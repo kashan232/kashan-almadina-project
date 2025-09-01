@@ -25,7 +25,9 @@ use App\Http\Controllers\SubcategoryController;
 use App\Http\Controllers\AccountsHeadController;
 use App\Http\Controllers\SalesOfficerController;
 use App\Http\Controllers\StockTransferController;
+use App\Http\Controllers\InwardgatepassController;
 use App\Http\Controllers\WarehouseStockController;
+    use App\Http\Controllers\SubCustomerController;
 
 /*
 |--------------------------------------------------------------------------
@@ -110,6 +112,18 @@ Route::middleware('auth')->group(function () {
     // Route::get('/barcode/{id}', [ProductController::class, 'barcode'])->name('product.barcode');
 
     // Product
+//     Route::get('/products', [ProductController::class, 'index'])->name('products.index');
+//     Route::get('/products/create', [ProductController::class, 'create'])->name('products.create');
+//     Route::post('/products', [ProductController::class, 'store'])->name('products.store');
+//     Route::get('/products/{product}/edit', [ProductController::class, 'edit'])->name('products.edit');
+//     Route::post('/products/{product}/update-price', [ProductController::class, 'updatePrice'])->name('products.updatePrice');
+//     Route::get('/products/{product}/prices', [ProductController::class, 'showPrices']);
+//     Route::get('/get-subcategories/{category_id}', [ProductController::class, 'getSubcategories']);
+//     Route::get('/products/bulk-set-price', [ProductController::class, 'bulkSetPrice'])->name('products.bulkSetPrice');
+//     Route::post('/products/bulk-set-price', [ProductController::class, 'bulkSetPriceUpdate'])->name('products.bulkUpdatePrices.update');
+
+Route::post('/products/bulk-action', [ProductController::class, 'bulkAction'])->name('products.bulkAction');
+
     Route::get('/products', [ProductController::class, 'index'])->name('products.index');
     Route::get('/products/create', [ProductController::class, 'create'])->name('products.create');
     Route::post('/products', [ProductController::class, 'store'])->name('products.store');
@@ -119,7 +133,6 @@ Route::middleware('auth')->group(function () {
     Route::get('/get-subcategories/{category_id}', [ProductController::class, 'getSubcategories']);
     Route::get('/products/bulk-set-price', [ProductController::class, 'bulkSetPrice'])->name('products.bulkSetPrice');
     Route::post('/products/bulk-set-price', [ProductController::class, 'bulkSetPriceUpdate'])->name('products.bulkUpdatePrices.update');
-
 
 
 
@@ -212,6 +225,8 @@ Route::middleware('auth')->group(function () {
 
     route::get('/sale/add',[SaleController::class,'add_sale'])->name('sale.add');
     route::get('/sale',[SaleController::class,'index'])->name('sale.index');
+    route::get('/Booking',[SaleController::class,'Booking'])->name('Booking.index');
+    route::get('/Booking/edit/{id}',[SaleController::class,'editBooking'])->name('editBooking.index');
 
     // routes/web.php
     Route::get('/get-products-by-warehouse/{warehouseId}', [App\Http\Controllers\SaleController::class, 'getProductsByWarehouse']);
@@ -223,6 +238,53 @@ Route::middleware('auth')->group(function () {
     Route::get('/sale/edit/{id}', [SaleController::class, 'edit'])->name('sale.edit');
     Route::post('/sale/update/{id}', [SaleController::class, 'update'])->name('sale.update');
 
+
+
+Route::get('/sub-customers', [SubCustomerController::class, 'index'])->name('sub_customers.index');
+Route::get('/sub-customers/create', [SubCustomerController::class, 'create'])->name('sub_customers.create');
+Route::post('/sub-customers/store', [SubCustomerController::class, 'store'])->name('sub_customers.store');
+Route::get('/sub-customers/edit/{id}', [SubCustomerController::class, 'edit'])->name('sub_customers.edit');
+Route::post('/sub-customers/update/{id}', [SubCustomerController::class, 'update'])->name('sub_customers.update');
+Route::get('/sub-customers/delete/{id}', [SubCustomerController::class, 'destroy'])->name('sub_customers.destroy');
+Route::get('/sub-customers/toggle-status/{id}', [SubCustomerController::class, 'toggleStatus'])->name('sub_customers.toggleStatus');
+Route::get('/sub-customers/ledger', [SubCustomerController::class, 'getLedger'])->name('sub_customers.ledger');
+Route::get('/sub-customers/by-type', [SubCustomerController::class, 'getByType']);
+// SubCustomer inactive list
+Route::get('/sub_customers/inactive', [SubCustomerController::class, 'inactive'])->name('sub_customers.inactive');
+
 });Route::get('sale/invoice/{id}', [SaleController::class, 'invoice'])->name('sale.invoice');
+// SubCustomer Payments
+Route::get('/sub_customers/payments', [SubCustomerController::class, 'payments'])->name('sub_customers.payments');
+Route::post('/sub_customers/payments/store', [SubCustomerController::class, 'storePayment'])->name('sub_customers.payments.store');
+Route::get('vouchers/{id}/receipt', [VoucherController::class, 'receipt'])->name('vouchers.receipt');
+
+
+// Inward Gatepass Routes
+Route::get('/InwardGatepass', [InwardgatepassController::class, 'index'])->name('InwardGatepass.home');
+Route::get('/add/InwardGatepass', [InwardgatepassController::class, 'create'])->name('add_inwardgatepass');
+Route::post('/InwardGatepass/store', [InwardgatepassController::class, 'store'])->name("store.InwardGatepass");
+Route::get('/InwardGatepass/{id}', [InwardgatepassController::class, 'show'])->name('InwardGatepass.show');
+
+// edit/update/delete abhi comment kiye hue hain
+Route::get('/InwardGatepass/{id}/edit', [InwardgatepassController::class, 'edit'])->name('InwardGatepass.edit');
+Route::put('/InwardGatepass/{id}', [InwardgatepassController::class, 'update'])->name('InwardGatepass.update');
+Route::get('/inward-gatepass/{id}/pdf', [InwardgatepassController::class, 'pdf'])->name('InwardGatepass.pdf');
+
+
+Route::delete('/InwardGatepass/{id}', [InwardgatepassController::class, 'destroy'])->name('InwardGatepass.destroy');
+// Products search
+Route::get('/search-productsinwar', [InwardgatepassController::class, 'searchProducts'])->name('search-productsinwar');
+
+
+// Show Add Bill Form
+Route::get('inward-gatepass/{id}/add-bill', [PurchaseController::class, 'addBill'])->name('add_bill');
+// Store Bill
+Route::post('inward-gatepass/{id}/store-bill', [PurchaseController::class, 'store'])->name('store.bill');
+
+Route::prefix('coa')->group(function() {
+    Route::get('/', [AccountsHeadController::class,'index'])->name('coa.index');
+    Route::post('/head', [AccountsHeadController::class,'storeHead'])->name('coa.head.store');
+    Route::post('/account', [AccountsHeadController::class,'storeAccount'])->name('coa.account.store');
+});
 
 require __DIR__.'/auth.php';

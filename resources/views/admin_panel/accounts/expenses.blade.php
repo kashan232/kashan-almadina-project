@@ -23,7 +23,7 @@
 
                             <th>id</th>
                             <th>Customer</th>
-                            <th>party</th>
+                            <th>customer id</th>
                             {{--  <th>Sub-Head</th>  --}}
                             <th>Narration</th>
                             <th>Amount</th>
@@ -51,6 +51,9 @@
                                         data-bs-toggle="modal" data-bs-target="#voucherModal">
                                         Edit
                                     </button>
+                                     <a href="{{ route('vouchers.receipt', $voucher->id) }}" target="_blank" class="btn btn-success btn-sm">
+        Receipt
+    </a>
                                 </td>
                             </tr>
                         @endforeach

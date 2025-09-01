@@ -60,6 +60,29 @@ public function store(Request $request)
     {
         //
     }
+public function receipt($id)
+{
+    $voucher = Voucher::findOrFail($id);
+
+    $customerName = $voucher->person; // Default
+    $customerAddress = '-';
+    $closingBalance = 0;
+
+    if ($voucher->type === 'Main Customer' && $voucher->mainCustomer) {
+        $customerName = $voucher->mainCustomer->customer_name;
+        $customerAddress = $voucher->mainCustomer->address;
+        $closingBalance = $voucher->mainCustomer->closing_balance;
+    } elseif ($voucher->type === 'Sub Customer' && $voucher->subCustomer) {
+        $customerName = $voucher->subCustomer->customer_name;
+        $customerAddress = $voucher->subCustomer->address;
+        $closingBalance = $voucher->subCustomer->closing_balance;
+    }
+
+    return view('admin_panel.accounts.receipt', compact('voucher', 'customerName', 'customerAddress', 'closingBalance'));
+}
+
+
+
 
     /**
      * Show the form for editing the specified resource.

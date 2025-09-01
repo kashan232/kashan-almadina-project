@@ -8,13 +8,13 @@
     <div class="container">
 
         <div class="d-flex justify-content-between align-items-center mb-2">
-            <h2 class="fw-bold mt-2">Sales</h2>
+            <h2 class="fw-bold mt-2">Booking</h2>
           <div>
-              <a class="btn btn-primary mt-2" href="sale/add">
+              {{--  <a class="btn btn-primary mt-2" href="sale/add">
                 <i class="bi bi-plus-lg"></i> Add Sale
-            </a>
-              <a class="btn btn-primary mt-2" href="/Booking">
-                <i class="bi bi-plus-lg"></i> Booking
+            </a>  --}}
+              <a class="btn btn-primary mt-2" href="/sale/add">
+                <i class="bi bi-plus-lg"></i>Add Booking
             </a>
           </div>
         </div>
@@ -60,12 +60,11 @@
                                 </td>
                                 {{--  <td> {{  $sale->weight}}</td>  --}}
                                 <td class="d-flex">
-                                  <a class="btn btn-warning btn-sm" href="{{ route('sale.edit', $sale->id) }}">
-                                      <i class="bi bi-pencil-square"></i>
-                                  </a>
-                                  <a class="btn btn-primary btn-sm" href="{{ route('sale.invoice', $sale->id) }}" >
+                        
+                                   {{--  <a class="btn btn-primary btn-sm" href="{{ route('sale.invoice', $sale->id) }}" >
     <i class="bi bi-printer"></i> Invoice
-</a>
+</a>    --}}
+  <a href="{{ route('editBooking.index', $sale->id) }}" class="btn btn-secondary">confrom </a>
 
                                 </td>
                             </tr>

@@ -234,4 +234,12 @@ public function destroy($id)
     return redirect()->back()->with('success', 'Purchase deleted successfully.');
 }
 
+public function addBill($gatepassId)
+{
+    // Fetch the gatepass along with its related items and products
+    $gatepass = InwardGatepass::with('items.product')->findOrFail($gatepassId);
+
+    // Pass the gatepass data to the view
+    return view('admin_panel.inward.add_bill', compact('gatepass'));
+}
 }

@@ -274,7 +274,12 @@
            <button type="button" class="btn btn-sm btn-primary me-1" id="btnAdd">Add</button>
 <button type="button" class="btn btn-sm btn-primary me-1" id="btnEdit">Edit</button>
 <button type="button" class="btn btn-sm btn-warning me-1" id="btnRevert">Revert</button>
-                <button type="submit" class="btn btn-sm btn-success me-1 ">Save</button>
+<!-- Sale button -->
+<button type="submit" name="sale" class="btn btn-sm btn-success me-1">Save</button>
+
+<!-- Booking button -->
+<button type="submit" name="booking" class="btn btn-sm btn-success me-1">Booking</button>
+
   <button type="button" class="btn btn-sm btn-danger me-1" id="btnDelete">Delete</button>
 <button type="button" class="btn btn-sm btn-info me-1" id="btnReceipt">Receipt</button>
 <button type="button" class="btn btn-sm btn-secondary me-1" id="btnPrint">Print</button>

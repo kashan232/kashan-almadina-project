@@ -11,9 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('products', function (Blueprint $table) {
-            $table->enum('status', [1, 0])->default(1)->after('alert_qty');
-        });
+       Schema::table('products', function (Blueprint $table) {
+    $table->boolean('status')->default(1)->after('alert_qty');
+    });
+
     }
 
     /**

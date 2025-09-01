@@ -17,7 +17,7 @@ class ProductController extends Controller
 {
       public function index()
     {
-        $products = Product::with('latest_price')->get();
+        $products = Product::with('latestPrice')->get();
         return view('admin_panel.product.index', compact('products'));
     }
     
@@ -28,48 +28,43 @@ class ProductController extends Controller
         return view('admin_panel.product.create', compact('categories', 'brands'));
     }
 
- public function store(Request $request)
+    public function store(Request $request)
     {
-        // dd("asd");
         // dd($request->all());
-        // $request->validate([
-        //      'name' => 'required|unique:products,name',
-        //     'price' => 'required|numeric',
-        //     'tax_percent' => 'required|numeric',
-        //     'discount_percent' => 'required|numeric',
-        //     'wht_percent' => 'required|numeric',
-        //     'name' => 'required|unique:products,name',
-        //     'category' => 'required',
-        //     'sub_category' => 'required',
-        //     'brand' => 'required',
-        //     'stock' => 'required',
-        //     'alert_qty' => 'required',
-        //     'purchase_retail_price' => 'required',
-        //     'purchase_tax_percent' => 'required',
-        //     'purchase_tax_amount' => 'required',
-        //     'purchase_discount_percent' => 'required',
-        //     'purchase_discount_amount' => 'required',
-        //     'purchase_net_amount' => 'required',
-        //     'sale_retail_price' => 'required',
-        //     'sale_tax_percent' => 'required',
-        //     'sale_tax_amount' => 'required',
-        //     'sale_wht_percent' => 'required',
-        //     'sale_discount_percent' => 'required',
-        //     'sale_discount_amount' => 'required',
-        //     'sale_net_amount' => 'required',
-        // ]);
-
-
-         $product = Product::create([
+        $request->validate([
+            'name' => 'required|unique:products,name',
+            'category' => 'required',
+            'sub_category' => 'required',
+            'brand' => 'required',
+            'stock' => 'required',
+            'status' => 'required',
+            'alert_qty' => 'required',
+            'purchase_retail_price' => 'required',
+            'purchase_tax_percent' => 'required',
+            'purchase_tax_amount' => 'required',
+            'purchase_discount_percent' => 'required',
+            'purchase_discount_amount' => 'required',
+            'purchase_net_amount' => 'required',
+            'sale_retail_price' => 'required',
+            'sale_tax_percent' => 'required',
+            'sale_tax_amount' => 'required',
+            'sale_wht_percent' => 'required',
+            'sale_discount_percent' => 'required',
+            'sale_discount_amount' => 'required',
+            'sale_net_amount' => 'required',
+        ]);
+        
+        $product = Product::create([
             'name' => $request->name,
             'category_id' => $request->category,
-            'subCategory_id' => $request->sub_category,
+            'sub_category_id' => $request->sub_category,
             'brand_id' => $request->brand,
             'stock' => $request->stock,
             'alert_qty' => $request->alert_qty,
             'status' => $request->status,
         ]);
-            $product->prices()->create([
+
+        $product->prices()->create([
             // 'price' => $request->price,
             'purchase_retail_price' => $request->purchase_retail_price,
             'purchase_tax_percent' => $request->purchase_tax_percent,
@@ -84,12 +79,25 @@ class ProductController extends Controller
             'sale_discount_percent' => $request->sale_discount_percent,
             'sale_discount_amount' => $request->sale_discount_amount,
             'sale_net_amount' => $request->sale_net_amount,
-            // 'start_date' => now()->setTimezone('Asia/Karachi')->toDateString(),
-            // 'end_date' => null // null means currently active
+            'start_date' => now()->setTimezone('Asia/Karachi')->toDateString(),
+            'end_date' => null ,
+            // 'sub_category_id' => $request->sub_category,
+            // 'brand' => $request->brand,
+            // 'stock' => $request->stock,
+            // 'alert_qty' => $request->alert_qty,
         ]);
+
+        // $product->prices()->create([
+        //     'price' => $request->price,
+        //     'tax_percent' => $request->tax_percent,
+        //     'discount_percent' => $request->discount_percent,
+        //     'weight' => $request->weight,
+        //     //   'wht_percent' => $request->discount_percent,
+        //     'effective_date' => now()->toDateString(),
+        // ]);
+
         return redirect()->route('products.index')->with('success', 'Product Created');
     }
-
 
     public function edit(Product $product)
     {
@@ -100,13 +108,13 @@ class ProductController extends Controller
     public function updatePrice(Request $request, Product $product)
     {
         $request->validate([
-            // 'price' => 'required|numeric',
+            'price' => 'required|numeric',
             'tax_percent' => 'required|numeric',
             'discount_percent' => 'required|numeric',
         ]);
 
         $product->prices()->create([
-            // 'price' => $request->price,
+            'price' => $request->price,
             'tax_percent' => $request->tax_percent,
             'discount_percent' => $request->discount_percent,
             'effective_date' => now()->toDateString(),
@@ -132,7 +140,28 @@ class ProductController extends Controller
         return response()->json($subcategories);
     }
    
-    
+    public function searchProducts(Request $request)
+    {
+        $query = $request->get('q');
+
+
+        \Log::info("Search query: " . $query); // Debug log
+
+        $products = Product::where('name', 'like', '%' . $query . '%')->get();
+
+        if ($products->isEmpty()) {
+            return response()->json(['message' => 'Product not found'], 404);
+        }
+
+        $products = $products->map(function ($product) {
+            return [
+                'name' => $product->name,
+            ];
+        });
+
+        return response()->json($products);
+    }
+
     public function bulkSetPrice(Request $request)
     {
         // dd($request->toArray());
@@ -170,6 +199,7 @@ class ProductController extends Controller
                     'purchase_discount_percent' => $request->purchase_discount_percent[$index],
                     'purchase_discount_amount' => $request->purchase_discount_amount[$index],
                     'purchase_net_amount' => $request->purchase_net_amount[$index],
+                    
                     'sale_retail_price' => $request->sale_retail_price[$index],
                     'sale_tax_percent' => $request->sale_tax_percent[$index],
                     'sale_tax_amount' => $request->sale_tax_amount[$index],
@@ -196,29 +226,30 @@ class ProductController extends Controller
 //         })->get();
 
 //     return response()->json($products);
-// }
-   public function searchProducts(Request $request)
+
+
+// }   
+
+public function bulkAction(Request $request)
 {
-    $query = $request->get('q');
+    $action = $request->input('action');
+    $ids = $request->input('ids', []);
 
-    \Log::info("Search query: " . $query);
-
-    $products = Product::with('latest_price')->where('name', 'like', '%' . $query . '%')->get();
-
-    if ($products->isEmpty()) {
-        return response()->json([]);
+    if (empty($ids)) {
+        return response()->json(['status' => 'error', 'message' => 'No products selected.'], 422);
     }
 
-    $products = $products->map(function ($product) {
-        return [
-            'id' => $product->id,
-            'name' => $product->name,
-            'latest_price' => $product->latest_price ? ['purchase_net_amount' => $product->latest_price->purchase_net_amount] : null,
-        ];
-    });
+    if ($action === 'delete') {
+        Product::whereIn('id', $ids)->delete();
+        return response()->json(['status' => 'success', 'message' => 'Selected products deleted.']);
+    }
 
-    return response()->json($products);
+    if ($action === 'deactivate') {
+        Product::whereIn('id', $ids)->update(['status' => 0]);
+        return response()->json(['status' => 'success', 'message' => 'Selected products deactivated.']);
+    }
+
+    return response()->json(['status' => 'error', 'message' => 'Invalid action.'], 400);
 }
-
 
 }

@@ -8,61 +8,7 @@
 <html class="no-js" lang="zxx">
 
 <head>
-    <style>
-        /* ERP Mega Menu & Normal Submenu Compact Styling */
-        .nav-item .submenu,
-        .mega-menu .submenu {
-            background: #fff;
-            padding: 12px;
-            /* compact padding */
-            border-radius: 6px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-        }
 
-        .mega-menu .category-heading {
-            font-size: 13px;
-            font-weight: 600;
-            color: #34495e;
-            margin-bottom: 8px;
-            padding-bottom: 4px;
-            border-bottom: 1px solid #eaeaea;
-        }
-
-        .nav-item .submenu-item li,
-        .mega-menu .submenu-item li {
-            margin-bottom: 4px;
-            /* less spacing */
-        }
-
-        .nav-item .submenu-item li a,
-        .mega-menu .submenu-item li a {
-            display: flex;
-            align-items: center;
-            font-size: 15px;
-            /* smaller font */
-            color: #555;
-            padding: 4px 8px;
-            /* compact padding */
-            border-radius: 4px;
-            transition: all 0.2s ease;
-        }
-
-        .nav-item .submenu-item li a i,
-        .mega-menu .submenu-item li a i {
-            font-size: 14px;
-            margin-right: 6px;
-            color: #2980b9;
-            min-width: 18px;
-            text-align: center;
-        }
-
-        .nav-item .submenu-item li a:hover,
-        .mega-menu .submenu-item li a:hover {
-            background: #f1f7fd;
-            color: #2980b9;
-            font-weight: 500;
-        }
-    </style>
     <!--=========================*
                 Met Data
     *===========================-->
@@ -382,58 +328,134 @@
                         <li class="nav-item mega-menu">
                             <a href="#" class="nav-link"><i class="menu_icon ti-layout-slider"></i><span
                                     class="menu-title">Management</span><i class="menu-arrow"></i></a>
-                                                                  <div class="submenu">
-        <div class="col-group-wrapper row">
+                            <div class="submenu">
+                                <div class="col-group-wrapper row">
+                                    <div class="col-group col-md-4 mb-mob-0">
+                                        <div class="row">
+                                            <div class="col-12">
+                                                <!--=========================*
+                                                      Basic Elements
+                                                *===========================-->
+                                                <p class="category-heading">Product Managment</p>
+                                                <div class="submenu-item">
+                                                    <div class="row">
+                                                        <div class="col-md-6">
+                                                            <ul>
+                                                                <li class="nav-item"><a class="nav-link"
+                                                                        href="{{ route('Category.home') }}"><i
+                                                                            class="menu_icon ti-alert"></i><span>Category</span></a>
+                                                                </li>
+                                                                <li class="nav-item"><a class="nav-link"
+                                                                        href="{{ route('subcategory.home') }}"><i
+                                                                            class="menu_icon ti-id-badge"></i><span>Sub
+                                                                            Category</span></a></li>
+                                                                <li class="nav-item"><a class="nav-link"
+                                                                        href="{{ route('Brand.home') }}"><i
+                                                                            class="menu_icon ti-smallcap"></i><span>Brands</span></a>
+                                                                </li>
+                                                                <li class="nav-item"><a class="nav-link"
+                                                                        href="{{ route('Unit.home') }}"><i
+                                                                            class="menu_icon ion-ios-photos"></i><span>Units</span></a>
+                                                                </li>
+                                                                <li class="nav-item"><a class="nav-link"
+                                                                        href="{{ route('products.index') }}"><i
+                                                                            class="menu_icon icon-basket"></i><span>Products</span></a>
+                                                                </li>
 
-            <!-- Products & Categories -->
-            <div class="col-group col-md-3">
-                <p class="category-heading">Products & Categories</p>
-                <ul class="submenu-item">
-                    <li><a href="{{url('products')}}"><i class="fas fa-box"></i> Products</a></li>
-                    {{--  <li><a href="{{route('discount.index')}}"><i class="fas fa-tags"></i> Discount Products</a></li>  --}}
-                    <li><a href="{{route('Category.home')}}"><i class="fas fa-list"></i> Category</a></li>
-                    <li><a href="{{route('subcategory.home')}}"><i class="fas fa-th-list"></i> Sub Category</a></li>
-                    <li><a href="{{route('Brand.home')}}"><i class="fas fa-trademark"></i> Brands</a></li>
-                    <li><a href="{{route('Unit.home')}}"><i class="fas fa-balance-scale"></i> Units</a></li>
-                </ul>
-            </div>
+                                                                {{-- <li class="nav-item"><a class="nav-link" href="accordion.html"><i class="menu_icon ti-layout-accordion-separated"></i><span>Accordion</span></a></li>
+                                                                <li class="nav-item"><a class="nav-link" href="buttons.html"><i class="menu_icon icon-focus"></i><span>Buttons</span></a></li>
+                                                                <li class="nav-item"><a class="nav-link" href="badges.html"><i class="menu_icon icon-ribbon"></i><span>Badges</span></a></li> --}}
 
-            <!-- Purchase & Inventory -->
-            <div class="col-group col-md-3">
-                <p class="category-heading">Purchase & Inventory</p>
-                <ul class="submenu-item">
+                                                            </ul>
+                                                        </div>
+                                                        <div class="col-md-6">
+                                                            <ul>
 
-                    <li><a href="{{route('InwardGatepass.home')}}"><i class="fas fa-shopping-cart"></i> Inward Gatepass </a></li>
-                    <li><a href="{{route('add_inwardgatepass')}}"><i class="fas fa-shopping-cart"></i> Add Inward Gatepass </a></li>
-                    <li><a href="{{route('Purchase.home')}}"><i class="fas fa-shopping-cart"></i> Purchase</a></li>
-                    
-                </ul>
-            </div>
+                                                                <li class="nav-item"><a class="nav-link"
+                                                                        href="{{ url('warehouse') }}"><i
+                                                                            class="menu_icon ti-alert"></i><span>warehouse</span></a>
+                                                                </li>
+                                                                <li class="nav-item"><a class="nav-link"
+                                                                        href="{{ url('vendor') }}"><i
+                                                                            class="menu_icon ti-alert"></i><span>vendor</span></a>
+                                                                </li>
+                                                                <li class="nav-item"><a class="nav-link"
+                                                                        href="{{ url('customers') }}"><i
+                                                                            class="menu_icon ti-alert"></i><span>customer</span></a>
+                                                                </li>
+                                                                <li class="nav-item"><a class="nav-link"
+                                                                        href="{{ url('zone') }}"><i
+                                                                            class="menu_icon ti-alert"></i><span>zone</span></a>
+                                                                </li>
+                                                                <li class="nav-item"><a class="nav-link"
+                                                                        href="{{ url('sales-officers') }}"><i
+                                                                            class="menu_icon ti-alert"></i><span>Sales
+                                                                            Officer</span></a></li>
+                                                                <li class="nav-item"><a class="nav-link"
+                                                                        href="{{ url('transport') }}"><i
+                                                                            class="menu_icon ti-alert"></i><span>Transport</span></a>
+                                                                </li>
+                                                                <li class="nav-item"><a class="nav-link"
+                                                                        href="{{ url('narrations') }}"><i
+                                                                            class="menu_icon ti-alert"></i><span>Narration</span></a>
+                                                                </li>
+                                                                {{-- <li class="nav-item"><a class="nav-link" href="carousel.html"><i class="menu_icon ti-layout-slider"></i><span>Carousels</span></a></li>
+                                                                <li class="nav-item"><a class="nav-link" href="dropdown.html"><i class="menu_icon icon-layers"></i><span>Dropdown</span></a></li>
+                                                                <li class="nav-item"><a class="nav-link" href="tabs.html"><i class="menu_icon ti-layout-tab"></i><span>Tabs</span></a></li> --}}
 
-            <!-- Accounts -->
-            <div class="col-group col-md-3">
-                <p class="category-heading">Accounts</p>
-                <ul class="submenu-item">
-                    {{-- <li><a href="{{url('narrations')}}"><i class="fas fa-file-alt"></i> Narration</a></li> --}}
-                    <li><a href="{{url('vendor')}}"><i class="fas fa-truck"></i> Vendor</a></li>
-                    <li><a href="{{url('warehouse')}}"><i class="fas fa-warehouse"></i> Warehouse</a></li>
-                    <li><a href="{{url('warehouse_stocks')}}"><i class="fas fa-boxes"></i> Warehouse Stock</a></li>
-                    <li><a href="{{url('stock_transfers')}}"><i class="fas fa-exchange-alt"></i> Stock Transfer</a></li>
-                </ul>
-            </div>
-              <!-- Customers & Sales -->
-            <div class="col-group col-md-3">
-                <p class="category-heading">Sales & Customers</p>
-                <ul class="submenu-item">
-                    <li><a href="{{url('sale')}}"><i class="fas fa-receipt"></i> Sales</a></li>
-                    <li><a href="{{url('customers')}}"><i class="fas fa-user"></i> Customer</a></li>
-                    <li><a href="{{url('sales-officers')}}"><i class="fas fa-user-tie"></i> Sales Officer</a></li>
-                    <li><a href="{{url('zone')}}"><i class="fas fa-map-marker-alt"></i> Zone</a></li>
-                </ul>
-            </div>
-
-        </div>
-    </div>
+                                                            </ul>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-group col-md-4">
+                                        <div class="row">
+                                            <div class="col-12">
+                                                <div class="submenu-item pt-5 mt-2 pt-mob-0 mt-mob-0">
+                                                    <div class="row">
+                                                        <div class="col-md-6">
+                                                            <ul>
+                                                                {{-- <li class="nav-item"><a class="nav-link" href="list-group.html"><i class="menu_icon ti-list"></i><span>List Group</span></a></li>
+                                                                <li class="nav-item"><a class="nav-link" href="modals.html"><i class="menu_icon ti-layers-alt"></i><span>Modals</span></a></li>
+                                                                <li class="nav-item"><a class="nav-link" href="pagination.html"><i class="menu_icon ion-android-more-horizontal"></i><span>Pagination</span></a></li> --}}
+                                                            </ul>
+                                                        </div>
+                                                        <div class="col-md-6">
+                                                            <ul>
+                                                                {{-- <li class="nav-item"><a class="nav-link" href="progressbar.html"><i class="menu_icon ion-ios-settings-strong"></i><span>Progressbar</span></a></li> --}}
+                                                                {{-- <li class="nav-item"><a class="nav-link" href="grid.html"><i class="menu_icon ti-layout-grid4"></i><span>Grid</span></a></li> --}}
+                                                            </ul>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <!--=========================*
+                                          Icons
+                                *===========================-->
+                                    <div class="col-group col-md-4">
+                                        <p class="category-heading">Products</p>
+                                        <ul class="submenu-item">
+                                            {{-- <li class="nav-item"><a class="nav-link" href="font-awesome.html"><i class="menu_icon ti-flag-alt"></i> <span>Font Awesome</span></a></li> --}}
+                                            {{-- <li class="nav-item"><a class="nav-link" href="themify.html"><i class="menu_icon ti-themify-favicon"></i><span>Themify</span></a></li> --}}
+                                            {{-- <li class="nav-item"><a class="nav-link" href="ionicons.html"><i class="menu_icon ion-ionic"></i><span>Ionicons V2</span></a></li> --}}
+                                            {{-- @if (auth()->user()->can('View Product') || auth()->user()->email === 'admin@admin.com') --}}
+                                            {{-- @endif --}}
+                                            <li class="nav-item"><a class="nav-link"
+                                                    href="{{ route('Purchase.home') }}"><i
+                                                        class="menu_icon icon-basket"></i><span>Purchase</span></a>
+                                            </li>
+                                            <li class="nav-item"><a class="nav-link"
+                                                    href="{{ route('sale.index') }}"><i
+                                                        class="menu_icon icon-basket"></i><span>Sale</span></a>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
                         </li>
                         {{-- @if (auth()->user()->email === 'admin@admin.com') --}}
                         <li class="nav-item">
@@ -502,13 +524,13 @@
                                             <span>Income Voucher</span>
                                         </a>
                                     </li>
-                                    <li class="nav-item">
+   <li class="nav-item">
                                         <a class="nav-link" href="{{ route('vouchers.index', 'Discount voucher') }}">
                                             <i class="fa-solid fa-wallet mr-2"></i>
                                             <span>Discount Voucher</span>
                                         </a>
                                     </li>
-                                    <li class="nav-item">
+   <li class="nav-item">
                                         <a class="nav-link" href="{{ route('vouchers.index', 'Wht voucher') }}">
                                             <i class="fa-solid fa-wallet mr-2"></i>
                                             <span>Wht Voucher</span>

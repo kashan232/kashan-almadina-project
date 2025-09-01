@@ -66,21 +66,21 @@
                                     <td class="d-none"><input type="number" name="product_id[]" value="{{ $product->id }}"></td>
 
                                     <!-- Purchase Inputs -->
-                                    <td><input type="number" class="form-control form-control-sm p-1 purchase-retail" value="{{ $product->latestPrice->purchase_retail_price }}" name="purchase_retail_price[]" style="width:90px"></td>
-                                    <td><input type="number" class="form-control form-control-sm p-1 purchase-tax" value="{{ $product->latestPrice->purchase_tax_percent }}"  name="purchase_tax_percent[]" style="width:90px"></td>
-                                    <td><input type="text" class="form-control form-control-sm p-1 purchase-after-tax" value="{{ $product->latestPrice->purchase_tax_amount }}" name="purchase_tax_amount[]" readonly style="width:90px"></td>
-                                    <td><input type="number" class="form-control form-control-sm p-1 purchase-discount" value="{{ $product->latestPrice->purchase_discount_percent }}" name="purchase_discount_percent[]" style="width:90px"></td>
-                                    <td class="d-none"><input type="text" class="form-control form-control-sm p-1 purchase-discount-amount" value="{{ $product->latestPrice->purchase_discount_amount }}" name="purchase_discount_amount[]" readonly style="width:90px"></td>
-                                    <td><input type="text" class="form-control form-control-sm p-1 purchase-net" value="{{ $product->latestPrice->purchase_net_amount }}" name="purchase_net_amount[]" readonly style="width:90px"></td>
+                                    <td><input type="number" class="form-control form-control-sm p-1 purchase-retail" value="{{ $product->latestPrice->purchase_retail_price ?? ''}}" name="purchase_retail_price[]" style="width:90px"></td>
+                                    <td><input type="number" class="form-control form-control-sm p-1 purchase-tax" value="{{ $product->latestPrice->purchase_tax_percent ?? ''}}"  name="purchase_tax_percent[]" style="width:90px"></td>
+                                    <td><input type="text" class="form-control form-control-sm p-1 purchase-after-tax" value="{{ $product->latestPrice->purchase_tax_amount ?? '' }}" name="purchase_tax_amount[]" readonly style="width:90px"></td>
+                                    <td><input type="number" class="form-control form-control-sm p-1 purchase-discount" value="{{ $product->latestPrice->purchase_discount_percent ?? '' }}" name="purchase_discount_percent[]" style="width:90px"></td>
+                                    <td class="d-none"><input type="text" class="form-control form-control-sm p-1 purchase-discount-amount" value="{{ $product->latestPrice->purchase_discount_amount ?? ''}}" name="purchase_discount_amount[]" readonly style="width:90px"></td>
+                                    <td><input type="text" class="form-control form-control-sm p-1 purchase-net" value="{{ $product->latestPrice->purchase_net_amount ?? ''}}" name="purchase_net_amount[]" readonly style="width:90px"></td>
 
                                     <!-- Sale Inputs -->
-                                    <td><input type="number" class="form-control form-control-sm p-1 sale-retail" value="{{ $product->latestPrice->sale_retail_price }}" name="sale_retail_price[]" style="width:90px"></td>
-                                    <td><input type="number" class="form-control form-control-sm p-1 sale-tax" value="{{ $product->latestPrice->sale_tax_percent }}" name="sale_tax_percent[]" style="width:90px"></td>
-                                    <td><input type="text" class="form-control form-control-sm p-1 sale-after-tax" value="{{ $product->latestPrice->sale_tax_amount }}" name="sale_tax_amount[]" readonly style="width:90px"></td>
+                                    <td><input type="number" class="form-control form-control-sm p-1 sale-retail" value="{{ $product->latestPrice->sale_retail_price ?? ''}}" name="sale_retail_price[]" style="width:90px"></td>
+                                    <td><input type="number" class="form-control form-control-sm p-1 sale-tax" value="{{ $product->latestPrice->sale_tax_percent ?? ''}}" name="sale_tax_percent[]" style="width:90px"></td>
+                                    <td><input type="text" class="form-control form-control-sm p-1 sale-after-tax" value="{{ $product->latestPrice->sale_tax_amount ?? ''}}" name="sale_tax_amount[]" readonly style="width:90px"></td>
                                     <td><input type="number" class="form-control form-control-sm p-1 sale-wht" value="{{ $product->latestPrice->sale_wht_percent ?? 0.5 }}" name="sale_wht_percent[]" style="width:90px"></td>
-                                    <td><input type="number" class="form-control form-control-sm p-1 sale-discount" value="{{ $product->latestPrice->sale_discount_percent }}" name="sale_discount_percent[]" style="width:90px"></td>
-                                    <td class="d-none"><input type="text" class="form-control form-control-sm p-1 sale-discount-amount" value="{{ $product->latestPrice->sale_discount_amount }}" name="sale_discount_amount[]" readonly style="width:90px"></td>
-                                    <td><input type="text" class="form-control form-control-sm p-1 sale-net" value="{{ $product->latestPrice->sale_net_amount }}" name="sale_net_amount[]" readonly style="width:90px"></td>
+                                    <td><input type="number" class="form-control form-control-sm p-1 sale-discount" value="{{ $product->latestPrice->sale_discount_percent ?? ''}}" name="sale_discount_percent[]" style="width:90px"></td>
+                                    <td class="d-none"><input type="text" class="form-control form-control-sm p-1 sale-discount-amount" value="{{ $product->latestPrice->sale_discount_amount?? '' }}" name="sale_discount_amount[]" readonly style="width:90px"></td>
+                                    <td><input type="text" class="form-control form-control-sm p-1 sale-net" value="{{ $product->latestPrice->sale_net_amount ?? ''}}" name="sale_net_amount[]" readonly style="width:90px"></td>
                                 </tr>
                                 @endforeach
                             </tbody>

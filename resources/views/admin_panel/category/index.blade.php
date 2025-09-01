@@ -2,24 +2,53 @@
 @section('content')
 
 <style>
-    /* Tighten table cell spacing but keep headers readable */
-        .custom-table th {
-            padding: 8px 6px !important;
-            font-weight: 600;
-            font-size: 14px;
-        }
+    html, body {
+        height: 100%;
+        overflow-x: hidden !important;
+        overflow-y: auto !important;
+        padding-right: 0 !important;
+        margin: 0;
+    }
 
-        .custom-table td {
-            padding: 4px 6px !important;
-            font-size: 13px;
-            vertical-align: middle;
-        }
+    body.modal-open {
+        padding-right: 0 !important;
+    }
 
-        /* Optional: Reduce font size for action buttons */
-        .custom-table .btn-sm {
-            padding: 2px 6px;
-            font-size: 12px;
-        }
+    body::-webkit-scrollbar {
+        width: 0px;
+        background: transparent;
+    }
+
+    .main-content {
+        min-height: calc(100vh - 60px);
+        overflow-y: auto;
+    }
+
+    .container {
+        padding-bottom: 10px;
+        margin-bottom: 0;
+    }
+
+    .custom-table th {
+        padding: 8px 6px !important;
+        font-weight: 600;
+        font-size: 14px;
+    }
+
+    .custom-table td {
+        padding: 4px 6px !important;
+        font-size: 13px;
+        vertical-align: middle;
+    }
+
+    .custom-table .btn-sm {
+        padding: 2px 6px;
+        font-size: 12px;
+    }
+
+    .dataTables_wrapper {
+        overflow-x: auto;
+    }
 </style>
 
 <div class="main-content">
@@ -34,7 +63,7 @@
                         </button>
                     </div>
 
-                    <div class="border mt-1 shadow rounded" style="background-color: white;">
+                    <div class="border mt-1 shadow rounded bg-white">
                         <div class="col-lg-12 m-auto">
                             <div class="table-responsive mt-4 mb-4">
                                 <table id="default-datatable" class="table custom-table table-bordered table-hover text-center">
@@ -136,6 +165,11 @@
                 search: "Search Category:",
                 lengthMenu: "Show _MENU_ entries"
             }
+        });
+
+        // Fix scroll/padding after modal close
+        $(document).on('hidden.bs.modal', function () {
+            $('body').css('padding-right', '0');
         });
     });
 </script>

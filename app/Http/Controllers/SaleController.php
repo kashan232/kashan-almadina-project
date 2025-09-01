@@ -10,12 +10,32 @@ use App\Models\Warehouse;
 use App\Models\ProductPrice;
 use App\Models\PurchaseItem;
 use Illuminate\Http\Request;
+use App\Models\Productbooking;
+use App\Models\ProductBookingItem;
 use Illuminate\Support\Facades\DB;
 
 class SaleController extends Controller
 {
 
 
+public function editBooking($id)
+{
+    $booking = Productbooking::with('items.product', 'customer')->findOrFail($id);
+
+    $warehouses = Warehouse::all();
+    $customers = Customer::all(); // ✅ All customers for select dropdown
+
+    // Optional: calculate next invoice number if creating a new booking
+    $lastInvoice = Productbooking::latest('id')->first();
+    $nextInvoiceNumber = $lastInvoice ? intval($lastInvoice->invoice_no) + 1 : 1;
+
+    return view('admin_panel.sale.booking.edit', compact(
+        'booking',
+        'warehouses',
+        'customers',
+        'nextInvoiceNumber'
+    ));
+}
 
     /**
      * Display a listing of the resource.
@@ -47,6 +67,15 @@ public function index()
 
     return view('admin_panel.sale.index', compact('sales'));
 }
+
+public function Booking()
+{
+    // Fetch sales with selected columns and related items
+    $sales = Productbooking::with('items')->get();
+
+    return view('admin_panel.sale.booking.index', compact('sales'));
+}
+
 
 
 public function getProductsByWarehouse($warehouseId)
@@ -123,72 +152,176 @@ public function getCustomerData($id)
 
 
   // Save Sale Items
+// public function store(Request $request)
+// {
+//     // Validate main sale fields if needed
+   
+//     // Generate invoice number if not provided
+
+//     // Create Sale
+//     $sale = Sale::create([
+//         'invoice_no' =>  $request->Invoice_no,
+//         'manual_invoice' => $request->Invoice_main ?? null,
+//         'customer_id' => $request->customer ?? null,
+//         'sub_customer' => $request->customerType ?? null,
+//         'filer_type' => $request->filerType ?? null,
+//         'address' => $request->address ?? null,
+//         'tel' => $request->tel ?? null,
+//         'remarks' => $request->remarks ?? null,
+//         'sub_total1' => $request->subTotal1 ?? 0,
+//         'sub_total2' => $request->subTotal2 ?? 0,
+//         'discount_percent' => $request->discountPercent ?? 0,
+//         'discount_amount' => $request->discountAmount ?? 0,
+//         'previous_balance' => $request->previousBalance ?? 0,
+//         'total_balance' => $request->totalBalance ?? 0,
+//         'receipt1' => $request->receipt1 ?? 0,
+//         'receipt2' => $request->receipt2 ?? 0,
+//         'final_balance1' => $request->finalBalance1 ?? 0,
+//         'final_balance2' => $request->finalBalance2 ?? 0,
+//         'weight' => $request->weight
+//     ]);
+
+//     // Save Sale Items (skip empty rows)
+//     foreach ($request->warehouse_name as $key => $warehouse_id) {
+//     if (empty($warehouse_id) || empty($request->product_name[$key])) {
+//         continue;
+//     }
+
+//     $productId = $request->product_name[$key];
+//     $saleQty = floatval($request->{'sales-qty'}[$key]);
+
+//     // 🔽 Reduce stock from product table
+//     $product = Product::find($productId);
+//     if ($product) {
+//         $currentStock = floatval($product->stock);
+//         $newStock = max(0, $currentStock - $saleQty); // prevent negative stock
+//         $product->stock = $newStock;
+//         $product->save();
+//     }
+
+//     // Save sale item
+//     SaleItem::create([
+//         'sale_id' => $sale->id,
+//         'warehouse_id' => $warehouse_id,
+//         'product_id' => $productId,
+//         'stock' => $request->stock[$key] ?? 0,
+//         'price_level' => $request->price[$key] ?? null,
+//         'sales_price' => $request->{'sales-price'}[$key] ?? 0,
+//         'sales_qty' => $saleQty,
+//         'retail_price' => $request->{'retail-price'}[$key] ?? 0,
+//         'discount_percent' => $request->{'discount-percent'}[$key] ?? 0,
+//         'discount_amount' => $request->{'discount-amount'}[$key] ?? 0,
+//         'amount' => $request->{'sales-amount'}[$key] ?? 0,
+//     ]);
+// }
+
+
+// return redirect()->back()->with("success", "Successfully added");
+
+// }
+
 public function store(Request $request)
 {
-    // Validate main sale fields if needed
-   
-    // Generate invoice number if not provided
+    $isBooking = $request->has('booking'); // booking button pe click kiya ya nahi
 
-    // Create Sale
-    $sale = Sale::create([
-        'invoice_no' =>  $request->Invoice_no,
-        'manual_invoice' => $request->Invoice_main ?? null,
-        'customer_id' => $request->customer ?? null,
-        'sub_customer' => $request->customerType ?? null,
-        'filer_type' => $request->filerType ?? null,
-        'address' => $request->address ?? null,
-        'tel' => $request->tel ?? null,
-        'remarks' => $request->remarks ?? null,
-        'sub_total1' => $request->subTotal1 ?? 0,
-        'sub_total2' => $request->subTotal2 ?? 0,
-        'discount_percent' => $request->discountPercent ?? 0,
-        'discount_amount' => $request->discountAmount ?? 0,
-        'previous_balance' => $request->previousBalance ?? 0,
-        'total_balance' => $request->totalBalance ?? 0,
-        'receipt1' => $request->receipt1 ?? 0,
-        'receipt2' => $request->receipt2 ?? 0,
-        'final_balance1' => $request->finalBalance1 ?? 0,
-        'final_balance2' => $request->finalBalance2 ?? 0,
-        'weight' => $request->weight
-    ]);
+    if ($isBooking) {
+        // ------------------- Booking -------------------
+        $booking = Productbooking::create([
+            'invoice_no' => $request->Invoice_no,
+            'manual_invoice' => $request->Invoice_main ?? null,
+            'customer_id' => $request->customer ?? null,
+            'sub_customer' => $request->customerType ?? null,
+            'filer_type' => $request->filerType ?? null,
+            'address' => $request->address ?? null,
+            'tel' => $request->tel ?? null,
+            'remarks' => $request->remarks ?? null,
+            'sub_total1' => $request->subTotal1 ?? 0,
+            'sub_total2' => $request->subTotal2 ?? 0,
+            'discount_percent' => $request->discountPercent ?? 0,
+            'discount_amount' => $request->discountAmount ?? 0,
+            'previous_balance' => $request->previousBalance ?? 0,
+            'total_balance' => $request->totalBalance ?? 0,
+            'receipt1' => $request->receipt1 ?? 0,
+            'receipt2' => $request->receipt2 ?? 0,
+            'final_balance1' => $request->finalBalance1 ?? 0,
+            'final_balance2' => $request->finalBalance2 ?? 0,
+            'weight' => $request->weight ?? null
+        ]);
 
-    // Save Sale Items (skip empty rows)
-    foreach ($request->warehouse_name as $key => $warehouse_id) {
-    if (empty($warehouse_id) || empty($request->product_name[$key])) {
-        continue;
+        foreach ($request->warehouse_name as $key => $warehouse_id) {
+            if (empty($warehouse_id) || empty($request->product_name[$key])) continue;
+
+            ProductBookingItem::create([
+                'booking_id' => $booking->id,
+                'warehouse_id' => $warehouse_id,
+                'product_id' => $request->product_name[$key],
+                'stock' => $request->stock[$key] ?? 0,
+                'price_level' => $request->price[$key] ?? 0,
+                'sales_price' => $request->{'sales-price'}[$key] ?? 0,
+                'sales_qty' => $request->{'sales-qty'}[$key] ?? 0,
+                'retail_price' => $request->{'retail-price'}[$key] ?? 0,
+                'discount_percent' => $request->{'discount-percent'}[$key] ?? 0,
+                'discount_amount' => $request->{'discount-amount'}[$key] ?? 0,
+                'amount' => $request->{'sales-amount'}[$key] ?? 0,
+            ]);
+        }
+
+        return redirect()->back()->with("success", "Booking saved successfully!");
+
+    } else {
+        // ------------------- Sale -------------------
+        $sale = Sale::create([
+            'invoice_no' => $request->Invoice_no,
+            'manual_invoice' => $request->Invoice_main ?? null,
+            'customer_id' => $request->customer ?? null,
+            'sub_customer' => $request->customerType ?? null,
+            'filer_type' => $request->filerType ?? null,
+            'address' => $request->address ?? null,
+            'tel' => $request->tel ?? null,
+            'remarks' => $request->remarks ?? null,
+            'sub_total1' => $request->subTotal1 ?? 0,
+            'sub_total2' => $request->subTotal2 ?? 0,
+            'discount_percent' => $request->discountPercent ?? 0,
+            'discount_amount' => $request->discountAmount ?? 0,
+            'previous_balance' => $request->previousBalance ?? 0,
+            'total_balance' => $request->totalBalance ?? 0,
+            'receipt1' => $request->receipt1 ?? 0,
+            'receipt2' => $request->receipt2 ?? 0,
+            'final_balance1' => $request->finalBalance1 ?? 0,
+            'final_balance2' => $request->finalBalance2 ?? 0,
+            'weight' => $request->weight
+        ]);
+
+        foreach ($request->warehouse_name as $key => $warehouse_id) {
+            if (empty($warehouse_id) || empty($request->product_name[$key])) continue;
+
+            $productId = $request->product_name[$key];
+            $saleQty = floatval($request->{'sales-qty'}[$key]);
+
+            // Reduce stock
+            $product = Product::find($productId);
+            if ($product) {
+                $product->stock = max(0, $product->stock - $saleQty);
+                $product->save();
+            }
+
+            SaleItem::create([
+                'sale_id' => $sale->id,
+                'warehouse_id' => $warehouse_id,
+                'product_id' => $productId,
+                'stock' => $request->stock[$key] ?? 0,
+                'price_level' => $request->price[$key] ?? 0,
+                'sales_price' => $request->{'sales-price'}[$key] ?? 0,
+                'sales_qty' => $saleQty,
+                'retail_price' => $request->{'retail-price'}[$key] ?? 0,
+                'discount_percent' => $request->{'discount-percent'}[$key] ?? 0,
+                'discount_amount' => $request->{'discount-amount'}[$key] ?? 0,
+                'amount' => $request->{'sales-amount'}[$key] ?? 0,
+            ]);
+        }
+
+        return redirect()->back()->with("success", "Sale saved successfully!");
     }
-
-    $productId = $request->product_name[$key];
-    $saleQty = floatval($request->{'sales-qty'}[$key]);
-
-    // 🔽 Reduce stock from product table
-    $product = Product::find($productId);
-    if ($product) {
-        $currentStock = floatval($product->stock);
-        $newStock = max(0, $currentStock - $saleQty); // prevent negative stock
-        $product->stock = $newStock;
-        $product->save();
-    }
-
-    // Save sale item
-    SaleItem::create([
-        'sale_id' => $sale->id,
-        'warehouse_id' => $warehouse_id,
-        'product_id' => $productId,
-        'stock' => $request->stock[$key] ?? 0,
-        'price_level' => $request->price[$key] ?? null,
-        'sales_price' => $request->{'sales-price'}[$key] ?? 0,
-        'sales_qty' => $saleQty,
-        'retail_price' => $request->{'retail-price'}[$key] ?? 0,
-        'discount_percent' => $request->{'discount-percent'}[$key] ?? 0,
-        'discount_amount' => $request->{'discount-amount'}[$key] ?? 0,
-        'amount' => $request->{'sales-amount'}[$key] ?? 0,
-    ]);
-}
-
-
-return redirect()->back()->with("success", "Successfully added");
-
 }
 
     // Optional: show sale items for a sale

@@ -15,12 +15,11 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->unsignedBigInteger('category_id');
-            $table->unsignedBigInteger('subCategory_id');
+            $table->unsignedBigInteger('sub_category_id');
             $table->unsignedBigInteger('brand_id');
-            $table->string('stock');
-            $table->string('alert_qty');
-            // $table->text('description')->nullable();
-  
+            $table->string('stock')->nullable();
+            $table->string('alert_qty')->nullable();
+            $table->string('brand')->nullable();
             $table->timestamps();
         });
     }

@@ -94,7 +94,7 @@
                                             <div class="col-md-1 mb-3">
                                                 <label class="form-label">Status</label>
                                                 {{-- <input type="checkbox" class="form-control @error('alert_qty') is-invalid  @enderror" name="alert_qty" placeholder="Alert Quantity"> --}}
-                                                <select name="      " class="form-control">
+                                                <select name="status" class="form-control">
                                                     <option value="1">Active</option>
                                                     <option value="0">Inactive</option>
                                                 </select>

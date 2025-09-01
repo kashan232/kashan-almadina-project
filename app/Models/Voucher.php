@@ -16,5 +16,16 @@ class Voucher extends Model
         'voucher_type', 'date', 'sales_officer', 'type', 'person',
         'sub_head', 'narration', 'amount'
     ];
-
+    public function mainCustomer()
+    {
+        return $this->belongsTo(Customer::class, 'person', 'id');
+    }
+   public function customer()
+    {
+        return $this->belongsTo(Customer::class, 'person', 'id');
+    }
+    public function subCustomer()
+    {
+        return $this->belongsTo(SubCustomer::class, 'person', 'id');
+    }
 }
