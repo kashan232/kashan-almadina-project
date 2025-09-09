@@ -15,11 +15,8 @@ class CategorySeeder extends Seeder
     public function run(): void
     {
         $data = [
-            'Men' => ['Shirts', 'T-Shirts', 'Trousers', 'Jeans', 'Kurta', 'Sherwani'],
-            'Women' => ['Tops', 'Kurtis', 'Sarees', 'Dresses', 'Abayas', 'Lawn'],
-            'Kids' => ['Boys', 'Girls', 'Infant Wear'],
-            'Accessories' => ['Belts', 'Caps', 'Socks', 'Scarves', 'Bags'],
-            'Footwear' => ['Men Shoes', 'Women Shoes', 'Kids Shoes'],
+            'Battery' => ['xp-140', 'xp-190', 'xp-220', 'xp-180'],
+            
         ];
 
         foreach ($data as $categoryName => $subcategories) {
