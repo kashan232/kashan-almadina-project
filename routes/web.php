@@ -21,6 +21,7 @@ use App\Http\Controllers\IncentiveController;
 use App\Http\Controllers\NarrationController;
 use App\Http\Controllers\WarehouseController;
 use App\Http\Controllers\PermissionController;
+use App\Http\Controllers\SalereturnController;
 use App\Http\Controllers\SubcategoryController;
 use App\Http\Controllers\AccountsHeadController;
 use App\Http\Controllers\SalesOfficerController;
@@ -227,6 +228,10 @@ Route::post('/products/bulk-action', [ProductController::class, 'bulkAction'])->
     route::get('/sale',[SaleController::class,'index'])->name('sale.index');
     route::get('/Booking',[SaleController::class,'Booking'])->name('Booking.index');
     route::get('/Booking/edit/{id}',[SaleController::class,'editBooking'])->name('editBooking.index');
+
+// sale return
+    route::get('/sale/return',[SalereturnController::class,'index_salereturn'])->name('sale.retrun');
+    route::get('/sale/return/create/{id}',[SalereturnController::class,'index_salereturn_Add'])->name('sale.retrun.add');
 
     // routes/web.php
     Route::get('/get-products-by-warehouse/{warehouseId}', [App\Http\Controllers\SaleController::class, 'getProductsByWarehouse']);

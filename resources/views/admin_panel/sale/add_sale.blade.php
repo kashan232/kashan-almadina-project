@@ -357,7 +357,7 @@ $(document).on('change', '.warehouse', function () {
             success: function (data) {
                 $productSelect.empty().append('<option value="">Select Product</option>');
                 $.each(data, function (key, value) {
-                    $productSelect.append('<option value="' + value.id + '">' + value.name + '</option>');
+                    $productSelect.append('<option value="' + value.product.id + '">' + value.product.name + '</option>');
                      });
             }
         });

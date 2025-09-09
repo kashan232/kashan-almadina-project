@@ -14,7 +14,7 @@
                     <th>Warehouse</th>
                     <th>Product</th>
                     <th>Quantity</th>
-                    <th>Price</th>
+                    {{--  <th>Price</th>  --}}
                     <th>Remarks</th>
                     <th>Action</th>
                 </tr>
@@ -26,7 +26,7 @@
                     <td>{{ $stock->warehouse->warehouse_name }}</td>
                     <td>{{ $stock->product->name }}</td>
                     <td>{{ $stock->quantity }}</td>
-                    <td>{{ $stock->price }}</td>
+                    {{--  <td>{{ $stock->price }}</td>  --}}
                     <td>{{ $stock->remarks }}</td>
                     <td>
                         <a href="{{ route('warehouse_stocks.edit', $stock->id) }}" class="btn btn-sm btn-warning">Edit</a>

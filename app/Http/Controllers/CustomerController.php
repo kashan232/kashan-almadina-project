@@ -69,13 +69,16 @@ public function outstandingLosses()
     return view('admin_panel.customers.inactive', compact('customers'));
 }
 
-    public function create()
+      public function create()
     {
           $zones = Zone::all();
           $SalesOfficer = SalesOfficer::all();
-        $latestId = 'CUST-' . str_pad(Customer::max('id') + 1, 4, '0', STR_PAD_LEFT);
+        $latestId = 'CUST-' . str_pad(Customer::max('id') + 1, 1, STR_PAD_LEFT);
+    //     $latestId = 'CUST-' . str_pad(Customer::max('id') + 1, 4, '0', STR_PAD_LEFT);
+
         return view('admin_panel.customers.create', compact('latestId','SalesOfficer','zones'));
     }
+
 
     // public function store(Request $request)
     // {

@@ -11,6 +11,7 @@ use App\Models\ProductPrice;
 use App\Models\PurchaseItem;
 use Illuminate\Http\Request;
 use App\Models\Productbooking;
+use App\Models\WarehouseStock;
 use App\Models\ProductBookingItem;
 use Illuminate\Support\Facades\DB;
 
@@ -47,19 +48,19 @@ public function add_sale()
 
     // Generate a unique invoice that does not exist in the sales table
     do {
-        $nextInvoiceNumber = 'INV-' . time() . rand(10, 99);
+        $nextInvoiceNumber = 'INV-' . time() . rand(1   , 99);
         $exists = Sale::where('invoice_no', $nextInvoiceNumber)->exists();
     } while ($exists); // repeat if invoice already exists
 
     return view('admin_panel.sale.add_sale', compact('warehouses', 'customers', 'nextInvoiceNumber'));
-}
+    }
 
     public function invoice($id)
-{
-    $sale = Sale::with(['customer', 'items.product'])->findOrFail($id);
+    {
+        $sale = Sale::with(['customer', 'items.product'])->findOrFail($id);
 
-    return view('admin_panel.sale.invoice', compact('sale'));
-}
+         return view('admin_panel.sale.invoice', compact('sale'));
+    }
 public function index()
 {
     // Fetch sales with selected columns and related items
@@ -78,15 +79,24 @@ public function Booking()
 
 
 
+// public function getProductsByWarehouse($warehouseId)
+// {
+//     // PurchaseItems join with Purchase to filter by warehouse
+//     $products = Product::whereIn('id', function($query) use ($warehouseId) {
+//         $query->select('product_id')
+//               ->from('purchase_items')
+//               ->join('purchases', 'purchase_items.purchase_id', '=', 'purchases.id')
+//               ->where('purchases.warehouse_id', $warehouseId);
+//     })->get();
+
+//     return response()->json($products);
+// }
+
 public function getProductsByWarehouse($warehouseId)
 {
-    // PurchaseItems join with Purchase to filter by warehouse
-    $products = Product::whereIn('id', function($query) use ($warehouseId) {
-        $query->select('product_id')
-              ->from('purchase_items')
-              ->join('purchases', 'purchase_items.purchase_id', '=', 'purchases.id')
-              ->where('purchases.warehouse_id', $warehouseId);
-    })->get();
+    $products = WarehouseStock::with('product')
+        ->where('warehouse_id', $warehouseId) // optional: only products with stock
+        ->get();
 
     return response()->json($products);
 }
@@ -295,8 +305,20 @@ public function store(Request $request)
         foreach ($request->warehouse_name as $key => $warehouse_id) {
             if (empty($warehouse_id) || empty($request->product_name[$key])) continue;
 
+
+            
             $productId = $request->product_name[$key];
             $saleQty = floatval($request->{'sales-qty'}[$key]);
+
+             $warehouseStock = WarehouseStock::where('warehouse_id', $warehouse_id)
+        ->where('product_id', $productId)
+        ->first();
+
+    if ($warehouseStock) {
+        $warehouseStock->quantity = max(0, $warehouseStock->quantity - $saleQty);
+        $warehouseStock->save();
+    }
+
 
             // Reduce stock
             $product = Product::find($productId);
@@ -395,4 +417,8 @@ public function update(Request $request, $id)
     return redirect()->back()->with('success', 'Sale updated successfully.');
 }
 
+
+
+
+// sale_start
 }

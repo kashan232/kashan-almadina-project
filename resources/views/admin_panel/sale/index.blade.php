@@ -63,6 +63,9 @@
                                   <a class="btn btn-warning btn-sm" href="{{ route('sale.edit', $sale->id) }}">
                                       <i class="bi bi-pencil-square"></i>
                                   </a>
+                                   <a class="btn btn-success btn-sm" href="{{ route('sale.retrun.add', $sale->id) }}">
+                                      <i class="bi bi-pencil-square"></i> sale return
+                                  </a>
                                   <a class="btn btn-primary btn-sm" href="{{ route('sale.invoice', $sale->id) }}" >
     <i class="bi bi-printer"></i> Invoice
 </a>
