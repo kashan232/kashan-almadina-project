@@ -17,6 +17,9 @@ class Account extends Model
         'total_debit',
         'total_credit',
         'status',        // active/inactive
+        'opening_balance',        // active/inactive
+
+        
     ];
 
     // Relation with AccountHead

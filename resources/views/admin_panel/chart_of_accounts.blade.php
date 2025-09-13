@@ -34,8 +34,8 @@
                         <td>{{ $account->head->name }}</td>
                         <td>{{ $account->title }}</td>
                         <td>{{ $account->type }}</td>
-                        <td>{{ $account->total_debit }}</td>
-                        <td>{{ $account->total_credit }}</td>
+                        <td>{{ number_format($account->debit, 2) }}</td> <!-- Display debit amount -->
+                        <td>{{ number_format($account->credit, 2) }}</td> <!-- Display credit amount -->
                         <td>
                             @if($account->status)
                                 <span class="badge bg-success">Active</span>
@@ -50,7 +50,8 @@
     </div>
 </div>
 
-<!-- Add Account Modal -->
+
+<!-- Add Account Modal --><!-- Add Account Modal -->
 <div class="modal fade" id="addAccountModal" tabindex="-1">
     <div class="modal-dialog">
         <form action="{{ route('coa.account.store') }}" method="POST" class="modal-content">
@@ -84,10 +85,16 @@
                         <option value="Credit">Credit</option>
                     </select>
                 </div>
-                <div class="form-check form-switch">
-                    <input class="form-check-input" name="status" type="checkbox" checked>
-                    <label class="form-check-label">Active</label>
+                <div class="mb-3">
+                    <label>Opening Balance</label>
+                    <input type="number" name="opening_balance" class="form-control" value="0.00">
                 </div>
+               <div class="form-check form-switch">
+    <input class="form-check-input" name="status" type="checkbox" value="on" @if(old('status', 1)) checked @endif>
+    <label class="form-check-label">Active</label>
+</div>
+
+
             </div>
             <div class="modal-footer">
                 <button type="submit" class="btn btn-success">Add Account</button>
@@ -95,6 +102,8 @@
         </form>
     </div>
 </div>
+
+
 
 <!-- Add Head Modal -->
 <div class="modal fade" id="addHeadModal" tabindex="-1">

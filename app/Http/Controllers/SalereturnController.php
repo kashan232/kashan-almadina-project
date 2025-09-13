@@ -3,139 +3,128 @@
 namespace App\Http\Controllers;
 
 use App\Models\Sale;
+use App\Models\Product;
 use App\Models\Customer;
-use App\Models\SaleItem;
 use App\Models\Warehouse;
 use App\Models\SaleReturn;
+use App\Models\SaleReturnItem; // NOTE: agar model ka naam SaleReturnitem hai to yahi import badal dein
+use App\Models\WarehouseStock;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class SalereturnController extends Controller
 {
-   public function index_salereturn(){
-    return view('admin_panel.sale.return.index');
-   }
+    public function index_salereturn()
+    {
+        return view('admin_panel.sale.return.index');
+    }
 
-  
-public function index_salereturn_Add($id)
+    // public function index_salereturn_Add($id)
+    // {
+    //     $sale = Sale::with(['items','items.product'])->findOrFail($id);
+
+    //     $warehouses = Warehouse::all();
+    //     $customers  = Customer::all();
+
+    //     do {
+    //         $nextInvoiceNumber = 'SR-' . time() . rand(1, 99);
+    //         $exists = SaleReturn::where('invoice_no', $nextInvoiceNumber)->exists();
+    //     } while ($exists);
+
+    //     return view('admin_panel.sale.return.create', compact(
+    //         'sale','warehouses','customers','nextInvoiceNumber'
+    //     ));
+    // }
+
+    public function index_salereturn_Add($id)
 {
-    $sale = Sale::with(['items', 'items.product'])->findOrFail($id); // includes sale_items
-    
+    $sale = Sale::with(['items','items.product'])->findOrFail($id);
+
     $warehouses = Warehouse::all();
-    $customers = Customer::all();
-    // Generate a unique invoice number for return
+    $customers  = Customer::all();
+
     do {
-        $nextInvoiceNumber = 'SR-' . time() . rand(1, 99); // SR = Sale Return
-        $exists = Sale::where('invoice_no', $nextInvoiceNumber)->exists();
+        $nextInvoiceNumber = 'SR-' . time() . rand(1, 99);
+        $exists = \App\Models\SaleReturn::where('invoice_no', $nextInvoiceNumber)->exists();
     } while ($exists);
 
     return view('admin_panel.sale.return.create', compact(
-        'sale',
-        'warehouses',
-        'customers',
-        'nextInvoiceNumber'
+        'sale','warehouses','customers','nextInvoiceNumber'
     ));
 }
-public function store(Request $request)
+
+
+    public function store(Request $request)
 {
-    $isBooking = $request->has('booking'); // booking button pe click kiya ya nahi
+    $request->validate([
+        'Invoice_no'        => 'required',
+        'warehouse_id.*'    => 'required|integer',
+        'product_id.*'      => 'required|integer',
+        'sold_qty.*'        => 'nullable',            // if you post it
+        'return_qty.*'      => 'required|numeric|min:0',
+        'sales-price.*'     => 'required|numeric|min:0',
+    ]);
 
-    if ($isBooking) {
-        // ------------------- Booking -------------------
-        $booking = Productbooking::create([
-            'invoice_no' => $request->Invoice_no,
-            'manual_invoice' => $request->Invoice_main ?? null,
-            'customer_id' => $request->customer ?? null,
-            'sub_customer' => $request->customerType ?? null,
-            'filer_type' => $request->filerType ?? null,
-            'address' => $request->address ?? null,
-            'tel' => $request->tel ?? null,
-            'remarks' => $request->remarks ?? null,
-            'sub_total1' => $request->subTotal1 ?? 0,
-            'sub_total2' => $request->subTotal2 ?? 0,
-            'discount_percent' => $request->discountPercent ?? 0,
-            'discount_amount' => $request->discountAmount ?? 0,
-            'previous_balance' => $request->previousBalance ?? 0,
-            'total_balance' => $request->totalBalance ?? 0,
-            'receipt1' => $request->receipt1 ?? 0,
-            'receipt2' => $request->receipt2 ?? 0,
-            'final_balance1' => $request->finalBalance1 ?? 0,
-            'final_balance2' => $request->finalBalance2 ?? 0,
-            'weight' => $request->weight ?? null
+    return DB::transaction(function () use ($request) {
+
+        $sr = SaleReturn::create([
+            'invoice_no'       => $request->Invoice_no,
+            'manual_invoice'   => $request->Invoice_main,
+            'customer_id'      => $request->customer,
+            'address'          => $request->address,
+            'tel'              => $request->tel,
+            'remarks'          => $request->remarks,
+            'sub_total1'       => (float) $request->subTotal1,
+            'sub_total2'       => (float) $request->subTotal2,
+            'discount_percent' => (float) $request->discountPercent,
+            'discount_amount'  => (float) $request->discountAmount,
+            'total_balance'    => (float) $request->totalBalance,
         ]);
 
-        foreach ($request->warehouse_name as $key => $warehouse_id) {
-            if (empty($warehouse_id) || empty($request->product_name[$key])) continue;
+        foreach (($request->warehouse_id ?? []) as $i => $wid) {
+            $pid    = (int) $request->product_id[$i];
+            $sold   = (float) ($request->sold_qty[$i] ?? 0);
+            $retQty = max(0, (float) $request->return_qty[$i]);
 
-            ProductBookingItem::create([
-                'booking_id' => $booking->id,
-                'warehouse_id' => $warehouse_id,
-                'product_id' => $request->product_name[$key],
-                'stock' => $request->stock[$key] ?? 0,
-                'price_level' => $request->price[$key] ?? 0,
-                'sales_price' => $request->{'sales-price'}[$key] ?? 0,
-                'sales_qty' => $request->{'sales-qty'}[$key] ?? 0,
-                'retail_price' => $request->{'retail-price'}[$key] ?? 0,
-                'discount_percent' => $request->{'discount-percent'}[$key] ?? 0,
-                'discount_amount' => $request->{'discount-amount'}[$key] ?? 0,
-                'amount' => $request->{'sales-amount'}[$key] ?? 0,
-            ]);
-        }
+            // cap: return cannot exceed sold
+            if ($sold > 0 && $retQty > $sold) { $retQty = $sold; }
+            if ($retQty <= 0) continue;
 
-        return redirect()->back()->with("success", "Booking saved successfully!");
+            $price   = (float) $request->input("sales-price.$i", 0);
+            $discPct = (float) $request->input("discount-percent.$i", 0);
+            $discAmt = (float) $request->input("discount-amount.$i", 0);
+            $gross   = $price * $retQty;
+            if ($discPct > 0) { $discAmt = ($gross * $discPct)/100.0; }
+            $amount  = $gross - $discAmt;
 
-    } else {
-        // ------------------- Sale -------------------
-        $sale = SaleReturn::create([
-            'invoice_no' => $request->Invoice_no,
-            'manual_invoice' => $request->Invoice_main ?? null,
-            'customer_id' => $request->customer ?? null,
-            'sub_customer' => $request->customerType ?? null,
-            'filer_type' => $request->filerType ?? null,
-            'address' => $request->address ?? null,
-            'tel' => $request->tel ?? null,
-            'remarks' => $request->remarks ?? null,
-            'sub_total1' => $request->subTotal1 ?? 0,
-            'sub_total2' => $request->subTotal2 ?? 0,
-            'discount_percent' => $request->discountPercent ?? 0,
-            'discount_amount' => $request->discountAmount ?? 0,
-            'previous_balance' => $request->previousBalance ?? 0,
-            'total_balance' => $request->totalBalance ?? 0,
-            'receipt1' => $request->receipt1 ?? 0,
-            'receipt2' => $request->receipt2 ?? 0,
-            'final_balance1' => $request->finalBalance1 ?? 0,
-            'final_balance2' => $request->finalBalance2 ?? 0,
-            'weight' => $request->weight
-        ]);
+            // + stock in the SELECTED warehouse (return location)
+            $ws = WarehouseStock::firstOrNew(['warehouse_id'=>$wid, 'product_id'=>$pid]);
+            $ws->quantity = (float)($ws->quantity ?? 0) + $retQty;
+            $ws->save();
 
-        foreach ($request->warehouse_name as $key => $warehouse_id) {
-            if (empty($warehouse_id) || empty($request->product_name[$key])) continue;
-
-            $productId = $request->product_name[$key];
-            $saleQty = floatval($request->{'sales-qty'}[$key]);
-
-            // Reduce stock
-            $product = Product::find($productId);
-            if ($product) {
-                $product->stock = max(0, $product->stock - $saleQty);
-                $product->save();
+            // + global stock
+            if ($p = Product::find($pid)) {
+                $p->stock = (float)($p->stock ?? 0) + $retQty;
+                $p->save();
             }
 
-            SaleReturnitem::create([
-                'sale_id' => $sale->id,
-                'warehouse_id' => $warehouse_id,
-                'product_id' => $productId,
-                'stock' => $request->stock[$key] ?? 0,
-                'price_level' => $request->price[$key] ?? 0,
-                'sales_price' => $request->{'sales-price'}[$key] ?? 0,
-                'sales_qty' => $saleQty,
-                'retail_price' => $request->{'retail-price'}[$key] ?? 0,
-                'discount_percent' => $request->{'discount-percent'}[$key] ?? 0,
-                'discount_amount' => $request->{'discount-amount'}[$key] ?? 0,
-                'amount' => $request->{'sales-amount'}[$key] ?? 0,
+            // save line
+            SaleReturnItem::create([
+                'sale_return_id'   => $sr->id,
+                'warehouse_id'     => $wid,   // selected warehouse
+                'product_id'       => $pid,
+                'stock'            => (float) $request->input("stock.$i", 0),
+                'price_level'      => (float) $request->input("price.$i", 0),
+                'sales_price'      => $price,
+                'sales_qty'        => $retQty,
+                'discount_percent' => $discPct,
+                'discount_amount'  => $discAmt,
+                'amount'           => $amount,
             ]);
         }
 
-        return redirect()->back()->with("success", "Sale saved successfully!");
-    }
+        return back()->with('success','Sale Return saved successfully!');
+    });
 }
 }
+
