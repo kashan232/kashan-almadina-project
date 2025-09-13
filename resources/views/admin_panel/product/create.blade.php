@@ -1,4 +1,3 @@
-
 @extends('admin_panel.layout.app')
 @section('content')
     
@@ -9,13 +8,8 @@
             <div class="page-header">
                 <div class="page-title">
                     <h4>Create Product</h4>
-                    {{-- <h6>Manage Products</h6> --}}
                 </div>
-                <div class="page-btn">
-                    {{-- <button class="btn btn-added" data-bs-toggle="modal" data-bs-target="#addProductModal">
-                        <img src="assets/img/icons/plus.svg" class="me-1" alt="img">Add Product
-                    </button> --}}
-                </div>
+                <div class="page-btn"></div>
             </div>
 
             <div class="card">
@@ -43,34 +37,31 @@
                                             </div>
                                             <div class="col-md-2 mb-3">
                                                 <label class="form-label">Category</label>
-                                                {{-- <input type="text" class="form-control" name="category" placeholder="Category"> --}}
                                                 <select name="category" class="form-control @error('category') is-invalid  @enderror" id="category-dropdown">
                                                     <option selected disabled>Select Category</option>
                                                     @foreach ($categories as $cat)
-                                                            <option value="{{ $cat->id }}">{{ $cat->name }}</option>
+                                                        <option value="{{ $cat->id }}">{{ $cat->name }}</option>
                                                     @endforeach
                                                 </select>
-                                                    @error('category')
-                                                        <span class="text-danger" style="font-size: 13px;">{{ $message }}</span>
-                                                    @enderror
+                                                @error('category')
+                                                    <span class="text-danger" style="font-size: 13px;">{{ $message }}</span>
+                                                @enderror
                                             </div>
                                             <div class="col-md-2 mb-3">
                                                 <label class="form-label">Sub-Category</label>
-                                                {{-- <input type="text" class="form-control" name="sub_category" placeholder="Sub-category"> --}}
-                                                   <select name="sub_category" class="form-control @error('sub_category') is-invalid  @enderror" id="subcategory-dropdown">
-                                                        <option selected disabled>Select Subcategory</option>
-                                                    </select>
-                                                    @error('sub_category')
-                                                        <span class="text-danger" style="font-size: 13px;">{{ $message }}</span>
-                                                    @enderror
+                                                <select name="sub_category" class="form-control @error('sub_category') is-invalid  @enderror" id="subcategory-dropdown">
+                                                    <option selected disabled>Select Subcategory</option>
+                                                </select>
+                                                @error('sub_category')
+                                                    <span class="text-danger" style="font-size: 13px;">{{ $message }}</span>
+                                                @enderror
                                             </div>
                                             <div class="col-md-2 mb-3">
                                                 <label class="form-label">Brand</label>
-                                                {{-- <input type="text" class="form-control @error('brand') is-invalid  @enderror" name="brand" placeholder="Brand"> --}}
-                                                <select name="brand" class="form-control @error('brand') is-invalid  @enderror" id="category-dropdown">
+                                                <select name="brand" class="form-control @error('brand') is-invalid  @enderror">
                                                     <option selected disabled>Select Brand</option>
                                                     @foreach ($brands as $brand)
-                                                            <option value="{{ $brand->id }}">{{ $brand->name }}</option>
+                                                        <option value="{{ $brand->id }}">{{ $brand->name }}</option>
                                                     @endforeach
                                                 </select>
                                                 @error('brand')
@@ -80,11 +71,11 @@
                                             <div class="col-md-2 mb-3">
                                                 <label class="form-label">Alert Quantity</label>
                                                 <input type="number" class="form-control @error('alert_qty') is-invalid  @enderror" name="alert_qty" placeholder="Alert Quantity">
-                                                  @error('alert_qty')
-                                                        <span class="text-danger" style="font-size: 13px;">{{ $message }}</span>
-                                                    @enderror
+                                                @error('alert_qty')
+                                                    <span class="text-danger" style="font-size: 13px;">{{ $message }}</span>
+                                                @enderror
                                             </div>
-                                             <div class="col-md-1 mb-3">
+                                            <div class="col-md-1 mb-3">
                                                 <label class="form-label">Stock</label>
                                                 <input type="number" class="form-control @error('stock') is-invalid  @enderror" name="stock" placeholder="Stock Quantity">
                                                 @error('stock')
@@ -93,14 +84,10 @@
                                             </div>
                                             <div class="col-md-1 mb-3">
                                                 <label class="form-label">Status</label>
-                                                {{-- <input type="checkbox" class="form-control @error('alert_qty') is-invalid  @enderror" name="alert_qty" placeholder="Alert Quantity"> --}}
                                                 <select name="status" class="form-control">
                                                     <option value="1">Active</option>
-                                                    <option value="0">Inactive</option>
+                <option value="0">Inactive</option>
                                                 </select>
-                                                  {{-- @error('alert_qty')
-                                                        <span class="text-danger" style="font-size: 13px;">{{ $message }}</span>
-                                                    @enderror --}}
                                             </div>
                                         </div>
                                     </div>
@@ -122,7 +109,7 @@
                                                 <div class="mb-3 col-4">
                                                     <label class="form-label">Tax (%)</label>
                                                     <input type="number" step="0.01" class="form-control @error('purchase_tax_percent') is-invalid  @enderror" name="purchase_tax_percent" placeholder="Tax %">
-                                                      @error('purchase_tax_percent')
+                                                    @error('purchase_tax_percent')
                                                         <span class="text-danger" style="font-size: 13px;">{{ $message }}</span>
                                                     @enderror
                                                 </div>
@@ -158,7 +145,7 @@
                                         </div>
                                     </div>
 
-                                    {{-- SALE --}}
+                                    {{-- SALE (UPDATED) --}}
                                     <div class="col-md-6">
                                         <h5 class="text-success mb-2">Sale Details</h5>
                                         <div class="border rounded p-3 bg-light h-100">
@@ -170,6 +157,7 @@
                                                         <span class="text-danger" style="font-size: 13px;">{{ $message }}</span>
                                                     @enderror
                                                 </div>
+
                                                 <div class="mb-3 col-4">
                                                     <label class="form-label">Tax (%)</label>
                                                     <input type="number" step="0.01" class="form-control @error('sale_tax_percent') is-invalid  @enderror" name="sale_tax_percent" placeholder="Tax %">
@@ -177,13 +165,17 @@
                                                         <span class="text-danger " style="font-size: 13px;">{{ $message }}</span>
                                                     @enderror
                                                 </div>
+
+                                                <div class="mb-3 col-4">
+                                                    <label class="form-label">Sales Tax Amount</label>
+                                                    <input type="text" class="form-control" name="sale_tax_amount" placeholder="Sales Tax Amount" readonly>
+                                                </div>
+
                                                 <div class="mb-3 col-4">
                                                     <label class="form-label">After Tax Amount</label>
-                                                    <input type="text" class="form-control @error('sale_tax_amount') is-invalid  @enderror" name="sale_tax_amount" placeholder="Tax Amount" readonly>
-                                                    @error('sale_tax_amount')
-                                                        <span class="text-danger" style="font-size: 13px;">{{ $message }}</span>
-                                                    @enderror
+                                                    <input type="text" class="form-control" name="sale_after_tax_amount" placeholder="After Tax Amount" readonly>
                                                 </div>
+
                                                 <div class="mb-3 col-4">
                                                     <label class="form-label">Withholding Tax (%)</label>
                                                     <input type="number" step="0.01" class="form-control @error('sale_wht_percent') is-invalid  @enderror" name="sale_wht_percent" placeholder="WHT %">
@@ -191,10 +183,12 @@
                                                         <span class="text-danger" style="font-size: 13px;">{{ $message }}</span>
                                                     @enderror
                                                 </div>
-                                                {{-- <div class="mb-3 col-4">
-                                                    <label class="form-label">Withholding Tax (%) testing</label>
-                                                    <input type="number" step="0.01" class="form-control" name="sale_wht_percent_only_show"  readonly>
-                                                </div> --}}
+
+                                                <div class="mb-3 col-4">
+                                                    <label class="form-label">WHT Amount</label>
+                                                    <input type="text" class="form-control" name="sale_wht_amount" placeholder="WHT Amount" readonly>
+                                                </div>
+
                                                 <div class="mb-3 col-4">
                                                     <label class="form-label">Discount (%)</label>
                                                     <input type="number" step="0.01" class="form-control @error('sale_discount_percent') is-invalid  @enderror" name="sale_discount_percent" placeholder="Discount %">
@@ -202,6 +196,7 @@
                                                         <span class="text-danger" style="font-size: 13px;">{{ $message }}</span>
                                                     @enderror
                                                 </div>
+
                                                 <div class="mb-3 col-4">
                                                     <label class="form-label">Discount Amount</label>
                                                     <input type="text" class="form-control @error('sale_discount_amount') is-invalid  @enderror" name="sale_discount_amount" placeholder="Discount Amount" readonly>
@@ -209,6 +204,7 @@
                                                         <span class="text-danger" style="font-size: 13px;">{{ $message }}</span>
                                                     @enderror
                                                 </div>
+
                                                 <div class="mb-3 col-4">
                                                     <label class="form-label">Net Amount</label>
                                                     <input type="text" class="form-control @error('sale_net_amount') is-invalid  @enderror" name="sale_net_amount" placeholder="Net Amount" readonly>
@@ -220,11 +216,11 @@
                                         </div>
                                     </div>
 
-                                    <div class="col-12 modal-footer mt-4   border-0 ">
-                                        <button type="submit" class="btn btn-primary">Save</button>
+                                    <div class="col-12 modal-footer mt-4 border-0">
+                                        <button type="submit" id="btnSave" class="btn btn-primary">Save</button>
+
                                     </div>
                                 </div>
-
 
                             </div>
                         </form>
@@ -249,17 +245,17 @@
         </script>
     @endif
     @if ($errors->any())
-    <script>
-        let errorMessages = `{!! implode('<br>', $errors->all()) !!}`;
-        Swal.fire({
-            icon: 'error',
-            title: 'Validation Error',
-            html: errorMessages,
-            timer: 3000,
-            showConfirmButton: false
-        });
-    </script>
-@endif
+        <script>
+            let errorMessages = `{!! implode('<br>', $errors->all()) !!}`;
+            Swal.fire({
+                icon: 'error',
+                title: 'Validation Error',
+                html: errorMessages,
+                timer: 3000,
+                showConfirmButton: false
+            });
+        </script>
+    @endif
     @if(session('success'))
         <script>
             Swal.fire({
@@ -271,94 +267,101 @@
             });
         </script>
     @endif
-        <script>
-            // alert("ads");   
-            // $("#form").submit(function(e){
-            //     e.preventDefault();
-            //     $(this).submit();
-            //     alert("Asd");
-            // });
+
+<script>
+    // ❶ Enter key se submit ko block kar do (inputs/select par)
+$('#form').on('keydown', 'input, select', function (e) {
+    if (e.key === 'Enter') {
+        e.preventDefault();   // Enter press pe submit NA ho
+        return false;
+    }
+});
+
+// ❷ Extra safety: sirf Save button se hi submit allow
+$('#form').on('submit', function (e) {
+    // Modern browsers: jis button se submit hua
+    const submitter = e.originalEvent && e.originalEvent.submitter;
+    if (!submitter || submitter.id !== 'btnSave') {
+        e.preventDefault();   // agar Save nahin, to block
+    }
+});
 
 $(document).ready(function() {
 
-        $('#category-dropdown').on('change', function() {
-            var categoryId = $(this).val();
+    // Category -> Subcategory
+    $('#category-dropdown').on('change', function() {
+        var categoryId = $(this).val();
+        if (categoryId) {
+            $.ajax({
+                url: '/get-subcategories/' + categoryId,
+                type: "GET",
+                dataType: "json",
+                success: function(data) {
+                    $('#subcategory-dropdown').empty();
+                    $('#subcategory-dropdown').append('<option selected disabled>Select Subcategory</option>');
+                    $.each(data, function(key, value) {
+                        $('#subcategory-dropdown').append('<option value="' + value.id + '">' + value.name + '</option>');
+                    });
+                }
+            });
+        } else {
+            $('#subcategory-dropdown').empty();
+        }
+    });
 
-            if (categoryId) {
-                $.ajax({
-                    url: '/get-subcategories/' + categoryId,
-                    type: "GET",
-                    dataType: "json",
-                    success: function(data) {
-                        $('#subcategory-dropdown').empty();
-                        $('#subcategory-dropdown').append('<option selected disabled>Select Subcategory</option>');
-                        $.each(data, function(key, value) {
-                            $('#subcategory-dropdown').append('<option value="' + value.id + '">' + value.name + '</option>');
-                        });
-                    }
-                });
-            } else {
-                $('#subcategory-dropdown').empty();
-            }
-        });
-
-    // Utility function to calculate values
+    // Generic calculator for purchase (as-is)
     function calculateValues(section) {
-        const retailPrice = parseFloat($(`[name="${section}_retail_price"]`).val()) || 0;
-        const taxPercent = parseFloat($(`[name="${section}_tax_percent"]`).val()) || 0;
+        const retailPrice     = parseFloat($(`[name="${section}_retail_price"]`).val()) || 0;
+        const taxPercent      = parseFloat($(`[name="${section}_tax_percent"]`).val()) || 0;
         const discountPercent = parseFloat($(`[name="${section}_discount_percent"]`).val()) || 0;
 
-        const taxAmount = (retailPrice * taxPercent / 100).toFixed(2);
+        const taxAmount      = (retailPrice * taxPercent / 100).toFixed(2);
         const discountAmount = (retailPrice * discountPercent / 100).toFixed(2);
-        const netAmount = (retailPrice + parseFloat(taxAmount) - parseFloat(discountAmount)).toFixed(2);
+        const netAmount      = (retailPrice + parseFloat(taxAmount) - parseFloat(discountAmount)).toFixed(2);
 
         $(`[name="${section}_tax_amount"]`).val(taxAmount);
         $(`[name="${section}_discount_amount"]`).val(discountAmount);
         $(`[name="${section}_net_amount"]`).val(netAmount);
     }
 
-function calculateSaleValues() {
-    // Step 1: Get Input Values
-    const retailPrice = parseFloat($('[name="sale_retail_price"]').val()) || 0;
-    const taxPercent = parseFloat($('[name="sale_tax_percent"]').val()) || 0;
-    const whtPercent = parseFloat($('[name="sale_wht_percent"]').val()) || 0.5; // Default 0.5%
-    const discountPercent = parseFloat($('[name="sale_discount_percent"]').val()) || 0;
+    // ---- SALE CALC (Correct formula)
+    function calculateSaleValues() {
+        const retail  = parseFloat($('[name="sale_retail_price"]').val())   || 0;
+        const taxPct  = parseFloat($('[name="sale_tax_percent"]').val())    || 0;
+        const whtPct  = parseFloat($('[name="sale_wht_percent"]').val())    || 0;
+        const discPct = parseFloat($('[name="sale_discount_percent"]').val()) || 0;
 
-    // Step 2: Calculate Tax (on Retail Price)
-    const taxAmount = (retailPrice * taxPercent / 100).toFixed(2); // 23,000 × 18% = 4,140
+        // 1) Sales Tax on retail
+        const taxAmount = retail * (taxPct / 100);
+        $('[name="sale_tax_amount"]').val(taxAmount.toFixed(2));
 
-    // Step 3: Calculate WHT (on Retail Price)
-    // const whtAmount = (retailPrice * whtPercent / 100).toFixed(2); // 23,000 × 0.5% = 115
-    const whtAmount = (taxAmount * whtPercent / 100).toFixed(2); // 23,000 × 0.5% = 115
-    // $("")
-    // Step 4: Calculate Discount (on Retail Price)
-    const discountAmount = (retailPrice * discountPercent / 100).toFixed(2); // 23,000 × 7% = 1,610
+        // 2) After Tax
+        const afterTax = retail + taxAmount;
+        $('[name="sale_after_tax_amount"]').val(afterTax.toFixed(2));
 
-    // Step 5: Net Amount = (Retail + Tax + WHT) - Discount
-    const netAmount = (
-        retailPrice + 
-        parseFloat(taxAmount) + 
-        parseFloat(whtAmount) - 
-        parseFloat(discountAmount)
-    ).toFixed(2); // 23,000 + 4,140 + 115 - 1,610 = 25,645
+        // 3) WHT on AfterTax
+        const whtAmount = afterTax * (whtPct / 100);
+        $('[name="sale_wht_amount"]').val(whtAmount.toFixed(2));
 
-    // Update Fields
-    $('[name="sale_tax_amount"]').val(taxAmount);
-    $('[name="sale_wht_amount"]').val(whtAmount);
-    $('[name="sale_discount_amount"]').val(discountAmount);
-    $('[name="sale_net_amount"]').val(netAmount);
-}
-    // Bind events for Purchase section
+        // 4) Discount on retail
+        const discountAmount = retail * (discPct / 100);
+        $('[name="sale_discount_amount"]').val(discountAmount.toFixed(2));
+
+        // 5) Net = AfterTax + WHT − Discount
+        const net = afterTax + whtAmount - discountAmount;
+        $('[name="sale_net_amount"]').val(net.toFixed(2));
+    }
+
+    // Bind changes
     $('[name="purchase_retail_price"], [name="purchase_tax_percent"], [name="purchase_discount_percent"]').on('input', function() {
         calculateValues('purchase');
     });
 
-    // Bind events for Sale section
-    $('[name="sale_retail_price"], [name="sale_tax_percent"], [name="sale_discount_percent"], [name="sale_wht_percent"]').on('input', function() {
-        calculateSaleValues();
-    });
+    $('[name="sale_retail_price"], [name="sale_tax_percent"], [name="sale_wht_percent"], [name="sale_discount_percent"]').on('input', calculateSaleValues);
 
+    // Init on load
+    calculateValues('purchase');
+    calculateSaleValues();
 });
 </script>
 @endsection
-
