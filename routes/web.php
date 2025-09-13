@@ -40,7 +40,7 @@ use App\Http\Controllers\SubCustomerController;
 | be assigned to the "web" middleware group. Make something great!
 |
 */
-
+// kashan connected
 Route::get('/home', [HomeController::class, 'index'])
     ->middleware('auth')
     ->name('home');
