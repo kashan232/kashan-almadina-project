@@ -11,14 +11,40 @@ class Purchase extends Model
 {
     use HasFactory;
     use SoftDeletes;
-// app/Models/Purchase.php
-protected $table = 'purchases'; // if it's not default
+    // app/Models/Purchase.php
+    protected $table = 'purchases'; // if it's not default
 
-    Protected $guarded = [];
+    protected $guarded = [];
 
-    // protected $fillable = [
-    //     'invoice_no', 'supplier', 'purchase_date', 'warehouse_id', 'item_category', 'item_name',
-    //     'quantity', 'price', 'total', 'note', 'unit', 'total_price', 'discount',
-    //     'Payable_amount', 'paid_amount', 'due_amount', 'status', 'is_return'
-    // ];
+    public function vendor()
+    {
+        return $this->belongsTo(\App\Models\Vendor::class, 'vendor_id');
+    }
+
+    public function warehouse()
+    {
+        return $this->belongsTo(\App\Models\Warehouse::class, 'warehouse_id');
+    }
+
+    public function items()
+    {
+        return $this->hasMany(PurchaseItem::class, 'purchase_id');
+    }
+
+    public static function generateInvoiceNo()
+    {
+        $prefix = 'PUR-';
+
+        // Fetch last invoice
+        $lastInvoice = self::orderBy('id', 'desc')->first();
+
+        $lastNumber = 0;
+        if ($lastInvoice && $lastInvoice->invoice_no) {
+            $lastNumber = (int)substr($lastInvoice->invoice_no, strlen($prefix));
+        }
+
+        $newNumber = str_pad($lastNumber + 1, 3, '0', STR_PAD_LEFT);
+
+        return $prefix . $newNumber;
+    }
 }

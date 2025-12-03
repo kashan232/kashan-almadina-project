@@ -10,21 +10,21 @@ use Spatie\Permission\Models\Role;
 
 class UserController extends Controller
 {
-        public function index()
+    public function index()
     {
         // dd("ok");
         $users = User::where('email', '!=', 'admin@admin.com')->get();
         $allRoles  = Role::all();
-        return view('admin_panel.users.users', compact(['users', 'allRoles'])); 
+        return view('admin_panel.users.users', compact(['users', 'allRoles']));
     }
 
     public function store(Request $request)
     {
         // dd("sda");
         $editId = $request->edit_id ?? null;
-         $validator = Validator::make($request->all(), [
+        $validator = Validator::make($request->all(), [
             'name' => 'required',
-            'email' => 'required|unique:users,email,'.$request->edit_id,
+            'email' => 'required|unique:users,email,' . $request->edit_id,
             'password' => 'required'
         ]);
 
@@ -33,7 +33,7 @@ class UserController extends Controller
         }
 
 
-      
+
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()]);
         }
@@ -72,13 +72,12 @@ class UserController extends Controller
         $user->save();
 
         return response()->json($msg);
-        
     }
 
     /**
      * Display the specified resource.
      */
-  
+
     /**
      * Remove the specified resource from storage.
      */
@@ -88,16 +87,15 @@ class UserController extends Controller
         $user->delete();
 
         return redirect()->route('users.index')->with('success', 'User deleted successfully.');
-
     }
 
- public function updateRoles(Request $request)
-{
-    $user = User::findOrFail($request->edit_id);
+    public function updateRoles(Request $request)
+    {
+        $user = User::findOrFail($request->edit_id);
 
-    // Assign new roles (by name)
-    $user->syncRoles($request->roles ?? []);
+        // Assign new roles (by name)
+        $user->syncRoles($request->roles ?? []);
 
-    return back()->with('success', 'User roles updated successfully!');
-}
+        return back()->with('success', 'User roles updated successfully!');
+    }
 }

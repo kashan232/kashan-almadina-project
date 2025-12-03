@@ -18,21 +18,21 @@ class Product extends Model
     //     'opening_carton_quantity', 'carton_quantity', 'loose_pieces', 'pcs_in_carton',
     //     'wholesale_price', 'retail_price', 'initial_stock', 'alert_quantity'
     // ];
-// public function category_relation()
-// {
-//     return $this->belongsTo(Category::class,'category_id');
-// }
+    // public function category_relation()
+    // {
+    //     return $this->belongsTo(Category::class,'category_id');
+    // }
 
-// public function sub_category_relation()
-// {
-//     return $this->belongsTo(Subcategory::class,'sub_category_id');
-// }
+    // public function sub_category_relation()
+    // {
+    //     return $this->belongsTo(Subcategory::class,'sub_category_id');
+    // }
 
 
-//     public function unit()
-//     {
-//         return $this->belongsTo(Unit::class, 'unit_id');
-//     }
+    //     public function unit()
+    //     {
+    //         return $this->belongsTo(Unit::class, 'unit_id');
+    //     }
 
 
     // App/Models/Product.php
@@ -51,9 +51,8 @@ class Product extends Model
         return $this->hasOne(ProductPrice::class)->latestOfMany();
     }
 
-        public function brand()
+    public function brand()
     {
-        return $this->belongsTo(Brand::class,'brand_id');
+        return $this->belongsTo(Brand::class, 'brand_id');
     }
-
 }

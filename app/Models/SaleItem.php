@@ -29,9 +29,8 @@ class SaleItem extends Model
     // Relation to Sale
     public function sale()
     {
-        return $this->belongsTo(Sale::class);
+        return $this->belongsTo(\App\Models\Sale::class, 'sale_id');
     }
-
     // Relation to Warehouse (agar model hai)
     public function warehouse()
     {
@@ -41,6 +40,6 @@ class SaleItem extends Model
     // Relation to Product (agar model hai)
     public function product()
     {
-        return $this->belongsTo(Product::class);
+        return $this->belongsTo(\App\Models\Product::class, 'product_id');
     }
 }

@@ -9,19 +9,23 @@ class WarehouseStock extends Model
 {
     use HasFactory;
 
+    protected $table = 'warehouse_stocks';
+
     protected $fillable = [
         'warehouse_id',
         'product_id',
         'quantity',
         'price',
-        'remarks'
+        'remarks',
     ];
 
-    public function warehouse() {
+    public function warehouse()
+    {
         return $this->belongsTo(Warehouse::class);
     }
 
-    public function product() {
+    public function product()
+    {
         return $this->belongsTo(Product::class);
     }
 }

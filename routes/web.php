@@ -27,6 +27,7 @@ use App\Http\Controllers\AccountsHeadController;
 use App\Http\Controllers\SalesOfficerController;
 use App\Http\Controllers\StockTransferController;
 use App\Http\Controllers\InwardgatepassController;
+use App\Http\Controllers\StockHoldController;
 use App\Http\Controllers\WarehouseStockController;
 use App\Http\Controllers\SubCustomerController;
 
@@ -56,6 +57,23 @@ Route::resource('narrations', NarrationController::class)->only(['index', 'store
 Route::get('vouchers/{type}', [VoucherController::class, 'index'])->name('vouchers.index');
 Route::post('vouchers/store', [VoucherController::class, 'store'])->name('vouchers.store');
 
+Route::get('/recepit-vochers', [VoucherController::class, 'recepit_vochers'])->name('recepit-vochers');
+route::post('/recepit/vochers/stote', [VoucherController::class, 'store_rec_vochers'])->name('recepit.vochers.store');
+
+Route::get('/all-recepit-vochers', [VoucherController::class, 'all_recepit_vochers'])->name('all-recepit-vochers');
+Route::get('/receipt-voucher/print/{id}', [VoucherController::class, 'print'])->name('receiptVoucher.print');
+
+
+Route::get('/Payment-vochers', [VoucherController::class, 'Payment_vochers'])->name('Payment-vochers');
+route::post('/Payment/vochers/stote', [VoucherController::class, 'store_Pay_vochers'])->name('Payment.vochers.store');
+Route::get('/all-Payment-vochers', [VoucherController::class, 'all_Payment_vochers'])->name('all-Payment-vochers');
+Route::get('/Payment-voucher/print/{id}', [VoucherController::class, 'Paymentprint'])->name('PaymentVoucher.print');
+
+Route::get('/expense-vochers', [VoucherController::class, 'expense_vochers'])->name('expense-vochers');
+route::post('/expense/vochers/stote', [VoucherController::class, 'store_expense_vochers'])->name('expense.vochers.store');
+Route::get('/all-expense-vochers', [VoucherController::class, 'all_expense_vochers'])->name('all-expense-vochers');
+Route::get('/expense-voucher/print/{id}', [VoucherController::class, 'expenseprint'])->name('expenseVoucher.print');
+
 // Route::get('/dashboard', function () {
 //     return view('dashboard');
 // })->middleware(['auth', 'verified'])->name('dashboard');
@@ -76,6 +94,7 @@ Route::middleware('auth')->group(function () {
     // Chart Of accounts
 
     Route::get('/view_all', [AccountsHeadController::class, 'index'])->name('view_all');
+    Route::get('/purcahse-account-allocation', [AccountsHeadController::class, 'purcahse_account_allocation'])->name('purcahse-account-allocation');
     // Route::get('/narration', [AccountsHeadController::class, 'narration'])->name('narration');
     // Route::get('/expense-heads', [AccountsHeadController::class, 'index'])->name('expense.heads.index');
     // Route::post('/expense-heads/store', [AccountsHeadController::class, 'store'])->name('expense.heads.store');
@@ -133,6 +152,14 @@ Route::middleware('auth')->group(function () {
     Route::get('/products/bulk-set-price', [ProductController::class, 'bulkSetPrice'])->name('products.bulkSetPrice');
     Route::post('/products/bulk-set-price', [ProductController::class, 'bulkSetPriceUpdate'])->name('products.bulkUpdatePrices.update');
 
+    Route::get('admin/products/{product}/prices', [App\Http\Controllers\ProductController::class, 'prices'])
+        ->name('products.prices');
+
+
+    // simple & resourceful:
+    Route::put('/products/{product}', [ProductController::class, 'update'])->name('products.update');
+
+
     // Customer Routes
 
     Route::get('/customers', [CustomerController::class, 'index'])->name('customers.index');
@@ -158,14 +185,25 @@ Route::middleware('auth')->group(function () {
     Route::get('vendor/ledger', [VendorController::class, 'allLedgers'])->name('vendor.ledger');
     Route::get('vendor/payments', [VendorController::class, 'payments_index'])->name('vendor.payments.index');
     Route::post('vendor/payments/store', [VendorController::class, 'payments_store'])->name('vendor.payments.store');
+    // routes/web.php
+    Route::get('/vendor/{id}/closing-balance', [VendorController::class, 'getClosingBalance'])->name('vendor.closing.balance');
 
     // Warehouse Routes
     Route::get('/warehouse', [WarehouseController::class, 'index']);
     Route::post('/warehouse/store', [WarehouseController::class, 'store']);
     Route::get('/warehouse/delete/{id}', [WarehouseController::class, 'delete']);
     Route::resource('warehouse_stocks', WarehouseStockController::class);
-    Route::resource('stock_transfers', StockTransferController::class);
     Route::get('/warehouse-stock-quantity', [StockTransferController::class, 'getStockQuantity'])->name('warehouse.stock.quantity');
+
+    Route::resource('stock_transfers', StockTransferController::class)->except(['edit', 'update', 'destroy']);
+    Route::post('stock_transfers/{id}/accept', [StockTransferController::class, 'accept'])->name('stock_transfers.accept');
+    Route::post('stock_transfers/{id}/reject', [StockTransferController::class, 'reject'])->name('stock_transfers.reject');
+
+    // Ajax
+    Route::get('warehouse-stock-quantity', [StockTransferController::class, 'warehouseStockQuantity'])->name('warehouse.stock.quantity');
+
+    // Pending list (optional)
+    Route::get('stock_transfers-pending', [StockTransferController::class, 'pending'])->name('stock_transfers.pending');
 
     // Branches
     Route::resource('branch', BranchController::class)
@@ -214,6 +252,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/purchase/{id}/edit', [PurchaseController::class, 'edit'])->name('purchase.edit');
     Route::put('/purchase/{id}', [PurchaseController::class, 'update'])->name('purchase.update');
     Route::delete('/purchase/{id}', [PurchaseController::class, 'destroy'])->name('purchase.destroy');
+    Route::get('/purchase/{id}/invoice', [PurchaseController::class, 'Invoice'])->name('purchase.invoice');
+    Route::get('/get-accounts-by-head/{headId}', [PurchaseController::class, 'getAccountsByHead']);
+    Route::get('/getPartyList', [PurchaseController::class, 'getPartyList'])->name('party.list');
 
     // Route::get('/fetch-product', [PurchaseController::class, 'fetchProduct'])->name('item.search');
 
@@ -252,8 +293,27 @@ Route::middleware('auth')->group(function () {
     Route::get('/sale/edit/{id}', [SaleController::class, 'edit'])->name('sale.edit');
     Route::post('/sale/update/{id}', [SaleController::class, 'update'])->name('sale.update');
 
+    Route::get('/create-stock-hold', [SaleController::class, 'create_stock_hold'])->name('create-stock-hold');
+    Route::get('products/search', [SaleController::class, 'search'])->name('products.search');
+
+    // stock hold helpers
+    Route::get('party/list', [SaleController::class, 'partyList'])->name('party.list');
+    Route::get('party/{id}/invoices', [SaleController::class, 'partyInvoices'])->name('party.invoices');
+    Route::get('invoice/{id}/items', [SaleController::class, 'invoiceItems'])->name('invoice.items');
+
+
+    Route::post('stock-holds/store', [\App\Http\Controllers\StockHoldController::class, 'store'])->name('stock-holds.store');
+    Route::post('stock-holds/claim/invoice/{invoice}', [\App\Http\Controllers\StockHoldController::class, 'claimByInvoice'])->name('stock-holds.claim.invoice');
+    Route::post('stock-holds/claim/item', [\App\Http\Controllers\StockHoldController::class, 'claimItem'])->name('stock-holds.claim.item');
+
+    Route::get('/stock-hold-list', [StockHoldController::class, 'stockholdlist'])->name('stock-hold-list');
+    Route::get('/stock-holds/{id}/release', [StockHoldController::class, 'createFromHold'])->name('stock-holds.release');
+    Route::post('/stock-holds/{id}/release', [StockHoldController::class, 'storeFromHold'])->name('stock-holds.release.store');
     // Legacy form submit (optional)
     Route::post('/sale/data', [SaleController::class, 'store'])->name('sale.store');
+
+    Route::get('/stock-relase-list', [StockHoldController::class, 'stockrelaselist'])->name('stock-relase-list');
+
 
     // AJAX (no refresh)
     Route::post('/sale/ajax/save', [SaleController::class, 'ajaxSave'])->name('sale.ajax.save');
@@ -322,7 +382,7 @@ Route::get('/search-productsinwar', [InwardgatepassController::class, 'searchPro
 // Show Add Bill Form
 Route::get('inward-gatepass/{id}/add-bill', [PurchaseController::class, 'addBill'])->name('add_bill');
 // Store Bill
-Route::post('inward-gatepass/{id}/store-bill', [PurchaseController::class, 'store'])->name('store.bill');
+Route::post('inward-gatepass/{id}/store-bill', [PurchaseController::class, 'store_inwrd_purchse'])->name('store.bill');
 
 Route::prefix('coa')->group(function () {
     Route::get('/', [AccountsHeadController::class, 'index'])->name('coa.index');

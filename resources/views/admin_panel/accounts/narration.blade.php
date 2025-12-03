@@ -5,19 +5,16 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
 
 <div class="main-content">
-    <div class="container " >
-
+    <div class="container-fluid">
         <div class="d-flex justify-content-between align-items-center mb-2 ">
             <h2 class="fw-bold mt-2">Narrations</h2>
             <button class="btn btn-primary mt-2" id="addBtn">
                 <i class="bi bi-plus-lg"></i> Add Narration
             </button>
         </div>
-
         @if(session('success'))
             <div class="alert alert-success">{{ session('success') }}</div>
         @endif
-
         <div class="card shadow">
             <div class="card-body">
                 <div class="table-responsive">
@@ -25,7 +22,7 @@
                         <thead class="table-dark">
                             <tr>
                                 <th>#</th>
-                                <th>Expense Head</th>
+                                <th>Vouchers</th>
                                 <th>Narration</th>
                                 <th>Date</th>
                                 <th style="width: 120px;">Action</th>
@@ -78,16 +75,10 @@
                                 <label class="form-label">Select Voucher Head</label>
                                 <select name="expense_head" id="expense_head" class="form-select form-control" required>
                                     <option value="" disabled>Choose...</option>
-                                    <option>Bank Charges</option>
-                                    <option>Fuel Expense</option>
-                                    <option>Lost Stock</option>
-                                    <option>journal voucher</option>
-                                    <option>reciepts voucher</option>
-                                    <option>payment voucher</option>
-                                    <option>income voucher</option>
-                                    <option>expense voucher</option>
-                                    <option>Discount voucher</option>
-                                    <option>Wht voucher</option>
+                                    <option value="Receipts Voucher">Receipts Voucher</option>
+                                    <option value="Expense voucher">Expense voucher</option>
+                                    <option value="Journal voucher">Journal voucher</option>
+                                    <option value="Payment voucher">Payment voucher</option>
                                 </select>
                             </div>
 

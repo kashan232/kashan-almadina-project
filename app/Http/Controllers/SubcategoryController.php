@@ -7,50 +7,59 @@ use App\Models\Category;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rule;
+
 class SubcategoryController extends Controller
 {
-    
+
     public function index()
     {
         $category = Category::get();
-      $subcategory = Subcategory::with('category')->get();
-      return  view("admin_panel.subcategory.index",compact('subcategory','category'));
-
-
+        $subcategory = Subcategory::with('category')->get();
+        return  view("admin_panel.subcategory.index", compact('subcategory', 'category'));
     }
 
-    public function store(request $request){
+    public function store(Request $request)
+    {
+        // validation rules
+        $rules = [
+            'name' => [
+                'required',
+                // ignore current record when editing
+                Rule::unique('subcategories', 'name')->ignore($request->edit_id)
+            ],
+            'category_id' => 'required', // <-- fixed: no concatenation
+        ];
 
-        $validator = Validator::make($request->all(), [
-            'name' => 'required|unique:subcategories,name,'.$request->edit_id,
-            'category_id' => 'required'.$request->edit_id,
-        ]);
+        $validator = Validator::make($request->all(), $rules);
 
         if ($validator->fails()) {
-            return ['errors' => $validator->errors()];
+            // return JSON with 422 so frontend can handle it
+            return response()->json(['errors' => $validator->errors()], 422);
         }
 
-
-        if($request->has('edit_id') && $request->edit_id != '' || $request->edit_id != null ){
-            $Company = Subcategory::find($request->edit_id);
+        // Use filled() to check if edit_id contains a non-empty value
+        if ($request->filled('edit_id')) {
+            $company = Subcategory::find($request->edit_id);
             $msg = [
                 'success' => 'Subcategory Updated Successfully',
                 'reload' => true
             ];
-        }
-        else{
-            $Company = new Subcategory();
+        } else {
+            $company = new Subcategory();
             $msg = [
                 'success' => 'Subcategory Created Successfully',
                 'redirect' => route('subcategory.home')
             ];
         }
-        $Company->name = $request->name;
-        $Company->category_id = $request->category_id;
-        $Company->save();
+
+        $company->name = $request->name;
+        $company->category_id = $request->category_id;
+        $company->save();
 
         return response()->json($msg);
     }
+
 
     public function delete($id)
     {

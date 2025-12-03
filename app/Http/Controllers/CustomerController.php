@@ -10,6 +10,7 @@ use App\Models\OutstandingLoss; // make sure to import this
 use App\Models\CustomerLedger;
 use Illuminate\Support\Facades\Auth;
 use App\Models\CustomerPayment;
+use Illuminate\Support\Facades\DB;
 
 class CustomerController extends Controller
 {
@@ -164,9 +165,35 @@ class CustomerController extends Controller
 
     public function destroy($id)
     {
-        $customer = Customer::findOrFail($id);
-        $customer->delete();
-        return redirect()->route('customers.index')->with('success', 'Customer deleted successfully.');
+        $customer = Customer::find($id);
+
+        if (! $customer) {
+            return redirect()->route('customers.index')->with('error', 'Customer not found.');
+        }
+
+        // Option A: simple DB check (non-deleted sales)
+        $hasSales = DB::table('sales')
+            ->where('partyType', 'customer')
+            ->where('customer_id', $customer->id)
+            ->exists();
+
+        // Option B: if you want to consider soft-deleted sales as well:
+        // $hasSales = Sale::withTrashed()->where('partyType','customer')->where('customer_id', $customer->id)->exists();
+
+        if ($hasSales) {
+            return redirect()->route('customers.index')->with('error', 'This customer has sale records and cannot be deleted.');
+        }
+
+        try {
+            $customer->delete();
+            return redirect()->route('customers.index')->with('success', 'Customer deleted successfully.');
+        } catch (\Illuminate\Database\QueryException $e) {
+            \Log::error('Customer delete failed: ' . $e->getMessage());
+            return redirect()->route('customers.index')->with('error', 'Cannot delete customer due to related records.');
+        } catch (\Throwable $e) {
+            \Log::error('Customer delete unexpected error: ' . $e->getMessage());
+            return redirect()->route('customers.index')->with('error', 'Something went wrong while deleting customer.');
+        }
     }
     public function getByType(Request $request)
     {

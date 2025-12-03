@@ -27,4 +27,5 @@ class Account extends Model
     {
         return $this->belongsTo(AccountHead::class, 'head_id');
     }
+    
 }

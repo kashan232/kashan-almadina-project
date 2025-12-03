@@ -16,4 +16,11 @@ class Customer extends Model
     {
         return $this->hasOne(CustomerLedger::class, 'customer_id');
     }
+
+    public function sales()
+    {
+        // Sales jahan partyType = 'customer' and customer_id = this id
+        return $this->hasMany(\App\Models\Sale::class, 'customer_id')
+            ->where('partyType', 'customer');
+    }
 }

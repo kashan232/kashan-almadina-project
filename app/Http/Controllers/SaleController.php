@@ -6,6 +6,7 @@ use App\Models\Sale;
 use App\Models\SaleItem;
 use App\Models\Product;
 use App\Models\Account;
+use App\Models\AccountHead;
 use App\Models\Customer;
 use App\Models\CustomerLedger;
 use App\Models\Vendor;
@@ -21,7 +22,7 @@ class SaleController extends Controller
     /* -------- Lists & screens -------- */
     public function index()
     {
-        $sales = Sale::with('items')->latest()->get();
+        $sales = Sale::with(['customer', 'vendor', 'items.product'])->latest()->get();
         return view('admin_panel.sale.index', compact('sales'));
     }
 
@@ -30,13 +31,13 @@ class SaleController extends Controller
         $warehouses = Warehouse::all();
         $customers = Customer::all();
         $accounts = Account::all();
-        do {
-            $nextInvoiceNumber = 'INV-' . time() . rand(10, 99);
-            $exists = Sale::where('invoice_no', $nextInvoiceNumber)->exists();
-        } while ($exists);
+
+        // Get next invoice from Sale model generator (ensures INVSLE-003 -> INVSLE-004)
+        $nextInvoiceNumber = Sale::generateInvoiceNo();
 
         return view('admin_panel.sale.add_sale', compact('warehouses', 'customers', 'nextInvoiceNumber', 'accounts'));
     }
+
 
     public function Booking()
     {
@@ -117,12 +118,12 @@ class SaleController extends Controller
     public function store(Request $request)
     {
         $isBooking = $request->has('booking');
-
         if ($isBooking) {
             $booking = Productbooking::create([
                 'invoice_no' => $request->Invoice_no,
                 'manual_invoice' => $request->Invoice_main,
                 'customer_id' => $request->customer,
+                'party_type' => $request->input('partyType') ?? null,
                 'sub_customer' => $request->customerType,
                 'filer_type' => $request->filerType,
                 'address' => $request->address,
@@ -173,9 +174,11 @@ class SaleController extends Controller
 
         // Direct Sale (stock minus)
         return DB::transaction(function () use ($request) {
+            $invoiceNo = Sale::generateInvoiceNo();
             $sale = Sale::create([
-                'invoice_no' => $request->Invoice_no,
+                'invoice_no' => $invoiceNo,
                 'manual_invoice' => $request->Invoice_main ?? null,
+                'partyType' => $request->input('partyType') ?? null,
                 'customer_id' => $request->customer ?? null,
                 'sub_customer' => $request->customerType ?? null,
                 'filer_type' => $request->filerType ?? null,
@@ -249,6 +252,7 @@ class SaleController extends Controller
             }
 
             $booking->manual_invoice = $request->Invoice_main;
+            $booking->party_type = $request->input('partyType');
             $booking->customer_id = $request->customer;
             $booking->sub_customer = $request->customerType;
             $booking->filer_type = $request->filerType;
@@ -311,6 +315,7 @@ class SaleController extends Controller
                 $sale = Sale::create([
                     'invoice_no' => $booking->invoice_no,
                     'manual_invoice' => $booking->manual_invoice,
+                    'partyType' => $booking->party_type,
                     'customer_id' => $booking->customer_id,
                     'sub_customer' => $booking->sub_customer,
                     'filer_type' => $booking->filer_type,
@@ -391,7 +396,7 @@ class SaleController extends Controller
     /* -------- Prints -------- */
     public function invoice(Sale $sale)
     {
-        return view('admin_panel.sale.prints.invoice', compact('sale'));
+        return view('admin_panel.sale.invoice', compact('sale'));
     }
     public function print2(Sale $sale)
     {
@@ -581,5 +586,102 @@ class SaleController extends Controller
         $accounts = Account::get(['id', 'title']);
 
         return response()->json($accounts);
+    }
+
+
+    public function create_stock_hold()
+    {
+        $Vendor = Vendor::get();
+        $Warehouses = Warehouse::get();
+        $AccountHeads = AccountHead::get();
+        $customers = Customer::all();
+
+        return view('admin_panel.stock_hold.create_stock_hold', compact('Warehouses', 'customers'));
+    }
+
+
+    public function search(Request $request)
+    {
+        $q = $request->get('q', '');
+        $rows = \App\Models\Product::query()
+            ->select('id', 'name', 'stock')
+            ->where('name', 'like', "%{$q}%")
+            ->limit(20)
+            ->get()
+            ->map(function ($p) {
+                return [
+                    'id' => $p->id,
+                    'name' => $p->name,
+                    'stock' => $p->stock ?? 0,
+                ];
+            });
+
+        return response()->json($rows);
+    }
+
+
+
+    // Return list of parties depending on type (vendor/customer/walkin)
+    public function partyList(Request $request)
+    {
+        $type = strtolower($request->query('type', 'customer'));
+
+        if ($type === 'vendor') {
+            $rows = \App\Models\Vendor::orderBy('name')->get(['id', 'name as text']);
+            return response()->json($rows->values());
+        }
+
+        if ($type === 'walkin' || $type === 'walking') {
+            $rows = \App\Models\Customer::where('customer_type', 'Walking Customer')
+                ->orderBy('customer_name')
+                ->get()
+                ->map(fn($c) => ['id' => $c->id, 'text' => $c->customer_id . ' - ' . $c->customer_name]);
+            return response()->json($rows);
+        }
+
+        // default customers
+        $rows = \App\Models\Customer::where('customer_type', 'Main Customer')
+            ->orderBy('customer_name')
+            ->get()
+            ->map(fn($c) => ['id' => $c->id, 'text' => $c->customer_id . ' - ' . $c->customer_name]);
+        return response()->json($rows);
+    }
+
+    // Given a party id + type, return list of invoices (productbookings) for that party
+    public function partyInvoices($id, Request $request)
+    {
+        $type = strtolower($request->query('type', 'customer')); // vendor/customer/walkin
+
+        // party stored in productbookings as customer_id and party_type
+        $invoices = Productbooking::where('party_type', $type)
+            ->where('customer_id', $id)
+            ->orderBy('id', 'desc')
+            ->get(['id', 'invoice_no']);
+
+        // map to {id, text}
+        $list = $invoices->map(fn($r) => ['id' => $r->id, 'text' => $r->invoice_no])->values();
+
+        return response()->json($list);
+    }
+
+    // Return items for a productbooking (invoice)
+    public function invoiceItems($id)
+    {
+        $items = ProductBookingItem::where('booking_id', $id)
+            ->with('product:id,name')
+            ->get()
+            ->map(function ($it) use ($id) {
+                return [
+                    'item_id' => $it->id,                  // unique booking item id (not product_id)
+                    'product_id' => $it->product_id,
+                    'warehouse_id' => $it->warehouse_id ?? null,
+                    'item_name' => optional($it->product)->name ?: ($it->item_name ?? 'Unknown'),
+                    'sales_qty' => (float) ($it->sales_qty ?? $it->quantity ?? 0),
+                    'hold_qty' => (float) ($it->hold_qty ?? 0), // if you store previous holds
+                    'sale_id' => $id,                       // include sale/invoice id
+                ];
+            });
+
+        return response()->json($items);
     }
 }

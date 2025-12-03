@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Http\Controllers;
+
 use Barryvdh\DomPDF\Facade\Pdf;
 use App\Models\InwardGatepass;
 use App\Models\InwardGatepassItem;
@@ -18,15 +19,14 @@ class InwardgatepassController extends Controller
     {
         $gatepass = InwardGatepass::with(['branch', 'warehouse', 'vendor', 'items.product'])->findOrFail($id);
         $pdf = Pdf::loadView('admin_panel.inward.pdf', compact('gatepass'));
-        return $pdf->download('gatepass_'.$gatepass->id.'.pdf');
+        return $pdf->download('gatepass_' . $gatepass->id . '.pdf');
     }
 
     // 1. List all inward gatepasses
     public function index()
     {
-        $gatepasses = InwardGatepass::with('items.product','branch','warehouse','vendor')
+        $gatepasses = InwardGatepass::with('items.product', 'branch', 'warehouse', 'vendor')
             ->latest()->get();
-
         return view('admin_panel.inward.index', compact('gatepasses'));
     }
 
@@ -36,8 +36,7 @@ class InwardgatepassController extends Controller
         $branches   = Branch::orderBy('name')->get();
         $warehouses = Warehouse::orderBy('warehouse_name')->get();
         $vendors    = Vendor::orderBy('name')->get();
-
-        return view('admin_panel.inward.create', compact('branches','warehouses','vendors'));
+        return view('admin_panel.inward.create', compact('branches', 'warehouses', 'vendors'));
     }
 
     // 3. Store gatepass + items + update stock
@@ -93,65 +92,71 @@ class InwardgatepassController extends Controller
     //                      ->with('success','Inward Gatepass Created Successfully');
     // }
     public function store(Request $request)
-{
-    $request->validate([
-        'branch_id'      => 'required|exists:branches,id',
-        'warehouse_id'   => 'required|exists:warehouses,id',
-        'vendor_id'      => 'required|exists:vendors,id',
-        'gatepass_date'  => 'required|date',
-        'product_id'     => 'required|array|min:1',
-        'product_id.*'   => 'required|exists:products,id',
-        'qty'            => 'required|array',
-        'qty.*'          => 'required|integer|min:1',
-    ]);
-
-    DB::transaction(function () use ($request) {
-        $gatepass = InwardGatepass::create([
-            'branch_id'    => $request->branch_id,
-            'warehouse_id' => $request->warehouse_id,
-            'vendor_id'    => $request->vendor_id,
-            'gatepass_date'=> $request->gatepass_date,
-            'note'         => $request->note ?? null,
-            'created_by'   => auth()->id() ?? null,
+    {
+        $request->validate([
+            'branch_id'      => 'required|exists:branches,id',
+            'warehouse_id'   => 'required|exists:warehouses,id',
+            'vendor_id'      => 'required|exists:vendors,id',
+            'gatepass_date'  => 'required|date',
+            'product_id'     => 'required|array|min:1',
+            'product_id.*'   => 'required|exists:products,id',
+            'qty'            => 'required|array',
+            'qty.*'          => 'required|integer|min:1',
         ]);
 
-        $productIds = $request->input('product_id', []);
-        $qtys       = $request->input('qty', []);
-
-        for ($i = 0; $i < count($productIds); $i++) {
-            $pid = $productIds[$i];
-            $q   = isset($qtys[$i]) ? (int)$qtys[$i] : 0;
-            if (!$pid || $q <= 0) continue;
-
-            InwardGatepassItem::create([
-                'inward_gatepass_id' => $gatepass->id,
-                'product_id'         => $pid,
-                'qty'                => $q,
+        DB::transaction(function () use ($request) {
+            $invoiceNo = InwardGatepass::generateInvoiceNo();
+            // 1. Create Gatepass
+            $gatepass = InwardGatepass::create([
+                'invoice_no'     => $invoiceNo,
+                'branch_id'     => $request->branch_id,
+                'warehouse_id'  => $request->warehouse_id,
+                'vendor_id'     => $request->vendor_id,
+                'gatepass_date' => $request->gatepass_date,
+                'transport_name' => $request->transport_name,
+                'gatepass_no'      => $request->bilty_no,
+                'remarks'          => $request->note,
+                'status'        => 'pending', // default status
+                'created_by'    => auth()->id(),
             ]);
 
-            $stock = Stock::firstOrNew([
-                'branch_id'    => $request->branch_id,
-                'warehouse_id' => $request->warehouse_id,
-                'product_id'   => $pid,
-            ]);
-            $stock->qty = ($stock->qty ?? 0) + $q;
-            $stock->save();
-        }
+            // 2. Save Products
+            $productIds = $request->input('product_id', []);
+            $qtys       = $request->input('qty', []);
+            $brands     = $request->input('brand', []); // optional brand
 
-        // Change status to 'pending' after inward gatepass is created
-        $gatepass->status = 'pending'; // Pending until bill is created
-        $gatepass->save();
-    });
+            foreach ($productIds as $i => $pid) {
+                $q = isset($qtys[$i]) ? (int)$qtys[$i] : 0;
+                if (!$pid || $q <= 0) continue;
 
-    return redirect()->route('InwardGatepass.home')
-                     ->with('success','Inward Gatepass Created Successfully');
-}
+                InwardGatepassItem::create([
+                    'inward_gatepass_id' => $gatepass->id,
+                    'product_id'         => $pid,
+                    'brand'              => $brands[$i] ?? null,
+                    'qty'                => $q,
+                ]);
+
+                // 3. Update Stock
+                $stock = Stock::firstOrNew([
+                    'branch_id'    => $request->branch_id,
+                    'warehouse_id' => $request->warehouse_id,
+                    'product_id'   => $pid,
+                ]);
+                $stock->qty = ($stock->qty ?? 0) + $q;
+                $stock->save();
+            }
+        });
+
+        return redirect()->route('InwardGatepass.home')
+            ->with('success', 'Inward Gatepass Created Successfully');
+    }
+
 
 
     // 4. Show single gatepass
     public function show($id)
     {
-        $gatepass = InwardGatepass::with('items.product','branch','warehouse','vendor')->findOrFail($id);
+        $gatepass = InwardGatepass::with('items.product', 'branch', 'warehouse', 'vendor')->findOrFail($id);
         return view('admin_panel.inward.show', compact('gatepass'));
     }
 
@@ -163,7 +168,7 @@ class InwardgatepassController extends Controller
         $warehouses = Warehouse::orderBy('warehouse_name')->get();
         $vendors    = Vendor::orderBy('name')->get();
 
-        return view('admin_panel.inward.edit', compact('gatepass','branches','warehouses','vendors'));
+        return view('admin_panel.inward.edit', compact('gatepass', 'branches', 'warehouses', 'vendors'));
     }
 
     // 6. Update gatepass + adjust stock
@@ -205,9 +210,9 @@ class InwardgatepassController extends Controller
                 'branch_id'    => $request->branch_id,
                 'warehouse_id' => $request->warehouse_id,
                 'vendor_id'    => $request->vendor_id,
-                'gatepass_date'=> $request->gatepass_date,
+                'gatepass_date' => $request->gatepass_date,
                 'note'         => $request->note ?? null,
-                'transport_name'=> $request->transport_name ?? null,
+                'transport_name' => $request->transport_name ?? null,
             ]);
 
             // insert new items + stock update
@@ -235,7 +240,7 @@ class InwardgatepassController extends Controller
         });
 
         return redirect()->route('InwardGatepass.home')
-                         ->with('success','Inward Gatepass Updated Successfully');
+            ->with('success', 'Inward Gatepass Updated Successfully');
     }
 
     // 7. Delete gatepass + adjust stock
@@ -264,7 +269,7 @@ class InwardgatepassController extends Controller
         });
 
         return redirect()->route('InwardGatepass.home')
-                         ->with('success','Inward Gatepass Deleted Successfully');
+            ->with('success', 'Inward Gatepass Deleted Successfully');
     }
 
     // 8. Search products

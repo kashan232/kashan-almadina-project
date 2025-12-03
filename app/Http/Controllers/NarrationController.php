@@ -14,30 +14,30 @@ class NarrationController extends Controller
         return view('admin_panel.accounts.narration', compact('narrations'));
     }
 
-   public function store(Request $request)
-{
-    $request->validate([
-        'expense_head' => 'required|string|max:255',
-        'narration' => 'required|string',
-    ]);
+    public function store(Request $request)
+    {
+        $request->validate([
+            'expense_head' => 'required|string|max:255',
+            'narration' => 'required|string',
+        ]);
 
-    if ($request->id) {
-        // Update
-        $narration = Narration::findOrFail($request->id);
-        $narration->update([
-            'expense_head' => $request->expense_head,
-            'narration' => $request->narration,
-        ]);
-        return redirect()->back()->with('success', 'Narration updated successfully.');
-    } else {
-        // Create
-        Narration::create([
-            'expense_head' => $request->expense_head,
-            'narration' => $request->narration,
-        ]);
-        return redirect()->back()->with('success', 'Narration added successfully.');
+        if ($request->id) {
+            // Update
+            $narration = Narration::findOrFail($request->id);
+            $narration->update([
+                'expense_head' => $request->expense_head,
+                'narration' => $request->narration,
+            ]);
+            return redirect()->back()->with('success', 'Narration updated successfully.');
+        } else {
+            // Create
+            Narration::create([
+                'expense_head' => $request->expense_head,
+                'narration' => $request->narration,
+            ]);
+            return redirect()->back()->with('success', 'Narration added successfully.');
+        }
     }
-}
 
     public function destroy($id)
     {

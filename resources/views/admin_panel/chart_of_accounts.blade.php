@@ -1,15 +1,17 @@
 @extends('admin_panel.layout.app')
 
 @section('content')
-<div class="container mt-4">
+<div class="container-fluid mt-4">
 
     @if(session('success'))
-        <div class="alert alert-success">{{ session('success') }}</div>
+    <div class="alert alert-success">{{ session('success') }}</div>
     @endif
 
-    <div class="d-flex justify-content-between mb-3">
+
+    <div class="mb-3">
         <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addAccountModal">➕ Add New Account</button>
         <button class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#addHeadModal">➕ Add Head</button>
+        <a href="{{ route('purcahse-account-allocation') }}" class="btn btn-danger">View History</a>
     </div>
 
     <div class="table-responsive">
@@ -20,30 +22,26 @@
                     <th>Account Code</th>
                     <th>Expense Head</th>
                     <th>Account Title</th>
-                    <th>Type</th>
-                    <th>Total Debit</th>
-                    <th>Total Credit</th>
+                    <th>closing Balance</th>
                     <th>Status</th>
                 </tr>
             </thead>
             <tbody>
                 @foreach($accounts as $key => $account)
-                    <tr>
-                        <td>{{ $key+1 }}</td>
-                        <td>{{ $account->account_code }}</td>
-                        <td>{{ $account->head->name }}</td>
-                        <td>{{ $account->title }}</td>
-                        <td>{{ $account->type }}</td>
-                        <td>{{ number_format($account->debit, 2) }}</td> <!-- Display debit amount -->
-                        <td>{{ number_format($account->credit, 2) }}</td> <!-- Display credit amount -->
-                        <td>
-                            @if($account->status)
-                                <span class="badge bg-success">Active</span>
-                            @else
-                                <span class="badge bg-danger">Inactive</span>
-                            @endif
-                        </td>
-                    </tr>
+                <tr>
+                    <td>{{ $key+1 }}</td>
+                    <td>{{ $account->account_code }}</td>
+                    <td>{{ $account->head->name }}</td>
+                    <td>{{ $account->title }}</td>
+                    <td><strong class="text-danger"> {{ $account->opening_balance  }} </strong></td> <!-- Display debit amount -->
+                    <td>
+                        @if($account->status)
+                        <span class="badge bg-success">Active</span>
+                        @else
+                        <span class="badge bg-danger">Inactive</span>
+                        @endif
+                    </td>
+                </tr>
                 @endforeach
             </tbody>
         </table>
@@ -51,7 +49,7 @@
 </div>
 
 
-<!-- Add Account Modal --><!-- Add Account Modal -->
+<!-- Add Account Modal -->
 <div class="modal fade" id="addAccountModal" tabindex="-1">
     <div class="modal-dialog">
         <form action="{{ route('coa.account.store') }}" method="POST" class="modal-content">
@@ -66,7 +64,7 @@
                     <select name="head_id" class="form-control" required>
                         <option value="">Select Head</option>
                         @foreach($heads as $head)
-                            <option value="{{ $head->id }}">{{ $head->name }}</option>
+                        <option value="{{ $head->id }}">{{ $head->name }}</option>
                         @endforeach
                     </select>
                 </div>
@@ -79,22 +77,13 @@
                     <input type="text" name="title" class="form-control" required>
                 </div>
                 <div class="mb-3">
-                    <label>Type</label>
-                    <select name="type" class="form-control" required>
-                        <option value="Debit">Debit</option>
-                        <option value="Credit">Credit</option>
-                    </select>
-                </div>
-                <div class="mb-3">
                     <label>Opening Balance</label>
-                    <input type="number" name="opening_balance" class="form-control" value="0.00">
+                    <input type="number" step="0.01" name="opening_balance" class="form-control" value="0.00">
                 </div>
-               <div class="form-check form-switch">
-    <input class="form-check-input" name="status" type="checkbox" value="on" @if(old('status', 1)) checked @endif>
-    <label class="form-check-label">Active</label>
-</div>
-
-
+                <div class="form-check form-switch">
+                    <input class="form-check-input" name="status" type="checkbox" value="on" checked>
+                    <label class="form-check-label">Active</label>
+                </div>
             </div>
             <div class="modal-footer">
                 <button type="submit" class="btn btn-success">Add Account</button>
@@ -102,6 +91,7 @@
         </form>
     </div>
 </div>
+
 
 
 

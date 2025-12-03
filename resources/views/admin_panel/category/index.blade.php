@@ -2,7 +2,8 @@
 @section('content')
 
 <style>
-    html, body {
+    html,
+    body {
         height: 100%;
         overflow-x: hidden !important;
         overflow-y: auto !important;
@@ -53,20 +54,19 @@
 
 <div class="main-content">
     <div class="main-content-inner">
-        <div class="container">
+        <div class="container-fluid">
             <div class="row">
                 <div class="col-lg-12">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h3 class="fw-bold text-dark">Category</h3>
-                        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#exampleModal" id="reset">
-                            Create
-                        </button>
-                    </div>
-
-                    <div class="border mt-1 shadow rounded bg-white">
+                    <div class="border mt-1 p-2 shadow rounded bg-white">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h3 class="fw-bold text-dark">Category</h3>
+                            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#exampleModal" id="reset">
+                                Create
+                            </button>
+                        </div>
                         <div class="col-lg-12 m-auto">
                             <div class="table-responsive mt-4 mb-4">
-                                <table id="default-datatable" class="table custom-table table-bordered table-hover text-center">
+                                <table id="example" class="display" style="width:100%">
                                     <thead class="table-dark">
                                         <tr>
                                             <th>ID</th>
@@ -76,22 +76,22 @@
                                     </thead>
                                     <tbody>
                                         @foreach ($category as $company)
-                                            <tr>
-                                                <td class="id">{{ $company->id }}</td>
-                                                <td class="name">{{ $company->name }}</td>
-                                                <td>
-                                                    <button class="btn btn-primary btn-sm edit-btn"
-                                                        data-url="{{ route('store.category') }}">
-                                                        Edit
-                                                    </button>
-                                                    <button class="btn btn-danger btn-sm delete-btn"
-                                                        data-url="{{ route('delete.category', $company->id) }}"
-                                                        data-msg="Are you sure you want to delete this title"
-                                                        data-method="get" onclick="logoutAndDeleteFunction(this)">
-                                                        Delete
-                                                    </button>
-                                                </td>
-                                            </tr>
+                                        <tr>
+                                            <td class="id">{{ $company->id }}</td>
+                                            <td class="name">{{ $company->name }}</td>
+                                            <td>
+                                                <button class="btn btn-primary btn-sm edit-btn"
+                                                    data-url="{{ route('store.category') }}">
+                                                    Edit
+                                                </button>
+                                                <button class="btn btn-danger btn-sm delete-btn"
+                                                    data-url="{{ route('delete.category', $company->id) }}"
+                                                    data-msg="Are you sure you want to delete this title"
+                                                    data-method="get" onclick="logoutAndDeleteFunction(this)">
+                                                    Delete
+                                                </button>
+                                            </td>
+                                        </tr>
                                         @endforeach
                                     </tbody>
                                 </table>
@@ -130,14 +130,6 @@
     </div>
 </div>
 
-{{-- Scripts --}}
-<link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
-<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
-<script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<script src="{{ asset('assets/js/mycode.js') }}"></script>
 
 <script>
     $(document).on('submit', '.myform', function(e) {
@@ -154,23 +146,6 @@
         $('#id').val(tr.find(".id").text());
         $('#name').val(tr.find(".name").text());
         $("#exampleModal").modal("show");
-    });
-
-    $(document).ready(function() {
-        $('#default-datatable').DataTable({
-            pageLength: 10,
-            lengthMenu: [5, 10, 25, 50, 100],
-            order: [[0, 'desc']],
-            language: {
-                search: "Search Category:",
-                lengthMenu: "Show _MENU_ entries"
-            }
-        });
-
-        // Fix scroll/padding after modal close
-        $(document).on('hidden.bs.modal', function () {
-            $('body').css('padding-right', '0');
-        });
     });
 </script>
 
