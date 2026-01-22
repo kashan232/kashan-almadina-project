@@ -119,15 +119,16 @@ class CustomerController extends Controller
             'contact_person_2' => 'nullable',
             'mobile_2' => 'nullable',
             'email_address_2' => 'nullable|email',
-            'opening_balance' => 'nullable|numeric', // Replace Debit and Credit with Opening Balance
+            'opening_balance' => 'nullable|numeric',
             'address' => 'nullable',
+            'address_ur' => 'nullable', // ← Urdu Address Added
+            'transport_ur' => 'nullable', // ← Urdu Address Added
             'customer_type' => 'nullable',
         ]);
 
         $customer = Customer::create($data);
 
         $openingBalance = floatval($request->opening_balance ?? 0);
-
         $userId = Auth::id();
 
         try {
@@ -137,31 +138,61 @@ class CustomerController extends Controller
                     'admin_or_user_id' => $userId,
                     'opening_balance' => $openingBalance,
                     'previous_balance' => 0,
-                    'closing_balance' => $openingBalance, // Store opening balance as closing balance
+                    'closing_balance' => $openingBalance,
                 ]);
             }
         } catch (\Exception $e) {
-            // Log the error for debugging
             \Log::error('Failed to create customer ledger entry: ' . $e->getMessage());
         }
 
-        return redirect()->route('customers.index')->with('success', 'Customer created successfully.');
+        return redirect()->route('customers.index')
+            ->with('success', 'Customer created successfully.');
     }
+
 
     public function edit($id)
     {
         $customer = Customer::findOrFail($id);
-        return view('admin_panel.customers.edit', compact('customer'));
+        $zones = Zone::all();
+        $SalesOfficer = SalesOfficer::all();
+        return view('admin_panel.customers.edit', compact('customer', 'zones', 'SalesOfficer'));
     }
+
 
     public function update(Request $request, $id)
     {
         $customer = Customer::findOrFail($id);
-        $data = $request->except('_token');
 
+        // Validate input. For customer_id, ignore unique check for this record.
+        $data = $request->validate([
+            'customer_id' => ['required', 'string', \Illuminate\Validation\Rule::unique('customers', 'customer_id')->ignore($customer->id)],
+            'customer_name' => 'nullable',
+            'customer_name_ur' => 'nullable',
+            'cnic' => 'nullable',
+            'filer_type' => 'nullable',
+            'zone' => 'nullable',
+            'contact_person' => 'nullable',
+            'mobile' => 'nullable',
+            'email_address' => 'nullable|email',
+            'contact_person_2' => 'nullable',
+            'mobile_2' => 'nullable',
+            'email_address_2' => 'nullable|email',
+            'opening_balance' => 'nullable|numeric',
+            'address' => 'nullable',
+            'address_ur' => 'nullable', // ← Urdu Address Added
+            'transport_ur' => 'nullable', // ← Urdu Address Added
+            'customer_type' => 'nullable',
+        ]);
+
+        // Update model
         $customer->update($data);
+
+        // Optional: If you need to update the ledger when opening_balance changes,
+        // implement that here. (Skipping by default to keep it quick.)
+
         return redirect()->route('customers.index')->with('success', 'Customer updated successfully.');
     }
+
 
     public function destroy($id)
     {

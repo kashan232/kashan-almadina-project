@@ -100,14 +100,25 @@
                                 <label><strong>Opening Balance:</strong></label>
                                 <input type="number" class="form-control" name="opening_balance" value="{{ old('opening_balance') }}">
                             </div>
+
+                            <div class="col-md-6">
+                                <label class="float-end"><strong>Transporter (اردو):</strong></label>
+                                <input rows="3" class="form-control text-end" dir="rtl" name="transport_ur" value="{{ old('address_ur') }}">
+                            </div>
                         </div>
 
                         <div class="row mb-4">
-                            <div class="col-md-12">
+                            <div class="col-md-6">
                                 <label><strong>Address:</strong></label>
                                 <textarea rows="3" class="form-control" name="address">{{ old('address') }}</textarea>
                             </div>
+
+                            <div class="col-md-6">
+                                <label class="float-end"><strong>پتہ (اردو):</strong></label>
+                                <textarea rows="3" class="form-control text-end" dir="rtl" name="address_ur">{{ old('address_ur') }}</textarea>
+                            </div>
                         </div>
+
 
                         <div class="text-center">
                             <button type="submit" class="btn btn-success px-5">Save Customer</button>

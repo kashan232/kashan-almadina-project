@@ -284,6 +284,92 @@
 @endif
 
 <script>
+
+    $(document).ready(function() {
+
+        // safe passing of PHP values into JS
+        const initialCategory = @json(old('category', $product->category_id ?? null));
+        const initialSubCategory = @json(old('sub_category', $product->sub_category_id ?? null));
+
+        // helper to populate subcategory select from returned data and optionally set selected
+        function populateSubcategories(data, selectedId) {
+            const $sub = $('#subcategory-dropdown');
+            $sub.empty();
+            $sub.append('<option disabled>Select Subcategory</option>');
+            if (!Array.isArray(data) || data.length === 0) {
+                // keep only "Select Subcategory" (disabled)
+                return;
+            }
+            data.forEach(function(item) {
+                const isSelected = selectedId && String(item.id) === String(selectedId) ? 'selected' : '';
+                $sub.append('<option value="' + item.id + '" ' + isSelected + '>' + item.name + '</option>');
+            });
+        }
+
+        // When category changes (user interaction)
+        $('#category-dropdown').on('change', function() {
+            const categoryId = $(this).val();
+            if (!categoryId) {
+                $('#subcategory-dropdown').empty().append('<option disabled selected>Select Subcategory</option>');
+                return;
+            }
+
+            $.ajax({
+                url: '/get-subcategories/' + categoryId,
+                method: 'GET',
+                dataType: 'json',
+                success: function(response) {
+                    populateSubcategories(response, null); // no auto-select on user change
+                },
+                error: function() {
+                    $('#subcategory-dropdown').empty().append('<option disabled selected>Select Subcategory</option>');
+                }
+            });
+        });
+
+        // On initial load: prefer server-provided options (Blade $subCategories), but if empty, fall back to AJAX.
+        // We still call populateSubcategories with data rendered by Blade if available.
+        (function initSubcategories() {
+            // 1) Try to use server-rendered options: check if #subcategory-dropdown already has >1 option (the server passed them)
+            const $sub = $('#subcategory-dropdown');
+            if ($sub.find('option').length > 1) {
+                // server already rendered subcategories — just ensure correct one is selected
+                if (initialSubCategory) {
+                    $sub.val(String(initialSubCategory));
+                }
+                return;
+            }
+
+            // 2) Otherwise, fetch via AJAX and set the initial selected subcategory
+            const catId = initialCategory || $('#category-dropdown').val();
+            if (!catId) {
+                // nothing selected; keep placeholder
+                return;
+            }
+
+            $.ajax({
+                url: '/get-subcategories/' + catId,
+                method: 'GET',
+                dataType: 'json',
+                success: function(response) {
+                    populateSubcategories(response, initialSubCategory);
+                },
+                error: function() {
+                    $sub.empty().append('<option disabled selected>Select Subcategory</option>');
+                }
+            });
+        })();
+
+        // (optional) block Enter from submitting accidentally — keep your existing logic if you want this
+        $('#form').on('keydown', 'input, select', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                return false;
+            }
+        });
+
+    });
+    
     $(document).ready(function() {
 
         // ❶ Enter key se submit ko block kar do (inputs/select par)
@@ -302,26 +388,6 @@
             }
         });
 
-        // Category -> Subcategory
-        $('#category-dropdown').on('change', function() {
-            var categoryId = $(this).val();
-            if (categoryId) {
-                $.ajax({
-                    url: '/get-subcategories/' + categoryId,
-                    type: "GET",
-                    dataType: "json",
-                    success: function(data) {
-                        $('#subcategory-dropdown').empty();
-                        $('#subcategory-dropdown').append('<option selected disabled>Select Subcategory</option>');
-                        $.each(data, function(key, value) {
-                            $('#subcategory-dropdown').append('<option value="' + value.id + '">' + value.name + '</option>');
-                        });
-                    }
-                });
-            } else {
-                $('#subcategory-dropdown').empty();
-            }
-        });
 
         // Purchase calc
         function calculateValues(section) {

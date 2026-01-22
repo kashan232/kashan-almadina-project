@@ -108,6 +108,6 @@
         </div>
         </div>
         </div>
-        </di    v>
+        </div>
 
 @endsection

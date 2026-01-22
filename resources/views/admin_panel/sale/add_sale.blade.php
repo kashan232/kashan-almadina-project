@@ -22,6 +22,19 @@
     height: auto;
   }
 
+  .invalid-cell {
+    background-color: #fff5f5 !important;
+    /* soft red */
+    border: 1px solid #e3342f !important;
+    /* red border */
+  }
+
+  .invalid-select,
+  .invalid-input {
+    border-color: #e3342f !important;
+    box-shadow: none !important;
+  }
+
   .input-readonly {
     background: #f9fbff;
   }
@@ -105,8 +118,17 @@
 
       {{-- HEADER --}}
       <div class="d-flex justify-content-between align-items-center p-2 border-bottom">
-        <small class="text-secondary" id="entryDateTime">Entry Date_Time: --</small>
-        <h5 class="header-text text-secondary fw-bold mb-0">Sales</h5>
+        <div>
+          <small class="text-secondary" id="entryDateTime">Entry Date_Time: --</small> <br>
+          <a href="{{ route('sale.index') }}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-secondary" title="Sales List (opens new tab)">
+            Sales List
+          </a>
+        </div>
+
+
+        <h2 class="header-text text-secondary fw-bold mb-0">Sales</h2>
+
+
         <div class="d-flex align-items-center gap-2">
           <small class="text-secondary me-2" id="entryDate">Date: --</small>
           <button type="button" class="btn btn-sm btn-light border" id="btnHeaderPosted" disabled>Posted</button>
@@ -197,29 +219,7 @@
                 </tr>
               </thead>
               <tbody id="salesTableBody">
-                <tr>
-                  <td>
-                    <select class="form-select warehouse" name="warehouse_name[]">
-                      <option value="">Select</option>
-                      @foreach ($warehouses as $wh)
-                      <option value="{{ $wh->id }}">{{ $wh->warehouse_name }}</option>
-                      @endforeach
-                    </select>
-                  </td>
-                  <td>
-                    <select class="form-select product" name="product_name[]">
-                      <option value="">Select Product</option>
-                    </select>
-                  </td>
-                  <td><input type="text" class="form-control stock text-center input-readonly" name="stock[]" readonly></td>
-                  <td><input type="text" class="form-control text-end sales-price input-readonly" name="sales-price[]" value="0" readonly></td>
-                  <td><input type="text" class="form-control text-end sales-qty" name="sales-qty[]" value="0"></td>
-                  <td><input type="text" class="form-control text-end retail-price input-readonly" name="retail-price[]" value="0" readonly></td>
-                  <td><input type="text" class="form-control text-end discount-percent" name="discount-percent[]" value="0"></td>
-                  <td><input type="text" class="form-control text-end discount-amount" name="discount-amount[]" value="0"></td>
-                  <td><input type="text" class="form-control text-end sales-amount input-readonly" name="sales-amount[]" value="0" readonly></td>
-                  <td class="text-center"><button type="button" class="btn btn-sm btn-outline-danger del-row">&times;</button></td>
-                </tr>
+
               </tbody>
               <tfoot>
                 <tr>
@@ -355,6 +355,18 @@
   }
 
   function addNewRow() {
+    // if there's already rows, require last row to be meaningful
+    const $last = $('#salesTableBody tr:last-child');
+    if ($last.length) {
+      if (!isRowMeaningful($last)) {
+        // focus last row product for user to fill instead of creating new
+        $last.find('.product').focus();
+        showAlert('danger', 'Please complete the current row before adding a new one.');
+        return;
+      }
+    }
+
+    // original append content (keep identical to your template)
     $('#salesTableBody').append(`
     <tr>
       <td>
@@ -368,16 +380,18 @@
       <td><select class="form-select product" name="product_name[]"><option value="">Select Product</option></select></td>
       <td><input type="text" class="form-control stock text-center input-readonly" name="stock[]" readonly></td>
       <td><input type="text" class="form-control text-end sales-price input-readonly" name="sales-price[]" value="0" readonly></td>
-      <td><input type="text" class="form-control text-end sales-qty"   name="sales-qty[]"   value="0"></td>
+      <td><input type="text" class="form-control text-end sales-qty"   name="sales-qty[]"   value=""></td>
       <td><input type="text" class="form-control text-end retail-price input-readonly" name="retail-price[]" value="0" readonly></td>
-      <td><input type="text" class="form-control text-end discount-percent" name="discount-percent[]" value="0"></td>
-      <td><input type="text" class="form-control text-end discount-amount"  name="discount-amount[]"  value="0"></td>
+      <td><input type="text" class="form-control text-end discount-percent" name="discount-percent[]" value=""></td>
+      <td><input type="text" class="form-control text-end discount-amount"  name="discount-amount[]"  value=""></td>
       <td><input type="text" class="form-control text-end sales-amount input-readonly" name="sales-amount[]" value="0" readonly></td>
       <td class="text-center"><button type="button" class="btn btn-sm btn-outline-danger del-row">&times;</button></td>
     </tr>
   `);
     refreshPostedState();
   }
+
+
 
   function canPost() {
     let ok = false;
@@ -407,21 +421,25 @@
       const existing = $('#booking_id').val();
       if (existing) return resolve(existing);
 
+      $('#btnSave, #btnHeaderPosted, #btnPosted').prop('disabled', true); // disable while saving
+
       $.post('{{ route("sale.ajax.save") }}', serializeForm())
         .done(function(res) {
+          $('#btnSave, #btnHeaderPosted, #btnPosted').prop('disabled', false);
           if (res?.ok) {
             $('#booking_id').val(res.booking_id);
             showAlert('success', 'Saved (Booking #' + res.booking_id + ')');
             resolve(res.booking_id);
           } else {
-            showAlert('danger', 'Save failed');
-            reject();
+            showAlert('danger', res.msg || 'Save failed');
+            reject(res);
           }
         })
         .fail(function(xhr) {
+          $('#btnSave, #btnHeaderPosted, #btnPosted').prop('disabled', false);
           console.error(xhr.responseText);
           showAlert('danger', 'Save error');
-          reject();
+          reject(xhr);
         });
     });
   }
@@ -684,12 +702,39 @@
 
   /* ---------- Row auto-add ---------- */
   $('#salesTableBody').on('input', '.sales-qty', function() {
-    let row = $(this).closest('tr');
-    if ($(this).val() !== "" && row.is(':last-child')) addNewRow();
-    computeRow(row);
+    const $row = $(this).closest('tr');
+    computeRow($row);
     updateGrandTotals();
     refreshPostedState();
   });
+
+  /* ---------- Add new row when user presses Enter in Disc % (only on last row) ---------- */
+  $('#salesTableBody').on('keydown', '.discount-percent', function(e) {
+    if (e.key === 'Enter' || e.keyCode === 13) {
+      e.preventDefault(); // prevent accidental form submit
+      const $current = $(this).closest('tr');
+
+      // compute current row first (in case user typed value and pressed Enter)
+      computeRow($current);
+      updateGrandTotals();
+      refreshPostedState();
+
+      // only add new row when this is the last row AND discount has some value OR qty > 0 or product selected
+      const isLast = $current.is(':last-child');
+      const discVal = parseFloat($(this).val() || '0') || 0;
+      const qtyVal = parseFloat($current.find('.sales-qty').val() || '0') || 0;
+      const prodSelected = !!$current.find('.product').val();
+
+      // require at least one 'meaningful' value so blank Enter doesn't create rows
+      if (isLast && (discVal !== 0 || qtyVal > 0 || prodSelected)) {
+        addNewRow();
+        // focus on new row product for quick entry
+        const $newRow = $('#salesTableBody tr:last-child');
+        setTimeout(() => $newRow.find('.warehouse').focus(), 0);
+      }
+    }
+  });
+
 
   /* ---------- Receipts (accounts) ---------- */
   function loadAccountsInto($select) {
@@ -750,6 +795,277 @@
     updateGrandTotals();
     refreshPostedState();
   }
+
   init();
+
+  function markInvalid($el) {
+    // add visuals; $el can be input/select/td
+    $el.addClass('invalid-input invalid-select');
+    // also add class to closest td for table cells
+    $el.closest('td').addClass('invalid-cell');
+  }
+
+  function clearInvalid($el) {
+    $el.removeClass('invalid-input invalid-select');
+    $el.closest('td').removeClass('invalid-cell');
+  }
+
+  function clearAllInvalids() {
+    $('.invalid-input, .invalid-select').removeClass('invalid-input invalid-select');
+    $('.invalid-cell').removeClass('invalid-cell');
+  }
+
+  $(document).on('input change', 'select, input, textarea', function() {
+    clearInvalid($(this));
+  });
+
+  function validateRows() {
+    let ok = true;
+    let firstMessage = null;
+    let firstEl = null;
+
+    $('#salesTableBody tr').each(function(rowIndex) {
+      const $row = $(this);
+      const $wh = $row.find('.warehouse');
+      const $prod = $row.find('.product');
+      const $qty = $row.find('.sales-qty');
+
+      // Warehouse
+      if (!$wh.val()) {
+        ok = false;
+        if (!firstMessage) {
+          firstMessage = 'Please select Warehouse for row ' + (rowIndex + 1);
+          firstEl = $wh;
+        }
+        markInvalid($wh);
+      }
+
+      // Product / Item
+      if (!$prod.val()) {
+        ok = false;
+        if (!firstMessage) {
+          firstMessage = 'Please select Item for row ' + (rowIndex + 1);
+          firstEl = $prod;
+        }
+        markInvalid($prod);
+      }
+
+      // Qty > 0
+      const qtyVal = parseFloat($qty.val() || '0') || 0;
+      if (qtyVal <= 0) {
+        ok = false;
+        if (!firstMessage) {
+          firstMessage = 'Please enter Item qty (> 0) for row ' + (rowIndex + 1);
+          firstEl = $qty;
+        }
+        markInvalid($qty);
+      }
+    });
+
+    return {
+      ok,
+      firstMessage,
+      firstEl
+    };
+  }
+
+  /**
+   * validateReceipts() -> if any receipt amount > 0 then account must be selected
+   * returns { ok, firstMessage, firstEl }
+   */
+  function validateReceipts() {
+    let ok = true,
+      firstMessage = null,
+      firstEl = null;
+    $('#rvWrapper .rv-row').each(function(i) {
+      const $row = $(this);
+      const $acc = $row.find('.rv-account');
+      const $amt = $row.find('.rv-amount');
+      const amtVal = parseFloat($amt.val() || '0') || 0;
+
+      if (amtVal > 0 && (!$acc.val() || $acc.val() === "")) {
+        ok = false;
+        if (!firstMessage) {
+          firstMessage = 'Please select Account for receipt row ' + (i + 1);
+          firstEl = $acc;
+        }
+        markInvalid($acc);
+      }
+    });
+    return {
+      ok,
+      firstMessage,
+      firstEl
+    };
+  }
+
+  /**
+   * validateHeader() -> Type & Party mandatory
+   */
+  function validateHeader() {
+    let ok = true,
+      firstMessage = null,
+      firstEl = null;
+    // Type (partyType) - we expect a radio selected
+    const partyType = $('input[name="partyType"]:checked').val();
+    if (!partyType) {
+      ok = false;
+      firstMessage = 'Please select Type';
+      firstEl = $('input[name="partyType"]').first();
+      // mark buttons visually
+      $('#partyTypeGroup').addClass('invalid-cell');
+    } else {
+      $('#partyTypeGroup').removeClass('invalid-cell');
+    }
+
+    // Party / Customer
+    const cust = $('#customerSelect').val();
+    if (!cust) {
+      ok = false;
+      if (!firstMessage) {
+        firstMessage = 'Please select Party (Customer / Vendor)';
+        firstEl = $('#customerSelect');
+      }
+      markInvalid($('#customerSelect'));
+    }
+
+    return {
+      ok,
+      firstMessage,
+      firstEl
+    };
+  }
+
+  /**
+   * validateFormAll() -> run header, rows, receipts
+   * returns { ok, message, el }
+   */
+  function validateFormAll() {
+    clearAllInvalids();
+
+    // header
+    const h = validateHeader();
+    if (!h.ok) {
+      return {
+        ok: false,
+        message: h.firstMessage,
+        el: h.firstEl
+      };
+    }
+
+    // rows
+    const r = validateRows();
+    if (!r.ok) {
+      return {
+        ok: false,
+        message: r.firstMessage,
+        el: r.firstEl
+      };
+    }
+
+    // receipts
+    const rec = validateReceipts();
+    if (!rec.ok) {
+      return {
+        ok: false,
+        message: rec.firstMessage,
+        el: rec.firstEl
+      };
+    }
+
+    // if all ok
+    return {
+      ok: true
+    };
+  }
+
+  /* ---------- Hook validation into Save / Post ---------- */
+
+  // override Save button to validate first
+  $('#btnSave').off('click').on('click', function() {
+    cleanupEmptyRows(); // remove empty rows
+    updateGrandTotals(); // recompute totals after cleanup
+    refreshPostedState();
+
+    // run the existing validation pipeline
+    const v = validateFormAll();
+    if (!v.ok) {
+      showAlert('danger', v.message);
+      if (v.el && v.el.length) {
+        v.el.focus();
+        if (v.el.hasClass('js-customer')) v.el.select2?.('open');
+      }
+      return;
+    }
+
+    // proceed to save
+    ensureSaved();
+  });
+
+
+  // override Post buttons to validate first
+  $('#btnHeaderPosted, #btnPosted').off('click').on('click', function() {
+    cleanupEmptyRows();
+    updateGrandTotals();
+    refreshPostedState();
+
+    const v = validateFormAll();
+    if (!v.ok) {
+      showAlert('danger', v.message);
+      if (v.el && v.el.length) {
+        v.el.focus();
+        if (v.el.hasClass('js-customer')) v.el.select2?.('open');
+      }
+      return;
+    }
+
+    if (!canPost()) {
+      showAlert('danger', 'No valid item lines to post');
+      return;
+    }
+
+    ensureSaved().then(postNow);
+  });
+
+
+  function isRowMeaningful($row) {
+    const prod = $row.find('.product').val();
+    const wh = $row.find('.warehouse').val();
+    const qty = parseFloat($row.find('.sales-qty').val() || '0') || 0;
+    const discPct = parseFloat($row.find('.discount-percent').val() || '0') || 0;
+    const discAmt = parseFloat($row.find('.discount-amount').val() || '0') || 0;
+
+    // consider row meaningful if product selected OR qty > 0 OR discount entered OR warehouse selected
+    return !!prod || !!wh || qty > 0 || discPct !== 0 || discAmt !== 0;
+  }
+
+  function cleanupEmptyRows() {
+    $('#salesTableBody tr').each(function() {
+      const $r = $(this);
+      const prod = $r.find('.product').val();
+      const wh = $r.find('.warehouse').val();
+      const qty = parseFloat($r.find('.sales-qty').val() || '0') || 0;
+
+      // Remove row when qty is zero or (product empty AND warehouse empty)
+      // We want to remove:
+      //  - rows where qty <= 0 (user didn't enter qty) because they are meaningless,
+      //  - or rows that are fully empty.
+      if ((qty <= 0) || ((!prod || prod === '') && (!wh || wh === ''))) {
+        // ensure we keep at least one row in UI
+        if ($('#salesTableBody tr').length > 1) {
+          $r.remove();
+        } else {
+          // if only one row left, clear its fields instead of removing (keeps UI stable)
+          $r.find('select').val('');
+          $r.find('input').val('');
+          $r.find('.stock').val('');
+          $r.find('.sales-amount').val('0');
+        }
+      }
+    });
+
+    // ensure at least one blank row exists
+    if ($('#salesTableBody tr').length === 0) addNewRow();
+  }
 </script>
 @endsection

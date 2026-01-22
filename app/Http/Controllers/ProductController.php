@@ -142,23 +142,6 @@ class ProductController extends Controller
             'category' => 'required',
             'sub_category' => 'required',
             'brand' => 'required',
-            'stock' => 'required',
-            'status' => 'required',
-            'weight' => 'required',
-            'alert_qty' => 'required',
-            'purchase_retail_price' => 'required',
-            'purchase_tax_percent' => 'required',
-            'purchase_tax_amount' => 'required',
-            'purchase_discount_percent' => 'required',
-            'purchase_discount_amount' => 'required',
-            'purchase_net_amount' => 'required',
-            'sale_retail_price' => 'required',
-            'sale_tax_percent' => 'required',
-            'sale_tax_amount' => 'required',
-            'sale_wht_percent' => 'required',
-            'sale_discount_percent' => 'required',
-            'sale_discount_amount' => 'required',
-            'sale_net_amount' => 'required',
         ]);
 
         $product = Product::create([
@@ -209,15 +192,16 @@ class ProductController extends Controller
 
     public function edit(Product $product)
     {
+        $product->load(['latestPrice']); // keep existing
 
-        $product->load(['latestPrice']);
+        $categories = \App\Models\Category::all();
+        $brands = \App\Models\Brand::all();
 
-        $categories = Category::all();
-        $brands = Brand::all();
-        // Agar subcategory chahiye toh use bhi eager load kar sakte hain
-        // ya phir AJAX se fetch kar sakte hain jaisa create mein hai.
-        // Edit page par, agar category selected hai, toh uski subcategories pass karni padengi.
-        $subCategories = $product->category ? $product->category->subCategories : collect();
+        // Ensure we always pass subCategories for the product's category (empty collection if none)
+        $subCategories = collect();
+        if (!empty($product->category_id)) {
+            $subCategories = \App\Models\SubCategory::where('category_id', $product->category_id)->get();
+        }
 
         return view('admin_panel.product.edit', compact('product', 'categories', 'brands', 'subCategories'));
     }

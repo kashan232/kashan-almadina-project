@@ -21,7 +21,9 @@ class ProductBookingItem extends Model
         'discount_percent',
         'discount_amount',
         'amount',
-        'invoice_no', 'customer_id', 'items'
+        'invoice_no',
+        'customer_id',
+        'items'
     ];
 
     // Relation to Sale
@@ -40,5 +42,14 @@ class ProductBookingItem extends Model
     public function product()
     {
         return $this->belongsTo(Product::class);
+    }
+
+    public static function generateInvoiceNo()
+    {
+        // pattern: INVSLE-001
+        // use DB lock to reduce collisions (works when called inside transaction)
+        $last = self::orderBy('id', 'desc')->lockForUpdate()->first();
+        $next = ($last?->id ?? 0) + 1;
+        return 'INVSLE-' . str_pad($next, 3, '0', STR_PAD_LEFT);
     }
 }
