@@ -34,7 +34,13 @@
             </thead>
             <tbody>
                 <tr>
-                    <td>{{ $transfers->fromWarehouse->warehouse_name }}</td>
+                    <td>
+                        @if($transfers->from_shop)
+                        Shop
+                        @else
+                        {{ $transfers->fromWarehouse->warehouse_name ?? '-' }}
+                        @endif
+                    </td>
                     <td>
                         @if($transfers->to_shop)
                         Shop

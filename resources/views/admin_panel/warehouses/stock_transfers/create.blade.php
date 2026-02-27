@@ -439,6 +439,23 @@ $(document).ready(function() {
     //  AJAX SAVE DRAFT
     // =============================================
     function ajaxSaveDraft(callback) {
+        // Remove empty rows before submission
+        $('#transferItems tr').each(function() {
+            if (!$(this).find('.product-select').val()) {
+                $(this).remove();
+            }
+        });
+
+        // Re-calculate after removing rows
+        recalcTotals();
+
+        // At least one row must exist
+        if ($('#transferItems tr').length === 0) {
+            appendBlankRow();
+            showToast('❌ Please add at least one item to transfer.', 'error');
+            return;
+        }
+
         var $form = $('#transferForm');
         if (!$form[0].checkValidity()) { $form[0].reportValidity(); return; }
 
@@ -460,12 +477,7 @@ $(document).ready(function() {
                     // Change Post button label
                     $('#postBtn').html('<i class="fa fa-send me-1"></i> Post <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+&#8629;</kbd>');
 
-                    // Replace Print Preview button with real print link
-                    var printUrl = '/stock_transfers/' + res.id + '/print';
-                    $('#previewPrintBtn').replaceWith(
-                        $('<a>').attr({ href: printUrl, target: '_blank', id: 'realPrintBtn', class: 'btn btn-sm btn-outline-dark rounded-pill px-4' })
-                        .html('<i class="fa fa-print me-1"></i> Print <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+P</kbd>')
-                    );
+// print preview button remains unchanged
 
                     if (typeof callback === 'function') callback(res.id);
                 } else {
@@ -506,7 +518,7 @@ $(document).ready(function() {
         $.ajax({
             url: '/stock_transfers/' + id + '/post',
             type: 'POST',
-            data: { _token: $('meta[name="csrf-token"]').attr('content') },
+            data: { _token: $('input[name="_token"]').val() },
             headers: { 'X-Requested-With': 'XMLHttpRequest' },
             success: function(res) {
                 if (res.success) {
@@ -568,16 +580,45 @@ $(document).ready(function() {
                 '</tr>';
         });
 
-        var html = '<div style="border:1px solid #eee;padding:20px;font-family:Poppins,sans-serif;font-size:13px;">' +
+        // Use 'Shop' if value is 'shop'
+        var fromVal = $('#from_warehouse_id').val();
+        if (fromVal === 'shop') {
+            fromWh = 'Shop';
+        }
+
+        var toShopVal = $('#toShop').is(':checked');
+        if (toShopVal) {
+            toWh = 'Shop';
+        }
+
+        var statusText = _savedTransferId ? 'UNPOSTED' : 'DRAFT';
+        var idText = _savedTransferId ? ('<strong>Transfer #:</strong> ' + _savedTransferId + '<br>') : '';
+        
+        var html = '<div style="border:1px solid #eee;padding:20px;max-width:780px;margin:auto;font-family:Poppins,sans-serif;font-size:13px;">' +
             '<div style="display:flex;justify-content:space-between;border-bottom:2px solid #000;padding-bottom:10px;margin-bottom:16px;">' +
             '<div><div style="font-size:22px;font-weight:700;">Al-Madina Traders</div>' +
             '<div style="color:#555;font-size:12px;">Stock Transfer Voucher</div></div>' +
-            '<div style="text-align:right;font-size:12px;"><div><strong>Status:</strong> DRAFT</div></div></div>' +
-            '<div style="margin-bottom:16px;font-size:12px;">' +
-            '<div><span style="font-weight:600;width:130px;display:inline-block;">From Warehouse:</span>' + fromWh + '</div>' +
-            '<div><span style="font-weight:600;width:130px;display:inline-block;">To Warehouse:</span>' + toWh + '</div>' +
-            (remarks ? '<div><span style="font-weight:600;width:130px;display:inline-block;">Remarks:</span>' + remarks + '</div>' : '') +
+            '<div style="text-align:right;font-size:12px;"><div>' + idText + '<strong>Status:</strong> ' + statusText + '</div></div></div>' +
+            
+            '<div style="text-align:center; margin-bottom:20px; padding:10px; background:#f8f9fa; border-radius:8px;">' +
+            '<span style="font-size:15px; font-weight:600;">' + fromWh + '</span>' +
+            '<span style="margin:0 16px; font-size:20px; font-weight:700;">→</span>' +
+            '<span style="font-size:15px; font-weight:600;">' + toWh + '</span>' +
             '</div>' +
+
+            '<div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px; font-size:12px;">' +
+            '<div>' +
+            '<div><span style="font-weight:600;width:130px;display:inline-block;">From Location:</span>' + fromWh + '</div>' + 
+            '<div><span style="font-weight:600;width:130px;display:inline-block;">Prepared By:</span>' + '{{ auth()->user() ? auth()->user()->name : "-" }}' + '</div>' + 
+            '</div>' + 
+            '<div>' +
+            '<div><span style="font-weight:600;width:130px;display:inline-block;">To Location:</span>' + toWh + '</div>' + 
+            '<div><span style="font-weight:600;width:130px;display:inline-block;">Date:</span>' + '{{ date("d-M-Y") }}' + '</div>' +
+            '</div>' +
+            '</div>' +
+
+            (remarks ? '<p style="font-size:12px; margin-bottom:16px;"><strong>Remarks:</strong> ' + remarks + '</p>' : '') +
+
             '<table style="width:100%;border-collapse:collapse;margin-bottom:20px;">' +
             '<thead><tr style="background:#f2f2f2;">' +
             '<th style="border:1px solid #ddd;padding:7px;width:40px;">S#</th>' +
@@ -585,10 +626,11 @@ $(document).ready(function() {
             '<th style="border:1px solid #ddd;padding:7px;">Product</th>' +
             '<th style="border:1px solid #ddd;padding:7px;width:80px;text-align:center;">Qty</th>' +
             '</tr></thead><tbody>' + rows +
-            '<tr style="font-weight:700;background:#f9f9f9;">' +
+            '</tbody>' +
+            '<tfoot><tr style="font-weight:700;background:#f9f9f9;">' +
             '<td colspan="3" style="border:1px solid #ddd;padding:7px;text-align:right;">Total Qty:</td>' +
             '<td style="border:1px solid #ddd;padding:7px;text-align:center;">' + totalQty + '</td>' +
-            '</tr></tbody></table>' +
+            '</tr></tfoot></table>' +
             '<div style="margin-top:50px;display:flex;justify-content:space-between;">' +
             '<div style="border-top:1px solid #000;width:130px;text-align:center;padding-top:5px;">Prepared By</div>' +
             '<div style="border-top:1px solid #000;width:130px;text-align:center;padding-top:5px;">Checked By</div>' +
@@ -608,11 +650,7 @@ $(document).ready(function() {
         if (e.ctrlKey && e.key === 'Enter') { e.preventDefault(); doPost(); }
         if (e.ctrlKey && e.key === 'p') {
             e.preventDefault();
-            if (_savedTransferId) {
-                window.open('/stock_transfers/' + _savedTransferId + '/print', '_blank');
-            } else {
-                $('#previewPrintBtn').trigger('click');
-            }
+            $('#previewPrintBtn').trigger('click');
         }
         if (e.ctrlKey && e.key === 'l') {
             e.preventDefault();

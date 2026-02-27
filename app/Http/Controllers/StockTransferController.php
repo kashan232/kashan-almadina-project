@@ -264,20 +264,28 @@ class StockTransferController extends Controller
             }
 
             foreach ($transfer->items as $item) {
-                $sourceStock = WarehouseStock::where('warehouse_id', $transfer->from_warehouse_id)
-                    ->where('product_id', $item->product_id)
-                    ->lockForUpdate()
-                    ->first();
-
-                if ($sourceStock) {
-                    $sourceStock->quantity = $sourceStock->quantity + $item->quantity;
-                    $sourceStock->save();
+                if ($transfer->from_shop) {
+                    $sourceProduct = Product::lockForUpdate()->find($item->product_id);
+                    if ($sourceProduct) {
+                        $sourceProduct->stock += $item->quantity;
+                        $sourceProduct->save();
+                    }
                 } else {
-                    WarehouseStock::create([
-                        'warehouse_id' => $transfer->from_warehouse_id,
-                        'product_id'   => $item->product_id,
-                        'quantity'     => $item->quantity,
-                    ]);
+                    $sourceStock = WarehouseStock::where('warehouse_id', $transfer->from_warehouse_id)
+                        ->where('product_id', $item->product_id)
+                        ->lockForUpdate()
+                        ->first();
+
+                    if ($sourceStock) {
+                        $sourceStock->quantity = $sourceStock->quantity + $item->quantity;
+                        $sourceStock->save();
+                    } else {
+                        WarehouseStock::create([
+                            'warehouse_id' => $transfer->from_warehouse_id,
+                            'product_id'   => $item->product_id,
+                            'quantity'     => $item->quantity,
+                        ]);
+                    }
                 }
             }
 

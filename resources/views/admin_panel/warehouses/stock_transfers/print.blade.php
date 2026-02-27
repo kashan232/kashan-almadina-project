@@ -50,7 +50,11 @@
 
         {{-- Warehouse Flow --}}
         <div style="text-align:center; margin-bottom:20px; padding:10px; background:#f8f9fa; border-radius:8px;">
-            <span style="font-size:15px; font-weight:600;">{{ $transfer->fromWarehouse->warehouse_name ?? '-' }}</span>
+            @if($transfer->from_shop)
+                <span style="font-size:15px; font-weight:600;">Shop</span>
+            @else
+                <span style="font-size:15px; font-weight:600;">{{ $transfer->fromWarehouse->warehouse_name ?? '-' }}</span>
+            @endif
             <span class="arrow" style="margin:0 16px;">→</span>
             <span style="font-size:15px; font-weight:600;">{{ $transfer->toWarehouse->warehouse_name ?? '-' }}</span>
             @if($transfer->to_shop)
@@ -61,8 +65,14 @@
         <div class="info-grid">
             <div>
                 <div class="info-item">
-                    <span class="info-label">From Warehouse:</span>
-                    <span>{{ $transfer->fromWarehouse->warehouse_name ?? '-' }}</span>
+                    <span class="info-label">From Location:</span>
+                    <span>
+                        @if($transfer->from_shop)
+                            Shop
+                        @else
+                            {{ $transfer->fromWarehouse->warehouse_name ?? '-' }}
+                        @endif
+                    </span>
                 </div>
                 <div class="info-item">
                     <span class="info-label">Prepared By:</span>

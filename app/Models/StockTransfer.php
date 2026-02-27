@@ -13,6 +13,7 @@ class StockTransfer extends Model
 
     protected $fillable = [
         'from_warehouse_id',
+        'from_shop',
         'to_warehouse_id',
         'to_shop',
         'remarks',
