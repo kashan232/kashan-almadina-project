@@ -464,7 +464,8 @@
                                                                     <th>WHT</th>
                                                                     <td>
                                                                         <div class="input-group">
-                                                                            <input type="number" step="0.01" id="whtValue" name="wht" class="form-control form-control-sm" value="{{ old('wht', $purchase->wht ?? 0) }}">
+                                                                            <input type="number" step="0.01" id="whtPercent" class="form-control form-control-sm" placeholder="%" value="{{ old('wht_percent', $purchase->wht_percent ?? '') }}">
+                                                                            <input type="hidden" id="whtValue" name="wht" value="{{ old('wht', $purchase->wht ?? 0) }}">
                                                                             <select id="whtType" class="form-select form-select-sm" style="max-width:90px;">
                                                                                 <option value="percent" selected>%</option>
                                                                                 <option value="amount">PKR</option>
@@ -662,14 +663,7 @@
                         });
                     } else {
                         $select.val(null).trigger('change');
-                        // Use SweetAlert for better UI
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Not Found',
-                            text: 'Product ID not found!',
-                            timer: 2000,
-                            showConfirmButton: false
-                        });
+                        showToast('❌ Product ID not found!', 'error');
                         $row.find('.item-id-input').val('');
                     }
                 });
@@ -1113,18 +1107,22 @@
         $('#subtotal').val(sub.toFixed(2));
 
         const oDisc = window.num($('#overallDiscount').val());
-        const whtVal = window.num($('#whtValue').val());
+        const whtPercent = window.num($('#whtPercent').val());
         const whtType = $('#whtType').val();
 
         let whtAmount = 0;
         if (whtType === 'percent') {
             const taxable = Math.max(0, sub - oDisc);
-            whtAmount = taxable * (whtVal / 100);
+            whtAmount = taxable * (whtPercent / 100);
         } else {
-            whtAmount = whtVal;
+            // If PKR mode, whtPercent holds the direct PKR amount
+            whtAmount = whtPercent;
         }
 
         $('#whtAmount').val(whtAmount.toFixed(2));
+        // Write calculated amount into whtValue (name=wht) so controller gets PKR amount
+        $('#whtValue').val(whtAmount.toFixed(2));
+
         const netTotal = sub - oDisc - whtAmount;
         $('#netAmount').val(netTotal.toFixed(2));
     };
@@ -1138,7 +1136,7 @@
         });
 
         // Handle Summary inputs
-        $(document).on('input change', '#overallDiscount, #whtValue, #whtType', function() {
+        $(document).on('input change', '#overallDiscount, #whtPercent, #whtType', function() {
             window.recalcSummary();
         });
 
@@ -1243,11 +1241,7 @@
                 return $(this).val();
             }).length === 0) {
             e.preventDefault();
-            Swal.fire({
-                icon: 'warning',
-                title: 'No item selected',
-                text: 'Please add at least one valid item before saving.'
-            });
+            showToast('⚠️ Please add at least one valid item before saving.', 'error');
             return false;
         }
 
@@ -1471,16 +1465,8 @@
         }
 
         if (isFormDirty) {
-            e.preventDefault(); // Stop navigation
-            
-            Swal.fire({
-                title: 'Incomplete Purchase!',
-                text: "Please complete the purchase first. You cannot leave the form incomplete.",
-                icon: 'error',
-                confirmButtonColor: '#3085d6',
-                confirmButtonText: 'OK'
-            });
-            // We do not navigate. User must stay.
+            e.preventDefault();
+            showToast('⚠️ Please complete the purchase first. You cannot leave the form incomplete.', 'error');
             return;
         }
     });
@@ -1695,13 +1681,7 @@ $(document).ready(function() {
             success: function(res) {
                 if (res.success) {
                     _savedPurchaseId = res.id;
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Draft Saved',
-                        text: res.message,
-                        timer: 2000,
-                        showConfirmButton: false
-                    });
+                    showToast('✅ Draft Saved — ' + (res.message || 'Purchase saved as unposted.'), 'success');
 
                     // Show Post button (becomes real post)
                     $('#postBtn')
@@ -1720,21 +1700,13 @@ $(document).ready(function() {
                         );
                     }
                 } else {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Error',
-                        text: res.message || 'Error saving draft.'
-                    });
+                    showToast('❌ ' + (res.message || 'Error saving draft.'), 'error');
                 }
             },
             error: function(xhr) {
                 var msg = 'Save failed.';
                 try { msg = JSON.parse(xhr.responseText).message || msg; } catch(e){}
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Save Failed',
-                    text: msg
-                });
+                showToast('❌ ' + msg, 'error');
             },
             complete: function() {
                 $('#saveDraftBtn').prop('disabled', false)
@@ -1748,11 +1720,7 @@ $(document).ready(function() {
     // =============================================
     function doPost() {
         if (!_savedPurchaseId) {
-            Swal.fire({
-                icon: 'warning',
-                title: 'Save First',
-                text: 'Please save draft before posting.'
-            });
+            showToast('⚠️ Please save draft first before posting.', 'error');
             return;
         }
         $('#postBtn').prop('disabled', true)
@@ -1764,15 +1732,10 @@ $(document).ready(function() {
             data: { _token: $('input[name="_token"]').first().val() },
             headers: { 'X-Requested-With': 'XMLHttpRequest' },
             success: function(res) {
-                Swal.fire({
-                    icon: 'success',
-                    title: 'Posted!',
-                    text: 'Purchase posted successfully. Redirecting...',
-                    timer: 2000,
-                    showConfirmButton: false
-                }).then(() => {
+                showToast('✅ Purchase posted successfully! Redirecting...', 'success');
+                setTimeout(function() {
                     window.location.href = '/add/Purchase';
-                });
+                }, 2000);
             },
             error: function(xhr) {
                 var msg = 'Post failed.';
@@ -1780,11 +1743,7 @@ $(document).ready(function() {
                     var r = JSON.parse(xhr.responseText);
                     msg = r.message || r.error || msg;
                 } catch(e) {}
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Post Failed',
-                    text: msg
-                });
+                showToast('❌ ' + msg, 'error');
                 $('#postBtn').prop('disabled', false)
                     .html('<i class="fa fa-send me-1"></i> Post <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+↵</kbd>');
             }
@@ -1798,45 +1757,13 @@ $(document).ready(function() {
     $('#postBtn').on('click',      function() { doPost(); });
     $('#previewPrintBtn').on('click', function() {
         if (!_savedPurchaseId) {
-            Swal.fire({
-                icon: 'warning',
-                title: 'Save First',
-                text: 'Please save draft before printing.'
-            });
+            showToast('⚠️ Please save draft first before printing.', 'error');
             return;
         }
         window.open('/purchase/' + _savedPurchaseId + '/invoice', '_blank');
     });
 
-    // =============================================
-    //  GLOBAL KEYBOARD SHORTCUTS
-    // =============================================
-    $(document).on('keydown', function(e) {
-        // Ctrl+S → Save Draft (AJAX)
-        if (e.ctrlKey && e.key === 's') {
-            e.preventDefault();
-            ajaxSaveDraft();
-        }
-        // Ctrl+Enter → Post (after save)
-        if (e.ctrlKey && e.key === 'Enter') {
-            e.preventDefault();
-            doPost();
-        }
-        // Ctrl+P → Print Preview
-        if (e.ctrlKey && (e.key === 'p' || e.key === 'P')) {
-            e.preventDefault();
-            $('#previewPrintBtn, #realPrintBtn').trigger('click');
-        }
-        // Ctrl+X → Remove Current Row
-        if (e.ctrlKey && (e.key === 'x' || e.key === 'X')) {
-            const $focusedRow = $(document.activeElement).closest('tr');
-            if ($focusedRow.length && $focusedRow.find('.remove-row').length) {
-                e.preventDefault();
-                $focusedRow.find('.remove-row').trigger('click');
-            }
-        }
-
-    });
+    // NOTE: Global keyboard shortcuts are handled in a single block below to avoid duplicate saves.
 
     // Ctrl+L → List page (capture phase — overrides browser address bar shortcut)
     document.addEventListener('keydown', function(e) {
@@ -1929,13 +1856,7 @@ $(document).ready(function() {
             $(this).closest('tr').remove();
             if (typeof window.recalcSummary === 'function') window.recalcSummary();
         } else {
-            Swal.fire({
-                icon: 'warning',
-                title: 'Operation Refused',
-                text: 'At least one row must remain!',
-                timer: 2000,
-                showConfirmButton: false
-            });
+            showToast('⚠️ At least one row must remain!', 'error');
         }
     });
 

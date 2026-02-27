@@ -367,7 +367,7 @@
         }
 
         // Initialize DataTable
-        $('#example').DataTable({
+        var dt = $('#example').DataTable({
             destroy: true,
             scrollX: true,
             autoWidth: false,
@@ -378,6 +378,26 @@
                 searchPlaceholder: "Search purchases..."
             }
         });
+
+        // Re-apply saved column visibility after DataTable init
+        const savedState2 = localStorage.getItem(storageKey);
+        if (savedState2) {
+            const columns = JSON.parse(savedState2);
+            $('#columnPickerMenu input').each(function() {
+                const colIdx = parseInt($(this).data('column'));
+                const checked = columns.hasOwnProperty(colIdx) ? columns[colIdx] : true;
+                $(this).prop('checked', checked);
+                // DataTable column index is 0-based, picker is 1-based
+                dt.column(colIdx - 1).visible(checked);
+            });
+            dt.columns.adjust().draw(false);
+        }
+
+        // Override toggleColumn to use DataTable API
+        toggleColumn = function(index, show) {
+            dt.column(parseInt(index) - 1).visible(show);
+            dt.columns.adjust().draw(false);
+        };
     });
 
     $(document).on('submit', '.myform', function(e) {
