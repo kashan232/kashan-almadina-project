@@ -1438,45 +1438,52 @@
     };
     // --- Navigation Guard (Prevent leaving incomplete form) ---
     let isFormDirty = false;
+    let isFormSaved = false; // set true once AJAX draft save succeeds
 
     // Detect changes in any input/select/textarea within the form
     $(document).on('change input', '#purchaseForm :input', function() {
         isFormDirty = true;
+        isFormSaved = false; // re-dirty if user edits after saving
     });
 
-    // If the form is submitted, clear the dirty flag so we don't block
+    // If the form is submitted (traditional), clear dirty flag
     $('#purchaseForm').on('submit', function() {
         isFormDirty = false;
+        isFormSaved = true;
     });
+
+    // Expose a function so ajaxSaveDraft success can clear the guard
+    window.markFormSaved = function() {
+        isFormDirty = false;
+        isFormSaved = true;
+    };
 
     // Intercept all link clicks
     $(document).on('click', 'a', function(e) {
-        // Allow Ctrl+Click (new tab) or Shift+Click (new window) to proceed
+        // Allow Ctrl/Meta/Shift+Click (new tab, new window) to proceed always
         if (e.ctrlKey || e.metaKey || e.shiftKey) {
             return;
         }
 
-        // If form is dirty and link is not just a hash or javascript:void
         const intendedUrl = $(this).attr('href');
-        
-        // Skip for blank target, javascript links, or same page anchors
+        // Skip hash links and javascript: links
         if (!intendedUrl || intendedUrl.startsWith('#') || intendedUrl.toLowerCase().startsWith('javascript')) {
             return;
         }
 
-        if (isFormDirty) {
+        // Block only if dirty and not yet saved
+        if (isFormDirty && !isFormSaved) {
             e.preventDefault();
-            showToast('⚠️ Please complete the purchase first. You cannot leave the form incomplete.', 'error');
+            showToast('⚠️ Please save the purchase (Save Draft) before leaving.', 'error');
             return;
         }
     });
 
-    // Browser-level guard (e.g. reload or close tab)
-    // Note: Most browsers show a generic message, custom text is often ignored.
+    // Browser-level guard (reload / close tab)
     window.addEventListener('beforeunload', function (e) {
-        if (isFormDirty) {
+        if (isFormDirty && !isFormSaved) {
             e.preventDefault();
-            e.returnValue = ''; // Standard for Chrome
+            e.returnValue = '';
         }
     });
 })();
@@ -1681,6 +1688,8 @@ $(document).ready(function() {
             success: function(res) {
                 if (res.success) {
                     _savedPurchaseId = res.id;
+                    // Clear navigation guard - form is now saved
+                    if (typeof window.markFormSaved === 'function') window.markFormSaved();
                     showToast('✅ Draft Saved — ' + (res.message || 'Purchase saved as unposted.'), 'success');
 
                     // Show Post button (becomes real post)
