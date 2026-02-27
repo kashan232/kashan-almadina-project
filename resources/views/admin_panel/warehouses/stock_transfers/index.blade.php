@@ -188,7 +188,13 @@
                                         <tr>
                                             <td class="fw-bold">#{{ $t->id }}</td>
                                             <td>{{ \Carbon\Carbon::parse($t->created_at)->format('d-M-Y') }}</td>
-                                            <td>{{ $t->fromWarehouse->warehouse_name ?? '—' }}</td>
+                                            <td>
+                                                @if($t->from_shop)
+                                                    <span class="badge bg-light text-primary border" style="font-size:11px;">Shop</span>
+                                                @else
+                                                    {{ $t->fromWarehouse->warehouse_name ?? '—' }}
+                                                @endif
+                                            </td>
                                             <td>
                                                 {{ $t->toWarehouse->warehouse_name ?? '—' }}
                                                 @if($t->to_shop)

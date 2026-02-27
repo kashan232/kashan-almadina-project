@@ -318,6 +318,24 @@
 
             $('#saveDraftBtn').prop('disabled', true).html('<i class="fa fa-spinner fa-spin me-1"></i> Saving...');
 
+            // Remove empty rows before submission
+            $('#itemsTable tbody tr').each(function() {
+                if (!$(this).find('.product-select').val()) {
+                    $(this).remove();
+                }
+            });
+
+            // Re-calculate after removing rows
+            calcTotal();
+
+            // At least one row must exist
+            if ($('#itemsTable tbody tr').length === 0) {
+                addRow();
+                $('#saveDraftBtn').prop('disabled', false).html('<i class="fa fa-floppy-o me-1"></i> Save Draft <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+S</kbd>');
+                showToast('❌ Please add at least one item.', 'error');
+                return;
+            }
+
             $.ajax({
                 url:  $form.attr('action'),
                 type: 'POST',
@@ -547,7 +565,7 @@
                     processResults: function (data) {
                         return {
                             results: data.map(function(item) {
-                                return { id: item.id, text: item.id + ' - ' + item.name, price_net: item.price_net || 0 };
+                                return { id: item.id, text: item.name, price_net: item.price_net || 0 };
                             })
                         };
                     },
@@ -586,7 +604,7 @@
 
                     if (match) {
                         // Fill select2
-                        var option = new Option(match.id + ' - ' + match.name, match.id, true, true);
+                        var option = new Option(match.name, match.id, true, true);
                         $row.find('.product-select').empty().append(option).trigger('change');
 
                         // Set qty = 1 (default)
@@ -728,6 +746,24 @@
             e.preventDefault();
             var action = $(this).val();
             var $form  = $('#wastageForm');
+
+            // Remove empty rows before submission
+            $('#itemsTable tbody tr').each(function() {
+                if (!$(this).find('.product-select').val()) {
+                    $(this).remove();
+                }
+            });
+
+            // Re-calculate after removing rows
+            calcTotal();
+
+            // At least one row must exist
+            if ($('#itemsTable tbody tr').length === 0) {
+                addRow();
+                showToast('❌ Please add at least one item.', 'error');
+                return;
+            }
+
             if (!$form[0].checkValidity()) { $form[0].reportValidity(); return; }
             if ($form.find('input[name="action"]').length === 0) {
                 $form.append('<input type="hidden" name="action">');
@@ -754,11 +790,8 @@
                 var productId   = $(this).find('.item-id-input').val();
                 var productText = $(this).find('.product-select option:selected').text();
                 
-                // Extract Name if text is "ID - Name"
+                // Use product text directly as we changed the name format
                 var productName = productText;
-                if (productText.includes(' - ')) {
-                    productName = productText.split(' - ').slice(1).join(' - ');
-                }
 
                 var price   = parseFloat($(this).find('.price').val()) || 0;
                 var qty     = parseFloat($(this).find('.qty').val()) || 0;

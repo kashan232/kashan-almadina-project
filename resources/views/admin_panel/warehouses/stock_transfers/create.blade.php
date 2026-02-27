@@ -71,9 +71,10 @@
                         <div class="row g-2">
                             {{-- From Warehouse --}}
                             <div class="col-md-3">
-                                <label class="form-label small fw-bold">From Warehouse <span class="text-danger">*</span></label>
+                                <label class="form-label small fw-bold">From Location <span class="text-danger">*</span></label>
                                 <select name="from_warehouse_id" id="from_warehouse_id" class="form-select select2" required>
-                                    <option value="" disabled selected>Select Warehouse</option>
+                                    <option value="" disabled selected>Select Location</option>
+                                    <option value="shop">Shop</option>
                                     @foreach ($warehouses as $warehouse)
                                         <option value="{{ $warehouse->id }}">{{ $warehouse->warehouse_name }}</option>
                                     @endforeach

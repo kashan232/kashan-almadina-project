@@ -40,8 +40,8 @@ class StockTransferController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'from_warehouse_id' => 'required|exists:warehouses,id',
-            'to_warehouse_id'   => 'required|exists:warehouses,id|different:from_warehouse_id',
+            'from_warehouse_id' => 'required',
+            'to_warehouse_id'   => 'required|exists:warehouses,id',
             'product_id'        => 'required|array|min:1',
             'product_id.*'      => 'required|exists:products,id',
             'quantity'          => 'required|array',
@@ -51,8 +51,11 @@ class StockTransferController extends Controller
 
         try {
             $transferId = DB::transaction(function () use ($request) {
+                $isFromShop = $request->from_warehouse_id === 'shop';
+
                 $transfer = StockTransfer::create([
-                    'from_warehouse_id' => $request->from_warehouse_id,
+                    'from_warehouse_id' => $isFromShop ? null : $request->from_warehouse_id,
+                    'from_shop'         => $isFromShop ? 1 : 0,
                     'to_warehouse_id'   => $request->to_warehouse_id,
                     'to_shop'           => $request->has('to_shop') ? 1 : 0,
                     'remarks'           => $request->remarks,
@@ -104,16 +107,27 @@ class StockTransferController extends Controller
         try {
             DB::transaction(function () use ($transfer) {
                 foreach ($transfer->items as $item) {
-                    // Deduct from source warehouse
-                    $sourceStock = WarehouseStock::where('warehouse_id', $transfer->from_warehouse_id)
-                        ->where('product_id', $item->product_id)
-                        ->lockForUpdate()->first();
+                    if ($transfer->from_shop) {
+                        // Deduct from shop (Product's direct stock)
+                        $sourceProduct = Product::lockForUpdate()->find($item->product_id);
 
-                    if (!$sourceStock || $sourceStock->quantity < $item->quantity) {
-                        throw new \Exception("Not enough stock for product ID: {$item->product_id}");
+                        if (!$sourceProduct || $sourceProduct->stock < $item->quantity) {
+                            throw new \Exception("Not enough stock in Shop for product ID: {$item->product_id}");
+                        }
+                        $sourceProduct->stock -= $item->quantity;
+                        $sourceProduct->save();
+                    } else {
+                        // Deduct from source warehouse
+                        $sourceStock = WarehouseStock::where('warehouse_id', $transfer->from_warehouse_id)
+                            ->where('product_id', $item->product_id)
+                            ->lockForUpdate()->first();
+
+                        if (!$sourceStock || $sourceStock->quantity < $item->quantity) {
+                            throw new \Exception("Not enough stock in warehouse for product ID: {$item->product_id}");
+                        }
+                        $sourceStock->quantity -= $item->quantity;
+                        $sourceStock->save();
                     }
-                    $sourceStock->quantity -= $item->quantity;
-                    $sourceStock->save();
 
                     // Add to destination warehouse
                     $destStock = WarehouseStock::where('warehouse_id', $transfer->to_warehouse_id)
@@ -178,19 +192,22 @@ class StockTransferController extends Controller
         return view('stock_transfers.pending', compact('transfers'));
     }
 
-    // AJAX: get available quantity for a product in a warehouse
     public function warehouseStockQuantity(Request $request)
     {
         $request->validate([
-            'warehouse_id' => 'required|exists:warehouses,id',
+            'warehouse_id' => 'required',
             'product_id'   => 'required|exists:products,id',
         ]);
 
-        $ws = WarehouseStock::where('warehouse_id', $request->warehouse_id)
-            ->where('product_id', $request->product_id)
-            ->first();
-
-        $quantity = $ws ? (int) $ws->quantity : 0;
+        if ($request->warehouse_id === 'shop') {
+            $product = Product::find($request->product_id);
+            $quantity = $product ? (int) $product->stock : 0;
+        } else {
+            $ws = WarehouseStock::where('warehouse_id', $request->warehouse_id)
+                ->where('product_id', $request->product_id)
+                ->first();
+            $quantity = $ws ? (int) $ws->quantity : 0;
+        }
 
         return response()->json(['quantity' => $quantity]);
     }

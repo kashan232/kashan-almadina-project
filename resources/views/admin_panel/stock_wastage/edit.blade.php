@@ -144,7 +144,7 @@
                                         <td><input type="text" class="form-control input-sm item-id-input" value="{{ $item->product_id }}" style="width:75px;"></td>
                                         <td>
                                             <select name="product_id[]" class="form-control product-select" required style="width:100%;">
-                                                <option value="{{ $item->product_id }}" selected>{{ $item->product_id }} - {{ $item->product->name ?? '' }}</option>
+                                                <option value="{{ $item->product_id }}" selected>{{ $item->product->name ?? '' }}</option>
                                             </select>
                                         </td>
                                         <td><input type="number" name="price[]" class="form-control input-sm price" step="0.01" value="{{ $item->price }}"></td>
@@ -222,7 +222,7 @@
                     processResults: function (data) {
                         return {
                             results: data.map(function(item) {
-                                return { id: item.id, text: item.id + ' - ' + item.name, price_net: item.price_net || 0 };
+                                return { id: item.id, text: item.name, price_net: item.price_net || 0 };
                             })
                         };
                     },
@@ -246,6 +246,24 @@
 
         function ajaxUpdate() {
             var $form = $('#wastageForm');
+
+            // Remove empty rows before submission
+            $('#itemsTable tbody tr').each(function() {
+                if (!$(this).find('.product-select').val()) {
+                    $(this).remove();
+                }
+            });
+
+            // Re-calculate after removing rows
+            calcTotal();
+
+            // At least one row must exist
+            if ($('#itemsTable tbody tr').length === 0) {
+                addRow();
+                showToast('❌ Please add at least one item.', 'error');
+                return;
+            }
+
             $('#saveUpdateBtn').prop('disabled', true).html('<i class="fa fa-spinner fa-spin me-1"></i> Updating...');
             $.ajax({
                 url: $form.attr('action'),
@@ -322,7 +340,7 @@
                     delay: 250,
                     data: function (params) { return { q: params.term }; },
                     processResults: function (data) {
-                        return { results: data.map(function(item) { return { id: item.id, text: item.id + ' - ' + item.name, price_net: item.price_net || 0 }; }) };
+                        return { results: data.map(function(item) { return { id: item.id, text: item.name, price_net: item.price_net || 0 }; }) };
                     },
                     cache: true
                 },
