@@ -8,14 +8,14 @@
         -webkit-overflow-scrolling: touch;
         margin-bottom: 1rem;
     }
-    #transferTable thead th {
+    #wastageTable thead th {
         white-space: nowrap;
         background-color: #f8f9fa;
         color: #333;
         font-weight: 600;
         vertical-align: middle;
     }
-    #transferTable tbody td {
+    #wastageTable tbody td {
         white-space: nowrap;
         vertical-align: middle;
     }
@@ -100,7 +100,7 @@
                 <div class="col-12">
                     <div class="card border-0 shadow-sm">
                         <div class="card-body p-3">
-                            <form action="{{ route('stock_transfers.index') }}" method="GET" class="row g-3 align-items-end">
+                            <form action="{{ route('stock-wastage.index') }}" method="GET" class="row g-3 align-items-end">
                                 <div class="col-md-3">
                                     <label class="form-label small fw-bold text-muted">Start Date</label>
                                     <input type="date" name="start_date" class="form-control form-control-sm" value="{{ request('start_date') }}">
@@ -115,8 +115,6 @@
                                         <option value="">All Status</option>
                                         <option value="Unposted" {{ request('status') == 'Unposted' ? 'selected' : '' }}>Unposted</option>
                                         <option value="Posted"   {{ request('status') == 'Posted'   ? 'selected' : '' }}>Posted</option>
-                                        <option value="accepted" {{ request('status') == 'accepted' ? 'selected' : '' }}>Accepted</option>
-                                        <option value="rejected" {{ request('status') == 'rejected' ? 'selected' : '' }}>Rejected</option>
                                     </select>
                                 </div>
                                 <div class="col-md-4">
@@ -124,7 +122,7 @@
                                         <button type="submit" class="btn btn-primary btn-sm px-4 rounded-pill">
                                             <i class="fa fa-filter me-1"></i> Filter
                                         </button>
-                                        <a href="{{ route('stock_transfers.index') }}" class="btn btn-outline-secondary btn-sm px-4 rounded-pill">
+                                        <a href="{{ route('stock-wastage.index') }}" class="btn btn-outline-secondary btn-sm px-4 rounded-pill">
                                             <i class="fa fa-refresh me-1"></i> Reset
                                         </a>
                                     </div>
@@ -140,7 +138,7 @@
                 <div class="col-12">
                     <div class="card border-0">
                         <div class="card-header d-flex justify-content-between align-items-center py-3">
-                            <h4 class="card-title mb-0 fw-bold text-dark">Stock Transfer Management</h4>
+                            <h4 class="card-title mb-0 fw-bold text-dark">Stock Wastage Management</h4>
                             <div class="d-flex gap-2">
                                 <!-- Column Picker Button -->
                                 <div class="column-picker-dropdown">
@@ -149,109 +147,97 @@
                                     </button>
                                     <div class="column-picker-menu shadow" id="columnPickerMenu">
                                         <div class="p-2 border-bottom fw-bold small text-muted">Show/Hide Columns</div>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="1" checked> TR ID</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="1" checked> GWN ID</label>
                                         <label class="column-picker-item"><input type="checkbox" data-column="2" checked> Date</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="3" checked> From Warehouse</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="4" checked> To Warehouse</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="5" checked> Items</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="6" checked> Amount</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="7" checked> Prepared By</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="8" checked> Status</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="9" checked> Action</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="3" checked> Warehouse</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="4" checked> Expense Head</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="5" checked> Expense A/C</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="6" checked> Items</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="7" checked> Remarks</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="8" checked> Amount</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="9" checked> Status</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="10" checked> Action</label>
                                     </div>
                                 </div>
 
-                                <a class="btn btn-primary btn-sm px-4 rounded-pill" href="{{ route('stock_transfers.create') }}">
-                                    <i class="fa fa-plus me-1"></i> Add Transfer
+                                <a class="btn btn-primary btn-sm px-4 rounded-pill" href="{{ route('stock-wastage.create') }}">
+                                    <i class="fa fa-plus me-1"></i> Add Wastage
                                 </a>
                             </div>
                         </div>
 
                         <div class="card-body p-3">
                             <div class="table-responsive">
-                                <table id="transferTable" class="table table-striped table-bordered display w-100">
+                                <table id="wastageTable" class="table table-striped table-bordered display w-100">
                                     <thead>
                                         <tr>
-                                            <th>TR ID</th>
+                                            <th>GWN ID</th>
                                             <th>Date</th>
-                                            <th>From Warehouse</th>
-                                            <th>To Warehouse</th>
+                                            <th>Warehouse</th>
+                                            <th>Expense Head</th>
+                                            <th>Expense A/C</th>
                                             <th>Items</th>
-                                            <th>Amount (Approx)</th>
-                                            <th>Prepared By</th>
+                                            <th>Remarks</th>
+                                            <th>Amount</th>
                                             <th>Status</th>
                                             <th>Action</th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        @foreach($transfers as $t)
+                                        @foreach($wastages as $wastage)
                                         <tr>
-                                            <td class="fw-bold">#{{ $t->id }}</td>
-                                            <td>{{ \Carbon\Carbon::parse($t->created_at)->format('d-M-Y') }}</td>
-                                            <td>{{ $t->fromWarehouse->warehouse_name ?? '—' }}</td>
-                                            <td>
-                                                {{ $t->toWarehouse->warehouse_name ?? '—' }}
-                                                @if($t->to_shop)
-                                                    <span class="badge bg-light text-primary border ms-1" style="font-size:10px;">Shop</span>
-                                                @endif
-                                            </td>
+                                            <td class="fw-bold">{{ $wastage->gwn_id }}</td>
+                                            <td>{{ \Carbon\Carbon::parse($wastage->date)->format('d-M-Y') }}</td>
+                                            <td>{{ $wastage->warehouse->warehouse_name ?? '-' }}</td>
+                                            <td>{{ $wastage->accountHead->name ?? '-' }}</td>
+                                            <td>{{ $wastage->account->title ?? '-' }}</td>
                                             <td class="small">
-                                                @foreach($t->items as $it)
+                                                @foreach($wastage->items as $item)
                                                     <div style="font-size:11px; border-bottom:1px dashed #eee; padding:2px 0;">
-                                                        {{ $it->product->name ?? 'Unknown' }}
-                                                        <span class="text-muted">({{ $it->quantity }})</span>
+                                                        {{ $item->product->name ?? 'Unknown' }}
+                                                        <span class="text-muted">({{ $item->qty }})</span>
                                                     </div>
                                                 @endforeach
                                             </td>
-                                            <td class="text-end">
-                                                @php 
-                                                    $totalAmt = $t->items->sum(function($item) {
-                                                        return $item->quantity * ($item->price ?? 0);
-                                                    });
-                                                @endphp
-                                                {{ number_format($totalAmt, 0) }}
-                                            </td>
-                                            <td>{{ $t->creator->name ?? '—' }}</td>
+                                            <td>{{ $wastage->remarks ?? '-' }}</td>
+                                            <td class="text-end fw-bold">{{ number_format($wastage->total_amount, 0) }}</td>
                                             <td class="text-center">
-                                                @if($t->status == 'Posted' || $t->status == 'accepted')
-                                                    <span class="badge bg-success">{{ ucfirst($t->status) }}</span>
-                                                @elseif($t->status == 'Unposted' || $t->status == 'pending')
-                                                    <span class="badge bg-warning text-dark">{{ ucfirst($t->status) }}</span>
+                                                @if($wastage->status == 'Posted')
+                                                    <span class="badge bg-success">Posted</span>
                                                 @else
-                                                    <span class="badge bg-danger">{{ ucfirst($t->status) }}</span>
+                                                    <span class="badge bg-warning text-dark">Unposted</span>
                                                 @endif
                                             </td>
                                             <td class="text-center">
                                                 <div class="d-flex gap-1 justify-content-center">
-                                                    @if($t->status == 'Unposted' || $t->status == 'pending')
-                                                        {{-- Post/Accept Action --}}
-                                                        <form action="{{ route('stock_transfers.post', $t->id) }}" method="POST" class="d-inline">
+                                                    @if($wastage->status != 'Posted')
+                                                        {{-- Post --}}
+                                                        <form action="{{ route('stock-wastage.post', $wastage->id) }}" method="POST" class="d-inline">
                                                             @csrf
                                                             <button type="submit" class="btn btn-outline-primary btn-sm rounded-pill px-2" title="Post now">
                                                                 <i class="fa fa-send"></i> Post
                                                             </button>
                                                         </form>
-                                                    @endif
 
-                                                    {{-- View --}}
-                                                    <a href="{{ route('stock_transfers.show', $t->id) }}" class="btn btn-outline-info btn-sm rounded-circle" title="View Details">
-                                                        <i class="fa fa-eye"></i>
-                                                    </a>
+                                                        {{-- Edit --}}
+                                                        <a href="{{ route('stock-wastage.edit', $wastage->id) }}" class="btn btn-outline-warning btn-sm rounded-circle" title="Edit">
+                                                            <i class="fa fa-pencil"></i>
+                                                        </a>
 
-                                                    {{-- Print --}}
-                                                    <a href="{{ route('stock_transfers.print', $t->id) }}" target="_blank" class="btn btn-outline-dark btn-sm rounded-circle" title="Print">
-                                                        <i class="fa fa-print"></i>
-                                                    </a>
-
-                                                    @if($t->status == 'Unposted' || $t->status == 'pending')
-                                                        {{-- Reject/Delete if possible --}}
-                                                        <form action="{{ route('stock_transfers.reject', $t->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Reject this transfer?')">
+                                                        {{-- Delete --}}
+                                                        <form action="{{ route('stock-wastage.destroy', $wastage->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Delete this wastage?')">
                                                             @csrf
-                                                            <button type="submit" class="btn btn-outline-danger btn-sm rounded-circle" title="Reject">
-                                                                <i class="fa fa-times"></i>
+                                                            @method('DELETE')
+                                                            <button type="submit" class="btn btn-outline-danger btn-sm rounded-circle" title="Delete">
+                                                                <i class="fa fa-trash"></i>
                                                             </button>
                                                         </form>
                                                     @endif
+
+                                                    {{-- Print (always) --}}
+                                                    <a href="{{ route('stock-wastage.print', $wastage->id) }}" target="_blank" class="btn btn-outline-dark btn-sm rounded-circle" title="Print">
+                                                        <i class="fa fa-print"></i>
+                                                    </a>
                                                 </div>
                                             </td>
                                         </tr>
@@ -286,7 +272,7 @@
         });
 
         // Column Persistence with LocalStorage
-        const storageKey = 'stock_transfer_list_columns_v1';
+        const storageKey = 'stock_wastage_table_columns_v1';
         
         // Load initial state
         const savedState = localStorage.getItem(storageKey);
@@ -311,7 +297,7 @@
         });
 
         function toggleColumn(index, show) {
-            const table = $('#transferTable');
+            const table = $('#wastageTable');
             const cells = table.find(`th:nth-child(${index}), td:nth-child(${index})`);
             if (show) {
                 cells.removeClass('column-hidden');
@@ -328,7 +314,7 @@
             localStorage.setItem(storageKey, JSON.stringify(state));
         }
 
-        $('#transferTable').DataTable({
+        $('#wastageTable').DataTable({
             destroy: true,
             scrollX: true,
             autoWidth: false,
@@ -336,7 +322,7 @@
             order: [[0, 'desc']],
             language: {
                 search: "_INPUT_",
-                searchPlaceholder: "Search transfers..."
+                searchPlaceholder: "Search wastages..."
             }
         });
     });

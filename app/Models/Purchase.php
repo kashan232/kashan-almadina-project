@@ -21,6 +21,12 @@ class Purchase extends Model
         return $this->belongsTo(\App\Models\Vendor::class, 'vendor_id');
     }
 
+    // Polymorphic relationship for Vendor/Customer/Walking Customer
+    public function purchasable()
+    {
+        return $this->morphTo();
+    }
+
     public function warehouse()
     {
         return $this->belongsTo(\App\Models\Warehouse::class, 'warehouse_id');
@@ -30,6 +36,12 @@ class Purchase extends Model
     {
         return $this->hasMany(PurchaseItem::class, 'purchase_id');
     }
+
+    public function accountAllocations()
+    {
+        return $this->hasMany(PurchaseAccountAllocaations::class, 'purchase_id');
+    }
+
 
     public static function generateInvoiceNo()
     {

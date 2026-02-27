@@ -44,4 +44,14 @@ class NarrationController extends Controller
         Narration::findOrFail($id)->delete();
         return redirect()->route('narrations.index')->with('success', 'Narration deleted successfully.');
     }
+
+    // API: Get narrations for Receipt Vouchers (JSON)
+    public function getForReceipts()
+    {
+        $narrations = Narration::where('expense_head', 'Receipts Voucher')
+            ->select('id', 'narration as narration_text', 'expense_head')
+            ->get();
+        
+        return response()->json($narrations);
+    }
 }

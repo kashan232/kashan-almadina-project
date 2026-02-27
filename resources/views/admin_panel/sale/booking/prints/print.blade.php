@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sale Invoice - {{ $sale->invoice_no }}</title>
+    <title>Booking Receipt - {{ $booking->invoice_no }}</title>
     
     <!-- Poppins Font -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -234,6 +234,17 @@
         .print-btn:hover {
             background: #333;
         }
+        
+        .unposted-watermark {
+            text-align: center;
+            font-size: 20px;
+            font-weight: 700;
+            color: #ff0000;
+            border: 2px solid #ff0000;
+            padding: 5px;
+            margin: 10px 0;
+            transform: rotate(-5deg);
+        }
     </style>
 </head>
 <body>
@@ -250,20 +261,22 @@
         </div>
     </div>
 
+    <div class="unposted-watermark">UNPOSTED (BOOKING)</div>
+
     <!-- Invoice Info -->
     <div class="invoice-info">
         <div class="info-row">
-            <span class="info-label">Invoice#:</span>
-            <span>{{ $sale->invoice_no }}</span>
+            <span class="info-label">Booking#:</span>
+            <span>{{ $booking->invoice_no }}</span>
         </div>
         <div class="info-row">
             <span class="info-label">Date:</span>
-            <span>{{ $sale->created_at ? $sale->created_at->format('d-M-Y h:i A') : now()->format('d-M-Y h:i A') }}</span>
+            <span>{{ $booking->created_at ? $booking->created_at->format('d-M-Y h:i A') : now()->format('d-M-Y h:i A') }}</span>
         </div>
-        @if($sale->manual_invoice)
+        @if($booking->manual_invoice)
         <div class="info-row">
             <span class="info-label">Manual Inv#:</span>
-            <span>{{ $sale->manual_invoice }}</span>
+            <span>{{ $booking->manual_invoice }}</span>
         </div>
         @endif
     </div>
@@ -274,17 +287,17 @@
     <div class="customer-info">
         <div class="info-row">
             <span class="info-label">Customer:</span>
-            <span>{{ $sale->customer->customer_name ?? $sale->customer_id ?? 'Walk-in' }}</span>
+            <span>{{ $booking->customer->customer_name ?? $booking->customer_id ?? 'Walk-in' }}</span>
         </div>
-        @if($sale->tel)
+        @if($booking->tel)
         <div class="info-row">
             <span class="info-label">Phone:</span>
-            <span>{{ $sale->tel }}</span>
+            <span>{{ $booking->tel }}</span>
         </div>
         @endif
-        @if($sale->address)
+        @if($booking->address)
         <div style="font-size: 9px; margin-top: 2px; font-weight: 400;">
-            <strong>Address:</strong> {{ Str::limit($sale->address, 50) }}
+            <strong>Address:</strong> {{ Str::limit($booking->address, 50) }}
         </div>
         @endif
     </div>
@@ -299,7 +312,7 @@
             <span style="width: 35%; text-align: right;">Amount</span>
         </div>
 
-        @foreach($sale->items as $index => $item)
+        @foreach($booking->items as $index => $item)
         <div class="item-row">
             <div class="item-name">{{ $index + 1 }}. {{ $item->product->name ?? 'Product' }}</div>
             <div class="item-details">
@@ -316,9 +329,9 @@
     <!-- Totals Section -->
     <div class="totals-section">
         @php
-            $subtotal = $sale->items->sum('amount');
-            $orderDisc = $sale->discount_amount ?? 0;
-            $prevBalance = $sale->previous_balance ?? 0;
+            $subtotal = $booking->items->sum('amount');
+            $orderDisc = $booking->discount_amount ?? 0;
+            $prevBalance = $booking->previous_balance ?? 0;
         @endphp
 
         @if($subtotal > 0)
@@ -343,22 +356,25 @@
         @endif
 
         <div class="total-row grand">
-            <span>TOTAL PAYABLE:</span>
-            <span>Rs.{{ number_format($sale->total_balance, 2) }}</span>
+            <span>EST. PAYABLE:</span>
+            <span>Rs.{{ number_format($booking->total_balance, 2) }}</span>
         </div>
     </div>
 
 
     <!-- Developer Info -->
-    <div class="developer-info">
-        <div class="developer-name text-center">Develop By: ProWave Software Solutions</div>
-        <div class="text-center">
-            +92 317 3836 223 | +92 317 3859 647
+    <div class="footer">
+        <div class="thank-you">THANK YOU FOR YOUR BUSINESS!</div>
+        <div class="developer-info">
+            <div class="developer-name text-center">Develop By: ProWave Software Solutions</div>
+            <div class="text-center">
+                +92 317 3836 223 | +92 317 3859 647
+            </div>
         </div>
     </div>
 
     <script>
-        // Auto print on load (optional - comment out if not needed)
+        // Auto print on load (optional)
         // window.onload = function() { window.print(); }
     </script>
 </body>

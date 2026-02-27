@@ -13,6 +13,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
     <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.colVis.min.js"></script>
 
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/metisMenu/3.0.7/metisMenu.min.js"></script>
@@ -52,10 +53,15 @@
                     'copyHtml5',
                     'excelHtml5',
                     'csvHtml5',
-                    'pdfHtml5'
+                    'pdfHtml5',
+                    'colvis'
                 ]
             });
         });
+
+        // Initialize column visibility if dataTable is already initialized elsewhere or needs specific config
+        // Actually the above global init covers #example
+        // But for column visibility to work, we need to ensure the button is included.
 
         function showAlert(title, text, icon) {
             Swal.fire({
@@ -189,6 +195,3 @@
             });
         }
     </script>
-    </body>
-
-    </html>

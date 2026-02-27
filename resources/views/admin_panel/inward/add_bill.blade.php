@@ -273,7 +273,14 @@
                                     </div>
                                 </div>
 
-                                <button type="submit" class="btn btn-primary w-100 mt-4">Submit Bill</button>
+                                <div class="d-flex gap-2 mt-4">
+                                    <button type="submit" class="btn btn-success btn-lg w-100">
+                                        <i class="fa fa-save me-1"></i> Save Purchase
+                                    </button>
+                                    <button type="button" class="btn btn-primary btn-lg w-100" disabled title="Post from list after saving">
+                                        <i class="fa fa-send me-1"></i> Post
+                                    </button>
+                                </div>
                             </form>
                         </div>
                     </div>

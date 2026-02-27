@@ -13,6 +13,7 @@ class Productbooking extends Model
     protected $fillable = [
         'invoice_no',
         'manual_invoice',
+        'party_type',
         'customer_id',
         'sub_customer',
         'filer_type',

@@ -30,6 +30,7 @@ use App\Http\Controllers\InwardgatepassController;
 use App\Http\Controllers\StockHoldController;
 use App\Http\Controllers\WarehouseStockController;
 use App\Http\Controllers\SubCustomerController;
+use App\Http\Controllers\StockWastageController;
 
 /*
 |--------------------------------------------------------------------------
@@ -42,9 +43,7 @@ use App\Http\Controllers\SubCustomerController;
 |
 */
 // kashan connected
-Route::get('/home', [HomeController::class, 'index'])
-    ->middleware('auth')
-    ->name('home');
+Route::get('/home', [HomeController::class, 'index'])->middleware('auth')->name('home');
 
 // Route::get('/adminpage', [HomeController::class, 'adminpage'])->middleware(['auth','admin'])->name('adminpage');
 
@@ -54,6 +53,7 @@ Route::get('/', function () {
 
 Route::get('/get-customers-by-type', [CustomerController::class, 'getByType']);
 Route::resource('narrations', NarrationController::class)->only(['index', 'store', 'destroy']);
+Route::get('/narrations/receipts/json', [NarrationController::class, 'getForReceipts'])->name('narrations.receipts');
 Route::get('vouchers/{type}', [VoucherController::class, 'index'])->name('vouchers.index');
 Route::post('vouchers/store', [VoucherController::class, 'store'])->name('vouchers.store');
 
@@ -198,6 +198,12 @@ Route::middleware('auth')->group(function () {
     Route::resource('stock_transfers', StockTransferController::class)->except(['edit', 'update', 'destroy']);
     Route::post('stock_transfers/{id}/accept', [StockTransferController::class, 'accept'])->name('stock_transfers.accept');
     Route::post('stock_transfers/{id}/reject', [StockTransferController::class, 'reject'])->name('stock_transfers.reject');
+    Route::post('stock_transfers/{id}/post', [StockTransferController::class, 'post'])->name('stock_transfers.post');
+    Route::get('stock_transfers/{id}/print', [StockTransferController::class, 'printView'])->name('stock_transfers.print');
+    // Stock Wastage
+    Route::resource('stock-wastage', StockWastageController::class);
+    Route::post('stock-wastage/{id}/post', [StockWastageController::class, 'post'])->name('stock-wastage.post');
+    Route::get('stock-wastage/{id}/print', [StockWastageController::class, 'print'])->name('stock-wastage.print');
 
     // Ajax
     Route::get('warehouse-stock-quantity', [StockTransferController::class, 'warehouseStockQuantity'])->name('warehouse.stock.quantity');
@@ -252,9 +258,18 @@ Route::middleware('auth')->group(function () {
     Route::get('/purchase/{id}/edit', [PurchaseController::class, 'edit'])->name('purchase.edit');
     Route::put('/purchase/{id}', [PurchaseController::class, 'update'])->name('purchase.update');
     Route::delete('/purchase/{id}', [PurchaseController::class, 'destroy'])->name('purchase.destroy');
+    Route::post('/purchase/{id}/post', [PurchaseController::class, 'post'])->name('purchase.post');
     Route::get('/purchase/{id}/invoice', [PurchaseController::class, 'Invoice'])->name('purchase.invoice');
     Route::get('/get-accounts-by-head/{headId}', [PurchaseController::class, 'getAccountsByHead']);
-    Route::get('/getPartyList', [PurchaseController::class, 'getPartyList'])->name('party.list');
+    Route::get('/getPartyList', [PurchaseController::class, 'getPartyList'])->name('purchase.party.list');
+
+    // Purchase Returns
+    Route::get('/purchase-returns', [\App\Http\Controllers\PurchaseReturnController::class, 'index'])->name('purchase.return.home');
+    Route::get('/purchase-returns/add', [\App\Http\Controllers\PurchaseReturnController::class, 'create'])->name('purchase.return.add');
+    Route::post('/purchase-returns', [\App\Http\Controllers\PurchaseReturnController::class, 'store'])->name('purchase.return.store');
+    Route::get('/purchase-returns/get-purchase/{invoice_no}', [\App\Http\Controllers\PurchaseReturnController::class, 'getPurchaseDetails']);
+    Route::get('/purchase-returns/post/{id}', [\App\Http\Controllers\PurchaseReturnController::class, 'post'])->name('purchase.return.post');
+    Route::get('/purchase-returns/print/{id}', [\App\Http\Controllers\PurchaseReturnController::class, 'print'])->name('purchase.return.print');
 
     // Route::get('/fetch-product', [PurchaseController::class, 'fetchProduct'])->name('item.search');
 
@@ -333,6 +348,7 @@ Route::middleware('auth')->group(function () {
 
     // Support APIs
     Route::get('/get-products-by-warehouse/{wid}', [SaleController::class, 'getProductsByWarehouse']);
+    Route::get('/get-all-sale-products', [SaleController::class, 'getAllSaleProducts']); // NEW: All products for sale
     Route::get('/get-stock/{pid}', [SaleController::class, 'getStock']);
     Route::get('/customers/filter', [SaleController::class, 'filterCustomers'])->name('customers.filter');
     Route::get('/get-customer/{id}', [SaleController::class, 'getCustomerData'])->name('customers.show');
@@ -368,6 +384,7 @@ Route::get('vouchers/{id}/receipt', [VoucherController::class, 'receipt'])->name
 Route::get('/InwardGatepass', [InwardgatepassController::class, 'index'])->name('InwardGatepass.home');
 Route::get('/add/InwardGatepass', [InwardgatepassController::class, 'create'])->name('add_inwardgatepass');
 Route::post('/InwardGatepass/store', [InwardgatepassController::class, 'store'])->name('store.InwardGatepass');
+Route::post('/InwardGatepass/{id}/post', [InwardgatepassController::class, 'post'])->name('InwardGatepass.post');
 Route::get('/InwardGatepass/{id}', [InwardgatepassController::class, 'show'])->name('InwardGatepass.show');
 
 // edit/update/delete abhi comment kiye hue hain
@@ -388,6 +405,7 @@ Route::prefix('coa')->group(function () {
     Route::get('/', [AccountsHeadController::class, 'index'])->name('coa.index');
     Route::post('/head', [AccountsHeadController::class, 'storeHead'])->name('coa.head.store');
     Route::post('/account', [AccountsHeadController::class, 'storeAccount'])->name('coa.account.store');
+    Route::get('/next-account-code/{headId}', [AccountsHeadController::class, 'getNextAccountCode'])->name('coa.account.next_code');
 });
 
 require __DIR__ . '/auth.php';

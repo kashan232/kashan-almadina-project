@@ -200,7 +200,7 @@ class ProductController extends Controller
         // Ensure we always pass subCategories for the product's category (empty collection if none)
         $subCategories = collect();
         if (!empty($product->category_id)) {
-            $subCategories = \App\Models\SubCategory::where('category_id', $product->category_id)->get();
+            $subCategories = \App\Models\Subcategory::where('category_id', $product->category_id)->get();
         }
 
         return view('admin_panel.product.edit', compact('product', 'categories', 'brands', 'subCategories'));
@@ -248,26 +248,43 @@ class ProductController extends Controller
     {
         $query = $request->get('q');
 
-        $products = Product::with('brand')
-            ->where('name', 'like', '%' . $query . '%')
-            ->get();
+        // If query is blank, return top 20 active products instead of empty
+        if (blank($query)) {
+             $products = Product::with(['brandRelation', 'latestPrice'])
+                ->where('status', 1)
+                ->latest()
+                ->limit(20)
+                ->get();
+        } else {
+            $products = Product::with(['brandRelation', 'latestPrice'])
+                ->where('status', 1) // Only active products
+                ->where(function($q) use ($query) {
+                    $q->where('name', 'like', '%' . $query . '%')
+                      ->orWhere('id', $query);
+                })
+                ->limit(20) // Performance boost
+                ->get();
+        }
 
         if ($products->isEmpty()) {
             return response()->json([], 200);
         }
 
         $results = $products->map(function ($product) {
-            // get latest product_price (example: latest by id)
-            $price = DB::table('product_prices')
-                ->where('product_id', $product->id)
-                ->orderByDesc('id')
-                ->first();
+            // Optimization: Use eager loaded relation instead of DB query
+            $price = $product->latestPrice;
 
             return [
                 'id' => $product->id,
                 'name' => $product->name,
-                'brand' => $product->brand ? $product->brand->name : null,
+                'brand' => $product->brandRelation ? $product->brandRelation->name : null,
                 'stock' => $product->stock,
+                // Sale prices
+                'sale_price' => $price->sale_net_amount ?? 0,
+                'sale_retail_price' => $price->sale_retail_price ?? 0,
+                'retail_price' => $price->sale_retail_price ?? 0,
+                'net_price' => $price->sale_net_amount ?? 0,
+                // Purchase prices
                 'purchase_net_amount' => $price->purchase_net_amount ?? 0,
                 'purchase_retail_price' => $price->purchase_retail_price ?? 0,
             ];

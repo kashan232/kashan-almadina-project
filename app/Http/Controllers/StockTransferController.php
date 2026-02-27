@@ -12,12 +12,21 @@ use Illuminate\Support\Facades\DB;
 
 class StockTransferController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $transfers = StockTransfer::with(['fromWarehouse', 'toWarehouse', 'items.product', 'creator', 'confirmer'])
-            ->orderBy('created_at', 'desc')
-            ->paginate(25);
+        $query = StockTransfer::with(['fromWarehouse', 'toWarehouse', 'items.product', 'creator', 'confirmer'])->latest();
 
+        if ($request->filled('start_date')) {
+            $query->whereDate('created_at', '>=', $request->start_date);
+        }
+        if ($request->filled('end_date')) {
+            $query->whereDate('created_at', '<=', $request->end_date);
+        }
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        $transfers = $query->get();
         return view('admin_panel.warehouses.stock_transfers.index', compact('transfers'));
     }
 
@@ -36,56 +45,115 @@ class StockTransferController extends Controller
             'product_id'        => 'required|array|min:1',
             'product_id.*'      => 'required|exists:products,id',
             'quantity'          => 'required|array',
-            'quantity.*'        => 'required|integer|min:1',
-            'to_shop'           => 'nullable|boolean',
+            'quantity.*'        => 'required|numeric|min:1',
             'remarks'           => 'nullable|string',
         ]);
 
-        $from = $request->from_warehouse_id;
-        $to = $request->to_warehouse_id;
-        $toShop = $request->has('to_shop') ? 1 : 0;
+        try {
+            $transferId = DB::transaction(function () use ($request) {
+                $transfer = StockTransfer::create([
+                    'from_warehouse_id' => $request->from_warehouse_id,
+                    'to_warehouse_id'   => $request->to_warehouse_id,
+                    'to_shop'           => $request->has('to_shop') ? 1 : 0,
+                    'remarks'           => $request->remarks,
+                    'status'            => 'Unposted',
+                    'created_by'        => auth()->id(),
+                ]);
 
-        DB::transaction(function () use ($request, $from, $to, $toShop) {
+                foreach ($request->product_id as $index => $productId) {
+                    $qty = (float) $request->quantity[$index];
+                    if ($qty <= 0) continue;
 
-            $transfer = StockTransfer::create([
-                'from_warehouse_id' => $from,
-                'to_warehouse_id'   => $to,
-                'to_shop'           => $toShop,
-                'remarks'           => $request->remarks,
-                'status'            => 'pending',
-                'created_by'        => auth()->id(),
-            ]);
-
-            foreach ($request->product_id as $index => $productId) {
-                $qty = (int) $request->quantity[$index];
-                if ($qty <= 0) {
-                    throw new \Exception("Invalid quantity for product ID: $productId");
+                    StockTransferProduct::create([
+                        'stock_transfer_id' => $transfer->id,
+                        'product_id'        => $productId,
+                        'quantity'          => $qty,
+                    ]);
                 }
 
-                // Lock row to avoid race conditions
-                $sourceStock = WarehouseStock::where('warehouse_id', $from)
-                    ->where('product_id', $productId)
-                    ->lockForUpdate()
-                    ->first();
+                return $transfer->id;
+            });
 
-                if (!$sourceStock || $sourceStock->quantity < $qty) {
-                    throw new \Exception("Not enough stock for product ID: {$productId} in source warehouse.");
-                }
-
-                // Reserve / decrease source warehouse stock now
-                $sourceStock->quantity = $sourceStock->quantity - $qty;
-                $sourceStock->save();
-
-                // Create transfer item
-                StockTransferProduct::create([
-                    'stock_transfer_id' => $transfer->id,
-                    'product_id'        => $productId,
-                    'quantity'          => $qty,
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'id'      => $transferId,
+                    'status'  => 'Unposted',
+                    'message' => 'Stock Transfer Saved as Unposted',
                 ]);
             }
-        });
 
-        return redirect()->back()->with('success', 'Stock transfer created and pending confirmation.');
+            return redirect()->route('stock_transfers.index')->with('success', 'Stock Transfer saved.');
+
+        } catch (\Exception $e) {
+            if ($request->ajax()) {
+                return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
+            }
+            return back()->with('error', $e->getMessage())->withInput();
+        }
+    }
+
+    public function post($id)
+    {
+        $transfer = StockTransfer::with('items')->findOrFail($id);
+
+        if ($transfer->status === 'Posted') {
+            return response()->json(['success' => false, 'message' => 'Already posted.'], 422);
+        }
+
+        try {
+            DB::transaction(function () use ($transfer) {
+                foreach ($transfer->items as $item) {
+                    // Deduct from source warehouse
+                    $sourceStock = WarehouseStock::where('warehouse_id', $transfer->from_warehouse_id)
+                        ->where('product_id', $item->product_id)
+                        ->lockForUpdate()->first();
+
+                    if (!$sourceStock || $sourceStock->quantity < $item->quantity) {
+                        throw new \Exception("Not enough stock for product ID: {$item->product_id}");
+                    }
+                    $sourceStock->quantity -= $item->quantity;
+                    $sourceStock->save();
+
+                    // Add to destination warehouse
+                    $destStock = WarehouseStock::where('warehouse_id', $transfer->to_warehouse_id)
+                        ->where('product_id', $item->product_id)
+                        ->lockForUpdate()->first();
+
+                    if ($destStock) {
+                        $destStock->quantity += $item->quantity;
+                        $destStock->save();
+                    } else {
+                        WarehouseStock::create([
+                            'warehouse_id' => $transfer->to_warehouse_id,
+                            'product_id'   => $item->product_id,
+                            'quantity'     => $item->quantity,
+                        ]);
+                    }
+                }
+
+                $transfer->status = 'Posted';
+                $transfer->confirmed_by = auth()->id();
+                $transfer->save();
+            });
+
+            if (request()->ajax()) {
+                return response()->json(['success' => true, 'message' => 'Stock Transfer Posted Successfully']);
+            }
+            return back()->with('success', 'Stock Transfer Posted Successfully');
+
+        } catch (\Exception $e) {
+            if (request()->ajax()) {
+                return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
+            }
+            return back()->with('error', $e->getMessage());
+        }
+    }
+
+    public function printView($id)
+    {
+        $transfer = StockTransfer::with(['fromWarehouse', 'toWarehouse', 'items.product', 'creator'])->findOrFail($id);
+        return view('admin_panel.warehouses.stock_transfers.print', compact('transfer'));
     }
 
     // Show single transfer

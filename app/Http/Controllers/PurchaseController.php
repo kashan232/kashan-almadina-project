@@ -24,9 +24,22 @@ use Illuminate\Support\Facades\Validator;
 
 class PurchaseController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $Purchase = Purchase::with(['vendor', 'warehouse'])->get();
+        $query = Purchase::with(['vendor', 'warehouse', 'purchasable', 'items.product']);
+
+        if ($request->filled('start_date')) {
+            $query->whereDate('current_date', '>=', $request->start_date);
+        }
+        if ($request->filled('end_date')) {
+            $query->whereDate('current_date', '<=', $request->end_date);
+        }
+
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        $Purchase = $query->latest()->get();
         return view("admin_panel.purchase.index", compact('Purchase'));
     }
     public function add_purchase()
@@ -93,6 +106,9 @@ class PurchaseController extends Controller
 
         $validator = Validator::make($request->all(), $rules, $messages);
         if ($validator->fails()) {
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json(['success' => false, 'message' => $validator->errors()->first()], 422);
+            }
             return redirect()->back()->withErrors($validator)->withInput();
         }
 
@@ -143,12 +159,13 @@ class PurchaseController extends Controller
             'total' => $cleanAmounts,
         ]);
 
-        // Now perform DB transaction and handle exceptions explicitly
+        $savedPurchase = null;
         try {
-            DB::transaction(function () use ($request) {
+            DB::transaction(function () use ($request, &$savedPurchase) {
                 $typeMap = [
                     'Vendor'       => \App\Models\Vendor::class,
                     'Customer'     => \App\Models\Customer::class,
+                    'Walkin'       => \App\Models\Customer::class,
                     'SubCustomer'  => \App\Models\SubCustomer::class,
                 ];
 
@@ -156,6 +173,7 @@ class PurchaseController extends Controller
                 $typeKey = ucfirst(strtolower($request['vendor_type']));
 
                 $purchase = \App\Models\Purchase::create([
+                    'status'           => 'Unposted',
                     'invoice_no'       => $invoiceNo,
                     'warehouse_id'     => $request['warehouse_id'],
                     'vendor_id'        => $request['vendor_id'],
@@ -163,6 +181,8 @@ class PurchaseController extends Controller
                     'purchasable_id'   => $request['vendor_id'],
                     'current_date'     => $request['current_date'] ?? now(),
                     'dc_date'          => $request['dc_date'] ?? null,
+                    'dc'               => $request['dc'] ?? null,
+                    'bilty_no'         => $request['bilty_no'] ?? null,
                     'note'             => $request['remarks'] ?? null,
                     'subtotal'         => $request->subtotal,
                     'discount'         => $request->discount,
@@ -180,7 +200,6 @@ class PurchaseController extends Controller
                     $qty  = $request->qty[$index] ?? 0;
                     $price = $request->price[$index] ?? 0;
                     $disc = $request->item_disc[$index] ?? 0;
-                    // line total calculation — adjust if your UI stores differently
                     $lineTotal = ($price * $qty) - ($request->item_disc_amount[$index] ?? 0);
 
                     \App\Models\PurchaseItem::create([
@@ -193,64 +212,12 @@ class PurchaseController extends Controller
                     ]);
 
                     $subtotal += $lineTotal;
-
-                    // Update product stock
-                    $product = \App\Models\Product::find($productId);
-                    if ($product) {
-                        $product->stock = ($product->stock ?? 0) + $qty;
-                        $product->save();
-                    }
                 }
 
                 $purchase->update([
                     'subtotal'   => $subtotal,
-                    'net_amount' => $request->net_amount,
                     'due_amount' => $request->net_amount,
                 ]);
-
-                // Ledger update (vendor/customer)
-                $type = strtolower($request->vendor_type);
-                $amount = $request->net_amount;
-
-                if ($type === 'vendor') {
-                    // vendor ledger update code (same as your existing)
-                    $vendor_id = $request->vendor_id;
-                    $ledger = \App\Models\VendorLedger::where('vendor_id', $vendor_id)->latest('id')->first();
-                    if ($ledger) {
-                        $ledger->previous_balance = $ledger->closing_balance;
-                        $ledger->closing_balance  = $ledger->closing_balance + $amount;
-                        $ledger->save();
-                    } else {
-                        \App\Models\VendorLedger::create([
-                            'vendor_id'        => $vendor_id,
-                            'admin_or_user_id' => auth()->id(),
-                            'date'             => $request['current_date'],
-                            'description'      => 'Purchase ID: ' . $purchase->id,
-                            'previous_balance' => 0,
-                            'closing_balance'  => $amount,
-                            'opening_balance'  => $amount,
-                        ]);
-                    }
-                } elseif ($type === 'customer') {
-                    // customer ledger update
-                    $customer_id = $request->vendor_id;
-                    $ledger = \App\Models\CustomerLedger::where('customer_id', $customer_id)->latest('id')->first();
-                    if ($ledger) {
-                        $ledger->previous_balance = $ledger->closing_balance;
-                        $ledger->closing_balance  = $ledger->closing_balance + $amount;
-                        $ledger->save();
-                    } else {
-                        \App\Models\CustomerLedger::create([
-                            'customer_id'      => $customer_id,
-                            'admin_or_user_id' => auth()->id(),
-                            'date'             => $request['current_date'],
-                            'description'      => 'Purchase ID: ' . $purchase->id,
-                            'previous_balance' => 0,
-                            'closing_balance'  => $amount,
-                            'opening_balance'  => $amount,
-                        ]);
-                    }
-                }
 
                 // Save account allocations IF provided and complete (optional)
                 $heads = $request->input('account_head_id', []);
@@ -263,7 +230,6 @@ class PurchaseController extends Controller
                     $a = $accs[$i] ?? null;
                     $m = isset($amts[$i]) ? floatval($amts[$i]) : 0;
 
-                    // only save complete allocations: head + account + amount>0
                     if (!empty($h) && !empty($a) && $m > 0) {
                         \App\Models\PurchaseAccountAllocaations::create([
                             'purchase_id'     => $purchase->id,
@@ -271,56 +237,30 @@ class PurchaseController extends Controller
                             'account_id'      => $a,
                             'amount'          => $m,
                         ]);
-
-                        // update account opening balance
-                        $account = \App\Models\Account::find($a);
-                        if ($account) {
-                            $account->opening_balance = ($account->opening_balance ?? 0) + $m;
-                            $account->save();
-                        }
                     }
                 }
 
-                // Vouchers if any (unchanged)
-                if ($request->discount > 0) {
-                    \App\Models\Voucher::create([
-                        'voucher_type'  => 'Discount voucher',
-                        'date'          => now(),
-                        'sales_officer' => auth()->user()->name,
-                        'type'          => 'Credit',
-                        'person'        => $purchase->vendor_id,
-                        'sub_head'      => 'Purchase Discount',
-                        'narration'     => 'Discount applied on Purchase ID: ' . $purchase->id,
-                        'amount'        => $request->discount,
-                    ]);
-                }
+                $savedPurchase = $purchase;
+            });
 
-                if ($request->wht > 0) {
-                    \App\Models\Voucher::create([
-                        'voucher_type'  => 'Wht voucher',
-                        'date'          => now(),
-                        'sales_officer' => auth()->user()->name,
-                        'type'          => 'Credit',
-                        'person'        => $purchase->vendor_id,
-                        'sub_head'      => 'WHT',
-                        'narration'     => 'WHT applied on Purchase ID: ' . $purchase->id,
-                        'amount'        => $request->wht,
-                    ]);
-                }
-            }); // end transaction
+            $msg = 'Purchase saved as Draft (Unposted)!';
 
-            return redirect()->back()->with('success', 'Purchase saved successfully!');
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'success'    => true,
+                    'message'    => $msg,
+                    'id'         => $savedPurchase->id,
+                    'invoice_no' => $savedPurchase->invoice_no,
+                ]);
+            }
+
+            return redirect()->route('Purchase.home')->with('success', $msg);
         } catch (\Throwable $e) {
-            // log error for debugging
-            \Log::error('Purchase store error: ' . $e->getMessage(), [
-                'trace' => $e->getTraceAsString(),
-                'request' => $request->all()
-            ]);
-
-            // show friendly message to user (for debugging you can append $e->getMessage())
-            return redirect()->back()
-                ->with('error', 'Failed to save purchase. Server error logged. ' . (config('app.debug') ? $e->getMessage() : ''))
-                ->withInput();
+            \Log::error('Purchase store error: ' . $e->getMessage());
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
+            }
+            return redirect()->back()->with('error', 'Failed to save purchase. ' . $e->getMessage())->withInput();
         }
     }
 
@@ -340,6 +280,7 @@ class PurchaseController extends Controller
 
             // 1️⃣ Save Purchase (with inward_id)
             $purchase = Purchase::create([
+                'status'          => 'Unposted',
                 'invoice_no'      => $invoiceNo,
                 'warehouse_id'    => $request['warehouse_id'],
                 'vendor_id'       => $request['vendor_id'],
@@ -357,13 +298,12 @@ class PurchaseController extends Controller
             ]);
 
             $subtotal = 0;
-            // 2️⃣ Save Purchase Items + Stock Update
+            // 2️⃣ Save Purchase Items
             foreach ($request['product_id'] as $index => $productId) {
                 if (!$productId) continue;
 
                 $qty       = $request['qty'][$index];
                 $price     = $request['purchase_retail_price'][$index]; // ✅ retail
-                $disc      = $request['item_disc'][$index] ?? 0;
                 $discAmt   = $request['item_disc_amount'][$index] ?? 0;
                 $lineTotal = ($price * $qty) - $discAmt;
 
@@ -377,58 +317,15 @@ class PurchaseController extends Controller
                 ]);
 
                 $subtotal += $lineTotal;
-
-                // 🔥 Stock Update
-                $product = Product::find($productId);
-                $product->stock += $qty;
-                $product->save();
             }
 
             // 3️⃣ Update Purchase Totals
             $purchase->update([
                 'subtotal'   => $subtotal,
-                'net_amount' => $request->net_amount,
                 'due_amount' => $request->net_amount,
             ]);
 
-            // 4️⃣ Ledger Updates
-            if (strtolower($request->vendor_type) === 'vendor') {
-                // Vendor Ledger
-                $ledger = VendorLedger::where('vendor_id', $request->vendor_id)->latest('id')->first();
-                if ($ledger) {
-                    $ledger->previous_balance = $ledger->closing_balance;
-                    $ledger->closing_balance  = $ledger->closing_balance + $request->net_amount;
-                    $ledger->save();
-                } else {
-                    VendorLedger::create([
-                        'vendor_id'        => $request->vendor_id,
-                        'admin_or_user_id' => auth()->id(),
-                        'date'             => $request['current_date'],
-                        'description'      => 'Inward Purchase ID: ' . $purchase->id,
-                        'previous_balance' => 0,
-                        'closing_balance'  => $request->net_amount,
-                        'opening_balance'  => $request->net_amount,
-                    ]);
-                }
-            } elseif (strtolower($request->vendor_type) === 'customer') {
-                // Customer Ledger
-                $ledger = CustomerLedger::where('customer_id', $request->vendor_id)->latest('id')->first();
-                if ($ledger) {
-                    $ledger->previous_balance = $ledger->closing_balance;
-                    $ledger->closing_balance  = $ledger->closing_balance + $request->net_amount;
-                    $ledger->save();
-                } else {
-                    CustomerLedger::create([
-                        'customer_id'      => $request->vendor_id,
-                        'admin_or_user_id' => auth()->id(),
-                        'previous_balance' => 0,
-                        'closing_balance'  => $request->net_amount,
-                        'opening_balance'  => $request->net_amount,
-                    ]);
-                }
-            }
-
-            // 5️⃣ Account Allocations
+            // 4️⃣ Account Allocations
             if ($request->has('account_head_id')) {
                 foreach ($request->account_head_id as $index => $headId) {
                     $accountId = $request->account_id[$index] ?? null;
@@ -441,109 +338,218 @@ class PurchaseController extends Controller
                             'account_id'      => $accountId,
                             'amount'          => $amount,
                         ]);
-
-                        $account = Account::find($accountId);
-                        if ($account) {
-                            $account->opening_balance += $amount;
-                            $account->save();
-                        }
                     }
                 }
             }
-
-            // 6️⃣ Vouchers
-            if ($request['discount'] > 0) {
-                Voucher::create([
-                    'voucher_type'  => 'Discount voucher',
-                    'date'          => now(),
-                    'sales_officer' => auth()->user()->name,
-                    'type'          => 'Credit',
-                    'person'        => $purchase->vendor_id,
-                    'sub_head'      => 'Purchase Discount',
-                    'narration'     => 'Discount applied on Inward Purchase ID: ' . $purchase->id,
-                    'amount'        => $request['discount']
-                ]);
-            }
-
-            if ($request['wht'] > 0) {
-                Voucher::create([
-                    'voucher_type'  => 'Wht voucher',
-                    'date'          => now(),
-                    'sales_officer' => auth()->user()->name,
-                    'type'          => 'Credit',
-                    'person'        => $purchase->vendor_id,
-                    'sub_head'      => 'WHT',
-                    'narration'     => 'WHT applied on Inward Purchase ID: ' . $purchase->id,
-                    'amount'        => $request['wht']
-                ]);
-            }
-
-            // 7️⃣ Inward Status Update
-            InwardGatepass::where('id', $request->inward_id)->update(['status' => 'linked']);
         });
 
-        return redirect()->back()->with('success', 'Inward Purchase confirmed and saved successfully!');
+        return redirect()->route('Purchase.home')->with('success', 'Inward Purchase saved as Draft (Unposted)!');
     }
 
 
     public function edit($id)
     {
-        $purchase   = Purchase::findOrFail($id);
-        $Vendor     = Vendor::all();
-        $Warehouse  = Warehouse::all();
-        //   $Transport  = Transport::all();
-        return view('admin_panel.purchase.edit', compact('purchase', 'Vendor', 'Warehouse'));
+        $purchase = Purchase::with(['purchasable', 'items.product.brandRelation', 'items.product.latestPrice', 'accountAllocations.account'])
+            ->findOrFail($id);
+        
+        $Vendor = Vendor::all();
+        $customers = Customer::all();
+        $Warehouse = Warehouse::all();
+        $AccountHeads = AccountHead::all();
+        
+        // Use existing invoice number
+        $nextInvoice = $purchase->invoice_no;
+        
+        return view('admin_panel.purchase.add_purchase', compact(
+            'purchase', 
+            'Vendor', 
+            'customers',
+            'Warehouse', 
+            'AccountHeads',
+            'nextInvoice'
+        ));
     }
 
     public function update(Request $request, $id)
     {
-        $validated = $request->validate([
-            'invoice_no' => 'nullable',
-            'supplier' => 'nullable',
-            'purchase_date' => 'nullable',
-            'warehouse_id' => 'nullable',
-            'item_category' => 'nullable',
-            'item_name' => 'nullable|array',
-            'quantity' => 'nullable|array',
-            'price' => 'nullable|array',
-            'unit' => 'nullable|array',
-            'total' => 'nullable|array',
-            'note' => 'nullable',
-            'total_price' => 'nullable',
-            'discount' => 'nullable',
-            'Payable_amount' => 'nullable',
-            'paid_amount' => 'nullable',
-            'due_amount' => 'nullable',
-            'status' => 'nullable',
-            'is_return' => 'nullable',
-        ]);
+        // Use same validation as store
+        $rules = [
+            'vendor_type'         => 'required|string',
+            'vendor_id'           => 'required|integer',
+            'warehouse_id'        => 'required|integer|exists:warehouses,id',
+            'current_date'        => 'nullable|date',
+            'product_id'          => 'required|array|min:1',
+            'product_id.*'        => 'required|integer|exists:products,id',
+            'qty'                 => 'required|array',
+            'qty.*'               => 'required|numeric|min:1',
+            'price'               => 'nullable|array',
+            'price.*'             => 'nullable|numeric|min:0',
+            'subtotal'            => 'required|numeric|min:0',
+            'net_amount'          => 'required|numeric|min:0',
+        ];
 
-        $purchase = Purchase::findOrFail($id);
+        $messages = [
+            'warehouse_id.required' => 'Please select Warehouse.',
+            'warehouse_id.exists'   => 'Selected Warehouse is invalid.',
+            'product_id.required'   => 'Please add at least one Item.',
+            'product_id.*.exists'   => 'One or more selected products are invalid.',
+            'qty.*.required'        => 'Please provide quantity for each item.',
+            'qty.*.min'             => 'Quantity must be at least 1.',
+        ];
 
-        $purchase->update([
-            'invoice_no' => $validated['invoice_no'] ?? null,
-            'supplier' => $validated['supplier'] ?? null,
-            'purchase_date' => $validated['purchase_date'] ?? null,
-            'warehouse_id' => $validated['warehouse_id'] ?? null,
-            'item_category' => $validated['item_category'] ?? null,
+        $validator = \Illuminate\Support\Facades\Validator::make($request->all(), $rules, $messages);
+        if ($validator->fails()) {
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json(['success' => false, 'message' => $validator->errors()->first()], 422);
+            }
+            return redirect()->back()->withErrors($validator)->withInput();
+        }
 
-            'item_name' => json_encode($validated['item_name'] ?? []),
-            'quantity' => json_encode($validated['quantity'] ?? []),
-            'price' => json_encode($validated['price'] ?? []),
-            'unit' => json_encode($validated['unit'] ?? []),
-            'total' => json_encode($validated['total'] ?? []),
+        // Clean product rows
+        $productIds = $request->input('product_id', []);
+        $qtys       = $request->input('qty', []);
+        $prices     = $request->input('price', []);
+        $item_discs = $request->input('item_disc', []);
+        $disc_amounts = $request->input('item_disc_amount', []);
+        $purchase_retail = $request->input('purchase_retail_price', []);
+        $purchase_net = $request->input('purchase_net_amount', []);
+        $amounts    = $request->input('total', []);
 
-            'note' => $validated['note'] ?? null,
-            'total_price' => $validated['total_price'] ?? null,
-            'discount' => $validated['discount'] ?? null,
-            'Payable_amount' => $validated['Payable_amount'] ?? null,
-            'paid_amount' => $validated['paid_amount'] ?? null,
-            'due_amount' => $validated['due_amount'] ?? null,
-            'status' => $validated['status'] ?? null,
-            'is_return' => $validated['is_return'] ?? null,
-        ]);
+        $cleanProductIds = [];
+        $cleanQtys = [];
+        $cleanPrices = [];
+        $cleanItemDiscs = [];
+        $cleanDiscAmounts = [];
+        $cleanPurchaseRetail = [];
+        $cleanPurchaseNet = [];
+        $cleanAmounts = [];
 
-        return redirect()->route('Purchase.home')->with('success', 'Purchase updated successfully!');
+        $max = max(count($productIds), count($qtys), count($prices));
+        for ($i = 0; $i < $max; $i++) {
+            $pid = $productIds[$i] ?? null;
+            $q = $qtys[$i] ?? null;
+            if (!empty($pid) && is_numeric($q) && floatval($q) > 0) {
+                $cleanProductIds[] = $pid;
+                $cleanQtys[] = $q;
+                $cleanPrices[] = $prices[$i] ?? 0;
+                $cleanItemDiscs[] = $item_discs[$i] ?? 0;
+                $cleanDiscAmounts[] = $disc_amounts[$i] ?? 0;
+                $cleanPurchaseRetail[] = $purchase_retail[$i] ?? 0;
+                $cleanPurchaseNet[] = $purchase_net[$i] ?? 0;
+                $cleanAmounts[] = $amounts[$i] ?? 0;
+            }
+        }
+
+        try {
+            \Illuminate\Support\Facades\DB::transaction(function () use ($request, $id, $cleanProductIds, $cleanQtys, $cleanPrices, $cleanItemDiscs, $cleanDiscAmounts, $cleanPurchaseRetail, $cleanPurchaseNet, $cleanAmounts) {
+                $purchase = Purchase::findOrFail($id);
+                
+                $typeMap = [
+                    'Vendor'       => \App\Models\Vendor::class,
+                    'Customer'     => \App\Models\Customer::class,
+                    'SubCustomer'  => \App\Models\SubCustomer::class,
+                ];
+                
+                $typeKey = ucfirst(strtolower($request['vendor_type']));
+
+                // Update purchase header
+                $purchase->update([
+                    'warehouse_id'     => $request['warehouse_id'],
+                    'vendor_id'        => $request['vendor_id'],
+                    'purchasable_type' => $typeMap[$typeKey] ?? null,
+                    'purchasable_id'   => $request['vendor_id'],
+                    'current_date'     => $request['current_date'] ?? now(),
+                    'dc_date'          => $request['dc_date'] ?? null,
+                    'dc'               => $request['dc'] ?? null,
+                    'bilty_no'         => $request['bilty_no'] ?? null,
+                    'note'             => $request['remarks'] ?? null,
+                    'subtotal'         => $request->subtotal,
+                    'discount'         => $request->discount,
+                    'wht'              => $request->wht,
+                    'net_amount'       => $request->net_amount,
+                ]);
+
+                // Delete old items
+                foreach ($purchase->items as $oldItem) {
+                    $oldItem->delete();
+                }
+
+                // Add new items
+                $subtotal = 0;
+                foreach ($cleanProductIds as $index => $productId) {
+                    if (empty($productId)) continue;
+
+                    $qty  = $cleanQtys[$index] ?? 0;
+                    $price = $cleanPrices[$index] ?? 0;
+                    $disc = $cleanItemDiscs[$index] ?? 0;
+                    $lineTotal = ($price * $qty) - ($cleanDiscAmounts[$index] ?? 0);
+
+                    \App\Models\PurchaseItem::create([
+                        'purchase_id'   => $purchase->id,
+                        'product_id'    => $productId,
+                        'price'         => $price,
+                        'item_discount' => $disc,
+                        'qty'           => $qty,
+                        'line_total'    => $lineTotal,
+                    ]);
+
+                    $subtotal += $lineTotal;
+                }
+
+                $purchase->update([
+                    'subtotal'   => $subtotal,
+                    'net_amount' => $request->net_amount,
+                    'due_amount' => $request->net_amount,
+                ]);
+
+                // Delete old account allocations
+                \App\Models\PurchaseAccountAllocaations::where('purchase_id', $purchase->id)->delete();
+
+                // Save new account allocations
+                $heads = $request->input('account_head_id', []);
+                $accs  = $request->input('account_id', []);
+                $amts  = $request->input('account_amount', []);
+
+                $maxAlloc = max(count($heads), count($accs), count($amts));
+                for ($i = 0; $i < $maxAlloc; $i++) {
+                    $h = $heads[$i] ?? null;
+                    $a = $accs[$i] ?? null;
+                    $m = isset($amts[$i]) ? floatval($amts[$i]) : 0;
+
+                    if (!empty($h) && !empty($a) && $m > 0) {
+                        \App\Models\PurchaseAccountAllocaations::create([
+                            'purchase_id'     => $purchase->id,
+                            'account_head_id' => $h,
+                            'account_id'      => $a,
+                            'amount'          => $m,
+                        ]);
+                    }
+                }
+            });
+
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Purchase updated successfully!',
+                    'id'      => $id
+                ]);
+            }
+
+            return redirect()->route('Purchase.home')->with('success', 'Purchase updated successfully!');
+        } catch (\Throwable $e) {
+            \Log::error('Purchase update error: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+                'request' => $request->all()
+            ]);
+
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
+            }
+
+            return redirect()->back()
+                ->with('error', 'Failed to update purchase. ' . (config('app.debug') ? $e->getMessage() : ''))
+                ->withInput();
+        }
     }
 
     public function destroy($id)
@@ -586,20 +592,140 @@ class PurchaseController extends Controller
         $type = strtolower($request->query('type', 'vendor'));
 
         if ($type === 'vendor') {
-            $vendors = Vendor::select('id', 'name as text')->get();
-            return response()->json($vendors);
-        } elseif ($type === 'customer') {
-            $customers = Customer::where('customer_type', 'Main Customer')
-                ->select('id', 'customer_name as text')
-                ->get();
-            return response()->json($customers);
-        } elseif ($type === 'walkin') {
-            $walkins = Customer::where('customer_type', 'Walking Customer')
-                ->select('id', 'customer_name as text')
-                ->get();
-            return response()->json($walkins);
+            $data = Vendor::orderBy('name')->get();
+            return response()->json($data->map(function($v) {
+                return ['id' => $v->id, 'text' => $v->name];
+            }));
         }
 
-        return response()->json([]);
+        $query = Customer::query();
+        if ($type === 'walkin') {
+            $query->where('customer_type', 'Walking Customer');
+        } elseif ($type === 'customer') {
+            // If you want to exclude walkin from 'customer' type, add:
+            // $query->where('customer_type', '!=', 'Walking Customer');
+        }
+
+        $data = $query->orderBy('customer_name')->get();
+        return response()->json($data->map(function($c) {
+            return ['id' => $c->id, 'text' => $c->customer_name];
+        }));
+    }
+    public function post(Request $request, $id)
+    {
+        try {
+            DB::transaction(function () use ($id) {
+                $purchase = Purchase::findOrFail($id);
+                if ($purchase->status === 'Posted') {
+                    throw new \Exception('This purchase is already posted.');
+                }
+                $this->performPosting($purchase);
+                $purchase->update(['status' => 'Posted']);
+            });
+
+            $msg = 'Purchase posted successfully!';
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json(['success' => true, 'message' => $msg]);
+            }
+            return redirect()->back()->with('success', $msg);
+        } catch (\Throwable $e) {
+            \Log::error('Purchase posting error: ' . $e->getMessage());
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
+            }
+            return redirect()->back()->with('error', 'Posting failed: ' . $e->getMessage());
+        }
+    }
+
+    private function performPosting(Purchase $purchase)
+    {
+        // 1. Stock Update
+        foreach ($purchase->items as $item) {
+            $product = Product::find($item->product_id);
+            if ($product) {
+                $product->stock = ($product->stock ?? 0) + $item->qty;
+                $product->save();
+            }
+        }
+
+        // 2. Ledger Update
+        $amount = $purchase->net_amount;
+        $type = strtolower(class_basename($purchase->purchasable_type));
+        $party_id = $purchase->purchasable_id;
+
+        if ($type === 'vendor') {
+            $ledger = VendorLedger::where('vendor_id', $party_id)->latest('id')->first();
+            if ($ledger) {
+                $ledger->previous_balance = $ledger->closing_balance;
+                $ledger->closing_balance  = $ledger->closing_balance + $amount;
+                $ledger->save();
+            } else {
+                VendorLedger::create([
+                    'vendor_id'        => $party_id,
+                    'admin_or_user_id' => auth()->id(),
+                    'date'             => $purchase->current_date,
+                    'description'      => 'Purchase ID: ' . $purchase->id,
+                    'previous_balance' => 0,
+                    'closing_balance'  => $amount,
+                    'opening_balance'  => $amount,
+                ]);
+            }
+        } elseif ($type === 'customer' || $type === 'walkin') {
+            $ledger = CustomerLedger::where('customer_id', $party_id)->latest('id')->first();
+            if ($ledger) {
+                $ledger->previous_balance = $ledger->closing_balance;
+                $ledger->closing_balance  = $ledger->closing_balance + $amount;
+                $ledger->save();
+            } else {
+                CustomerLedger::create([
+                    'customer_id'      => $party_id,
+                    'admin_or_user_id' => auth()->id(),
+                    'previous_balance' => 0,
+                    'closing_balance'  => $amount,
+                    'opening_balance'  => $amount,
+                ]);
+            }
+        }
+
+        // 3. Account Allocations impact
+        foreach ($purchase->accountAllocations as $allocation) {
+            $account = Account::find($allocation->account_id);
+            if ($account) {
+                $account->opening_balance = ($account->opening_balance ?? 0) + $allocation->amount;
+                $account->save();
+            }
+        }
+
+        // 4. Vouchers
+        if ($purchase->discount > 0) {
+            Voucher::create([
+                'voucher_type'  => 'Discount voucher',
+                'date'          => now(),
+                'sales_officer' => auth()->user()->name,
+                'type'          => 'Credit',
+                'person'        => $purchase->purchasable_id,
+                'sub_head'      => 'Purchase Discount',
+                'narration'     => 'Discount applied on Purchase ID: ' . $purchase->id,
+                'amount'        => $purchase->discount
+            ]);
+        }
+
+        if ($purchase->wht > 0) {
+            Voucher::create([
+                'voucher_type'  => 'Wht voucher',
+                'date'          => now(),
+                'sales_officer' => auth()->user()->name,
+                'type'          => 'Credit',
+                'person'        => $purchase->purchasable_id,
+                'sub_head'      => 'WHT',
+                'narration'     => 'WHT applied on Purchase ID: ' . $purchase->id,
+                'amount'        => $purchase->wht
+            ]);
+        }
+
+        // 5. Inward Update if exists
+        if ($purchase->inward_id) {
+            InwardGatepass::where('id', $purchase->inward_id)->update(['status' => 'linked']);
+        }
     }
 }

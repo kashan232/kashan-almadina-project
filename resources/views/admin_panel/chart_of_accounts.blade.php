@@ -11,11 +11,12 @@
     <div class="mb-3">
         <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addAccountModal">➕ Add New Account</button>
         <button class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#addHeadModal">➕ Add Head</button>
+        <button class="btn btn-info text-white" data-bs-toggle="modal" data-bs-target="#listHeadsModal">📋 List of Heads</button>
         <a href="{{ route('purcahse-account-allocation') }}" class="btn btn-danger">View History</a>
     </div>
 
     <div class="table-responsive">
-        <table class="table table-bordered table-striped">
+        <table id="accountsTable" class="table table-bordered table-striped">
             <thead class="table-dark">
                 <tr>
                     <th>#</th>
@@ -106,6 +107,10 @@
             </div>
             <div class="modal-body">
                 <div class="mb-3">
+                    <label>Head Code</label>
+                    <input type="text" class="form-control" value="{{ $nextHeadId ?? '' }}" readonly>
+                </div>
+                <div class="mb-3">
                     <label>Head Name</label>
                     <input type="text" name="name" class="form-control" required>
                 </div>
@@ -115,6 +120,92 @@
             </div>
         </form>
     </div>
+    </div>
 </div>
 
+<!-- List of Heads Modal -->
+<div class="modal fade" id="listHeadsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">List of Heads</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="table-responsive">
+                    <table id="headsTable" class="table table-striped table-bordered">
+                        <thead>
+                            <tr>
+                                <th>Head Code</th>
+                                <th>Head Name</th>
+                                <th>Status</th>
+                                <th>Created At</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach($heads as $head)
+                            <tr>
+                                <td>{{ $head->id }}</td>
+                                <td>{{ $head->name }}</td>
+                                <td>
+                                    @if($head->status)
+                                    <span class="badge bg-success">Active</span>
+                                    @else
+                                    <span class="badge bg-danger">Inactive</span>
+                                    @endif
+                                </td>
+                                <td>{{ $head->created_at ? $head->created_at->format('Y-m-d') : '-' }}</td>
+                            </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@endsection
+
+@section('scripts')
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const headSelect = document.querySelector('select[name="head_id"]');
+        const codeInput = document.querySelector('input[name="account_code"]');
+        
+        if (headSelect) {
+            headSelect.addEventListener('change', function() {
+                const headId = this.value;
+                if (headId) {
+                    const url = "{{ url('/coa/next-account-code') }}/" + headId;
+                    
+                    fetch(url)
+                        .then(response => response.json())
+                        .then(data => {
+                            if (codeInput) {
+                                codeInput.value = data.code;
+                            }
+                        })
+                        .catch(error => console.error('Error fetching code:', error));
+                } else {
+                    if (codeInput) codeInput.value = '';
+                }
+            });
+        }
+    });
+
+    $(document).ready(function() {
+        // Initialize DataTable for Accounts Table
+        $('#accountsTable').DataTable({
+            dom: 'Bfrtip',
+            buttons: ['copy', 'csv', 'excel', 'pdf', 'print']
+        });
+
+        // Initialize DataTable for Heads Table inside Modal
+        $('#headsTable').DataTable({
+            dom: 'Bfrtip',
+            buttons: ['copy', 'csv', 'excel', 'pdf', 'print']
+        });
+    });
+</script>
 @endsection

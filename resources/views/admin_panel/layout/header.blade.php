@@ -8,16 +8,15 @@
                  </div>
                  <div class="nav_wrapper_main d-flex align-items-center justify-content-between flex-grow-1">
                      <ul class="navbar-nav navbar-nav-right mr-0 ml-auto">
-                         <li class="nav-item nav-profile dropdown">
-                             <a class="nav-link dropdown-toggle" href="#" data-toggle="dropdown"
-                                 id="profileDropdown">
-                                 <span class="profile_name">{{ Auth::user()->name }} <i
-                                         class="feather ft-chevron-down"></i></span>
+                         <li class="nav-item">
+                             <a class="nav-link" href="#" onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
+                                  <span class="profile_name">Logout <i
+                                         class="feather ft-chevron-down" style="display:none;"></i></span>
                              </a>
-                             <div class="dropdown-menu dropdown-menu-right navbar-dropdown pt-2"
+                             <div class="dropdown-menu dropdown-menu-right navbar-dropdown pt-2" style="display:none;"
                                  aria-labelledby="profileDropdown">
                                  <span role="separator" class="divider"></span>
-                                 <form method="POST" action="{{ route('logout') }}">
+                                 <form id="logout-form" method="POST" action="{{ route('logout') }}">
                                      @csrf
                                      <button type="submit" class="dropdown-item">
                                          <i class="ti-power-off text-dark mr-3"></i> Logout
@@ -25,7 +24,6 @@
                                  </form>
                              </div>
                          </li>
-
                      </ul>
 
                      <button class="navbar-toggler align-self-center" type="button" data-toggle="minimize">
@@ -73,6 +71,8 @@
                      <li><a href="{{route('InwardGatepass.home')}}"><i class="fas fa-shopping-cart"></i> Inward Gatepass </a></li>
                      <li><a href="{{route('add_inwardgatepass')}}"><i class="fas fa-shopping-cart"></i> Add Inward Gatepass </a></li>
                      <li><a href="{{route('Purchase.home')}}"><i class="fas fa-shopping-cart"></i> Purchase</a></li>
+                    <li><a href="{{route('purchase.return.home')}}"><i class="fas fa-undo"></i> Purchase Return</a></li>
+                    <li><a href="{{route('stock-wastage.index')}}"><i class="fas fa-trash"></i> Stock Wastage</a></li>
 
                  </ul>
              </div>

@@ -99,11 +99,14 @@
 
 <script>
     $(document).ready(function() {
-        $('#salesTable').DataTable();
-
-
-
-
+        $('#example').DataTable({
+            "order": [[5, "desc"]], // Column 5 is Created At - descending (latest first)
+            "pageLength": 25,
+            "language": {
+                "search": "Search Sales:",
+                "lengthMenu": "Show _MENU_ sales per page"
+            }
+        });
     });
 </script>
 

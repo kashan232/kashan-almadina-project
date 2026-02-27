@@ -244,107 +244,90 @@ class SaleController extends Controller
             $attempts = 0;
             $maxAttempts = 5;
 
-            // if updating existing booking, keep previous behavior
             $bookingId = $request->input('booking_id');
             if ($bookingId) {
                 $booking = Productbooking::findOrFail($bookingId);
                 ProductBookingItem::where('booking_id', $booking->id)->delete();
-                // update fields below & save as before
-                $booking->manual_invoice = $request->Invoice_main;
-                // ... other fields ...
-                $booking->save();
+            } else {
+                // NEW booking path -> must ensure invoice_no unique
+                do {
+                    $attempts++;
+                    $invoiceNo = method_exists(Productbooking::class, 'generateInvoiceNo')
+                        ? Productbooking::generateInvoiceNo()
+                        : ('INVSLE-' . str_pad((Productbooking::max('id') ?? 0) + 1, 3, '0', STR_PAD_LEFT));
 
-                // recreate items (same as your existing code)...
-                // (you can keep your existing foreach here)
-                // ...
-                return response()->json(['ok' => true, 'booking_id' => $booking->id]);
+                    $booking = new Productbooking();
+                    $booking->invoice_no = $invoiceNo;
+                    try {
+                        $booking->save(); // temporary save to get ID and lock invoice_no
+                        break;
+                    } catch (\Exception $ex) {
+                        if ($attempts >= $maxAttempts) throw $ex;
+                        continue;
+                    }
+                } while ($attempts < $maxAttempts);
             }
 
-            // NEW booking path -> must ensure invoice_no unique
-            do {
-                $attempts++;
+            // Common field updates
+            $booking->manual_invoice = $request->Invoice_main;
+            $booking->party_type     = $request->input('partyType');
+            $booking->customer_id    = $request->customer;
+            $booking->sub_customer   = $request->customerType;
+            $booking->filer_type     = $request->filerType;
+            $booking->address        = $request->address;
+            $booking->tel            = $request->tel;
+            $booking->remarks        = $request->remarks;
+            $booking->sub_total1     = $request->subTotal1 ?? 0;
+            $booking->sub_total2     = $request->subTotal2 ?? 0;
+            $booking->discount_percent = $request->discountPercent ?? 0;
+            $booking->discount_amount  = $request->discountAmount ?? 0;
+            $booking->previous_balance = $request->previousBalance ?? 0;
+            $booking->total_balance    = $request->totalBalance ?? 0;
+            $booking->receipt1       = $request->receipt1 ?? 0;
+            $booking->receipt2       = $request->receipt2 ?? 0;
+            $booking->final_balance1 = $request->finalBalance1 ?? 0;
+            $booking->final_balance2 = $request->finalBalance2 ?? 0;
+            $booking->weight         = $request->weight;
 
-                // generate invoice - adapt to your existing generator if you have one
-                // e.g. Productbooking::generateInvoiceNo() or Sale::generateInvoiceNo()
-                // I'll attempt to call a method; if you don't have it, create below.
-                $invoiceNo = method_exists(Productbooking::class, 'generateInvoiceNo')
-                    ? Productbooking::generateInvoiceNo()
-                    : ('INVSLE-' . str_pad((Productbooking::max('id') ?? 0) + 1, 3, '0', STR_PAD_LEFT));
+            $productIds = $request->input('product_id', []);
+            $warehouseIds = $request->input('warehouse_name', []);
+            $stocks = $request->input('stock', []);
+            $salesPrices = $request->input('sales-price', []);
+            $salesQtys = $request->input('sales-qty', []);
+            $retailPrices = $request->input('retail-price', []);
+            $discPercents = $request->input('discount-percent', []);
+            $discAmounts = $request->input('discount-amount', []);
+            $amounts = $request->input('sales-amount', []);
 
-                $booking = new Productbooking();
-                $booking->invoice_no = $invoiceNo;
-                $booking->manual_invoice = $request->Invoice_main;
-                $booking->party_type = $request->input('partyType');
-                $booking->customer_id = $request->customer;
-                $booking->sub_customer = $request->customerType;
-                $booking->filer_type = $request->filerType;
-                $booking->address = $request->address;
-                $booking->tel = $request->tel;
-                $booking->remarks = $request->remarks;
-                $booking->sub_total1 = $request->subTotal1 ?? 0;
-                $booking->sub_total2 = $request->subTotal2 ?? 0;
-                $booking->discount_percent = $request->discountPercent ?? 0;
-                $booking->discount_amount = $request->discountAmount ?? 0;
-                $booking->previous_balance = $request->previousBalance ?? 0;
-                $booking->total_balance = $request->totalBalance ?? 0;
-                $booking->receipt1 = $request->receipt1 ?? 0;
-                $booking->receipt2 = $request->receipt2 ?? 0;
-                $booking->final_balance1 = $request->finalBalance1 ?? 0;
-                $booking->final_balance2 = $request->finalBalance2 ?? 0;
-                $booking->weight = $request->weight;
+            $totalQty = 0;
+            foreach ($productIds as $i => $productId) {
+                $warehouse_id = $warehouseIds[$i] ?? null;
+                $qty = (float) ($salesQtys[$i] ?? 0);
 
-                try {
-                    $booking->save(); // may throw unique constraint exception
-                } catch (QueryException $ex) {
-                    // 23000 / 1062 is duplicate key — try again with new invoice
-                    if ($ex->getCode() == '23000' || str_contains($ex->getMessage(), 'Duplicate entry')) {
-                        // if max reached, rethrow
-                        if ($attempts >= $maxAttempts) {
-                            throw $ex;
-                        }
-                        // otherwise try again (loop)
-                        continue;
-                    }
-                    throw $ex;
+                if (empty($warehouse_id) || empty($productId) || $qty <= 0) {
+                    continue;
                 }
 
-                // if saved ok -> create items
-                $totalQty = 0;
-                foreach ($request->warehouse_name ?? [] as $i => $warehouse_id) {
-                    $productId = $request->input("product_name.$i");
-                    $qty = (float) $request->input("sales-qty.$i", 0);
+                $totalQty += $qty;
 
-                    // Skip invalid/empty or zero-qty lines
-                    if (empty($warehouse_id) || empty($productId) || $qty <= 0) {
-                        continue;
-                    }
+                ProductBookingItem::create([
+                    'booking_id' => $booking->id,
+                    'warehouse_id' => $warehouse_id,
+                    'product_id' => $productId,
+                    'stock' => (float) ($stocks[$i] ?? 0),
+                    'sales_price' => (float) ($salesPrices[$i] ?? 0),
+                    'sales_qty' => $qty,
+                    'retail_price' => (float) ($retailPrices[$i] ?? 0),
+                    'discount_percent' => (float) ($discPercents[$i] ?? 0),
+                    'discount_amount' => (float) ($discAmounts[$i] ?? 0),
+                    'amount' => (float) ($amounts[$i] ?? 0),
+                ]);
+            }
 
-                    $totalQty += $qty;
+            $booking->quantity = $totalQty;
+            $booking->save();
 
-                    ProductBookingItem::create([
-                        'booking_id' => $booking->id,
-                        'warehouse_id' => $warehouse_id,
-                        'product_id' => $productId,
-                        'stock' => (float) $request->input("stock.$i", 0),
-                        'price_level' => (float) $request->input("price.$i", 0),
-                        'sales_price' => (float) $request->input("sales-price.$i", 0),
-                        'sales_qty' => $qty,
-                        'retail_price' => (float) $request->input("retail-price.$i", 0),
-                        'discount_percent' => (float) $request->input("discount-percent.$i", 0),
-                        'discount_amount' => (float) $request->input("discount-amount.$i", 0),
-                        'amount' => (float) $request->input("sales-amount.$i", 0),
-                    ]);
-                }
-
-
-                $booking->quantity = $totalQty;
-                $booking->save();
-
-                return response()->json(['ok' => true, 'booking_id' => $booking->id]);
-            } while ($attempts < $maxAttempts);
-
-            // if we somehow exit loop
-            return response()->json(['ok' => false, 'msg' => 'Failed to allocate invoice no'], 500);
+            return response()->json(['ok' => true, 'booking_id' => $booking->id]);
         });
     }
 
@@ -452,16 +435,19 @@ class SaleController extends Controller
         return view('admin_panel.sale.prints.dc', compact('sale'));
     }
 
-    public function bookingPrint(Productbooking $booking)
+    public function bookingPrint($id)
     {
+        $booking = Productbooking::with('items.product')->findOrFail($id);
         return view('admin_panel.sale.booking.prints.print', compact('booking'));
     }
-    public function bookingPrint2(Productbooking $booking)
+    public function bookingPrint2($id)
     {
+        $booking = Productbooking::with('items.product')->findOrFail($id);
         return view('admin_panel.sale.booking.prints.print2', compact('booking'));
     }
-    public function bookingDc(Productbooking $booking)
+    public function bookingDc($id)
     {
+        $booking = Productbooking::with('items.product')->findOrFail($id);
         return view('admin_panel.sale.booking.prints.dc', compact('booking'));
     }
 
@@ -477,6 +463,17 @@ class SaleController extends Controller
         return response()->json($rows->values());
     }
 
+    // Get ALL products for sale (not filtered by warehouse)
+    public function getAllSaleProducts()
+    {
+        $products = Product::select('id', 'name')
+            ->when(\Schema::hasColumn('products', 'status'), fn($q) => $q->where('status', 1))
+            ->orderBy('name')
+            ->get();
+        
+        return response()->json($products->values());
+    }
+
     // public function getStock($productId)
     // {
     //     $product = Product::with('prices')->find($productId);
@@ -490,21 +487,24 @@ class SaleController extends Controller
     // }
 
     public function getStock($productId)
-    {
-        $product = Product::with('prices')->find($productId);
-        if (!$product) {
-            return response()->json(['error' => 'Product not found'], 404);
-        }
-
-        // Fetch the latest price record (or based on your logic, you can fetch based on date range)
-        $price = $product->prices()->latest()->first();
-
-        return response()->json([
-            'stock' => (float) ($product->stock ?? 0),
-            'sales_price' => (float) $price->sale_net_amount, // Using sale_net_amount as sales price
-            'retail_price' => (float) $price->sale_retail_price, // Using sale_retail_price for retail price
-        ]);
+{
+    $product = Product::with('prices')->find($productId);
+    if (!$product) {
+        return response()->json(['error' => 'Product not found'], 404);
     }
+
+    // Fetch the latest price record
+    $price = $product->prices()->latest()->first();
+
+    // Get total stock from all warehouses
+    $totalStock = WarehouseStock::where('product_id', $productId)->sum('quantity');
+
+    return response()->json([
+        'stock' => (float) ($totalStock ?? 0), // Total stock from all warehouses
+        'sales_price' => (float) $price->sale_net_amount, // Using sale_net_amount as sales price
+        'retail_price' => (float) $price->sale_retail_price, // Using sale_retail_price for retail price
+    ]);
+}
     // SaleController.php
     public function filterCustomers(Request $request)
     {

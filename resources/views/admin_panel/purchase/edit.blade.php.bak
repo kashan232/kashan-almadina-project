@@ -1,17 +1,162 @@
 @extends('admin_panel.layout.app')
-<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 <style>
-    /* Select2 customizations to match theme */
-    .select2-container .select2-selection--single {
-        height: 31px !important;
-        border: 1px solid #ced4da;
+    /* Professional Product Search Dropdown */
+    .searchResults {
+        position: absolute;
+        z-index: 9999;
+        width: 400px !important;
+        max-width: 500px;
+        max-height: 350px;
+        overflow-y: auto;
+        background: #ffffff;
+        border: 1px solid #d1d5db;
+        border-radius: 8px;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+        margin-top: 4px;
+        left: 0;
     }
-    .select2-container .select2-selection--single .select2-selection__rendered {
-        line-height: 31px !important;
-        padding-left: 8px;
+
+    .searchResults::-webkit-scrollbar {
+        width: 8px;
     }
-    .select2-container .select2-selection--single .select2-selection__arrow {
-        height: 31px !important;
+
+    .searchResults::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 4px;
+    }
+
+    .searchResults::-webkit-scrollbar-thumb {
+        background: #888;
+        border-radius: 4px;
+    }
+
+    .searchResults::-webkit-scrollbar-thumb:hover {
+        background: #555;
+    }
+
+    .search-result-item {
+        padding: 12px 16px;
+        cursor: pointer;
+        border-bottom: 1px solid #e5e7eb;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .search-result-item:last-child {
+        border-bottom: none;
+    }
+
+    .search-result-item:hover {
+        background: #f3f4f6;
+    }
+
+    .search-result-item.active {
+        background: #3b82f6;
+        color: white;
+    }
+
+    .search-result-item.active .product-brand,
+    .search-result-item.active .product-price {
+        color: rgba(255, 255, 255, 0.9);
+    }
+
+    .product-icon {
+        width: 36px;
+        height: 36px;
+        background: #e0e7ff;
+        border-radius: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 18px;
+        flex-shrink: 0;
+    }
+
+    .search-result-item.active .product-icon {
+        background: rgba(255, 255, 255, 0.2);
+    }
+
+    .product-info {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .product-name {
+        font-weight: 600;
+        font-size: 14px;
+        color: #1f2937;
+        margin-bottom: 2px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .search-result-item.active .product-name {
+        color: white;
+    }
+
+    .product-brand {
+        font-size: 12px;
+        color: #6b7280;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .product-price {
+        font-weight: 600;
+        font-size: 14px;
+        color: #059669;
+        white-space: nowrap;
+        flex-shrink: 0;
+    }
+
+    .search-loading {
+        padding: 16px;
+        text-align: center;
+        color: #6b7280;
+        font-size: 13px;
+    }
+
+    .search-no-results {
+        padding: 20px;
+        text-align: center;
+        color: #9ca3af;
+        font-size: 13px;
+    }
+
+    .productSearch {
+        position: relative;
+    }
+
+    .productSearch.searching::after {
+        content: '';
+        position: absolute;
+        right: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 16px;
+        height: 16px;
+        border: 2px solid #3b82f6;
+        border-top-color: transparent;
+        border-radius: 50%;
+        animation: spin 0.6s linear infinite;
+    }
+
+    @keyframes spin {
+        to { transform: translateY(-50%) rotate(360deg); }
+    }
+
+    th {
+        font-weight: 500 !important;
+    }
+
+    /* Enhanced product search input */
+    .productSearch:focus {
+        border-color: #3b82f6 !important;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
     }
 </style>
 @section('content')
@@ -192,11 +337,11 @@
                                                 </thead>
                                                 <tbody id="purchaseItems">
                                                     <tr>
-                                                        <td style="width: 250px;">
-                                                            <select name="product_id[]" class="form-control form-control-sm product-select" style="width: 100%;">
-                                                                <option value="" disabled selected>Select Product</option>
-                                                            </select>
+                                                        <td>
+                                                            <input type="hidden" name="product_id[]" class="product_id">
                                                             <input type="hidden" name="product_name[]" class="product_name_hidden">
+                                                            <input type="text" class="form-control form-control-sm productSearch" placeholder="Search product..." autocomplete="off">
+                                                            <div class="searchResults"></div>
                                                         </td>
 
                                                         <td class="uom border">
@@ -374,95 +519,204 @@
 
 
 
-<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Global helper for initializing Select2 on a row
-        window.initProductSelect = function($row) {
-            const $select = $row.find('.product-select');
-            
-            $select.select2({
-                placeholder: "Select Product",
-                allowClear: true,
-                width: '100%',
-                ajax: {
-                    url: "{{ route('search-products') }}",
-                    dataType: 'json',
-                    delay: 250, 
-                    data: function (params) {
-                        return {
-                            q: params.term // search term
-                        };
-                    },
-                    processResults: function (data) {
-                        return {
-                            results: data.map(function(item) {
-                                return {
-                                    id: item.id,
-                                    text: item.name,
-                                    // Pass custom data
-                                    brand: item.brand,
-                                    price_net: item.purchase_net_amount,
-                                    price_retail: item.purchase_retail_price
-                                };
-                            })
-                        };
-                    },
-                    cache: true
-                },
-                minimumInputLength: 0
-            });
+    (function($) {
+        // throttle / single Swal helper
+        let lastSwalAt = 0;
 
-            // Handle selection
-            $select.on('select2:select', function (e) {
-                const data = e.params.data;
-                const $currentRow = $(this).closest('tr');
+        function showOneToast(options = {}) {
+            const now = Date.now();
+            const throttleMs = options.throttleMs || 1200; // change if you want longer
+            // if Swal is visible OR recently shown, skip
+            if (typeof Swal !== 'undefined' && Swal.isVisible && Swal.isVisible()) return;
+            if (now - lastSwalAt < throttleMs) return;
+            lastSwalAt = now;
 
-                // Populate fields
-                $currentRow.find('.product_name_hidden').val(data.text);
-                $currentRow.find('input[name="brand[]"]').val(data.brand || '');
-                
-                const net = parseFloat(data.price_net || 0).toFixed(2);
-                let retail = parseFloat(data.price_retail || 0);
-
-                // Safe check for NaN
-                if(isNaN(retail)) { retail = 0; }
-                const retailStr = retail.toFixed(2);
-                
-                // Set prices
-                $currentRow.find('.price').val(net);
-                $currentRow.find('.retail_price_show').val(retailStr);
-                $currentRow.find('.purchase_net_amount').val(net);
-                $currentRow.find('.purchase_retail_price').val(retailStr); // store hidden
-                
-                // Default Quantity to 1
-                $currentRow.find('.quantity').val(1);
-                $currentRow.find('.item_disc').val(0);
-                $currentRow.find('.disc_amount').val('0.00');
-
-                // Trigger calculation
-                if(typeof window.recalcRow === 'function') {
-                    window.recalcRow($currentRow);
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    icon: options.icon || 'info',
+                    title: options.title || '',
+                    text: options.text || '',
+                    timer: options.timer || 1400,
+                    showConfirmButton: options.showConfirmButton || false,
+                });
+            } else {
+                // fallback to alert once
+                if (now - (window._lastAlertAt || 0) > throttleMs) {
+                    alert((options.title ? (options.title + '\n') : '') + (options.text || ''));
+                    window._lastAlertAt = now;
                 }
-                if(typeof window.recalcSummary === 'function') {
-                    window.recalcSummary();
+            }
+        }
+
+        // flag to coordinate pointerdown->blur->click
+        let isSelectingSuggestion = false;
+
+        // set flag on pointerdown (fires before blur)
+        $(document).on('pointerdown', '.searchResults .search-result-item', function() {
+            isSelectingSuggestion = true;
+            // clear after short delay to allow click handlers to run
+            setTimeout(() => {
+                isSelectingSuggestion = false;
+            }, 400);
+        });
+
+        // Product search key handlers (Tab/Enter) — use showOneToast instead of direct Swal calls
+        $(document).on('keydown', '.productSearch', function(e) {
+            const $input = $(this);
+            const $row = $input.closest('tr');
+            const $box = $row.find('.searchResults');
+
+            if (e.key === 'Tab') {
+                const pid = $row.find('.product_id').val() || '';
+                const $items = $box.children('.search-result-item');
+                const hasActive = $items.length && $items.filter('.active').length;
+
+                if (!pid.toString().trim() && !hasActive) {
+                    e.preventDefault();
+                    $input.addClass('invalid-product');
+                    showOneToast({
+                        icon: 'warning',
+                        title: 'Please select a product',
+                        text: 'Choose from suggestions or clear the field.',
+                        timer: 1400
+                    });
+                    setTimeout(() => $input.focus(), 0);
+                    return;
                 }
 
-                // Focus next field (Price)
-                setTimeout(() => {
-                    $currentRow.find('.price').focus().select();
-                }, 100);
-            });
-            
-            $select.on('select2:clear', function (e) {
-                const $currentRow = $(this).closest('tr');
-                $currentRow.find('input').not(this).val('');
-                $currentRow.find('.quantity').val(1);
-                if(typeof window.recalcRow === 'function') window.recalcRow($currentRow);
-                if(typeof window.recalcSummary === 'function') window.recalcSummary();
-            });
-        };
-    });
+                if (!pid.toString().trim() && hasActive) {
+                    e.preventDefault();
+                    const $active = $items.filter('.active').first();
+                    if ($active.length) {
+                        // mark selecting to avoid blur race
+                        isSelectingSuggestion = true;
+                        $active.trigger('click');
+                        setTimeout(() => {
+                            isSelectingSuggestion = false;
+                        }, 400);
+                    }
+                    setTimeout(() => focusPriceOrQty($row), 0);
+                    return;
+                }
+                // else allow tab normally
+            }
+
+            if (e.key === 'Enter') {
+                const $items = $box.children('.search-result-item');
+                if ($items.length) {
+                    e.preventDefault();
+                    const idx = $items.index($items.filter('.active'));
+                    if (idx >= 0) {
+                        isSelectingSuggestion = true;
+                        $items.eq(idx).trigger('click');
+                        setTimeout(() => {
+                            isSelectingSuggestion = false;
+                        }, 400);
+                    } else if ($items.length === 1) {
+                        isSelectingSuggestion = true;
+                        $items.eq(0).trigger('click');
+                        setTimeout(() => {
+                            isSelectingSuggestion = false;
+                        }, 400);
+                    }
+                    setTimeout(() => $row.find('.quantity').focus(), 0);
+                } else {
+                    e.preventDefault();
+                    showOneToast({
+                        icon: 'info',
+                        title: 'No suggestions',
+                        text: 'No matching product found.',
+                        timer: 900
+                    });
+                    $input.focus();
+                }
+            }
+        });
+
+
+
+
+
+        function focusPriceOrQty($row) {
+            const $price = $row.find('.price');
+            const $qty = $row.find('.quantity');
+            if ($price.length && !$price.prop('readonly') && !$price.prop('disabled')) {
+                $price.focus();
+                try {
+                    $price.select();
+                } catch (e) {}
+                return;
+            }
+            if ($qty.length) {
+                $qty.focus();
+                try {
+                    $qty.select();
+                } catch (e) {}
+            }
+        }
+
+        // Click select suggestion — idempotent fill (won't double-fill)
+        $(document).on('click', '.search-result-item', function(e) {
+            const $li = $(this);
+            const $row = $li.closest('tr');
+
+            // visible value
+            $row.find('.productSearch').val($li.data('product-name'));
+            // hidden field to be posted -> old() will keep it after validation fail
+            $row.find('input[name="product_name[]"]').val($li.data('product-name'));
+
+            $row.find('input[name="brand[]"]').val($li.data('product-brand') || '');
+            $row.find('.price').val(parseFloat($li.data('price-net') || 0).toFixed(2));
+            $row.find('.retail_price_show').val(parseFloat($li.data('price-retail') || 0).toFixed(2));
+
+            $row.find('.purchase_net_amount').val(parseFloat($li.data('price-net') || 0).toFixed(2));
+            $row.find('.purchase_retail_price').val(parseFloat($li.data('price-retail') || 0).toFixed(2));
+            $row.find('.product_id').val($li.data('product-id'));
+
+            $row.find('.quantity').val(1);
+            $row.find('.item_disc').val(0);
+            $row.find('.disc_amount').val('0.00');
+
+            if (typeof recalcRow === 'function') recalcRow($row);
+            if (typeof recalcSummary === 'function') recalcSummary();
+
+            $row.find('.searchResults').empty();
+            setTimeout(() => focusPriceOrQty($row), 0);
+        });
+
+
+        // When selecting active suggestion via Tab/Enter
+        // wherever you have code that triggers selection like $active.trigger('click');
+        // just ensure you call focusPriceOrQty afterwards, e.g.:
+        $active.trigger('click');
+        setTimeout(() => focusPriceOrQty($row), 0);
+
+        // blur: do not force refocus if selecting suggestion; show throttled toast instead of multiple modals
+        $(document).on('blur', '.productSearch', function() {
+            const $input = $(this);
+            const $row = $input.closest('tr');
+
+            // if user is clicking a suggestion, skip
+            if (isSelectingSuggestion) return;
+
+            setTimeout(() => {
+                const pid = $row.find('.product_id').val() || '';
+                const txt = $input.val() || '';
+                if (txt.toString().trim().length > 0 && !pid.toString().trim()) {
+                    // show one toast only (throttled)
+                    showOneToast({
+                        icon: 'info',
+                        title: 'Select product',
+                        text: 'Please select a product from the list, or clear the input to skip.',
+                        timer: 1200
+                    });
+                    // do not force focus immediately to avoid flicker (user may click elsewhere)
+                }
+            }, 160);
+        });
+
+    })(jQuery);
 </script>
 
 {{-- Item Row Autocomplete + Add/Remove --}}
@@ -470,66 +724,28 @@
 
 <script>
     (function() {
-        @php
-            // Prepare default data from $purchase relationship for edit mode
-            $items = $purchase->items;
-            
-            $pIds = $items->pluck('product_id')->toArray();
-            $pNames = $items->map(fn($i) => $i->product->name ?? '')->toArray();
-            $brands = $items->map(fn($i) => $i->product->brand->name ?? '')->toArray();
-            $prices = $items->pluck('price')->toArray();
-            $qtys   = $items->pluck('qty')->toArray();
-            // item_discount col stores the % input
-            $discs  = $items->pluck('item_discount')->toArray(); 
-            
-            // Calculate discount amount: (price * qty) - line_total
-            // or if line_total is consistent, just use that difference.
-            // Ideally re-calc from %: (price/retail * %/100) * qty. 
-            // But let's rely on stored line_total for consistency if possible, 
-            // or just let JS recalc it. 
-            // For restoration, we'll pass 0 or let JS recalc. 
-            // Actually, we can pass (price*qty - line_total).
-            $discAmts = $items->map(fn($i) => round(($i->price * $i->qty) - $i->line_total, 2))->toArray();
-
-            // Product latest prices for retail/cost reference
-            $retails = $items->map(fn($i) => optional(optional($i->product)->latestPrice)->purchase_retail_price ?? 0)->toArray();
-            $nets    = $items->map(fn($i) => optional(optional($i->product)->latestPrice)->purchase_net_amount ?? 0)->toArray();
-            $totals  = $items->pluck('line_total')->toArray();
-
-            // Accounts
-            $allocs = $purchase->accountAllocations;
-            $accHeads = $allocs->pluck('account_head_id')->toArray();
-            $accIds   = $allocs->pluck('account_id')->toArray();
-            $accAmts  = $allocs->pluck('amount')->toArray();
-        @endphp
-
         // restore old arrays from server (Blade -> JS)
-        // If old() is present (validation fail), use it. Otherwise use $purchase data.
-        const oldProducts = @json(old('product_id', $pIds));
-        const oldPrices = @json(old('price', $prices));
-        const oldQtys = @json(old('qty', $qtys));
-        const oldItemDiscs = @json(old('item_disc', $discs));
-        const oldDiscAmounts = @json(old('item_disc_amount', $discAmts));
-        
-        // For retail/net, we favor the request input if validation fails, 
-        // else we grab from current product master data (or you could store these in purchase_items if you migrated).
-        const oldRetailPrices = @json(old('purchase_retail_price', $retails));
-        const oldPurchaseNet = @json(old('purchase_net_amount', $nets));
-        
-        const oldRowAmounts = @json(old('total', $totals));
-        const oldProductNames = @json(old('product_name', $pNames));
-        const oldBrands = @json(old('brand', $brands));
+        const oldProducts = @json(old('product_id', []));
+        const oldPrices = @json(old('price', []));
+        const oldQtys = @json(old('qty', []));
+        const oldItemDiscs = @json(old('item_disc', []));
+        const oldDiscAmounts = @json(old('item_disc_amount', []));
+        const oldRetailPrices = @json(old('purchase_retail_price', []));
+        const oldPurchaseNet = @json(old('purchase_net_amount', []));
+        const oldRowAmounts = @json(old('total', []));
+        const oldProductNames = @json(old('product_name', []));
+        const oldBrands = @json(old('brand', []));
 
         // account allocations
-        const oldAccHeads = @json(old('account_head_id', $accHeads));
-        const oldAccIds = @json(old('account_id', $accIds));
-        const oldAccAmounts = @json(old('account_amount', $accAmts));
+        const oldAccHeads = @json(old('account_head_id', []));
+        const oldAccIds = @json(old('account_id', []));
+        const oldAccAmounts = @json(old('account_amount', []));
 
         const errors = @json($errors->toArray());
         const accountHeadsList = @json($AccountHeads);
 
         // helper: create a product row HTML (same structure as appendBlankRow)
-        window.makeRowHtml = function(data, index = null) {
+        function makeRowHtml(data, index = null) {
             // Error handling helper
             const getError = (field) => {
                 if (index !== null && errors[field + '.' + index]) {
@@ -538,22 +754,15 @@
                 return '';
             };
 
-            // Pre-select option if data exists
-            let optionHtml = '<option value="" disabled selected>Select Product</option>';
-            if(data.product_id) {
-                const pName = data.product_name || 'Product ' + data.product_id;
-                optionHtml = `<option value="${data.product_id}" selected>${pName}</option>`;
-            }
-
             // data: { product_id, product_name, brand, price, retail_show, item_disc, disc_amount, qty, row_amount, row_total, purchase_retail, purchase_net }
             return `
       <tr>
-        <td style="width: 250px;">
-          <select name="product_id[]" class="form-control form-control-sm product-select" style="width: 100%;">
-            ${optionHtml}
-          </select>
+        <td>
+          <input type="hidden" name="product_id[]" class="product_id" value="${data.product_id || ''}">
           <input type="hidden" name="product_name[]" class="product_name_hidden" value="${(data.product_name || '')}">
+          <input type="text" class="form-control form-control-sm productSearch" placeholder="Search product..." autocomplete="off" value="${(data.product_name||'')}">
           ${getError('product_id')}
+          <div class="searchResults"></div>
         </td>
         <td class="uom border">
           <input type="text" name="brand[]" class="form-control form-control-sm" readonly value="${data.brand || ''}">
@@ -575,7 +784,7 @@
           <input type="hidden" name="purchase_net_amount[]" class="purchase_net_amount" value="${data.purchase_net || ''}">
         </td>
         <td>
-          <input type="number" name="qty[]" class="form-control form-control-sm quantity" value="${data.qty}" min="1">
+          <input type="number" name="qty[]" class="form-control form-control-sm quantity" value="${data.qty || 1}" min="1">
           ${getError('qty')}
         </td>
         <td>
@@ -601,33 +810,22 @@
             const max = Math.max(oldProducts.length, oldPrices.length, oldQtys.length);
 
             for (let i = 0; i < max; i++) {
-                
-                let rShow = oldRetailPrices[i];
-                // Force to number and format
-                let rShowAttributes = parseFloat(rShow);
-                if (isNaN(rShowAttributes)) {
-                    rShowAttributes = 0;
-                }
-                rShow = rShowAttributes.toFixed(2);
-
                 const rowData = {
                     product_id: oldProducts[i] ?? '',
                     product_name: (oldProductNames[i] ?? ''),
                     brand: (oldBrands[i] ?? ''),
                     price: oldPrices[i] ?? '',
-                    retail_show: rShow,
+                    retail_show: oldRetailPrices[i] ?? '',
                     item_disc: oldItemDiscs[i] ?? '',
                     disc_amount: oldDiscAmounts[i] ?? '',
-                    purchase_retail: rShow,
+                    purchase_retail: oldRetailPrices[i] ?? '',
                     purchase_net: oldPurchaseNet[i] ?? '',
                     qty: oldQtys[i] ?? 1,
                     row_amount: '', // will be recalculated
                     row_total: oldRowAmounts[i] ?? ''
                 };
 
-                const $newRow = $(window.makeRowHtml(rowData, i));
-                $('#purchaseItems').append($newRow);
-                if(window.initProductSelect) window.initProductSelect($newRow);
+                $('#purchaseItems').append(makeRowHtml(rowData, i));
             }
 
             // re-bind any plugin stuff? (your handlers are delegated so okay)
@@ -640,6 +838,11 @@
                 }
             });
             if (typeof recalcSummary === 'function') recalcSummary();
+
+            // focus last product search to allow quick continue
+            setTimeout(function() {
+                $('#purchaseItems tr:last .productSearch').focus();
+            }, 80);
         }
 
         function restoreAccounts() {
@@ -711,7 +914,7 @@
                      $amountInput.prop('disabled', false).prop('required', true).attr('min', '0.01');
 
                      $.ajax({
-                        url: "/get-accounts-by-head/" + headId,
+                        url: "{{ url('/get-accounts-by-head') }}/" + headId,
                         type: "GET",
                         dataType: 'json',
                         success: function(res) {
@@ -857,81 +1060,299 @@
         function lastRowHasProduct() {
             const $last = $('#purchaseItems tr:last');
             if (!$last.length) return false;
-            const pid = $last.find('.product-select').val() || '';
+            const pid = $last.find('.product_id').val() || '';
             return pid.toString().trim().length > 0;
         }
+
+
 
         function appendBlankRow() {
             // only append if last row has product selected (prevents extra empties)
             if ($('#purchaseItems tr').length > 0 && !lastRowHasProduct()) {
-                // open the product dropdown of last row to encourage selection
-                $('#purchaseItems tr:last .product-select').select2('open');
+                // focus the product field of last row to encourage selection
+                $('#purchaseItems tr:last .productSearch').focus();
                 return;
             }
 
-            const rowData = {
-            product_id: '', product_name: '', brand: '', price: '', retail_show: '',
-                item_disc: '', disc_amount: '', purchase_retail: '', purchase_net: '',
-                qty: '', row_amount: '', row_total: ''
-            };
+            const newRow = `
+      <tr>
+        <!-- Product -->
+         <td>
+      <input type="hidden" name="product_id[]" class="product_id">
+      <input type="hidden" name="product_name[]" class="product_name_hidden" value="">
+      <input type="text" class="form-control form-control-sm productSearch" placeholder="Enter product name..." autocomplete="off" value="">
+      <div class="searchResults"></div>
+    </td>
 
-            const $newRow = $(window.makeRowHtml(rowData));
-            $('#purchaseItems').append($newRow);
-            if(window.initProductSelect) window.initProductSelect($newRow);
-            
-            // Open the new dropdown
-            setTimeout(() => {
-                $newRow.find('.product-select').select2('open');
-            }, 50);
+        <!-- Brand -->
+        <td class="uom border">
+            <input type="text" name="brand[]" class="form-control form-control-sm" readonly>
+        </td>
+
+        <!-- Price -->
+        <td>
+            <input type="number" step="0.01" name="price[]" class="form-control form-control-sm price">
+        </td>
+
+        <!-- Retail Price (visible) -->
+        <td>
+            <input type="text" name="retail_price_show[]" class="form-control form-control-sm retail_price_show" readonly>
+        </td>
+
+        <!-- Discount (percent) + Discount Amount (visible) + hidden purchase prices -->
+        <td>
+          <div class="input-group">
+            <input type="number" step="0.01" min="0" name="item_disc[]" class="form-control form-control-sm item_disc" placeholder="%">
+            <input type="text" name="item_disc_amount[]" class="form-control form-control-sm disc_amount" readonly placeholder="Disc Amt">
+          </div>
+          <input type="hidden" name="purchase_retail_price[]" class="purchase_retail_price">
+          <input type="hidden" name="purchase_net_amount[]" class="purchase_net_amount">
+        </td>
+
+        <!-- Quantity -->
+        <td class="qty">
+            <input type="number" name="qty[]" class="form-control form-control-sm quantity" value="" min="1">
+        </td>
+
+        <!-- Amount (unit after discount shown) -->
+        <td>
+            <input type="text" name="amount[]" class="form-control form-control-sm row-amount" readonly>
+        </td>
+
+        <!-- Total (amount * qty) -->
+        <td class="total border">
+            <input type="text" name="total[]" class="form-control form-control-sm row-total" readonly>
+        </td>
+
+        <!-- Remove -->
+        <td>
+            <button type="button" class="btn btn-sm btn-danger remove-row">X</button>
+        </td>
+      </tr>`;
+            $('#purchaseItems').append(newRow);
         }
 
+        // ---------- Product Search (AJAX) with Debouncing ----------
+        let searchTimeout = null;
+        
+        $(document).on('keyup', '.productSearch', function(e) {
+            const $input = $(this);
+            const q = $input.val().trim();
+            const $row = $input.closest('tr');
+            const $box = $row.find('.searchResults');
 
+            // keyboard nav
+            const isNavKey = ['ArrowDown', 'ArrowUp', 'Enter'].includes(e.key);
+            if (isNavKey && $box.children('.search-result-item').length) {
+                const $items = $box.children('.search-result-item');
+                let idx = $items.index($items.filter('.active'));
+                if (e.key === 'ArrowDown') {
+                    idx = (idx + 1) % $items.length;
+                    $items.removeClass('active');
+                    $items.eq(idx).addClass('active');
+                    
+                    // Auto-scroll to keep active item visible
+                    const itemTop = $items.eq(idx).position().top;
+                    const containerHeight = $box.height();
+                    if (itemTop > containerHeight - 50) {
+                        $box.scrollTop($box.scrollTop() + 50);
+                    }
+                    
+                    e.preventDefault();
+                    return;
+                }
+                if (e.key === 'ArrowUp') {
+                    idx = (idx <= 0 ? $items.length - 1 : idx - 1);
+                    $items.removeClass('active');
+                    $items.eq(idx).addClass('active');
+                    
+                    // Auto-scroll to keep active item visible
+                    const itemTop = $items.eq(idx).position().top;
+                    if (itemTop < 0) {
+                        $box.scrollTop($box.scrollTop() - 50);
+                    }
+                    
+                    e.preventDefault();
+                    return;
+                }
+                if (e.key === 'Enter') {
+                    if (idx >= 0) {
+                        $items.eq(idx).trigger('click');
+                    } else if ($items.length === 1) {
+                        $items.eq(0).trigger('click');
+                    }
+                    e.preventDefault();
+                    return;
+                }
+            }
 
+            if (q.length === 0) {
+                $box.empty();
+                $input.removeClass('searching');
+                return;
+            }
 
+            // Debouncing: Clear previous timeout
+            if (searchTimeout) {
+                clearTimeout(searchTimeout);
+            }
 
-        // Handle Enter key navigation for inputs
-        $(document).on('keydown', '#purchaseItems input', function(e) {
+            // Show loading state
+            $box.html('<div class="search-loading"><i class="bi bi-arrow-repeat" style="animation: spin 1s linear infinite;"></i> Searching...</div>');
+            $input.addClass('searching');
+
+            // Debounce search by 300ms for better performance
+            searchTimeout = setTimeout(function() {
+                $.ajax({
+                    url: "{{ route('search-products') }}",
+                    type: 'GET',
+                    data: { q: q },
+                    success: function(data) {
+                        $input.removeClass('searching');
+                        
+                        if (!data || data.length === 0) {
+                            $box.html('<div class="search-no-results"><i class="bi bi-inbox"></i><br>No products found</div>');
+                            return;
+                        }
+
+                        let html = '';
+                        // Limit results to 50 for better performance
+                        const results = data.slice(0, 50);
+                        
+                        results.forEach(p => {
+                            const brand = p.brand ?? 'N/A';
+                            const net = parseFloat(p.purchase_net_amount ?? 0).toFixed(2);
+                            const retail = parseFloat(p.purchase_retail_price ?? 0).toFixed(2);
+                            const name = p.name ?? '';
+                            const id = p.id ?? '';
+                            
+                            // Get first letter for icon
+                            const firstLetter = name.charAt(0).toUpperCase();
+
+                            html += `
+                                <div class="search-result-item"
+                                    tabindex="0"
+                                    data-product-id="${id}"
+                                    data-product-name="${name}"
+                                    data-product-brand="${brand}"
+                                    data-price-net="${net}"
+                                    data-price-retail="${retail}">
+                                    <div class="product-icon">
+                                        <i class="bi bi-box-seam"></i>
+                                    </div>
+                                    <div class="product-info">
+                                        <div class="product-name">${name}</div>
+                                        <div class="product-brand">${brand}</div>
+                                    </div>
+                                    <div class="product-price">Rs. ${net}</div>
+                                </div>`;
+                        });
+                        
+                        if (data.length > 50) {
+                            html += '<div class="search-loading" style="background: #fef3c7; color: #92400e; padding: 8px;">Showing top 50 results. Refine search for more.</div>';
+                        }
+
+                        $box.html(html);
+                        $box.find('.search-result-item').first().addClass('active');
+                    },
+                    error: function() {
+                        $input.removeClass('searching');
+                        $box.html('<div class="search-no-results"><i class="bi bi-exclamation-triangle"></i><br>Search failed</div>');
+                    }
+                });
+            }, 300); // 300ms debounce
+        });
+
+        // Click/Enter select suggestion
+        $(document).on('click', '.search-result-item', function() {
+            const $li = $(this);
+            const $row = $li.closest('tr');
+
+            // Get product data
+            const pName = $li.attr('data-product-name');
+            const pBrand = $li.attr('data-product-brand');
+            const pPriceNet = parseFloat($li.attr('data-price-net') || 0);
+            const pPriceRetail = parseFloat($li.attr('data-price-retail') || 0);
+            const pId = $li.attr('data-product-id');
+
+            // Set all product fields
+            $row.find('.product_id').val(pId);
+            $row.find('.product_name_hidden').val(pName);
+            $row.find('.productSearch').val(pName);
+            $row.find('input[name="brand[]"]').val(pBrand || '');
             
-            if (e.key === 'Enter') {
-                e.preventDefault(); 
+            // Set prices
+            $row.find('.price').val(pPriceNet.toFixed(2));
+            $row.find('.retail_price_show').val(pPriceRetail.toFixed(2));
+            $row.find('.purchase_net_amount').val(pPriceNet.toFixed(2));
+            $row.find('.purchase_retail_price').val(pPriceRetail.toFixed(2));
+
+            // Set discount to 0, but leave quantity EMPTY
+            $row.find('.quantity').val(''); // Empty - user will enter after discount
+            $row.find('.item_disc').val(0);
+            $row.find('.disc_amount').val('0.00');
+
+            // Clear search results
+            $row.find('.searchResults').empty();
+            
+            // Move focus to Price field
+            $row.find('.price').focus();
+            $row.find('.price').select();
+        });
+
+
+
+
+
+        $(document).on('keydown', '#purchaseItems input', function(e) {
+            const isProductSearch = $(this).hasClass('productSearch');
+            
+            // Handle Enter key navigation
+            if (e.key === 'Enter' && !isProductSearch) {
+                e.preventDefault(); // stop submit
                 const $row = $(this).closest('tr');
 
                 // 1. Price -> Discount
                 if ($(this).hasClass('price')) {
-                    $row.find('.item_disc').focus().select();
+                    $row.find('.item_disc').focus();
+                    $row.find('.item_disc').select();
                     return false;
                 }
 
                 // 2. Discount -> Quantity
                 if ($(this).hasClass('item_disc')) {
-                    $row.find('.quantity').focus().select();
+                    $row.find('.quantity').focus();
+                    $row.find('.quantity').select();
                     return false;
                 }
 
-                // 3. Quantity -> ensure product selected before creating new row
+                // 3. Quantity -> Next Row (or create new)
                 if ($(this).hasClass('quantity')) {
-                    const productIdVal = $row.find('.product-select').val() || '';
+                    const productIdVal = $row.find('.product_id').val() || '';
                     if (!productIdVal) {
-                        $row.find('.product-select').select2('open');
+                        // if no product, force go back to product search
+                        $row.find('.productSearch').focus();
                         return false;
                     }
                     
                     const isLast = $row.is(':last-child');
                     if (isLast) {
                         appendBlankRow();
+                        // focus moved to new row in appendBlankRow, but let's ensure
+                        $('#purchaseItems tr:last .productSearch').focus();
                     } else {
-                        // Focus next row product select
-                        $row.next().find('.product-select').select2('open');
+                        $row.next().find('.productSearch').focus();
                     }
                     return false;
                 }
-                
-                // Fallback: move to next input
-                const $inputs = $row.find('input:visible, select:visible, button:visible');
-                const idx = $inputs.index(this);
-                if (idx >= 0 && idx < $inputs.length - 1) {
-                    $inputs.eq(idx + 1).focus();
+
+                // Fallback for other inputs: move to next visible input
+                let $next = $row.find('input,select,button').filter(':visible').toArray();
+                let idx = $next.indexOf(e.target);
+                if (idx >= 0 && idx < $next.length - 1) {
+                    $($next[idx + 1]).focus();
                 }
+                return false;
             }
         });
 
@@ -1087,7 +1508,7 @@
 
             // Fetch accounts for this head (AJAX)
             $.ajax({
-                url: "/get-accounts-by-head/" + headId,
+                url: "{{ url('/get-accounts-by-head') }}/" + headId,
                 type: "GET",
                 dataType: 'json',
                 success: function(res) {
@@ -1165,8 +1586,10 @@
     $('#purchaseForm').on('submit', function(e) {
         // remove any item rows that do not have a product selected
         $('#purchaseItems tr').each(function() {
-            const pid = $(this).find('.product-select').val() || '';
-            if (!pid.toString().trim()) {
+            const pid = $(this).find('.product_id').val() || '';
+            // if product id blank OR productSearch text blank, remove row
+            const name = $(this).find('.productSearch').val() || '';
+            if (!pid.toString().trim() && !name.toString().trim()) {
                 $(this).remove();
             }
         });
@@ -1175,15 +1598,17 @@
         if ($('#purchaseItems tr').length === 0) {
             if (typeof appendBlankRow === 'function') {
                 appendBlankRow(); 
+            } else {
+                 // Fallback if function is somehow not reachable (though it should be)
+                 const fallbackRow = `<tr><td><input type="hidden" name="product_id[]" class="product_id"><input type="hidden" name="product_name[]" class="product_name_hidden"><input type="text" class="form-control form-control-sm productSearch" placeholder="Search product..."><div class="searchResults"></div></td><td class="uom border"><input type="text" name="brand[]" class="form-control form-control-sm" readonly></td><td><input type="number" step="0.01" name="price[]" class="form-control form-control-sm price"></td><td><input type="text" name="retail_price_show[]" class="form-control form-control-sm retail_price_show" readonly></td><td><div class="input-group"><input type="number" step="0.01" min="0" name="item_disc[]" class="form-control form-control-sm item_disc" placeholder="%"><input type="text" name="item_disc_amount[]" class="form-control form-control-sm disc_amount" readonly placeholder="Disc Amt"></div><input type="hidden" name="purchase_retail_price[]" class="purchase_retail_price"><input type="hidden" name="purchase_net_amount[]" class="purchase_net_amount"></td><td><input type="number" name="qty[]" class="form-control form-control-sm quantity" value="1" min="1"></td><td><input type="text" name="amount[]" class="form-control form-control-sm row-amount" readonly></td><td><input type="text" name="total[]" class="form-control form-control-sm row-total" readonly></td><td><button type="button" class="btn btn-sm btn-danger remove-row">X</button></td></tr>`;
+                 $('#purchaseItems').append(fallbackRow);
             }
         }
 
         // after removal, check if we still have at least one valid row
-        const validRows = $('#purchaseItems .product-select').filter(function() {
-             return $(this).val();
-        }).length;
-
-        if (validRows === 0) {
+        if ($('#purchaseItems .product_id').filter(function() {
+                return $(this).val().toString().trim() !== '';
+            }).length === 0) {
             e.preventDefault();
             Swal.fire({
                 icon: 'warning',
@@ -1211,7 +1636,7 @@
         let apiType = type;
         if(type === 'walkin') apiType = 'customer'; // usually walkin is handled as customer or separate
 
-        $.get('/party/list', { type: apiType }, function(data) {
+        $.get('{{ route("party.list") }}', { type: apiType }, function(data) {
             $vendorSelect.empty().append('<option value="" disabled selected>Select</option>');
             if(Array.isArray(data)) {
                 data.forEach(function(item) {
@@ -1231,35 +1656,189 @@
     });
 
     $(function() {
-        // ========== EDIT MODE: Restore Vendor Only ==========
-        // (Items and Allocations are handled by the IIFE restore logic above)
-        
-        // Data from server
-        const purchase = @json($purchase);
-        const oldInputExists = @json(!empty(old('vendor_type')));
+    // ========== EDIT MODE: Restore Purchase Data ==========
+    
+    // We can use Blade to inject the Purchase data into JS variables
+    const purchase = @json($purchase);
+    const purchaseItems = @json($purchase->items);
+    const allocations = @json($purchase->accountAllocations);
+    
+    // 1. Restore Vendor Type & ID
+    // Derive type from purchasable_type
+    let vendorType = 'vendor'; 
+    let vendorId = purchase.vendor_id || purchase.purchasable_id; // fallback
 
-        if (oldInputExists) {
-             const type = $('select[name="vendor_type"]').val();
-             const vId = $('select[name="vendor_id"]').val() || "{{ old('vendor_id') }}";
-             if(type) loadVendors(type, vId);
-             return;
+    if (purchase.purchasable_type) {
+        if (purchase.purchasable_type.toLowerCase().includes('customer')) {
+            vendorType = 'customer';
+        } else if (purchase.purchasable_type.toLowerCase().includes('vendor')) {
+            vendorType = 'vendor';
         }
+        // Check if walkin logic exists, if handled via type
+    }
+    
+    // Set the select box
+    $('select[name="vendor_type"]').val(vendorType);
+    
+    // Load vendors and select the correct ID
+    loadVendors(vendorType, vendorId);
 
-        // 1. Restore Vendor Selection from DB
-        // Determine type based on purchasable_type or default 'vendor'
-        let vendorType = 'vendor';
-        if (purchase.purchasable_type) {
-            const types = purchase.purchasable_type.toLowerCase();
-            if (types.includes('customer')) vendorType = 'customer';
-            else if (types.includes('walking')) vendorType = 'walkin';
-        }
+
+    // 2. Restore Purchase Items
+    if (purchaseItems && purchaseItems.length > 0) {
+        $('#purchaseItems').empty(); // Remove default blank row
         
-        // Update select and trigger load
-        $('select[name="vendor_type"]').val(vendorType);
+        purchaseItems.forEach(item => {
+             // Calculate/Format values
+             let price = parseFloat(item.price || 0);
+             let qty = parseFloat(item.qty || 1);
+             let itemDisc = parseFloat(item.item_discount || 0);
+             // derived values for display
+             // Assuming item_discount is % ? If it's amount, adjust logic. 
+             // Based on previous code, item_discount seems to be %. 
+             // Let's verify: In create UI, item_disc is placeholder="%"
+             
+             let discAmt = (price * (itemDisc / 100)) * qty;
+             let rowAmount = price; // unit price
+             let lineTotal = (price * qty) - discAmt;
+             
+             // Get Product Name/Brand (lazy load or safe access)
+             let pName = item.product ? item.product.name : '';
+             let pBrand = item.product && item.product.brand ? item.product.brand.name : '';
+             
+             // Latest price for display (optional)
+             let retail = item.product && item.product.latest_price ? item.product.latest_price.retail_price : 0;
+
+             let newRow = `
+              <tr>
+                <!-- Product -->
+                 <td>
+              <input type="hidden" name="product_id[]" class="product_id" value="${item.product_id}">
+              <input type="hidden" name="product_name[]" class="product_name_hidden" value="${pName}">
+              <input type="text" class="form-control form-control-sm productSearch" placeholder="Enter product name..." autocomplete="off" value="${pName}">
+              <div class="searchResults"></div>
+            </td>
+
+                <!-- Brand -->
+                <td class="uom border">
+                    <input type="text" name="brand[]" class="form-control form-control-sm" readonly value="${pBrand}">
+                </td>
+
+                <!-- Price -->
+                <td>
+                    <input type="number" step="0.01" name="price[]" class="form-control form-control-sm price" value="${price.toFixed(2)}">
+                </td>
+
+                <!-- Retail Price (visible) -->
+                <td>
+                    <input type="text" name="retail_price_show[]" class="form-control form-control-sm retail_price_show" readonly value="${parseFloat(retail).toFixed(2)}">
+                </td>
+
+                <!-- Discount -->
+                <td>
+                  <div class="input-group">
+                    <input type="number" step="0.01" min="0" name="item_disc[]" class="form-control form-control-sm item_disc" placeholder="%" value="${itemDisc}">
+                    <input type="text" name="item_disc_amount[]" class="form-control form-control-sm disc_amount" readonly placeholder="Disc Amt" value="${discAmt.toFixed(2)}">
+                  </div>
+                  <input type="hidden" name="purchase_retail_price[]" class="purchase_retail_price" value="${parseFloat(retail).toFixed(2)}">
+                  <input type="hidden" name="purchase_net_amount[]" class="purchase_net_amount" value="${price.toFixed(2)}">
+                </td>
+
+                <!-- Quantity -->
+                <td class="qty">
+                    <input type="number" name="qty[]" class="form-control form-control-sm quantity" min="1" value="${qty}">
+                </td>
+
+                <!-- Amount -->
+                <td>
+                    <input type="text" name="amount[]" class="form-control form-control-sm row-amount" readonly value="${price.toFixed(2)}">
+                </td>
+
+                <!-- Total -->
+                <td class="total border">
+                    <input type="text" name="total[]" class="form-control form-control-sm row-total" readonly value="${lineTotal.toFixed(2)}">
+                </td>
+
+                <!-- Remove -->
+                <td>
+                    <button type="button" class="btn btn-sm btn-danger remove-row">X</button>
+                </td>
+              </tr>`;
+            $('#purchaseItems').append(newRow);
+        });
         
-        // Manually load vendors to ensure we select the correct one
-        const vendorId = purchase.purchasable_id || purchase.vendor_id;
-        loadVendors(vendorType, vendorId);
-    }); // End Document Ready
-    </script>
+        // Add blank row at end for convenience? Maybe not in edit mode to keep it clean.
+        appendBlankRow();
+    }
+
+    // 3. Restore Account Allocations
+    if(allocations && allocations.length > 0) {
+        // The default PHP loop in HTML might render if there are any, but we are doing it via JS for strict control
+        // Actually, the HTML had a PHP loop: @foreach ($AccountHeads as $head) ...
+        // But the TABLE BODY for allocations was effectively empty or had a template row. 
+        // Let's clear and rebuild.
+        $('#accountsTable tbody').empty();
+        
+        const headsData = @json($AccountHeads);
+        
+        allocations.forEach(alloc => {
+            let headOptions = '<option value="" disabled>Select Head</option>';
+            headsData.forEach(h => {
+                let s = (String(h.id) === String(alloc.account_head_id)) ? 'selected' : '';
+                headOptions += `<option value="${h.id}" ${s}>${h.name}</option>`;
+            });
+            
+            let rowHtml = `
+            <tr>
+              <td>
+                <select name="account_head_id[]" class="form-control form-control-sm accountHead">
+                  ${headOptions}
+                </select>
+              </td>
+              <td>
+                <select name="account_id[]" class="form-control form-control-sm accountSub" required>
+                  <option value="${alloc.account_id}" selected>Loading...</option>
+                </select>
+              </td>
+              <td>
+                <input type="number" step="0.01" name="account_amount[]" class="form-control form-control-sm accountAmount" value="${alloc.amount}">
+              </td>
+              <td>
+                <button type="button" class="btn btn-sm btn-danger removeAccountRow">X</button>
+              </td>
+            </tr>`;
+            
+            let $row = $(rowHtml);
+            $('#accountsTable tbody').append($row);
+            
+            // Now trigger the AJAX to load the proper account list for this head
+            // and keep the selected account
+            let headId = alloc.account_head_id;
+            let $accSelect = $row.find('.accountSub');
+            
+            $.ajax({
+                url: "{{ url('/get-accounts-by-head') }}/" + headId, // Ensure this route exists or matches your setup
+                type: "GET",
+                dataType: 'json',
+                success: function(res) {
+                    let html = '<option value="" disabled>Select Account</option>';
+                    if (Array.isArray(res) && res.length) {
+                        res.forEach(acc => {
+                            let selected = String(acc.id) === String(alloc.account_id) ? ' selected' : '';
+                            html += `<option value="${acc.id}"${selected}>${acc.title}</option>`;
+                        });
+                    }
+                    $accSelect.html(html);
+                }
+            });
+        });
+    }
+
+    // 4. Recalculate Totals
+    recalcSummary();
+    recalcAccountsTotal();
+
+}); // End Document Ready
+
+</script>
 @endsection

@@ -51,7 +51,7 @@ class Product extends Model
         return $this->hasOne(ProductPrice::class)->latestOfMany();
     }
 
-    public function brand()
+    public function brandRelation()
     {
         return $this->belongsTo(Brand::class, 'brand_id');
     }

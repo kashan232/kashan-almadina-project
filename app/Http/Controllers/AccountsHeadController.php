@@ -19,9 +19,24 @@ class AccountsHeadController extends Controller
     public function index()
     {
         $accounts = Account::with('head')->get();
-        // dd( $accounts->toArray());
         $heads = AccountHead::all();
-        return view('admin_panel.chart_of_accounts', compact('accounts', 'heads'));
+        // Calculate next Head Code (ID)
+        $nextHeadId = AccountHead::max('id') + 1;
+        return view('admin_panel.chart_of_accounts', compact('accounts', 'heads', 'nextHeadId'));
+    }
+
+    public function getNextAccountCode($headId)
+    {
+        $lastAccount = Account::where('head_id', $headId)->orderBy('id', 'desc')->first();
+
+        if ($lastAccount && is_numeric($lastAccount->account_code)) {
+            $nextCode = $lastAccount->account_code + 1;
+        } else {
+            // Default format: HeadID + 001
+            $nextCode = $headId . '001';
+        }
+
+        return response()->json(['code' => $nextCode]);
     }
 
     public function purcahse_account_allocation()
