@@ -96,6 +96,88 @@ class StockTransferController extends Controller
         }
     }
 
+    public function edit($id)
+    {
+        $transfer = StockTransfer::with('items')->findOrFail($id);
+        
+        if ($transfer->status !== 'Unposted') {
+            return back()->with('error', 'Only unposted stock transfers can be edited.');
+        }
+
+        $warehouses = Warehouse::orderBy('warehouse_name')->get();
+        $products = Product::orderBy('name')->get();
+
+        return view('admin_panel.warehouses.stock_transfers.edit', compact('transfer', 'warehouses', 'products'));
+    }
+
+    public function update(Request $request, $id)
+    {
+        $transfer = StockTransfer::findOrFail($id);
+        
+        if ($transfer->status !== 'Unposted') {
+            if ($request->ajax()) {
+                return response()->json(['success' => false, 'message' => 'Only unposted transfers can be edited'], 400);
+            }
+            return back()->with('error', 'Only unposted transfers can be edited');
+        }
+
+        $request->validate([
+            'from_warehouse_id' => 'required',
+            'to_warehouse_id'   => 'required|exists:warehouses,id',
+            'product_id'        => 'required|array|min:1',
+            'product_id.*'      => 'required|exists:products,id',
+            'quantity'          => 'required|array',
+            'quantity.*'        => 'required|numeric|min:1',
+            'remarks'           => 'nullable|string',
+        ]);
+
+        try {
+            DB::transaction(function () use ($request, $transfer) {
+                $isFromShop = $request->from_warehouse_id === 'shop';
+
+                $transfer->update([
+                    'from_warehouse_id' => $isFromShop ? null : $request->from_warehouse_id,
+                    'from_shop'         => $isFromShop ? 1 : 0,
+                    'to_warehouse_id'   => $request->to_warehouse_id,
+                    'to_shop'           => $request->has('to_shop') ? 1 : 0,
+                    'remarks'           => $request->remarks,
+                ]);
+
+                // Delete old items
+                $transfer->items()->delete();
+
+                // Add new items
+                foreach ($request->product_id as $index => $productId) {
+                    $qty = (float) $request->quantity[$index];
+                    if ($qty <= 0) continue;
+
+                    StockTransferProduct::create([
+                        'stock_transfer_id' => $transfer->id,
+                        'product_id'        => $productId,
+                        'quantity'          => $qty,
+                    ]);
+                }
+            });
+
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'id'      => $transfer->id,
+                    'status'  => 'Unposted',
+                    'message' => 'Stock Transfer Updated',
+                ]);
+            }
+
+            return redirect()->route('stock_transfers.index')->with('success', 'Stock Transfer updated.');
+
+        } catch (\Exception $e) {
+            if ($request->ajax()) {
+                return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
+            }
+            return back()->with('error', $e->getMessage())->withInput();
+        }
+    }
+
     public function post($id)
     {
         $transfer = StockTransfer::with('items')->findOrFail($id);

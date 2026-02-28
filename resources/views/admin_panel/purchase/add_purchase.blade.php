@@ -464,11 +464,12 @@
                                                                     <th>WHT</th>
                                                                     <td>
                                                                         <div class="input-group">
-                                                                            <input type="number" step="0.01" id="whtPercent" class="form-control form-control-sm" placeholder="%" value="{{ old('wht_percent', $purchase->wht_percent ?? '') }}">
+                                                                            <input type="number" step="0.01" id="whtPercent" name="wht_percent" class="form-control form-control-sm" placeholder="%" value="{{ old('wht_percent', $purchase->wht_percent ?? '') }}">
                                                                             <input type="hidden" id="whtValue" name="wht" value="{{ old('wht', $purchase->wht ?? 0) }}">
-                                                                            <select id="whtType" class="form-select form-select-sm" style="max-width:90px;">
-                                                                                <option value="percent" selected>%</option>
-                                                                                <option value="amount">PKR</option>
+                                                                            <select id="whtType" name="wht_type" class="form-select form-select-sm" style="max-width:90px;">
+                                                                                @php $wType = old('wht_type', $purchase->wht_type ?? 'percent'); @endphp
+                                                                                <option value="percent" {{ $wType == 'percent' ? 'selected' : '' }}>%</option>
+                                                                                <option value="amount" {{ $wType == 'amount' ? 'selected' : '' }}>PKR</option>
                                                                             </select>
                                                                         </div>
                                                                     </td>
@@ -1559,7 +1560,7 @@ $(function() {
         $('#subtotal').val(subTotalGross.toFixed(2));
         $('#overallDiscount').val(totalDiscount.toFixed(2));
 
-        var whtVal = _n($('#whtValue').val());
+        var whtVal = _n($('#whtPercent').val());
         var whtType = $('#whtType').val() || 'percent';
         var whtAmt = 0;
         
@@ -1569,6 +1570,7 @@ $(function() {
             whtAmt = whtVal;
         }
 
+        $('#whtValue').val(whtVal);
         $('#whtAmount').val(whtAmt.toFixed(2));
         var netTotal = subTotalGross - totalDiscount - whtAmt;
         $('#netAmount').val(netTotal.toFixed(2));
@@ -1588,7 +1590,7 @@ $(function() {
     });
 
     // Summary field changes
-    $(document).on('input change', '#overallDiscount, #whtValue, #whtType', function() {
+    $(document).on('input change', '#overallDiscount, #whtPercent, #whtType', function() {
         _recalcSummary();
     });
 

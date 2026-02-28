@@ -34,7 +34,7 @@ class PurchaseReturnController extends Controller
     public function create()
     {
         $nextInvoice = PurchaseReturn::generateReturnNo();
-        $purchases = Purchase::where('status', 'Posted')->get(['id', 'invoice_no']);
+        $purchases = Purchase::where('status', 'Posted')->get(['id', 'invoice_no', 'purchasable_type', 'purchasable_id']);
         $vendors = \App\Models\Vendor::all();
         $customers = \App\Models\Customer::all();
         $warehouses = \App\Models\Warehouse::all();
@@ -59,7 +59,8 @@ class PurchaseReturnController extends Controller
                 
                 // Calculate discount percent if not stored (total_disc / (price * qty)) * 100
                 $totalVal = $item->price * $item->qty;
-                $discPercent = $totalVal > 0 ? ($item->item_discount / $totalVal) * 100 : 0;
+                // If item_discount contains the percentage directly (from DB column item_discount)
+                $discPercent = $item->item_discount ?? 0;
                 
                 return [
                     'id' => $item->id,
@@ -68,7 +69,7 @@ class PurchaseReturnController extends Controller
                     'price' => $item->price,
                     'qty' => $item->qty,
                     'item_discount' => $item->item_discount,
-                    'discount_percent' => round($discPercent, 2),
+                    'discount_percent' => $discPercent,
                     'retail_price' => $pPrice->purchase_retail_price ?? 0,
                 ];
             });
@@ -79,7 +80,10 @@ class PurchaseReturnController extends Controller
                 'party_name' => $purchase->purchasable->name ?? ($purchase->purchasable->customer_name ?? 'N/A'),
                 'party_type' => class_basename($purchase->purchasable_type),
                 'warehouse_id' => $purchase->warehouse_id,
-                'warehouse_name' => $purchase->warehouse->warehouse_name ?? 'N/A'
+                'warehouse_name' => $purchase->warehouse->warehouse_name ?? 'N/A',
+                'wht' => $purchase->wht ?? 0,
+                'wht_percent' => $purchase->wht_percent ?? 0,
+                'wht_type' => $purchase->wht_type ?? 'percent'
             ]);
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 500);
@@ -96,7 +100,7 @@ class PurchaseReturnController extends Controller
         ]);
 
         try {
-            DB::transaction(function () use ($request) {
+            $result = DB::transaction(function () use ($request) {
                 $purchaseId = $request->purchase_id;
                 $invoiceNo = PurchaseReturn::generateReturnNo();
                 
@@ -161,11 +165,25 @@ class PurchaseReturnController extends Controller
                         'line_total'        => $lineTotal,
                     ]);
                 }
+
+                return $purchaseReturn; // return the instance
             });
+
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Purchase Return saved as Unposted!',
+                    'id' => $result->id
+                ]);
+            }
 
             return redirect()->route('purchase.return.home')->with('success', 'Purchase Return saved as Unposted!');
         } catch (\Exception $e) {
-            Log::error('Purchase Return Error: ' . $e->getMessage());
+            \Illuminate\Support\Facades\Log::error('Purchase Return Error: ' . $e->getMessage());
+            
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
+            }
             return redirect()->back()->with('error', 'Error: ' . $e->getMessage())->withInput();
         }
     }
@@ -258,8 +276,14 @@ class PurchaseReturnController extends Controller
                 $ret->save();
             });
 
+            if (request()->ajax() || request()->wantsJson()) {
+                return response()->json(['success' => true, 'message' => 'Purchase Return Posted successfully and impacts applied!']);
+            }
             return redirect()->back()->with('success', 'Purchase Return Posted successfully and impacts applied!');
         } catch (\Exception $e) {
+            if (request()->ajax() || request()->wantsJson()) {
+                return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
+            }
             return redirect()->back()->with('error', $e->getMessage());
         }
     }

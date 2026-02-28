@@ -187,6 +187,8 @@ class PurchaseController extends Controller
                     'subtotal'         => $request->subtotal,
                     'discount'         => $request->discount,
                     'wht'              => $request->wht,
+                    'wht_percent'      => $request->wht_percent,
+                    'wht_type'         => $request->wht_type,
                     'net_amount'       => $request->net_amount,
                     'branch_id'        => auth()->user()->branch_id ?? 1,
                 ]);
@@ -292,6 +294,8 @@ class PurchaseController extends Controller
                 'subtotal'        => $request->subtotal,
                 'discount'        => $request->discount,
                 'wht'             => $request->wht,
+                'wht_percent'     => $request->wht_percent,
+                'wht_type'        => $request->wht_type,
                 'net_amount'      => $request->net_amount,
                 'branch_id'       => auth()->user()->branch_id ?? 1,
                 'inward_id'       => $request->inward_id, // link inward
@@ -466,6 +470,8 @@ class PurchaseController extends Controller
                     'subtotal'         => $request->subtotal,
                     'discount'         => $request->discount,
                     'wht'              => $request->wht,
+                    'wht_percent'      => $request->wht_percent,
+                    'wht_type'         => $request->wht_type,
                     'net_amount'       => $request->net_amount,
                 ]);
 

@@ -272,21 +272,8 @@
         });
 
         // Column Persistence with LocalStorage
-        const storageKey = 'stock_wastage_table_columns_v1';
+        const storageKey = 'stock_wastage_table_columns_v2';
         
-        // Load initial state
-        const savedState = localStorage.getItem(storageKey);
-        if (savedState) {
-            const columns = JSON.parse(savedState);
-            $('#columnPickerMenu input').each(function() {
-                const colIdx = $(this).data('column');
-                if (columns.hasOwnProperty(colIdx)) {
-                    $(this).prop('checked', columns[colIdx]);
-                    toggleColumn(colIdx, columns[colIdx]);
-                }
-            });
-        }
-
         // Handle Checkbox Change
         $('#columnPickerMenu input').on('change', function() {
             const colIdx = $(this).data('column');
@@ -296,16 +283,6 @@
             saveState();
         });
 
-        function toggleColumn(index, show) {
-            const table = $('#wastageTable');
-            const cells = table.find(`th:nth-child(${index}), td:nth-child(${index})`);
-            if (show) {
-                cells.removeClass('column-hidden');
-            } else {
-                cells.addClass('column-hidden');
-            }
-        }
-
         function saveState() {
             const state = {};
             $('#columnPickerMenu input').each(function() {
@@ -314,7 +291,7 @@
             localStorage.setItem(storageKey, JSON.stringify(state));
         }
 
-        $('#wastageTable').DataTable({
+        var dt = $('#wastageTable').DataTable({
             destroy: true,
             scrollX: true,
             autoWidth: false,
@@ -325,6 +302,25 @@
                 searchPlaceholder: "Search wastages..."
             }
         });
+
+        // Load initial state
+        const savedState = localStorage.getItem(storageKey);
+        if (savedState) {
+            const columns = JSON.parse(savedState);
+            $('#columnPickerMenu input').each(function() {
+                const colIdx = $(this).data('column');
+                if (columns.hasOwnProperty(colIdx)) {
+                    $(this).prop('checked', columns[colIdx]);
+                    dt.column(colIdx - 1).visible(columns[colIdx]);
+                }
+            });
+            dt.columns.adjust().draw(false);
+        }
+
+        let toggleColumn = function(index, show) {
+            dt.column(index - 1).visible(show);
+            dt.columns.adjust().draw(false);
+        };
     });
 </script>
 @endsection
