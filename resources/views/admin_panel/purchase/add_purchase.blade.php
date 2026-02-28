@@ -1544,20 +1544,18 @@ $(function() {
 
     // Recalculate bottom summary
     function _recalcSummary() {
-        var subTotalGross = 0;
-        var itemDiscTotal = 0;
+        var subTotalNetItems = 0;
 
-        // Sum all row gross amounts and disc amounts
+        // Sum all row net totals (since item discount is 'upr hi dia bs khatam')
         $('#purchaseItems tr').each(function() {
-            subTotalGross += _n($(this).find('.row-amount').val());
-            itemDiscTotal += _n($(this).find('.disc_amount').val());
+            subTotalNetItems += _n($(this).find('.row-total').val());
         });
 
         // Sum accounts allocation total
         var accTotal = _n($('#accountsTotal').val());
-        var totalDiscount = itemDiscTotal + accTotal;
+        var totalDiscount = accTotal; // ONLY account allocations in bottom discount
 
-        $('#subtotal').val(subTotalGross.toFixed(2));
+        $('#subtotal').val(subTotalNetItems.toFixed(2));
         $('#overallDiscount').val(totalDiscount.toFixed(2));
 
         var whtVal = _n($('#whtPercent').val());
@@ -1565,14 +1563,14 @@ $(function() {
         var whtAmt = 0;
         
         if (whtType === 'percent') {
-            whtAmt = Math.max(0, subTotalGross - totalDiscount) * whtVal / 100;
+            whtAmt = Math.max(0, subTotalNetItems - totalDiscount) * whtVal / 100;
         } else {
             whtAmt = whtVal;
         }
 
         $('#whtValue').val(whtVal);
         $('#whtAmount').val(whtAmt.toFixed(2));
-        var netTotal = subTotalGross - totalDiscount - whtAmt;
+        var netTotal = subTotalNetItems - totalDiscount - whtAmt;
         $('#netAmount').val(netTotal.toFixed(2));
     }
 
