@@ -107,7 +107,11 @@ class PurchaseController extends Controller
         $validator = Validator::make($request->all(), $rules, $messages);
         if ($validator->fails()) {
             if ($request->ajax() || $request->wantsJson()) {
-                return response()->json(['success' => false, 'message' => $validator->errors()->first()], 422);
+                return response()->json([
+                    'success' => false, 
+                    'message' => 'Validation error', 
+                    'errors' => $validator->errors()
+                ], 422);
             }
             return redirect()->back()->withErrors($validator)->withInput();
         }
@@ -404,7 +408,11 @@ class PurchaseController extends Controller
         $validator = \Illuminate\Support\Facades\Validator::make($request->all(), $rules, $messages);
         if ($validator->fails()) {
             if ($request->ajax() || $request->wantsJson()) {
-                return response()->json(['success' => false, 'message' => $validator->errors()->first()], 422);
+                return response()->json([
+                    'success' => false, 
+                    'message' => 'Validation error',
+                    'errors' => $validator->errors()
+                ], 422);
             }
             return redirect()->back()->withErrors($validator)->withInput();
         }

@@ -56,10 +56,10 @@
         padding: 20px;
         border-radius: 20px;
     }
-    .posted-bg {
+    .locked-bg {
         background-color: #fcfcfc !important;
     }
-    {{ isset($purchase) && $purchase->status == 'Posted' ? 'input, select, textarea, button[type="submit"] { pointer-events: none; opacity: 0.8; } .remove-row, .removeAccountRow, #addRow, #addAccountRow { display: none !important; }' : '' }}
+    {{ isset($purchase) ? 'input, select, textarea { pointer-events: none; opacity: 0.8; } .remove-row, .removeAccountRow, #addRow, #addAccountRow, #saveDraftBtn { display: none !important; }' : '' }}
 </style>
 @section('content')
 <div class="main-content bg-white">
@@ -427,7 +427,7 @@
                                                                                     </select>
                                                                                 </td>
                                                                                 <td>
-                                                                                    <input type="number" step="0.01" name="account_amount[]" class="form-control form-control-sm accountAmount" value="0">
+                                                                                    <input type="number" step="0.01" name="account_amount[]" class="form-control form-control-sm accountAmount" value="0" disabled>
                                                                                 </td>
                                                                                 <td>
                                                                                     <button type="button" class="btn btn-sm btn-danger removeAccountRow">X</button>
@@ -531,6 +531,21 @@
                                                         <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+&#8629;</kbd>
                                                     </button>
                                                 @endif
+
+                                                {{-- New Invoice --}}
+                                                <a href="{{ url('add/Purchase') }}" id="newInvoiceBtn" 
+                                                    class="btn btn-sm btn-info rounded-pill px-4 shadow-sm text-white" 
+                                                    style="display: {{ isset($purchase) ? 'inline-block' : 'none' }};">
+                                                    <i class="fa fa-plus me-1"></i> New 
+                                                    <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+M</kbd>
+                                                </a>
+
+                                                {{-- Cancel --}}
+                                                <a href="{{ route('Purchase.home') }}" id="cancelBtn" 
+                                                    class="btn btn-sm btn-danger rounded-pill px-4 shadow-sm text-white">
+                                                    <i class="fa fa-times me-1"></i> Cancel 
+                                                    <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Esc</kbd>
+                                                </a>
 
                                             </div>
 
@@ -998,7 +1013,7 @@
             ${getError('account_id')}
           </td>
           <td>
-            <input type="number" step="0.01" name="account_amount[]" class="form-control form-control-sm accountAmount" value="${amt}">
+            <input type="number" step="0.01" name="account_amount[]" class="form-control form-control-sm accountAmount" value="${amt}" disabled>
             ${getError('account_amount')}
           </td>
           <td>
@@ -1038,6 +1053,9 @@
                                 $accountSelect.prepend('<option value="" disabled selected>Select Account</option>');
                                 $accountSelect.val('');
                             }
+                            
+                            // Re-evaluate enablement after loading saved account
+                            $accountSelect.trigger('change');
                             if (typeof recalcAccountsTotal === 'function') recalcAccountsTotal();
                         },
                         error: function() {
@@ -1140,6 +1158,8 @@
         $(document).on('input change', '#overallDiscount, #whtPercent, #whtType', function() {
             window.recalcSummary();
         });
+
+        // (Account Amount disable logic removed from here, handled directly in change events)
 
         // Auto-select on focus
         $(document).on('focus', '.quantity, .item_disc, .price', function() {
@@ -1676,6 +1696,7 @@ $(document).ready(function() {
     //  AJAX SAVE DRAFT (no page reload)
     // =============================================
     function ajaxSaveDraft() {
+        $('.ajax-valid-error').remove();
         var $form  = $('#purchaseForm');
 
         $('#saveDraftBtn').prop('disabled', true).html('<i class="fa fa-spinner fa-spin me-1"></i> Saving...');
@@ -1708,13 +1729,52 @@ $(document).ready(function() {
                             .html('<i class="fa fa-print me-1"></i> Print <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+P</kbd>')
                         );
                     }
+                    
+                    // Show New Invoice button
+                    $('#newInvoiceBtn').show();
+                    
+                    // Lock the entire form visually from taking new input
+                    $('#purchaseForm input, #purchaseForm select, #purchaseForm textarea').css({'pointer-events': 'none', 'opacity': '0.8'});
+                    $('.remove-row, .removeAccountRow, #addRow, #addAccountRow, #saveDraftBtn').hide();
+                    
                 } else {
                     showToast('❌ ' + (res.message || 'Error saving draft.'), 'error');
                 }
             },
             error: function(xhr) {
+                $('.ajax-valid-error').remove();
                 var msg = 'Save failed.';
-                try { msg = JSON.parse(xhr.responseText).message || msg; } catch(e){}
+                try { 
+                    var resp = JSON.parse(xhr.responseText);
+                    msg = resp.message || msg;
+                    if(resp.errors) {
+                        $.each(resp.errors, function(key, val) {
+                            var fieldHtml = '<div class="text-danger fw-bold ajax-valid-error mb-1" style="font-size:11px;"><i class="fa fa-exclamation-triangle"></i> ' + val[0] + '</div>';
+                            if(key.indexOf('.') !== -1) {
+                                var parts = key.split('.');
+                                var fieldName = parts[0] + '[]';
+                                var index = parseInt(parts[1]);
+                                var $target = $('[name="' + fieldName + '"]').eq(index);
+                                if($target.length) {
+                                    if ($target.is('select')) {
+                                        $target.closest('td, div').prepend(fieldHtml);
+                                    } else {
+                                        $target.before(fieldHtml);
+                                    }
+                                }
+                            } else {
+                                var $target = $('[name="' + key + '"]');
+                                if($target.closest('.input-group').length && !$target.closest('.input-group').parent().is('td')) {
+                                    $target.closest('.input-group').before(fieldHtml);
+                                } else if($target.hasClass('select2-hidden-accessible')) {
+                                    $target.next('.select2-container').before(fieldHtml);
+                                } else if($target.length) {
+                                    $target.before(fieldHtml);
+                                }
+                            }
+                        });
+                    }
+                } catch(e){}
                 showToast('❌ ' + msg, 'error');
             },
             complete: function() {
@@ -1774,11 +1834,29 @@ $(document).ready(function() {
 
     // NOTE: Global keyboard shortcuts are handled in a single block below to avoid duplicate saves.
 
-    // Ctrl+L → List page (capture phase — overrides browser address bar shortcut)
+    // Keyboard Shortcuts Capture
     document.addEventListener('keydown', function(e) {
+        // Ctrl+L → List page
         if (e.ctrlKey && (e.key === 'l' || e.key === 'L')) {
             e.preventDefault();
             window.location.href = $('#listBtn').attr('href');
+        }
+        
+        // Ctrl+M → New Invoice
+        if (e.ctrlKey && (e.key === 'm' || e.key === 'M')) {
+            e.preventDefault();
+            if ($('#newInvoiceBtn').is(':visible')) {
+                window.location.href = $('#newInvoiceBtn').attr('href');
+            } else {
+                // if it's not visible, we can just redirect to the add URL directly
+                window.location.href = "{{ url('add/Purchase') }}";
+            }
+        }
+        
+        // Esc → Cancel (Redirect to list)
+        if (e.key === 'Escape') {
+            e.preventDefault();
+            window.location.href = $('#cancelBtn').attr('href');
         }
     }, true);
 
@@ -1917,11 +1995,46 @@ $(document).ready(function() {
                     html = '<option value="" disabled>No Accounts Found</option>';
                 }
                 $accSelect.html(html);
+                
+                // When head changes, disable amount until new account is selected
+                var $amt = $row.find('.accountAmount');
+                $amt.prop('disabled', true).attr('disabled', 'disabled');
             },
             error: function(err) {
                 console.error('AJAX Error:', err.statusText);
             }
         });
+    });
+
+    $(document).on('change', '.accountSub', function() {
+        var $row = $(this).closest('tr');
+        var headVal = $row.find('.accountHead').val();
+        var subVal = $(this).val();
+        var $amt = $row.find('.accountAmount');
+        
+        if (headVal && subVal) {
+            $amt.prop('disabled', false).removeAttr('disabled');
+        } else {
+            $amt.prop('disabled', true).attr('disabled', 'disabled');
+        }
+    });
+
+    // Sweep all rows on load to ensure proper enablement state
+    $(document).ready(function() {
+        setTimeout(function() {
+            $('.accountSub').each(function() {
+                var $row = $(this).closest('tr');
+                var headVal = $row.find('.accountHead').val();
+                var subVal = $(this).val();
+                var $amt = $row.find('.accountAmount');
+                
+                if (headVal && subVal) {
+                    $amt.prop('disabled', false).removeAttr('disabled');
+                } else {
+                    $amt.prop('disabled', true).attr('disabled', 'disabled');
+                }
+            });
+        }, 500); // Wait for restore logic if any
     });
 
     // 2. Add Account Row
@@ -1941,7 +2054,7 @@ $(document).ready(function() {
                 </select>
             </td>
             <td>
-                <input type="number" step="0.01" name="account_amount[]" class="form-control form-control-sm accountAmount" value="0">
+                <input type="number" step="0.01" name="account_amount[]" class="form-control form-control-sm accountAmount" value="0" disabled>
             </td>
             <td>
                 <button type="button" class="btn btn-sm btn-danger removeAccountRow">X</button>
