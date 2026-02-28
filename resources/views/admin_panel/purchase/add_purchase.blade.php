@@ -59,7 +59,8 @@
     .locked-bg {
         background-color: #fcfcfc !important;
     }
-    {{ isset($purchase) ? 'input, select, textarea { pointer-events: none; opacity: 0.8; } .remove-row, .removeAccountRow, #addRow, #addAccountRow, #saveDraftBtn { display: none !important; }' : '' }}
+    .form-locked input, .form-locked select, .form-locked textarea { pointer-events: none; opacity: 0.8; }
+    .form-locked .remove-row, .form-locked .removeAccountRow, .form-locked #addRow, .form-locked #addAccountRow, .form-locked #saveDraftBtn { display: none !important; }
 </style>
 @section('content')
 <div class="main-content bg-white">
@@ -158,7 +159,7 @@
                                         </div>
                                         @endif
 
-                                        <form id="purchaseForm" action="{{ isset($purchase) ? route('purchase.update', $purchase->id) : route('store.Purchase') }}" method="POST">
+                                        <form id="purchaseForm" class="{{ isset($purchase) ? 'form-locked' : '' }}" action="{{ isset($purchase) ? route('purchase.update', $purchase->id) : route('store.Purchase') }}" method="POST">
                                             @csrf
                                             @if(isset($purchase))
                                                 @method('PUT')
@@ -531,6 +532,14 @@
                                                         <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+&#8629;</kbd>
                                                     </button>
                                                 @endif
+
+                                                {{-- Edit Invoice --}}
+                                                <button type="button" id="editInvoiceBtn" 
+                                                    class="btn btn-sm btn-warning rounded-pill px-4 shadow-sm" 
+                                                    style="display: {{ isset($purchase) && $purchase->status != 'Posted' ? 'inline-block' : 'none' }};">
+                                                    <i class="fa fa-pencil me-1"></i> Edit 
+                                                    <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+E</kbd>
+                                                </button>
 
                                                 {{-- New Invoice --}}
                                                 <a href="{{ url('add/Purchase') }}" id="newInvoiceBtn" 
@@ -1730,12 +1739,12 @@ $(document).ready(function() {
                         );
                     }
                     
-                    // Show New Invoice button
+                    // Show New & Edit buttons
                     $('#newInvoiceBtn').show();
+                    $('#editInvoiceBtn').show();
                     
                     // Lock the entire form visually from taking new input
-                    $('#purchaseForm input, #purchaseForm select, #purchaseForm textarea').css({'pointer-events': 'none', 'opacity': '0.8'});
-                    $('.remove-row, .removeAccountRow, #addRow, #addAccountRow, #saveDraftBtn').hide();
+                    $('#purchaseForm').addClass('form-locked');
                     
                 } else {
                     showToast('❌ ' + (res.message || 'Error saving draft.'), 'error');
@@ -1834,6 +1843,12 @@ $(document).ready(function() {
 
     // NOTE: Global keyboard shortcuts are handled in a single block below to avoid duplicate saves.
 
+    // Edit logic
+    $('#editInvoiceBtn').on('click', function() {
+        $('#purchaseForm').removeClass('form-locked');
+        $(this).hide();
+    });
+
     // Keyboard Shortcuts Capture
     document.addEventListener('keydown', function(e) {
         // Ctrl+L → List page
@@ -1848,8 +1863,15 @@ $(document).ready(function() {
             if ($('#newInvoiceBtn').is(':visible')) {
                 window.location.href = $('#newInvoiceBtn').attr('href');
             } else {
-                // if it's not visible, we can just redirect to the add URL directly
                 window.location.href = "{{ url('add/Purchase') }}";
+            }
+        }
+        
+        // Ctrl+E → Edit Invoice
+        if (e.ctrlKey && (e.key === 'e' || e.key === 'E')) {
+            if ($('#editInvoiceBtn').is(':visible')) {
+                e.preventDefault();
+                $('#editInvoiceBtn').trigger('click');
             }
         }
         
