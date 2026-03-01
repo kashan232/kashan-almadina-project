@@ -173,7 +173,8 @@ class PurchaseReturnController extends Controller
                 return response()->json([
                     'success' => true,
                     'message' => 'Purchase Return saved as Unposted!',
-                    'id' => $result->id
+                    'id' => $result->id,
+                    'invoice_no' => $result->invoice_no
                 ]);
             }
 
@@ -181,6 +182,115 @@ class PurchaseReturnController extends Controller
         } catch (\Exception $e) {
             \Illuminate\Support\Facades\Log::error('Purchase Return Error: ' . $e->getMessage());
             
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
+            }
+            return redirect()->back()->with('error', 'Error: ' . $e->getMessage())->withInput();
+        }
+    }
+
+    public function edit($id)
+    {
+        $returnData = PurchaseReturn::with(['items.product.latestPrice', 'purchasable', 'warehouse', 'purchase.items.product'])->findOrFail($id);
+        $nextInvoice = $returnData->invoice_no;
+        $purchases = Purchase::where('status', 'Posted')->get(['id', 'invoice_no', 'purchasable_type', 'purchasable_id']);
+        $vendors = \App\Models\Vendor::all();
+        $customers = \App\Models\Customer::all();
+        $warehouses = \App\Models\Warehouse::all();
+        
+        return view('admin_panel.purchase_return.add_return', compact('returnData', 'nextInvoice', 'purchases', 'vendors', 'customers', 'warehouses'));
+    }
+
+    public function update(Request $request, $id)
+    {
+        $request->validate([
+            'current_date' => 'required|date',
+            'product_id' => 'required|array',
+            'qty' => 'required|array',
+            'warehouse_id' => 'required',
+        ]);
+
+        try {
+            $result = DB::transaction(function () use ($request, $id) {
+                $purchaseReturn = PurchaseReturn::findOrFail($id);
+                if ($purchaseReturn->status === 'Posted') {
+                    throw new \Exception("Cannot edit a posted return.");
+                }
+
+                $purchaseId = $request->purchase_id;
+                
+                $purchasable_type = null;
+                $purchasable_id = null;
+                $vendor_id = null;
+
+                if ($purchaseId) {
+                    $purchase = Purchase::findOrFail($purchaseId);
+                    $purchasable_type = $purchase->purchasable_type;
+                    $purchasable_id = $purchase->purchasable_id;
+                    $vendor_id = $purchase->vendor_id;
+                } else {
+                    if ($request->vendor_type == 'vendor') {
+                        $purchasable_type = \App\Models\Vendor::class;
+                        $purchasable_id = $request->party_id;
+                        $vendor_id = $request->party_id;
+                    } else {
+                        $purchasable_type = \App\Models\Customer::class;
+                        $purchasable_id = $request->party_id;
+                    }
+                }
+
+                $purchaseReturn->update([
+                    'purchase_id'      => $purchaseId,
+                    'warehouse_id'     => $request->warehouse_id,
+                    'purchasable_type' => $purchasable_type,
+                    'purchasable_id'   => $purchasable_id,
+                    'vendor_id'        => $vendor_id,
+                    'current_date'     => $request->current_date,
+                    'note'             => $request->remarks,
+                    'subtotal'         => $request->subtotal,
+                    'discount'         => $request->discount,
+                    'wht'              => $request->wht,
+                    'net_amount'       => $request->net_amount,
+                ]);
+
+                // Clear old items
+                $purchaseReturn->items()->delete();
+
+                foreach ($request->product_id as $index => $productId) {
+                    $qty = $request->qty[$index];
+                    if ($qty <= 0) continue;
+
+                    $price = $request->price[$index];
+                    $retail = $request->retail_price[$index] ?? 0;
+                    $disc_percent = $request->discount_percent[$index] ?? 0;
+                    $disc_amount = ($request->item_disc_amount[$index] ?? 0) * $qty;
+                    $lineTotal = ($price * $qty) - $disc_amount;
+
+                    PurchaseReturnItem::create([
+                        'purchase_return_id' => $purchaseReturn->id,
+                        'product_id'        => $productId,
+                        'price'             => $price,
+                        'retail_price'      => $retail,
+                        'discount_percent'  => $disc_percent,
+                        'item_discount'     => $disc_amount,
+                        'qty'               => $qty,
+                        'line_total'        => $lineTotal,
+                    ]);
+                }
+
+                return $purchaseReturn;
+            });
+
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Purchase Return updated successfully!',
+                    'id' => $result->id
+                ]);
+            }
+
+            return redirect()->route('purchase.return.home')->with('success', 'Purchase Return updated successfully!');
+        } catch (\Exception $e) {
             if ($request->ajax() || $request->wantsJson()) {
                 return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
             }

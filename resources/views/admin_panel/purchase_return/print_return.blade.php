@@ -56,6 +56,7 @@
                                             <th class="text-center py-2">Price</th>
                                             <th class="text-center py-2">Disc (%)</th>
                                             <th class="text-center py-2">Qty</th>
+                                            <th class="text-center py-2">Amount</th>
                                             <th class="text-end pe-3 py-2">Line Total</th>
                                         </tr>
                                     </thead>
@@ -67,6 +68,7 @@
                                             <td class="text-center">{{ number_format($item->price, 2) }}</td>
                                             <td class="text-center">{{ number_format($item->discount_percent, 2) }}%</td>
                                             <td class="text-center fw-bold">{{ $item->qty }}</td>
+                                            <td class="text-center">{{ number_format($item->price, 2) }}</td>
                                             <td class="text-end pe-3 fw-bold">{{ number_format($item->line_total, 2) }}</td>
                                         </tr>
                                         @endforeach

@@ -7,6 +7,38 @@
     th { font-weight: 500 !important; font-size: 13px; }
     .card { border-radius: 8px; }
     .manual-only { display: none; }
+    
+    /* Form Locking Styles - Aggressive Locking */
+    .form-locked input:not(.no-lock), 
+    .form-locked select, 
+    .form-locked textarea, 
+    .form-locked .btn-group,
+    .form-locked .select2-container,
+    .form-locked .select2-selection,
+    .form-locked .select2-selection__rendered {
+        pointer-events: none !important;
+        background-color: #f8f9fa !important;
+        opacity: 0.75 !important;
+        cursor: not-allowed !important;
+    }
+    .form-locked select {
+        -webkit-appearance: none;
+        -moz-appearance: none;
+        appearance: none;
+    }
+    .form-locked .remove-row, 
+    .form-locked #saveDraftBtn,
+    .form-locked #manual_search_col {
+        display: none !important;
+    }
+    .form-locked #editInvoiceBtn, 
+    .form-locked #newInvoiceBtn, 
+    .form-locked #realPrintBtn, 
+    .form-locked #postBtn,
+    .form-locked #cancelBtn {
+        pointer-events: auto !important;
+        opacity: 1 !important;
+    }
 </style>
 
 @section('content')
@@ -20,11 +52,11 @@
                 </div>
                 <div class="d-flex gap-2">
                     <div class="btn-group btn-group-sm" role="group">
-                        <input type="radio" class="btn-check" name="return_mode" id="mode_invoice" value="invoice" checked autocomplete="off">
-                        <label class="btn btn-outline-primary" for="mode_invoice">Invoice Return</label>
+                        <input type="radio" class="btn-check" name="return_mode" id="mode_invoice" value="invoice" {{ !isset($returnData) || (isset($returnData) && $returnData->purchase_id) ? 'checked' : '' }} autocomplete="off">
+                        <label class="btn btn-primary" for="mode_invoice">Invoice Return</label>
 
-                        <input type="radio" class="btn-check" name="return_mode" id="mode_manual" value="manual" autocomplete="off">
-                        <label class="btn btn-outline-primary" for="mode_manual">Manual Return</label>
+                        <input type="radio" class="btn-check" name="return_mode" id="mode_manual" value="manual" {{ isset($returnData) && !$returnData->purchase_id ? 'checked' : '' }} autocomplete="off">
+                        <label class="btn btn-primary" for="mode_manual">Manual Return</label>
                     </div>
                     <a href="{{ route('purchase.return.home') }}" class="btn btn-sm btn-dark px-3" id="returnListBtn">
                          <i class="fa fa-list me-1"></i> Return List
@@ -35,9 +67,9 @@
 
             <div class="card shadow-sm border-0">
                 <div class="card-body">
-                    <form id="returnForm" action="{{ route('purchase.return.store') }}" method="POST">
+                    <form id="returnForm" action="{{ isset($returnData) ? route('purchase.return.update', $returnData->id) : route('purchase.return.store') }}" method="POST">
                         @csrf
-                        <input type="hidden" name="purchase_id" id="purchase_id">
+                        <input type="hidden" name="purchase_id" id="purchase_id" value="{{ $returnData->purchase_id ?? '' }}">
                         
                         <!-- Header Selection -->
                         <div class="row g-3 mb-4 p-3 bg-light rounded shadow-sm">
@@ -45,8 +77,8 @@
                                 <label class="form-label small fw-bold text-muted">Party Type</label>
                                 <select name="vendor_type" id="vendor_type_select" class="form-select form-select-sm">
                                     <option value="" disabled selected>Select</option>
-                                    <option value="vendor">Vendor</option>
-                                    <option value="customer">Customer</option>
+                                    <option value="vendor" {{ isset($returnData) && class_basename($returnData->purchasable_type) == 'Vendor' ? 'selected' : '' }}>Vendor</option>
+                                    <option value="customer" {{ isset($returnData) && class_basename($returnData->purchasable_type) == 'Customer' ? 'selected' : '' }}>Customer</option>
                                     <option value="walkin">Walking Customer</option>
                                 </select>
                             </div>
@@ -55,19 +87,25 @@
                                 <label class="form-label small fw-bold text-muted">Select Party</label>
                                 <select name="party_id" id="party_select" class="form-select form-select-sm select2">
                                     <option value="">Select Party</option>
+                                    @if(isset($returnData))
+                                        <option value="{{ $returnData->purchasable_id }}" selected>{{ $returnData->purchasable->name ?? $returnData->purchasable->customer_name }}</option>
+                                    @endif
                                 </select>
                             </div>
 
-                            <div class="col-md-3 invoice-only" id="invoice_col">
+                            <div class="col-md-3 invoice-only" id="invoice_col" style="{{ isset($returnData) && !$returnData->purchase_id ? 'display:none;' : '' }}">
                                 <label class="form-label small fw-bold text-muted">Select Purchase Invoice</label>
                                 <select id="purchase_invoice_select" class="form-select form-select-sm select2">
                                     <option value="">Select Invoice</option>
+                                    @if(isset($returnData) && $returnData->purchase)
+                                        <option value="{{ $returnData->purchase->invoice_no }}" selected>{{ $returnData->purchase->invoice_no }}</option>
+                                    @endif
                                 </select>
                             </div>
 
                             <div class="col-md-2">
                                 <label class="form-label small fw-bold text-muted">Return Date</label>
-                                <input name="current_date" value="{{ date('Y-m-d') }}" type="date" class="form-control form-control-sm" required>
+                                <input name="current_date" value="{{ $returnData->current_date ?? date('Y-m-d') }}" type="date" class="form-control form-control-sm" required>
                             </div>
 
                             <div class="col-md-2">
@@ -75,17 +113,17 @@
                                 <select name="warehouse_id" id="warehouse_select" class="form-select form-select-sm select2" required>
                                     <option value="">Select Warehouse</option>
                                     @foreach($warehouses as $w)
-                                        <option value="{{ $w->id }}">{{ $w->warehouse_name }}</option>
+                                        <option value="{{ $w->id }}" {{ isset($returnData) && $returnData->warehouse_id == $w->id ? 'selected' : '' }}>{{ $w->warehouse_name }}</option>
                                     @endforeach
                                 </select>
                             </div>
 
                             <div class="col-md-3 invoice-only" id="display_col" style="display:none;">
                                 <label class="form-label small fw-bold text-muted">Loaded Party</label>
-                                <input id="party_name_display" type="text" class="form-control form-control-sm bg-white" readonly placeholder="Auto-fill">
+                                <input id="party_name_display" type="text" class="form-control form-control-sm bg-white" readonly placeholder="Auto-fill" value="{{ isset($returnData) ? ($returnData->purchasable->name ?? $returnData->purchasable->customer_name) : '' }}">
                             </div>
 
-                            <div class="col-md-12 manual-only mt-2" id="manual_search_col">
+                            <div class="col-md-12 manual-only mt-2" id="manual_search_col" style="{{ isset($returnData) && !$returnData->purchase_id ? 'display:block;' : 'display:none;' }}">
                                 <label class="form-label small fw-bold text-muted">Search & Add Product</label>
                                 <select id="manual_product_search" class="form-select form-select-sm"></select>
                             </div>
@@ -97,20 +135,41 @@
                                 <thead class="table-dark">
                                     <tr>
                                         <th style="width: 250px;">Product</th>
-                                        <th>Purchase Price</th>
+                                        <th>Price</th>
                                         <th>Retail Price</th>
                                         <th>Disc (%)</th>
                                         <th>Disc Amt</th>
                                         <th class="invoice-only">Orig Qty</th>
                                         <th>Return Qty</th>
-                                        <th>Row Total</th>
+                                        <th>Amount</th>
+                                        <th>Total</th>
                                         <th>X</th>
                                     </tr>
                                 </thead>
                                 <tbody id="purchaseItems">
-                                    <tr>
-                                        <td colspan="9" class="text-center text-muted py-4">No invoice selected yet.</td>
-                                    </tr>
+                                    @if(isset($returnData))
+                                        @foreach($returnData->items as $item)
+                                            <tr>
+                                                <td>
+                                                    <input type="text" class="form-control form-control-sm bg-white" value="{{ $item->product->name }}" readonly title="{{ $item->product->name }}">
+                                                    <input type="hidden" name="product_id[]" value="{{ $item->product_id }}">
+                                                </td>
+                                                <td><input type="number" step="0.01" name="price[]" class="form-control form-control-sm price text-end" value="{{ $item->price }}"></td>
+                                                <td><input type="number" step="0.01" name="retail_price[]" class="form-control form-control-sm retail_price text-end bg-light" value="{{ $item->retail_price }}" readonly></td>
+                                                <td><input type="number" step="0.01" name="discount_percent[]" class="form-control form-control-sm discount_percent text-center" value="{{ $item->discount_percent }}"></td>
+                                                <td><input type="number" step="0.01" name="item_disc_amount[]" class="form-control form-control-sm disc_amount text-end bg-light" value="{{ $item->qty > 0 ? ($item->item_discount / $item.qty) : 0 }}" readonly></td>
+                                                <td class="invoice-only"><input type="text" class="form-control form-control-sm bg-light text-center" value="{{ $item->qty }}" readonly></td>
+                                                <td><input type="number" name="qty[]" class="form-control form-control-sm quantity text-center" value="{{ $item->qty }}" min="0"></td>
+                                                <td><input type="text" name="line_amount[]" class="form-control form-control-sm row-amount text-end bg-white" readonly value="0"></td>
+                                                <td><input type="text" name="line_total[]" class="form-control form-control-sm row-total text-end bg-white" readonly value="0"></td>
+                                                <td><button type="button" class="btn btn-sm btn-danger remove-row"><i class="fa fa-times"></i></button></td>
+                                            </tr>
+                                        @endforeach
+                                    @else
+                                        <tr>
+                                            <td colspan="10" class="text-center text-muted py-4">No invoice selected yet.</td>
+                                        </tr>
+                                    @endif
                                 </tbody>
                             </table>
                         </div>
@@ -120,7 +179,7 @@
                             <div class="col-md-6">
                                 <div class="p-3 bg-light rounded h-100">
                                     <label class="form-label fw-bold">Return Remarks</label>
-                                    <textarea name="remarks" class="form-control" rows="4" placeholder="Reason for return..."></textarea>
+                                    <textarea name="remarks" class="form-control" rows="4" placeholder="Reason for return...">{{ $returnData->note ?? '' }}</textarea>
                                 </div>
                             </div>
                             <div class="col-md-6">
@@ -129,20 +188,20 @@
                                         <table class="table table-sm table-borderless mb-0">
                                             <tr>
                                                 <th class="text-secondary">Subtotal</th>
-                                                <td><input type="text" id="subtotal" name="subtotal" class="form-control form-control-sm text-end bg-white" readonly value="0"></td>
+                                                <td><input type="text" id="subtotal" name="subtotal" class="form-control form-control-sm text-end bg-white" readonly value="{{ $returnData->subtotal ?? 0 }}"></td>
                                             </tr>
                                             <tr>
                                                 <th class="text-secondary">Total Discount</th>
-                                                <td><input type="text" id="overallDiscount" name="discount" class="form-control form-control-sm text-end bg-white" readonly value="0"></td>
+                                                <td><input type="text" id="overallDiscount" name="discount" class="form-control form-control-sm text-end bg-white" readonly value="{{ $returnData->discount ?? 0 }}"></td>
                                             </tr>
                                             <tr>
                                                 <th class="text-secondary">WHT</th>
                                                 <td>
                                                     <div class="input-group input-group-sm">
-                                                        <input type="number" step="0.01" id="whtPercent" class="form-control text-end" placeholder="%" value="0">
+                                                        <input type="number" step="0.01" id="whtPercent" class="form-control text-end" placeholder="%" value="{{ $returnData->wht_percent ?? 0 }}">
                                                         <select id="whtType" class="form-select form-select-sm" style="max-width:70px;">
-                                                            <option value="percent" selected>%</option>
-                                                            <option value="amount">PKR</option>
+                                                            <option value="percent" {{ !isset($returnData) || (isset($returnData) && $returnData->wht_type != 'amount') ? 'selected' : '' }}>%</option>
+                                                            <option value="amount" {{ isset($returnData) && $returnData->wht_type == 'amount' ? 'selected' : '' }}>PKR</option>
                                                         </select>
                                                     </div>
                                                 </td>
@@ -150,12 +209,12 @@
                                             <tr>
                                                 <th class="text-secondary">WHT Amount</th>
                                                 <td>
-                                                    <input type="text" id="whtAmount" name="wht" class="form-control form-control-sm text-end bg-white" readonly value="0">
+                                                    <input type="text" id="whtAmount" name="wht" class="form-control form-control-sm text-end bg-white" readonly value="{{ $returnData->wht ?? 0 }}">
                                                 </td>
                                             </tr>
                                             <tr class="border-top">
                                                 <th class="h5 fw-bold pt-3">Net Return Amount</th>
-                                                <td class="pt-3"><input type="text" id="netAmount" name="net_amount" class="form-control form-control-lg fw-bold text-end text-danger bg-white" readonly value="0"></td>
+                                                <td class="pt-3"><input type="text" id="netAmount" name="net_amount" class="form-control form-control-lg fw-bold text-end text-danger bg-white" readonly value="{{ $returnData->net_amount ?? 0 }}"></td>
                                             </tr>
                                         </table>
                                     </div>
@@ -164,18 +223,33 @@
                         </div>
 
                         <div class="d-flex gap-2 justify-content-end mt-4">
-                            <button type="button" class="btn btn-sm btn-warning rounded-pill px-4 shadow-sm" id="saveDraftBtn" disabled>
+                            <a href="{{ route('purchase.return.add') }}" class="btn btn-sm btn-info rounded-pill px-4 shadow-sm" id="newInvoiceBtn" style="display:none;">
+                                <i class="fa fa-plus me-1"></i> New <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+M</kbd>
+                            </a>
+                            <button type="button" class="btn btn-sm btn-warning rounded-pill px-4 shadow-sm" id="editInvoiceBtn" style="display:none;">
+                                <i class="fa fa-edit me-1"></i> Edit <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+E</kbd>
+                            </button>
+                            <button type="button" class="btn btn-sm btn-warning rounded-pill px-4 shadow-sm" id="saveDraftBtn" {{ isset($returnData) ? 'style=display:none;' : '' }}>
                                 <i class="fa fa-floppy-o me-1"></i> Save Draft
                                 <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+S</kbd>
                             </button>
-                            <button type="button" id="previewPrintBtn" class="btn btn-sm btn-outline-dark rounded-pill px-4 shadow-sm" onclick="showPreviewModal()">
-                                <i class="fa fa-print me-1"></i> Print Preview
-                                <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+P</kbd>
-                            </button>
-                            <button type="button" class="btn btn-sm btn-primary rounded-pill px-4 shadow-sm" id="postBtn" disabled title="Post from list after saving">
+                            @if(isset($returnData))
+                                <a href="{{ route('purchase.return.print', $returnData->id) }}" target="_blank" id="realPrintBtn" class="btn btn-sm btn-dark rounded-pill px-4 shadow-sm">
+                                    <i class="fa fa-print me-1"></i> Print <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+P</kbd>
+                                </a>
+                            @else
+                                <button type="button" id="previewPrintBtn" class="btn btn-sm btn-dark rounded-pill px-4 shadow-sm" onclick="showPreviewModal()">
+                                    <i class="fa fa-print me-1"></i> Print Preview
+                                    <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+P</kbd>
+                                </button>
+                            @endif
+                            <button type="button" class="btn btn-sm btn-primary rounded-pill px-4 shadow-sm" id="postBtn" title="Post from list after saving">
                                 <i class="fa fa-send me-1"></i> Post
                                 <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+&#8629;</kbd>
                             </button>
+                            <a href="{{ route('purchase.return.home') }}" class="btn btn-sm btn-danger rounded-pill px-4 shadow-sm" id="cancelBtn">
+                                <i class="fa fa-times me-1"></i> Cancel <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Esc</kbd>
+                            </a>
                         </div>
                     </form>
                 </div>
@@ -231,7 +305,28 @@ $(document).ready(function() {
     // =============================================
     //  SAVED PURCHASE STATE (after AJAX save)
     // =============================================
-    var _savedReturnId = null;
+    var _savedReturnId = @json(isset($returnData) ? $returnData->id : null);
+
+    if (_savedReturnId) {
+        // Form locked if already saved or in edit mode (initially locked unless User hits edit)
+        $('#returnForm').addClass('form-locked');
+        $('#newInvoiceBtn').show();
+        $('#editInvoiceBtn').show();
+        
+        // If it was already posted, hide edit
+        @if(isset($returnData) && $returnData->status == 'Posted')
+             $('#editInvoiceBtn').hide();
+             $('#postBtn').hide();
+        @else
+             $('#postBtn').removeClass('btn-primary').addClass('btn-success');
+        @endif
+        
+        // Recalc all rows to fix unit amount column
+        $('#purchaseItems tr').each(function() {
+            recalcRow($(this));
+        });
+        recalcSummary();
+    }
 
     function showToast(msg, type) {
         type = type || 'success';
@@ -255,6 +350,10 @@ $(document).ready(function() {
             showToast('⚠️ Please select a party', 'error');
             return;
         }
+        if($('#purchaseItems tr').length === 0 || $('#purchaseItems .text-muted').length > 0) {
+            showToast('⚠️ Please select an invoice or add products first', 'error');
+            return;
+        }
 
         var $form = $('#returnForm');
         $('#saveDraftBtn').prop('disabled', true).html('<i class="fa fa-spinner fa-spin me-1"></i> Saving...');
@@ -275,6 +374,26 @@ $(document).ready(function() {
                         .removeClass('btn-primary')
                         .addClass('btn-success')
                         .html('<i class="fa fa-send me-1"></i> Post <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+↵</kbd>');
+
+                    $('#newInvoiceBtn').show();
+                    $('#editInvoiceBtn').show();
+                    
+                    // Lock form
+                    $('#returnForm').addClass('form-locked');
+
+                    // Update action for future saves (becomes update)
+                    $form.attr('action', '/purchase-returns/' + res.id + '/update');
+                    
+                    // Update print button
+                    var printUrl = '/purchase-returns/print/' + res.id;
+                    if ($('#previewPrintBtn').length) {
+                        $('#previewPrintBtn').replaceWith(
+                            $('<a>').attr({href: printUrl, target:'_blank', id:'realPrintBtn', class:'btn btn-sm btn-dark rounded-pill px-4 shadow-sm'})
+                            .html('<i class="fa fa-print me-1"></i> Print <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+P</kbd>')
+                        );
+                    }
+                    
+                    $('#saveDraftBtn').hide();
                 } else {
                     showToast('❌ ' + (res.message || 'Error saving draft.'), 'error');
                 }
@@ -323,22 +442,30 @@ $(document).ready(function() {
 
     $('#saveDraftBtn').on('click', function(e) { e.preventDefault(); ajaxSaveDraft(); });
     $('#postBtn').on('click', function(e) { e.preventDefault(); doPost(); });
+    
+    $('#editInvoiceBtn').on('click', function() {
+        $('#returnForm').removeClass('form-locked');
+        $(this).hide();
+        $('#saveDraftBtn').show();
+    });
 
     // --- BLOCK ENTER KEY (prevents accidental form submit on qty, price etc) ---
     $(document).on('keydown', function(e) {
         if (e.key === 'Enter') {
             var $t = $(e.target);
             // Only allow Enter in textarea
-            if (!$t.is('textarea')) {
+            if (!$t.is('textarea') && !e.ctrlKey) {
                 e.preventDefault();
                 return false;
             }
         }
 
         // --- CTRL+S = Submit form ---
-        if (e.ctrlKey && e.key === 's') {
+        if (e.ctrlKey && (e.key === 's' || e.key === 'S')) {
             e.preventDefault();
-            ajaxSaveDraft();
+            if(!$('#returnForm').hasClass('form-locked')) {
+                ajaxSaveDraft();
+            }
         }
 
         // --- CTRL+L = Return List ---
@@ -347,10 +474,38 @@ $(document).ready(function() {
             window.location.href = "{{ route('purchase.return.home') }}";
         }
 
-        // --- CTRL+P = Print Preview ---
+        // --- CTRL+P = Print Preview / Real Print ---
         if (e.ctrlKey && e.key.toLowerCase() === 'p') {
             e.preventDefault();
-            $('#previewPrintBtn').click();
+            if($('#realPrintBtn').length) {
+                window.open($('#realPrintBtn').attr('href'), '_blank');
+            } else {
+                $('#previewPrintBtn').click();
+            }
+        }
+
+        // --- CTRL+Enter = Post ---
+        if (e.ctrlKey && e.key === 'Enter') {
+            e.preventDefault();
+            $('#postBtn').click();
+        }
+
+        // --- CTRL+M = New ---
+        if (e.ctrlKey && (e.key === 'm' || e.key === 'M')) {
+            e.preventDefault();
+            window.location.href = "{{ route('purchase.return.add') }}";
+        }
+
+        // --- CTRL+E = Edit ---
+        if (e.ctrlKey && (e.key === 'e' || e.key === 'E')) {
+            e.preventDefault();
+            $('#editInvoiceBtn').click();
+        }
+
+        // --- ESC = Cancel ---
+        if (e.key === 'Escape') {
+            e.preventDefault();
+            window.location.href = "{{ route('purchase.return.home') }}";
         }
     });
 
@@ -363,15 +518,14 @@ $(document).ready(function() {
             $('#purchase_id').val('');
             $('#purchaseItems').empty();
             if ($('#purchaseItems tr').length === 0) {
-                 $('#purchaseItems').html('<tr><td colspan="9" class="text-center text-muted py-4">Add products manually.</td></tr>');
+                 $('#purchaseItems').html('<tr><td colspan="10" class="text-center text-muted py-4">Add products manually.</td></tr>');
             }
             $('#saveDraftBtn').attr('disabled', false);
         } else {
             $('.manual-only').hide();
             $('.invoice-only').show();
             $('#invoice_col').show();
-            $('#purchaseItems').html('<tr><td colspan="9" class="text-center text-muted py-4">No invoice selected yet.</td></tr>');
-            $('#saveDraftBtn').attr('disabled', true);
+            $('#purchaseItems').html('<tr><td colspan="10" class="text-center text-muted py-4">No invoice selected yet.</td></tr>');
         }
         recalcSummary();
     });
@@ -394,7 +548,7 @@ $(document).ready(function() {
         if (type === 'vendor') {
             list = vendors;
         } else if (type === 'customer') {
-            list = customers; // Ensure customers include walking if not filtered out, though backend might separate them via customer_type
+            list = customers; 
         } else if (type === 'walkin') {
             list = customers.filter(c => (c.customer_type || '').toLowerCase().includes('walking'));
         }
@@ -417,7 +571,7 @@ $(document).ready(function() {
 
         let targetTypeClass = '';
         if (type === 'vendor') targetTypeClass = 'Vendor';
-        else if (type === 'customer' || type === 'walkin') targetTypeClass = 'Customer'; // Usually App\Models\Customer
+        else if (type === 'customer' || type === 'walkin') targetTypeClass = 'Customer'; 
 
         let filtered = allPurchases.filter(p => {
             if (!p.purchasable_type) return false;
@@ -466,13 +620,7 @@ $(document).ready(function() {
         });
 
         if (existing) {
-            Swal.fire({
-                icon: 'warning',
-                title: 'Already Added',
-                text: 'This product is already in the list.',
-                timer: 2000,
-                showConfirmButton: false
-            });
+            Swal.fire({ icon: 'warning', title: 'Already Added', text: 'This product is already in the list.', timer: 2000, showConfirmButton: false });
             $(this).val(null).trigger('change');
             return;
         }
@@ -513,13 +661,11 @@ $(document).ready(function() {
             }
 
             if (res.items.length === 0) {
-                $('#purchaseItems').html('<tr><td colspan="9" class="text-danger p-3">This purchase has no items!</td></tr>');
-                $('#saveDraftBtn').attr('disabled', true);
+                $('#purchaseItems').html('<tr><td colspan="10" class="text-danger p-3">This purchase has no items!</td></tr>');
             } else {
                 res.items.forEach(item => {
                     appendRow(item, false);
                 });
-                $('#saveDraftBtn').attr('disabled', false);
             }
             recalcSummary();
         });
@@ -539,8 +685,9 @@ $(document).ready(function() {
             <td><input type="number" step="0.01" name="item_disc_amount[]" class="form-control form-control-sm disc_amount text-end bg-light" value="${discAmt}" readonly></td>
             <td class="invoice-only"><input type="text" class="form-control form-control-sm bg-light text-center" value="${item.qty}" readonly></td>
             <td><input type="number" name="qty[]" class="form-control form-control-sm quantity text-center" value="${isManual ? 1 : item.qty}" ${isManual ? '' : 'max="'+item.qty+'"'} min="0"></td>
+            <td><input type="text" name="line_amount[]" class="form-control form-control-sm row-amount text-end bg-white" readonly value="0"></td>
             <td><input type="text" name="line_total[]" class="form-control form-control-sm row-total text-end bg-white" readonly value="0"></td>
-            <td><button type="button" class="btn btn-sm btn-outline-danger remove-row"><i class="fa fa-times"></i></button></td>
+            <td><button type="button" class="btn btn-sm btn-danger remove-row"><i class="fa fa-times"></i></button></td>
         </tr>`;
         $('#purchaseItems').append(html);
         if ($('input[name="return_mode"]:checked').val() === 'manual') {
@@ -554,7 +701,7 @@ $(document).ready(function() {
         recalcSummary();
     });
 
-    $(document).on('input', '.quantity, .price, .discount_percent, #whtPercent, #whtType', function() {
+    $(document).on('input change', '.quantity, .price, .discount_percent, #whtPercent, #whtType', function() {
         let row = $(this).closest('tr');
         if (row.length) recalcRow(row);
         recalcSummary();
@@ -569,11 +716,15 @@ $(document).ready(function() {
         let discBase = (retail > 0) ? retail : price;
         let perUnitDisc = (discBase * discPercent) / 100;
         
-        let netUnitPrice = price - perUnitDisc;
-        let total = netUnitPrice * qty;
+        let totalDisc = perUnitDisc * qty;
+        let grossAmount = price * qty;
+        let netAmount = grossAmount - totalDisc;
 
+        // Amount = 1 single unit price
+        $row.find('.row-amount').val(price.toFixed(2));
+        // Total = Price * Qty - Discount
+        $row.find('.row-total').val(netAmount.toFixed(2));
         $row.find('.disc_amount').val(perUnitDisc.toFixed(2));
-        $row.find('.row-total').val(total.toFixed(2));
     }
 
     function recalcSummary() {
