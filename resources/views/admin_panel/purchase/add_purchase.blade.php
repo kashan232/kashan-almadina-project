@@ -721,9 +721,9 @@
                 $currentRow.find('.disc_amount').val('0.00');
 
                 // Immediate calculation for better responsiveness
-                const gross = (parseFloat(net) || 0) * 1;
-                $currentRow.find('.row-amount').val(gross.toFixed(2));
-                $currentRow.find('.row-total').val(gross.toFixed(2));
+                const price_val = parseFloat(net) || 0;
+                $currentRow.find('.row-amount').val(price_val.toFixed(2)); // Show single qty amount
+                $currentRow.find('.row-total').val(price_val.toFixed(2));
 
                 // Trigger formal calculation and summary
                 if(typeof window.recalcRow === 'function') {
@@ -1118,7 +1118,7 @@
 
         // Update fields
         $row.find('.disc_amount').val(totalDisc.toFixed(2));
-        $row.find('.row-amount').val(gross.toFixed(2));
+        $row.find('.row-amount').val(price.toFixed(2)); // Show single qty amount
         $row.find('.row-total').val(net.toFixed(2));
 
         // Always update summary after row change
@@ -1561,13 +1561,14 @@ $(function() {
         var base    = retail > 0 ? retail : price;
         var discAmt = (base * disc / 100) * qty;
 
-        // Amount = Price * Qty (Gross Amount)
+        // Amount = 1 single unit price
+        var unitPrice = price;
+        // Total = Price * Qty - Discount (Net Amount)
         var grossAmount = price * qty;
-        // Total = Gross - Discount (Net Amount)
         var netAmount   = grossAmount - discAmt;
 
         $row.find('.disc_amount').val(discAmt.toFixed(2));
-        $row.find('.row-amount').val(grossAmount.toFixed(2));
+        $row.find('.row-amount').val(unitPrice.toFixed(2));
         $row.find('.row-total').val(netAmount.toFixed(2));
     }
 

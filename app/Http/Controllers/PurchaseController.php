@@ -96,6 +96,8 @@ class PurchaseController extends Controller
         ];
 
         $messages = [
+            'vendor_type.required'  => 'Please select Type.',
+            'vendor_id.required'    => 'Please select Party.',
             'warehouse_id.required' => 'Please select Warehouse.',
             'warehouse_id.exists'   => 'Selected Warehouse is invalid.',
             'product_id.required'   => 'Please add at least one Item.',
@@ -105,6 +107,24 @@ class PurchaseController extends Controller
         ];
 
         $validator = Validator::make($request->all(), $rules, $messages);
+        
+        $validator->after(function ($validator) use ($request) {
+            $amounts = $request->input('account_amount', []);
+            $heads = $request->input('account_head_id', []);
+            $subs = $request->input('account_id', []);
+
+            foreach ($amounts as $key => $amount) {
+                if (floatval($amount) > 0) {
+                    if (empty($heads[$key])) {
+                        $validator->errors()->add("account_head_id.$key", "Account Head is required if amount is given.");
+                    }
+                    if (empty($subs[$key])) {
+                        $validator->errors()->add("account_id.$key", "Account is required if amount is given.");
+                    }
+                }
+            }
+        });
+
         if ($validator->fails()) {
             if ($request->ajax() || $request->wantsJson()) {
                 return response()->json([
@@ -397,6 +417,8 @@ class PurchaseController extends Controller
         ];
 
         $messages = [
+            'vendor_type.required'  => 'Please select Type.',
+            'vendor_id.required'    => 'Please select Party.',
             'warehouse_id.required' => 'Please select Warehouse.',
             'warehouse_id.exists'   => 'Selected Warehouse is invalid.',
             'product_id.required'   => 'Please add at least one Item.',
@@ -406,6 +428,24 @@ class PurchaseController extends Controller
         ];
 
         $validator = \Illuminate\Support\Facades\Validator::make($request->all(), $rules, $messages);
+        
+        $validator->after(function ($validator) use ($request) {
+            $amounts = $request->input('account_amount', []);
+            $heads = $request->input('account_head_id', []);
+            $subs = $request->input('account_id', []);
+
+            foreach ($amounts as $key => $amount) {
+                if (floatval($amount) > 0) {
+                    if (empty($heads[$key])) {
+                        $validator->errors()->add("account_head_id.$key", "Account Head is required if amount is given.");
+                    }
+                    if (empty($subs[$key])) {
+                        $validator->errors()->add("account_id.$key", "Account is required if amount is given.");
+                    }
+                }
+            }
+        });
+
         if ($validator->fails()) {
             if ($request->ajax() || $request->wantsJson()) {
                 return response()->json([
