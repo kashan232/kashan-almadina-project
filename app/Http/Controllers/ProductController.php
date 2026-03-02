@@ -297,54 +297,65 @@ class ProductController extends Controller
 
     public function bulkSetPrice(Request $request)
     {
-        // dd($request->toArray());
         $ids = explode(',', $request->ids);
+        $type = $request->get('type', 'both'); // purchase, sale, or both
 
         // Products fetch
         $products = Product::with('latestPrice')->whereIn('id', $ids)->get();
 
         $product_ids = $request->ids;
-        return view('admin_panel.product.bulk_set_price', compact('products', 'product_ids'));
+        return view('admin_panel.product.bulk_set_price', compact('products', 'product_ids', 'type'));
     }
 
     public function bulkSetPriceUpdate(Request $request)
     {
-        // dd(now()->setTimezone('Asia/Karachi')->toDateString());
-        // Product IDs le rahe hain
         $productIds = $request->product_id;
+        $type = $request->get('type', 'both');
+        $startDate = $request->get('start_date', now()->setTimezone('Asia/Karachi')->toDateString());
 
         foreach ($productIds as $index => $id) {
             $product = Product::find($id);
             if ($product) {
-
-                // Purane active price ka end_date set karo
                 $latestP = $product->prices()->whereNull('end_date')->latest('start_date')->first();
+                
+                $data = [
+                    'product_id' => $id,
+                    'start_date' => $startDate,
+                    'end_date' => null
+                ];
+
                 if ($latestP) {
+                    // Carry over old values first
+                    $data = array_merge($latestP->toArray(), $data);
+                    unset($data['id']); // remove old ID
+                    
                     $latestP->update([
-                        'end_date' => now()->setTimezone('Asia/Karachi')->toDateString()
+                        'end_date' => $startDate
                     ]);
                 }
 
-                $product->latestPrice->create([
-                    'product_id' => $request->product_id[$index],
-                    'purchase_retail_price' => $request->purchase_retail_price[$index],
-                    'purchase_tax_percent' => $request->purchase_tax_percent[$index],
-                    'purchase_tax_amount' => $request->purchase_tax_amount[$index],
-                    'purchase_discount_percent' => $request->purchase_discount_percent[$index],
-                    'purchase_discount_amount' => $request->purchase_discount_amount[$index],
-                    'purchase_net_amount' => $request->purchase_net_amount[$index],
+                // Update only relevant type fields
+                if ($type === 'purchase' || $type === 'both') {
+                    $data['purchase_retail_price'] = $request->purchase_retail_price[$index];
+                    $data['purchase_tax_percent'] = $request->purchase_tax_percent[$index];
+                    $data['purchase_tax_amount'] = $request->purchase_tax_amount[$index];
+                    $data['purchase_discount_percent'] = $request->purchase_discount_percent[$index];
+                    $data['purchase_discount_amount'] = $request->purchase_discount_amount[$index];
+                    $data['purchase_net_amount'] = $request->purchase_net_amount[$index];
+                }
 
-                    'sale_retail_price' => $request->sale_retail_price[$index],
-                    'sale_tax_percent' => $request->sale_tax_percent[$index],
-                    'sale_tax_amount' => $request->sale_tax_amount[$index],
-                    'sale_wht_percent' => $request->sale_wht_percent[$index],
-                    'sale_discount_percent' => $request->sale_discount_percent[$index],
-                    'sale_discount_amount' => $request->sale_discount_amount[$index],
-                    'sale_net_amount' => $request->sale_net_amount[$index],
-                    // 'effective_date' => now()->setTimezone('Asia/Karachi')->toDateString(),
-                    'start_date' => now()->setTimezone('Asia/Karachi')->toDateString(),
-                    'end_date' => null // Active price
-                ]);
+                if ($type === 'sale' || $type === 'both') {
+                    $data['sale_retail_price'] = $request->sale_retail_price[$index];
+                    $data['sale_tax_percent'] = $request->sale_tax_percent[$index];
+                    $data['sale_tax_amount'] = $request->sale_tax_amount[$index];
+                    $data['sale_wht_percent'] = $request->sale_wht_percent[$index];
+                    $data['sale_wht_amount'] = $request->sale_wht_amount[$index];
+                    $data['sale_discount_percent'] = $request->sale_discount_percent[$index];
+                    $data['sale_discount_amount'] = $request->sale_discount_amount[$index];
+                    $data['sale_net_amount'] = $request->sale_net_amount[$index];
+                }
+
+                ProductPrice::create($data);
             }
         }
 

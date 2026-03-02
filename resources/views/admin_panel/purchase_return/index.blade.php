@@ -2,11 +2,37 @@
 
 @section('content')
 <style>
-    .table-responsive { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; margin-bottom: 1rem; }
-    #example thead th { white-space: nowrap; background-color: #f8f9fa; color: #333; font-weight: 600; vertical-align: middle; }
-    #example tbody td { white-space: nowrap; vertical-align: middle; }
-    .card { border-radius: 8px; box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075); }
-    .card-header { background-color: #fff; border-bottom: 1px solid #edf2f9; }
+    /* Table Responsive & Scroll Enhancements */
+    .table-responsive {
+        width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        margin-bottom: 1rem;
+    }
+    
+    #example thead th {
+        white-space: nowrap;
+        background-color: #f8f9fa;
+        color: #333;
+        font-weight: 600;
+        vertical-align: middle;
+    }
+    
+    #example tbody td {
+        white-space: nowrap;
+        vertical-align: middle;
+    }
+
+    /* Card styling */
+    .card {
+        border-radius: 8px;
+        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    }
+    
+    .card-header {
+        background-color: #fff;
+        border-bottom: 1px solid #edf2f9;
+    }
 </style>
 
 <div class="main-content">
@@ -25,6 +51,14 @@
                                 <div class="col-md-3">
                                     <label class="form-label small fw-bold text-muted">End Date</label>
                                     <input type="date" name="end_date" class="form-control form-control-sm" value="{{ request('end_date') }}">
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label small fw-bold text-muted">Status</label>
+                                    <select name="status" class="form-select form-select-sm">
+                                        <option value="">All Status</option>
+                                        <option value="Unposted" {{ request('status') == 'Unposted' ? 'selected' : '' }}>Unposted</option>
+                                        <option value="Posted" {{ request('status') == 'Posted' ? 'selected' : '' }}>Posted</option>
+                                    </select>
                                 </div>
                                 <div class="col-md-4">
                                     <div class="d-flex gap-2">
@@ -93,19 +127,37 @@
                                             <td>{{ \Carbon\Carbon::parse($ret->current_date)->format('d-M-Y') }}</td>
                                             <td class="text-end fw-bold">{{ number_format($ret->net_amount, 0) }}</td>
                                             <td class="text-center">
-                                                <span class="badge bg-{{ $ret->status == 'Posted' ? 'success' : 'warning' }}">
-                                                    {{ $ret->status }}
-                                                </span>
+                                                @if($ret->status === 'Posted')
+                                                    <span class="badge bg-success">Posted</span>
+                                                @else
+                                                    <span class="badge bg-warning text-dark">Unposted</span>
+                                                @endif
                                             </td>
                                             <td class="text-center">
                                                 <div class="d-flex gap-1 justify-content-center">
-                                                    @if($ret->status == 'Unposted')
-                                                        <a href="{{ route('purchase.return.post', $ret->id) }}" class="btn btn-sm btn-primary" title="Post Return" onclick="return confirm('Are you sure you want to POST this return? This will update stock and ledger.')">
-                                                            <i class="fa fa-send"></i> Post
+                                                    @if($ret->status === 'Unposted')
+                                                        <form action="{{ route('purchase.return.post', $ret->id) }}" method="POST" class="d-inline">
+                                                            @csrf
+                                                            <button type="submit" class="btn btn-outline-primary btn-sm rounded-pill px-2" title="Post now">
+                                                                <i class="fa fa-send"></i> Post
+                                                            </button>
+                                                        </form>
+                                                        
+                                                        <a href="{{ route('purchase.return.edit', $ret->id) }}" class="btn btn-outline-warning btn-sm rounded-circle" title="Edit">
+                                                            <i class="fa fa-edit"></i>
                                                         </a>
+
+                                                        <form action="{{ route('purchase.return.destroy', $ret->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Delete this unposted return?')">
+                                                            @csrf
+                                                            @method('DELETE')
+                                                            <button type="submit" class="btn btn-outline-danger btn-sm rounded-circle" title="Delete">
+                                                                <i class="fa fa-trash"></i>
+                                                            </button>
+                                                        </form>
                                                     @endif
-                                                    <a href="{{ route('purchase.return.print', $ret->id) }}" class="btn btn-sm btn-dark" title="Print Return" target="_blank">
-                                                        <i class="fa fa-print"></i> Print
+                                                    
+                                                    <a href="{{ route('purchase.return.print', $ret->id) }}" target="_blank" class="btn btn-outline-dark btn-sm rounded-circle" title="Print Return">
+                                                        <i class="fa fa-print"></i>
                                                     </a>
                                                 </div>
                                             </td>
@@ -131,6 +183,10 @@
             scrollX: true,
             pageLength: 25,
             order: [[0, 'desc']],
+            language: {
+                search: "_INPUT_",
+                searchPlaceholder: "Search returns..."
+            }
         });
     });
 </script>

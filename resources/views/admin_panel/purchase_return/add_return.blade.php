@@ -28,7 +28,7 @@
     }
     .form-locked .remove-row, 
     .form-locked #saveDraftBtn,
-    .form-locked #manual_search_col {
+    .form-locked #addRowBtn {
         display: none !important;
     }
     .form-locked #editInvoiceBtn, 
@@ -123,9 +123,11 @@
                                 <input id="party_name_display" type="text" class="form-control form-control-sm bg-white" readonly placeholder="Auto-fill" value="{{ isset($returnData) ? ($returnData->purchasable->name ?? $returnData->purchasable->customer_name) : '' }}">
                             </div>
 
-                            <div class="col-md-12 manual-only mt-2" id="manual_search_col" style="{{ isset($returnData) && !$returnData->purchase_id ? 'display:block;' : 'display:none;' }}">
-                                <label class="form-label small fw-bold text-muted">Search & Add Product</label>
-                                <select id="manual_product_search" class="form-select form-select-sm"></select>
+                            <div class="col-md-2 manual-only mt-2" id="addRow_col" style="{{ isset($returnData) && !$returnData->purchase_id ? 'display:block;' : 'display:none;' }}">
+                                <label class="form-label d-block">&nbsp;</label>
+                                <button type="button" id="addRowBtn" class="btn btn-sm btn-primary w-100 rounded-pill shadow-sm">
+                                    <i class="fa fa-plus me-1"></i> Add Row
+                                </button>
                             </div>
                         </div>
 
@@ -134,6 +136,7 @@
                             <table class="table table-bordered table-sm text-center align-middle">
                                 <thead class="table-dark">
                                     <tr>
+                                        <th style="width: 100px;">Item ID</th>
                                         <th style="width: 250px;">Product</th>
                                         <th>Price</th>
                                         <th>Retail Price</th>
@@ -151,13 +154,17 @@
                                         @foreach($returnData->items as $item)
                                             <tr>
                                                 <td>
-                                                    <input type="text" class="form-control form-control-sm bg-white" value="{{ $item->product->name }}" readonly title="{{ $item->product->name }}">
-                                                    <input type="hidden" name="product_id[]" value="{{ $item->product_id }}">
+                                                    <input type="text" class="form-control form-control-sm item-id-input" value="{{ $item->product_id }}">
+                                                </td>
+                                                <td>
+                                                    <select name="product_id[]" class="form-control form-control-sm product-select" style="width: 100%;">
+                                                        <option value="{{ $item->product_id }}" selected>{{ $item->product->name }}</option>
+                                                    </select>
                                                 </td>
                                                 <td><input type="number" step="0.01" name="price[]" class="form-control form-control-sm price text-end" value="{{ $item->price }}"></td>
                                                 <td><input type="number" step="0.01" name="retail_price[]" class="form-control form-control-sm retail_price text-end bg-light" value="{{ $item->retail_price }}" readonly></td>
                                                 <td><input type="number" step="0.01" name="discount_percent[]" class="form-control form-control-sm discount_percent text-center" value="{{ $item->discount_percent }}"></td>
-                                                <td><input type="number" step="0.01" name="item_disc_amount[]" class="form-control form-control-sm disc_amount text-end bg-light" value="{{ $item->qty > 0 ? ($item->item_discount / $item.qty) : 0 }}" readonly></td>
+                                                <td><input type="number" step="0.01" name="item_disc_amount[]" class="form-control form-control-sm disc_amount text-end bg-light" value="{{ $item->qty > 0 ? ($item->item_discount / $item->qty) : 0 }}" readonly></td>
                                                 <td class="invoice-only"><input type="text" class="form-control form-control-sm bg-light text-center" value="{{ $item->qty }}" readonly></td>
                                                 <td><input type="number" name="qty[]" class="form-control form-control-sm quantity text-center" value="{{ $item->qty }}" min="0"></td>
                                                 <td><input type="text" name="line_amount[]" class="form-control form-control-sm row-amount text-end bg-white" readonly value="0"></td>
@@ -167,7 +174,7 @@
                                         @endforeach
                                     @else
                                         <tr>
-                                            <td colspan="10" class="text-center text-muted py-4">No invoice selected yet.</td>
+                                            <td colspan="11" class="text-center text-muted py-4">No invoice selected yet.</td>
                                         </tr>
                                     @endif
                                 </tbody>
@@ -419,8 +426,11 @@ $(document).ready(function() {
 
         $.ajax({
             url: '/purchase-returns/post/' + _savedReturnId,
-            type: 'GET',
-            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+            type: 'POST',
+            headers: { 
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRF-TOKEN': $('input[name="_token"]').val()
+            },
             success: function(res) {
                 showToast('✅ Return posted successfully! Redirecting...', 'success');
                 setTimeout(function() {
@@ -517,15 +527,13 @@ $(document).ready(function() {
             $('.invoice-only').hide();
             $('#purchase_id').val('');
             $('#purchaseItems').empty();
-            if ($('#purchaseItems tr').length === 0) {
-                 $('#purchaseItems').html('<tr><td colspan="10" class="text-center text-muted py-4">Add products manually.</td></tr>');
-            }
+            appendBlankRow(true);
             $('#saveDraftBtn').attr('disabled', false);
         } else {
             $('.manual-only').hide();
             $('.invoice-only').show();
             $('#invoice_col').show();
-            $('#purchaseItems').html('<tr><td colspan="10" class="text-center text-muted py-4">No invoice selected yet.</td></tr>');
+            $('#purchaseItems').html('<tr><td colspan="11" class="text-center text-muted py-4">No invoice selected yet.</td></tr>');
         }
         recalcSummary();
     });
@@ -589,56 +597,135 @@ $(document).ready(function() {
         $('#purchase_invoice_select').html(html).trigger('change.select2');
     }
 
-    // Manual Product Search
-    $('#manual_product_search').select2({
-        placeholder: "Search Product to add...",
-        width: '100%',
-        ajax: {
-            url: "{{ route('search-products') }}",
-            dataType: 'json',
-            delay: 250,
-            data: params => ({ q: params.term }),
-            processResults: data => ({
-                results: data.map(item => ({
-                    id: item.id,
-                    text: item.name,
-                    price: item.purchase_net_amount,
-                    retail: item.purchase_retail_price
-                }))
-            })
-        }
-    }).on('select2:select', function(e) {
-        let data = e.params.data;
+    // --- MANUAL MODE ROW MANAGEMENT (Matching Purchase Form) ---
+
+    window.initProductSelect = function($row) {
+        const $select = $row.find('.product-select');
         
-        // Prevent Adding same product twice
-        let existing = false;
-        $('#purchaseItems input[name="product_id[]"]').each(function() {
-            if ($(this).val() == data.id) {
-                existing = true;
-                return false;
+        $select.select2({
+            placeholder: "Select Product",
+            allowClear: true,
+            width: '100%',
+            ajax: {
+                url: "{{ route('search-products') }}",
+                dataType: 'json',
+                delay: 250,
+                data: params => ({ q: params.term }),
+                processResults: data => ({
+                    results: data.map(item => ({
+                        id: item.id,
+                        text: item.name,
+                        price: item.purchase_net_amount,
+                        retail: item.purchase_retail_price
+                    }))
+                }),
+                cache: true
+            },
+            minimumInputLength: 0
+        });
+
+        // Tab/Enter on Item ID -> Auto-Append Row if last
+        $row.find('.item-id-input').on('keydown', function(e) {
+            if (e.key === 'Enter' || e.key === 'Tab') {
+                const $currentRow = $(this).closest('tr');
+                if ($currentRow.is(':last-child')) {
+                    appendBlankRow(true, false);
+                }
+                if (!$(this).val()) {
+                    e.preventDefault();
+                    $select.select2('open');
+                }
             }
         });
 
-        if (existing) {
-            Swal.fire({ icon: 'warning', title: 'Already Added', text: 'This product is already in the list.', timer: 2000, showConfirmButton: false });
-            $(this).val(null).trigger('change');
-            return;
-        }
-        
-        if ($('#purchaseItems .text-muted').length > 0) $('#purchaseItems').empty();
-        
-        appendRow({
-            product_id: data.id,
-            product_name: data.text,
-            price: data.price,
-            retail_price: data.retail,
-            discount_percent: 0,
-            item_discount: 0,
-            qty: 1
-        }, true);
+        // Sync ID input -> Select2
+        $row.find('.item-id-input').on('change', function() {
+            const id = $(this).val();
+            if (!id) {
+                $select.val(null).trigger('change');
+                return;
+            }
+            
+            $.getJSON("{{ route('search-products') }}", { q: id }, function(data) {
+                const product = data.find(p => p.id == id);
+                if (product) {
+                    const newOption = new Option(product.name, product.id, true, true);
+                    $select.empty().append(newOption).trigger('change');
+                    
+                    $select.trigger({
+                        type: 'select2:select',
+                        params: {
+                            data: {
+                                id: product.id,
+                                text: product.name,
+                                price: product.purchase_net_amount,
+                                retail: product.purchase_retail_price
+                            }
+                        }
+                    });
+                } else {
+                    $select.val(null).trigger('change');
+                    showToast('❌ Product ID not found!', 'error');
+                    $row.find('.item-id-input').val('');
+                }
+            });
+        });
 
-        // Clear search box and keep it focused for next product
-        $(this).val(null).trigger('change');
+        // Handle selection
+        $select.on('select2:select', function (e) {
+            const data = e.params.data;
+            const $currentRow = $(this).closest('tr');
+
+            $currentRow.find('.item-id-input').val(data.id);
+            $currentRow.find('.price').val(data.price).trigger('input');
+            $currentRow.find('.retail_price').val(data.retail);
+            $currentRow.find('.quantity').val(1).trigger('input');
+            $currentRow.find('.discount_percent').val(0);
+
+            setTimeout(() => { $currentRow.find('.quantity').focus().select(); }, 50);
+        });
+    };
+
+    window.appendBlankRow = function(force = false, focus = true) {
+        const lastRow = $('#purchaseItems tr:last');
+        if (!force && lastRow.length > 0) {
+            const pid = lastRow.find('.product-select').val();
+            if(!pid) {
+                lastRow.find('.item-id-input').focus();
+                return;
+            }
+        }
+
+        const newRowHtml = `
+            <tr>
+                <td><input type="text" class="form-control form-control-sm item-id-input" placeholder="ID"></td>
+                <td>
+                    <select name="product_id[]" class="form-control form-control-sm product-select" style="width: 100%;">
+                        <option value="" disabled selected>Select Product</option>
+                    </select>
+                </td>
+                <td><input type="number" step="0.01" name="price[]" class="form-control form-control-sm price text-end"></td>
+                <td><input type="number" step="0.01" name="retail_price[]" class="form-control form-control-sm retail_price text-end bg-light" readonly></td>
+                <td><input type="number" step="0.01" name="discount_percent[]" class="form-control form-control-sm discount_percent text-center"></td>
+                <td><input type="number" step="0.01" name="item_disc_amount[]" class="form-control form-control-sm disc_amount text-end bg-light" readonly></td>
+                <td class="invoice-only"><input type="text" class="form-control form-control-sm bg-light text-center" value="-" readonly></td>
+                <td><input type="number" name="qty[]" class="form-control form-control-sm quantity text-center" value="1" min="0"></td>
+                <td><input type="text" name="line_amount[]" class="form-control form-control-sm row-amount text-end bg-white" readonly value="0"></td>
+                <td><input type="text" name="line_total[]" class="form-control form-control-sm row-total text-end bg-white" readonly value="0"></td>
+                <td><button type="button" class="btn btn-sm btn-danger remove-row"><i class="fa fa-times"></i></button></td>
+            </tr>`;
+        
+        const $row = $(newRowHtml);
+        $('#purchaseItems').append($row);
+        initProductSelect($row);
+        
+        if (focus) {
+            setTimeout(() => { $row.find('.item-id-input').focus(); }, 50);
+        }
+    };
+
+    $('#addRowBtn').on('click', function() {
+        appendBlankRow(true);
     });
 
     // Invoice Selection
@@ -661,20 +748,23 @@ $(document).ready(function() {
             }
 
             if (res.items.length === 0) {
-                $('#purchaseItems').html('<tr><td colspan="10" class="text-danger p-3">This purchase has no items!</td></tr>');
+                $('#purchaseItems').html('<tr><td colspan="11" class="text-danger p-3">This purchase has no items!</td></tr>');
             } else {
                 res.items.forEach(item => {
-                    appendRow(item, false);
+                    appendInvoiceRow(item);
                 });
             }
             recalcSummary();
         });
     });
 
-    function appendRow(item, isManual) {
+    function appendInvoiceRow(item) {
         let discAmt = item.qty > 0 ? (item.item_discount / item.qty).toFixed(2) : 0;
         let html = `
         <tr>
+            <td>
+                <input type="text" class="form-control form-control-sm bg-light" value="${item.product_id}" readonly>
+            </td>
             <td>
                 <input type="text" class="form-control form-control-sm bg-white" value="${item.product_name}" readonly title="${item.product_name}">
                 <input type="hidden" name="product_id[]" value="${item.product_id}">
@@ -684,15 +774,12 @@ $(document).ready(function() {
             <td><input type="number" step="0.01" name="discount_percent[]" class="form-control form-control-sm discount_percent text-center" value="${item.discount_percent}"></td>
             <td><input type="number" step="0.01" name="item_disc_amount[]" class="form-control form-control-sm disc_amount text-end bg-light" value="${discAmt}" readonly></td>
             <td class="invoice-only"><input type="text" class="form-control form-control-sm bg-light text-center" value="${item.qty}" readonly></td>
-            <td><input type="number" name="qty[]" class="form-control form-control-sm quantity text-center" value="${isManual ? 1 : item.qty}" ${isManual ? '' : 'max="'+item.qty+'"'} min="0"></td>
+            <td><input type="number" name="qty[]" class="form-control form-control-sm quantity text-center" value="${item.qty}" max="${item.qty}" min="0"></td>
             <td><input type="text" name="line_amount[]" class="form-control form-control-sm row-amount text-end bg-white" readonly value="0"></td>
             <td><input type="text" name="line_total[]" class="form-control form-control-sm row-total text-end bg-white" readonly value="0"></td>
             <td><button type="button" class="btn btn-sm btn-danger remove-row"><i class="fa fa-times"></i></button></td>
         </tr>`;
         $('#purchaseItems').append(html);
-        if ($('input[name="return_mode"]:checked').val() === 'manual') {
-            $('.invoice-only').hide();
-        }
         recalcRow($('#purchaseItems tr:last'));
     }
 
@@ -757,6 +844,14 @@ $(document).ready(function() {
         $('#overallDiscount').val(discount.toFixed(2));
         $('#netAmount').val(net.toFixed(2));
     }
+
+    // Initialize existing rows
+    $('#purchaseItems tr').each(function() {
+        if ($(this).find('.product-select').length) {
+            initProductSelect($(this));
+        }
+        recalcRow($(this));
+    });
 });
 
 // --- Print Preview Functions ---

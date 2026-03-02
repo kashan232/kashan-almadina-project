@@ -268,11 +268,12 @@ Route::middleware('auth')->group(function () {
     Route::get('/purchase-returns/add', [\App\Http\Controllers\PurchaseReturnController::class, 'create'])->name('purchase.return.add');
     Route::post('/purchase-returns', [\App\Http\Controllers\PurchaseReturnController::class, 'store'])->name('purchase.return.store');
     Route::get('/purchase-returns/get-purchase/{invoice_no}', [\App\Http\Controllers\PurchaseReturnController::class, 'getPurchaseDetails']);
-    Route::get('/purchase-returns/post/{id}', [\App\Http\Controllers\PurchaseReturnController::class, 'post'])->name('purchase.return.post');
+    Route::post('/purchase-returns/post/{id}', [\App\Http\Controllers\PurchaseReturnController::class, 'post'])->name('purchase.return.post');
     Route::get('/purchase-returns/print/{id}', [\App\Http\Controllers\PurchaseReturnController::class, 'print'])->name('purchase.return.print');
     /* Added routes for edit and update */
     Route::get('/purchase-returns/{id}/edit', [\App\Http\Controllers\PurchaseReturnController::class, 'edit'])->name('purchase.return.edit');
     Route::post('/purchase-returns/{id}/update', [\App\Http\Controllers\PurchaseReturnController::class, 'update'])->name('purchase.return.update');
+    Route::delete('/purchase-returns/{id}/destroy', [\App\Http\Controllers\PurchaseReturnController::class, 'destroy'])->name('purchase.return.destroy');
 
     // Route::get('/fetch-product', [PurchaseController::class, 'fetchProduct'])->name('item.search');
 

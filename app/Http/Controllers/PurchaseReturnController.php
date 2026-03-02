@@ -26,6 +26,9 @@ class PurchaseReturnController extends Controller
         if ($request->filled('end_date')) {
             $query->whereDate('current_date', '<=', $request->end_date);
         }
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
 
         $PurchaseReturns = $query->latest()->get();
         return view('admin_panel.purchase_return.index', compact('PurchaseReturns'));
@@ -402,5 +405,20 @@ class PurchaseReturnController extends Controller
     {
         $ret = PurchaseReturn::with(['items.product', 'purchasable', 'warehouse'])->findOrFail($id);
         return view('admin_panel.purchase_return.print_return', compact('ret'));
+    }
+
+    public function destroy($id)
+    {
+        try {
+            $ret = PurchaseReturn::findOrFail($id);
+            if ($ret->status === 'Posted') {
+                return redirect()->back()->with('error', 'Cannot delete a posted return.');
+            }
+            $ret->items()->delete();
+            $ret->delete();
+            return redirect()->back()->with('success', 'Purchase Return deleted successfully.');
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Error: ' . $e->getMessage());
+        }
     }
 }

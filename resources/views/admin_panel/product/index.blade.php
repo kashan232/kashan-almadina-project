@@ -229,292 +229,301 @@
                                                         </li>
                                                         <li><hr class="dropdown-divider"></li>
                                                         <li>
-                                                            <a class="dropdown-item py-2" href="/products/bulk-set-price?ids={{ $product->id }}">
-                                                                <i class="fa fa-tag me-2 text-success"></i> Set New Price
-                                                            </a>
-                                                        </li>
-                                                    </ul>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                        @endforeach
-                                    </tbody>
-                                </table>
-                            </div>
+                                                             <a class="dropdown-item py-2" href="/products/bulk-set-price?type=purchase&ids={{ $product->id }}">
+                                                                 <i class="fa fa-tag me-2 text-primary"></i> Set Purchase Price
+                                                             </a>
+                                                         </li>
+                                                         <li>
+                                                             <a class="dropdown-item py-2" href="/products/bulk-set-price?type=sale&ids={{ $product->id }}">
+                                                                 <i class="fa fa-tag me-2 text-success"></i> Set Sale Price
+                                                             </a>
+                                                         </li>
+                                                     </ul>
+                                                 </div>
+                                             </td>
+                                         </tr>
+                                         @endforeach
+                                     </tbody>
+                                 </table>
+                             </div>
 
-                            <div class="mt-4 pt-3 border-top">
-                                <div class="d-flex align-items-center gap-3">
-                                    <label class="fw-bold text-muted small mb-0">Bulk Action:</label>
-                                    <select id="bulk-action" class="form-select form-select-sm" style="width:200px;">
-                                        <option value="">Select Action</option>
-                                        <option value="set-new-prices">Set New Price</option>
-                                        <option value="delete">Delete Selected</option>
-                                        <option value="deactivate">Deactivate Selected</option>
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
+                             <div class="mt-4 pt-3 border-top">
+                                 <div class="d-flex align-items-center gap-3">
+                                     <label class="fw-bold text-muted small mb-0">Bulk Action:</label>
+                                     <select id="bulk-action" class="form-select form-select-sm" style="width:200px;">
+                                         <option value="">Select Action</option>
+                                         <option value="set-purchase-prices">Set Purchase Price</option>
+                                         <option value="set-sale-prices">Set Sale Price</option>
+                                         <option value="delete">Delete Selected</option>
+                                         <option value="deactivate">Deactivate Selected</option>
+                                     </select>
+                                 </div>
+                             </div>
+                         </div>
+                     </div>
+                 </div>
+             </div>
+         </div>
+     </div>
+ </div>
 
-{{-- Bulk Action Modal --}}
-<div class="modal fade" id="bulkConfirmModal" tabindex="-1" aria-labelledby="bulkConfirmModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content border-0 shadow">
-            <div class="modal-header bg-light">
-                <h5 class="modal-title fw-bold" id="bulkConfirmModalLabel">Confirm Bulk Action</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body p-4">
-                <p class="mb-0">Are you sure you want to perform this action on the selected products?</p>
-            </div>
-            <div class="modal-footer border-0">
-                <button type="button" class="btn btn-secondary rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" id="confirm-bulk-action" class="btn btn-primary rounded-pill px-4">Yes, Continue</button>
-            </div>
-        </div>
-    </div>
-</div>
+ {{-- Bulk Action Modal --}}
+ <div class="modal fade" id="bulkConfirmModal" tabindex="-1" aria-labelledby="bulkConfirmModalLabel" aria-hidden="true">
+     <div class="modal-dialog">
+         <div class="modal-content border-0 shadow">
+             <div class="modal-header bg-light">
+                 <h5 class="modal-title fw-bold" id="bulkConfirmModalLabel">Confirm Bulk Action</h5>
+                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+             </div>
+             <div class="modal-body p-4">
+                 <p class="mb-0">Are you sure you want to perform this action on the selected products?</p>
+             </div>
+             <div class="modal-footer border-0">
+                 <button type="button" class="btn btn-secondary rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
+                 <button type="button" id="confirm-bulk-action" class="btn btn-primary rounded-pill px-4">Yes, Continue</button>
+             </div>
+         </div>
+     </div>
+ </div>
 
-<!-- Price History Modal -->
-<div class="modal fade" id="priceHistoryModal" tabindex="-1" role="dialog" aria-labelledby="priceHistoryModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-xl" role="document">
-        <div class="modal-content border-0 shadow">
-            <div class="modal-header bg-light">
-                <h5 class="modal-title fw-bold" id="priceHistoryModalLabel">Price History</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body p-0">
-                <div class="table-responsive">
-                    <table class="table table-bordered table-striped mb-0" id="price-history-table">
-                        <thead class="bg-light">
-                            <tr>
-                                <th>#</th>
-                                <th>Pur. Retail</th>
-                                <th>Pur. Tax (%) / (PKR)</th>
-                                <th>Pur. Disc (%) / (PKR)</th>
-                                <th>Sale Retail</th>
-                                <th>Sale Tax (%) / (PKR)</th>
-                                <th>Sale Disc (%) / (PKR)</th>
-                                <th>WHT (Sale)</th>
-                                <th>Start Date</th>
-                                <th>End Date</th>
-                            </tr>
-                        </thead>
-                        <tbody id="price-history-tbody">
-                            <!-- Table rows inserted via JS -->
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
+ <!-- Price History Modal -->
+ <div class="modal fade" id="priceHistoryModal" tabindex="-1" role="dialog" aria-labelledby="priceHistoryModalLabel" aria-hidden="true">
+     <div class="modal-dialog modal-xl" role="document">
+         <div class="modal-content border-0 shadow">
+             <div class="modal-header bg-light">
+                 <h5 class="modal-title fw-bold" id="priceHistoryModalLabel">Price History</h5>
+                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+             </div>
+             <div class="modal-body p-0">
+                 <div class="table-responsive">
+                     <table class="table table-bordered table-striped mb-0" id="price-history-table">
+                         <thead class="bg-light">
+                             <tr>
+                                 <th>#</th>
+                                 <th>Pur. Retail</th>
+                                 <th>Pur. Tax (%) / (PKR)</th>
+                                 <th>Pur. Disc (%) / (PKR)</th>
+                                 <th>Sale Retail</th>
+                                 <th>Sale Tax (%) / (PKR)</th>
+                                 <th>Sale Disc (%) / (PKR)</th>
+                                 <th>WHT (Sale)</th>
+                                 <th>Start Date</th>
+                                 <th>End Date</th>
+                             </tr>
+                         </thead>
+                         <tbody id="price-history-tbody">
+                             <!-- Table rows inserted via JS -->
+                         </tbody>
+                     </table>
+                 </div>
+             </div>
+         </div>
+     </div>
+ </div>
 
-@endsection
+ @endsection
 
-@section('scripts')
-<script>
-    $(document).ready(function() {
-        // Toggle Column Picker Menu
-        $('#columnPickerBtn').on('click', function(e) {
-            e.stopPropagation();
-            $('#columnPickerMenu').toggleClass('show');
-        });
+ @section('scripts')
+ <script>
+     $(document).ready(function() {
+         // Toggle Column Picker Menu
+         $('#columnPickerBtn').on('click', function(e) {
+             e.stopPropagation();
+             $('#columnPickerMenu').toggleClass('show');
+         });
 
-        // Close menu when clicking outside
-        $(document).on('click', function(e) {
-            if (!$(e.target).closest('.column-picker-dropdown').length) {
-                $('#columnPickerMenu').removeClass('show');
-            }
-        });
+         // Close menu when clicking outside
+         $(document).on('click', function(e) {
+             if (!$(e.target).closest('.column-picker-dropdown').length) {
+                 $('#columnPickerMenu').removeClass('show');
+             }
+         });
 
-        // Column Persistence with LocalStorage
-        const storageKey = 'product_table_columns_v1';
-        
-        // Load initial state
-        const savedState = localStorage.getItem(storageKey);
-        if (savedState) {
-            const columns = JSON.parse(savedState);
-            $('#columnPickerMenu input').each(function() {
-                const colIdx = $(this).data('column');
-                if (columns.hasOwnProperty(colIdx)) {
-                    $(this).prop('checked', columns[colIdx]);
-                    toggleColumn(colIdx, columns[colIdx]);
-                }
-            });
-        }
+         // Column Persistence with LocalStorage
+         const storageKey = 'product_table_columns_v1';
+         
+         // Load initial state
+         const savedState = localStorage.getItem(storageKey);
+         if (savedState) {
+             const columns = JSON.parse(savedState);
+             $('#columnPickerMenu input').each(function() {
+                 const colIdx = $(this).data('column');
+                 if (columns.hasOwnProperty(colIdx)) {
+                     $(this).prop('checked', columns[colIdx]);
+                     toggleColumn(colIdx, columns[colIdx]);
+                 }
+             });
+         }
 
-        // Handle Checkbox Change
-        $('#columnPickerMenu input').on('change', function() {
-            const colIdx = $(this).data('column');
-            const isChecked = $(this).is(':checked');
-            
-            toggleColumn(colIdx, isChecked);
-            saveState();
-        });
+         // Handle Checkbox Change
+         $('#columnPickerMenu input').on('change', function() {
+             const colIdx = $(this).data('column');
+             const isChecked = $(this).is(':checked');
+             
+             toggleColumn(colIdx, isChecked);
+             saveState();
+         });
 
-        function toggleColumn(index, show) {
-            const table = $('#example');
-            const cells = table.find(`th:nth-child(${index}), td:nth-child(${index})`);
-            if (show) {
-                cells.removeClass('column-hidden');
-            } else {
-                cells.addClass('column-hidden');
-            }
-        }
+         function toggleColumn(index, show) {
+             const table = $('#example');
+             const cells = table.find(`th:nth-child(${index}), td:nth-child(${index})`);
+             if (show) {
+                 cells.removeClass('column-hidden');
+             } else {
+                 cells.addClass('column-hidden');
+             }
+         }
 
-        function saveState() {
-            const state = {};
-            $('#columnPickerMenu input').each(function() {
-                state[$(this).data('column')] = $(this).is(':checked');
-            });
-            localStorage.setItem(storageKey, JSON.stringify(state));
-        }
+         function saveState() {
+             const state = {};
+             $('#columnPickerMenu input').each(function() {
+                 state[$(this).data('column')] = $(this).is(':checked');
+             });
+             localStorage.setItem(storageKey, JSON.stringify(state));
+         }
 
-        // Initialize DataTable
-        var table = $('#example').DataTable({
-            scrollX: true,
-            autoWidth: false,
-            pageLength: 25,
-            order: [[1, 'asc']],
-            language: {
-                search: "_INPUT_",
-                searchPlaceholder: "Search products..."
-            }
-        });
+         // Initialize DataTable
+         var table = $('#example').DataTable({
+             scrollX: true,
+             autoWidth: false,
+             pageLength: 25,
+             order: [[1, 'asc']],
+             language: {
+                 search: "_INPUT_",
+                 searchPlaceholder: "Search products..."
+             }
+         });
 
-        // Price History Logic
-        $(document).on('click', '.view-history-btn', function() {
-            var productId = $(this).data('product-id');
-            
-            $.ajax({
-                url: '/products/' + productId + '/prices',
-                type: 'GET',
-                success: function(response) {
-                    const prices = response.prices;
-                    const productName = response.product_name;
+         // Price History Logic
+         $(document).on('click', '.view-history-btn', function() {
+             var productId = $(this).data('product-id');
+             
+             $.ajax({
+                 url: '/products/' + productId + '/prices',
+                 type: 'GET',
+                 success: function(response) {
+                     const prices = response.prices;
+                     const productName = response.product_name;
 
-                    $('#priceHistoryModalLabel').text('Price History: ' + productName);
+                     $('#priceHistoryModalLabel').text('Price History: ' + productName);
 
-                    let rows = '';
-                    if (prices && prices.length > 0) {
-                        prices.forEach((price, index) => {
-                            rows += `<tr>
-                                <td class="text-center">${index + 1}</td>
-                                <td class="text-end">${price.purchase_retail_price || '0'}</td>
-                                <td class="text-center">
-                                    ${price.purchase_tax_percent}% <br>
-                                    <small class="text-muted">Rs. ${price.purchase_tax_amount || '0'}</small>
-                                </td>
-                                <td class="text-center">
-                                    ${price.purchase_discount_percent}% <br>
-                                    <small class="text-muted">Rs. ${price.purchase_discount_amount || '0'}</small>
-                                </td>
-                                <td class="text-end">${price.sale_retail_price || '0'}</td>
-                                <td class="text-center">
-                                    ${price.sale_tax_percent}% <br>
-                                    <small class="text-muted">Rs. ${price.sale_tax_amount || '0'}</small>
-                                </td>
-                                <td class="text-center">
-                                    ${price.sale_discount_percent}% <br>
-                                    <small class="text-muted">Rs. ${price.sale_discount_amount || '0'}</small>
-                                </td>
-                                <td class="text-end">Rs. ${price.sale_wht_percent || '0'}</td>
-                                <td class="text-center">${price.start_date}</td>
-                                <td class="text-center">
-                                    ${price.end_date 
-                                        ? `<span class="text-danger small">${price.end_date}</span>` 
-                                        : `<span class="badge bg-success">Active</span>`}
-                                </td>
-                            </tr>`;
-                        });
-                    } else {
-                        rows = '<tr><td colspan="10" class="text-center">No price history found.</td></tr>';
-                    }
+                     let rows = '';
+                     if (prices && prices.length > 0) {
+                         prices.forEach((price, index) => {
+                             rows += `<tr>
+                                 <td class="text-center">${index + 1}</td>
+                                 <td class="text-end">${price.purchase_retail_price || '0'}</td>
+                                 <td class="text-center">
+                                     ${price.purchase_tax_percent}% <br>
+                                     <small class="text-muted">Rs. ${price.purchase_tax_amount || '0'}</small>
+                                 </td>
+                                 <td class="text-center">
+                                     ${price.purchase_discount_percent}% <br>
+                                     <small class="text-muted">Rs. ${price.purchase_discount_amount || '0'}</small>
+                                 </td>
+                                 <td class="text-end">${price.sale_retail_price || '0'}</td>
+                                 <td class="text-center">
+                                     ${price.sale_tax_percent}% <br>
+                                     <small class="text-muted">Rs. ${price.sale_tax_amount || '0'}</small>
+                                 </td>
+                                 <td class="text-center">
+                                     ${price.sale_discount_percent}% <br>
+                                     <small class="text-muted">Rs. ${price.sale_discount_amount || '0'}</small>
+                                 </td>
+                                 <td class="text-end">Rs. ${price.sale_wht_percent || '0'}</td>
+                                 <td class="text-center">${price.start_date}</td>
+                                 <td class="text-center">
+                                     ${price.end_date 
+                                         ? `<span class="text-danger small">${price.end_date}</span>` 
+                                         : `<span class="badge bg-success">Active</span>`}
+                                 </td>
+                             </tr>`;
+                         });
+                     } else {
+                         rows = '<tr><td colspan="10" class="text-center">No price history found.</td></tr>';
+                     }
 
-                    $('#price-history-tbody').html(rows);
-                    $('#priceHistoryModal').modal('show');
-                },
-                error: function() {
-                    Swal.fire('Error', 'Failed to load price history.', 'error');
-                }
-            });
-        });
+                     $('#price-history-tbody').html(rows);
+                     $('#priceHistoryModal').modal('show');
+                 },
+                 error: function() {
+                     Swal.fire('Error', 'Failed to load price history.', 'error');
+                 }
+             });
+         });
 
-        // Select All Checkbox
-        $('#select-all').on('change', function() {
-            $('.row-checkbox').prop('checked', $(this).is(':checked'));
-        });
+         // Select All Checkbox
+         $('#select-all').on('change', function() {
+             $('.row-checkbox').prop('checked', $(this).is(':checked'));
+         });
 
-        // Bulk Action Logic
-        $('#bulk-action').on('change', function() {
-            let action = $(this).val();
-            if (action) {
-                let selectedIds = $('.row-checkbox:checked').map(function() {
-                    return $(this).val();
-                }).get();
+         // Bulk Action Logic
+         $('#bulk-action').on('change', function() {
+             let action = $(this).val();
+             if (action) {
+                 let selectedIds = $('.row-checkbox:checked').map(function() {
+                     return $(this).val();
+                 }).get();
 
-                if (selectedIds.length === 0) {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Validation Error',
-                        text: 'Please select at least one product.',
-                        timer: 3000,
-                        showConfirmButton: false
-                    });
-                    $(this).val('');
-                    return;
-                }
+                 if (selectedIds.length === 0) {
+                     Swal.fire({
+                         icon: 'error',
+                         title: 'Validation Error',
+                         text: 'Please select at least one product.',
+                         timer: 3000,
+                         showConfirmButton: false
+                     });
+                     $(this).val('');
+                     return;
+                 }
 
-                $('#bulkConfirmModal').modal('show');
+                 $('#bulkConfirmModal').modal('show');
 
-                $('#confirm-bulk-action').off('click').on('click', function() {
-                    if (action === 'set-new-prices') {
-                        let idsString = selectedIds.join(',');
-                        window.location.href = `/products/bulk-set-price?ids=${idsString}`;
-                    } else {
-                        $.ajax({
-                            url: "{{ route('products.bulkAction') }}",
-                            method: "POST",
-                            data: {
-                                _token: "{{ csrf_token() }}",
-                                action: action,
-                                ids: selectedIds
-                            },
-                            success: function(response) {
-                                Swal.fire({
-                                    icon: 'success',
-                                    title: 'Success',
-                                    text: response.message,
-                                    timer: 2000,
-                                    showConfirmButton: false
-                                });
-                                $('#bulkConfirmModal').modal('hide');
-                                $('#bulk-action').val('');
-                                setTimeout(() => {
-                                    location.reload();
-                                }, 2000);
-                            },
-                            error: function(xhr) {
-                                const res = xhr.responseJSON;
-                                Swal.fire({
-                                    icon: 'error',
-                                    title: 'Error',
-                                    text: res.message || 'Something went wrong.',
-                                    timer: 3000,
-                                    showConfirmButton: false
-                                });
-                            }
-                        });
-                    }
-                });
-            }
-        });
-    });
-</script>
-@endsection
+                 $('#confirm-bulk-action').off('click').on('click', function() {
+                     if (action === 'set-purchase-prices') {
+                         let idsString = selectedIds.join(',');
+                         window.location.href = `/products/bulk-set-price?type=purchase&ids=${idsString}`;
+                     } else if (action === 'set-sale-prices') {
+                         let idsString = selectedIds.join(',');
+                         window.location.href = `/products/bulk-set-price?type=sale&ids=${idsString}`;
+                     } else {
+                         $.ajax({
+                             url: "{{ route('products.bulkAction') }}",
+                             method: "POST",
+                             data: {
+                                 _token: "{{ csrf_token() }}",
+                                 action: action,
+                                 ids: selectedIds
+                             },
+                             success: function(response) {
+                                 Swal.fire({
+                                     icon: 'success',
+                                     title: 'Success',
+                                     text: response.message,
+                                     timer: 2000,
+                                     showConfirmButton: false
+                                 });
+                                 $('#bulkConfirmModal').modal('hide');
+                                 $('#bulk-action').val('');
+                                 setTimeout(() => {
+                                     location.reload();
+                                 }, 2000);
+                             },
+                             error: function(xhr) {
+                                 const res = xhr.responseJSON;
+                                 Swal.fire({
+                                     icon: 'error',
+                                     title: 'Error',
+                                     text: res.message || 'Something went wrong.',
+                                     timer: 3000,
+                                     showConfirmButton: false
+                                 });
+                             }
+                         });
+                     }
+                 });
+             }
+         });
+     });
+ </script>
+ @endsection
