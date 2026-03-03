@@ -31,6 +31,43 @@
         padding: 5px 10px;
         border-radius: 4px;
     }
+    .posted-watermark {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%) rotate(-30deg);
+        font-size: 100px;
+        color: rgba(255, 0, 0, 0.1);
+        font-weight: bold;
+        pointer-events: none;
+        z-index: 1000;
+        text-transform: uppercase;
+        border: 10px solid rgba(255, 0, 0, 0.1);
+        padding: 20px;
+        border-radius: 20px;
+        display: none;
+    }
+    .posted-watermark.show { display: block; }
+    .locked-bg {
+        background-color: #f8f9fa !important;
+    }
+    .form-locked {
+        background-color: #f8f9fa !important;
+        position: relative;
+    }
+    .form-locked input, 
+    .form-locked .select2-container--default .select2-selection--single,
+    .form-locked .select2-container, 
+    .form-locked select, 
+    .form-locked textarea { 
+        pointer-events: none !important; 
+        opacity: 0.85 !important; 
+        background-color: #f1f3f5 !important;
+        cursor: not-allowed !important;
+    }
+    .form-locked .remove-row, .form-locked #addItemBtn, .form-locked #saveDraftBtn { 
+        display: none !important; 
+    }
 </style>
 
 @section('content')
@@ -90,8 +127,9 @@
 
             </div>
 
-            <form action="{{ route('stock-wastage.store') }}" method="POST" id="wastageForm">
+            <form action="{{ route('stock-wastage.store') }}" method="POST" id="wastageForm" class="position-relative">
                 @csrf
+                <div class="posted-watermark">Posted</div>
 
                 <div class="card shadow-sm mb-3">
                     <div class="card-header bg-white py-2">
@@ -186,56 +224,50 @@
                         </div>
                     </div>
                     <div class="card-footer bg-white py-3">
-                        <div class="d-flex justify-content-between align-items-center">
+                        <div class="d-flex gap-2 justify-content-end">
+                            {{-- Save Draft --}}
+                            <button type="button" id="saveDraftBtn"
+                                class="btn btn-sm btn-warning rounded-pill px-4 shadow-sm">
+                                <i class="fa fa-floppy-o me-1"></i> Save Draft
+                                <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+S</kbd>
+                            </button>
 
-                            {{-- Left: Cancel --}}
-                            <div>
-                                <a href="{{ route('stock-wastage.index') }}" class="btn btn-sm btn-outline-secondary rounded-pill px-4">
-                                    <i class="fa fa-times me-1"></i> Cancel
-                                </a>
-                            </div>
+                            {{-- Print Preview --}}
+                            <button type="button" id="previewPrintBtn"
+                                class="btn btn-sm btn-outline-dark rounded-pill px-4">
+                                <i class="fa fa-print me-1"></i> Print Preview
+                                <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+P</kbd>
+                            </button>
 
-                            {{-- Right: Save + Print + Post --}}
-                            <div class="d-flex gap-2">
+                            {{-- Post --}}
+                            <button type="button" id="postBtn" data-action="post"
+                                class="btn btn-sm btn-primary rounded-pill px-4 shadow-sm">
+                                <i class="fa fa-send me-1"></i> Save & Post
+                                <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+&#8629;</kbd>
+                            </button>
 
-                                {{-- Save Draft --}}
-                                <button type="button" id="saveDraftBtn"
-                                    class="btn btn-sm btn-warning rounded-pill px-4 shadow-sm">
-                                    <i class="fa fa-floppy-o me-1"></i> Save Draft
-                                    <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+S</kbd>
-                                </button>
+                            {{-- Edit --}}
+                            <button type="button" id="editInvoiceBtn" 
+                                class="btn btn-sm btn-warning rounded-pill px-4 shadow-sm" 
+                                style="display: none;">
+                                <i class="fa fa-pencil me-1"></i> Edit 
+                                <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+E</kbd>
+                            </button>
 
-                                {{-- Print Preview --}}
-                                @if(isset($wastage))
-                                    <a href="{{ route('stock-wastage.print', $wastage->id) }}" target="_blank"
-                                        class="btn btn-sm btn-outline-dark rounded-pill px-4">
-                                        <i class="fa fa-print me-1"></i> Print
-                                        <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+P</kbd>
-                                    </a>
-                                @else
-                                    <button type="button" id="previewPrintBtn"
-                                        class="btn btn-sm btn-outline-dark rounded-pill px-4">
-                                        <i class="fa fa-print me-1"></i> Print Preview
-                                        <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+P</kbd>
-                                    </button>
-                                @endif
+                            {{-- New --}}
+                            <a href="{{ route('stock-wastage.create') }}" id="newInvoiceBtn" 
+                                class="btn btn-sm btn-info rounded-pill px-4 shadow-sm text-white" 
+                                style="display: none;">
+                                <i class="fa fa-plus me-1"></i> New 
+                                <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+M</kbd>
+                            </a>
 
-                                {{-- Post --}}
-                                @if(isset($wastage) && $wastage->status != 'Posted')
-                                    <button type="button" id="postBtn" data-action="post"
-                                        class="btn btn-sm btn-primary rounded-pill px-4 shadow-sm">
-                                        <i class="fa fa-send me-1"></i> Post
-                                        <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+↵</kbd>
-                                    </button>
-                                @elseif(!isset($wastage))
-                                    <button type="button" id="postBtn" data-action="post"
-                                        class="btn btn-sm btn-primary rounded-pill px-4 shadow-sm">
-                                        <i class="fa fa-send me-1"></i> Save & Post
-                                        <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+↵</kbd>
-                                    </button>
-                                @endif
-
-                            </div>
+                            {{-- Cancel --}}
+                            <a href="{{ route('stock-wastage.index') }}" id="cancelBtn" 
+                                class="btn btn-sm btn-danger rounded-pill px-4 shadow-sm text-white">
+                                <i class="fa fa-times me-1"></i> Cancel 
+                                <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Esc</kbd>
+                            </a>
                         </div>
                     </div>
                 </div>
@@ -308,17 +340,8 @@
         // =============================================
         function ajaxSaveDraft() {
             var $form  = $('#wastageForm');
-            if (!$form[0].checkValidity()) { $form[0].reportValidity(); return; }
-
-            // Set action = save
-            if ($form.find('input[name="action"]').length === 0) {
-                $form.append('<input type="hidden" name="action" value="save">');
-            }
-            $form.find('input[name="action"]').val('save');
-
-            $('#saveDraftBtn').prop('disabled', true).html('<i class="fa fa-spinner fa-spin me-1"></i> Saving...');
-
-            // Remove empty rows before submission
+            
+            // Remove empty rows before anything else
             $('#itemsTable tbody tr').each(function() {
                 if (!$(this).find('.product-select').val()) {
                     $(this).remove();
@@ -331,12 +354,22 @@
             // At least one row must exist
             if ($('#itemsTable tbody tr').length === 0) {
                 addRow();
-                $('#saveDraftBtn').prop('disabled', false).html('<i class="fa fa-floppy-o me-1"></i> Save Draft <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+S</kbd>');
                 showToast('❌ Please add at least one item.', 'error');
                 return;
             }
 
-            $.ajax({
+            // Now check validity
+            if (!$form[0].checkValidity()) { $form[0].reportValidity(); return; }
+
+            // Set action = save
+            if ($form.find('input[name="action"]').length === 0) {
+                $form.append('<input type="hidden" name="action" value="save">');
+            }
+            $form.find('input[name="action"]').val('save');
+
+            $('#saveDraftBtn').prop('disabled', true).html('<i class="fa fa-spinner fa-spin me-1"></i> Saving...');
+
+        $.ajax({
                 url:  $form.attr('action'),
                 type: 'POST',
                 data: $form.serialize(),
@@ -344,12 +377,9 @@
                 success: function(res) {
                     if (res.success) {
                         _savedWastageId = res.id;
-                        showToast('✅ ' + res.message);
+                        showToast('✅ Draft Saved — ' + (res.message || 'Wastage saved as unposted.'), 'success');
 
-                        // Update GWN badge in header (already correct, but refresh name)
-                        $('.page-title').text('Edit Stock Wastage');
-
-                        // Show Post button (it was "Save & Post" before — now it becomes real Post)
+                        // Show Post button
                         $('#postBtn')
                             .show()
                             .prop('disabled', false)
@@ -357,22 +387,26 @@
                             .addClass('btn-success')
                             .html('<i class="fa fa-send me-1"></i> Post <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+↵</kbd>');
 
-                        // Show Print button (real print link)
+                        // Update print button
                         var printUrl = '{{ url("stock-wastage") }}/' + res.id + '/print';
-                        $('#previewPrintBtn')
-                            .attr('href', printUrl)
-                            .attr('target', '_blank')
-                            .attr('id', 'realPrintBtn')
-                            .prop('tagName') === 'BUTTON'
-                            ? $('#previewPrintBtn').replaceWith(
+                        if ($('#previewPrintBtn').length) {
+                            $('#previewPrintBtn').replaceWith(
                                 $('<a>').attr({href: printUrl, target:'_blank', id:'realPrintBtn', class:'btn btn-sm btn-outline-dark rounded-pill px-4'})
                                 .html('<i class="fa fa-print me-1"></i> Print <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+P</kbd>')
-                            ) : null;
-
-                        // Disable form fields to prevent further edits without a new form
-                        // (optional UX) — leave editable for now
+                            );
+                        }
+                        
+                        // Show New & Edit buttons
+                        $('#newInvoiceBtn').show();
+                        $('#editInvoiceBtn').show();
+                        
+                        // Explicitly Lock the form
+                        console.log("Locking form...");
+                        $('#wastageForm').addClass('form-locked');
+                        showToast('🔒 Form Locked — Press Ctrl+E to Edit', 'success');
+                        
                     } else {
-                        showToast('❌ ' + (res.message || 'Error saving.'), 'error');
+                        showToast('❌ ' + (res.message || 'Error saving draft.'), 'error');
                     }
                 },
                 error: function(xhr) {
@@ -429,6 +463,13 @@
         $('#saveDraftBtn').on('click', function() { ajaxSaveDraft(); });
         $('#postBtn').on('click',      function() { doPost(); });
 
+        // Unlock form on Edit button
+        $('#editInvoiceBtn').on('click', function() {
+            $('#wastageForm').removeClass('form-locked');
+            $(this).hide();
+            showToast('🔓 Form Unlocked for Editing', 'success');
+        });
+
         // =============================================
         //  GLOBAL KEYBOARD SHORTCUTS
         // =============================================
@@ -443,10 +484,9 @@
                 e.preventDefault();
                 doPost();
             }
-            // Ctrl+P  →  Print Preview modal
+            // Ctrl+P  →  Print
             if (e.ctrlKey && e.key === 'p') {
                 e.preventDefault();
-                // If the real print link exists (it means we've saved draft), open the link in a new tab
                 if ($('#realPrintBtn').length > 0) {
                     window.open($('#realPrintBtn').attr('href'), '_blank');
                 } else {
@@ -457,6 +497,26 @@
             if (e.ctrlKey && e.key === 'l') {
                 e.preventDefault();
                 window.location.href = $('#listBtn').attr('href');
+            }
+            // Ctrl+E → Unlock form (Edit)
+            if (e.ctrlKey && e.key === 'e') {
+                e.preventDefault();
+                if ($('#editInvoiceBtn').is(':visible')) {
+                    $('#editInvoiceBtn').trigger('click');
+                }
+            }
+            // Ctrl+M → New
+            if (e.ctrlKey && e.key === 'm') {
+                e.preventDefault();
+                window.location.href = $('#newInvoiceBtn').attr('href');
+            }
+            // ESC → Cancel / Modal Close
+            if (e.key === 'Escape') {
+                if ($('.modal.show').length) {
+                    $('.modal.show').modal('hide');
+                } else {
+                   window.location.href = $('#cancelBtn').attr('href');
+                }
             }
         });
 
@@ -735,8 +795,13 @@
 
         function calcTotal() {
             var totalAmt = 0, totalQty = 0;
-            $('.amount').each(function() { totalAmt += parseFloat($(this).val()) || 0; });
-            $('.qty').each(function()    { totalQty += parseFloat($(this).val()) || 0; });
+            $('#itemsTable tbody tr').each(function() {
+                var productId = $(this).find('.product-select').val();
+                if (productId) {
+                    totalAmt += parseFloat($(this).find('.amount').val()) || 0;
+                    totalQty += parseFloat($(this).find('.qty').val()) || 0;
+                }
+            });
             $('#grand_total').val(totalAmt.toFixed(2));
             $('#total_qty').val(totalQty);
         }

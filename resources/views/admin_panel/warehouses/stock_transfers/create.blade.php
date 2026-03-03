@@ -15,6 +15,39 @@
     }
     .input-sm { height: 31px; padding: 2px 8px; font-size: 14px; }
     .table td, .table th { vertical-align: middle !important; padding: 4px !important; }
+    
+    .posted-watermark {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%) rotate(-30deg);
+        font-size: 100px;
+        color: rgba(255, 0, 0, 0.1);
+        font-weight: bold;
+        pointer-events: none;
+        z-index: 1000;
+        text-transform: uppercase;
+        border: 10px solid rgba(255, 0, 0, 0.1);
+        padding: 20px;
+        border-radius: 20px;
+        display: none;
+    }
+    .posted-watermark.show { display: block; }
+
+    .form-locked {
+        position: relative;
+        pointer-events: none !important;
+    }
+    .form-locked input, 
+    .form-locked .select2-container, 
+    .form-locked select, 
+    .form-locked textarea { 
+        background-color: #f1f3f5 !important;
+        cursor: not-allowed !important;
+    }
+    .form-locked .remove-row, .form-locked #addRowBtn { 
+        visibility: hidden !important; 
+    }
 </style>
 
 @section('content')
@@ -38,14 +71,19 @@
             {{-- TOP BAR --}}
             <div class="d-flex justify-content-between align-items-center mb-3 bg-light p-2 rounded shadow-sm">
 
-                {{-- LEFT: empty placeholder --}}
-                <div style="min-width:80px;"></div>
+                {{-- LEFT: Actions --}}
+                <div id="postActionArea" style="min-width:80px;">
+                    {{-- Populated by JS after save --}}
+                </div>
 
-                {{-- CENTER: Title + Status Badge --}}
+                {{-- CENTER: Title + Status + ID Badge --}}
                 <div class="d-flex align-items-center gap-2 justify-content-center flex-grow-1">
-                    <h6 class="page-title mb-0 fw-bold">New Stock Transfer</h6>
+                    <h6 class="page-title mb-0 fw-bold">Add Stock Transfer</h6>
                     <span id="statusBadge" class="badge bg-warning text-dark px-3 py-2 rounded-pill shadow-sm" style="font-size:12px;">
                         <i class="fa fa-pencil me-1"></i> Draft
+                    </span>
+                    <span id="idBadge" class="badge bg-primary px-3 py-2 rounded-pill shadow-sm" style="font-size:12px;">
+                        <i class="fa fa-tag me-1"></i> ID: NEW
                     </span>
                 </div>
 
@@ -59,8 +97,10 @@
 
             </div>
 
-            <form action="{{ route('stock_transfers.store') }}" method="POST" id="transferForm">
+            <form action="{{ route('stock_transfers.store') }}" method="POST" id="transferForm" class="position-relative">
                 @csrf
+                
+                <div class="posted-watermark" id="postedWatermark">Posted</div>
 
                 {{-- Header Details --}}
                 <div class="card shadow-sm mb-3">
@@ -140,40 +180,44 @@
                     </div>
 
                     <div class="card-footer bg-white py-3">
-                        <div class="d-flex justify-content-between align-items-center">
+                        <div class="d-flex justify-content-end gap-2">
 
-                            {{-- Left: Cancel --}}
-                            <div>
-                                <a href="{{ route('stock_transfers.index') }}" class="btn btn-sm btn-outline-secondary rounded-pill px-4">
-                                    <i class="fa fa-times me-1"></i> Cancel
-                                </a>
-                            </div>
+                            {{-- Save Draft --}}
+                            <button type="button" id="saveDraftBtn" class="btn btn-sm btn-warning rounded-pill px-4 shadow-sm">
+                                <i class="fa fa-floppy-o me-1"></i> Save Draft
+                                <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+S</kbd>
+                            </button>
 
-                            {{-- Right: Save Draft + Print Preview + Post --}}
-                            <div class="d-flex gap-2">
+                            {{-- Print Preview --}}
+                            <button type="button" id="previewPrintBtn" class="btn btn-sm btn-outline-dark rounded-pill px-4">
+                                <i class="fa fa-print me-1"></i> Print Preview
+                                <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+P</kbd>
+                            </button>
 
-                                {{-- Save Draft --}}
-                                <button type="button" id="saveDraftBtn"
-                                    class="btn btn-sm btn-warning rounded-pill px-4 shadow-sm">
-                                    <i class="fa fa-floppy-o me-1"></i> Save Draft
-                                    <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+S</kbd>
-                                </button>
+                            {{-- Post --}}
+                            <button type="button" id="postBtn" class="btn btn-sm btn-primary rounded-pill px-4 shadow-sm">
+                                <i class="fa fa-send me-1"></i> Save & Post
+                                <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+&#8629;</kbd>
+                            </button>
 
-                                {{-- Print Preview --}}
-                                <button type="button" id="previewPrintBtn"
-                                    class="btn btn-sm btn-outline-dark rounded-pill px-4">
-                                    <i class="fa fa-print me-1"></i> Print Preview
-                                    <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+P</kbd>
-                                </button>
+                            {{-- Edit (Hidden initially) --}}
+                            <button type="button" id="editInvoiceBtn" class="btn btn-sm btn-warning rounded-pill px-4 shadow-sm" style="display:none;">
+                                <i class="fa fa-pencil me-1"></i> Edit
+                                <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+E</kbd>
+                            </button>
 
-                                {{-- Post --}}
-                                <button type="button" id="postBtn"
-                                    class="btn btn-sm btn-primary rounded-pill px-4 shadow-sm">
-                                    <i class="fa fa-send me-1"></i> Save &amp; Post
-                                    <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+&#8629;</kbd>
-                                </button>
+                            {{-- New (Hidden initially) --}}
+                            <a href="{{ route('stock_transfers.create') }}" id="newInvoiceBtn" class="btn btn-sm btn-info rounded-pill px-4 shadow-sm text-white" style="display:none;">
+                                <i class="fa fa-plus me-1"></i> New
+                                <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+M</kbd>
+                            </a>
 
-                            </div>
+                            {{-- Cancel --}}
+                            <a href="{{ route('stock_transfers.index') }}" id="cancelBtn" class="btn btn-sm btn-danger rounded-pill px-4 shadow-sm text-white">
+                                <i class="fa fa-times me-1"></i> Cancel
+                                <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Esc</kbd>
+                            </a>
+
                         </div>
                     </div>
                 </div>
@@ -195,7 +239,6 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body" id="printPreviewBody" style="font-family:'Poppins',sans-serif; font-size:13px;">
-                {{-- Populated by JS --}}
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">
@@ -216,75 +259,49 @@
 <script>
 $(document).ready(function() {
 
-    // Initialize header Select2
     $('.select2').select2({ width: '100%' });
 
-    // =============================================
-    //  TOAST
-    // =============================================
+    var _savedTransferId = null;
+
     function showToast(msg, type) {
         type = type || 'success';
         var icon  = type === 'success' ? 'fa-check-circle' : 'fa-times-circle';
         var color = type === 'success' ? '#28a745' : '#dc3545';
         var $toast = $('<div>').css({
             position: 'fixed', top: '20px', right: '20px', zIndex: 9999,
-            background: color, color: '#fff',
-            padding: '12px 20px', borderRadius: '8px',
-            boxShadow: '0 4px 15px rgba(0,0,0,.2)',
-            fontSize: '14px', fontWeight: '500',
-            display: 'flex', alignItems: 'center', gap: '8px',
-            minWidth: '280px'
+            background: color, color: '#fff', padding: '12px 20px', borderRadius: '8px',
+            boxShadow: '0 4px 15px rgba(0,0,0,.2)', fontSize: '14px', fontWeight: '500',
+            display: 'flex', alignItems: 'center', gap: '8px', minWidth: '280px'
         }).html('<i class="fa ' + icon + '"></i> ' + msg);
         $('body').append($toast);
         setTimeout(function() { $toast.fadeOut(400, function(){ $(this).remove(); }); }, 3500);
     }
 
-    // =============================================
-    //  RECALC TOTAL QTY
-    // =============================================
     function recalcTotals() {
         var total = 0;
         $('.quantity').each(function() { total += parseFloat($(this).val()) || 0; });
-        $('#total_qty').val(total);
+        $('#total_qty').val(total.toFixed(2));
     }
 
-    // =============================================
-    //  STOCK LOOKUP for a row
-    // =============================================
     function fetchStock($row, productId) {
         var warehouseId = $('#from_warehouse_id').val();
         if (!warehouseId || !productId) { $row.find('.stock').val(''); return; }
-
-        $.get("{{ route('warehouse.stock.quantity') }}", {
-            warehouse_id: warehouseId,
-            product_id: productId
-        }).done(function(res) {
-            $row.find('.stock').val(res.quantity);
-            $row.find('.quantity').attr('max', res.quantity);
-        }).fail(function() {
-            $row.find('.stock').val(0);
-            $row.find('.quantity').attr('max', 0);
-        });
+        $.get("{{ route('warehouse.stock.quantity') }}", { warehouse_id: warehouseId, product_id: productId })
+            .done(function(res) { 
+                $row.find('.stock').val(res.quantity); 
+                $row.find('.quantity').attr('max', res.quantity);
+            })
+            .fail(function() { $row.find('.stock').val(0); });
     }
 
-    // =============================================
-    //  INIT SELECT2 ON A ROW
-    // =============================================
     function initProductSelect($row) {
         $row.find('.product-select').select2({
-            placeholder: 'Search Product',
-            width: '100%',
+            placeholder: 'Search Product', width: '100%',
             ajax: {
-                url: "{{ route('search-productsinwar') }}",
-                dataType: 'json',
-                delay: 250,
+                url: "{{ route('search-productsinwar') }}", dataType: 'json', delay: 250,
                 data: function(params) { return { q: params.term }; },
                 processResults: function(data) {
-                    return {
-                        results: data.map(function(i) {
-                            return { id: i.id, text: i.id + ' - ' + i.name };
-                        })
-                    };
+                    return { results: data.map(function(i) { return { id: i.id, text: i.id + ' - ' + i.name }; }) };
                 }
             }
         }).on('select2:select', function(e) {
@@ -292,372 +309,194 @@ $(document).ready(function() {
             $row.find('.item-id-input').val(data.id);
             fetchStock($row, data.id);
             recalcTotals();
+            if ($row.is('#transferItems tr:last-child')) { appendBlankRow(false); }
             setTimeout(function() { $row.find('.quantity').focus().select(); }, 60);
         });
     }
 
-    // =============================================
-    //  APPEND BLANK ROW
-    // =============================================
     function appendBlankRow(focus = true) {
-        var html = '<tr>' +
-            '<td><input type="text" class="form-control input-sm item-id-input" placeholder="ID"></td>' +
-            '<td><select name="product_id[]" class="form-control product-select" style="width:100%;"><option value="">Select Product</option></select></td>' +
-            '<td><input type="number" name="available_stock[]" class="form-control input-sm stock" readonly></td>' +
-            '<td><input type="number" name="quantity[]" class="form-control input-sm quantity" value="1" min="1"></td>' +
-            '<td class="text-center"><button type="button" class="btn btn-sm btn-danger remove-row">X</button></td>' +
-            '</tr>';
+        var html = `<tr>
+            <td><input type="text" class="form-control input-sm item-id-input" placeholder="ID"></td>
+            <td><select name="product_id[]" class="form-control product-select" style="width:100%;"><option value="">Select Product</option></select></td>
+            <td><input type="number" name="available_stock[]" class="form-control input-sm stock" readonly></td>
+            <td><input type="number" name="quantity[]" class="form-control input-sm quantity" value="1" step="any" min="0.01"></td>
+            <td class="text-center"><button type="button" class="btn btn-sm btn-danger remove-row">X</button></td>
+        </tr>`;
         var $row = $(html);
         $('#transferItems').append($row);
         initProductSelect($row);
-        
-        if (focus) {
-            setTimeout(function() { $row.find('.item-id-input').focus(); }, 60);
-        }
+        if (focus) { setTimeout(function() { $row.find('.item-id-input').focus(); }, 60); }
         return $row;
     }
 
-    // Initial row
     appendBlankRow();
 
-    // =============================================
-    //  ITEM ID LOOKUP (Enter / Tab)
-    // =============================================
     $(document).on('keydown', '.item-id-input', function(e) {
         if ((e.key === 'Enter' || e.key === 'Tab') && !e.shiftKey) {
             var $row = $(this).closest('tr');
             var val  = $(this).val().trim();
-
-            // Always append new row silently if last
-            if ($row.is('#transferItems tr:last-child')) {
-                appendBlankRow(false);
-            }
-
-            if (!val) {
-                e.preventDefault();
-                $row.find('.product-select').select2('open');
-                return;
-            }
+            if (!val) { e.preventDefault(); $row.find('.product-select').select2('open'); return; }
             e.preventDefault();
-
             $.ajax({
-                url: "{{ route('search-productsinwar') }}",
-                data: { q: val },
+                url: "{{ route('search-productsinwar') }}", data: { q: val },
                 success: function(res) {
                     var item = res.find(function(i) { return i.id.toString() === val; });
                     if (item) {
                         var option = new Option(item.id + ' - ' + item.name, item.id, true, true);
                         $row.find('.product-select').empty().append(option).val(item.id).trigger('change.select2');
-                        $row.find('.item-id-input').val(item.id);
                         fetchStock($row, item.id);
                         recalcTotals();
+                        if ($row.is('#transferItems tr:last-child')) { appendBlankRow(false); }
                         setTimeout(function() { $row.find('.quantity').focus().select(); }, 60);
-                    } else {
-                        $row.find('.product-select').select2('open');
-                    }
+                    } else { $row.find('.product-select').select2('open'); }
                 }
             });
         }
     });
 
-    // =============================================
-    //  QTY → Enter moves to next row
-    // =============================================
-    $(document).on('keydown', '.quantity', function(e) {
-        if (e.key === 'Enter') {
-            e.preventDefault();
-            var $row = $(this).closest('tr');
-            if ($row.is('#transferItems tr:last-child')) {
-                appendBlankRow().find('.item-id-input').focus();
-            } else {
-                $row.next().find('.item-id-input').focus();
-            }
-        }
-    });
-
-    // =============================================
-    //  QTY VALIDATION
-    // =============================================
-    $(document).on('input', '.quantity', function() {
-        var max = parseFloat($(this).attr('max')) || 0;
-        var val = parseFloat($(this).val()) || 0;
-        if (max > 0 && val > max) {
-            showToast('Cannot transfer more than available stock (' + max + ')!', 'error');
-            $(this).val(max);
-        }
-        recalcTotals();
-    });
-
-    // =============================================
-    //  REMOVE ROW
-    // =============================================
     $(document).on('click', '.remove-row', function() {
-        if ($('#transferItems tr').length > 1) {
-            $(this).closest('tr').remove();
-            recalcTotals();
-        }
+        if ($('#transferItems tr').length > 1) { $(this).closest('tr').remove(); recalcTotals(); }
     });
 
-    // =============================================
-    //  ADD ROW BUTTON
-    // =============================================
-    $('#addRowBtn').on('click', function() {
-        appendBlankRow().find('.item-id-input').focus();
-    });
+    $(document).on('input', '.quantity', recalcTotals);
 
-    // =============================================
-    //  WAREHOUSE CHANGE → CLEAR ROWS
-    // =============================================
+    $('#addRowBtn').on('click', function() { appendBlankRow().find('.item-id-input').focus(); });
+
     $('#from_warehouse_id').on('change', function() {
-        $('#transferItems').empty();
-        appendBlankRow();
-        recalcTotals();
+        $('#transferItems').empty(); appendBlankRow(); recalcTotals();
     });
 
-    // =============================================
-    //  FIELD CHAIN FOCUS
-    // =============================================
-    $('select[name="from_warehouse_id"]').on('select2:select', function() {
-        setTimeout(function() { $('select[name="to_warehouse_id"]').select2('open'); }, 80);
-    });
-    $('select[name="to_warehouse_id"]').on('select2:select', function() {
-        setTimeout(function() { $('input[name="remarks"]').focus(); }, 80);
-    });
-    $('input[name="remarks"]').on('keydown', function(e) {
-        if (e.key === 'Enter') {
-            e.preventDefault();
-            $('#transferItems tr:first .item-id-input').focus();
-        }
-    });
-
-    // =============================================
-    //  SAVED STATE
-    // =============================================
-    var _savedTransferId = null;
-
-    // =============================================
-    //  AJAX SAVE DRAFT
-    // =============================================
     function ajaxSaveDraft(callback) {
-        // Remove empty rows before submission
-        $('#transferItems tr').each(function() {
-            if (!$(this).find('.product-select').val()) {
-                $(this).remove();
-            }
-        });
-
-        // Re-calculate after removing rows
+        $('#transferItems tr').each(function() { if (!$(this).find('.product-select').val()) { $(this).remove(); } });
         recalcTotals();
-
-        // At least one row must exist
-        if ($('#transferItems tr').length === 0) {
-            appendBlankRow();
-            showToast('❌ Please add at least one item to transfer.', 'error');
-            return;
-        }
+        if ($('#transferItems tr').length === 0) { appendBlankRow(); showToast('❌ Add at least one item.', 'error'); return; }
 
         var $form = $('#transferForm');
         if (!$form[0].checkValidity()) { $form[0].reportValidity(); return; }
 
         $('#saveDraftBtn').prop('disabled', true).html('<i class="fa fa-spinner fa-spin me-1"></i> Saving...');
 
+        var url = _savedTransferId ? "/stock_transfers/" + _savedTransferId : "{{ route('stock_transfers.store') }}";
+        var data = $form.serializeArray();
+        if(_savedTransferId) data.push({name: '_method', value: 'PUT'});
+
         $.ajax({
-            url: "{{ route('stock_transfers.store') }}",
-            type: 'POST',
-            data: $form.serialize(),
+            url: url, type: 'POST', data: $.param(data),
             headers: { 'X-Requested-With': 'XMLHttpRequest' },
             success: function(res) {
                 if (res.success) {
                     _savedTransferId = res.id;
-                    showToast('Saved as Draft successfully!');
-                    $('.page-title').text('Stock Transfer Saved');
-                    $('#statusBadge').removeClass('bg-warning text-dark').addClass('bg-info text-white')
-                        .html('<i class="fa fa-pencil me-1"></i> Unposted');
+                    showToast('✅ Saved successfully!');
+                    $('#statusBadge').removeClass('bg-warning text-dark').addClass('bg-info text-white').html('<i class="fa fa-pencil me-1"></i> Unposted');
+                    $('#idBadge').html('<i class="fa fa-tag me-1"></i> ID: ' + res.id);
+                    $('#editInvoiceBtn').show();
+                    $('#newInvoiceBtn').show();
+                    $('#saveDraftBtn, #postBtn').hide();
+                    $('#transferForm').addClass('form-locked');
+                    showToast('🔒 Form Locked — Ctrl+E to Edit', 'success');
 
-                    // Change Post button label
-                    $('#postBtn').html('<i class="fa fa-send me-1"></i> Post <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+&#8629;</kbd>');
-
-// print preview button remains unchanged
+                    // Add post button to top area if not there
+                    if($('#postActionArea').is(':empty')){
+                        $('#postActionArea').html(`<button type="button" onclick="$('#postBtn').trigger('click')" class="btn btn-sm btn-primary rounded-pill px-4 shadow-sm"><i class="fa fa-send me-1"></i> Post</button>`);
+                    }
 
                     if (typeof callback === 'function') callback(res.id);
-                } else {
-                    showToast(res.message || 'Save failed.', 'error');
-                }
-            },
-            error: function(xhr) {
-                var msg = 'Save failed.';
-                if (xhr.responseJSON) {
-                    if (xhr.responseJSON.message) msg = xhr.responseJSON.message;
-                    else if (xhr.responseJSON.errors) msg = Object.values(xhr.responseJSON.errors).flat().join(' | ');
-                }
-                showToast(msg, 'error');
+                } else { showToast(res.message, 'error'); }
             },
             complete: function() {
-                $('#saveDraftBtn').prop('disabled', false)
-                    .html('<i class="fa fa-floppy-o me-1"></i> Save Draft <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+S</kbd>');
+                $('#saveDraftBtn').prop('disabled', false).html('<i class="fa fa-floppy-o me-1"></i> Save Draft <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+S</kbd>');
             }
         });
     }
 
-    // =============================================
-    //  AJAX POST
-    // =============================================
     function doPost() {
-        if (!_savedTransferId) {
-            ajaxSaveDraft(function(id) {
-                setTimeout(function() { postById(id); }, 400);
-            });
-            return;
-        }
+        if (!_savedTransferId) { ajaxSaveDraft(function(id) { postById(id); }); return; }
         postById(_savedTransferId);
     }
 
     function postById(id) {
         $('#postBtn').prop('disabled', true).html('<i class="fa fa-spinner fa-spin me-1"></i> Posting...');
-
         $.ajax({
-            url: '/stock_transfers/' + id + '/post',
-            type: 'POST',
-            data: { _token: $('input[name="_token"]').val() },
-            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+            url: '/stock_transfers/' + id + '/post', type: 'POST', 
+            data: { _token: '{{ csrf_token() }}' },
             success: function(res) {
                 if (res.success) {
-                    showToast('Posted Successfully! Redirecting...');
-                    $('#statusBadge').removeClass('bg-info bg-warning text-dark').addClass('bg-success text-white')
-                        .html('<i class="fa fa-check me-1"></i> Posted');
-                    $('#saveDraftBtn').hide();
-                    $('#postBtn').hide();
-                    setTimeout(function() {
-                        window.location.href = '{{ route("stock_transfers.index") }}';
-                    }, 1500);
-                } else {
-                    showToast(res.message, 'error');
-                    $('#postBtn').prop('disabled', false)
-                        .html('<i class="fa fa-send me-1"></i> Post <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+&#8629;</kbd>');
-                }
-            },
-            error: function(xhr) {
-                var msg = xhr.responseJSON ? xhr.responseJSON.message : 'Post failed.';
-                showToast(msg, 'error');
-                $('#postBtn').prop('disabled', false)
-                    .html('<i class="fa fa-send me-1"></i> Post <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+&#8629;</kbd>');
+                    showToast('✅ Posted Successfully!');
+                    $('#statusBadge').removeClass('bg-info').addClass('bg-success text-white').html('<i class="fa fa-check me-1"></i> Posted');
+                    $('#postedWatermark').addClass('show');
+                    $('#transferForm').addClass('form-locked');
+                    $('#saveDraftBtn, #postBtn, #editInvoiceBtn, #postActionArea button').hide();
+                    setTimeout(function() { window.location.href = "{{ route('stock_transfers.index') }}"; }, 1500);
+                } else { showToast(res.message, 'error'); $('#postBtn').prop('disabled', false).html('<i class="fa fa-send me-1"></i> Save & Post'); }
             }
         });
     }
 
-    // =============================================
-    //  BUTTON CLICK HANDLERS
-    // =============================================
     $('#saveDraftBtn').on('click', function() { ajaxSaveDraft(); });
     $('#postBtn').on('click', function() { doPost(); });
+    $('#editInvoiceBtn').on('click', function() {
+        $('#transferForm').removeClass('form-locked');
+        $(this).hide();
+        $('#saveDraftBtn, #postBtn').show();
+        showToast('🔓 Form Unlocked for Editing', 'success');
+    });
 
-    // Print Preview modal (before save)
-    $(document).on('click', '#previewPrintBtn', function() {
+    $('#previewPrintBtn').on('click', function() {
         var fromWh  = $('#from_warehouse_id option:selected').text();
         var toWh    = $('#to_warehouse_id option:selected').text();
+        if ($('#toShop').is(':checked')) toWh = 'Shop';
         var remarks = $('input[name="remarks"]').val();
         var rows = '', totalQty = 0, serial = 1;
 
         $('#transferItems tr').each(function() {
-            var productId   = $(this).find('.item-id-input').val();
-            var productText = $(this).find('.product-select option:selected').text();
-
-            // Extract Name if text is "ID - Name"
-            var productName = productText;
-            if (productText.includes(' - ')) {
-                productName = productText.split(' - ').slice(1).join(' - ');
-            }
-
-            var qty = parseFloat($(this).find('.quantity').val()) || 0;
-            if (!productId || productText === 'Select Product' || !qty) return;
-
+            var pid   = $(this).find('.item-id-input').val();
+            var ptxt  = $(this).find('.product-select option:selected').text();
+            var qty   = parseFloat($(this).find('.quantity').val()) || 0;
+            if (!pid || ptxt.includes('Select Product') || !qty) return;
             totalQty += qty;
-            rows += '<tr>' +
-                '<td style="border:1px solid #ddd;padding:6px;">' + serial++ + '</td>' +
-                '<td style="border:1px solid #ddd;padding:6px;">' + productId + '</td>' +
-                '<td style="border:1px solid #ddd;padding:6px;">' + productName + '</td>' +
-                '<td style="border:1px solid #ddd;padding:6px;text-align:center;">' + qty + '</td>' +
-                '</tr>';
+            rows += `<tr><td style="border:1px solid #ddd;padding:6px;">${serial++}</td><td style="border:1px solid #ddd;padding:6px;">${pid}</td><td style="border:1px solid #ddd;padding:6px;">${ptxt.split(' - ').slice(1).join(' - ') || ptxt}</td><td style="border:1px solid #ddd;padding:6px;text-align:center;">${qty.toFixed(2)}</td></tr>`;
         });
 
-        // Use 'Shop' if value is 'shop'
-        var fromVal = $('#from_warehouse_id').val();
-        if (fromVal === 'shop') {
-            fromWh = 'Shop';
-        }
-
-        var toShopVal = $('#toShop').is(':checked');
-        if (toShopVal) {
-            toWh = 'Shop';
-        }
-
-        var statusText = _savedTransferId ? 'UNPOSTED' : 'DRAFT';
-        var idText = _savedTransferId ? ('<strong>Transfer #:</strong> ' + _savedTransferId + '<br>') : '';
-        
-        var html = '<div style="border:1px solid #eee;padding:20px;max-width:780px;margin:auto;font-family:Poppins,sans-serif;font-size:13px;">' +
-            '<div style="display:flex;justify-content:space-between;border-bottom:2px solid #000;padding-bottom:10px;margin-bottom:16px;">' +
-            '<div><div style="font-size:22px;font-weight:700;">Al-Madina Traders</div>' +
-            '<div style="color:#555;font-size:12px;">Stock Transfer Voucher</div></div>' +
-            '<div style="text-align:right;font-size:12px;"><div>' + idText + '<strong>Status:</strong> ' + statusText + '</div></div></div>' +
-            
-            '<div style="text-align:center; margin-bottom:20px; padding:10px; background:#f8f9fa; border-radius:8px;">' +
-            '<span style="font-size:15px; font-weight:600;">' + fromWh + '</span>' +
-            '<span style="margin:0 16px; font-size:20px; font-weight:700;">→</span>' +
-            '<span style="font-size:15px; font-weight:600;">' + toWh + '</span>' +
-            '</div>' +
-
-            '<div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px; font-size:12px;">' +
-            '<div>' +
-            '<div><span style="font-weight:600;width:130px;display:inline-block;">From Location:</span>' + fromWh + '</div>' + 
-            '<div><span style="font-weight:600;width:130px;display:inline-block;">Prepared By:</span>' + '{{ auth()->user() ? auth()->user()->name : "-" }}' + '</div>' + 
-            '</div>' + 
-            '<div>' +
-            '<div><span style="font-weight:600;width:130px;display:inline-block;">To Location:</span>' + toWh + '</div>' + 
-            '<div><span style="font-weight:600;width:130px;display:inline-block;">Date:</span>' + '{{ date("d-M-Y") }}' + '</div>' +
-            '</div>' +
-            '</div>' +
-
-            (remarks ? '<p style="font-size:12px; margin-bottom:16px;"><strong>Remarks:</strong> ' + remarks + '</p>' : '') +
-
-            '<table style="width:100%;border-collapse:collapse;margin-bottom:20px;">' +
-            '<thead><tr style="background:#f2f2f2;">' +
-            '<th style="border:1px solid #ddd;padding:7px;width:40px;">S#</th>' +
-            '<th style="border:1px solid #ddd;padding:7px;width:80px;">Item ID</th>' +
-            '<th style="border:1px solid #ddd;padding:7px;">Product</th>' +
-            '<th style="border:1px solid #ddd;padding:7px;width:80px;text-align:center;">Qty</th>' +
-            '</tr></thead><tbody>' + rows +
-            '</tbody>' +
-            '<tfoot><tr style="font-weight:700;background:#f9f9f9;">' +
-            '<td colspan="3" style="border:1px solid #ddd;padding:7px;text-align:right;">Total Qty:</td>' +
-            '<td style="border:1px solid #ddd;padding:7px;text-align:center;">' + totalQty + '</td>' +
-            '</tr></tfoot></table>' +
-            '<div style="margin-top:50px;display:flex;justify-content:space-between;">' +
-            '<div style="border-top:1px solid #000;width:130px;text-align:center;padding-top:5px;">Prepared By</div>' +
-            '<div style="border-top:1px solid #000;width:130px;text-align:center;padding-top:5px;">Checked By</div>' +
-            '<div style="border-top:1px solid #000;width:130px;text-align:center;padding-top:5px;">Authorized By</div>' +
-            '</div></div>';
-
+        var html = `
+            <div style="border:1px solid #eee;padding:20px;max-width:780px;margin:auto;">
+                <div style="display:flex;justify-content:space-between;border-bottom:2px solid #000;padding-bottom:10px;margin-bottom:16px;">
+                    <div><div style="font-size:22px;font-weight:700;">Al-Madina Traders</div><div style="color:#555;font-size:12px;">Stock Transfer Voucher</div></div>
+                    <div style="text-align:right;font-size:12px;"><div><strong>Transfer #:</strong> ${_savedTransferId || 'NEW'}<br><strong>Status:</strong> ${_savedTransferId ? 'UNPOSTED' : 'DRAFT'}</div></div>
+                </div>
+                <div style="text-align:center; margin-bottom:20px; padding:10px; background:#f8f9fa; border-radius:8px;">
+                    <span style="font-size:15px; font-weight:600;">${fromWh}</span><span style="margin:0 16px; font-size:20px; font-weight:700;">→</span><span style="font-size:15px; font-weight:600;">${toWh}</span>
+                </div>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px; font-size:12px;">
+                    <div><div><span style="font-weight:600;width:120px;display:inline-block;">Date:</span>{{ date('d-M-Y') }}</div></div>
+                    <div><div><span style="font-weight:600;width:120px;display:inline-block;">Prepared By:</span>{{ auth()->user()->name }}</div></div>
+                </div>
+                ${remarks ? '<p style="font-size:12px;"><strong>Remarks:</strong> ' + remarks + '</p>' : ''}
+                <table style="width:100%;border-collapse:collapse;margin-bottom:20px;">
+                    <thead><tr style="background:#f2f2f2;"><th style="border:1px solid #ddd;padding:7px;width:40px;">S#</th><th style="border:1px solid #ddd;padding:7px;width:80px;">Item ID</th><th style="border:1px solid #ddd;padding:7px;">Product</th><th style="border:1px solid #ddd;padding:7px;width:80px;text-align:center;">Qty</th></tr></thead>
+                    <tbody>${rows}</tbody>
+                    <tfoot><tr style="font-weight:700;background:#f9f9f9;"><td colspan="3" style="border:1px solid #ddd;padding:7px;text-align:right;">Total Qty:</td><td style="border:1px solid #ddd;padding:7px;text-align:center;">${totalQty.toFixed(2)}</td></tr></tfoot>
+                </table>
+                <div style="margin-top:50px;display:flex;justify-content:space-between;">
+                    <div style="border-top:1px solid #000;width:130px;text-align:center;padding-top:5px;font-size:12px;">Prepared By</div>
+                    <div style="border-top:1px solid #000;width:130px;text-align:center;padding-top:5px;font-size:12px;">Authorized By</div>
+                </div>
+            </div>`;
         $('#printPreviewBody').html(html);
-        var myModal = new bootstrap.Modal(document.getElementById('printPreviewModal'));
-        myModal.show();
+        new bootstrap.Modal(document.getElementById('printPreviewModal')).show();
     });
 
-    // =============================================
-    //  KEYBOARD SHORTCUTS
-    // =============================================
     $(document).on('keydown', function(e) {
-        if (e.ctrlKey && e.key === 's') { e.preventDefault(); ajaxSaveDraft(); }
-        if (e.ctrlKey && e.key === 'Enter') { e.preventDefault(); doPost(); }
-        if (e.ctrlKey && e.key === 'p') {
-            e.preventDefault();
-            $('#previewPrintBtn').trigger('click');
-        }
-        if (e.ctrlKey && e.key === 'l') {
-            e.preventDefault();
-            window.location.href = $('#listBtn').attr('href');
+        if (e.ctrlKey && (e.key === 's' || e.key === 'S')) { e.preventDefault(); $('#saveDraftBtn').trigger('click'); }
+        if (e.ctrlKey && e.key === 'Enter') { e.preventDefault(); $('#postBtn').trigger('click'); }
+        if (e.ctrlKey && (e.key === 'p' || e.key === 'P')) { e.preventDefault(); $('#previewPrintBtn').trigger('click'); }
+        if (e.ctrlKey && (e.key === 'l' || e.key === 'L')) { e.preventDefault(); window.location.href = $('#listBtn').attr('href'); }
+        if (e.ctrlKey && (e.key === 'e' || e.key === 'E')) { e.preventDefault(); $('#editInvoiceBtn').trigger('click'); }
+        if (e.ctrlKey && (e.key === 'm' || e.key === 'M')) { e.preventDefault(); window.location.href = $('#newInvoiceBtn').attr('href'); }
+        if (e.key === 'Escape') { 
+            if ($('.modal.show').length) { $('.modal.show').modal('hide'); } 
+            else { window.location.href = $('#cancelBtn').attr('href'); }
         }
     });
-
 });
 </script>
 @endsection

@@ -283,7 +283,7 @@ class InwardgatepassController extends Controller
     // 5. Edit gatepass
     public function edit($id)
     {
-        $gatepass = InwardGatepass::with('items')->findOrFail($id);
+        $gatepass = InwardGatepass::with('items.product.brandRelation')->findOrFail($id);
         $branches   = Branch::orderBy('name')->get();
         $warehouses = Warehouse::orderBy('warehouse_name')->get();
         $vendors    = Vendor::orderBy('name')->get();

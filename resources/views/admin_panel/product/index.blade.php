@@ -146,7 +146,7 @@
                                         <label class="column-picker-item"><input type="checkbox" data-column="9" checked> Tax (%)</label>
                                         <label class="column-picker-item"><input type="checkbox" data-column="10" checked> Tax (PKR)</label>
                                         <label class="column-picker-item"><input type="checkbox" data-column="11" checked> WHT (%)</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="12" checked> Net Amount</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="12" checked> Sale Net Amount</label>
                                         <label class="column-picker-item"><input type="checkbox" data-column="13" checked> Status</label>
                                     </div>
                                 </div>
@@ -182,7 +182,7 @@
                                             <th>Tax (%)</th>
                                             <th>Tax (PKR)</th>
                                             <th>WHT (%)</th>
-                                            <th>Net Amount (PKR)</th>
+                                            <th>Sale Net Amount</th>
                                             <th>Status</th>
                                             <th>Actions</th>
                                         </tr>
@@ -218,13 +218,13 @@
                                                     </button>
                                                     <ul class="dropdown-menu shadow border-0">
                                                         <li>
-                                                            <a href="{{ route('products.edit', $product->id) }}" class="dropdown-item py-2">
-                                                                <i class="fa fa-edit me-2 text-warning"></i> Edit Product
+                                                            <a href="javascript:void(0);" class="dropdown-item py-2 view-product-btn" data-product-id="{{ $product->id }}">
+                                                                <i class="fa fa-eye me-2 text-primary"></i> View Product
                                                             </a>
                                                         </li>
                                                         <li>
-                                                            <a href="javascript:void(0);" class="dropdown-item py-2 view-history-btn" data-product-id="{{ $product->id }}">
-                                                                <i class="fa fa-history me-2 text-info"></i> Price History
+                                                            <a href="{{ route('products.edit', $product->id) }}" class="dropdown-item py-2">
+                                                                <i class="fa fa-edit me-2 text-warning"></i> Edit Product
                                                             </a>
                                                         </li>
                                                         <li><hr class="dropdown-divider"></li>
@@ -286,40 +286,137 @@
      </div>
  </div>
 
- <!-- Price History Modal -->
- <div class="modal fade" id="priceHistoryModal" tabindex="-1" role="dialog" aria-labelledby="priceHistoryModalLabel" aria-hidden="true">
-     <div class="modal-dialog modal-xl" role="document">
-         <div class="modal-content border-0 shadow">
-             <div class="modal-header bg-light">
-                 <h5 class="modal-title fw-bold" id="priceHistoryModalLabel">Price History</h5>
-                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-             </div>
-             <div class="modal-body p-0">
-                 <div class="table-responsive">
-                     <table class="table table-bordered table-striped mb-0" id="price-history-table">
-                         <thead class="bg-light">
-                             <tr>
-                                 <th>#</th>
-                                 <th>Pur. Retail</th>
-                                 <th>Pur. Tax (%) / (PKR)</th>
-                                 <th>Pur. Disc (%) / (PKR)</th>
-                                 <th>Sale Retail</th>
-                                 <th>Sale Tax (%) / (PKR)</th>
-                                 <th>Sale Disc (%) / (PKR)</th>
-                                 <th>WHT (Sale)</th>
-                                 <th>Start Date</th>
-                                 <th>End Date</th>
-                             </tr>
-                         </thead>
-                         <tbody id="price-history-tbody">
-                             <!-- Table rows inserted via JS -->
-                         </tbody>
-                     </table>
-                 </div>
-             </div>
-         </div>
-     </div>
- </div>
+{{-- ===== VIEW PRODUCT MODAL ===== --}}
+<div class="modal fade" id="viewProductModal" tabindex="-1" aria-labelledby="viewProductLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 12px; overflow: hidden;">
+            <div class="modal-header bg-dark text-white py-3">
+                <h5 class="modal-title fw-bold" id="viewProductLabel">
+                    <i class="fa fa-cube me-2 text-info"></i> <span id="modalProductName">Product Details</span>
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4 bg-light">
+                
+                {{-- Pricing Summary Cards --}}
+                <div class="row g-4 mb-4">
+                    {{-- Purchase Section --}}
+                    <div class="col-lg-6">
+                        <div class="card h-100 border-0 shadow-sm overflow-hidden">
+                            <div class="card-header bg-primary text-white py-2">
+                                <h6 class="mb-0 fs-14 fw-bold"><i class="fa fa-shopping-cart me-2"></i>Current Purchase Details</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row g-3">
+                                    <div class="col-4">
+                                        <div class="p-2 border-start border-primary border-4 bg-light rounded">
+                                            <small class="text-muted d-block text-uppercase fw-bold" style="font-size:10px;">Retail Price</small>
+                                            <span class="fw-bold fs-15" id="view_purchase_retail">0.00</span>
+                                        </div>
+                                    </div>
+                                    <div class="col-4">
+                                        <div class="p-2 border-start border-info border-4 bg-light rounded">
+                                            <small class="text-muted d-block text-uppercase fw-bold" style="font-size:10px;">Tax % / Amt</small>
+                                            <span class="fw-bold fs-15"><span id="view_purchase_tax_pct">0%</span> <small class="text-muted">/ <span id="view_purchase_tax_amt">0</span></small></span>
+                                        </div>
+                                    </div>
+                                    <div class="col-4">
+                                        <div class="p-2 border-start border-warning border-4 bg-light rounded">
+                                            <small class="text-muted d-block text-uppercase fw-bold" style="font-size:10px;">Disc % / Amt</small>
+                                            <span class="fw-bold fs-15"><span id="view_purchase_disc_pct">0%</span> <small class="text-muted">/ <span id="view_purchase_disc_amt">0</span></small></span>
+                                        </div>
+                                    </div>
+                                    <div class="col-12">
+                                        <div class="p-2 border-start border-success border-4 bg-info-subtle rounded text-center">
+                                            <small class="text-muted d-block text-uppercase fw-bold" style="font-size:10px;">Net Purchase Cost (Final)</small>
+                                            <span class="fw-bold fs-18 text-primary" id="view_purchase_net">0.00</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {{-- Sale Section --}}
+                    <div class="col-lg-6">
+                        <div class="card h-100 border-0 shadow-sm overflow-hidden text-white" style="background: linear-gradient(135deg, #198754 0%, #0d6efd 100%);">
+                            <div class="card-header bg-transparent border-bottom border-white border-opacity-25 py-2">
+                                <h6 class="mb-0 fs-14 fw-bold text-white"><i class="fa fa-line-chart me-2"></i>Current Sale Details</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row g-3">
+                                    <div class="col-4">
+                                        <div class="p-2 bg-white bg-opacity-10 rounded">
+                                            <small class="text-white-50 d-block text-uppercase fw-bold" style="font-size:10px;">Retail Price</small>
+                                            <span class="fw-bold fs-15 text-white" id="view_sale_retail">0.00</span>
+                                        </div>
+                                    </div>
+                                    <div class="col-4">
+                                        <div class="p-2 bg-white bg-opacity-10 rounded">
+                                            <small class="text-white-50 d-block text-uppercase fw-bold" style="font-size:10px;">Tax % / Amt</small>
+                                            <span class="fw-bold fs-15 text-white"><span id="view_sale_tax_pct">0%</span> <small class="text-white-50">/ <span id="view_sale_tax_amt">0</span></small></span>
+                                        </div>
+                                    </div>
+                                    <div class="col-4">
+                                        <div class="p-2 bg-white bg-opacity-10 rounded">
+                                            <small class="text-white-50 d-block text-uppercase fw-bold" style="font-size:10px;">WHT % / Amt</small>
+                                            <span class="fw-bold fs-15 text-white"><span id="view_sale_wht_pct">0%</span> <small class="text-white-50">/ <span id="view_sale_wht_amt">0</span></small></span>
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="p-2 bg-white bg-opacity-10 rounded">
+                                            <small class="text-white-50 d-block text-uppercase fw-bold" style="font-size:10px;">Disc % / Amt</small>
+                                            <span class="fw-bold fs-15 text-white"><span id="view_sale_disc_pct">0%</span> <small class="text-white-50">/ <span id="view_sale_disc_amt">0</span></small></span>
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <div class="p-2 bg-white rounded text-center">
+                                            <small class="text-success d-block text-uppercase fw-bold" style="font-size:10px;">Net Sale Value (Final)</small>
+                                            <span class="fw-bold fs-18 text-success" id="view_sale_net">0.00</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Price History Log --}}
+                <div class="card border-0 shadow-sm overflow-hidden mt-2">
+                    <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0 fw-bold text-dark"><i class="fa fa-history me-2 text-warning"></i>Price Transaction Log</h6>
+                        <span class="badge bg-light text-dark border px-3">Recent Changes First</span>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0" id="view_history_table">
+                                <thead class="bg-light text-muted small text-uppercase fw-bold">
+                                    <tr>
+                                        <th class="ps-3 py-3">Date Range</th>
+                                        <th class="py-3">Pur. Net</th>
+                                        <th class="py-3">Sale Net</th>
+                                        <th class="py-3">Taxes</th>
+                                        <th class="py-3">Discounts</th>
+                                        <th class="py-3 text-center">Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="view_history_tbody">
+                                    {{-- Data will be injected here --}}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            <div class="modal-footer bg-white py-3 border-top">
+                <button type="button" class="btn btn-secondary rounded-pill px-4 shadow-sm" data-bs-dismiss="modal">
+                    <i class="fa fa-times me-1"></i> Close
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 
  @endsection
 
@@ -384,6 +481,7 @@
 
          // Initialize DataTable
          var table = $('#example').DataTable({
+             destroy: true, // Allow re-initialization if already handled by global layout
              scrollX: true,
              autoWidth: false,
              pageLength: 25,
@@ -394,63 +492,88 @@
              }
          });
 
-         // Price History Logic
-         $(document).on('click', '.view-history-btn', function() {
-             var productId = $(this).data('product-id');
-             
-             $.ajax({
-                 url: '/products/' + productId + '/prices',
-                 type: 'GET',
-                 success: function(response) {
-                     const prices = response.prices;
-                     const productName = response.product_name;
+        // =============================================
+        //  VIEW PRODUCT MODAL LOGIC
+        // =============================================
+        $(document).on('click', '.view-product-btn', function() {
+            var productId = $(this).data('product-id');
+            var $modal = $('#viewProductModal');
+            
+            $modal.modal('show');
+            $('#view_history_tbody').html('<tr><td colspan="6" class="text-center py-5"><div class="spinner-border text-primary"></div></td></tr>');
 
-                     $('#priceHistoryModalLabel').text('Price History: ' + productName);
+            $.ajax({
+                url: '/products/' + productId + '/prices',
+                type: 'GET',
+                success: function(res) {
+                    $('#modalProductName').text(res.product_name || 'Product Details');
+                    
+                    var history = res.prices || [];
+                    var latest = history.length > 0 ? history[0] : null;
 
-                     let rows = '';
-                     if (prices && prices.length > 0) {
-                         prices.forEach((price, index) => {
-                             rows += `<tr>
-                                 <td class="text-center">${index + 1}</td>
-                                 <td class="text-end">${price.purchase_retail_price || '0'}</td>
-                                 <td class="text-center">
-                                     ${price.purchase_tax_percent}% <br>
-                                     <small class="text-muted">Rs. ${price.purchase_tax_amount || '0'}</small>
-                                 </td>
-                                 <td class="text-center">
-                                     ${price.purchase_discount_percent}% <br>
-                                     <small class="text-muted">Rs. ${price.purchase_discount_amount || '0'}</small>
-                                 </td>
-                                 <td class="text-end">${price.sale_retail_price || '0'}</td>
-                                 <td class="text-center">
-                                     ${price.sale_tax_percent}% <br>
-                                     <small class="text-muted">Rs. ${price.sale_tax_amount || '0'}</small>
-                                 </td>
-                                 <td class="text-center">
-                                     ${price.sale_discount_percent}% <br>
-                                     <small class="text-muted">Rs. ${price.sale_discount_amount || '0'}</small>
-                                 </td>
-                                 <td class="text-end">Rs. ${price.sale_wht_percent || '0'}</td>
-                                 <td class="text-center">${price.start_date}</td>
-                                 <td class="text-center">
-                                     ${price.end_date 
-                                         ? `<span class="text-danger small">${price.end_date}</span>` 
-                                         : `<span class="badge bg-success">Active</span>`}
-                                 </td>
-                             </tr>`;
-                         });
-                     } else {
-                         rows = '<tr><td colspan="10" class="text-center">No price history found.</td></tr>';
-                     }
+                    if (latest) {
+                        // Current Details
+                        $('#view_purchase_retail').text(parseFloat(latest.purchase_retail_price || 0).toLocaleString());
+                        $('#view_purchase_tax_pct').text((latest.purchase_tax_percent || 0) + '%');
+                        $('#view_purchase_tax_amt').text(parseFloat(latest.purchase_tax_amount || 0).toLocaleString());
+                        $('#view_purchase_disc_pct').text((latest.purchase_discount_percent || 0) + '%');
+                        $('#view_purchase_disc_amt').text(parseFloat(latest.purchase_discount_amount || 0).toLocaleString());
+                        $('#view_purchase_net').text(parseFloat(latest.purchase_net_amount || 0).toLocaleString());
 
-                     $('#price-history-tbody').html(rows);
-                     $('#priceHistoryModal').modal('show');
-                 },
-                 error: function() {
-                     Swal.fire('Error', 'Failed to load price history.', 'error');
-                 }
-             });
-         });
+                        $('#view_sale_retail').text(parseFloat(latest.sale_retail_price || 0).toLocaleString());
+                        $('#view_sale_tax_pct').text((latest.sale_tax_percent || 0) + '%');
+                        $('#view_sale_tax_amt').text(parseFloat(latest.sale_tax_amount || 0).toLocaleString());
+                        $('#view_sale_wht_pct').text((latest.sale_wht_percent || 0) + '%');
+                        $('#view_sale_wht_amt').text(parseFloat(latest.sale_wht_amount || 0).toLocaleString());
+                        $('#view_sale_disc_pct').text((latest.sale_discount_percent || 0) + '%');
+                        $('#view_sale_disc_amt').text(parseFloat(latest.sale_discount_amount || 0).toLocaleString());
+                        $('#view_sale_net').text(parseFloat(latest.sale_net_amount || 0).toLocaleString());
+                    } else {
+                        // Clear if no latest price
+                        $('#view_purchase_retail, #view_purchase_tax_pct, #view_purchase_tax_amt, #view_purchase_disc_pct, #view_purchase_disc_amt, #view_purchase_net, #view_sale_retail, #view_sale_tax_pct, #view_sale_tax_amt, #view_sale_wht_pct, #view_sale_wht_amt, #view_sale_disc_pct, #view_sale_disc_amt, #view_sale_net').text('N/A');
+                    }
+
+                    // Log / History
+                    var tbody = '';
+                    if (history.length === 0) {
+                        tbody = '<tr><td colspan="6" class="text-center py-4 text-muted">No price history found.</td></tr>';
+                    } else {
+                        history.forEach(function(p, i) {
+                            var statusBadge = i === 0 
+                                ? '<span class="badge bg-success rounded-pill px-3">Current</span>' 
+                                : '<span class="badge bg-light text-muted border rounded-pill px-3">Expired</span>';
+                            
+                            tbody += `
+                                <tr class="${i === 0 ? 'bg-light-primary' : ''}">
+                                    <td class="ps-3 py-3">
+                                        <div class="fw-bold text-dark">${p.start_date || 'N/A'}</div>
+                                        <small class="text-muted">${p.end_date ? 'to ' + p.end_date : 'present'}</small>
+                                    </td>
+                                    <td class="py-3 fw-bold text-primary">₨ ${parseFloat(p.purchase_net_amount || 0).toLocaleString()}</td>
+                                    <td class="py-3 fw-bold text-success">₨ ${parseFloat(p.sale_net_amount || 0).toLocaleString()}</td>
+                                    <td class="py-3">
+                                        <small class="d-block text-muted">Pur: ${p.purchase_tax_percent || 0}%</small>
+                                        <small class="d-block text-muted">Sale: ${p.sale_tax_percent || 0}%</small>
+                                    </td>
+                                    <td class="py-3">
+                                        <small class="d-block text-muted">Pur: ${p.purchase_discount_percent || 0}%</small>
+                                        <small class="d-block text-muted">Sale: ${p.sale_discount_percent || 0}%</small>
+                                    </td>
+                                    <td class="py-3 text-center">${statusBadge}</td>
+                                </tr>
+                            `;
+                        });
+                    }
+                    $('#view_history_tbody').html(tbody);
+                },
+                error: function() {
+                    $('#view_history_tbody').html('<tr><td colspan="6" class="text-center py-4 text-danger">Failed to load data.</td></tr>');
+                    $('#modalProductName').text('Error loading product');
+                    $('#view_purchase_retail, #view_purchase_tax_pct, #view_purchase_tax_amt, #view_purchase_disc_pct, #view_purchase_disc_amt, #view_purchase_net, #view_sale_retail, #view_sale_tax_pct, #view_sale_tax_amt, #view_sale_wht_pct, #view_sale_wht_amt, #view_sale_disc_pct, #view_sale_disc_amt, #view_sale_net').text('N/A');
+                }
+            });
+        });
+        // End Modal Logic
 
          // Select All Checkbox
          $('#select-all').on('change', function() {

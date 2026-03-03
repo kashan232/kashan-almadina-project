@@ -23,6 +23,43 @@
         vertical-align: middle;
         padding: 4px;
     }
+    .posted-watermark {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%) rotate(-30deg);
+        font-size: 100px;
+        color: rgba(255, 0, 0, 0.1);
+        font-weight: bold;
+        pointer-events: none;
+        z-index: 1000;
+        text-transform: uppercase;
+        border: 10px solid rgba(255, 0, 0, 0.1);
+        padding: 20px;
+        border-radius: 20px;
+        display: none; /* Hidden by default, shown with .show class */
+    }
+    .posted-watermark.show { display: block; }
+    .locked-bg {
+        background-color: #f8f9fa !important;
+    }
+    .form-locked {
+        background-color: #f8f9fa !important;
+        position: relative;
+    }
+    .form-locked input, 
+    .form-locked .select2-container--default .select2-selection--single,
+    .form-locked .select2-container, 
+    .form-locked select, 
+    .form-locked textarea { 
+        pointer-events: none !important; 
+        opacity: 0.85 !important; 
+        background-color: #f1f3f5 !important;
+        cursor: not-allowed !important;
+    }
+    .form-locked .remove-row, .form-locked #addItemBtn, .form-locked #saveDraftBtn, .form-locked #saveUpdateBtn { 
+        display: none !important; 
+    }
 </style>
 
 @section('content')
@@ -74,9 +111,10 @@
                 </div>
             </div>
 
-            <form action="{{ route('stock-wastage.update', $stock_wastage->id) }}" method="POST" id="wastageForm">
+            <form action="{{ route('stock-wastage.update', $stock_wastage->id) }}" method="POST" id="wastageForm" class="position-relative {{ $stock_wastage->status != 'Posted' ? 'form-locked' : '' }}">
                 @csrf
                 @method('PUT')
+                <div class="posted-watermark {{ $stock_wastage->status == 'Posted' ? 'show' : '' }}">Posted</div>
 
                 <div class="card shadow-sm mb-3">
                     <div class="card-header bg-white py-2">
@@ -172,23 +210,42 @@
                         </div>
                     </div>
                     <div class="card-footer bg-white py-3">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <a href="{{ route('stock-wastage.index') }}" class="btn btn-sm btn-outline-secondary rounded-pill px-4">
-                                    <i class="fa fa-times me-1"></i> Cancel
-                                </a>
-                            </div>
-                            <div class="d-flex gap-2">
-                                <button type="button" id="saveUpdateBtn" class="btn btn-sm btn-warning rounded-pill px-4 shadow-sm">
-                                    <i class="fa fa-floppy-o me-1"></i> Update Draft <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+S</kbd>
-                                </button>
-                                <a href="{{ route('stock-wastage.print', $stock_wastage->id) }}" target="_blank" class="btn btn-sm btn-outline-dark rounded-pill px-4">
-                                    <i class="fa fa-print me-1"></i> Print <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+P</kbd>
-                                </a>
-                                <button type="button" id="postBtn" data-action="post" class="btn btn-sm btn-primary rounded-pill px-4 shadow-sm">
-                                    <i class="fa fa-send me-1"></i> Post <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+↵</kbd>
-                                </button>
-                            </div>
+                        <div class="d-flex gap-2 justify-content-end">
+                            {{-- Update Draft --}}
+                            @if($stock_wastage->status != 'Posted')
+                            <button type="button" id="saveUpdateBtn" class="btn btn-sm btn-warning rounded-pill px-4 shadow-sm">
+                                <i class="fa fa-floppy-o me-1"></i> Update Draft <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+S</kbd>
+                            </button>
+                            @endif
+
+                            {{-- Print --}}
+                            <a href="{{ route('stock-wastage.print', $stock_wastage->id) }}" target="_blank" id="realPrintBtn" class="btn btn-sm btn-outline-dark rounded-pill px-4">
+                                <i class="fa fa-print me-1"></i> Print <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+P</kbd>
+                            </a>
+
+                            {{-- Post --}}
+                            @if($stock_wastage->status != 'Posted')
+                            <button type="button" id="postBtn" data-action="post" class="btn btn-sm btn-primary rounded-pill px-4 shadow-sm">
+                                <i class="fa fa-send me-1"></i> Post <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+&#8629;</kbd>
+                            </button>
+                            @endif
+
+                            {{-- Edit --}}
+                            @if($stock_wastage->status != 'Posted')
+                            <button type="button" id="editInvoiceBtn" class="btn btn-sm btn-warning rounded-pill px-4 shadow-sm">
+                                <i class="fa fa-pencil me-1"></i> Edit <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+E</kbd>
+                            </button>
+                            @endif
+
+                            {{-- New --}}
+                            <a href="{{ route('stock-wastage.create') }}" id="newInvoiceBtn" class="btn btn-sm btn-info rounded-pill px-4 shadow-sm text-white">
+                                <i class="fa fa-plus me-1"></i> New <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+M</kbd>
+                            </a>
+
+                            {{-- Cancel --}}
+                            <a href="{{ route('stock-wastage.index') }}" id="cancelBtn" class="btn btn-sm btn-danger rounded-pill px-4 shadow-sm text-white">
+                                <i class="fa fa-times me-1"></i> Cancel <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Esc</kbd>
+                            </a>
                         </div>
                     </div>
                 </div>
@@ -247,7 +304,7 @@
         function ajaxUpdate() {
             var $form = $('#wastageForm');
 
-            // Remove empty rows before submission
+            // Remove empty rows before anything else
             $('#itemsTable tbody tr').each(function() {
                 if (!$(this).find('.product-select').val()) {
                     $(this).remove();
@@ -264,6 +321,9 @@
                 return;
             }
 
+            // check validity
+            if (!$form[0].checkValidity()) { $form[0].reportValidity(); return; }
+
             $('#saveUpdateBtn').prop('disabled', true).html('<i class="fa fa-spinner fa-spin me-1"></i> Updating...');
             $.ajax({
                 url: $form.attr('action'),
@@ -272,6 +332,14 @@
                 success: function(res) {
                     if (res.success) {
                         showToast('✅ ' + res.message);
+                        showToast('🔒 Changes Saved & Form Locked', 'success');
+                        
+                        // Lock the form
+                        $('#wastageForm').addClass('form-locked');
+                        $('#editInvoiceBtn').show();
+                        
+                        // Optional: trigger select2 to update its visual state if needed
+                        // but pointer-events:none in CSS usually handles it.
                     } else {
                         showToast('❌ ' + res.message, 'error');
                     }
@@ -306,10 +374,27 @@
         $('#saveUpdateBtn').on('click', ajaxUpdate);
         $('#postBtn').on('click', doPost);
 
+        // Unlock logic
+        $('#editInvoiceBtn').on('click', function() {
+            $('#wastageForm').removeClass('form-locked');
+            $(this).hide();
+            showToast('🔓 Form Unlocked for Editing', 'success');
+        });
+
         $(document).on('keydown', function(e) {
-            if (e.ctrlKey && e.key === 's') { e.preventDefault(); ajaxUpdate(); }
-            if (e.ctrlKey && e.key === 'Enter') { e.preventDefault(); doPost(); }
+            if (e.ctrlKey && e.key === 's') { e.preventDefault(); $('#saveUpdateBtn').trigger('click'); }
+            if (e.ctrlKey && e.key === 'Enter') { e.preventDefault(); $('#postBtn').trigger('click'); }
             if (e.ctrlKey && e.key === 'l') { e.preventDefault(); window.location.href = $('#listBtn').attr('href'); }
+            if (e.ctrlKey && e.key === 'p') { e.preventDefault(); window.open($('#realPrintBtn').attr('href'), '_blank'); }
+            if (e.ctrlKey && e.key === 'e') { e.preventDefault(); $('#editInvoiceBtn').trigger('click'); }
+            if (e.ctrlKey && e.key === 'm') { e.preventDefault(); window.location.href = $('#newInvoiceBtn').attr('href'); }
+            if (e.key === 'Escape') {
+                if ($('.modal.show').length) {
+                    $('.modal.show').modal('hide');
+                } else {
+                    window.location.href = $('#cancelBtn').attr('href');
+                }
+            }
         });
 
         // Logic for adding rows and product selection similar to create.blade.php
@@ -379,8 +464,13 @@
 
         function calcTotal() {
             var totalAmt = 0, totalQty = 0;
-            $('.amount').each(function() { totalAmt += parseFloat($(this).val()) || 0; });
-            $('.qty').each(function() { totalQty += parseFloat($(this).val()) || 0; });
+            $('#itemsTable tbody tr').each(function() {
+                var productId = $(this).find('.product-select').val();
+                if (productId) {
+                    totalAmt += parseFloat($(this).find('.amount').val()) || 0;
+                    totalQty += parseFloat($(this).find('.qty').val()) || 0;
+                }
+            });
             $('#grand_total').val(totalAmt.toFixed(2));
             $('#total_qty').val(totalQty);
         }

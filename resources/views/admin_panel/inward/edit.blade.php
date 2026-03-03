@@ -22,6 +22,40 @@
         vertical-align: middle !important;
         padding: 4px !important;
     }
+    .posted-watermark {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%) rotate(-30deg);
+        font-size: 100px;
+        color: rgba(255, 0, 0, 0.1);
+        font-weight: bold;
+        pointer-events: none;
+        z-index: 1000;
+        text-transform: uppercase;
+        border: 10px solid rgba(255, 0, 0, 0.1);
+        padding: 20px;
+        border-radius: 20px;
+        display: none;
+    }
+    .posted-watermark.show { display: block; }
+    .form-locked {
+        background-color: #f8f9fa !important;
+        position: relative;
+    }
+    .form-locked input, 
+    .form-locked .select2-container--default .select2-selection--single,
+    .form-locked .select2-container, 
+    .form-locked select, 
+    .form-locked textarea { 
+        pointer-events: none !important; 
+        opacity: 0.85 !important; 
+        background-color: #f1f3f5 !important;
+        cursor: not-allowed !important;
+    }
+    .form-locked .remove-row, .form-locked #addRowBtn, .form-locked #saveDraftBtn { 
+        display: none !important; 
+    }
 </style>
 
 @section('content')
@@ -39,14 +73,24 @@
             {{-- TOP BAR --}}
             <div class="d-flex justify-content-between align-items-center mb-3 bg-light p-2 rounded shadow-sm">
                 <div class="d-flex align-items-center" style="min-width:80px;">
-                    {{-- Post btn could go here if status != Posted --}}
+                    @if(isset($gatepass) && $gatepass->status != 'Posted')
+                        <form action="{{ url('InwardGatepass/'.$gatepass->id.'/post') }}" method="POST" class="d-inline">
+                            @csrf
+                            <button type="submit" class="btn btn-sm btn-primary rounded-pill px-4 shadow-sm">
+                                <i class="fa fa-send me-1"></i> Post
+                            </button>
+                        </form>
+                    @endif
                 </div>
 
                 <div class="d-flex align-items-center gap-2 justify-content-center flex-grow-1">
-                    <h6 class="page-title mb-0 fw-bold">Edit Inward Gatepass</h6>
-                    <span class="badge {{ $gatepass->status == 'posted' ? 'bg-success' : 'bg-warning text-dark' }} px-3 py-2 rounded-pill shadow-sm" style="font-size:12px;">
-                        <i class="fa {{ $gatepass->status == 'posted' ? 'fa-check-circle' : 'fa-pencil' }} me-1"></i>
-                        {{ ucfirst($gatepass->status ?? 'Draft') }}
+                    <h6 class="page-title mb-0 fw-bold">{{ isset($gatepass) ? 'Edit Inward Gatepass' : 'Add Inward Gatepass' }}</h6>
+                    <span class="badge {{ isset($gatepass) && $gatepass->status == 'Posted' ? 'bg-success' : 'bg-warning text-dark' }} px-3 py-2 rounded-pill shadow-sm" style="font-size:12px;">
+                        <i class="fa {{ isset($gatepass) && $gatepass->status == 'Posted' ? 'fa-check-circle' : 'fa-pencil' }} me-1"></i>
+                        {{ $gatepass->status ?? 'Draft' }}
+                    </span>
+                    <span class="badge bg-primary px-3 py-2 rounded-pill shadow-sm" style="font-size:12px;">
+                        <i class="fa fa-tag me-1"></i> Inv: {{ isset($gatepass) ? $gatepass->invoice_no : 'NEW' }}
                     </span>
                 </div>
 
@@ -58,9 +102,13 @@
                 </div>
             </div>
 
-            <form action="{{ route('InwardGatepass.update', $gatepass->id) }}" method="POST" id="gatepassForm">
+            <form action="{{ isset($gatepass) ? url('InwardGatepass/'.$gatepass->id) : route('store.InwardGatepass') }}" method="POST" id="gatepassForm" class="position-relative {{ (isset($gatepass) && $gatepass->status == 'Posted') ? 'form-locked' : '' }}">
                 @csrf
-                @method('PUT')
+                @if(isset($gatepass))
+                    @method('PUT')
+                @endif
+                
+                <div class="posted-watermark {{ (isset($gatepass) && $gatepass->status == 'Posted') ? 'show' : '' }}">Posted</div>
 
                 <div class="card shadow-sm mb-3">
                     <div class="card-header bg-white py-2">
@@ -71,15 +119,16 @@
                              <!-- Date -->
                              <div class="col-md-2">
                                 <label class="form-label small fw-bold">Date</label>
-                                <input type="date" name="gatepass_date" class="form-control input-sm" value="{{ $gatepass->gatepass_date }}" required>
+                                <input type="date" name="gatepass_date" class="form-control input-sm" value="{{ isset($gatepass) ? $gatepass->gatepass_date : date('Y-m-d') }}" required>
                             </div>
 
                             <!-- Branch -->
                             <div class="col-md-2">
                                 <label class="form-label small fw-bold">Branch</label>
-                                <select name="branch_id" class="form-select select2" required>
+                                <select name="branch_id" class="form-select select2">
+                                    <option value="" disabled selected>Select Branch</option>
                                     @foreach ($branches as $item)
-                                        <option value="{{ $item->id }}" {{ $gatepass->branch_id == $item->id ? 'selected' : '' }}>
+                                        <option value="{{ $item->id }}" {{ (isset($gatepass) && $gatepass->branch_id == $item->id) ? 'selected' : '' }}>
                                             {{ $item->name }}
                                         </option>
                                     @endforeach
@@ -90,8 +139,9 @@
                             <div class="col-md-2">
                                 <label class="form-label small fw-bold">Warehouse</label>
                                 <select name="warehouse_id" class="form-select select2" required>
+                                    <option value="" disabled selected>Select Warehouse</option>
                                     @foreach ($warehouses as $item)
-                                        <option value="{{ $item->id }}" {{ $gatepass->warehouse_id == $item->id ? 'selected' : '' }}>
+                                        <option value="{{ $item->id }}" {{ (isset($gatepass) && $gatepass->warehouse_id == $item->id) ? 'selected' : '' }}>
                                             {{ $item->warehouse_name }}
                                         </option>
                                     @endforeach
@@ -102,8 +152,9 @@
                             <div class="col-md-2">
                                 <label class="form-label small fw-bold">Vendor</label>
                                 <select name="vendor_id" class="form-select select2" required>
+                                    <option value="" disabled selected>Select Vendor</option>
                                     @foreach ($vendors as $item)
-                                        <option value="{{ $item->id }}" {{ $gatepass->vendor_id == $item->id ? 'selected' : '' }}>
+                                        <option value="{{ $item->id }}" {{ (isset($gatepass) && $gatepass->vendor_id == $item->id) ? 'selected' : '' }}>
                                             {{ $item->name }}
                                         </option>
                                     @endforeach
@@ -113,19 +164,19 @@
                             <!-- Transport -->
                             <div class="col-md-2">
                                 <label class="form-label small fw-bold">Transport</label>
-                                <input type="text" name="transport_name" class="form-control input-sm" value="{{ $gatepass->transport_name }}">
+                                <input type="text" name="transport_name" class="form-control input-sm" value="{{ isset($gatepass) ? $gatepass->transport_name : '' }}">
                             </div>
 
                             <!-- Bilty -->
                             <div class="col-md-2">
                                 <label class="form-label small fw-bold">Bilty/GP No</label>
-                                <input type="text" name="bilty_no" class="form-control input-sm" value="{{ $gatepass->bilty_no ?? $gatepass->gatepass_no }}">
+                                <input type="text" name="bilty_no" class="form-control input-sm" value="{{ isset($gatepass) ? $gatepass->gatepass_no : '' }}">
                             </div>
 
                             <!-- Remarks/Note -->
                             <div class="col-md-12">
                                 <label class="form-label small fw-bold">Note / Remarks</label>
-                                <input type="text" name="note" class="form-control input-sm" value="{{ $gatepass->note ?? $gatepass->remarks }}">
+                                <input type="text" name="note" class="form-control input-sm" value="{{ isset($gatepass) ? $gatepass->remarks : '' }}">
                             </div>
                         </div>
                     </div>
@@ -146,19 +197,21 @@
                                     </tr>
                                 </thead>
                                 <tbody id="gatepassItems">
-                                    @foreach($gatepass->items as $item)
-                                    <tr>
-                                        <td><input type="text" class="form-control input-sm item-id-input" value="{{ $item->product_id }}" placeholder="ID"></td>
-                                        <td>
-                                            <select name="product_id[]" class="form-control product-select" style="width:100%;">
-                                                <option value="{{ $item->product_id }}" selected>{{ $item->product_id }} - {{ $item->product->name ?? '' }}</option>
-                                            </select>
-                                        </td>
-                                        <td><input type="text" name="brand[]" class="form-control input-sm brand-name" value="{{ $item->brand ?? '' }}" readonly></td>
-                                        <td><input type="number" name="qty[]" class="form-control input-sm quantity" value="{{ $item->qty }}" min="1"></td>
-                                        <td class="text-center"><button type="button" class="btn btn-sm btn-danger remove-row">X</button></td>
-                                    </tr>
-                                    @endforeach
+                                    @if(isset($gatepass))
+                                        @foreach($gatepass->items as $idx => $item)
+                                            <tr>
+                                                <td><input type="text" class="form-control input-sm item-id-input" value="{{ $item->product_id }}" placeholder="ID"></td>
+                                                <td>
+                                                    <select name="product_id[]" class="form-control product-select" style="width:100%;">
+                                                        <option value="{{ $item->product_id }}" selected>{{ $item->product_id }} - {{ $item->product->name ?? 'N/A' }}</option>
+                                                    </select>
+                                                </td>
+                                                <td><input type="text" name="brand[]" class="form-control input-sm brand-name" value="{{ $item->product->brandRelation->name ?? '' }}" readonly></td>
+                                                <td><input type="number" name="qty[]" class="form-control input-sm quantity" value="{{ $item->qty }}" step="any" min="0.01"></td>
+                                                <td class="text-center"><button type="button" class="btn btn-sm btn-danger remove-row">X</button></td>
+                                            </tr>
+                                        @endforeach
+                                    @endif
                                 </tbody>
                                 <tfoot>
                                     <tr>
@@ -175,22 +228,76 @@
                         </div>
                     </div>
                     <div class="card-footer bg-white py-3">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <a href="{{ route('InwardGatepass.home') }}" class="btn btn-sm btn-outline-secondary rounded-pill px-4">
-                                    <i class="fa fa-times me-1"></i> Cancel
-                                </a>
-                            </div>
-                            <div class="d-flex gap-2">
-                                <button type="submit" class="btn btn-sm btn-success rounded-pill px-5 shadow-sm">
-                                    <i class="fa fa-save me-1"></i> Update Inward Gatepass
-                                    <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+↵</kbd>
-                                </button>
-                            </div>
+                        <div class="d-flex justify-content-end gap-2">
+                            {{-- Save Draft --}}
+                            <button type="button" id="saveDraftBtn" class="btn btn-sm btn-warning rounded-pill px-4 shadow-sm">
+                                <i class="fa fa-floppy-o me-1"></i> Save Draft
+                                <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+S</kbd>
+                            </button>
+
+                            {{-- Print Preview --}}
+                            <button type="button" id="previewPrintBtn" class="btn btn-sm btn-outline-dark rounded-pill px-4">
+                                <i class="fa fa-print me-1"></i> Print Preview
+                                <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+P</kbd>
+                            </button>
+
+                            {{-- Post --}}
+                            <button type="button" id="postBtn" class="btn btn-sm btn-primary rounded-pill px-5 shadow-sm">
+                                <i class="fa fa-send me-1"></i> Save & Post Inward
+                                <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+↵</kbd>
+                            </button>
+
+                            {{-- Edit --}}
+                            <button type="button" id="editInvoiceBtn" 
+                                class="btn btn-sm btn-warning rounded-pill px-4 shadow-sm" 
+                                style="display: none;">
+                                <i class="fa fa-pencil me-1"></i> Edit 
+                                <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+E</kbd>
+                            </button>
+
+                            {{-- New --}}
+                            <a href="{{ route('add_inwardgatepass') }}" id="newInvoiceBtn" 
+                                class="btn btn-sm btn-info rounded-pill px-4 shadow-sm text-white" 
+                                style="display: none;">
+                                <i class="fa fa-plus me-1"></i> New 
+                                <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+M</kbd>
+                            </a>
+
+                            {{-- Cancel --}}
+                            <a href="{{ route('InwardGatepass.home') }}" id="cancelBtn" 
+                                class="btn btn-sm btn-danger rounded-pill px-4 shadow-sm text-white">
+                                <i class="fa fa-times me-1"></i> Cancel 
+                                <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Esc</kbd>
+                            </a>
                         </div>
                     </div>
                 </div>
             </form>
+        </div>
+    </div>
+</div>
+
+{{-- ===== Print Preview Modal ===== --}}
+<div class="modal fade" id="printPreviewModal" tabindex="-1" aria-labelledby="printPreviewLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header border-bottom">
+                <h5 class="modal-title fw-bold" id="printPreviewLabel">
+                    <i class="fa fa-eye me-2"></i> Inward Gatepass Preview
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="printPreviewBody" style="font-family:'Poppins',sans-serif; font-size:13px;">
+                {{-- Populated by JS --}}
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">
+                    <i class="fa fa-times me-1"></i> Close
+                </button>
+                <button type="button" class="btn btn-dark rounded-pill px-4" onclick="window.print()">
+                    <i class="fa fa-print me-1"></i> Print
+                </button>
+            </div>
         </div>
     </div>
 </div>
@@ -203,10 +310,131 @@
         // Initialize static Select2
         $('.select2').select2({ width: '100%' });
 
-        // =============================================
-        //  ROW MANAGEMENT
-        // =============================================
+        var _savedGatepassId = "{{ isset($gatepass) ? $gatepass->id : '' }}";
+        if(_savedGatepassId) {
+            $('#editInvoiceBtn').show();
+            $('#newInvoiceBtn').show();
+            $('#gatepassForm').addClass('form-locked');
+        }
 
+        function showToast(msg, type) {
+            type = type || 'success';
+            var icon = type === 'success' ? 'fa-check-circle' : 'fa-times-circle';
+            var color = type === 'success' ? '#28a745' : '#dc3545';
+            var $toast = $('<div>').css({
+                position: 'fixed', top: '20px', right: '20px', zIndex: 9999,
+                background: color, color: '#fff',
+                padding: '12px 20px', borderRadius: '8px',
+                boxShadow: '0 4px 15px rgba(0,0,0,.2)',
+                fontSize: '14px', fontWeight: '500',
+                display: 'flex', alignItems: 'center', gap: '8px',
+                minWidth: '280px', animation: 'fadein .3s'
+            }).html('<i class="fa ' + icon + '"></i> ' + msg);
+            $('body').append($toast);
+            setTimeout(function() { $toast.fadeOut(400, function(){ $(this).remove(); }); }, 3500);
+        }
+
+        function ajaxSaveDraft() {
+            var $form = $('#gatepassForm');
+
+            // Remove empty rows
+            $('#gatepassItems tr').each(function() {
+                if (!$(this).find('.product-select').val()) {
+                    $(this).remove();
+                }
+            });
+
+            if ($('#gatepassItems tr').length === 0) {
+                window.appendBlankRow();
+                showToast('❌ Please add at least one product.', 'error');
+                return;
+            }
+
+            if (!$form[0].checkValidity()) { $form[0].reportValidity(); return; }
+
+            $('#saveDraftBtn').prop('disabled', true).html('<i class="fa fa-spinner fa-spin me-1"></i> Saving...');
+
+            var url = _savedGatepassId 
+                ? "{{ url('InwardGatepass') }}/" + _savedGatepassId 
+                : "{{ route('store.InwardGatepass') }}";
+            
+            var data = $form.serializeArray();
+
+            $.ajax({
+                url: url,
+                type: 'POST',
+                data: $.param(data),
+                success: function(res) {
+                    if (res.success) {
+                        _savedGatepassId = res.id;
+                        showToast('✅ ' + res.message);
+                        $('.page-title').text('Edit Inward Gatepass');
+                        
+                        if(res.status) {
+                            $('.badge').removeClass('bg-warning text-dark').addClass('bg-info text-white')
+                                .html('<i class="fa fa-pencil me-1"></i> ' + res.status);
+                        }
+
+                        $('#postBtn').show().prop('disabled', false).removeClass('btn-primary').addClass('btn-success')
+                            .html('<i class="fa fa-send me-1"></i> Post <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+↵</kbd>');
+                        
+                        $('#editInvoiceBtn').show();
+                        $('#newInvoiceBtn').show();
+                        $('#gatepassForm').addClass('form-locked');
+                        showToast('🔒 Form Locked — Press Ctrl+E to Edit', 'success');
+
+                        var printUrl = "{{ url('inward-gatepass') }}/" + res.id + "/pdf";
+                        $('#previewPrintBtn').replaceWith(
+                            $('<a>').attr({href: printUrl, target:'_blank', id:'realPrintBtn', class:'btn btn-sm btn-outline-dark rounded-pill px-4'})
+                            .html('<i class="fa fa-print me-1"></i> Print <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+P</kbd>')
+                        );
+
+                        // Update URL to Edit without reload
+                        var editUrl = "{{ url('InwardGatepass') }}/" + res.id + "/edit";
+                        window.history.replaceState(null, null, editUrl);
+                    } else {
+                        showToast('❌ Error saving.', 'error');
+                    }
+                },
+                error: function(xhr) {
+                    var errorMsg = xhr.responseJSON ? xhr.responseJSON.message : 'Save failed.';
+                    showToast('❌ ' + errorMsg, 'error');
+                },
+                complete: function() {
+                    $('#saveDraftBtn').prop('disabled', false).html('<i class="fa fa-floppy-o me-1"></i> Save Draft <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+S</kbd>');
+                }
+            });
+        }
+
+        function doPost() {
+            if (!_savedGatepassId) { ajaxSaveDraft(); return; }
+            $('#postBtn').prop('disabled', true).html('<i class="fa fa-spinner fa-spin me-1"></i> Posting...');
+
+            $.ajax({
+                url: "{{ url('InwardGatepass') }}/" + _savedGatepassId + "/post",
+                type: 'POST',
+                data: { _token: '{{ csrf_token() }}' },
+                success: function(res) {
+                    showToast('✅ Posted successfully!');
+                    setTimeout(function() { window.location.href = "{{ route('add_inwardgatepass') }}"; }, 1500);
+                },
+                error: function() {
+                    showToast('❌ Post failed.', 'error');
+                    $('#postBtn').prop('disabled', false).html('<i class="fa fa-send me-1"></i> Post <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+↵</kbd>');
+                }
+            });
+        }
+
+        $('#saveDraftBtn').on('click', ajaxSaveDraft);
+        $('#postBtn').on('click', doPost);
+
+        $('#editInvoiceBtn').on('click', function() {
+            $('#gatepassForm').removeClass('form-locked');
+            $(this).hide();
+            showToast('🔓 Form Unlocked for Editing', 'success');
+        });
+
+        // Row Management
         window.initProductSelect = function($row) {
             $row.find('.product-select').select2({
                 placeholder: "Select Product",
@@ -233,8 +461,11 @@
                 const data = e.params.data;
                 $row.find('.item-id-input').val(data.id);
                 $row.find('.brand-name').val(data.brand);
-                $row.find('.quantity').focus().select();
                 recalcTotals();
+                if ($row.is('#gatepassItems tr:last-child')) {
+                    window.appendBlankRow();
+                }
+                setTimeout(function() { $row.find('.quantity').focus().select(); }, 60);
             });
         };
 
@@ -248,7 +479,7 @@
                         </select>
                     </td>
                     <td><input type="text" name="brand[]" class="form-control input-sm brand-name" readonly></td>
-                    <td><input type="number" name="qty[]" class="form-control input-sm quantity" value="1" min="1"></td>
+                    <td><input type="number" name="qty[]" class="form-control input-sm quantity" value="1" step="any" min="0.01"></td>
                     <td class="text-center"><button type="button" class="btn btn-sm btn-danger remove-row">X</button></td>
                 </tr>`;
             const $newRow = $(html);
@@ -257,17 +488,15 @@
             return $newRow;
         };
 
-        // Initialize existing rows
-        $('#gatepassItems tr').each(function() {
-            window.initProductSelect($(this));
-        });
-
         // If no rows, add one
-        if ($('#gatepassItems tr').length === 0) {
+        if($('#gatepassItems tr').length === 0) {
             window.appendBlankRow();
+        } else {
+            $('#gatepassItems tr').each(function() {
+                window.initProductSelect($(this));
+            });
+            recalcTotals();
         }
-
-        recalcTotals();
 
         // Item ID Lookup
         $(document).on('keydown', '.item-id-input', function(e) {
@@ -284,26 +513,70 @@
                         const item = res.find(i => i.id.toString() === val);
                         if (item) {
                             const option = new Option(item.id + ' - ' + item.name, item.id, true, true);
-                            $row.find('.product-select').empty().append(option).trigger('change');
+                            $row.find('.product-select').empty().append(option);
+                            $row.find('.product-select').val(item.id).trigger('change.select2');
                             $row.find('.brand-name').val(item.brand);
-                            $row.find('.quantity').focus().select();
+                            recalcTotals();
+                            if ($row.is('#gatepassItems tr:last-child')) {
+                                window.appendBlankRow();
+                            }
+                            setTimeout(function() { $row.find('.quantity').focus().select(); }, 60);
                         } else {
-                            $(this).focus().select();
+                            $row.find('.product-select').select2('open');
                         }
                     }
                 });
             }
         });
 
-        $(document).on('keydown', '.quantity', function(e) {
-            if (e.key === 'Enter') {
+        // Shortcuts
+        $(document).on('keydown', function(e) {
+            // Ctrl+S → Save Draft
+            if (e.ctrlKey && (e.key === 's' || e.key === 'S')) {
                 e.preventDefault();
-                const $row = $(this).closest('tr');
-                if ($row.is(':last-child')) {
-                    const $newRow = window.appendBlankRow();
-                    $newRow.find('.item-id-input').focus();
+                ajaxSaveDraft();
+            }
+            // Ctrl+Enter → Post
+            if (e.ctrlKey && e.key === 'Enter') {
+                e.preventDefault();
+                doPost();
+            }
+            // Ctrl+P → Print Preview
+            if (e.ctrlKey && (e.key === 'p' || e.key === 'P')) {
+                e.preventDefault();
+                if ($('#realPrintBtn').length > 0) {
+                    window.open($('#realPrintBtn').attr('href'), '_blank');
                 } else {
-                    $row.next().find('.item-id-input').focus();
+                    $('#previewPrintBtn').trigger('click');
+                }
+            }
+            // Ctrl+L → List page
+            if (e.ctrlKey && (e.key === 'l' || e.key === 'L')) {
+                e.preventDefault();
+                window.location.href = $('#listBtn').attr('href');
+            }
+            // Ctrl+E → Unlock form (Edit)
+            if (e.ctrlKey && (e.key === 'e' || e.key === 'E')) {
+                e.preventDefault();
+                if ($('#editInvoiceBtn').is(':visible')) {
+                    $('#editInvoiceBtn').trigger('click');
+                }
+            }
+            // Ctrl+M → New
+            if (e.ctrlKey && (e.key === 'm' || e.key === 'M')) {
+                e.preventDefault();
+                window.location.href = $('#newInvoiceBtn').attr('href');
+            }
+            // ESC → Cancel / Modal Close
+            if (e.key === 'Escape') {
+                var $openModal = $('.modal.show');
+                if ($openModal.length) {
+                    e.preventDefault();
+                    e.stopImmediatePropagation();
+                    $openModal.modal('hide');
+                    return false;
+                } else {
+                    window.location.href = $('#cancelBtn').attr('href');
                 }
             }
         });
@@ -315,16 +588,18 @@
             }
         });
 
-        $(document).on('input', '.quantity', function() {
-            recalcTotals();
-        });
+        $(document).on('input', '.quantity', recalcTotals);
 
         function recalcTotals() {
             let totalQty = 0;
             $('.quantity').each(function() {
-                totalQty += parseFloat($(this).val()) || 0;
+                const $row = $(this).closest('tr');
+                const productId = $row.find('.product-select').val();
+                if (productId) {
+                    totalQty += parseFloat($(this).val()) || 0;
+                }
             });
-            $('#total_qty').val(totalQty);
+            $('#total_qty').val(totalQty.toFixed(2));
         }
 
         $('#addRowBtn').on('click', function() {
@@ -332,17 +607,99 @@
         });
 
         // =============================================
-        //  SHORTCUTS
+        //  PRINT PREVIEW LOGIC
         // =============================================
-        $(document).on('keydown', function(e) {
-            if (e.ctrlKey && e.key === 'Enter') {
-                e.preventDefault();
-                $('#gatepassForm').submit();
-            }
-            if (e.ctrlKey && (e.key === 'l' || e.key === 'L')) {
-                e.preventDefault();
-                window.location.href = $('#listBtn').attr('href');
-            }
+        $('#previewPrintBtn').on('click', function() {
+            var date      = $('input[name="gatepass_date"]').val();
+            var branch    = $('select[name="branch_id"] option:selected').text();
+            var warehouse = $('select[name="warehouse_id"] option:selected').text();
+            var vendor    = $('select[name="vendor_id"] option:selected').text();
+            var transport = $('input[name="transport_name"]').val();
+            var bilty     = $('input[name="bilty_no"]').val();
+            var remarks   = $('input[name="note"]').val();
+            var invNo     = $('.badge .fa-tag').parent().text().replace('Inv:', '').trim();
+
+            var rows = '';
+            var totalQty = 0, serialNum = 1;
+
+            $('#gatepassItems tr').each(function() {
+                var productId = $(this).find('.item-id-input').val();
+                var product   = $(this).find('.product-select option:selected').text();
+                var brand     = $(this).find('.brand-name').val();
+                var qty       = parseFloat($(this).find('.quantity').val()) || 0;
+
+                if (!productId || product.indexOf('Select Product') !== -1) return;
+
+                totalQty += qty;
+                rows += `<tr>
+                    <td>${serialNum++}</td>
+                    <td>${productId}</td>
+                    <td>${product}</td>
+                    <td>${brand || ''}</td>
+                    <td style="text-align:center">${qty.toFixed(2)}</td>
+                </tr>`;
+            });
+
+            var html = `
+                <div style="border:1px solid #eee; padding:20px; max-width:780px; margin:auto;">
+                    {{-- Header --}}
+                    <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #000; padding-bottom:10px; margin-bottom:16px;">
+                        <div>
+                            <div style="font-size:22px; font-weight:700;">Al-Madina Traders</div>
+                            <div style="color:#555; font-size:12px;">Inward Gatepass Voucher</div>
+                        </div>
+                        <div style="text-align:right; font-size:12px;">
+                            <div><strong>Inv No:</strong> ${invNo}</div>
+                            <div><strong>Status:</strong> ${(_savedGatepassId && _savedGatepassId !== '') ? 'SAVED' : 'DRAFT'}</div>
+                        </div>
+                    </div>
+
+                    {{-- Info Grid --}}
+                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px; font-size:12px;">
+                        <div>
+                            <div><span style="font-weight:600;width:120px;display:inline-block;">Date:</span>${date}</div>
+                            <div><span style="font-weight:600;width:120px;display:inline-block;">Warehouse:</span>${warehouse}</div>
+                            <div><span style="font-weight:600;width:120px;display:inline-block;">Vendor:</span>${vendor}</div>
+                        </div>
+                        <div>
+                            <div><span style="font-weight:600;width:120px;display:inline-block;">Branch:</span>${branch}</div>
+                            <div><span style="font-weight:600;width:120px;display:inline-block;">Transport:</span>${transport}</div>
+                            <div><span style="font-weight:600;width:120px;display:inline-block;">Bilty/GP No:</span>${bilty}</div>
+                        </div>
+                    </div>
+
+                    {{-- Table --}}
+                    <table style="width:100%;border-collapse:collapse;margin-bottom:20px;">
+                        <thead>
+                            <tr style="background:#f2f2f2;">
+                                <th style="border:1px solid #ddd;padding:7px;width:40px;">S#</th>
+                                <th style="border:1px solid #ddd;padding:7px;width:80px;">Item ID</th>
+                                <th style="border:1px solid #ddd;padding:7px;">Product</th>
+                                <th style="border:1px solid #ddd;padding:7px;">Brand</th>
+                                <th style="border:1px solid #ddd;padding:7px;width:70px;text-align:center;">Qty</th>
+                            </tr>
+                        </thead>
+                        <tbody>${rows}</tbody>
+                        <tfoot>
+                            <tr style="background:#f9f9f9;font-weight:700;">
+                                <td colspan="4" style="border:1px solid #ddd;padding:7px;text-align:right;">Total Qty:</td>
+                                <td style="border:1px solid #ddd;padding:7px;text-align:center;">${totalQty.toFixed(2)}</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+
+                    ${remarks ? '<p style="font-size:12px;"><strong>Remarks:</strong> ' + remarks + '</p>' : ''}
+
+                    {{-- Signatures --}}
+                    <div style="display:flex;justify-content:space-between;margin-top:40px;">
+                        <div style="border-top:1px solid #000;width:130px;text-align:center;padding-top:4px;font-size:12px;">Prepared By</div>
+                        <div style="border-top:1px solid #000;width:130px;text-align:center;padding-top:4px;font-size:12px;">Approved By</div>
+                    </div>
+                </div>
+            `;
+            $('#printPreviewBody').html(html);
+            var modal = new bootstrap.Modal(document.getElementById('printPreviewModal'));
+            modal.show();
         });
     });
 </script>
