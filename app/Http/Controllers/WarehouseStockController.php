@@ -10,16 +10,32 @@ use Illuminate\Support\Facades\DB;
 
 class WarehouseStockController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $stocks = WarehouseStock::with('warehouse', 'product')->get();
-        return view('admin_panel.warehouses.warehouse_stocks.index', compact('stocks'));
+        $query = \App\Models\StockAdjustment::with(['warehouse', 'items.product'])->latest();
+
+        if ($request->filled('start_date')) {
+            $query->whereDate('date', '>=', $request->start_date);
+        }
+        if ($request->filled('end_date')) {
+            $query->whereDate('date', '<=', $request->end_date);
+        }
+        if ($request->filled('warehouse_id')) {
+            $query->where('warehouse_id', $request->warehouse_id);
+        }
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        $stocks = $query->get(); // Using 'stocks' for compatibility with view variable name if preferred, or rename to 'adjustments'
+        $warehouses = Warehouse::orderBy('warehouse_name')->get();
+
+        return view('admin_panel.warehouses.warehouse_stocks.index', compact('stocks', 'warehouses'));
     }
 
     public function create()
     {
         $warehouses = Warehouse::orderBy('warehouse_name')->get();
-        // Products are fetched via AJAX search in the UI
         return view('admin_panel.warehouses.warehouse_stocks.create', compact('warehouses'));
     }
 
@@ -38,28 +54,32 @@ class WarehouseStockController extends Controller
         try {
             DB::beginTransaction();
 
-            // Note: Since warehouse_stocks is usually a balance table, 
-            // the user's request for "Post" implies a transactional record should exist.
-            // If they don't have a 'StockAdjustment' table, we will update the balance.
-            // But for a professional workflow, we should probably have a 'adjustment' ID.
-            // For now, I'll update the balance but return an ID placeholder.
+            $adjustment = \App\Models\StockAdjustment::create([
+                'adj_id'       => \App\Models\StockAdjustment::generateAdjID(),
+                'date'         => now(),
+                'warehouse_id' => $request->warehouse_id,
+                'remarks'      => $request->remarks,
+                'status'       => $status,
+            ]);
 
             foreach ($request->product_id as $index => $productId) {
                 $qty = (float) $request->quantity[$index];
                 if ($qty <= 0) continue;
 
-                $stock = WarehouseStock::firstOrNew([
-                    'warehouse_id' => $request->warehouse_id,
-                    'product_id'   => $productId
+                $adjustment->items()->create([
+                    'product_id' => $productId,
+                    'qty'        => $qty,
                 ]);
 
-                // Increment stock ONLY IF POSTED
                 if ($status === 'Posted') {
+                    $stock = WarehouseStock::firstOrNew([
+                        'warehouse_id' => $request->warehouse_id,
+                        'product_id'   => $productId
+                    ]);
                     $stock->quantity = ($stock->quantity ?? 0) + $qty;
+                    $stock->remarks = 'Manual Adjustment #' . $adjustment->adj_id;
+                    $stock->save();
                 }
-                
-                $stock->remarks = $request->remarks;
-                $stock->save();
             }
 
             DB::commit();
@@ -69,7 +89,7 @@ class WarehouseStockController extends Controller
                     'success' => true,
                     'message' => 'Stock ' . ($status == 'Posted' ? 'Posted' : 'Saved') . ' successfully.',
                     'status'  => $status,
-                    'id'      => rand(1000, 9999) // Placeholder for adjustment ID
+                    'id'      => $adjustment->id
                 ]);
             }
 
@@ -84,9 +104,41 @@ class WarehouseStockController extends Controller
         }
     }
 
-    public function print($id) {
-        // Placeholder for printing stock adjustment
-        return "Stock Adjustment Print View for ID #" . $id;
+    public function post($id)
+    {
+        try {
+            DB::beginTransaction();
+            $adjustment = \App\Models\StockAdjustment::with('items')->findOrFail($id);
+
+            if ($adjustment->status === 'Posted') {
+                throw new \Exception('This adjustment is already posted.');
+            }
+
+            foreach ($adjustment->items as $item) {
+                $stock = WarehouseStock::firstOrNew([
+                    'warehouse_id' => $adjustment->warehouse_id,
+                    'product_id'   => $item->product_id
+                ]);
+                $stock->quantity = ($stock->quantity ?? 0) + $item->qty;
+                $stock->remarks = 'Manual Adjustment #' . $adjustment->adj_id;
+                $stock->save();
+            }
+
+            $adjustment->status = 'Posted';
+            $adjustment->save();
+
+            DB::commit();
+            return back()->with('success', 'Stock Adjustment Posted successfully.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->with('error', $e->getMessage());
+        }
+    }
+
+    public function print($id)
+    {
+        $adjustment = \App\Models\StockAdjustment::with(['warehouse', 'items.product'])->findOrFail($id);
+        return view('admin_panel.warehouses.warehouse_stocks.print', compact('adjustment'));
     }
 
     public function edit(WarehouseStock $warehouseStock)

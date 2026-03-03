@@ -193,6 +193,8 @@ Route::middleware('auth')->group(function () {
     Route::post('/warehouse/store', [WarehouseController::class, 'store']);
     Route::get('/warehouse/delete/{id}', [WarehouseController::class, 'delete']);
     Route::resource('warehouse_stocks', WarehouseStockController::class);
+    Route::post('warehouse_stocks/{id}/post', [WarehouseStockController::class, 'post'])->name('warehouse_stocks.post');
+    Route::get('warehouse_stocks/{id}/print', [WarehouseStockController::class, 'print'])->name('warehouse_stocks.print');
     Route::get('/warehouse-stock-quantity', [StockTransferController::class, 'getStockQuantity'])->name('warehouse.stock.quantity');
 
     Route::resource('stock_transfers', StockTransferController::class)->except(['destroy']);
