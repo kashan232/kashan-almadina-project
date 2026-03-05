@@ -257,13 +257,19 @@ class ProductController extends Controller
                 ->get();
         } else {
             $products = Product::with(['brandRelation', 'latestPrice'])
-                ->where('status', 1) // Only active products
-                ->where(function($q) use ($query) {
-                    $q->where('name', 'like', '%' . $query . '%')
-                      ->orWhere('id', $query);
-                })
-                ->limit(20) // Performance boost
-                ->get();
+                ->where('status', 1);
+
+            // OPTIMIZATION: If numeric, try exact ID match first for better speed
+            if (is_numeric($query)) {
+                $products->where(function($q) use ($query) {
+                    $q->where('id', $query)
+                      ->orWhere('name', 'like', '%' . $query . '%');
+                });
+            } else {
+                $products->where('name', 'like', '%' . $query . '%');
+            }
+
+            $products = $products->limit(20)->get();
         }
 
         if ($products->isEmpty()) {

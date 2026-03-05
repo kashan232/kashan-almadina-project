@@ -332,6 +332,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/stock-hold-list', [StockHoldController::class, 'stockholdlist'])->name('stock-hold-list');
     Route::get('/stock-holds/{id}/release', [StockHoldController::class, 'createFromHold'])->name('stock-holds.release');
     Route::post('/stock-holds/{id}/release', [StockHoldController::class, 'storeFromHold'])->name('stock-holds.release.store');
+    Route::get('/stock-holds/print/{id}', [StockHoldController::class, 'print'])->name('stock-holds.print');
     // Legacy form submit (optional)
     Route::post('/sale/data', [SaleController::class, 'store'])->name('sale.store');
 

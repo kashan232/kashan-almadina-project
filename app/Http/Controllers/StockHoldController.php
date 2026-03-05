@@ -22,14 +22,26 @@ use Illuminate\Support\Facades\Log;
 class StockHoldController extends Controller
 {
     // store holds from the form submission
-    public function stockholdlist()
+    public function stockholdlist(Request $request)
     {
-        $vouchers = StockHoldVoucher::with([
+        $query = StockHoldVoucher::with([
             'warehouse:id,warehouse_name',
             'partyCustomer:id,customer_name',
             'partyVendor:id,name',
             'items.product'
-        ])->latest()->get();
+        ]);
+
+        if ($request->start_date) {
+            $query->whereDate('date', '>=', $request->start_date);
+        }
+        if ($request->end_date) {
+            $query->whereDate('date', '<=', $request->end_date);
+        }
+        if ($request->status) {
+            $query->where('status', $request->status);
+        }
+
+        $vouchers = $query->latest()->get();
 
         return view("admin_panel.stock_hold.stock_hold_list", compact('vouchers'));
     }
@@ -371,6 +383,12 @@ class StockHoldController extends Controller
             \Log::error('Stock release error: ' . $e->getMessage(), ['hold_id' => $id, 'payload' => $data]);
             return back()->withErrors(['error' => 'Failed to release stock: ' . $e->getMessage()]);
         }
+    }
+
+    public function print($id)
+    {
+        $voucher = StockHoldVoucher::with(['items.product', 'warehouse', 'partyCustomer', 'partyVendor'])->findOrFail($id);
+        return view('admin_panel.stock_hold.print', compact('voucher'));
     }
 
     public function stockrelaselist()

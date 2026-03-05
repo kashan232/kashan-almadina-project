@@ -297,6 +297,11 @@
         font-size: 0.7rem;
         line-height: 1.2;
     }
+  .loading-indicator {
+    background-color: #fff9c4 !important; /* soft yellow */
+    border-color: #fdd835 !important;
+    transition: background-color 0.3s ease;
+  }
 </style>
 
 <div class="container-fluid py-4">
@@ -430,8 +435,7 @@
                   <th style="width:10%" class="text-end">Sales Price</th>
                   <th style="width:7%" class="text-center">Qty</th>
                   <th style="width:10%" class="text-end">Retail Price</th>
-                  <th style="width:14%" class="text-center">Discount</th>
-                  <th style="width:9%" class="text-end">Disc. Amt</th>
+                  <th style="width:20%" class="text-center">Discount (% | Amt)</th>
                   <th style="width:10%" class="text-end">Amount</th>
                   <th style="width:3%" class="text-center">—</th>
                 </tr>
@@ -478,19 +482,16 @@
                       <td style="width: 100px;"><input type="text" class="form-control form-control-sm text-end sales-price input-readonly" name="sales-price[]" value="{{ $sPrice }}" readonly></td>
                       <td style="width: 70px;"><input type="text" class="form-control form-control-sm text-center sales-qty" name="sales-qty[]" value="{{ $qty }}"></td>
                       <td style="width: 100px;"><input type="text" class="form-control form-control-sm text-end retail-price input-readonly" name="retail-price[]" value="{{ $rPrice }}" readonly></td>
-                      <td style="width: 130px;">
-                        <div class="discount-wrapper">
-                          <input type="number" step="0.01" class="form-control form-control-sm text-end discount-value px-1" placeholder="0" value="{{ $displayValue }}" style="width: 55px;">
-                          <div class="btn-group">
-                            <button type="button" class="btn btn-outline-primary btn-xs disc-mode-btn {{ $dMode == 'percent' ? 'active' : '' }}" data-mode="percent">%</button>
-                            <button type="button" class="btn btn-outline-primary btn-xs disc-mode-btn {{ $dMode == 'amount' ? 'active' : '' }}" data-mode="amount">Rs</button>
-                          </div>
-                          <input type="hidden" class="discount-mode" name="discount_mode[]" value="{{ $dMode }}">
-                          <input type="hidden" class="discount-percent" name="discount-percent[]" value="{{ $dPct }}">
-                          <input type="hidden" class="discount-amount" name="discount-amount[]" value="{{ $dAmt }}">
+                      <td style="width:165px;">
+                        <div class="input-group input-group-sm">
+                          <input type="number" step="0.01" class="form-control text-end discount-value" placeholder="%" value="{{ $dPct }}" style="max-width: 65px;">
+                          <span class="input-group-text px-1" style="font-size: 0.7rem;">%</span>
+                          <input type="text" class="form-control text-end discount-amount-display input-readonly" value="{{ $dAmt }}" readonly style="background: #f8f9fa;">
                         </div>
+                        <input type="hidden" class="discount-mode" name="discount_mode[]" value="percent">
+                        <input type="hidden" class="discount-percent" name="discount-percent[]" value="{{ $dPct }}">
+                        <input type="hidden" class="discount-amount" name="discount-amount[]" value="{{ $dAmt }}">
                       </td>
-                      <td style="width: 80px;"><input type="text" class="form-control form-control-sm text-end discount-amount-display input-readonly" value="{{ $dAmt }}" readonly></td>
                       <td style="width: 100px;"><input type="text" class="form-control form-control-sm text-end sales-amount input-readonly" name="sales-amount[]" value="{{ $sAmount }}" readonly></td>
                       <td class="text-center" style="width: 40px;"><button type="button" class="btn btn-xs btn-outline-danger del-row">&times;</button></td>
                     </tr>
@@ -500,7 +501,7 @@
               </tbody>
               <tfoot>
                 <tr>
-                  <td colspan="7" class="text-end fw-bold">Total:</td>
+                  <td colspan="8" class="text-end fw-bold">Total:</td>
                   <td class="text-end fw-bold"><span id="totalAmount">0.00</span></td>
                   <td></td>
                 </tr>
@@ -541,7 +542,8 @@
                           <div class="col-md-2">
                             <label class="form-label text-muted small mb-1">Amount</label>
                             <input type="text" class="form-control form-control-sm text-end fw-bold rv-amount" 
-                                   name="receipt_amount[]" placeholder="0.00" value="{{ old('receipt_amount')[$index] ?? '' }}">
+                                   name="receipt_amount[]" placeholder="0.00" value="{{ old('receipt_amount')[$index] ?? '' }}"
+                                   {{ !old('receipt_account_id')[$index] ? 'disabled' : '' }}>
                           </div>
                           <div class="col-md-5">
                             <label class="form-label text-muted small mb-1">Narration</label>
@@ -576,7 +578,7 @@
                       <div class="col-md-2">
                         <label class="form-label text-muted small mb-1">Amount</label>
                         <input type="text" class="form-control form-control-sm text-end fw-bold rv-amount" 
-                               name="receipt_amount[]" placeholder="0.00">
+                               name="receipt_amount[]" placeholder="0.00" disabled>
                       </div>
                       <div class="col-md-5">
                         <label class="form-label text-muted small mb-1">Narration</label>
@@ -619,11 +621,7 @@
                 <span class="fw-semibold" id="tGross">0.00</span>
               </div>
 
-              <!-- Line Discount -->
-              <div class="d-flex justify-content-between py-2 border-bottom">
-                <span class="text-muted small">Line Discount (on Retail)</span>
-                <span class="fw-semibold text-danger" id="tLineDisc">0.00</span>
-              </div>
+              <input type="hidden" id="tLineDiscValue" value="0">
 
               <!-- Sub-Total -->
               <div class="d-flex justify-content-between py-2 border-bottom bg-white rounded px-2">
@@ -734,10 +732,10 @@
 </div>
 
 
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+@endsection
 
+@section('scripts')
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script>
   /* ---------- helpers ---------- */
   function pad(n) {
@@ -765,6 +763,153 @@
     const el = $('#alertBox');
     el.removeClass('d-none alert-success alert-danger').addClass('alert-' + type).text(msg);
     setTimeout(() => el.addClass('d-none'), 2500);
+  }
+
+  /* ---------- Unified helper to update row with product data ---------- */
+  function updateRowWithProductData($row, data) {
+    if (!data) return;
+    $row.find('.item-id-input').val(data.id);
+    $row.find('.product_name_hidden').val(data.text || data.name);
+    
+    const $select = $row.find('.product-select');
+    if ($select.val() !== String(data.id)) {
+        const newOption = new Option(data.text || data.name, data.id, true, true);
+        $select.empty().append(newOption).trigger('change');
+    }
+    
+    $row.find('.stock').val(data.stock || 0);
+    $row.find('.sales-price').val(parseFloat(data.sale_price || 0).toFixed(2));
+    $row.find('.retail-price').val(parseFloat(data.retail_price || 0).toFixed(2));
+    
+    computeRow($row);
+    updateGrandTotals();
+    refreshPostedState();
+  }
+
+  /* ---------- Select2 Product Initialization ---------- */
+  function initProductSelect($row) {
+    const $select = $row.find('.product-select');
+    $select.select2({
+      placeholder: "Select Product",
+      allowClear: true,
+      width: '100%',
+      minimumInputLength: 0,
+      ajax: {
+        url: '{{ route("search-products") }}',
+        dataType: 'json',
+        delay: 250,
+        data: function(params) {
+          return { q: params.term };
+        },
+        processResults: function(data) {
+          return {
+            results: data.map(function(item) {
+              const lp = item.latest_price || item.latestPrice || {};
+              return {
+                id: item.id,
+                text: item.name,
+                stock: item.stock || 0,
+                sale_price: item.sale_price || lp.sale_price || 0,
+                retail_price: item.retail_price || lp.retail_price || 0
+              };
+            })
+          };
+        },
+        cache: true
+      }
+    });
+
+    // Simple robust trigger for AJAX on open (even with 0 input)
+    $select.on('select2:open', function() {
+        if (!$select.val()) {
+            const $searchField = $('.select2-search__field');
+            if ($searchField.length) {
+                $searchField.val('').trigger('input');
+            }
+        }
+    });
+
+    $select.on('select2:select', function(e) {
+      const data = e.params.data;
+      const $currentRow = $(this).closest('tr');
+      updateRowWithProductData($currentRow, data);
+      
+      if ($currentRow.is(':last-child')) {
+          addNewRow(false);
+      }
+      setTimeout(() => $currentRow.find('.sales-qty').focus(), 50);
+    });
+
+    $select.on('select2:clear', function(e) {
+      const $currentRow = $(this).closest('tr');
+      $currentRow.find('input').not('.item-id-input').val('');
+      $currentRow.find('.item-id-input').val('');
+      $currentRow.find('.stock').val('');
+      $currentRow.find('.sales-price').val('0');
+      $currentRow.find('.retail-price').val('0');
+      computeRow($currentRow);
+      updateGrandTotals();
+    });
+  }
+
+  /* ---------- Add New Row ---------- */
+  function addNewRow(focusNewRow = true, force = false) {
+    const $last = $('#salesTableBody tr:last-child');
+    if ($last.length && !force) {
+      const pid = $last.find('.product-select').val();
+      if (!pid) {
+        if(focusNewRow) $last.find('.item-id-input').focus();
+        return;
+      }
+    }
+
+    const rowId = 'row-' + Date.now();
+    const template = `
+    <tr data-row-id="${rowId}">
+      <td style="width: 70px;">
+        <input type="text" class="form-control form-control-sm item-id-input text-center" placeholder="ID">
+      </td>
+      <td>
+        <select name="product_id[]" class="form-control form-control-sm product-select" style="width: 100%;">
+          <option value=""></option>
+        </select>
+        <input type="hidden" name="product_search[]" class="product_name_hidden">
+      </td>
+      <td style="width: 120px;">
+        <select class="form-select form-select-sm warehouse" name="warehouse_name[]">
+          @foreach ($warehouses as $index => $wh)
+            <option value="{{ $wh->id }}" {{ $index == 0 ? 'selected' : '' }}>{{ $wh->warehouse_name }}</option>
+          @endforeach
+        </select>
+      </td>
+      <td style="width: 80px;"><input type="text" class="form-control form-control-sm stock text-center input-readonly" name="stock[]" readonly></td>
+      <td style="width: 100px;"><input type="text" class="form-control form-control-sm text-end sales-price input-readonly" name="sales-price[]" value="0" readonly></td>
+      <td style="width: 70px;"><input type="text" class="form-control form-control-sm text-center sales-qty" name="sales-qty[]" value=""></td>
+      <td style="width: 100px;"><input type="text" class="form-control form-control-sm text-end retail-price input-readonly" name="retail-price[]" value="0" readonly></td>
+      <td style="width: 165px;">
+        <div class="input-group input-group-sm">
+          <input type="number" step="0.01" class="form-control text-end discount-value" placeholder="%" value="0" style="max-width: 65px;">
+          <span class="input-group-text px-1" style="font-size: 0.7rem;">%</span>
+          <input type="text" class="form-control text-end discount-amount-display input-readonly" value="0" readonly style="background: #f8f9fa;">
+        </div>
+        <input type="hidden" class="discount-mode" name="discount_mode[]" value="percent">
+        <input type="hidden" class="discount-percent" name="discount-percent[]" value="0">
+        <input type="hidden" class="discount-amount" name="discount-amount[]" value="0">
+      </td>
+      <td style="width: 100px;"><input type="text" class="form-control form-control-sm text-end sales-amount input-readonly" name="sales-amount[]" value="0" readonly></td>
+      <td class="text-center" style="width: 40px;"><button type="button" class="btn btn-xs btn-outline-danger del-row">&times;</button></td>
+    </tr>`;
+
+    const $newRow = $(template);
+    $('#salesTableBody').append($newRow);
+    
+    // Explicitly initialize Select2 BEFORE setting focus
+    initProductSelect($newRow);
+    
+    if (focusNewRow) {
+        $newRow.find('.item-id-input').focus();
+    }
+    refreshPostedState();
   }
 
   // Load narrations into dropdown
@@ -815,7 +960,11 @@
       loadNarrationsInto($(this));
     });
 
-    // If rows exist (from old input), recalculate totals
+    // If rows exist (from old input), initialize them
+    $('#salesTableBody tr').each(function() {
+        initProductSelect($(this));
+    });
+
     if ($('#salesTableBody tr').length > 0) {
         updateGrandTotals();
         recomputeReceipts();
@@ -831,78 +980,21 @@
     return productId && qty > 0;
   }
 
-  function addNewRow(focusNewRow = true, force = false) {
-    const $last = $('#salesTableBody tr:last-child');
-    if ($last.length && !force) {
-      const pid = $last.find('.product-select').val();
-      if (!pid) {
-        if(focusNewRow) $last.find('.item-id-input').focus();
-        return;
-      }
-    }
-
-    const rowId = 'row-' + Date.now();
-    $('#salesTableBody').append(`
-    <tr data-row-id="${rowId}">
-      <td style="width: 70px;">
-        <input type="text" class="form-control form-control-sm item-id-input text-center" placeholder="ID">
-      </td>
-      <td>
-        <select name="product_id[]" class="form-control form-control-sm product-select" style="width: 100%;">
-            <option value="" disabled selected>Select Product</option>
-        </select>
-        <input type="hidden" name="product_search[]" class="product_name_hidden">
-      </td>
-      <td style="width: 120px;">
-        <select class="form-select form-select-sm warehouse" name="warehouse_name[]">
-          @foreach ($warehouses as $index => $wh)
-            <option value="{{ $wh->id }}" {{ $index == 0 ? 'selected' : '' }}>{{ $wh->warehouse_name }}</option>
-          @endforeach
-        </select>
-      </td>
-      <td style="width: 80px;"><input type="text" class="form-control form-control-sm stock text-center input-readonly" name="stock[]" readonly></td>
-      <td style="width: 100px;"><input type="text" class="form-control form-control-sm text-end sales-price input-readonly" name="sales-price[]" value="0" readonly></td>
-      <td style="width: 70px;"><input type="text" class="form-control form-control-sm text-center sales-qty" name="sales-qty[]" value=""></td>
-      <td style="width: 100px;"><input type="text" class="form-control form-control-sm text-end retail-price input-readonly" name="retail-price[]" value="0" readonly></td>
-      <td style="width: 130px;">
-        <div class="discount-wrapper">
-          <input type="number" step="0.01" class="form-control form-control-sm text-end discount-value px-1" placeholder="0" value="0" style="width: 55px;">
-          <div class="btn-group">
-            <button type="button" class="btn btn-outline-primary btn-xs disc-mode-btn active" data-mode="percent">%</button>
-            <button type="button" class="btn btn-outline-primary btn-xs disc-mode-btn" data-mode="amount">Rs</button>
-          </div>
-          <input type="hidden" class="discount-mode" name="discount_mode[]" value="percent">
-          <input type="hidden" class="discount-percent" name="discount-percent[]" value="0">
-          <input type="hidden" class="discount-amount" name="discount-amount[]" value="0">
-        </div>
-      </td>
-      <td style="width: 80px;"><input type="text" class="form-control form-control-sm text-end discount-amount-display input-readonly" value="0" readonly></td>
-      <td style="width: 100px;"><input type="text" class="form-control form-control-sm text-end sales-amount input-readonly" name="sales-amount[]" value="0" readonly></td>
-      <td class="text-center" style="width: 40px;"><button type="button" class="btn btn-xs btn-outline-danger del-row">&times;</button></td>
-    </tr>
-  `);
-
-    const $row = $('#salesTableBody tr:last-child');
-    if (window.initProductSelect) window.initProductSelect($row);
-    
-    if (focusNewRow) {
-        setTimeout(() => {
-            $row.find('.item-id-input').focus();
-        }, 50);
-    }
-
-    refreshPostedState();
-  }
 
 
 
   function canPost() {
+    // 1. Party must be selected
+    if (!$('#customerSelect').val()) {
+        return false;
+    }
+
+    // 2. At least one valid item row
     let ok = false;
     $('#salesTableBody tr').each(function() {
       const pid = $(this).find('.product-select').val();
-      const wid = $(this).find('.warehouse').val();
       const qty = parseFloat($(this).find('.sales-qty').val() || '0');
-      if (pid && wid && qty > 0) {
+      if (pid && qty > 0) {
         ok = true;
         return false;
       }
@@ -985,8 +1077,14 @@
 
       // AJAX Save Draft
       function ajaxSaveDraft(showMsg = true) {
+          // Explicitly check for Party/Customer
+          if (!$('#customerSelect').val()) {
+              if(showMsg) Swal.fire({ icon: 'warning', title: 'Party Required', text: 'Please select a customer/party before saving.' });
+              return Promise.reject();
+          }
+
           if (!canPost()) {
-              if(showMsg) Swal.fire({ icon: 'error', title: 'Error', text: 'Add at least one item with quantity.' });
+              if(showMsg) Swal.fire({ icon: 'error', title: 'Items Required', text: 'Add at least one item with quantity.' });
               return Promise.reject();
           }
 
@@ -1215,87 +1313,6 @@
 
 
 
-  /* ---------- Select2 Product Initialization ---------- */
-  window.initProductSelect = function($row) {
-    const $select = $row.find('.product-select');
-    
-    $select.select2({
-      placeholder: "Select Product",
-      allowClear: true,
-      width: '100%',
-      ajax: {
-        url: '{{ route("search-products") }}',
-        dataType: 'json',
-        delay: 250,
-        data: function(params) {
-          return { q: params.term };
-        },
-        processResults: function(data) {
-          return {
-            results: data.map(function(item) {
-              return {
-                id: item.id,
-                text: item.name,
-                stock: item.stock,
-                sale_price: item.sale_price,
-                retail_price: item.retail_price
-              };
-            })
-          };
-        },
-        cache: true
-      }
-    });
-
-    /* Unified helper to update row with product data */
-    window.updateRowWithProductData = function($row, data) {
-      if (!data) return;
-      
-      $row.find('.item-id-input').val(data.id);
-      $row.find('.product_name_hidden').val(data.text || data.name);
-      
-      // Select2 sync (if needed)
-      const $select = $row.find('.product-select');
-      if ($select.val() !== String(data.id)) {
-          const newOption = new Option(data.text || data.name, data.id, true, true);
-          $select.empty().append(newOption).trigger('change');
-      }
-      
-      // Populate fields
-      $row.find('.stock').val(data.stock || 0);
-      $row.find('.sales-price').val(parseFloat(data.sale_price || 0).toFixed(2));
-      $row.find('.retail-price').val(parseFloat(data.retail_price || 0).toFixed(2));
-      
-      computeRow($row);
-      updateGrandTotals();
-      refreshPostedState();
-    };
-
-    $select.on('select2:select', function(e) {
-      const data = e.params.data;
-      const $currentRow = $(this).closest('tr');
-      
-      window.updateRowWithProductData($currentRow, data);
-
-      if ($currentRow.is(':last-child')) {
-          addNewRow(false); // Add row but don't focus it yet
-      }
-      
-      // Always focus the qty of the row we just updated
-      setTimeout(() => $currentRow.find('.sales-qty').focus(), 50);
-    });
-
-    $select.on('select2:clear', function(e) {
-      const $currentRow = $(this).closest('tr');
-      $currentRow.find('input').not('.item-id-input').val('');
-      $currentRow.find('.item-id-input').val('');
-      $currentRow.find('.stock').val('');
-      $currentRow.find('.sales-price').val('0');
-      $currentRow.find('.retail-price').val('0');
-      computeRow($currentRow);
-      updateGrandTotals();
-    });
-  };
 
   /* ---------- Item ID Lookup Logic ---------- */
   $(document).on('keydown', '.item-id-input', function(e) {
@@ -1310,52 +1327,56 @@
               return;
           }
 
-          // IMMEDIATELY append row if this is the last one (don't wait for AJAX)
-          if ($row.is(':last-child')) {
-              addNewRow(false, true); // force = true to bypass empty check
-          }
-
           // If current selection is already same, just move focus
           if ($select.val() === String(id)) {
-             setTimeout(() => $row.find('.sales-qty').focus(), 50);
-             if (e.key === 'Enter') e.preventDefault();
-             return;
+              if ($row.is(':last-child')) addNewRow(false);
+              setTimeout(() => $row.find('.sales-qty').focus(), 50);
+              e.preventDefault();
+              return;
           }
 
-          $.get('{{ route("search-products") }}', { q: id }, function(res) {
-              if (res && res.length > 0) {
-                  const item = res.find(i => String(i.id) === String(id)) || res[0];
-                  
-                  // SYNC with Select2 so updateRowWithProductData logic is triggered correctly
-                  const newOption = new Option(item.name, item.id, true, true);
-                  $select.empty().append(newOption).trigger('change');
+          e.preventDefault(); // Lock focus until we fetch data
+          $input.addClass('loading-indicator'); 
 
-                  window.updateRowWithProductData($row, {
-                      id: item.id,
-                      name: item.name,
-                      text: item.name,
-                      stock: item.stock,
-                      sale_price: item.sale_price,
-                      retail_price: item.retail_price
-                  });
-                  
-                  // Focus Quantity of current row
-                  setTimeout(() => $row.find('.sales-qty').focus(), 50);
-              } else {
-                  if (typeof Swal !== 'undefined') {
-                      Swal.fire({
-                          icon: 'error',
-                          title: 'Not Found',
-                          text: 'No product found with ID: ' + id,
-                          timer: 1500,
-                          showConfirmButton: false
-                      });
-                  }
-                  $input.select();
-              }
-          });
+          $.get('{{ route("search-products") }}', { q: id })
+            .done(function(res) {
+                $input.removeClass('loading-indicator');
+                if (res && res.length > 0) {
+                    const item = res.find(i => String(i.id) === String(id)) || res[0];
+                    
+                    // 1. Populate current row first
+                    updateRowWithProductData($row, {
+                        id: item.id,
+                        name: item.name,
+                        text: item.name,
+                        stock: item.stock,
+                        sale_price: item.sale_price,
+                        retail_price: item.retail_price
+                    });
 
-          if (e.key === 'Enter') e.preventDefault();
+                    // 2. Append row ONLY after data is loaded (if last)
+                    if ($row.is(':last-child')) {
+                        addNewRow(false);
+                    }
+                    
+                    // 3. Focus Quantity of current row
+                    setTimeout(() => $row.find('.sales-qty').focus(), 50);
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Not Found',
+                        text: 'Product ID ' + id + ' not found in system.',
+                        timer: 2000,
+                        showConfirmButton: false
+                    });
+                    $input.select().focus();
+                }
+            })
+            .fail(function() {
+                $input.removeClass('loading-indicator');
+                Swal.fire({ icon: 'error', title: 'Error', text: 'Server error while fetching product.' });
+                $input.select().focus();
+            });
       }
   });
 
@@ -1370,23 +1391,11 @@
     const sp = toNum($row.find('.sales-price').val());
     const rp = toNum($row.find('.retail-price').val());
     const qty = toNum($row.find('.sales-qty').val());
-    const mode = $row.find('.discount-mode').val();
     const value = toNum($row.find('.discount-value').val());
 
-    let discAmt = 0;
-    let discPct = 0;
-
-    if (mode === 'percent') {
-      // Percentage mode: value % on (Retail Price * Qty)
-      discPct = value;
-      discAmt = ((rp * qty) * value) / 100.0;
-    } else {
-      // Amount mode (PKR): value per unit
-      discAmt = value * qty;
-      // Calculate equivalent percentage
-      const retailTotal = rp * qty;
-      discPct = retailTotal > 0 ? (discAmt / retailTotal) * 100 : 0;
-    }
+    // Percentage mode: value % on (Retail Price * Qty)
+    let discPct = value;
+    let discAmt = ((rp * qty) * value) / 100.0;
 
     // Update hidden fields
     $row.find('.discount-percent').val(discPct.toFixed(2));
@@ -1396,30 +1405,11 @@
     $row.find('.discount-amount-display').val(discAmt.toFixed(2));
 
     // Calculate Gross (before discounts)
-    // "Discount item me doga wo bs udrhi ayga" -> Line Amount shows Gross
     const gross = sp * qty;
     $row.find('.sales-amount').val(gross.toFixed(2));
   }
 
-  // Discount Toggle Button Click
-  $(document).on('click', '.disc-mode-btn', function() {
-    const $btn = $(this);
-    const $wrapper = $btn.closest('.discount-wrapper');
-    const $row = $btn.closest('tr');
-    const mode = $btn.data('mode');
-
-    // Update UI
-    $wrapper.find('.disc-mode-btn').removeClass('active');
-    $btn.addClass('active');
-
-    // Update mode
-    $wrapper.find('.discount-mode').val(mode);
-
-    // Recalculate
-    computeRow($row);
-    updateGrandTotals();
-    refreshPostedState();
-  });
+  // Discount Toggle Button Click - ELIMINATED (only percent now)
 
   // Discount Value Input
   $(document).on('input', '.discount-value', function() {
@@ -1430,11 +1420,33 @@
   });
 
   // Other inputs (price, qty)
-  $(document).on('input', '.sales-price, .sales-qty, .retail-price', function() {
+  $(document).on('input change', '.sales-price, .sales-qty, .retail-price, #customerSelect', function() {
     const $row = $(this).closest('tr');
-    computeRow($row);
+    if ($row.length) computeRow($row);
     updateGrandTotals();
     refreshPostedState();
+  });
+
+  // Receipt Voucher Account -> Amount Toggle
+  $(document).on('change', '.rv-account', function() {
+    const $row = $(this).closest('.row');
+    const $amount = $row.find('.rv-amount');
+    if ($(this).val()) {
+        $amount.prop('disabled', false).focus();
+    } else {
+        $amount.prop('disabled', true).val('');
+        updateGrandTotals();
+    }
+  });
+
+  // Initialize RV states on load
+  $('.rv-account').each(function() {
+    const $row = $(this).closest('.row');
+    if (!$(this).val()) {
+        $row.find('.rv-amount').prop('disabled', true);
+    } else {
+        $row.find('.rv-amount').prop('disabled', false);
+    }
   });
 
   /* ---------- Delete row ---------- */
@@ -1450,6 +1462,7 @@
 
   /* ---------- Totals ---------- */
   function updateGrandTotals() {
+    let tQty = 0, tGross = 0, tLineDisc = 0;
     $('#salesTableBody tr').each(function() {
       const $r = $(this);
       const sp = toNum($r.find('.sales-price').val());
@@ -1493,7 +1506,7 @@
     // UI Updates
     $('#tQty').text(tQty.toFixed(0));
     $('#tGross').text(tGross.toFixed(2));
-    $('#tLineDisc').text(tLineDisc.toFixed(2));
+    $('#tLineDiscValue').val(tLineDisc.toFixed(2)); // hidden now
     $('#tSub').text(subTotal.toFixed(2));
     $('#tOrderDisc').text(orderDisc.toFixed(2));
     $('#tPrev').text(prev.toFixed(2));
@@ -1624,7 +1637,7 @@
         <div class="col-md-2">
           <label class="form-label text-muted small mb-1">Amount</label>
           <input type="text" class="form-control form-control-sm text-end fw-bold rv-amount" 
-                 name="receipt_amount[]" placeholder="0.00">
+                 name="receipt_amount[]" placeholder="0.00" disabled>
         </div>
         <div class="col-md-5">
           <label class="form-label text-muted small mb-1">Narration</label>
@@ -2126,6 +2139,4 @@
   });
 
 </script>
-<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-
 @endsection

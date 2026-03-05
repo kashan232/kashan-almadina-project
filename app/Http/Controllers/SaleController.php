@@ -435,6 +435,10 @@ class SaleController extends Controller
                     ]);
                 }
 
+                // FIX: Delete the booking (draft) after it has been converted to a Sale
+                $booking->items()->delete();
+                $booking->delete();
+
                 return response()->json([
                     'ok' => true,
                     'sale_id' => $sale->id,

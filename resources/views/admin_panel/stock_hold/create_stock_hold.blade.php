@@ -8,11 +8,12 @@
     .input-sm { height: 31px; padding: 2px 8px; font-size: 14px; }
     .table td, .table th { vertical-align: middle !important; padding: 4px !important; }
     
-    .form-locked { position: relative; pointer-events: none !important; opacity: 0.8; }
+    .form-locked { position: relative; opacity: 0.8; }
+    .form-locked .card-body { pointer-events: none !important; }
     .form-locked input, .form-locked .select2-container--default .select2-selection--single, .form-locked select, .form-locked textarea { 
         background-color: #e9ecef !important; cursor: not-allowed !important; 
     }
-    .form-locked .remove-row, .form-locked #addItemBtn, .form-locked .btn-primary { display: none !important; }
+    .form-locked .remove-row, .form-locked #addItemBtn { display: none !important; }
     
     .posted-watermark {
         position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-30deg);
@@ -275,8 +276,8 @@ $(document).ready(function() {
                     _savedVoucherId = res.id;
                     $('#idBadge').text('ID: ' + res.id).show();
                     $('#stockHoldForm').addClass('form-locked');
-                    $('#saveDraftBtn, #postBtn').hide();
-                    $('#editBtn, #newBtn').show();
+                    $('#saveDraftBtn').hide();
+                    $('#postBtn, #editBtn, #newBtn').show();
                     if(res.status === 'Posted') {
                         $('#statusBadge').removeClass('bg-warning').addClass('bg-success text-white').html('<i class="fa fa-check"></i> Posted');
                         $('#postedWatermark').addClass('show');
@@ -296,7 +297,12 @@ $(document).ready(function() {
 
     $('#saveDraftBtn').on('click', () => save('save'));
     $('#postBtn').on('click', () => save('post'));
-    $('#editBtn').on('click', function() { $('#stockHoldForm').removeClass('form-locked'); $('#saveDraftBtn, #postBtn').show(); $(this).hide(); });
+    $('#editBtn').on('click', function() { 
+        $('#stockHoldForm').removeClass('form-locked'); 
+        $('#saveDraftBtn, #postBtn').show(); 
+        $('#postBtn').html('<i class="fa fa-send"></i> Update & Post <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+&#8629;</kbd>');
+        $(this).hide(); 
+    });
 
     $('#previewPrintBtn').on('click', function() {
         if(!_savedVoucherId) return showToast('Save first', 'error');

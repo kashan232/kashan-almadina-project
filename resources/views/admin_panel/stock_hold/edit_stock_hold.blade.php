@@ -8,11 +8,12 @@
     .input-sm { height: 31px; padding: 2px 8px; font-size: 14px; }
     .table td, .table th { vertical-align: middle !important; padding: 4px !important; }
     
-    .form-locked { position: relative; pointer-events: none !important; opacity: 0.8; }
+    .form-locked { position: relative; opacity: 0.8; }
+    .form-locked .card-body { pointer-events: none !important; }
     .form-locked input, .form-locked .select2-container--default .select2-selection--single, .form-locked select, .form-locked textarea { 
         background-color: #e9ecef !important; cursor: not-allowed !important; 
     }
-    .form-locked .remove-row, .form-locked #addItemBtn, .form-locked .btn-primary { display: none !important; }
+    .form-locked .remove-row, .form-locked #addItemBtn { display: none !important; }
     
     .posted-watermark {
         position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-30deg);
@@ -46,7 +47,7 @@
                 </div>
             </div>
 
-            <form action="{{ route('stock-holds.update', $voucher->id) }}" method="POST" id="stockHoldForm" class="position-relative @if($voucher->status == 'Posted') form-locked @endif">
+            <form action="{{ route('stock-holds.update', $voucher->id) }}" method="POST" id="stockHoldForm" class="position-relative form-locked">
                 @csrf
                 <input type="hidden" name="action" id="formAction" value="save">
                 <input type="hidden" name="sale_id" id="sale_id" value="{{ $voucher->sale_id }}">
@@ -155,16 +156,16 @@
                     <div class="card-footer bg-white py-3">
                         <div class="d-flex justify-content-end gap-2">
                             @if($voucher->status != 'Posted')
-                                <button type="button" id="saveDraftBtn" class="btn btn-sm btn-warning rounded-pill px-4 shadow-sm">
+                                <button type="button" id="saveDraftBtn" class="btn btn-sm btn-warning rounded-pill px-4 shadow-sm" style="display:none;">
                                     <i class="fa fa-floppy-o me-1"></i> Update Draft <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+S</kbd>
                                 </button>
                                 <button type="button" id="previewPrintBtn" class="btn btn-sm btn-outline-dark rounded-pill px-4">
                                     <i class="fa fa-print me-1"></i> Print Preview <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+P</kbd>
                                 </button>
                                 <button type="button" id="postBtn" class="btn btn-sm btn-primary rounded-pill px-4 shadow-sm">
-                                    <i class="fa fa-send me-1"></i> Update & Post <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+&#8629;</kbd>
+                                    <i class="fa fa-send me-1"></i> Post <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+&#8629;</kbd>
                                 </button>
-                                <button type="button" id="editBtn" class="btn btn-sm btn-warning rounded-pill px-4 shadow-sm" style="display:none;">
+                                <button type="button" id="editBtn" class="btn btn-sm btn-warning rounded-pill px-4 shadow-sm">
                                     <i class="fa fa-pencil me-1"></i> Edit <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+E</kbd>
                                 </button>
                             @endif
@@ -246,8 +247,8 @@ $(document).ready(function() {
             success: function(res) {
                 if(res.success) {
                     $('#stockHoldForm').addClass('form-locked');
-                    $('#saveDraftBtn, #postBtn').hide();
-                    $('#editBtn').show();
+                    $('#saveDraftBtn').hide();
+                    $('#postBtn, #editBtn').show();
                     if(res.status === 'Posted') {
                         $('#statusBadge').removeClass('bg-info').addClass('bg-success text-white').html('<i class="fa fa-check"></i> Posted');
                         $('#postedWatermark').addClass('show');
@@ -271,6 +272,7 @@ $(document).ready(function() {
         if("{{ $voucher->status }}" === 'Posted') return;
         $('#stockHoldForm').removeClass('form-locked'); 
         $('#saveDraftBtn, #postBtn').show(); 
+        $('#postBtn').html('<i class="fa fa-send"></i> Update & Post <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+&#8629;</kbd>');
         $(this).hide(); 
     });
 
