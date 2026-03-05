@@ -1,158 +1,91 @@
 @extends('admin_panel.layout.app')
-@section('content')
 
+@section('content')
 <div class="main-content">
     <div class="main-content-inner">
-        <div class="container-fluid">
-            <div class="row">
-                <div class="col-lg-12">
-                    <div class="border mt-1 p-3 shadow rounded bg-white">
+        <div class="container-fluid pt-3">
+            
+            <div class="d-flex justify-content-between align-items-center mb-3 bg-light p-2 rounded shadow-sm">
+                <h5 class="fw-bold mb-0"><i class="fa fa-list me-2 text-primary"></i> Stock Hold List</h5>
+                <a href="{{ route('create-stock-hold') }}" class="btn btn-primary btn-sm rounded-pill px-4">
+                    <i class="fa fa-plus me-1"></i> Create New Hold
+                </a>
+            </div>
 
-                        <div class="d-flex justify-content-between align-items-center mb-3">
-                            <h3 class="fw-bold text-dark">All Stock Holds</h3>
-                            <a href="{{ route('create-stock-hold') }}" class="btn btn-primary">
-                                Create Stock Hold
-                            </a>
-                        </div>
-
-                        <div class="table-responsive">
-                            <table class="table table-bordered table-striped align-middle">
-                                <thead class="table-dark text-center">
+            <div class="card shadow-sm border-0">
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0">
+                            <thead class="bg-dark text-white text-center">
+                                <tr>
+                                    <th style="width: 80px;">ID</th>
+                                    <th style="width: 120px;">Date</th>
+                                    <th>Party / Customer</th>
+                                    <th>Warehouse</th>
+                                    <th>Items Details</th>
+                                    <th style="width: 100px;">Status</th>
+                                    <th style="width: 150px;">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody class="text-center">
+                                @forelse($vouchers as $v)
                                     <tr>
-                                        <th>ID</th>
-                                        <th>Date</th>
-                                        <th>Sale ID</th>
-                                        <th>Invoice ID</th>
-                                        <th>Party Type</th>
-                                        <th>Party Name</th>
-                                        <th>Warehouse</th>
-                                        <th>Product</th>
-                                        <th>Item ID</th>
-                                        <th>Sale Qty</th>
-                                        <th>Hold Qty</th>
-                                        <th>Remarks</th>
-                                        <th>Meta (source)</th>
-                                        <th>Status</th>
-                                        <th>Entry Date</th>
-                                        <th>Action</th>
-                                    </tr>
-                                </thead>
-
-                                <tbody class="text-center">
-                                    @forelse($holds as $h)
-                                    <tr>
-                                        <td>{{ $h->id ?? '-' }}</td>
-
-                                        <td>{{ optional($h->entry_date)->format('Y-m-d') ?? '-' }}</td>
-
-                                        {{-- sale_id and invoice id --}}
-                                        <td>{{ $h->sale_id ?? '-' }}</td>
-                                        <td>{{ $h->invoice_id ?? '-' }}</td>
-
-                                        {{-- party type --}}
-                                        <td>{{ $h->party_type ?? '-' }}</td>
-
-                                        {{-- party name: use accessor or relations if available --}}
+                                        <td class="fw-bold">HOLD-{{ $v->id }}</td>
+                                        <td>{{ \Carbon\Carbon::parse($v->date)->format('d-M-Y') }}</td>
                                         <td class="text-start">
-                                            @php
-                                            // prefer accessor party_name, then loaded relations, then fallback to '-'
-                                            $partyName = $h->party_name ?? null;
-                                            if (! $partyName) {
-                                            if ($h->party_type === 'vendor') {
-                                            $partyName = $h->partyVendor->name ?? $h->partyVendor->phone ?? null;
-                                            } elseif ($h->party_type === 'customer') {
-                                            $partyName = $h->partyCustomer->customer_name ?? $h->partyCustomer->mobile ?? null;
-                                            }
-                                            }
-                                            @endphp
-                                            {{ $partyName ?? '-' }}
-                                        </td>
-
-                                        {{-- warehouse --}}
-                                        <td>{{ $h->warehouse->warehouse_name ?? '-' }}</td>
-
-                                        {{-- product --}}
-                                        <td class="text-start">{{ $h->product->name ?? ('Product #'.$h->product_id ?? '-') }}</td>
-
-                                        {{-- item id --}}
-                                        <td>{{ $h->item_id ?? '-' }}</td>
-
-                                        {{-- sale qty / hold qty --}}
-                                        <td>{{ $h->sale_qty !== null ? (string)$h->sale_qty : '-' }}</td>
-                                        <td>{{ $h->hold_qty !== null ? (string)$h->hold_qty : '-' }}</td>
-
-                                        {{-- remarks --}}
-                                        <td class="text-start">{{ $h->remarks ? e($h->remarks) : '-' }}</td>
-
-                                        {{-- meta: show source if present otherwise full json (pretty) --}}
-                                        <td>
-                                            @php
-                                            $meta = $h->meta ?? null;
-                                            $metaSource = null;
-                                            if (is_array($meta) || is_object($meta)) {
-                                            $metaArr = (array) $meta;
-                                            $metaSource = $metaArr['source'] ?? null;
-                                            } else {
-                                            // if stored as JSON string
-                                            try {
-                                            $decoded = json_decode($meta, true);
-                                            if (is_array($decoded)) {
-                                            $metaSource = $decoded['source'] ?? null;
-                                            }
-                                            } catch (\Throwable $ex) {}
-                                            }
-                                            @endphp
-
-                                            @if($metaSource)
-                                            <span class="badge bg-info text-dark">{{ ucfirst($metaSource) }}</span>
-                                            @elseif($meta)
-                                            <pre style="white-space:pre-wrap;max-width:200px;margin:0">{{ is_array($meta) ? json_encode($meta, JSON_PRETTY_PRINT|JSON_UNESCAPED_SLASHES) : (string)$meta }}</pre>
+                                            @if($v->party_type == 'customer' || $v->party_type == 'walkin')
+                                                <i class="fa fa-user me-1 text-info"></i> {{ $v->partyCustomer->customer_name ?? 'Walkin' }}
                                             @else
-                                            -
+                                                <i class="fa fa-truck me-1 text-warning"></i> {{ $v->partyVendor->name ?? '-' }}
+                                            @endif
+                                            <div class="small text-muted">{{ ucfirst($v->party_type) }}</div>
+                                        </td>
+                                        <td>{{ $v->warehouse->warehouse_name ?? '-' }}</td>
+                                        <td class="text-start">
+                                            @foreach($v->items as $item)
+                                                <span class="badge bg-light text-dark border me-1 mb-1">
+                                                    {{ $item->product->name ?? 'Product' }} ({{ (float)$item->hold_qty }})
+                                                </span>
+                                            @endforeach
+                                        </td>
+                                        <td>
+                                            @if($v->status == 'Posted')
+                                                <span class="badge bg-success rounded-pill px-3">Posted</span>
+                                            @else
+                                                <span class="badge bg-info text-white rounded-pill px-3">Unposted</span>
                                             @endif
                                         </td>
-
-                                        {{-- status --}}
                                         <td>
-                                            @if($h->status == 0)
-                                            <span class="badge bg-warning">Hold</span>
-                                            @else
-                                            <span class="badge bg-success">Released</span>
-                                            @endif
+                                            <div class="btn-group">
+                                                @if($v->status != 'Posted')
+                                                    <a href="{{ route('stock-holds.edit', $v->id) }}" class="btn btn-sm btn-outline-primary" title="Edit">
+                                                        <i class="fa fa-pencil"></i>
+                                                    </a>
+                                                    <form action="{{ route('stock-holds.post', $v->id) }}" method="POST" class="d-inline">
+                                                        @csrf
+                                                        <button type="submit" class="btn btn-sm btn-outline-success" onclick="return confirm('Post this hold?')" title="Post">
+                                                            <i class="fa fa-send"></i>
+                                                        </button>
+                                                    </form>
+                                                @endif
+                                                <a href="#" class="btn btn-sm btn-outline-dark" title="Print">
+                                                    <i class="fa fa-print"></i>
+                                                </a>
+                                            </div>
                                         </td>
-
-                                        {{-- timestamps --}}
-                                        <td>{{ optional($h->created_at)->format('Y-m-d H:i') ?? '-' }}</td>
-
-
-                                        <td>
-                                            @if($h->status == 0)
-                                            <a href="{{ route('stock-holds.release', $h->id) }}" class="btn btn-sm btn-primary">Release</a>
-                                            @else
-                                            <span class="text-muted">Released</span>
-                                            @endif
-                                        </td>
-
                                     </tr>
-                                    @empty
+                                @empty
                                     <tr>
-                                        <td colspan="16" class="text-center text-muted">No Stock Hold Records found</td>
+                                        <td colspan="7" class="text-center text-muted py-4">No records found.</td>
                                     </tr>
-
-
-                                    @endforelse
-
-
-
-                                </tbody>
-                            </table>
-                        </div> <!-- table-responsive -->
-
-                    </div> <!-- border -->
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
+
         </div>
     </div>
 </div>
-
 @endsection

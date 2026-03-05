@@ -19,16 +19,17 @@
     .form-locked {
         position: relative;
         pointer-events: none !important;
+        opacity: 0.8;
     }
     .form-locked input, 
-    .form-locked .select2-container, 
+    .form-locked .select2-container--default .select2-selection--single, 
     .form-locked select, 
     .form-locked textarea { 
-        background-color: #f1f3f5 !important;
+        background-color: #e9ecef !important;
         cursor: not-allowed !important;
     }
-    .form-locked .remove-row, .form-locked #addRowBtn { 
-        visibility: hidden !important; 
+    .form-locked .remove-row, .form-locked #addRowBtn, .form-locked .btn-primary { 
+        display: none !important; 
     }
     .posted-watermark {
         position: absolute;
@@ -350,6 +351,7 @@ $(document).ready(function() {
                         $('#saveBtn, #postBtn').hide();
                         $('#stockUpdateForm').addClass('form-locked');
                         showToast('🔒 Draft Saved — Ctrl+E to Edit', 'success');
+                        setTimeout(function(){ $('#editBtn').focus(); }, 100);
                     }
                     $('#idBadge').html('<i class="fa fa-tag me-1"></i> ID: ' + res.id).show();
                 } else { showToast(res.message, 'error'); }

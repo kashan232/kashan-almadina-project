@@ -141,28 +141,102 @@ class WarehouseStockController extends Controller
         return view('admin_panel.warehouses.warehouse_stocks.print', compact('adjustment'));
     }
 
-    public function edit(WarehouseStock $warehouseStock)
+    public function edit($id)
     {
-        $warehouses = Warehouse::all();
-        $products = Product::all();
-        return view('admin_panel.warehouses.warehouse_stocks.edit', compact('warehouseStock', 'warehouses', 'products'));
+        $adjustment = \App\Models\StockAdjustment::with(['items.product', 'warehouse'])->findOrFail($id);
+        
+        if ($adjustment->status === 'Posted') {
+            return redirect()->route('warehouse_stocks.index')->with('error', 'Posted adjustments cannot be edited.');
+        }
+
+        $warehouses = Warehouse::orderBy('warehouse_name')->get();
+        return view('admin_panel.warehouses.warehouse_stocks.edit', compact('adjustment', 'warehouses'));
     }
 
-    public function update(Request $request, WarehouseStock $warehouseStock)
+    public function update(Request $request, $id)
     {
         $request->validate([
-            'warehouse_id' => 'required',
-            'product_id' => 'required',
-            'quantity' => 'required|integer|min:0'
+            'warehouse_id' => 'required|exists:warehouses,id',
+            'product_id'   => 'required|array|min:1',
+            'product_id.*' => 'required|exists:products,id',
+            'quantity'     => 'required|array',
+            'quantity.*'   => 'required|numeric|min:0',
         ]);
 
-        $warehouseStock->update($request->all());
-        return redirect()->route('warehouse_stocks.index')->with('success', 'Stock updated successfully.');
+        $adjustment = \App\Models\StockAdjustment::findOrFail($id);
+
+        if ($adjustment->status === 'Posted') {
+            return response()->json(['success' => false, 'message' => 'Posted records cannot be modified.'], 422);
+        }
+
+        $status = $request->action === 'post' ? 'Posted' : 'Unposted';
+
+        try {
+            DB::beginTransaction();
+
+            // Update main adjustment
+            $adjustment->update([
+                'warehouse_id' => $request->warehouse_id,
+                'remarks'      => $request->remarks,
+                'status'       => $status,
+                'date'         => now(), // Update date to current edit time or keep original? Keeping original date might be better but user might want current.
+            ]);
+
+            // Sync items: simplest way is to delete and recreate or match IDs.
+            // Given the small number of items, deleting and recreating is safer.
+            $adjustment->items()->delete();
+
+            foreach ($request->product_id as $index => $productId) {
+                $qty = (float) $request->quantity[$index];
+                if ($qty <= 0) continue;
+
+                $adjustment->items()->create([
+                    'product_id' => $productId,
+                    'qty'        => $qty,
+                ]);
+
+                if ($status === 'Posted') {
+                    $stock = WarehouseStock::firstOrNew([
+                        'warehouse_id' => $request->warehouse_id,
+                        'product_id'   => $productId
+                    ]);
+                    $stock->quantity = ($stock->quantity ?? 0) + $qty;
+                    $stock->remarks = 'Manual Adjustment Updated #' . $adjustment->adj_id;
+                    $stock->save();
+                }
+            }
+
+            DB::commit();
+
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Stock ' . ($status == 'Posted' ? 'Posted' : 'Updated') . ' successfully.',
+                    'status'  => $status,
+                    'id'      => $adjustment->id
+                ]);
+            }
+
+            return redirect()->route('warehouse_stocks.index')->with('success', 'Stock updated successfully.');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            if ($request->ajax()) {
+                return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+            }
+            return back()->with('error', $e->getMessage());
+        }
     }
 
-    public function destroy(WarehouseStock $warehouseStock)
+    public function destroy($id)
     {
-        $warehouseStock->delete();
-        return redirect()->route('warehouse_stocks.index')->with('success', 'Stock deleted successfully.');
+        $adjustment = \App\Models\StockAdjustment::findOrFail($id);
+        
+        if ($adjustment->status === 'Posted') {
+            return redirect()->route('warehouse_stocks.index')->with('error', 'Posted adjustments cannot be deleted.');
+        }
+
+        $adjustment->delete();
+        return redirect()->route('warehouse_stocks.index')->with('success', 'Adjustment deleted successfully.');
     }
 }

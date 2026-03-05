@@ -16,6 +16,11 @@ class StockHold extends Model
     ];
 
     // Relations
+    public function voucher()
+    {
+        return $this->belongsTo(\App\Models\StockHoldVoucher::class, 'stock_hold_voucher_id');
+    }
+
     public function sale()
     {
         return $this->belongsTo(\App\Models\Sale::class, 'sale_id');

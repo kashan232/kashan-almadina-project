@@ -29,14 +29,14 @@
             
             {{-- TOP BAR --}}
             <div class="d-flex justify-content-between align-items-center mb-3 bg-light p-2 rounded shadow-sm">
-                <div style="min-width:80px;"></div>
+                <div style="min-width:105px;"></div>
                 <div class="d-flex align-items-center gap-2 justify-content-center flex-grow-1">
-                    <h6 class="page-title mb-0 fw-bold">Stock Hold Management</h6>
-                    <span id="statusBadge" class="badge bg-warning text-dark px-3 py-2 rounded-pill shadow-sm" style="font-size:12px;">
-                        <i class="fa fa-pencil me-1"></i> New Hold
+                    <h6 class="page-title mb-0 fw-bold">Edit Stock Hold</h6>
+                    <span id="statusBadge" class="badge @if($voucher->status == 'Posted') bg-success @else bg-info @endif text-white px-3 py-2 rounded-pill shadow-sm" style="font-size:12px;">
+                        <i class="fa fa-pencil me-1"></i> {{ $voucher->status }}
                     </span>
-                    <span id="idBadge" class="badge bg-primary px-3 py-2 rounded-pill shadow-sm" style="display:none;font-size:12px;">
-                        <i class="fa fa-tag me-1"></i> ID: NEW
+                    <span id="idBadge" class="badge bg-primary px-3 py-2 rounded-pill shadow-sm" style="font-size:12px;">
+                        <i class="fa fa-tag me-1"></i> ID: {{ $voucher->id }}
                     </span>
                 </div>
                 <div class="d-flex align-items-center justify-content-end" style="min-width:115px;">
@@ -46,11 +46,11 @@
                 </div>
             </div>
 
-            <form action="{{ route('stock-holds.store') }}" method="POST" id="stockHoldForm" class="position-relative">
+            <form action="{{ route('stock-holds.update', $voucher->id) }}" method="POST" id="stockHoldForm" class="position-relative @if($voucher->status == 'Posted') form-locked @endif">
                 @csrf
                 <input type="hidden" name="action" id="formAction" value="save">
-                <input type="hidden" name="sale_id" id="sale_id">
-                <div class="posted-watermark" id="postedWatermark">Posted</div>
+                <input type="hidden" name="sale_id" id="sale_id" value="{{ $voucher->sale_id }}">
+                <div class="posted-watermark @if($voucher->status == 'Posted') show @endif" id="postedWatermark">Posted</div>
 
                 {{-- Header Details --}}
                 <div class="card shadow-sm mb-3">
@@ -58,48 +58,41 @@
                         <div class="row g-2">
                             <div class="col-md-2">
                                 <label class="form-label small fw-bold">Date</label>
-                                <input type="date" name="entry_date" class="form-control input-sm" value="{{ date('Y-m-d') }}" required>
+                                <input type="date" name="entry_date" class="form-control input-sm" value="{{ $voucher->date }}" required>
                             </div>
                             <div class="col-md-2">
                                 <label class="form-label small fw-bold">Type</label>
-                                <select name="vendor_type" id="vendor_type" class="form-select input-sm" required>
-                                    <option value="" disabled selected>Select Type</option>
-                                    <option value="vendor">Vendor</option>
-                                    <option value="customer">Customer</option>
-                                    <option value="walkin">Walkin Customer</option>
-                                </select>
+                                <input type="text" class="form-control input-sm" value="{{ ucfirst($voucher->party_type) }}" readonly>
+                                <input type="hidden" name="vendor_type" value="{{ $voucher->party_type }}">
                             </div>
                             <div class="col-md-3">
-                                <label class="form-label small fw-bold">Select Party</label>
-                                <select name="vendor_id" id="vendor_id" class="form-select select2" required>
-                                    <option value="">Select Party</option>
-                                </select>
+                                <label class="form-label small fw-bold">Party</label>
+                                <input type="text" class="form-control input-sm" value="{{ $voucher->party_type == 'vendor' ? ($voucher->partyVendor->name ?? '-') : ($voucher->partyCustomer->customer_name ?? '-') }}" readonly>
+                                <input type="hidden" name="vendor_id" value="{{ $voucher->party_id }}">
                             </div>
                             <div class="col-md-2">
-                                <label class="form-label small fw-bold">Invoice (Optional)</label>
-                                <select id="invoice_id" class="form-select input-sm">
-                                    <option value="">Select Invoice</option>
-                                </select>
+                                <label class="form-label small fw-bold">Voucher No</label>
+                                <input type="text" class="form-control input-sm" value="{{ $voucher->voucher_no }}" readonly>
                             </div>
                             <div class="col-md-3">
                                 <label class="form-label small fw-bold">Hold Type</label>
                                 <select name="hold_type" class="form-select input-sm">
-                                    <option value="hold" selected>Hold</option>
-                                    <option value="claim">Claim</option>
+                                    <option value="hold" @if($voucher->hold_type == 'hold') selected @endif>Hold</option>
+                                    <option value="claim" @if($voucher->hold_type == 'claim') selected @endif>Claim</option>
                                 </select>
                             </div>
                             <div class="col-md-4 mt-2">
                                 <label class="form-label small fw-bold">Warehouse</label>
-                                <select name="warehouse_id" id="warehouse_id" class="form-select select2" required>
-                                    <option value="" disabled selected>Select Warehouse</option>
+                                <select name="warehouse_id" id="warehouse_id" class="form-select select2" required disabled>
                                     @foreach($warehouses as $wh)
-                                        <option value="{{ $wh->id }}">{{ $wh->warehouse_name }}</option>
+                                        <option value="{{ $wh->id }}" @if($voucher->warehouse_id == $wh->id) selected @endif>{{ $wh->warehouse_name }}</option>
                                     @endforeach
                                 </select>
+                                <input type="hidden" name="warehouse_id" value="{{ $voucher->warehouse_id }}">
                             </div>
                             <div class="col-md-8 mt-2">
                                 <label class="form-label small fw-bold">Remarks</label>
-                                <input type="text" name="remarks" class="form-control input-sm" placeholder="Any special notes...">
+                                <input type="text" name="remarks" class="form-control input-sm" value="{{ $voucher->remarks }}" placeholder="Any special notes...">
                             </div>
                         </div>
                     </div>
@@ -138,11 +131,21 @@
                                         <th style="width:50px;">Act</th>
                                     </tr>
                                 </thead>
-                                <tbody id="itemRows"></tbody>
+                                <tbody id="itemRows">
+                                    @foreach($voucher->items as $item)
+                                        <tr>
+                                            <td>{{ $item->product_id }} <input type="hidden" name="product_id[]" value="{{ $item->product_id }}"></td>
+                                            <td>{{ $item->product->name ?? 'Product' }}</td>
+                                            <td><input type="number" name="sale_qty[]" class="form-control input-sm text-center" value="{{ (float)$item->sale_qty }}" readonly></td>
+                                            <td><input type="number" name="hold_qty[]" class="form-control input-sm text-center hold-qty-input" value="{{ (float)$item->hold_qty }}" step="any"></td>
+                                            <td class="text-center"><button type="button" class="btn btn-sm btn-danger remove-row">X</button></td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
                                 <tfoot>
                                     <tr>
                                         <th colspan="3" class="text-end">Total Hold Items:</th>
-                                        <th class="text-center"><span id="total_items_badge" class="badge bg-secondary">0</span></th>
+                                        <th class="text-center"><span id="total_items_badge" class="badge bg-secondary">{{ count($voucher->items) }}</span></th>
                                         <th></th>
                                     </tr>
                                 </tfoot>
@@ -151,19 +154,21 @@
                     </div>
                     <div class="card-footer bg-white py-3">
                         <div class="d-flex justify-content-end gap-2">
-                            <button type="button" id="saveDraftBtn" class="btn btn-sm btn-warning rounded-pill px-4 shadow-sm">
-                                <i class="fa fa-floppy-o me-1"></i> Save Draft <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+S</kbd>
-                            </button>
-                            <button type="button" id="previewPrintBtn" class="btn btn-sm btn-outline-dark rounded-pill px-4">
-                                <i class="fa fa-print me-1"></i> Print Preview <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+P</kbd>
-                            </button>
-                            <button type="button" id="postBtn" class="btn btn-sm btn-primary rounded-pill px-4 shadow-sm">
-                                <i class="fa fa-send me-1"></i> Save & Post <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+&#8629;</kbd>
-                            </button>
-                            <button type="button" id="editBtn" class="btn btn-sm btn-warning rounded-pill px-4 shadow-sm" style="display:none;">
-                                <i class="fa fa-pencil me-1"></i> Edit <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+E</kbd>
-                            </button>
-                            <a href="{{ route('create-stock-hold') }}" id="newBtn" class="btn btn-sm btn-info rounded-pill px-4 shadow-sm text-white" style="display:none;">
+                            @if($voucher->status != 'Posted')
+                                <button type="button" id="saveDraftBtn" class="btn btn-sm btn-warning rounded-pill px-4 shadow-sm">
+                                    <i class="fa fa-floppy-o me-1"></i> Update Draft <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+S</kbd>
+                                </button>
+                                <button type="button" id="previewPrintBtn" class="btn btn-sm btn-outline-dark rounded-pill px-4">
+                                    <i class="fa fa-print me-1"></i> Print Preview <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+P</kbd>
+                                </button>
+                                <button type="button" id="postBtn" class="btn btn-sm btn-primary rounded-pill px-4 shadow-sm">
+                                    <i class="fa fa-send me-1"></i> Update & Post <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+&#8629;</kbd>
+                                </button>
+                                <button type="button" id="editBtn" class="btn btn-sm btn-warning rounded-pill px-4 shadow-sm" style="display:none;">
+                                    <i class="fa fa-pencil me-1"></i> Edit <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+E</kbd>
+                                </button>
+                            @endif
+                            <a href="{{ route('create-stock-hold') }}" id="newBtn" class="btn btn-sm btn-info rounded-pill px-4 shadow-sm text-white">
                                 <i class="fa fa-plus me-1"></i> New <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+M</kbd>
                             </a>
                             <a href="{{ route('stock-hold-list') }}" id="cancelBtn" class="btn btn-sm btn-danger rounded-pill px-4 shadow-sm text-white">
@@ -183,7 +188,7 @@
 <script>
 $(document).ready(function() {
     $('.select2').select2({ width: '100%' });
-    var _savedVoucherId = null;
+    var _savedVoucherId = "{{ $voucher->id }}";
 
     function showToast(msg, type = 'success') {
         var icon = type === 'success' ? 'fa-check-circle' : 'fa-times-circle';
@@ -196,38 +201,6 @@ $(document).ready(function() {
         $('body').append($toast);
         setTimeout(function() { $toast.fadeOut(400, function(){ $(this).remove(); }); }, 3000);
     }
-
-    // Party List Loading
-    $('#vendor_type').on('change', function() {
-        var type = $(this).val();
-        $.get("{{ route('stock-holds.party.list') }}", { type: type }, function(res) {
-            var $p = $('#vendor_id').empty().append('<option value="">Select Party</option>');
-            res.forEach(item => $p.append(`<option value="${item.id}">${item.text}</option>`));
-            $p.trigger('change');
-        });
-    });
-
-    // Invoice List Loading
-    $('#vendor_id').on('change', function() {
-        var id = $(this).val();
-        var type = $('#vendor_type').val();
-        if(!id) return;
-        $.get("{{ url('stock-holds/party') }}/" + id + "/invoices", { type: type }, function(res) {
-            var $inv = $('#invoice_id').empty().append('<option value="">Select Invoice</option>');
-            res.forEach(item => $inv.append(`<option value="${item.id}">${item.text}</option>`));
-        });
-    });
-
-    // Invoice Item Loading
-    $('#invoice_id').on('change', function() {
-        var id = $(this).val();
-        if(!id) return;
-        $('#sale_id').val(id);
-        $('#itemRows').empty();
-        $.get("{{ url('stock-holds/invoice') }}/" + id + "/items", function(items) {
-            items.forEach(item => addRow(item.product_id, item.item_name || 'Product', item.qty || item.quantity || 0, 1));
-        });
-    });
 
     function addRow(pid, name, saleQty = 0, holdQty = 1) {
         var row = `<tr>
@@ -259,7 +232,7 @@ $(document).ready(function() {
         $('#manual_product_search').val(null).trigger('change');
     });
 
-    function save(act) {
+    function update(act) {
         $('#formAction').val(act);
         if($('#itemRows tr').length === 0) { showToast('Add at least one item', 'error'); return; }
         var $form = $('#stockHoldForm');
@@ -272,35 +245,37 @@ $(document).ready(function() {
             url: $form.attr('action'), type: 'POST', data: $form.serialize(),
             success: function(res) {
                 if(res.success) {
-                    _savedVoucherId = res.id;
-                    $('#idBadge').text('ID: ' + res.id).show();
                     $('#stockHoldForm').addClass('form-locked');
                     $('#saveDraftBtn, #postBtn').hide();
-                    $('#editBtn, #newBtn').show();
+                    $('#editBtn').show();
                     if(res.status === 'Posted') {
-                        $('#statusBadge').removeClass('bg-warning').addClass('bg-success text-white').html('<i class="fa fa-check"></i> Posted');
+                        $('#statusBadge').removeClass('bg-info').addClass('bg-success text-white').html('<i class="fa fa-check"></i> Posted');
                         $('#postedWatermark').addClass('show');
                         showToast('Stock Hold Posted! Redirecting...', 'success');
-                        setTimeout(() => window.location.href = "{{ route('create-stock-hold') }}", 1500);
+                        setTimeout(() => window.location.href = "{{ route('stock-hold-list') }}", 1500);
                     } else {
-                        $('#statusBadge').removeClass('bg-warning').addClass('bg-info text-white').html('<i class="fa fa-pencil"></i> Unposted');
-                        showToast('Draft Saved - Ctrl+E to edit');
+                        $('#statusBadge').html('<i class="fa fa-pencil"></i> Unposted');
+                        showToast('Draft Updated - Ctrl+E to edit');
                         setTimeout(() => $('#editBtn').focus(), 100);
                     }
                 } else { showToast(res.message, 'error'); }
             },
             error: function(e) { showToast('Server Error', 'error'); },
-            complete: function() { $(btn).prop('disabled', false).html(act === 'post' ? '<i class="fa fa-send"></i> Save & Post' : '<i class="fa fa-floppy-o"></i> Save Draft'); }
+            complete: function() { $(btn).prop('disabled', false).html(act === 'post' ? '<i class="fa fa-send"></i> Update & Post' : '<i class="fa fa-floppy-o"></i> Update Draft'); }
         });
     }
 
-    $('#saveDraftBtn').on('click', () => save('save'));
-    $('#postBtn').on('click', () => save('post'));
-    $('#editBtn').on('click', function() { $('#stockHoldForm').removeClass('form-locked'); $('#saveDraftBtn, #postBtn').show(); $(this).hide(); });
+    $('#saveDraftBtn').on('click', () => update('save'));
+    $('#postBtn').on('click', () => update('post'));
+    $('#editBtn').on('click', function() { 
+        if("{{ $voucher->status }}" === 'Posted') return;
+        $('#stockHoldForm').removeClass('form-locked'); 
+        $('#saveDraftBtn, #postBtn').show(); 
+        $(this).hide(); 
+    });
 
     $('#previewPrintBtn').on('click', function() {
-        if(!_savedVoucherId) return showToast('Save first', 'error');
-        window.open("/stock-holds/print/" + _savedVoucherId, "_blank"); // Placeholder print route
+        window.open("/stock-holds/print/" + _savedVoucherId, "_blank");
     });
 
     $(document).on('keydown', function(e) {

@@ -314,16 +314,18 @@ Route::middleware('auth')->group(function () {
     Route::get('/sale/edit/{id}', [SaleController::class, 'edit'])->name('sale.edit');
     Route::post('/sale/update/{id}', [SaleController::class, 'update'])->name('sale.update');
 
-    Route::get('/create-stock-hold', [SaleController::class, 'create_stock_hold'])->name('create-stock-hold');
+    Route::get('/create-stock-hold', [StockHoldController::class, 'create'])->name('create-stock-hold');
     Route::get('products/search', [SaleController::class, 'search'])->name('products.search');
+    Route::get('stock-holds/products/search', [SaleController::class, 'search'])->name('stock-holds.products.search');
+    Route::get('stock-holds/party/list', [StockHoldController::class, 'partyList'])->name('stock-holds.party.list');
+    Route::get('stock-holds/party/{id}/invoices', [StockHoldController::class, 'partyInvoices'])->name('stock-holds.party.invoices');
+    Route::get('stock-holds/invoice/{id}/items', [StockHoldController::class, 'invoiceItems'])->name('stock-holds.invoice.items');
 
-    // stock hold helpers
-    Route::get('party/list', [SaleController::class, 'partyList'])->name('party.list');
-    Route::get('party/{id}/invoices', [SaleController::class, 'partyInvoices'])->name('party.invoices');
-    Route::get('invoice/{id}/items', [SaleController::class, 'invoiceItems'])->name('invoice.items');
 
-
-    Route::post('stock-holds/store', [\App\Http\Controllers\StockHoldController::class, 'store'])->name('stock-holds.store');
+    Route::post('stock-holds/store', [StockHoldController::class, 'store'])->name('stock-holds.store');
+    Route::get('/stock-holds/edit/{id}', [StockHoldController::class, 'edit'])->name('stock-holds.edit');
+    Route::post('/stock-holds/update/{id}', [StockHoldController::class, 'update'])->name('stock-holds.update');
+    Route::post('/stock-holds/post/{id}', [StockHoldController::class, 'post'])->name('stock-holds.post');
     Route::post('stock-holds/claim/invoice/{invoice}', [\App\Http\Controllers\StockHoldController::class, 'claimByInvoice'])->name('stock-holds.claim.invoice');
     Route::post('stock-holds/claim/item', [\App\Http\Controllers\StockHoldController::class, 'claimItem'])->name('stock-holds.claim.item');
 

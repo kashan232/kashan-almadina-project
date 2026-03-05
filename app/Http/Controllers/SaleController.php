@@ -20,10 +20,43 @@ use Illuminate\Support\Facades\DB;
 class SaleController extends Controller
 {
     /* -------- Lists & screens -------- */
-    public function index()
+    public function index(Request $request)
     {
-        $sales = Sale::with(['customer', 'vendor', 'items.product'])->latest()->get();
-        return view('admin_panel.sale.index', compact('sales'));
+        // Fetch Posted Sales with items
+        $salesQuery = Sale::with(['customer', 'vendor', 'items.product'])->latest();
+        
+        // Fetch Unposted Bookings with items
+        $bookingsQuery = Productbooking::with(['customer', 'vendor', 'items.product'])->latest();
+
+        // Filters
+        if ($request->filled('start_date')) {
+            $salesQuery->whereDate('created_at', '>=', $request->start_date);
+            $bookingsQuery->whereDate('created_at', '>=', $request->start_date);
+        }
+        if ($request->filled('end_date')) {
+            $salesQuery->whereDate('created_at', '<=', $request->end_date);
+            $bookingsQuery->whereDate('created_at', '<=', $request->end_date);
+        }
+
+        $salesRows = $salesQuery->get()->map(function($s) {
+            $s->entry_status = 'Posted';
+            $s->p_type = $s->partyType;
+            return $s;
+        });
+
+        $bookingsRows = $bookingsQuery->get()->map(function($b) {
+            $b->entry_status = 'Unposted';
+            $b->p_type = $b->party_type; 
+            return $b;
+        });
+
+        $combined = $salesRows->concat($bookingsRows)->sortByDesc('created_at');
+
+        if ($request->filled('status')) {
+            $combined = $combined->where('entry_status', $request->status);
+        }
+
+        return view('admin_panel.sale.index', ['sales' => $combined]);
     }
 
     public function add_sale()
@@ -300,8 +333,9 @@ class SaleController extends Controller
             $amounts = $request->input('sales-amount', []);
 
             $totalQty = 0;
-            foreach ($productIds as $i => $productId) {
-                $warehouse_id = $warehouseIds[$i] ?? null;
+            // Use warehouse_name as the primary loop key since it's now always present
+            foreach ($warehouseIds as $i => $warehouse_id) {
+                $productId = $productIds[$i] ?? null;
                 $qty = (float) ($salesQtys[$i] ?? 0);
 
                 if (empty($warehouse_id) || empty($productId) || $qty <= 0) {

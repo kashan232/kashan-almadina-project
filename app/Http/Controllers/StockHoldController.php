@@ -7,8 +7,15 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Validator;
 use App\Models\StockHold;
+use App\Models\StockHoldVoucher;
 use App\Models\StockRelease;
 use App\Models\Warehouse;
+use App\Models\Vendor;
+use App\Models\Customer;
+use App\Models\AccountHead;
+use App\Models\Product;
+use App\Models\Sale;
+use App\Models\Stock;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Log;
 
@@ -17,185 +24,236 @@ class StockHoldController extends Controller
     // store holds from the form submission
     public function stockholdlist()
     {
-        $holds = StockHold::with([
-            'product:id,name',
+        $vouchers = StockHoldVoucher::with([
             'warehouse:id,warehouse_name',
-            'partyCustomer:id,customer_name,mobile',
-            'partyVendor:id,name,phone',
-            'sale:id,invoice_no'
-        ])
-            ->orderBy('id', 'desc')
-            ->get();
+            'partyCustomer:id,customer_name',
+            'partyVendor:id,name',
+            'items.product'
+        ])->latest()->get();
 
-        return view("admin_panel.stock_hold.stock_hold_list", compact('holds'));
+        return view("admin_panel.stock_hold.stock_hold_list", compact('vouchers'));
     }
 
 
 
 
-    public function store(Request $request)
+    public function create()
     {
-        // validation
-        $validator = Validator::make($request->all(), [
-            'entry_date' => 'nullable|date',
-            'vendor_type' => 'nullable|in:vendor,customer,walkin',
-            'vendor_id' => 'nullable|integer',
-            'warehouse_id' => 'nullable|integer',          // <-- form-level warehouse
-            'sale_id' => 'nullable|integer',
-            'invoice_id' => 'nullable|integer',
-            'hold_type' => 'nullable|string',
-            'remarks' => 'nullable|string',
-            'items' => 'required|array|min:1',
-            'items.*.item_id' => 'nullable',              // manual rows may have empty
-            'items.*.sale_qty' => 'nullable|numeric',
-            'items.*.hold_qty' => 'required|numeric|min:0.0001',
-            'items.*.product_id' => 'nullable|integer',
-            'items.*.warehouse_id' => 'nullable|integer',
-        ]);
+        $warehouses = Warehouse::orderBy('warehouse_name')->get();
+        return view('admin_panel.stock_hold.create_stock_hold', compact('warehouses'));
+    }
 
-        if ($validator->fails()) {
-            return response()->json([
-                'status' => 'error',
-                'errors' => $validator->errors(),
-            ], 422);
+    public function partyList(Request $request)
+    {
+        $type = $request->type; // vendor, customer, walkin
+        if ($type === 'vendor') {
+            return Vendor::orderBy('name')->get()->map(fn($v) => ['id' => $v->id, 'text' => $v->id . ' - ' . $v->name]);
+        }
+        
+        $customerType = ($type === 'walkin' || $type === 'walking') ? 'Walking Customer' : 'Main Customer';
+        
+        return Customer::where('customer_type', $customerType)
+            ->orderBy('customer_name')
+            ->get()
+            ->map(fn($c) => ['id' => $c->id, 'text' => ($c->customer_id ?? $c->id) . ' - ' . $c->customer_name]);
+    }
+
+    public function partyInvoices(Request $request, $partyId)
+    {
+        $type = $request->type;
+        // In this project, 'sales' table uses 'customer_id' and 'partyType' (camelCase)
+        $invoices = Sale::where('customer_id', $partyId)
+            ->where('partyType', $type)
+            ->latest()
+            ->get();
+
+        return $invoices->map(fn($s) => [
+            'id' => $s->id, 
+            'text' => $s->invoice_no . ' (' . ($s->created_at ? $s->created_at->format('Y-m-d') : '-') . ')'
+        ]);
+    }
+
+    public function invoiceItems($id)
+    {
+        // First try SaleItems (Posted Sale)
+        $items = \App\Models\SaleItem::where('sale_id', $id)
+            ->with('product:id,name')
+            ->get();
+            
+        if ($items->isEmpty()) {
+            // Try ProductBookingItem (Draft Booking)
+            $items = \App\Models\ProductBookingItem::where('booking_id', $id)
+                ->with('product:id,name')
+                ->get();
         }
 
-        $data = $validator->validated();
+        $res = $items->map(function ($it) {
+            return [
+                'product_id' => $it->product_id,
+                'item_name'  => optional($it->product)->name ?: 'Unknown',
+                'qty'        => (float) ($it->sales_qty ?? $it->quantity ?? 0),
+            ];
+        });
+        
+        return response()->json($res);
+    }
 
-        // Prefer sale_id (invoice) if provided
-        $saleId = $data['sale_id'] ?? $data['invoice_id'] ?? null;
+    public function store(Request $request)
+    {
+        $request->validate([
+            'entry_date'   => 'required|date',
+            'vendor_type'  => 'required',
+            'vendor_id'    => 'required',
+            'warehouse_id' => 'required',
+            'product_id'   => 'required|array',
+            'hold_qty'     => 'required|array',
+        ]);
 
-        DB::beginTransaction();
+        $status = $request->action === 'post' ? 'Posted' : 'Unposted';
+
         try {
-            $entryDate = $data['entry_date'] ?? now()->toDateString();
-            $partyType = $data['vendor_type'] ?? null;
-            $partyId = $data['vendor_id'] ?? null;
-            $formWarehouseId = $data['warehouse_id'] ?? null; // <-- top-level fallback
-            $remarks = $data['remarks'] ?? null;
+            DB::beginTransaction();
 
-            $processed = 0;
-            $created = [];
-            $updated = [];
+            $voucher = StockHoldVoucher::create([
+                'voucher_no'   => StockHoldVoucher::generateVoucherNo(),
+                'date'         => $request->entry_date,
+                'party_type'   => $request->vendor_type,
+                'party_id'     => $request->vendor_id,
+                'warehouse_id' => $request->warehouse_id,
+                'sale_id'      => $request->sale_id,
+                'hold_type'    => $request->hold_type ?? 'hold',
+                'remarks'      => $request->remarks,
+                'status'       => $status,
+            ]);
 
-            foreach ($data['items'] as $itemKey => $it) {
-                // normalize values
-                $rawItemId = $it['item_id'] ?? null; // may be empty string for manual
-                $productId = $it['product_id'] ?? null;
+            foreach ($request->product_id as $index => $productId) {
+                $qty = (float) $request->hold_qty[$index];
+                if ($qty <= 0) continue;
 
-                // item-level warehouse first; fallback to form-level warehouse
-                $warehouseId = $it['warehouse_id'] ?? $formWarehouseId ?? null;
-
-                $saleQty = isset($it['sale_qty']) ? (float) $it['sale_qty'] : null;
-                $holdQty = isset($it['hold_qty']) ? (float) $it['hold_qty'] : 0.0;
-
-                // skip zero or negative hold qty (defensive)
-                if ($holdQty <= 0) {
-                    continue;
-                }
-
-                // Detect manual vs invoice:
-                // - treat as manual if item_id is empty OR itemKey starts with 'manual_'
-                $isManual = empty($rawItemId) || Str::startsWith((string) $itemKey, 'manual_');
-
-                // Prepare meta to store source info
-                $meta = [
-                    'source' => $isManual ? 'manual' : 'invoice',
-                ];
-
-                // For manual rows ensure item_id null and sale_qty zero; for invoice keep item_id
-                $dbItemId = $isManual ? null : $rawItemId;
-
-                $payload = [
-                    'entry_date'   => $entryDate,
-                    'sale_id'      => $isManual ? null : $saleId,
-                    'invoice_id'   => $data['invoice_id'] ?? null,
-                    'party_type'   => $partyType,
-                    'party_id'     => $partyId,
-                    'warehouse_id' => $warehouseId,
+                StockHold::create([
+                    'stock_hold_voucher_id' => $voucher->id,
+                    'entry_date'   => $request->entry_date,
+                    'sale_id'      => $request->sale_id,
+                    'party_type'   => $request->vendor_type,
+                    'party_id'     => $request->vendor_id,
+                    'warehouse_id' => $request->warehouse_id,
                     'product_id'   => $productId,
-                    'item_id'      => $dbItemId,
-                    'sale_qty'     => $isManual ? 0 : $saleQty,
-                    'hold_qty'     => $holdQty,
-                    'remarks'      => $remarks,
-                    'status'       => 0,
-                    'meta'         => $meta,
-                ];
-
-                // Upsert logic
-                if ($isManual) {
-                    // match by product + party + warehouse (manual holds are not tied to sale_id)
-                    $existing = StockHold::whereNull('sale_id')
-                        ->where('product_id', $productId)
-                        ->where('party_id', $partyId)
-                        ->where(function ($q) use ($warehouseId) {
-                            if ($warehouseId) {
-                                $q->where('warehouse_id', $warehouseId);
-                            } else {
-                                $q->whereNull('warehouse_id');
-                            }
-                        })
-                        ->where('status', 0)
-                        ->first();
-
-                    if ($existing) {
-                        $existing->update($payload);
-                        $updated[] = $existing->id;
-                    } else {
-                        $rec = StockHold::create($payload);
-                        $created[] = $rec->id;
-                    }
-                } else {
-                    // invoice-based: match by sale_id + item_id (only when both available)
-                    $existing = null;
-                    if ($saleId && $dbItemId) {
-                        $existing = StockHold::where('sale_id', $saleId)
-                            ->where('item_id', $dbItemId)
-                            ->where('status', 0)
-                            ->first();
-                    }
-
-                    if ($existing) {
-                        $existing->update($payload);
-                        $updated[] = $existing->id;
-                    } else {
-                        $rec = StockHold::create($payload);
-                        $created[] = $rec->id;
-                    }
-                }
-
-                $processed++;
-            }
-
-            if ($processed === 0) {
-                DB::rollBack();
-                return response()->json([
-                    'status' => 'error',
-                    'message' => 'No items with hold_qty > 0 were submitted.',
-                ], 422);
+                    'sale_qty'     => $request->sale_qty[$index] ?? 0,
+                    'hold_qty'     => $qty,
+                    'remarks'      => $request->remarks,
+                    'status'       => $status === 'Posted' ? 0 : 0, // In this system, 0 means Active Hold
+                ]);
             }
 
             DB::commit();
 
-            return response()->json([
-                'status' => 'success',
-                'message' => 'Stock hold saved successfully.',
-                'processed' => $processed,
-                'created' => $created,
-                'updated' => $updated,
-            ]);
-        } catch (\Throwable $e) {
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Stock Hold ' . ($status == 'Posted' ? 'Posted' : 'Saved') . ' successfully.',
+                    'status'  => $status,
+                    'id'      => $voucher->id
+                ]);
+            }
+
+            return redirect()->route('stock-hold-list')->with('success', 'Stock Hold saved successfully.');
+
+        } catch (\Exception $e) {
             DB::rollBack();
-            Log::error('StockHold store error: ' . $e->getMessage(), [
-                'trace' => $e->getTraceAsString(),
-                'payload' => $request->all(),
+            if ($request->ajax()) {
+                return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+            }
+            return back()->with('error', $e->getMessage());
+        }
+    }
+
+    public function edit($id)
+    {
+        $voucher = StockHoldVoucher::with('items.product')->findOrFail($id);
+        if ($voucher->status === 'Posted') {
+            return redirect()->route('stock-hold-list')->with('error', 'Posted holds cannot be edited.');
+        }
+        $warehouses = Warehouse::orderBy('warehouse_name')->get();
+        return view('admin_panel.stock_hold.edit_stock_hold', compact('voucher', 'warehouses'));
+    }
+
+    public function update(Request $request, $id)
+    {
+        $request->validate([
+            'entry_date'   => 'required|date',
+            'product_id'   => 'required|array',
+            'hold_qty'     => 'required|array',
+        ]);
+
+        $voucher = StockHoldVoucher::findOrFail($id);
+        if ($voucher->status === 'Posted') {
+            return response()->json(['success' => false, 'message' => 'Posted records cannot be modified.'], 422);
+        }
+
+        $status = $request->action === 'post' ? 'Posted' : 'Unposted';
+
+        try {
+            DB::beginTransaction();
+
+            $voucher->update([
+                'date'         => $request->entry_date,
+                'remarks'      => $request->remarks,
+                'status'       => $status,
             ]);
 
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Failed to save stock hold.',
-                'detail' => $e->getMessage(),
-            ], 500);
+            $voucher->items()->delete();
+
+            foreach ($request->product_id as $index => $productId) {
+                $qty = (float) $request->hold_qty[$index];
+                if ($qty <= 0) continue;
+
+                StockHold::create([
+                    'stock_hold_voucher_id' => $voucher->id,
+                    'entry_date'   => $request->entry_date,
+                    'sale_id'      => $voucher->sale_id,
+                    'party_type'   => $voucher->party_type,
+                    'party_id'     => $voucher->party_id,
+                    'warehouse_id' => $voucher->warehouse_id,
+                    'product_id'   => $productId,
+                    'sale_qty'     => $request->sale_qty[$index] ?? 0,
+                    'hold_qty'     => $qty,
+                    'remarks'      => $request->remarks,
+                    'status'       => 0,
+                ]);
+            }
+
+            DB::commit();
+
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Stock Hold ' . ($status == 'Posted' ? 'Posted' : 'Updated') . ' successfully.',
+                    'status'  => $status,
+                    'id'      => $voucher->id
+                ]);
+            }
+
+            return redirect()->route('stock-hold-list')->with('success', 'Stock Hold updated successfully.');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            if ($request->ajax()) {
+                return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+            }
+            return back()->with('error', $e->getMessage());
         }
+    }
+
+    public function post($id)
+    {
+        $voucher = StockHoldVoucher::findOrFail($id);
+        if ($voucher->status === 'Posted') {
+            return back()->with('error', 'Already posted.');
+        }
+        $voucher->update(['status' => 'Posted']);
+        // Here we could also update main stock if "Hold" meant moving to a hold warehouse, 
+        // but typically hold just marks availability.
+        return back()->with('success', 'Stock Hold Posted successfully.');
     }
 
     // Mark hold(s) as claimed for an invoice or item (called when sale completes)

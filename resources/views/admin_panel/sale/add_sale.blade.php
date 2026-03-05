@@ -279,11 +279,24 @@
     gap: 2px;
   }
   
-  .btn-xs {
-    padding: 1px 4px;
-    font-size: 0.7rem;
-    line-height: 1.2;
-  }
+    .form-locked { position: relative; pointer-events: none !important; opacity: 0.8; }
+    .form-locked input, .form-locked .select2-container--default .select2-selection--single, .form-locked select, .form-locked textarea { 
+        background-color: #e9ecef !important; cursor: not-allowed !important; 
+    }
+    .form-locked .del-row, .form-locked #btnAdd, .form-locked #btnAddRV, .form-locked .btnRemRV { display: none !important; }
+    
+    .posted-watermark {
+        position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-30deg);
+        font-size: 100px; color: rgba(255, 0, 0, 0.1); font-weight: bold; pointer-events: none; z-index: 1000;
+        text-transform: uppercase; border: 10px solid rgba(255, 0, 0, 0.1); padding: 20px; border-radius: 20px; display: none;
+    }
+    .posted-watermark.show { display: block; }
+
+    .btn-xs {
+        padding: 1px 4px;
+        font-size: 0.7rem;
+        line-height: 1.2;
+    }
 </style>
 
 <div class="container-fluid py-4">
@@ -296,13 +309,15 @@
 
       <div class="d-flex align-items-center gap-2 justify-content-center flex-grow-1">
           <h6 class="page-title mb-0 fw-bold">Create Sale</h6>
-          <span class="badge bg-primary px-3 py-2 rounded-pill shadow-sm" style="font-size:12px;">
-              <i class="fa fa-receipt me-1"></i> {{ $nextInvoiceNumber }}
+          <span id="statusBadge" class="badge bg-warning text-dark px-3 py-2 rounded-pill shadow-sm" style="font-size:12px;">
+              <i class="fa fa-pencil me-1"></i> New Sale
+          </span>
+          <span id="idBadge" class="badge bg-primary px-3 py-2 rounded-pill shadow-sm" style="display:none;font-size:12px;">
+              <i class="fa fa-tag me-1"></i> ID: N/A
           </span>
       </div>
 
       <div class="d-flex align-items-center gap-2">
-          <span id="bookingBadge" class="badge bg-warning text-dark d-none" style="font-size: 10px;">Unposted</span>
           <a href="{{ route('sale.index') }}" id="listBtn" class="btn btn-sm btn-outline-secondary rounded-pill px-3">
               <i class="fa fa-list me-1"></i> List <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+L</kbd>
           </a>
@@ -454,9 +469,8 @@
                       </td>
                       <td style="width: 120px;">
                         <select class="form-select form-select-sm warehouse" name="warehouse_name[]">
-                          <option value="">Select</option>
-                          @foreach ($warehouses as $wh)
-                            <option value="{{ $wh->id }}" {{ $whId == $wh->id ? 'selected' : '' }}>{{ $wh->warehouse_name }}</option>
+                          @foreach ($warehouses as $index => $wh)
+                            <option value="{{ $wh->id }}" {{ ($whId == $wh->id || (!$whId && $index == 0)) ? 'selected' : '' }}>{{ $wh->warehouse_name }}</option>
                           @endforeach
                         </select>
                       </td>
@@ -662,29 +676,39 @@
         </div>
       </div>
 
-      {{-- BOTTOM BUTTONS (Purchase style) --}}
+      {{-- BOTTOM BUTTONS --}}
       <div class="d-flex gap-2 mt-4 justify-content-end border-top pt-3">
         
-        {{-- Save Draft --}}
         <button type="button" id="saveDraftBtn" class="btn btn-sm btn-warning rounded-pill px-4 shadow-sm">
           <i class="fa fa-floppy-o me-1"></i> Save Draft
           <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+S</kbd>
         </button>
 
-        {{-- Print Preview / Real Print --}}
         <button type="button" id="previewPrintBtn" class="btn btn-sm btn-outline-dark rounded-pill px-4">
           <i class="fa fa-print me-1"></i> Print Preview
           <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+P</kbd>
         </button>
 
-        {{-- Post --}}
         <button type="button" id="postBtn" class="btn btn-sm btn-primary rounded-pill px-4 shadow-sm">
-          <i class="fa fa-send me-1"></i> Post
+          <i class="fa fa-send me-1"></i> Save & Post
           <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+&#8629;</kbd>
         </button>
 
+        <button type="button" id="editBtn" class="btn btn-sm btn-warning rounded-pill px-4 shadow-sm" style="display:none;">
+          <i class="fa fa-pencil me-1"></i> Edit <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+E</kbd>
+        </button>
+
+        <a href="{{ route('sale.add') }}" id="newBtn" class="btn btn-sm btn-info rounded-pill px-4 shadow-sm text-white" style="display:none;">
+          <i class="fa fa-plus me-1"></i> New <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+M</kbd>
+        </a>
+
+        <a href="{{ route('sale.index') }}" id="cancelBtn" class="btn btn-sm btn-danger rounded-pill px-4 shadow-sm text-white">
+          <i class="fa fa-times me-1"></i> Cancel <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Esc</kbd>
+        </a>
+
       </div>
     </form>
+    <div class="posted-watermark" id="postedWatermark">Posted</div>
   </div>
 </div>
 
@@ -807,12 +831,12 @@
     return productId && qty > 0;
   }
 
-  function addNewRow() {
+  function addNewRow(focusNewRow = true, force = false) {
     const $last = $('#salesTableBody tr:last-child');
-    if ($last.length) {
-      if (!isRowMeaningful($last)) {
-        $last.find('.item-id-input').focus();
-        showAlert('danger', 'Please complete the current row before adding a new one.');
+    if ($last.length && !force) {
+      const pid = $last.find('.product-select').val();
+      if (!pid) {
+        if(focusNewRow) $last.find('.item-id-input').focus();
         return;
       }
     }
@@ -831,9 +855,8 @@
       </td>
       <td style="width: 120px;">
         <select class="form-select form-select-sm warehouse" name="warehouse_name[]">
-          <option value="">Select</option>
-          @foreach ($warehouses as $wh)
-            <option value="{{ $wh->id }}">{{ $wh->warehouse_name }}</option>
+          @foreach ($warehouses as $index => $wh)
+            <option value="{{ $wh->id }}" {{ $index == 0 ? 'selected' : '' }}>{{ $wh->warehouse_name }}</option>
           @endforeach
         </select>
       </td>
@@ -862,9 +885,11 @@
     const $row = $('#salesTableBody tr:last-child');
     if (window.initProductSelect) window.initProductSelect($row);
     
-    setTimeout(() => {
-        $row.find('.item-id-input').focus();
-    }, 50);
+    if (focusNewRow) {
+        setTimeout(() => {
+            $row.find('.item-id-input').focus();
+        }, 50);
+    }
 
     refreshPostedState();
   }
@@ -874,9 +899,10 @@
   function canPost() {
     let ok = false;
     $('#salesTableBody tr').each(function() {
-      const pid = $(this).find('.product-select').val(); // Updated for Select2
+      const pid = $(this).find('.product-select').val();
+      const wid = $(this).find('.warehouse').val();
       const qty = parseFloat($(this).find('.sales-qty').val() || '0');
-      if (pid && qty > 0) {
+      if (pid && wid && qty > 0) {
         ok = true;
         return false;
       }
@@ -974,22 +1000,21 @@
                   if (res.ok) {
                       _savedBookingId = res.booking_id;
                       $('#booking_id').val(res.booking_id);
+                      $('#idBadge').text('ID: ' + res.booking_id).show();
+                      $('#saleForm').addClass('form-locked');
+                      $('#saveDraftBtn, #postBtn').hide();
+                      $('#editBtn, #newBtn').show();
+                      $('#statusBadge').removeClass('bg-warning').addClass('bg-info text-white').html('<i class="fa fa-pencil"></i> Unposted');
+
                       if (showMsg) {
                           Swal.fire({ 
                               icon: 'success', 
                               title: 'Draft Saved', 
-                              text: 'Sale saved as Unposted (Booking).',
+                              text: 'Sale saved as draft. Esc to go back or Ctrl+E to edit.',
                               timer: 2000, 
                               showConfirmButton: false 
                           });
                       }
-                      
-                      // UI Updates
-                      $('#postBtn').html('<i class="fa fa-send me-1"></i> Post <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+&#8629;</kbd>')
-                                 .removeClass('btn-primary').addClass('btn-success');
-                      
-                      // Change Title to Edit if it was New
-                      $('.page-title').text('Edit Sale (Unposted)');
                   } else {
                       Swal.fire({
                           icon: 'error',
@@ -1038,7 +1063,7 @@
                       Swal.fire({ 
                           icon: 'success', 
                           title: 'Posted!', 
-                          text: 'Sale posted successfully. Redirecting...', 
+                          text: 'Sale posted successfully. Redirecting to new sale.', 
                           timer: 2000, 
                           showConfirmButton: false 
                       }).then(() => { 
@@ -1084,6 +1109,12 @@
           $('#printModal').modal('show');
       });
 
+      $('#editBtn').on('click', function() {
+          $('#saleForm').removeClass('form-locked');
+          $('#saveDraftBtn, #postBtn').show();
+          $(this).hide();
+      });
+
       // KEYBOARD SHORTCUTS
       $(document).on('keydown', function(e) {
           if (e.ctrlKey && (e.key === 's' || e.key === 'S')) {
@@ -1097,6 +1128,17 @@
           if (e.ctrlKey && (e.key === 'p' || e.key === 'P')) {
               e.preventDefault();
               $('#previewPrintBtn').trigger('click');
+          }
+          if (e.ctrlKey && (e.key === 'e' || e.key === 'E')) {
+              e.preventDefault();
+              $('#editBtn:visible').click();
+          }
+          if (e.ctrlKey && (e.key === 'm' || e.key === 'M')) {
+              e.preventDefault();
+              window.location.href = '{{ route("sale.add") }}';
+          }
+          if (e.key === 'Escape') {
+              window.location.href = '{{ route("sale.index") }}';
           }
           if (e.ctrlKey && (e.key === 'x' || e.key === 'X')) {
               const $row = $(document.activeElement).closest('tr');
@@ -1114,6 +1156,15 @@
               window.location.href = $('#listBtn').attr('href');
           }
       }, true);
+
+      // On load, if booking_id exists, lock form
+      if($('#booking_id').val()) {
+          $('#saleForm').addClass('form-locked');
+          $('#saveDraftBtn, #postBtn').hide();
+          $('#editBtn, #newBtn').show();
+          $('#idBadge').text('ID: ' + $('#booking_id').val()).show();
+          $('#statusBadge').removeClass('bg-warning').addClass('bg-info text-white').html('<i class="fa fa-pencil"></i> Unposted');
+      }
   });
 
 
@@ -1227,10 +1278,11 @@
       window.updateRowWithProductData($currentRow, data);
 
       if ($currentRow.is(':last-child')) {
-          addNewRow();
-      } else {
-          setTimeout(() => $currentRow.find('.sales-qty').focus(), 50);
+          addNewRow(false); // Add row but don't focus it yet
       }
+      
+      // Always focus the qty of the row we just updated
+      setTimeout(() => $currentRow.find('.sales-qty').focus(), 50);
     });
 
     $select.on('select2:clear', function(e) {
@@ -1253,10 +1305,20 @@
           const $row = $input.closest('tr');
           const $select = $row.find('.product-select');
           
-          if (!id) return;
+          if (!id) {
+              if (e.key === 'Enter') e.preventDefault();
+              return;
+          }
+
+          // IMMEDIATELY append row if this is the last one (don't wait for AJAX)
+          if ($row.is(':last-child')) {
+              addNewRow(false, true); // force = true to bypass empty check
+          }
 
           // If current selection is already same, just move focus
-          if ($select.val() === id) {
+          if ($select.val() === String(id)) {
+             setTimeout(() => $row.find('.sales-qty').focus(), 50);
+             if (e.key === 'Enter') e.preventDefault();
              return;
           }
 
@@ -1264,7 +1326,10 @@
               if (res && res.length > 0) {
                   const item = res.find(i => String(i.id) === String(id)) || res[0];
                   
-                  // Use unified helper
+                  // SYNC with Select2 so updateRowWithProductData logic is triggered correctly
+                  const newOption = new Option(item.name, item.id, true, true);
+                  $select.empty().append(newOption).trigger('change');
+
                   window.updateRowWithProductData($row, {
                       id: item.id,
                       name: item.name,
@@ -1273,12 +1338,9 @@
                       sale_price: item.sale_price,
                       retail_price: item.retail_price
                   });
-
-                  if ($row.is(':last-child')) {
-                      addNewRow();
-                  } else {
-                      setTimeout(() => $row.find('.sales-qty').focus(), 50);
-                  }
+                  
+                  // Focus Quantity of current row
+                  setTimeout(() => $row.find('.sales-qty').focus(), 50);
               } else {
                   if (typeof Swal !== 'undefined') {
                       Swal.fire({
@@ -1315,15 +1377,15 @@
     let discPct = 0;
 
     if (mode === 'percent') {
-      // Percentage mode
+      // Percentage mode: value % on (Retail Price * Qty)
       discPct = value;
       discAmt = ((rp * qty) * value) / 100.0;
     } else {
-      // Amount mode (PKR)
-      discAmt = value;
+      // Amount mode (PKR): value per unit
+      discAmt = value * qty;
       // Calculate equivalent percentage
       const retailTotal = rp * qty;
-      discPct = retailTotal > 0 ? (value / retailTotal) * 100 : 0;
+      discPct = retailTotal > 0 ? (discAmt / retailTotal) * 100 : 0;
     }
 
     // Update hidden fields
@@ -1333,10 +1395,10 @@
     // Update visible discount amount display
     $row.find('.discount-amount-display').val(discAmt.toFixed(2));
 
-    // Calculate final amount
+    // Calculate Gross (before discounts)
+    // "Discount item me doga wo bs udrhi ayga" -> Line Amount shows Gross
     const gross = sp * qty;
-    const net = Math.max(0, gross - discAmt);
-    $row.find('.sales-amount').val(net.toFixed(2));
+    $row.find('.sales-amount').val(gross.toFixed(2));
   }
 
   // Discount Toggle Button Click
@@ -1388,27 +1450,20 @@
 
   /* ---------- Totals ---------- */
   function updateGrandTotals() {
-    let tQty = 0,
-      tGross = 0,
-      tLineDisc = 0,
-      tNet = 0;
-
     $('#salesTableBody tr').each(function() {
       const $r = $(this);
       const sp = toNum($r.find('.sales-price').val());
       const qty = toNum($r.find('.sales-qty').val());
-      const dam = toNum($r.find('.discount-amount').val()); // Use calculated discount amount
+      const dam = toNum($r.find('.discount-amount').val()); // Line discount (rp * value)
 
       const gross = sp * qty;
-      const net = Math.max(0, gross - dam);
-
+      
       tQty += qty;
       tGross += gross;
       tLineDisc += dam;
-      tNet += net;
     });
 
-    // Calculate subtotal first
+    // Calculate subtotal
     const subTotal = Math.max(0, tGross - tLineDisc);
 
     // Order discount with toggle support
@@ -1432,9 +1487,10 @@
     const prev = toNum($('#previousBalance').val());
     const receipts = toNum($('#receiptsTotal').text());
 
+    // Final Payable = Sub-Total (Gross - LineDisc) - OrderDisc + PrevBal - Receipts
     const payable = Math.max(0, subTotal - orderDisc + prev - receipts);
 
-    // UI
+    // UI Updates
     $('#tQty').text(tQty.toFixed(0));
     $('#tGross').text(tGross.toFixed(2));
     $('#tLineDisc').text(tLineDisc.toFixed(2));
@@ -1442,9 +1498,9 @@
     $('#tOrderDisc').text(orderDisc.toFixed(2));
     $('#tPrev').text(prev.toFixed(2));
     $('#tPayable').text(payable.toFixed(2));
-    $('#totalAmount').text(tNet.toFixed(2));
+    $('#totalAmount').text(tGross.toFixed(2)); // Total of the table footer is Gross
 
-    // mirrors for backend
+    // backend mirrors
     $('#subTotal1').val(tGross.toFixed(2));
     $('#subTotal2').val(subTotal.toFixed(2));
     $('#discountAmount').val(orderDisc.toFixed(2));

@@ -44,4 +44,9 @@ class Productbooking extends Model
     {
         return $this->belongsTo(Customer::class);
     }
+
+    public function vendor()
+    {
+        return $this->belongsTo(Vendor::class, 'customer_id');
+    }
 }
