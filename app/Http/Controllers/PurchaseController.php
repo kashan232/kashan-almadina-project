@@ -81,7 +81,7 @@ class PurchaseController extends Controller
         $rules = [
             'vendor_type'         => 'required|string',
             'vendor_id'           => 'required|integer',
-            'warehouse_id'        => 'required|integer|exists:warehouses,id',
+            'warehouse_id'        => 'required|integer',
             'current_date'        => 'nullable|date',
             // products
             'product_id'          => 'required|array|min:1',
@@ -98,9 +98,8 @@ class PurchaseController extends Controller
         $messages = [
             'vendor_type.required'  => 'Please select Type.',
             'vendor_id.required'    => 'Please select Party.',
-            'warehouse_id.required' => 'Please select Warehouse.',
-            'warehouse_id.exists'   => 'Selected Warehouse is invalid.',
-            'product_id.required'   => 'Please add at least one Item.',
+            'warehouse_id.required' => 'Please select Warehouse or Shop.',
+                        'product_id.required'   => 'Please add at least one Item.',
             'product_id.*.exists'   => 'One or more selected products are invalid.',
             'qty.*.required'        => 'Please provide quantity for each item.',
             'qty.*.min'             => 'Quantity must be at least 1.',
@@ -404,7 +403,7 @@ class PurchaseController extends Controller
         $rules = [
             'vendor_type'         => 'required|string',
             'vendor_id'           => 'required|integer',
-            'warehouse_id'        => 'required|integer|exists:warehouses,id',
+            'warehouse_id'        => 'required|integer',
             'current_date'        => 'nullable|date',
             'product_id'          => 'required|array|min:1',
             'product_id.*'        => 'required|integer|exists:products,id',
@@ -419,9 +418,8 @@ class PurchaseController extends Controller
         $messages = [
             'vendor_type.required'  => 'Please select Type.',
             'vendor_id.required'    => 'Please select Party.',
-            'warehouse_id.required' => 'Please select Warehouse.',
-            'warehouse_id.exists'   => 'Selected Warehouse is invalid.',
-            'product_id.required'   => 'Please add at least one Item.',
+            'warehouse_id.required' => 'Please select Warehouse or Shop.',
+                        'product_id.required'   => 'Please add at least one Item.',
             'product_id.*.exists'   => 'One or more selected products are invalid.',
             'qty.*.required'        => 'Please provide quantity for each item.',
             'qty.*.min'             => 'Quantity must be at least 1.',
@@ -695,10 +693,26 @@ class PurchaseController extends Controller
     {
         // 1. Stock Update
         foreach ($purchase->items as $item) {
-            $product = Product::find($item->product_id);
-            if ($product) {
-                $product->stock = ($product->stock ?? 0) + $item->qty;
-                $product->save();
+            $productId = $item->product_id;
+            $qty = (float)($item->qty ?? 0);
+            
+            if ($purchase->warehouse_id == 0) {
+                // UPDATE SHOP STOCK
+                $product = Product::find($productId);
+                if ($product) {
+                    $product->stock = ($product->stock ?? 0) + $qty;
+                    $product->save();
+                }
+            } else {
+                // UPDATE WAREHOUSE STOCK
+                $stock = \App\Models\WarehouseStock::firstOrNew([
+                    'warehouse_id' => $purchase->warehouse_id,
+                    'product_id'   => $productId
+                ]);
+                $stock->quantity = ($stock->quantity ?? 0) + $qty;
+                $stock->status = 'Posted';
+                $stock->remarks = 'Purchase ID: ' . $purchase->invoice_no;
+                $stock->save();
             }
         }
 

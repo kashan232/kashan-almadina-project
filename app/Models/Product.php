@@ -55,4 +55,9 @@ class Product extends Model
     {
         return $this->belongsTo(Brand::class, 'brand_id');
     }
+
+    public function warehouseStocks()
+    {
+        return $this->hasMany(WarehouseStock::class);
+    }
 }

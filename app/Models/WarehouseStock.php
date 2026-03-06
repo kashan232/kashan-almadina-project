@@ -17,6 +17,7 @@ class WarehouseStock extends Model
         'quantity',
         'price',
         'remarks',
+        'status',
     ];
 
     public function warehouse()

@@ -357,7 +357,7 @@
             </div>
           </div>
 
-          {{-- Customer Type Toggle --}}
+          {{-- Party Type Toggle --}}
           <div class="mb-2">
             <div class="btn-group w-100" role="group">
               <input type="radio" class="btn-check" name="partyType" id="typeCustomers" value="customer" {{ old('partyType', 'customer') == 'customer' ? 'checked' : '' }}>
@@ -377,12 +377,18 @@
             </div>
           </div>
 
-          {{-- Select Customer --}}
-          <div class="mb-2">
-            <label class="form-label text-muted small mb-0" style="font-size: 0.7rem;">Select Party</label>
-            <select class="form-select form-select-sm py-0" name="customer" id="customerSelect" data-old-val="{{ old('customer') }}" style="font-size: 0.8rem;">
-              <option selected disabled>Loading…</option>
-            </select>
+          {{-- Party Identification & Selection --}}
+          <div class="row g-1 mb-2">
+            <div class="col-4">
+              <label class="form-label text-muted small mb-0" style="font-size: 0.7rem;">Party ID</label>
+              <input type="text" class="form-control form-control-sm py-0 fw-bold text-danger" id="partyIdInput" placeholder="ID" style="font-size: 0.8rem;">
+            </div>
+            <div class="col-8">
+              <label class="form-label text-muted small mb-0" style="font-size: 0.7rem;">Select Party</label>
+              <select class="form-select form-select-sm py-0" name="customer" id="customerSelect" data-old-val="{{ old('customer') }}" style="font-size: 0.8rem;">
+                <option selected disabled>Loading…</option>
+              </select>
+            </div>
           </div>
 
           {{-- Address --}}
@@ -391,28 +397,29 @@
             <textarea class="form-control form-control-sm py-1" id="address" name="address" rows="1" placeholder="Address" style="font-size: 0.75rem;">{{ old('address') }}</textarea>
           </div>
 
-          {{-- Tel & Rewards --}}
+          {{-- Tel & Balance --}}
           <div class="row g-1 mb-2">
-            <div class="col-6">
+            <div class="col-5">
               <label class="form-label text-muted small mb-0" style="font-size: 0.7rem;">Tel#</label>
               <input type="text" class="form-control form-control-sm py-0" id="tel" name="tel" placeholder="Phone" value="{{ old('tel') }}" style="font-size: 0.8rem;">
             </div>
-            <div class="col-6">
-              <label class="form-label text-muted small mb-0" style="font-size: 0.7rem;">Prev Bal</label>
-              <input type="text" class="form-control form-control-sm text-end fw-bold py-0" id="previousBalance" 
-                     name="previousBalance" value="{{ old('previousBalance', '0') }}" placeholder="0.00" style="font-size: 0.8rem;">
+            <div class="col-7">
+              <label class="form-label text-muted small mb-0" style="font-size: 0.7rem;">Current Balance</label>
+              <input type="text" class="form-control form-control-sm text-end fw-bold py-0 input-readonly" id="previousBalance" 
+                     name="previousBalance" value="{{ old('previousBalance', '0.00') }}" placeholder="0.00" readonly 
+                     style="font-size: 1.1rem; color: #d63384; background: #fffcfd;">
             </div>
           </div>
 
           {{-- Remarks --}}
-          <div class="mb-2">
+          <div class="mb-1">
             <label class="form-label text-muted small mb-0" style="font-size: 0.7rem;">Remarks</label>
             <textarea class="form-control form-control-sm py-1" id="remarks" name="remarks" rows="1" placeholder="Notes" style="font-size: 0.75rem;">{{ old('remarks') }}</textarea>
           </div>
 
-          <div class="text-end mt-2">
+          <div class="text-end mt-1">
             <button id="clearCustomerData" type="button" class="btn btn-xs btn-outline-secondary py-0" style="font-size: 0.7rem;">
-              Clear All
+              Clear Selection
             </button>
           </div>
         </div>
@@ -615,18 +622,10 @@
                 <span class="fw-semibold" id="tQty">0</span>
               </div>
 
-              <!-- Invoice Gross -->
-              <div class="d-flex justify-content-between py-2 border-bottom">
-                <span class="text-muted small">Invoice Gross (Σ Sales Price × Qty)</span>
-                <span class="fw-semibold" id="tGross">0.00</span>
-              </div>
-
-              <input type="hidden" id="tLineDiscValue" value="0">
-
               <!-- Sub-Total -->
-              <div class="d-flex justify-content-between py-2 border-bottom bg-white rounded px-2">
-                <span class="fw-bold">Sub-Total</span>
-                <span class="fw-bold text-primary" id="tSub">0.00</span>
+              <div class="d-flex justify-content-between py-3 border-bottom bg-info bg-opacity-10 rounded px-2">
+                <span class="fw-bold fs-6">Sub-Total</span>
+                <span class="fw-bold fs-6 text-primary" id="tSub">0.00</span>
               </div>
 
               <!-- Order Discount Input -->
@@ -637,12 +636,12 @@
                          id="orderDiscountValue" name="order_discount_value" 
                          value="{{ old('order_discount_value', '0') }}" style="width:70px">
                   <div class="btn-group btn-group-sm">
-                    <button type="button" class="btn btn-outline-primary order-disc-btn {{ old('order_discount_mode', 'percent') == 'percent' ? 'active' : '' }}" data-mode="percent">%</button>
-                    <button type="button" class="btn btn-outline-primary order-disc-btn {{ old('order_discount_mode') == 'amount' ? 'active' : '' }}" data-mode="amount">₨</button>
+                    <button type="button" class="btn btn-outline-primary order-disc-btn {{ old('order_discount_mode') == 'percent' ? 'active' : '' }}" data-mode="percent">%</button>
+                    <button type="button" class="btn btn-outline-primary order-disc-btn {{ old('order_discount_mode', 'amount') == 'amount' ? 'active' : '' }}" data-mode="amount">₨</button>
                   </div>
                 </div>
-                <input type="hidden" id="orderDiscountMode" name="order_discount_mode" value="{{ old('order_discount_mode', 'percent') }}">
-                <input type="hidden" id="discountPercent" name="discountPercent" value="{{ old('discountPercent', '0') }}">
+                  <input type="hidden" id="orderDiscountMode" name="order_discount_mode" value="{{ old('order_discount_mode', 'amount') }}">
+                  <input type="hidden" id="discountPercent" name="discountPercent" value="{{ old('discountPercent', '0') }}">
                 <input type="hidden" id="discountAmountHidden" value="0">
               </div>
 
@@ -1272,42 +1271,109 @@
     $.get('{{ route("customers.filter") }}', {
       type
     }, function(list) {
-      $sel.empty().append('<option selected disabled>Select ' + (type === 'vendor' ? 'vendor' : (type === 'walking' ? 'walk-in customer' : 'customer')) + '</option>');
+      $sel.empty().append('<option selected disabled value="">Select ' + (type === 'vendor' ? 'vendor' : (type === 'walking' ? 'walk-in customer' : 'customer')) + '</option>');
       list.forEach(r => $sel.append('<option value="' + r.id + '">' + r.text + '</option>'));
-      $('#customerCountHint').text(list.length + ' ' + type + (list.length === 1 ? ' found' : 's found'));
       $sel.prop('disabled', false);
+
+      // Initialize Select2 if not already initialized, or refresh it
+      if ($sel.hasClass('select2-hidden-accessible')) {
+          $sel.select2('destroy');
+      }
+      $sel.select2({
+          placeholder: 'Select ' + type,
+          allowClear: true,
+          width: '100%',
+          dropdownParent: $sel.parent()
+      });
+
+      // Handle old values if any
+      const oldVal = $sel.data('old-val');
+      if (oldVal) {
+          $sel.val(oldVal).trigger('change');
+          $sel.data('old-val', '');
+      }
     }).fail(function() {
       $sel.empty().append('<option selected disabled>Error loading</option>').prop('disabled', false);
-      $('#customerCountHint').text('');
     });
   }
 
   loadCustomersByType('customer');
+
   $(document).on('change', 'input[name="partyType"]', function() {
     $('#customerSelect').val(null).trigger('change');
-    $('#address,#tel,#remarks').val('');
+    $('#address,#tel,#remarks,#partyIdInput').val('');
     loadCustomersByType(this.value);
   });
+
+  // Party ID Lookup
+  $('#partyIdInput').on('keydown', function(e) {
+      if (e.key === 'Tab' || e.key === 'Enter') {
+          const pid = $(this).val().trim();
+          if (!pid) return;
+
+          let foundId = null;
+          // Try to match in the already loaded Select2 options
+          $('#customerSelect option').each(function() {
+              const text = $(this).text();
+              const val = $(this).val();
+
+              if (text.startsWith(pid + ' -') || val === pid) {
+                  foundId = val;
+                  return false;
+              }
+          });
+
+          if (foundId) {
+              if ($('#customerSelect').val() !== foundId) {
+                  $('#customerSelect').val(foundId).trigger('change');
+              }
+              e.preventDefault();
+              // Transition to first row's Item ID
+              setTimeout(() => $('#salesTableBody tr:first-child .item-id-input').focus(), 100);
+          } else {
+              // Optional: You could add a small visual indicator that ID was not found
+              $(this).addClass('is-invalid');
+              setTimeout(() => $(this).removeClass('is-invalid'), 1000);
+          }
+      }
+  });
+
   $(document).on('change', '#customerSelect', function() {
     let id = $(this).val();
-    if (!id) return;
+    if (!id) {
+        $('#partyIdInput').val('');
+        $('#address').val('');
+        $('#tel').val('');
+        $('#remarks').val('');
+        $('#previousBalance').val('0.00');
+        updateGrandTotals();
+        return;
+    }
 
-    let type = $('input[name="partyType"]:checked').val(); // Get the selected type (customer/vendor)
+    // Update Party ID Input field with the display ID if possible
+    const selectedText = $("#customerSelect option:selected").text();
+    const parts = selectedText.split(' - ');
+    if (parts.length > 1) {
+        $('#partyIdInput').val(parts[0]);
+    } else {
+        $('#partyIdInput').val(id);
+    }
+
+    let type = $('input[name="partyType"]:checked').val();
 
     $.get('{{ route("customers.show", ["id" => "__ID__"]) }}'.replace('__ID__', id) + '?type=' + type, function(d) {
-      // Fill in the customer/vendor details
       $('#address').val(d.address || '');
       $('#tel').val(d.mobile || '');
       $('#remarks').val(d.remarks || '');
-      $('#previousBalance').val((+d.previous_balance || 0).toFixed(2)); // Set previous balance for customer
-      updateGrandTotals(); // Update other totals if needed
+      $('#previousBalance').val((+d.previous_balance || 0).toFixed(2));
+      updateGrandTotals();
     });
   });
 
   $('#clearCustomerData').on('click', function() {
     $('#customerSelect').val(null).trigger('change');
-    $('#address,#tel,#remarks').val('');
-    $('#previousBalance').val('0');
+    $('#address,#tel,#remarks,#partyIdInput').val('');
+    $('#previousBalance').val('0.00');
     updateGrandTotals();
   });
 
@@ -1404,9 +1470,10 @@
     // Update visible discount amount display
     $row.find('.discount-amount-display').val(discAmt.toFixed(2));
 
-    // Calculate Gross (before discounts)
-    const gross = sp * qty;
-    $row.find('.sales-amount').val(gross.toFixed(2));
+    // Calculate Net Amount for the row (Sales Price * Qty - Discount)
+    const lineGross = sp * qty;
+    const netAmount = Math.max(0, lineGross - discAmt);
+    $row.find('.sales-amount').val(netAmount.toFixed(2));
   }
 
   // Discount Toggle Button Click - ELIMINATED (only percent now)
@@ -1462,22 +1529,18 @@
 
   /* ---------- Totals ---------- */
   function updateGrandTotals() {
-    let tQty = 0, tGross = 0, tLineDisc = 0;
+    let tQty = 0, tSub = 0;
     $('#salesTableBody tr').each(function() {
       const $r = $(this);
-      const sp = toNum($r.find('.sales-price').val());
       const qty = toNum($r.find('.sales-qty').val());
-      const dam = toNum($r.find('.discount-amount').val()); // Line discount (rp * value)
+      const rowNet = toNum($r.find('.sales-amount').val());
 
-      const gross = sp * qty;
-      
       tQty += qty;
-      tGross += gross;
-      tLineDisc += dam;
+      tSub += rowNet;
     });
 
-    // Calculate subtotal
-    const subTotal = Math.max(0, tGross - tLineDisc);
+    // Sub-Total is the sum of all row net amounts
+    const subTotal = tSub;
 
     // Order discount with toggle support
     const orderMode = $('#orderDiscountMode').val();
@@ -1500,21 +1563,19 @@
     const prev = toNum($('#previousBalance').val());
     const receipts = toNum($('#receiptsTotal').text());
 
-    // Final Payable = Sub-Total (Gross - LineDisc) - OrderDisc + PrevBal - Receipts
-    const payable = Math.max(0, subTotal - orderDisc + prev - receipts);
+    // Final Payable = Sub-Total - OrderDisc + PrevBal - Receipts
+    const payable = subTotal - orderDisc + prev - receipts;
 
     // UI Updates
     $('#tQty').text(tQty.toFixed(0));
-    $('#tGross').text(tGross.toFixed(2));
-    $('#tLineDiscValue').val(tLineDisc.toFixed(2)); // hidden now
     $('#tSub').text(subTotal.toFixed(2));
     $('#tOrderDisc').text(orderDisc.toFixed(2));
     $('#tPrev').text(prev.toFixed(2));
     $('#tPayable').text(payable.toFixed(2));
-    $('#totalAmount').text(tGross.toFixed(2)); // Total of the table footer is Gross
+    $('#totalAmount').text(subTotal.toFixed(2)); // Table footer total matches Sub-Total
 
     // backend mirrors
-    $('#subTotal1').val(tGross.toFixed(2));
+    $('#subTotal1').val(subTotal.toFixed(2)); // We use subTotal as the base now
     $('#subTotal2').val(subTotal.toFixed(2));
     $('#discountAmount').val(orderDisc.toFixed(2));
     $('#totalBalance').val(payable.toFixed(2));

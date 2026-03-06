@@ -12,25 +12,28 @@ class WarehouseStockController extends Controller
 {
     public function index(Request $request)
     {
-        $query = \App\Models\StockAdjustment::with(['warehouse', 'items.product'])->latest();
+        // View mode: 'balances' or 'history'
+        $view = $request->get('view', 'balances');
 
-        if ($request->filled('start_date')) {
-            $query->whereDate('date', '>=', $request->start_date);
-        }
-        if ($request->filled('end_date')) {
-            $query->whereDate('date', '<=', $request->end_date);
-        }
-        if ($request->filled('warehouse_id')) {
-            $query->where('warehouse_id', $request->warehouse_id);
-        }
-        if ($request->filled('status')) {
-            $query->where('status', $request->status);
-        }
-
-        $stocks = $query->get(); // Using 'stocks' for compatibility with view variable name if preferred, or rename to 'adjustments'
         $warehouses = Warehouse::orderBy('warehouse_name')->get();
 
-        return view('admin_panel.warehouses.warehouse_stocks.index', compact('stocks', 'warehouses'));
+        if ($view === 'history') {
+            $query = \App\Models\StockAdjustment::with(['warehouse', 'items.product'])->latest();
+            if ($request->filled('start_date')) $query->whereDate('date', '>=', $request->start_date);
+            if ($request->filled('end_date')) $query->whereDate('date', '<=', $request->end_date);
+            if ($request->filled('warehouse_id')) $query->where('warehouse_id', $request->warehouse_id);
+            if ($request->filled('status')) $query->where('status', $request->status);
+            $stocks = $query->get();
+            return view('admin_panel.warehouses.warehouse_stocks.index', compact('stocks', 'warehouses', 'view'));
+        }
+
+        // Live Balances Mode
+        // Fetch all products with their shop stock and warehouse stock relations
+        $products = Product::with(['warehouseStocks' => function($q) {
+            $q->where('status', 'Posted');
+        }])->orderBy('name')->get();
+
+        return view('admin_panel.warehouses.warehouse_stocks.index', compact('products', 'warehouses', 'view'));
     }
 
     public function create()

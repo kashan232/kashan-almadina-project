@@ -13,6 +13,10 @@ use App\Models\ProductPrice;
 use App\Models\Brand;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use App\Models\Warehouse;
+use App\Models\WarehouseStock;
+use App\Models\StockAdjustment;
+use App\Models\StockAdjustmentItem;
 
 class ProductController extends Controller
 {
@@ -131,7 +135,8 @@ class ProductController extends Controller
     {
         $categories = Category::get();
         $brands = Brand::get();
-        return view('admin_panel.product.create', compact('categories', 'brands'));
+        $warehouses = Warehouse::all();
+        return view('admin_panel.product.create', compact('categories', 'brands', 'warehouses'));
     }
 
     public function store(Request $request)
@@ -144,19 +149,30 @@ class ProductController extends Controller
             'brand' => 'required',
         ]);
 
+        // Calculate distribution
+        $totalOpeningStock = (float)($request->stock ?? 0);
+        $warehouseTotal = 0;
+        if ($request->has('warehouse_stocks')) {
+            foreach ($request->warehouse_stocks as $qty) {
+                $warehouseTotal += (float)$qty;
+            }
+        }
+
+        // Shop Stock (product table) is the remainder
+        $shopStock = $totalOpeningStock - $warehouseTotal;
+
         $product = Product::create([
             'name' => $request->name,
             'category_id' => $request->category,
             'sub_category_id' => $request->sub_category,
             'brand_id' => $request->brand,
-            'stock' => $request->stock,
+            'stock' => $shopStock, // Remainder goes to shop
             'alert_qty' => $request->alert_qty,
             'status' => $request->status,
             'weight' => $request->weight,
         ]);
 
         $product->prices()->create([
-            // 'price' => $request->price,
             'purchase_retail_price' => $request->purchase_retail_price,
             'purchase_tax_percent' => $request->purchase_tax_percent,
             'purchase_tax_amount' => $request->purchase_tax_amount,
@@ -172,22 +188,42 @@ class ProductController extends Controller
             'sale_net_amount' => $request->sale_net_amount,
             'start_date' => now()->setTimezone('Asia/Karachi')->toDateString(),
             'end_date' => null,
-            // 'sub_category_id' => $request->sub_category,
-            // 'brand' => $request->brand,
-            // 'stock' => $request->stock,
-            // 'alert_qty' => $request->alert_qty,
         ]);
 
-        // $product->prices()->create([
-        //     'price' => $request->price,
-        //     'tax_percent' => $request->tax_percent,
-        //     'discount_percent' => $request->discount_percent,
-        //     'weight' => $request->weight,
-        //     //   'wht_percent' => $request->discount_percent,
-        //     'effective_date' => now()->toDateString(),
-        // ]);
+        // Save Warehouse Stocks & Create Stock Adjustments
+        if ($request->has('warehouse_ids')) {
+            foreach ($request->warehouse_ids as $index => $warehouse_id) {
+                $qty = (float)($request->warehouse_stocks[$index] ?? 0);
+                if ($qty != 0) {
+                    // 1. Create Stock Adjustment Head
+                    $adjustment = StockAdjustment::create([
+                        'adj_id' => StockAdjustment::generateAdjID(),
+                        'date' => now()->toDateString(),
+                        'warehouse_id' => $warehouse_id,
+                        'remarks' => 'Opening Stock Distribution for Product: ' . $product->name,
+                        'status' => 'Posted'
+                    ]);
 
-        return redirect()->route('products.index')->with('success', 'Product Created');
+                    // 2. Create Stock Adjustment Detail
+                    StockAdjustmentItem::create([
+                        'stock_adjustment_id' => $adjustment->id,
+                        'product_id' => $product->id,
+                        'qty' => $qty
+                    ]);
+
+                    // 3. Create/Update Warehouse Stock (Directly Posted)
+                    WarehouseStock::create([
+                        'warehouse_id' => $warehouse_id,
+                        'product_id' => $product->id,
+                        'quantity' => $qty,
+                        'remarks' => 'Opening Stock Distribution',
+                        'status' => 'Posted'
+                    ]);
+                }
+            }
+        }
+
+        return redirect()->route('products.index')->with('success', 'Product Created and Stock Distributed with Adjustments');
     }
 
     public function edit(Product $product)

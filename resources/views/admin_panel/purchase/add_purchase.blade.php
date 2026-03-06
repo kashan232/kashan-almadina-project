@@ -227,11 +227,13 @@
                                                             @enderror
                                                         </td>
                                                         <td>
-                                                            <select name="warehouse_id" class="form-control form-control-sm">
-                                                                <option value="" disabled {{ old('warehouse_id', $purchase->warehouse_id ?? '') ? '' : 'selected' }}>Select</option>
+                                                            <select name="warehouse_id" class="form-control form-control-sm" required>
+                                                                <option value="0" {{ (string)old('warehouse_id', $purchase->warehouse_id ?? '') === '0' ? 'selected' : '' }}>
+                                                                    🏠 Shop Stock
+                                                                </option>
                                                                 @foreach ($Warehouse as $ware)
                                                                 <option value="{{ $ware->id }}" {{ (string)old('warehouse_id', $purchase->warehouse_id ?? '') === (string)$ware->id ? 'selected' : '' }}>
-                                                                    {{ $ware->warehouse_name }}
+                                                                    📦 {{ $ware->warehouse_name }}
                                                                 </option>
                                                                 @endforeach
                                                             </select>

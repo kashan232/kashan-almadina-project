@@ -246,7 +246,13 @@
                                             </td>
 
                                             <td>{{ \Carbon\Carbon::parse($purchase->current_date)->format('d-M-Y') }}</td>
-                                            <td>{{ $purchase->warehouse->warehouse_name ?? 'N/A' }}</td>
+                                            <td>
+                                                @if($purchase->warehouse_id == 0 || !$purchase->warehouse)
+                                                    <span class="text-primary fw-bold">🏠 Shop</span>
+                                                @else
+                                                    <span class="text-muted">📦 {{ $purchase->warehouse->warehouse_name }}</span>
+                                                @endif
+                                            </td>
                                             
                                             <td>
                                                 @if($purchase->dc) <div><small>DC:</small> {{ $purchase->dc }}</div> @endif

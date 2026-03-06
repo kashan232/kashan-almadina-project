@@ -115,12 +115,16 @@
                                         @endforeach
                                     </select>
                                 </div>
-                                <div class="col-md-1 mb-2">
+                                <div class="col-md-2 mb-2">
                                     <label class="form-label d-flex justify-content-between">
-                                        <span>Stock</span>
+                                        <span>Total Opening Stock</span>
                                         @error('stock') <span class="text-danger small">{{ $message }}</span> @enderror
                                     </label>
-                                    <input type="number" class="form-control @error('stock') is-invalid @enderror" name="stock" value="{{ old('stock', 0) }}">
+                                    <div class="input-group input-group-sm">
+                                        <input type="number" class="form-control @error('stock') is-invalid @enderror" name="stock" id="total-stock-input" value="{{ old('stock', 0) }}">
+                                        <span class="input-group-text bg-info text-white fw-bold" id="shop-stock-display" title="Net Shop Stock">0</span>
+                                    </div>
+                                    <small class="text-muted" style="font-size: 9px;">Remaining for Shop</small>
                                 </div>
                                 <div class="col-md-1 mb-2">
                                     <label class="form-label d-flex justify-content-between">
@@ -136,8 +140,40 @@
                                     </label>
                                     <input type="text" name="weight" class="form-control @error('weight') is-invalid @enderror" value="{{ old('weight') }}">
                                 </div>
-                                 {{-- Status hidden or default active. If needed add col. --}}
                                 <input type="hidden" name="status" value="1">
+                            </div>
+                        </div>
+
+                        {{-- Warehouse Stock Section --}}
+                        <div class="section-container mb-2" style="background-color: #f8fafc; border: 1px solid #cbd5e1;">
+                            <h5 class="text-dark fw-bold border-bottom pb-2 mb-3" style="font-size: 14px;">
+                                <i class="fa fa-warehouse me-2 text-primary"></i> Warehouse Opening Stock
+                                <small class="text-muted fw-normal ms-2" style="font-size: 11px;">(Distribution from Total Stock)</small>
+                            </h5>
+                            <div class="row g-3">
+                                @forelse($warehouses as $wh)
+                                <div class="col-md-3 col-sm-6">
+                                    <div class="p-2 border rounded bg-white shadow-sm hover-shadow-sm transition-all" style="border-left: 4px solid #3b82f6 !important;">
+                                        <label class="form-label text-truncate d-block mb-2 fw-bold text-dark" title="{{ $wh->warehouse_name }}" style="font-size: 12px;">
+                                            {{ $wh->warehouse_name }}
+                                        </label>
+                                        <div class="input-group input-group-sm">
+                                            <span class="input-group-text bg-light border-end-0"><i class="fa fa-boxes-stacked text-muted" style="font-size: 10px;"></i></span>
+                                            <input type="hidden" name="warehouse_ids[]" value="{{ $wh->id }}">
+                                            <input type="number" name="warehouse_stocks[]" 
+                                                   class="form-control form-control-sm text-center fw-bold warehouse-stock-input" 
+                                                   value="0" 
+                                                   style="height: 36px; font-size: 15px; border-color: #e2e8f0;">
+                                        </div>
+                                    </div>
+                                </div>
+                                @empty
+                                <div class="col-12 text-center py-3">
+                                    <div class="text-muted small p-3 border rounded bg-light border-dashed">
+                                        <i class="fa fa-info-circle me-1"></i> No warehouses found in the system.
+                                    </div>
+                                </div>
+                                @endforelse
                             </div>
                         </div>
 
@@ -371,6 +407,25 @@
 
         calculateValues('purchase');
         calculateSaleValues();
+        // Stock Distribution Calculator
+        function updateShopStock() {
+            let total = parseFloat($('#total-stock-input').val()) || 0;
+            let distributed = 0;
+            $('.warehouse-stock-input').each(function() {
+                distributed += parseFloat($(this).val()) || 0;
+            });
+            let shopBalance = total - distributed;
+            $('#shop-stock-display').text(shopBalance);
+            
+            if (shopBalance < 0) {
+                $('#shop-stock-display').removeClass('bg-info').addClass('bg-danger');
+            } else {
+                $('#shop-stock-display').removeClass('bg-danger').addClass('bg-info');
+            }
+        }
+
+        $(document).on('input', '#total-stock-input, .warehouse-stock-input', updateShopStock);
+        updateShopStock();
     });
 </script>
 @endsection
