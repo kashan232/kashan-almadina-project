@@ -149,7 +149,7 @@
                             <div class="col-md-3">
                                 <label class="form-label small fw-bold">Warehouse</label>
                                 <select name="warehouse_id" class="form-select select2" required>
-                                    <option value="" disabled selected>Select Warehouse</option>
+                                    <option value="0" selected>🏠 Shop Stock</option>
                                     @foreach($warehouses as $wh)
                                         <option value="{{ $wh->id }}">{{ $wh->warehouse_name }}</option>
                                     @endforeach
@@ -226,8 +226,8 @@
                     <div class="card-footer bg-white py-3">
                         <div class="d-flex gap-2 justify-content-end">
                             {{-- Save Draft --}}
-                            <button type="button" id="saveDraftBtn"
-                                class="btn btn-sm btn-warning rounded-pill px-4 shadow-sm">
+                            <button type="button" id="saveDraftBtn" value="draft"
+                                class="btn btn-sm btn-warning rounded-pill px-4 shadow-sm api-save-btn">
                                 <i class="fa fa-floppy-o me-1"></i> Save Draft
                                 <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+S</kbd>
                             </button>
@@ -240,8 +240,8 @@
                             </button>
 
                             {{-- Post --}}
-                            <button type="button" id="postBtn" data-action="post"
-                                class="btn btn-sm btn-primary rounded-pill px-4 shadow-sm">
+                            <button type="button" id="postBtn" value="post"
+                                class="btn btn-sm btn-primary rounded-pill px-4 shadow-sm api-save-btn">
                                 <i class="fa fa-send me-1"></i> Save & Post
                                 <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+&#8629;</kbd>
                             </button>
@@ -806,23 +806,20 @@
             $('#total_qty').val(totalQty);
         }
 
-        // Submit handler
-        $('.api-save-btn').on('click', function(e) {
+        // Submit handler (AJAX)
+        $(document).on('click', '.api-save-btn', function(e) {
             e.preventDefault();
-            var action = $(this).val();
+            var $btn = $(this);
+            var action = $btn.val();
             var $form  = $('#wastageForm');
 
             // Remove empty rows before submission
             $('#itemsTable tbody tr').each(function() {
-                if (!$(this).find('.product-select').val()) {
-                    $(this).remove();
-                }
+                if (!$(this).find('.product-select').val()) { $(this).remove(); }
             });
 
-            // Re-calculate after removing rows
             calcTotal();
 
-            // At least one row must exist
             if ($('#itemsTable tbody tr').length === 0) {
                 addRow();
                 showToast('❌ Please add at least one item.', 'error');
@@ -830,13 +827,76 @@
             }
 
             if (!$form[0].checkValidity()) { $form[0].reportValidity(); return; }
-            if ($form.find('input[name="action"]').length === 0) {
-                $form.append('<input type="hidden" name="action">');
-            }
-            $form.find('input[name="action"]').val(action);
-            $('.api-save-btn').prop('disabled', true);
-            $(this).text('Processing...');
-            $form.submit();
+            
+            var originalBtnText = $btn.html();
+            $btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin me-1"></i> Processing...');
+
+            // Prepare data
+            var formData = $form.serializeArray();
+            formData.push({ name: 'action', value: action });
+
+            $.ajax({
+                url: $form.attr('action'),
+                type: 'POST',
+                data: $.param(formData),
+                success: function(res) {
+                    if (res.success) {
+                        showToast('✅ ' + res.message);
+                        
+                        if (action === 'post') {
+                            // If posted, redirect to index or show success state
+                            setTimeout(function() { window.location.href = "{{ route('stock-wastage.index') }}"; }, 1000);
+                        } else {
+                            // Saved as Draft -> Convert "Create" screen to "Edit" screen state
+                            var editUrl = "{{ url('stock-wastage') }}/" + res.id + "/edit";
+                            
+                            // 1. Update form for PUT updates
+                            $form.attr('action', "{{ url('stock-wastage') }}/" + res.id);
+                            if ($form.find('input[name="_method"]').length === 0) {
+                                $form.prepend('<input type="hidden" name="_method" value="PUT">');
+                            }
+                            
+                            // 2. Lock form & Show Edit/New buttons
+                            $form.addClass('form-locked');
+                            $('#editInvoiceBtn').show();
+                            $('#newInvoiceBtn').show();
+                            $('#saveDraftBtn').html('<i class="fa fa-floppy-o me-1"></i> Update Draft <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+S</kbd>');
+                            
+                            // 3. Update URL without reload
+                            window.history.pushState({path: editUrl}, '', editUrl);
+                            
+                            showToast('🔒 Form Locked. Click Edit or Ctrl+E to unlock.', 'success');
+                        }
+                    } else {
+                        showToast('❌ ' + res.message, 'error');
+                        $btn.prop('disabled', false).html(originalBtnText);
+                    }
+                },
+                error: function(xhr) {
+                    var msg = 'Failed to save.';
+                    if (xhr.status === 422 && xhr.responseJSON) {
+                        msg = xhr.responseJSON.message || 'Validation Error';
+                    }
+                    showToast('❌ ' + msg, 'error');
+                    $btn.prop('disabled', false).html(originalBtnText);
+                }
+            });
+        });
+
+        // Unlock logic
+        $('#editInvoiceBtn').on('click', function() {
+            $('#wastageForm').removeClass('form-locked');
+            $(this).hide();
+            showToast('🔓 Form Unlocked for Editing', 'success');
+        });
+
+        // Shortcuts
+        $(document).on('keydown', function(e) {
+            if (e.ctrlKey && e.key === 's') { e.preventDefault(); $('#saveDraftBtn').trigger('click'); }
+            if (e.ctrlKey && e.key === 'Enter') { e.preventDefault(); $('#postBtn').trigger('click'); }
+            if (e.ctrlKey && e.key === 'e') { e.preventDefault(); $('#editInvoiceBtn').trigger('click'); }
+            if (e.ctrlKey && e.key === 'm') { e.preventDefault(); window.location.href = $('#newInvoiceBtn').attr('href'); }
+            if (e.key === 'Escape') { window.location.href = $('#cancelBtn').attr('href'); }
         });
 
         // Print Preview → show Modal with same design as print.blade.php

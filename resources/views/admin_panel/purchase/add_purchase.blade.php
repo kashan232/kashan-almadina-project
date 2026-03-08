@@ -61,6 +61,15 @@
     }
     .form-locked input, .form-locked select, .form-locked textarea { pointer-events: none; opacity: 0.8; }
     .form-locked .remove-row, .form-locked .removeAccountRow, .form-locked #addRow, .form-locked #addAccountRow, .form-locked #saveDraftBtn { display: none !important; }
+    
+    .loading-indicator {
+        background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-loader"><line x1="12" y1="2" x2="12" y2="6"></line><line x1="12" y1="18" x2="12" y2="22"></line><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line><line x1="2" y1="12" x2="6" y2="12"></line><line x1="18" y1="12" x2="22" y2="12"></line><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line></svg>');
+        background-repeat: no-repeat;
+        background-position: right 5px center;
+        background-size: 16px;
+        animation: spin 1s linear infinite;
+    }
+    @keyframes spin { 100% { transform:rotate(360deg); } }
 </style>
 @section('content')
 <div class="main-content bg-white">
@@ -663,14 +672,22 @@
 
             // Sync ID input -> Select2
             $row.find('.item-id-input').on('change', function() {
-                const id = $(this).val();
+                const $input = $(this);
+                const id = $input.val().trim();
                 if (!id) {
                     $select.val(null).trigger('change');
                     return;
                 }
                 
-                $.getJSON("{{ route('search-products') }}", { q: id }, function(data) {
-                    const product = data.find(p => p.id == id);
+                $input.addClass('loading-indicator');
+                $.getJSON("{{ route('search-products') }}", { 
+                    q: id,
+                    warehouse_id: $('select[name="warehouse_id"]').val() 
+                }, function(data) {
+                    $input.removeClass('loading-indicator');
+                    // Precise matching: for numeric input, prioritize exact ID match. 
+                    const product = data.find(p => String(p.id) === String(id)) || (isNaN(id) ? data[0] : null);
+
                     if (product) {
                         const newOption = new Option(product.name, product.id, true, true);
                         $select.empty().append(newOption).trigger('change');
@@ -691,8 +708,11 @@
                     } else {
                         $select.val(null).trigger('change');
                         showToast('❌ Product ID not found!', 'error');
-                        $row.find('.item-id-input').val('');
+                        $input.val('');
                     }
+                }).fail(function() {
+                    $input.removeClass('loading-indicator');
+                    showToast('❌ Server error!', 'error');
                 });
             });
 

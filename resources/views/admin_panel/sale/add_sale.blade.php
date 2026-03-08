@@ -480,14 +480,15 @@
                       </td>
                       <td style="width: 120px;">
                         <select class="form-select form-select-sm warehouse" name="warehouse_name[]">
-                          @foreach ($warehouses as $index => $wh)
-                            <option value="{{ $wh->id }}" {{ ($whId == $wh->id || (!$whId && $index == 0)) ? 'selected' : '' }}>{{ $wh->warehouse_name }}</option>
+                            <option value="0" {{ (!$whId || $whId == 0) ? 'selected' : '' }}>🏠 Shop Stock</option>
+                          @foreach ($warehouses as $wh)
+                            <option value="{{ $wh->id }}" {{ $whId == $wh->id ? 'selected' : '' }}>📦 {{ $wh->warehouse_name }}</option>
                           @endforeach
                         </select>
                       </td>
                       <td style="width: 80px;"><input type="text" class="form-control form-control-sm stock text-center input-readonly" name="stock[]" value="{{ $stock }}" readonly></td>
                       <td style="width: 100px;"><input type="text" class="form-control form-control-sm text-end sales-price input-readonly" name="sales-price[]" value="{{ $sPrice }}" readonly></td>
-                      <td style="width: 70px;"><input type="text" class="form-control form-control-sm text-center sales-qty" name="sales-qty[]" value="{{ $qty }}"></td>
+                      <td style="width: 70px;"><input type="number" step="any" class="form-control form-control-sm text-center sales-qty" name="sales-qty[]" value="{{ $qty }}"></td>
                       <td style="width: 100px;"><input type="text" class="form-control form-control-sm text-end retail-price input-readonly" name="retail-price[]" value="{{ $rPrice }}" readonly></td>
                       <td style="width:165px;">
                         <div class="input-group input-group-sm">
@@ -535,24 +536,30 @@
             <div id="rvWrapper">
               @if(old('receipt_account_id'))
                   @foreach(old('receipt_account_id') as $index => $accId)
-                      <div class="receipt-row bg-white border rounded-3 p-2 mb-2 shadow-sm">
+                      <div class="receipt-row bg-white border rounded-3 p-2 mb-2 shadow-sm rv-row">
                         <div class="row g-2 align-items-center">
-                          <div class="col-md-4">
-                            <label class="form-label text-muted small mb-1">Account</label>
-                            <select class="form-select form-select-sm rv-account" name="receipt_account_id[]">
-                              <option value="" disabled>Select account</option>
-                              @foreach ($accounts as $acc)
-                              <option value="{{ $acc->id }}" {{ $accId == $acc->id ? 'selected' : '' }}>{{ $acc->title }}</option>
+                          <div class="col-md-3">
+                            <label class="form-label text-muted small mb-1">Head</label>
+                            <select class="form-select form-select-sm rv-head" name="receipt_head_id[]">
+                              <option value="" disabled selected>Select Head</option>
+                              @foreach ($accountHeads as $head)
+                                <option value="{{ $head->id }}" {{ (old('receipt_head_id')[$index] ?? '') == $head->id ? 'selected' : '' }}>{{ $head->name }}</option>
                               @endforeach
+                            </select>
+                          </div>
+                          <div class="col-md-3">
+                            <label class="form-label text-muted small mb-1">Account</label>
+                            <select class="form-select form-select-sm rv-account" name="receipt_account_id[]" data-selected="{{ $accId }}">
+                              <option value="" disabled selected>Select account</option>
                             </select>
                           </div>
                           <div class="col-md-2">
                             <label class="form-label text-muted small mb-1">Amount</label>
                             <input type="text" class="form-control form-control-sm text-end fw-bold rv-amount" 
                                    name="receipt_amount[]" placeholder="0.00" value="{{ old('receipt_amount')[$index] ?? '' }}"
-                                   {{ !old('receipt_account_id')[$index] ? 'disabled' : '' }}>
+                                   {{ !$accId ? 'disabled' : '' }}>
                           </div>
-                          <div class="col-md-5">
+                          <div class="col-md-3">
                             <label class="form-label text-muted small mb-1">Narration</label>
                             <select class="form-select form-select-sm rv-narration" name="receipt_narration[]" 
                                     data-selected="{{ old('receipt_narration')[$index] ?? '' }}">
@@ -573,13 +580,19 @@
               @else
                   <div class="receipt-row bg-white border rounded-3 p-2 mb-2 shadow-sm rv-row">
                     <div class="row g-2 align-items-center">
-                      <div class="col-md-4">
-                        <label class="form-label text-muted small mb-1">Account</label>
-                        <select class="form-select form-select-sm rv-account" name="receipt_account_id[]">
-                          <option value="" disabled selected>Select account</option>
-                          @foreach ($accounts as $acc)
-                          <option value="{{ $acc->id }}">{{ $acc->title }}</option>
+                      <div class="col-md-3">
+                        <label class="form-label text-muted small mb-1">Head</label>
+                        <select class="form-select form-select-sm rv-head" name="receipt_head_id[]">
+                          <option value="" disabled selected>Select Head</option>
+                          @foreach ($accountHeads as $head)
+                            <option value="{{ $head->id }}">{{ $head->name }}</option>
                           @endforeach
+                        </select>
+                      </div>
+                      <div class="col-md-3">
+                        <label class="form-label text-muted small mb-1">Account</label>
+                        <select class="form-select form-select-sm rv-account" name="receipt_account_id[]" disabled>
+                          <option value="" disabled selected>Select account</option>
                         </select>
                       </div>
                       <div class="col-md-2">
@@ -587,7 +600,7 @@
                         <input type="text" class="form-control form-control-sm text-end fw-bold rv-amount" 
                                name="receipt_amount[]" placeholder="0.00" disabled>
                       </div>
-                      <div class="col-md-5">
+                      <div class="col-md-3">
                         <label class="form-label text-muted small mb-1">Narration</label>
                         <select class="form-select form-select-sm rv-narration" name="receipt_narration[]">
                           <option value="">Select narration...</option>
@@ -622,9 +635,15 @@
                 <span class="fw-semibold" id="tQty">0</span>
               </div>
 
-              <!-- Sub-Total -->
+              <!-- Retail Total -->
+              <div class="d-flex justify-content-between py-2 border-bottom">
+                <span class="text-muted small">Total Retail Price</span>
+                <span class="fw-semibold" id="tRetail">0.00</span>
+              </div>
+
+              <!-- Sub-Total (Net) -->
               <div class="d-flex justify-content-between py-3 border-bottom bg-info bg-opacity-10 rounded px-2">
-                <span class="fw-bold fs-6">Sub-Total</span>
+                <span class="fw-bold fs-6">Sub-Total (Net)</span>
                 <span class="fw-bold fs-6 text-primary" id="tSub">0.00</span>
               </div>
 
@@ -651,10 +670,28 @@
                 <span class="fw-semibold text-danger" id="tOrderDisc">0.00</span>
               </div>
 
+              <!-- Current Invoice Total -->
+              <div class="d-flex justify-content-between py-2 border-bottom bg-light">
+                <span class="text-dark small fw-bold">Current Invoice</span>
+                <span class="fw-bold" id="tCurrentInvoice">0.00</span>
+              </div>
+
               <!-- Previous Balance -->
               <div class="d-flex justify-content-between py-2 border-bottom">
                 <span class="text-warning small fw-semibold">Previous Balance</span>
                 <span class="fw-semibold text-warning" id="tPrev">0.00</span>
+              </div>
+
+              <!-- Total Receipts -->
+              <div class="d-flex justify-content-between py-2 border-bottom">
+                <span class="text-success small fw-semibold">Less: Receipts</span>
+                <span class="fw-semibold text-success" id="tReceiptsMirror">0.00</span>
+              </div>
+
+              <!-- Balance After Receipt -->
+              <div class="d-flex justify-content-between py-2 border-bottom bg-light">
+                <span class="text-muted small">Balance After Receipt</span>
+                <span class="fw-semibold" id="tBalAfterReceipt">0.00</span>
               </div>
 
               <!-- Payable / Total Balance -->
@@ -798,18 +835,20 @@
         dataType: 'json',
         delay: 250,
         data: function(params) {
-          return { q: params.term };
+          return {
+            q: params.term,
+            warehouse_id: $row.find('.warehouse').val()
+          };
         },
         processResults: function(data) {
           return {
             results: data.map(function(item) {
-              const lp = item.latest_price || item.latestPrice || {};
               return {
                 id: item.id,
                 text: item.name,
                 stock: item.stock || 0,
-                sale_price: item.sale_price || lp.sale_price || 0,
-                retail_price: item.retail_price || lp.retail_price || 0
+                sale_price: item.sale_price || 0,
+                retail_price: item.retail_price || 0
               };
             })
           };
@@ -876,14 +915,15 @@
       </td>
       <td style="width: 120px;">
         <select class="form-select form-select-sm warehouse" name="warehouse_name[]">
-          @foreach ($warehouses as $index => $wh)
-            <option value="{{ $wh->id }}" {{ $index == 0 ? 'selected' : '' }}>{{ $wh->warehouse_name }}</option>
+            <option value="0" selected>🏠 Shop Stock</option>
+          @foreach ($warehouses as $wh)
+            <option value="{{ $wh->id }}">📦 {{ $wh->warehouse_name }}</option>
           @endforeach
         </select>
       </td>
       <td style="width: 80px;"><input type="text" class="form-control form-control-sm stock text-center input-readonly" name="stock[]" readonly></td>
       <td style="width: 100px;"><input type="text" class="form-control form-control-sm text-end sales-price input-readonly" name="sales-price[]" value="0" readonly></td>
-      <td style="width: 70px;"><input type="text" class="form-control form-control-sm text-center sales-qty" name="sales-qty[]" value=""></td>
+      <td style="width: 70px;"><input type="number" step="any" class="form-control form-control-sm text-center sales-qty" name="sales-qty[]" value=""></td>
       <td style="width: 100px;"><input type="text" class="form-control form-control-sm text-end retail-price input-readonly" name="retail-price[]" value="0" readonly></td>
       <td style="width: 165px;">
         <div class="input-group input-group-sm">
@@ -900,6 +940,12 @@
     </tr>`;
 
     const $newRow = $(template);
+    
+    // Inherit warehouse from last row if exists
+    if ($last.length) {
+       $newRow.find('.warehouse').val($last.find('.warehouse').val());
+    }
+    
     $('#salesTableBody').append($newRow);
     
     // Explicitly initialize Select2 BEFORE setting focus
@@ -1404,12 +1450,29 @@
           e.preventDefault(); // Lock focus until we fetch data
           $input.addClass('loading-indicator'); 
 
-          $.get('{{ route("search-products") }}', { q: id })
+          $.get('{{ route("search-products") }}', { 
+              q: id,
+              warehouse_id: $row.find('.warehouse').val()
+          })
             .done(function(res) {
                 $input.removeClass('loading-indicator');
                 if (res && res.length > 0) {
-                    const item = res.find(i => String(i.id) === String(id)) || res[0];
+                    // Precise matching: for numeric input, prioritize exact ID match. 
+                    // Only fallback to first result if the input isn't a simple ID lookup.
+                    const item = res.find(i => String(i.id) === String(id)) || (isNaN(id) ? res[0] : null);
                     
+                    if (!item) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Not Found',
+                            text: 'Product ID ' + id + ' not found.',
+                            timer: 2000,
+                            showConfirmButton: false
+                        });
+                        $input.select().focus();
+                        return;
+                    }
+
                     // 1. Populate current row first
                     updateRowWithProductData($row, {
                         id: item.id,
@@ -1494,6 +1557,39 @@
     refreshPostedState();
   });
 
+  // Warehouse change -> re-fetch stock + Sync all rows
+  $(document).on('change', '.warehouse', function() {
+      const selectedWH = $(this).val();
+      const $changedRow = $(this).closest('tr');
+      
+      // Update all other warehouse selects to match
+      $('.warehouse').not(this).val(selectedWH);
+
+      // Re-fetch stock for ALL rows that have a product selected
+      $('#salesTableBody tr').each(function() {
+          const $r = $(this);
+          const productId = $r.find('.product-select').val();
+          if (!productId) return;
+
+          const $stock = $r.find('.stock');
+          $stock.addClass('loading-indicator');
+
+          $.get('{{ route("search-products") }}', { q: productId, warehouse_id: selectedWH })
+              .done(function(res) {
+                  $stock.removeClass('loading-indicator');
+                  if (res && res.length > 0) {
+                      const item = res.find(i => String(i.id) === String(productId));
+                      if (item) {
+                          $stock.val(item.stock || 0);
+                      }
+                  }
+              })
+              .fail(function() {
+                  $stock.removeClass('loading-indicator');
+              });
+      });
+  });
+
   // Receipt Voucher Account -> Amount Toggle
   $(document).on('change', '.rv-account', function() {
     const $row = $(this).closest('.row');
@@ -1529,18 +1625,28 @@
 
   /* ---------- Totals ---------- */
   function updateGrandTotals() {
-    let tQty = 0, tSub = 0;
+    let tQty = 0, tSub = 0, tRetail = 0;
     $('#salesTableBody tr').each(function() {
       const $r = $(this);
       const qty = toNum($r.find('.sales-qty').val());
       const rowNet = toNum($r.find('.sales-amount').val());
+      const rowRetail = toNum($r.find('.retail-price').val()) * qty;
 
       tQty += qty;
       tSub += rowNet;
+      tRetail += rowRetail;
     });
 
-    // Sub-Total is the sum of all row net amounts
-    const subTotal = tSub;
+    // Sub-Total for calculation is what user calls "Retail Price"
+    // But we show Net Total (tSub) as the main summary Sub-Total normally.
+    // However, the order discount will be calculated on tRetail.
+
+    // Update hidden mirrors
+    $('#subTotal1').val(tRetail.toFixed(2)); // Store Retail Total in subTotal1
+    $('#subTotal2').val(tSub.toFixed(2));    // Store Net Total in subTotal2
+
+    const discountBase = tRetail; // Request: discount on retail price
+    const subTotal = tSub;        // Basis for payable balance
 
     // Order discount with toggle support
     const orderMode = $('#orderDiscountMode').val();
@@ -1550,32 +1656,38 @@
 
     if (orderMode === 'percent') {
       orderPct = orderValue;
-      orderDisc = (subTotal * orderValue) / 100.0;
+      orderDisc = (discountBase * orderValue) / 100.0;
     } else {
       orderDisc = orderValue;
-      orderPct = subTotal > 0 ? (orderValue / subTotal) * 100 : 0;
+      orderPct = discountBase > 0 ? (orderValue / discountBase) * 100 : 0;
     }
 
     // Update hidden fields
     $('#discountPercent').val(orderPct.toFixed(2));
     $('#discountAmountHidden').val(orderDisc.toFixed(2));
+    $('#discountAmount').val(orderDisc.toFixed(2)); // mirror to hidden name="discountAmount"
 
     const prev = toNum($('#previousBalance').val());
     const receipts = toNum($('#receiptsTotal').text());
 
-    // Final Payable = Sub-Total - OrderDisc + PrevBal - Receipts
-    const payable = subTotal - orderDisc + prev - receipts;
+    const currentInvoice = subTotal - orderDisc;
+    const balAfterReceipt = prev - receipts;
+    const payable = currentInvoice + balAfterReceipt;
 
     // UI Updates
     $('#tQty').text(tQty.toFixed(0));
+    $('#tRetail').text(tRetail.toFixed(2));
     $('#tSub').text(subTotal.toFixed(2));
     $('#tOrderDisc').text(orderDisc.toFixed(2));
+    $('#tCurrentInvoice').text(currentInvoice.toFixed(2));
     $('#tPrev').text(prev.toFixed(2));
+    $('#tReceiptsMirror').text(receipts.toFixed(2));
+    $('#tBalAfterReceipt').text(balAfterReceipt.toFixed(2));
     $('#tPayable').text(payable.toFixed(2));
-    $('#totalAmount').text(subTotal.toFixed(2)); // Table footer total matches Sub-Total
+    $('#totalAmount').text(subTotal.toFixed(2));
 
     // backend mirrors
-    $('#subTotal1').val(subTotal.toFixed(2)); // We use subTotal as the base now
+    $('#subTotal1').val(subTotal.toFixed(2));
     $('#subTotal2').val(subTotal.toFixed(2));
     $('#discountAmount').val(orderDisc.toFixed(2));
     $('#totalBalance').val(payable.toFixed(2));
@@ -1657,20 +1769,37 @@
 
 
   /* ---------- Receipts (accounts) ---------- */
-  function loadAccountsInto($select) {
+  $(document).on('change', '.rv-head', function() {
+    const headId = $(this).val();
+    const $row = $(this).closest('.rv-row');
+    const $accSelect = $row.find('.rv-account');
+    const $amtInput = $row.find('.rv-amount');
+
+    if (!headId) return;
+
+    loadAccountsByHead(headId, $accSelect);
+    $amtInput.prop('disabled', true).val(''); 
+    recomputeReceipts();
+  });
+
+  function loadAccountsByHead(headId, $select) {
+    if (!headId) return;
     $select.prop('disabled', true).empty().append('<option value="">Loading...</option>');
 
-    // Get the list of accounts
-    $.get('{{ route("accounts.list") }}', {
-      scope: 'cashbank'
-    }, function(rows) {
-      $select.empty().append('<option value="">Select account</option>');
+    $.get('{{ url("/get-accounts-by-head") }}/' + headId, function(rows) {
+      $select.empty().append('<option value="" disabled selected>Select account</option>');
       (rows || []).forEach(function(a) {
-        $select.append('<option value="' + a.id + '">' + a.title + '</option>'); // Add account options
+        $select.append('<option value="' + a.id + '">' + a.title + '</option>');
       });
-      $select.prop('disabled', false); // Enable the select input after loading
+      $select.prop('disabled', false);
+      
+      // If we have a pre-selected value (from old() or edit)
+      const selected = $select.attr('data-selected');
+      if (selected) {
+        $select.val(selected).trigger('change');
+        $select.removeAttr('data-selected');
+      }
     }).fail(function() {
-      // If there's an error, display an error message
       $select.empty().append('<option value="">Error loading</option>').prop('disabled', false);
     });
   }
@@ -1686,13 +1815,24 @@
   }
 
   $('#btnAddRV').on('click', function() {
+    let headOptions = '<option value="" disabled selected>Select Head</option>';
+    @foreach($accountHeads as $head)
+      headOptions += `<option value="{{ $head->id }}">{{ $head->name }}</option>`;
+    @endforeach
+
     $('#rvWrapper').append(`
     <div class="receipt-row bg-white border rounded-3 p-2 mb-2 shadow-sm rv-row">
       <div class="row g-2 align-items-center">
-        <div class="col-md-4">
+        <div class="col-md-3">
+          <label class="form-label text-muted small mb-1">Head</label>
+          <select class="form-select form-select-sm rv-head" name="receipt_head_id[]">
+            ${headOptions}
+          </select>
+        </div>
+        <div class="col-md-3">
           <label class="form-label text-muted small mb-1">Account</label>
-          <select class="form-select form-select-sm rv-account" name="receipt_account_id[]">
-            <option value="">Select account</option>
+          <select class="form-select form-select-sm rv-account" name="receipt_account_id[]" disabled>
+            <option value="" disabled selected>Select account</option>
           </select>
         </div>
         <div class="col-md-2">
@@ -1700,7 +1840,7 @@
           <input type="text" class="form-control form-control-sm text-end fw-bold rv-amount" 
                  name="receipt_amount[]" placeholder="0.00" disabled>
         </div>
-        <div class="col-md-5">
+        <div class="col-md-3">
           <label class="form-label text-muted small mb-1">Narration</label>
           <select class="form-select form-select-sm rv-narration" name="receipt_narration[]">
             <option value="">Select narration...</option>
@@ -1716,8 +1856,7 @@
     </div>
   `);
 
-    // Load accounts and narrations into the newly added row
-    loadAccountsInto($('#rvWrapper .rv-row:last .rv-account'));
+    // Load narrations into the newly added row
     loadNarrationsInto($('#rvWrapper .rv-row:last .rv-narration'));
   });
   $(document).on('click', '.btnRemRV', function() {
@@ -1732,8 +1871,16 @@
   function init() {
     addNewRow();
     loadCustomersByType('customer');
-    loadAccountsInto($('.rv-account').first());
-    loadNarrationsInto($('.rv-narration').first());
+    loadNarrationsInto($('.rv-narration'));
+
+    // If there are existing heads (from old() or edit), load their accounts
+    $('.rv-head').each(function() {
+      const headId = $(this).val();
+      if (headId) {
+        loadAccountsByHead(headId, $(this).closest('.rv-row').find('.rv-account'));
+      }
+    });
+
     updateGrandTotals();
     refreshPostedState();
   }
@@ -1821,17 +1968,28 @@
       firstEl = null;
     $('#rvWrapper .rv-row').each(function(i) {
       const $row = $(this);
+      const $head = $row.find('.rv-head');
       const $acc = $row.find('.rv-account');
       const $amt = $row.find('.rv-amount');
       const amtVal = parseFloat($amt.val() || '0') || 0;
 
-      if (amtVal > 0 && (!$acc.val() || $acc.val() === "")) {
-        ok = false;
-        if (!firstMessage) {
-          firstMessage = 'Please select Account for receipt row ' + (i + 1);
-          firstEl = $acc;
+      if (amtVal > 0) {
+        if (!$head.val()) {
+          ok = false;
+          if (!firstMessage) {
+            firstMessage = 'Please select Head for receipt row ' + (i + 1);
+            firstEl = $head;
+          }
+          markInvalid($head);
         }
-        markInvalid($acc);
+        if (!$acc.val()) {
+          ok = false;
+          if (!firstMessage) {
+            firstMessage = 'Please select Account for receipt row ' + (i + 1);
+            firstEl = $acc;
+          }
+          markInvalid($acc);
+        }
       }
     });
     return {

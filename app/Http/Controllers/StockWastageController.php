@@ -58,7 +58,7 @@ class StockWastageController extends Controller
     {
         $request->validate([
             'date' => 'required|date',
-            'warehouse_id' => 'required|exists:warehouses,id',
+            'warehouse_id' => 'required',
             'account_head_id' => 'required|exists:account_heads,id',
             'account_id' => 'required|exists:accounts,id',
             'product_id' => 'required|array|min:1',
@@ -73,18 +73,38 @@ class StockWastageController extends Controller
 
         try {
             DB::transaction(function () use ($request, $status, &$savedWastage) {
-                // 1. Create Stock Wastage Header
-                $wastage = StockWastage::create([
-                    'gwn_id'          => $request->gwn_id,
-                    'date'            => $request->date,
-                    'warehouse_id'    => $request->warehouse_id,
-                    'account_head_id' => $request->account_head_id,
-                    'account_id'      => $request->account_id,
-                    'ref_no'          => $request->ref_no,
-                    'remarks'         => $request->remarks,
-                    'total_amount'    => $request->grand_total ?? 0,
-                    'status'          => $status,
-                ]);
+                // Check if unposted record with same GWN ID exists to prevent duplicates
+                $wastage = StockWastage::where('gwn_id', $request->gwn_id)
+                    ->where('status', 'Unposted')
+                    ->first();
+
+                $warehouseId = $request->warehouse_id;
+
+                if ($wastage) {
+                    $wastage->update([
+                        'date'            => $request->date,
+                        'warehouse_id'    => ($warehouseId == 0) ? null : $warehouseId,
+                        'account_head_id' => $request->account_head_id,
+                        'account_id'      => $request->account_id,
+                        'ref_no'          => $request->ref_no,
+                        'remarks'         => $request->remarks,
+                        'status'          => $status,
+                    ]);
+                    // Clear old items
+                    $wastage->items()->delete();
+                } else {
+                    $wastage = StockWastage::create([
+                        'gwn_id'          => $request->gwn_id,
+                        'date'            => $request->date,
+                        'warehouse_id'    => ($warehouseId == 0) ? null : $warehouseId,
+                        'account_head_id' => $request->account_head_id,
+                        'account_id'      => $request->account_id,
+                        'ref_no'          => $request->ref_no,
+                        'remarks'         => $request->remarks,
+                        'total_amount'    => $request->grand_total ?? 0,
+                        'status'          => $status,
+                    ]);
+                }
 
                 $grandTotal = 0;
 
@@ -108,19 +128,23 @@ class StockWastageController extends Controller
 
                     // 3. Stock Impact (Only if Posted)
                     if ($status === 'Posted') {
-                        $product = Product::find($productId);
-                        if ($product) {
-                            $product->stock = ($product->stock ?? 0) - $qty;
-                            $product->save();
-                        }
+                        if ($warehouseId == 0) {
+                            // Decrement SHOP stock
+                            $product = Product::find($productId);
+                            if ($product) {
+                                $product->stock = ($product->stock ?? 0) - $qty;
+                                $product->save();
+                            }
+                        } else {
+                            // Decrement Warehouse Specific Stock
+                            $stock = \App\Models\WarehouseStock::where('warehouse_id', $warehouseId)
+                                ->where('product_id', $productId)
+                                ->first();
 
-                        $stock = \App\Models\Stock::where('warehouse_id', $request->warehouse_id)
-                            ->where('product_id', $productId)
-                            ->first();
-
-                        if ($stock) {
-                            $stock->qty = ($stock->qty ?? 0) - $qty;
-                            $stock->save();
+                            if ($stock) {
+                                $stock->quantity = ($stock->quantity ?? 0) - $qty;
+                                $stock->save();
+                            }
                         }
                     }
                 }
@@ -190,7 +214,7 @@ class StockWastageController extends Controller
 
         $request->validate([
             'date' => 'required|date',
-            'warehouse_id' => 'required|exists:warehouses,id',
+            'warehouse_id' => 'required',
             'account_head_id' => 'required|exists:account_heads,id',
             'account_id' => 'required|exists:accounts,id',
             'product_id' => 'required|array|min:1',
@@ -204,9 +228,10 @@ class StockWastageController extends Controller
         try {
             DB::transaction(function () use ($request, $stock_wastage, $status) {
                 // 1. Update Header
+                $warehouseId = $request->warehouse_id;
                 $stock_wastage->update([
                     'date'            => $request->date,
-                    'warehouse_id'    => $request->warehouse_id,
+                    'warehouse_id'    => ($warehouseId == 0) ? null : $warehouseId,
                     'account_head_id' => $request->account_head_id,
                     'account_id'      => $request->account_id,
                     'remarks'         => $request->remarks,
@@ -238,19 +263,21 @@ class StockWastageController extends Controller
 
                     // 4. Stock Impact (Only if transitioning to Posted)
                     if ($status === 'Posted') {
-                        $product = Product::find($productId);
-                        if ($product) {
-                            $product->stock = ($product->stock ?? 0) - $qty;
-                            $product->save();
-                        }
+                        if ($warehouseId == 0) {
+                            $product = Product::find($productId);
+                            if ($product) {
+                                $product->stock = ($product->stock ?? 0) - $qty;
+                                $product->save();
+                            }
+                        } else {
+                            $stock = \App\Models\WarehouseStock::where('warehouse_id', $warehouseId)
+                                ->where('product_id', $productId)
+                                ->first();
 
-                        $stock = \App\Models\Stock::where('warehouse_id', $request->warehouse_id)
-                            ->where('product_id', $productId)
-                            ->first();
-
-                        if ($stock) {
-                            $stock->qty = ($stock->qty ?? 0) - $qty;
-                            $stock->save();
+                            if ($stock) {
+                                $stock->quantity = ($stock->quantity ?? 0) - $qty;
+                                $stock->save();
+                            }
                         }
                     }
                 }
@@ -298,23 +325,27 @@ class StockWastageController extends Controller
 
         try {
             DB::transaction(function () use ($wastage) {
-                // Stock Impact
+                 // Stock Impact
                 foreach ($wastage->items as $item) {
-                     // 1. Decrement Global Product Stock
-                     $product = Product::find($item->product_id);
-                     if ($product) {
-                         $product->stock = ($product->stock ?? 0) - $item->qty;
-                         $product->save();
-                     }
-
-                     // 2. Decrement Warehouse Specific Stock (stocks table)
-                     $stock = \App\Models\Stock::where('warehouse_id', $wastage->warehouse_id)
-                         ->where('product_id', $item->product_id)
-                         ->first();
+                     $warehouseId = $wastage->warehouse_id;
                      
-                     if ($stock) {
-                         $stock->qty = ($stock->qty ?? 0) - $item->qty;
-                         $stock->save();
+                     if (!$warehouseId) {
+                         // 1. Decrement SHOP stock
+                         $product = Product::find($item->product_id);
+                         if ($product) {
+                             $product->stock = ($product->stock ?? 0) - $item->qty;
+                             $product->save();
+                         }
+                     } else {
+                         // 2. Decrement Warehouse Specific Stock
+                         $stock = \App\Models\WarehouseStock::where('warehouse_id', $warehouseId)
+                             ->where('product_id', $item->product_id)
+                             ->first();
+                         
+                         if ($stock) {
+                             $stock->quantity = ($stock->quantity ?? 0) - $item->qty;
+                             $stock->save();
+                         }
                      }
                 }
                 

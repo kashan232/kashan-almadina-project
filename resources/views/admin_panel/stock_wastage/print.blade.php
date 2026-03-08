@@ -111,7 +111,7 @@
                 </div>
                 <div class="info-item">
                     <span class="info-label">Warehouse:</span>
-                    <span>{{ $wastage->warehouse->warehouse_name ?? '-' }}</span>
+                    <span>{{ $wastage->warehouse->warehouse_name ?? 'Shop Stock' }}</span>
                 </div>
             </div>
             <div>

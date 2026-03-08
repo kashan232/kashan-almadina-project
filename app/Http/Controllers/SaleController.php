@@ -64,11 +64,12 @@ class SaleController extends Controller
         $warehouses = Warehouse::all();
         $customers = Customer::all();
         $accounts = Account::all();
+        $accountHeads = AccountHead::all();
 
         // Get next invoice from Sale model generator (ensures INVSLE-003 -> INVSLE-004)
         $nextInvoiceNumber = Sale::generateInvoiceNo();
 
-        return view('admin_panel.sale.add_sale', compact('warehouses', 'customers', 'nextInvoiceNumber', 'accounts'));
+        return view('admin_panel.sale.add_sale', compact('warehouses', 'customers', 'nextInvoiceNumber', 'accounts', 'accountHeads'));
     }
 
 
@@ -124,8 +125,10 @@ class SaleController extends Controller
         SaleItem::where('sale_id', $sale->id)->delete();
 
         foreach ($request->warehouse_name ?? [] as $i => $warehouse_id) {
-            $productId = $request->input("product_name.$i");
-            if (empty($warehouse_id) || empty($productId)) {
+            $productId = $request->input("product_id.$i");
+            $qty = (float) $request->input("sales-qty.$i", 0);
+
+            if (($warehouse_id === null || $warehouse_id === '') || empty($productId) || $qty <= 0) {
                 continue;
             }
 
@@ -177,12 +180,12 @@ class SaleController extends Controller
 
             $totalQty = 0;
             foreach ($request->warehouse_name ?? [] as $i => $warehouse_id) {
-                $productId = $request->input("product_name.$i");
-                if (empty($warehouse_id) || empty($productId)) {
+                $productId = $request->input("product_id.$i");
+                $qty = (float) $request->input("sales-qty.$i", 0);
+                if (($warehouse_id === null || $warehouse_id === '') || empty($productId) || $qty <= 0) {
                     continue;
                 }
 
-                $qty = (float) $request->input("sales-qty.$i", 0);
                 $totalQty += $qty;
 
                 ProductBookingItem::create([
@@ -232,23 +235,30 @@ class SaleController extends Controller
             ]);
 
             foreach ($request->warehouse_name ?? [] as $i => $warehouse_id) {
-                $productId = $request->input("product_name.$i");
-                if (empty($warehouse_id) || empty($productId)) {
+                $productId = $request->input("product_id.$i");
+                $saleQty = (float) $request->input("sales-qty.$i", 0);
+
+                if (($warehouse_id === null || $warehouse_id === '') || empty($productId) || $saleQty <= 0) {
                     continue;
                 }
 
                 $saleQty = (float) $request->input("sales-qty.$i", 0);
 
-                // Per-warehouse stock
-                if ($ws = WarehouseStock::where('warehouse_id', $warehouse_id)->where('product_id', $productId)->first()) {
-                    $ws->quantity = max(0, $ws->quantity - $saleQty);
-                    $ws->save();
-                }
-
-                // Global stock
-                if ($p = Product::find($productId)) {
-                    $p->stock = max(0, ($p->stock ?? 0) - $saleQty);
-                    $p->save();
+                // Stock Logic: 0 = Shop, >0 = Warehouse
+                if ($warehouse_id == 0) {
+                    // Shop Stock
+                    if ($p = Product::find($productId)) {
+                        $p->stock = max(0, ($p->stock ?? 0) - $saleQty);
+                        $p->save();
+                    }
+                } else {
+                    // Warehouse Stock
+                    if ($ws = WarehouseStock::where('warehouse_id', $warehouse_id)
+                        ->where('product_id', $productId)
+                        ->first()) {
+                        $ws->quantity = max(0, $ws->quantity - $saleQty);
+                        $ws->save();
+                    }
                 }
 
                 SaleItem::create([
@@ -285,9 +295,7 @@ class SaleController extends Controller
                 // NEW booking path -> must ensure invoice_no unique
                 do {
                     $attempts++;
-                    $invoiceNo = method_exists(Productbooking::class, 'generateInvoiceNo')
-                        ? Productbooking::generateInvoiceNo()
-                        : ('INVSLE-' . str_pad((Productbooking::max('id') ?? 0) + 1, 3, '0', STR_PAD_LEFT));
+                    $invoiceNo = Sale::generateInvoiceNo();
 
                     $booking = new Productbooking();
                     $booking->invoice_no = $invoiceNo;
@@ -338,7 +346,7 @@ class SaleController extends Controller
                 $productId = $productIds[$i] ?? null;
                 $qty = (float) ($salesQtys[$i] ?? 0);
 
-                if (empty($warehouse_id) || empty($productId) || $qty <= 0) {
+                if (($warehouse_id === null || $warehouse_id === '') || empty($productId) || $qty <= 0) {
                     continue;
                 }
 
@@ -374,8 +382,13 @@ class SaleController extends Controller
             if ($bookingId) {
                 $booking = Productbooking::with('items')->findOrFail($bookingId);
 
+                $invNo = $booking->invoice_no;
+                if (Sale::where('invoice_no', $invNo)->exists()) {
+                    $invNo = Sale::generateInvoiceNo();
+                }
+
                 $sale = Sale::create([
-                    'invoice_no' => $booking->invoice_no,
+                    'invoice_no' => $invNo,
                     'manual_invoice' => $booking->manual_invoice,
                     'partyType' => $booking->party_type,
                     'customer_id' => $booking->customer_id,
@@ -409,15 +422,21 @@ class SaleController extends Controller
                     $discAmt = (float) data_get($it, 'discount_amount', 0);
                     $amount = (float) data_get($it, 'amount', 0);
 
-                    // Per-warehouse stock
-                    if ($ws = WarehouseStock::where('warehouse_id', $it->warehouse_id)->where('product_id', $it->product_id)->first()) {
-                        $ws->quantity = max(0, $ws->quantity - $salesQty);
-                        $ws->save();
-                    }
-                    // Global stock
-                    if ($p = Product::find($it->product_id)) {
-                        $p->stock = max(0, ($p->stock ?? 0) - $salesQty);
-                        $p->save();
+                    // Stock Logic: 0 = Shop, >0 = Warehouse
+                    if ($it->warehouse_id == 0) {
+                        // Shop Stock
+                        if ($p = Product::find($it->product_id)) {
+                            $p->stock = max(0, ($p->stock ?? 0) - $salesQty);
+                            $p->save();
+                        }
+                    } else {
+                        // Warehouse Stock
+                        if ($ws = WarehouseStock::where('warehouse_id', $it->warehouse_id)
+                            ->where('product_id', $it->product_id)
+                            ->first()) {
+                            $ws->quantity = max(0, $ws->quantity - $salesQty);
+                            $ws->save();
+                        }
                     }
 
                     SaleItem::create([
@@ -524,25 +543,34 @@ class SaleController extends Controller
     //     ]);
     // }
 
-    public function getStock($productId)
-{
-    $product = Product::with('prices')->find($productId);
-    if (!$product) {
-        return response()->json(['error' => 'Product not found'], 404);
+    public function getStock(Request $request, $productId)
+    {
+        $product = Product::with('prices')->find($productId);
+        if (!$product) {
+            return response()->json(['error' => 'Product not found'], 404);
+        }
+
+        $warehouseId = $request->get('warehouse_id', 0);
+        $stock = 0;
+
+        if ($warehouseId == 0) {
+            $stock = $product->stock;
+        } else {
+            $ws = WarehouseStock::where('warehouse_id', $warehouseId)
+                ->where('product_id', $productId)
+                ->first();
+            $stock = $ws ? $ws->quantity : 0;
+        }
+
+        // Fetch the latest price record
+        $price = $product->prices()->latest()->first();
+
+        return response()->json([
+            'stock' => (float) ($stock ?? 0),
+            'sales_price' => (float) ($price->sale_net_amount ?? 0),
+            'retail_price' => (float) ($price->sale_retail_price ?? 0),
+        ]);
     }
-
-    // Fetch the latest price record
-    $price = $product->prices()->latest()->first();
-
-    // Get total stock from all warehouses
-    $totalStock = WarehouseStock::where('product_id', $productId)->sum('quantity');
-
-    return response()->json([
-        'stock' => (float) ($totalStock ?? 0), // Total stock from all warehouses
-        'sales_price' => (float) $price->sale_net_amount, // Using sale_net_amount as sales price
-        'retail_price' => (float) $price->sale_retail_price, // Using sale_retail_price for retail price
-    ]);
-}
     // SaleController.php
     public function filterCustomers(Request $request)
     {

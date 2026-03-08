@@ -188,7 +188,7 @@
                                         <tr>
                                             <td class="fw-bold">{{ $wastage->gwn_id }}</td>
                                             <td>{{ \Carbon\Carbon::parse($wastage->date)->format('d-M-Y') }}</td>
-                                            <td>{{ $wastage->warehouse->warehouse_name ?? '-' }}</td>
+                                            <td>{{ $wastage->warehouse->warehouse_name ?? '🏠 Shop Stock' }}</td>
                                             <td>{{ $wastage->accountHead->name ?? '-' }}</td>
                                             <td>{{ $wastage->account->title ?? '-' }}</td>
                                             <td class="small">

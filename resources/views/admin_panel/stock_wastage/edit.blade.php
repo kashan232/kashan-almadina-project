@@ -111,7 +111,7 @@
                 </div>
             </div>
 
-            <form action="{{ route('stock-wastage.update', $stock_wastage->id) }}" method="POST" id="wastageForm" class="position-relative {{ $stock_wastage->status != 'Posted' ? 'form-locked' : '' }}">
+            <form action="{{ route('stock-wastage.update', $stock_wastage->id) }}" method="POST" id="wastageForm" class="position-relative">
                 @csrf
                 @method('PUT')
                 <div class="posted-watermark {{ $stock_wastage->status == 'Posted' ? 'show' : '' }}">Posted</div>
@@ -132,6 +132,7 @@
                             <div class="col-md-3">
                                 <label class="form-label small fw-bold">Warehouse</label>
                                 <select name="warehouse_id" class="form-select select2" required>
+                                    <option value="0" {{ is_null($stock_wastage->warehouse_id) ? 'selected' : '' }}>🏠 Shop Stock</option>
                                     @foreach($warehouses as $wh)
                                         <option value="{{ $wh->id }}" {{ $stock_wastage->warehouse_id == $wh->id ? 'selected' : '' }}>{{ $wh->warehouse_name }}</option>
                                     @endforeach
@@ -328,7 +329,7 @@
             $.ajax({
                 url: $form.attr('action'),
                 type: 'POST',
-                data: $form.serialize(),
+                data: $form.serialize() + '&action=draft',
                 success: function(res) {
                     if (res.success) {
                         showToast('✅ ' + res.message);

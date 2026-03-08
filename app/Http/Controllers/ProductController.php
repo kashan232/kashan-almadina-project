@@ -286,21 +286,21 @@ class ProductController extends Controller
 
         // If query is blank, return top 20 active products instead of empty
         if (blank($query)) {
-             $products = Product::with(['brandRelation', 'latestPrice'])
+             $products = Product::with(['brandRelation', 'latestPrice', 'warehouseStocks'])
                 ->where('status', 1)
                 ->latest()
                 ->limit(20)
                 ->get();
         } else {
-            $products = Product::with(['brandRelation', 'latestPrice'])
+            $products = Product::with(['brandRelation', 'latestPrice', 'warehouseStocks'])
                 ->where('status', 1);
 
-            // OPTIMIZATION: If numeric, try exact ID match first for better speed
             if (is_numeric($query)) {
                 $products->where(function($q) use ($query) {
                     $q->where('id', $query)
                       ->orWhere('name', 'like', '%' . $query . '%');
-                });
+                })
+                ->orderByRaw("CASE WHEN id = ? THEN 0 ELSE 1 END", [$query]);
             } else {
                 $products->where('name', 'like', '%' . $query . '%');
             }
@@ -308,19 +308,30 @@ class ProductController extends Controller
             $products = $products->limit(20)->get();
         }
 
+        $warehouseId = $request->get('warehouse_id', 0);
+
         if ($products->isEmpty()) {
             return response()->json([], 200);
         }
 
-        $results = $products->map(function ($product) {
+        $results = $products->map(function ($product) use ($warehouseId) {
             // Optimization: Use eager loaded relation instead of DB query
             $price = $product->latestPrice;
+
+            // STOCK LOGIC: 0 = Shop, >0 = Warehouse
+            $stock = 0;
+            if ($warehouseId == 0) {
+                $stock = $product->stock;
+            } else {
+                $ws = $product->warehouseStocks->where('warehouse_id', $warehouseId)->first();
+                $stock = $ws ? $ws->quantity : 0;
+            }
 
             return [
                 'id' => $product->id,
                 'name' => $product->name,
                 'brand' => $product->brandRelation ? $product->brandRelation->name : null,
-                'stock' => $product->stock,
+                'stock' => $stock,
                 // Sale prices
                 'sale_price' => $price->sale_net_amount ?? 0,
                 'sale_retail_price' => $price->sale_retail_price ?? 0,
