@@ -40,13 +40,13 @@ class SaleController extends Controller
 
         $salesRows = $salesQuery->get()->map(function($s) {
             $s->entry_status = 'Posted';
-            $s->p_type = $s->partyType;
+            $s->p_type = $s->partyType ?? 'customer';
             return $s;
         });
 
         $bookingsRows = $bookingsQuery->get()->map(function($b) {
             $b->entry_status = 'Unposted';
-            $b->p_type = $b->party_type; 
+            $b->p_type = $b->party_type ?? 'customer'; 
             return $b;
         });
 
@@ -154,29 +154,34 @@ class SaleController extends Controller
     public function store(Request $request)
     {
         $isBooking = $request->has('booking');
+        
+        // Aggregate all receipts from common form input array
+        $receiptAmounts = $request->input('receipt_amount', []);
+        $totalReceipts = array_sum(array_map('floatval', $receiptAmounts));
+
         if ($isBooking) {
-            $booking = Productbooking::create([
-                'invoice_no' => $request->Invoice_no,
-                'manual_invoice' => $request->Invoice_main,
-                'customer_id' => $request->customer,
-                'party_type' => $request->input('partyType') ?? null,
-                'sub_customer' => $request->customerType,
-                'filer_type' => $request->filerType,
-                'address' => $request->address,
-                'tel' => $request->tel,
-                'remarks' => $request->remarks,
-                'sub_total1' => $request->subTotal1 ?? 0,
-                'sub_total2' => $request->subTotal2 ?? 0,
-                'discount_percent' => $request->discountPercent ?? 0,
-                'discount_amount' => $request->discountAmount ?? 0,
-                'previous_balance' => $request->previousBalance ?? 0,
-                'total_balance' => $request->totalBalance ?? 0,
-                'receipt1' => $request->receipt1 ?? 0,
-                'receipt2' => $request->receipt2 ?? 0,
-                'final_balance1' => $request->finalBalance1 ?? 0,
-                'final_balance2' => $request->finalBalance2 ?? 0,
-                'weight' => $request->weight ?? null,
-            ]);
+                $booking = Productbooking::create([
+                    'invoice_no' => $request->Invoice_no,
+                    'manual_invoice' => $request->Invoice_main,
+                    'customer_id' => $request->customer,
+                    'party_type' => $request->input('partyType') ?? null,
+                    'sub_customer' => $request->customerType,
+                    'filer_type' => $request->filerType,
+                    'address' => $request->address,
+                    'tel' => $request->tel,
+                    'remarks' => $request->remarks,
+                    'sub_total1' => $request->subTotal1 ?? 0,
+                    'sub_total2' => $request->subTotal2 ?? 0,
+                    'discount_percent' => $request->discountPercent ?? 0,
+                    'discount_amount' => $request->discountAmount ?? 0,
+                    'previous_balance' => $request->previousBalance ?? 0,
+                    'total_balance' => $request->totalBalance ?? 0,
+                    'receipt1' => $totalReceipts,
+                    'receipt2' => 0,
+                    'final_balance1' => $request->finalBalance1 ?? 0,
+                    'final_balance2' => $request->finalBalance2 ?? 0,
+                    'weight' => $request->weight ?? null,
+                ]);
 
             $totalQty = 0;
             foreach ($request->warehouse_name ?? [] as $i => $warehouse_id) {
@@ -324,8 +329,13 @@ class SaleController extends Controller
             $booking->discount_amount  = $request->discountAmount ?? 0;
             $booking->previous_balance = $request->previousBalance ?? 0;
             $booking->total_balance    = $request->totalBalance ?? 0;
-            $booking->receipt1       = $request->receipt1 ?? 0;
-            $booking->receipt2       = $request->receipt2 ?? 0;
+            
+            // Sum up all receipt amounts from the array
+            $receiptAmounts = $request->input('receipt_amount', []);
+            $totalReceipts = array_sum(array_map('floatval', $receiptAmounts));
+            $booking->receipt1       = $totalReceipts;
+            $booking->receipt2       = 0;
+
             $booking->final_balance1 = $request->finalBalance1 ?? 0;
             $booking->final_balance2 = $request->finalBalance2 ?? 0;
             $booking->weight         = $request->weight;
@@ -476,6 +486,89 @@ class SaleController extends Controller
                 'invoice_url' => route('sale.invoice', $sale->id),
             ]);
         });
+    }
+
+    /* -------- Post booking -> Sale (from list) -------- */
+    public function post($id)
+    {
+        return DB::transaction(function () use ($id) {
+            $booking = Productbooking::with('items')->findOrFail($id);
+            
+            $invNo = $booking->invoice_no;
+            if (Sale::where('invoice_no', $invNo)->exists()) {
+                $invNo = Sale::generateInvoiceNo();
+            }
+
+            $sale = Sale::create([
+                'invoice_no' => $invNo,
+                'manual_invoice' => $booking->manual_invoice,
+                'partyType' => $booking->party_type,
+                'customer_id' => $booking->customer_id,
+                'sub_customer' => $booking->sub_customer,
+                'filer_type' => $booking->filer_type,
+                'address' => $booking->address,
+                'tel' => $booking->tel,
+                'remarks' => $booking->remarks,
+                'sub_total1' => $booking->sub_total1,
+                'sub_total2' => $booking->sub_total2,
+                'discount_percent' => $booking->discount_percent,
+                'discount_amount' => $booking->discount_amount,
+                'previous_balance' => $booking->previous_balance,
+                'total_balance' => $booking->total_balance,
+                'receipt1' => $booking->receipt1,
+                'receipt2' => $booking->receipt2,
+                'final_balance1' => $booking->final_balance1,
+                'final_balance2' => $booking->final_balance2,
+                'weight' => $booking->weight,
+            ]);
+
+            foreach ($booking->items as $it) {
+                $salesQty = (float)($it->sales_qty ?? 0);
+                
+                // Stock Logic
+                if ($it->warehouse_id == 0) {
+                    if ($p = Product::find($it->product_id)) {
+                        $p->stock = max(0, ($p->stock ?? 0) - $salesQty);
+                        $p->save();
+                    }
+                } else {
+                    if ($ws = WarehouseStock::where('warehouse_id', $it->warehouse_id)
+                        ->where('product_id', $it->product_id)
+                        ->first()) {
+                        $ws->quantity = max(0, $ws->quantity - $salesQty);
+                        $ws->save();
+                    }
+                }
+
+                SaleItem::create([
+                    'sale_id' => $sale->id,
+                    'warehouse_id' => $it->warehouse_id,
+                    'product_id' => $it->product_id,
+                    'stock' => (float)($it->stock ?? 0),
+                    'price_level' => (float)($it->price_level ?? 0),
+                    'sales_price' => (float)($it->sales_price ?? 0),
+                    'sales_qty' => $salesQty,
+                    'retail_price' => (float)($it->retail_price ?? 0),
+                    'discount_percent' => (float)($it->discount_percent ?? 0),
+                    'discount_amount' => (float)($it->discount_amount ?? 0),
+                    'amount' => (float)($it->amount ?? 0),
+                ]);
+            }
+
+            $booking->items()->delete();
+            $booking->delete();
+
+            return redirect()->route('sale.index')->with('success', 'Sale posted successfully.');
+        });
+    }
+
+    /* -------- Delete Unposted Booking -------- */
+    public function destroy($id)
+    {
+        $booking = Productbooking::findOrFail($id);
+        $booking->items()->delete();
+        $booking->delete();
+        return redirect()->route('sale.index')->with('success', 'Booking deleted successfully.');
     }
 
     /* -------- Prints -------- */

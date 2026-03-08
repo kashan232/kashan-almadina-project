@@ -342,6 +342,8 @@ Route::middleware('auth')->group(function () {
     // AJAX (no refresh)
     Route::post('/sale/ajax/save', [SaleController::class, 'ajaxSave'])->name('sale.ajax.save');
     Route::post('/sale/ajax/post', [SaleController::class, 'ajaxPost'])->name('sale.ajax.post');
+    Route::post('/sale/{id}/post', [SaleController::class, 'post'])->name('sale.post');
+    Route::delete('/sale/{id}', [SaleController::class, 'destroy'])->name('sale.destroy');
 
     // Prints
     Route::get('/sale/invoice/{sale}', [SaleController::class, 'invoice'])->name('sale.invoice');
