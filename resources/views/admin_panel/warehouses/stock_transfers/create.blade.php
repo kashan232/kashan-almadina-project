@@ -1,4 +1,4 @@
-﻿@extends('admin_panel.layout.app')
+@extends('admin_panel.layout.app')
 
 <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 <style>
@@ -298,12 +298,25 @@ $(document).ready(function() {
         $row.find('.product-select').select2({
             placeholder: 'Search Product', width: '100%',
             ajax: {
-                url: "{{ route('search-productsinwar') }}", dataType: 'json', delay: 250,
+                url: "{{ route('search-productsinwar') }}", dataType: 'json', delay: 100,
                 data: function(params) { return { q: params.term }; },
-                processResults: function(data) {
-                    return { results: data.map(function(i) { return { id: i.id, text: i.id + ' - ' + i.name }; }) };
+                processResults: function(data, params) {
+                    const term = (params.term || '').toLowerCase();
+                    const results = data.map(function(i) { 
+                        return { id: i.id, text: i.id + ' - ' + i.name, name: i.name }; 
+                    });
+
+                    // Prioritize exact matches
+                    results.sort((a, b) => {
+                        if (String(a.id) === term || a.name.toLowerCase() === term) return -1;
+                        if (String(b.id) === term || b.name.toLowerCase() === term) return 1;
+                        return 0;
+                    });
+
+                    return { results };
                 }
-            }
+            },
+            minimumInputLength: 1
         }).on('select2:select', function(e) {
             var data = e.params.data;
             $row.find('.item-id-input').val(data.id);
@@ -340,7 +353,14 @@ $(document).ready(function() {
             $.ajax({
                 url: "{{ route('search-productsinwar') }}", data: { q: val },
                 success: function(res) {
-                    var item = res.find(function(i) { return i.id.toString() === val; });
+                    // Match prioritization: exact ID -> case-insensitive exact name -> first result if only 1
+                    var item = res.find(function(i) { return i.id.toString() === val; })
+                             || res.find(function(i) { return i.name.toLowerCase() === val.toLowerCase(); });
+                    
+                    if (!item && res.length === 1) {
+                        item = res[0];
+                    }
+
                     if (item) {
                         var option = new Option(item.id + ' - ' + item.name, item.id, true, true);
                         $row.find('.product-select').empty().append(option).val(item.id).trigger('change.select2');

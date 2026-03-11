@@ -45,6 +45,34 @@
     letter-spacing: .3px;
   }
 
+  .form-locked {
+    pointer-events: none;
+    opacity: 0.85;
+    filter: grayscale(0.2);
+  }
+  
+  .form-locked button, .form-locked .btn {
+    display: none !important;
+  }
+
+  /* Watermark for posted state */
+  .posted-watermark {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(-30deg);
+    font-size: 8rem;
+    color: rgba(220, 53, 69, 0.1);
+    font-weight: 900;
+    text-transform: uppercase;
+    pointer-events: none;
+    z-index: 1000;
+    display: none;
+    border: 10px solid rgba(220, 53, 69, 0.1);
+    padding: 20px 50px;
+    border-radius: 20px;
+  }
+
   .table {
     --bs-table-padding-y: .35rem;
     --bs-table-padding-x: .5rem;
@@ -828,44 +856,43 @@
     $select.select2({
       placeholder: "Select Product",
       allowClear: true,
-      width: '100%',
-      minimumInputLength: 0,
+      minimumInputLength: 1,
       ajax: {
         url: '{{ route("search-products") }}',
         dataType: 'json',
-        delay: 250,
+        delay: 100,
+        cache: true,
         data: function(params) {
           return {
             q: params.term,
             warehouse_id: $row.find('.warehouse').val()
           };
         },
-        processResults: function(data) {
-          return {
-            results: data.map(function(item) {
-              return {
-                id: item.id,
-                text: item.name,
-                stock: item.stock || 0,
-                sale_price: item.sale_price || 0,
-                retail_price: item.retail_price || 0
-              };
-            })
-          };
-        },
-        cache: true
+        processResults: function(data, params) {
+          const term = (params.term || '').toLowerCase();
+          const results = data.map(function(item) {
+            return {
+              id: item.id,
+              text: item.name,
+              stock: item.stock || 0,
+              sale_price: item.sale_price || 0,
+              retail_price: item.retail_price || 0
+            };
+          });
+
+          // Prioritize exact matches (ID or Name) at the top of the list
+          results.sort((a, b) => {
+             if (String(a.id) === term || a.text.toLowerCase() === term) return -1;
+             if (String(b.id) === term || b.text.toLowerCase() === term) return 1;
+             return 0;
+          });
+
+          return { results };
+        }
       }
     });
 
-    // Simple robust trigger for AJAX on open (even with 0 input)
-    $select.on('select2:open', function() {
-        if (!$select.val()) {
-            const $searchField = $('.select2-search__field');
-            if ($searchField.length) {
-                $searchField.val('').trigger('input');
-            }
-        }
-    });
+
 
     $select.on('select2:select', function(e) {
       const data = e.params.data;
@@ -1459,7 +1486,13 @@
                 if (res && res.length > 0) {
                     // Precise matching: for numeric input, prioritize exact ID match. 
                     // Only fallback to first result if the input isn't a simple ID lookup.
-                    const item = res.find(i => String(i.id) === String(id)) || (isNaN(id) ? res[0] : null);
+                    // Precise matching prioritize: Exact ID -> Exact Name (Case Insensitive) -> First Result
+                    let item = res.find(i => String(i.id) === String(id)) 
+                              || res.find(i => i.name.toLowerCase() === id.toLowerCase());
+                    
+                    if (!item && res.length === 1) {
+                         item = res[0]; 
+                    }
                     
                     if (!item) {
                         Swal.fire({
@@ -1736,7 +1769,7 @@
       // Add new row and focus on product search
       addNewRow();
       const $newRow = $('#salesTableBody tr:last-child');
-      setTimeout(() => $newRow.find('.productSearch').focus(), 100);
+      setTimeout(() => $newRow.find('.item-id-input').focus(), 100);
     }
   });
 
@@ -1762,7 +1795,7 @@
         addNewRow();
         // focus on new row product for quick entry
         const $newRow = $('#salesTableBody tr:last-child');
-        setTimeout(() => $newRow.find('.productSearch').focus(), 100);
+        setTimeout(() => $newRow.find('.item-id-input').focus(), 100);
       }
     }
   });

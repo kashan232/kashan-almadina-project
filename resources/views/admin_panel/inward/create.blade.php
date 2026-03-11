@@ -466,21 +466,30 @@
                 ajax: {
                     url: "{{ route('search-productsinwar') }}",
                     dataType: 'json',
-                    delay: 250,
+                    delay: 100,
                     data: function(params) {
                         return { q: params.term };
                     },
-                    processResults: function(data) {
-                        return {
-                            results: data.map(i => ({
-                                id: i.id,
-                                text: i.id + ' - ' + i.name,
-                                name: i.name,
-                                brand: i.brand
-                            }))
-                        };
+                    processResults: function(data, params) {
+                        const term = (params.term || '').toLowerCase();
+                        const results = data.map(i => ({
+                            id: i.id,
+                            text: i.id + ' - ' + i.name,
+                            name: i.name,
+                            brand: i.brand
+                        }));
+
+                        // Prioritize exact matches (ID or Name) at the top of the list
+                        results.sort((a, b) => {
+                            if (String(a.id) === term || a.name.toLowerCase() === term) return -1;
+                            if (String(b.id) === term || b.name.toLowerCase() === term) return 1;
+                            return 0;
+                        });
+
+                        return { results };
                     }
-                }
+                },
+                minimumInputLength: 1
             }).on('select2:select', function(e) {
                 const data = e.params.data;
                 $row.find('.item-id-input').val(data.id);
@@ -534,12 +543,19 @@
                     url: "{{ route('search-productsinwar') }}",
                     data: { q: val },
                     success: function(res) {
-                        const item = res.find(i => i.id.toString() === val);
+                        // Precise matching prioritize: Exact ID -> Exact Name (Case Insensitive) -> First Result if only 1
+                        let item = res.find(i => String(i.id) === String(val))
+                                || res.find(i => i.name.toLowerCase() === val.toLowerCase());
+
+                        if (!item && res.length === 1) {
+                            item = res[0];
+                        }
+
                         if (item) {
                             const option = new Option(item.id + ' - ' + item.name, item.id, true, true);
                             $row.find('.product-select').empty().append(option);
                             $row.find('.product-select').val(item.id).trigger('change.select2');
-                            $row.find('.brand-name').val(item.brand);
+                            $row.find('.brand-name').val(item.brand || '');
                             recalcTotals();
                             if ($row.is('#gatepassItems tr:last-child')) {
                                 window.appendBlankRow();

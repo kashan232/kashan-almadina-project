@@ -609,7 +609,7 @@ $(document).ready(function() {
             ajax: {
                 url: "{{ route('search-products') }}",
                 dataType: 'json',
-                delay: 250,
+                delay: 100,
                 data: params => ({ q: params.term }),
                 processResults: data => ({
                     results: data.map(item => ({
@@ -621,7 +621,7 @@ $(document).ready(function() {
                 }),
                 cache: true
             },
-            minimumInputLength: 0
+            minimumInputLength: 1
         });
 
         // Tab/Enter on Item ID -> Auto-Append Row if last
@@ -647,7 +647,14 @@ $(document).ready(function() {
             }
             
             $.getJSON("{{ route('search-products') }}", { q: id }, function(data) {
-                const product = data.find(p => p.id == id);
+                // Precise matching prioritize: Exact ID -> Exact Name (Case Insensitive) -> First Result if only 1
+                let product = data.find(p => String(p.id) === String(id))
+                            || data.find(p => p.name.toLowerCase() === id.toLowerCase());
+
+                if (!product && data.length === 1) {
+                    product = data[0];
+                }
+
                 if (product) {
                     const newOption = new Option(product.name, product.id, true, true);
                     $select.empty().append(newOption).trigger('change');

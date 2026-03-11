@@ -271,12 +271,13 @@ $(document).ready(function() {
         $row.find('.product-select').select2({
             placeholder: 'Search Product', width: '100%',
             ajax: {
-                url: "{{ route('search-productsinwar') }}", dataType: 'json', delay: 250,
+                url: "{{ route('search-productsinwar') }}", dataType: 'json', delay: 100,
                 data: function(params) { return { q: params.term }; },
                 processResults: function(data) {
                     return { results: data.map(function(i) { return { id: i.id, text: i.id + ' - ' + i.name }; }) };
                 }
-            }
+            },
+            minimumInputLength: 1
         }).on('select2:select', function(e) {
             var data = e.params.data;
             $row.find('.item-id-input').val(data.id);
@@ -324,7 +325,14 @@ $(document).ready(function() {
             $.ajax({
                 url: "{{ route('search-productsinwar') }}", data: { q: val },
                 success: function(res) {
-                    var item = res.find(function(i) { return i.id.toString() === val; });
+                    // Match prioritization: exact ID -> case-insensitive exact name -> first result if only 1
+                    var item = res.find(function(i) { return i.id.toString() === val; })
+                             || res.find(function(i) { return i.name.toLowerCase() === val.toLowerCase(); });
+                    
+                    if (!item && res.length === 1) {
+                        item = res[0];
+                    }
+
                     if (item) {
                         var option = new Option(item.id + ' - ' + item.name, item.id, true, true);
                         $row.find('.product-select').empty().append(option).val(item.id).trigger('change.select2');

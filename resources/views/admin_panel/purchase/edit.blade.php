@@ -179,6 +179,7 @@
                                                 class="table table-bordered table-sm text-center align-middle mt-2">
                                                 <thead class="table-light">
                                                     <tr>
+                                                        <th>Item ID</th>
                                                         <th>Product</th>
                                                         <th>Brand</th>
                                                         <th>Price</th>
@@ -192,6 +193,9 @@
                                                 </thead>
                                                 <tbody id="purchaseItems">
                                                     <tr>
+                                                        <td style="width: 100px;">
+                                                            <input type="text" class="form-control form-control-sm item-id-input" placeholder="ID">
+                                                        </td>
                                                         <td style="width: 250px;">
                                                             <select name="product_id[]" class="form-control form-control-sm product-select" style="width: 100%;">
                                                                 <option value="" disabled selected>Select Product</option>
@@ -388,35 +392,116 @@
                 ajax: {
                     url: "{{ route('search-products') }}",
                     dataType: 'json',
-                    delay: 250, 
+                    delay: 100, 
                     data: function (params) {
                         return {
                             q: params.term // search term
                         };
                     },
-                    processResults: function (data) {
-                        return {
-                            results: data.map(function(item) {
-                                return {
-                                    id: item.id,
-                                    text: item.name,
-                                    // Pass custom data
-                                    brand: item.brand,
-                                    price_net: item.purchase_net_amount,
-                                    price_retail: item.purchase_retail_price
-                                };
-                            })
-                        };
+                    processResults: function (data, params) {
+                        const term = (params.term || '').toLowerCase();
+                        const results = data.map(function(item) {
+                            return {
+                                id: item.id,
+                                text: item.name,
+                                // Pass custom data
+                                brand: item.brand,
+                                price_net: item.purchase_net_amount,
+                                price_retail: item.purchase_retail_price
+                            };
+                        });
+
+                        // Prioritize exact matches (ID or Name) at the top of the list
+                        results.sort((a, b) => {
+                            if (String(a.id) === term || a.text.toLowerCase() === term) return -1;
+                            if (String(b.id) === term || b.text.toLowerCase() === term) return 1;
+                            return 0;
+                        });
+
+                        return { results };
                     },
                     cache: true
                 },
-                minimumInputLength: 0
+                minimumInputLength: 1
+            });
+
+            // Tab/Enter on Item ID -> Auto-Append Row if last
+            $row.find('.item-id-input').on('keydown', function(e) {
+                if (e.key === 'Enter' || e.key === 'Tab') {
+                    const $currentRow = $(this).closest('tr');
+                    // Always append a new row at the bottom if we are on the last row
+                    if ($currentRow.is(':last-child')) {
+                        // focus = false so the focus doesn't jump to the new row yet
+                        window.appendBlankRow(true, false);
+                    }
+
+                    // If empty ID, open the product selector
+                    if (!$(this).val()) {
+                        e.preventDefault();
+                        $select.select2('open');
+                    }
+                }
+            });
+
+            // Sync ID input -> Select2
+            $row.find('.item-id-input').on('change', function() {
+                const $input = $(this);
+                const id = $input.val().trim();
+                if (!id) {
+                    $select.val(null).trigger('change');
+                    return;
+                }
+                
+                $input.addClass('loading-indicator');
+                $.getJSON("{{ route('search-products') }}", { 
+                    q: id,
+                    warehouse_id: $('select[name="warehouse_id"]').val() 
+                }, function(data) {
+                    $input.removeClass('loading-indicator');
+                    
+                    // Precise matching prioritize: Exact ID -> Exact Name (Case Insensitive) -> First Result if only 1
+                    let product = data.find(p => String(p.id) === String(id)) 
+                               || data.find(p => p.name.toLowerCase() === id.toLowerCase());
+                    
+                    if (!product && data.length === 1) {
+                         product = data[0];
+                    }
+
+                    if (product) {
+                        const newOption = new Option(product.name, product.id, true, true);
+                        $select.empty().append(newOption).trigger('change');
+                        
+                        // Populate and trigger row calcs
+                        $select.trigger({
+                            type: 'select2:select',
+                            params: {
+                                data: {
+                                    id: product.id,
+                                    text: product.name,
+                                    brand: product.brand,
+                                    price_net: product.purchase_net_amount,
+                                    price_retail: product.purchase_retail_price
+                                }
+                            }
+                        });
+                    } else {
+                        $select.val(null).trigger('change');
+                        showToast('❌ Product ID not found!', 'error');
+                        $input.val('');
+                    }
+                }).fail(function() {
+                    $input.removeClass('loading-indicator');
+                    showToast('❌ Server error!', 'error');
+                });
             });
 
             // Handle selection
             $select.on('select2:select', function (e) {
                 const data = e.params.data;
                 const $currentRow = $(this).closest('tr');
+
+                // Update ID input
+                $currentRow.find('.item-id-input').val(data.id);
 
                 // Populate fields
                 $currentRow.find('.product_name_hidden').val(data.text);
@@ -548,6 +633,9 @@
             // data: { product_id, product_name, brand, price, retail_show, item_disc, disc_amount, qty, row_amount, row_total, purchase_retail, purchase_net }
             return `
       <tr>
+        <td style="width: 100px;">
+          <input type="text" class="form-control form-control-sm item-id-input" placeholder="ID" value="${data.product_id || ''}">
+        </td>
         <td style="width: 250px;">
           <select name="product_id[]" class="form-control form-control-sm product-select" style="width: 100%;">
             ${optionHtml}

@@ -620,18 +620,26 @@
                 ajax: {
                     url: "{{ route('search-products') }}",
                     dataType: 'json',
-                    delay: 250,
+                    delay: 100,
                     data: function (params) { return { q: params.term }; },
-                    processResults: function (data) {
-                        return {
-                            results: data.map(function(item) {
-                                return { id: item.id, text: item.name, price_net: item.price_net || 0 };
-                            })
-                        };
+                    processResults: function (data, params) {
+                        const term = (params.term || '').toLowerCase();
+                        const results = data.map(function(item) {
+                            return { id: item.id, text: item.name, price_net: item.price_net || 0 };
+                        });
+
+                        // Prioritize exact matches (ID or Name) at the top of the list
+                        results.sort((a, b) => {
+                            if (String(a.id) === term || a.text.toLowerCase() === term) return -1;
+                            if (String(b.id) === term || b.text.toLowerCase() === term) return 1;
+                            return 0;
+                        });
+
+                        return { results };
                     },
                     cache: true
                 },
-                minimumInputLength: 0
+                minimumInputLength: 1
             });
 
             // Focus Item ID of new row
@@ -656,10 +664,10 @@
                 dataType: 'json',
                 data: { q: itemId },
                 success: function(data) {
-                    var match = null;
-                    $.each(data, function(i, item) {
-                        if (item.id.toString() === itemId.toString()) { match = item; return false; }
-                    });
+                    // Match prioritization: exact ID -> case-insensitive exact name -> first result if only 1
+                    var match = data.find(function(item) { return item.id.toString() === itemId.toString(); })
+                             || data.find(function(item) { return item.name.toLowerCase() === itemId.toLowerCase(); });
+                    
                     if (!match && data.length === 1) match = data[0];
 
                     if (match) {

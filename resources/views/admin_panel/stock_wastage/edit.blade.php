@@ -275,7 +275,7 @@
                 ajax: {
                     url: "{{ route('search-products') }}",
                     dataType: 'json',
-                    delay: 250,
+                    delay: 100,
                     data: function (params) { return { q: params.term }; },
                     processResults: function (data) {
                         return {
@@ -286,7 +286,7 @@
                     },
                     cache: true
                 },
-                minimumInputLength: 0
+                minimumInputLength: 1
             });
         });
 
@@ -423,14 +423,14 @@
                 ajax: {
                     url: "{{ route('search-products') }}",
                     dataType: 'json',
-                    delay: 250,
+                    delay: 100,
                     data: function (params) { return { q: params.term }; },
                     processResults: function (data) {
                         return { results: data.map(function(item) { return { id: item.id, text: item.name, price_net: item.price_net || 0 }; }) };
                     },
                     cache: true
                 },
-                minimumInputLength: 0
+                minimumInputLength: 1
             });
             setTimeout(function() { $row.find('.item-id-input').focus(); }, 60);
         }

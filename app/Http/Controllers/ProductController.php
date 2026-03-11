@@ -283,47 +283,66 @@ class ProductController extends Controller
     public function searchProducts(Request $request)
     {
         $query = $request->get('q');
+        $warehouseId = $request->get('warehouse_id', 0);
 
-        // If query is blank, return top 20 active products instead of empty
+        // Optimize: Only load the warehouse stocks for the SPECIFIC warehouse selected
+        $withArray = [
+            'brandRelation', 
+            'latestPrice', 
+            'warehouseStocks' => function($q) use ($warehouseId) {
+                $q->where('warehouse_id', $warehouseId);
+            }
+        ];
+
+        // If query is blank, return top 20 active products
         if (blank($query)) {
-             $products = Product::with(['brandRelation', 'latestPrice', 'warehouseStocks'])
+             $products = Product::with($withArray)
                 ->where('status', 1)
-                ->latest()
+                ->orderBy('id', 'desc')
                 ->limit(20)
                 ->get();
         } else {
-            $products = Product::with(['brandRelation', 'latestPrice', 'warehouseStocks'])
+            $products = Product::with($withArray)
                 ->where('status', 1);
 
             if (is_numeric($query)) {
                 $products->where(function($q) use ($query) {
                     $q->where('id', $query)
+                      ->orWhere('name', 'like', $query . '%')
                       ->orWhere('name', 'like', '%' . $query . '%');
                 })
-                ->orderByRaw("CASE WHEN id = ? THEN 0 ELSE 1 END", [$query]);
+                ->orderByRaw("CASE 
+                    WHEN id = ? THEN 0 
+                    WHEN name = ? THEN 1
+                    WHEN name LIKE ? THEN 2
+                    ELSE 3 
+                END", [$query, $query, $query . '%']);
             } else {
-                $products->where('name', 'like', '%' . $query . '%');
+                $products->where('name', 'like', '%' . $query . '%')
+                        ->orderByRaw("CASE 
+                            WHEN name = ? THEN 0 
+                            WHEN name LIKE ? THEN 1 
+                            ELSE 2 
+                        END", [$query, $query . '%']);
             }
 
             $products = $products->limit(20)->get();
         }
-
-        $warehouseId = $request->get('warehouse_id', 0);
 
         if ($products->isEmpty()) {
             return response()->json([], 200);
         }
 
         $results = $products->map(function ($product) use ($warehouseId) {
-            // Optimization: Use eager loaded relation instead of DB query
             $price = $product->latestPrice;
 
-            // STOCK LOGIC: 0 = Shop, >0 = Warehouse
+            // Stock Logic: 0 = Shop, >0 = Warehouse
             $stock = 0;
             if ($warehouseId == 0) {
                 $stock = $product->stock;
             } else {
-                $ws = $product->warehouseStocks->where('warehouse_id', $warehouseId)->first();
+                // Since we eager loaded with a filter, we can just grab the first()
+                $ws = $product->warehouseStocks->first();
                 $stock = $ws ? $ws->quantity : 0;
             }
 
@@ -332,12 +351,10 @@ class ProductController extends Controller
                 'name' => $product->name,
                 'brand' => $product->brandRelation ? $product->brandRelation->name : null,
                 'stock' => $stock,
-                // Sale prices
                 'sale_price' => $price->sale_net_amount ?? 0,
                 'sale_retail_price' => $price->sale_retail_price ?? 0,
                 'retail_price' => $price->sale_retail_price ?? 0,
                 'net_price' => $price->sale_net_amount ?? 0,
-                // Purchase prices
                 'purchase_net_amount' => $price->purchase_net_amount ?? 0,
                 'purchase_retail_price' => $price->purchase_retail_price ?? 0,
             ];

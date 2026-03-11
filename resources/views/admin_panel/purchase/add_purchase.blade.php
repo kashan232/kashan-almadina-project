@@ -1,4 +1,4 @@
-﻿@extends('admin_panel.layout.app')
+@extends('admin_panel.layout.app')
 <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 <style>
                 @media print {
@@ -627,29 +627,37 @@
                 ajax: {
                     url: "{{ route('search-products') }}",
                     dataType: 'json',
-                    delay: 250, 
+                    delay: 100, 
                     data: function (params) {
                         return {
                             q: params.term // search term
                         };
                     },
-                    processResults: function (data) {
-                        return {
-                            results: data.map(function(item) {
-                                return {
-                                    id: item.id,
-                                    text: item.name,
-                                    // Pass custom data
-                                    brand: item.brand,
-                                    price_net: item.purchase_net_amount,
-                                    price_retail: item.purchase_retail_price
-                                };
-                            })
-                        };
+                    processResults: function (data, params) {
+                        const term = (params.term || '').toLowerCase();
+                        const results = data.map(function(item) {
+                            return {
+                                id: item.id,
+                                text: item.name,
+                                // Pass custom data
+                                brand: item.brand,
+                                price_net: item.purchase_net_amount,
+                                price_retail: item.purchase_retail_price
+                            };
+                        });
+
+                        // Prioritize exact matches (ID or Name) at the top of the list
+                        results.sort((a, b) => {
+                            if (String(a.id) === term || a.text.toLowerCase() === term) return -1;
+                            if (String(b.id) === term || b.text.toLowerCase() === term) return 1;
+                            return 0;
+                        });
+
+                        return { results };
                     },
                     cache: true
                 },
-                minimumInputLength: 0
+                minimumInputLength: 1
             });
 
             // Tab/Enter on Item ID -> Auto-Append Row if last
@@ -685,8 +693,14 @@
                     warehouse_id: $('select[name="warehouse_id"]').val() 
                 }, function(data) {
                     $input.removeClass('loading-indicator');
-                    // Precise matching: for numeric input, prioritize exact ID match. 
-                    const product = data.find(p => String(p.id) === String(id)) || (isNaN(id) ? data[0] : null);
+                    
+                    // Precise matching prioritize: Exact ID -> Exact Name (Case Insensitive) -> First Result if only 1
+                    let product = data.find(p => String(p.id) === String(id)) 
+                               || data.find(p => p.name.toLowerCase() === id.toLowerCase());
+                    
+                    if (!product && data.length === 1) {
+                         product = data[0];
+                    }
 
                     if (product) {
                         const newOption = new Option(product.name, product.id, true, true);

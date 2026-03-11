@@ -316,18 +316,35 @@ class InwardgatepassController extends Controller
         if (blank($query)) {
             $products = Product::with(['brandRelation'])
                 ->where('status', 1)
-                ->latest()
+                ->orderBy('id', 'desc')
                 ->limit(20)
                 ->get();
         } else {
             $products = Product::with(['brandRelation'])
-                ->where('status', 1)
-                ->where(function($q) use ($query) {
-                    $q->where('name', 'like', '%' . $query . '%')
-                      ->orWhere('id', $query);
+                ->where('status', 1);
+
+            if (is_numeric($query)) {
+                 $products->where(function($q) use ($query) {
+                    $q->where('id', $query)
+                      ->orWhere('name', 'like', $query . '%')
+                      ->orWhere('name', 'like', '%' . $query . '%');
                 })
-                ->limit(20)
-                ->get();
+                ->orderByRaw("CASE 
+                    WHEN id = ? THEN 0 
+                    WHEN name = ? THEN 1
+                    WHEN name LIKE ? THEN 2
+                    ELSE 3 
+                END", [$query, $query, $query . '%']);
+            } else {
+                $products->where('name', 'like', '%' . $query . '%')
+                        ->orderByRaw("CASE 
+                            WHEN name = ? THEN 0 
+                            WHEN name LIKE ? THEN 1 
+                            ELSE 2 
+                        END", [$query, $query . '%']);
+            }
+
+            $products = $products->limit(20)->get();
         }
 
         $results = $products->map(function ($product) {
