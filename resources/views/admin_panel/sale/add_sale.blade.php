@@ -45,17 +45,36 @@
     letter-spacing: .3px;
   }
 
-  .form-locked {
-    pointer-events: none;
-    opacity: 0.85;
-    filter: grayscale(0.2);
+  .form-locked input,
+  .form-locked select,
+  .form-locked textarea,
+  .form-locked label,
+  .form-locked .btn-group .btn,
+  .form-locked .select2-container,
+  .form-locked .del-row,
+  .form-locked #btnAdd,
+  .form-locked #btnAddRV,
+  .form-locked .btnRemRV,
+  .form-locked .discount-value,
+  .form-locked .order-disc-btn,
+  .form-locked .rv-amount,
+  .form-locked .rv-head,
+  .form-locked .rv-account,
+  .form-locked .rv-narration {
+    pointer-events: none !important;
+    opacity: 0.65 !important;
+    cursor: not-allowed !important;
   }
   
-  .form-locked button, .form-locked .btn {
-    display: none !important;
+  /* GRAY BACKGROUND FOR LOCKED INPUTS */
+  .form-locked input:not([type="hidden"]), 
+  .form-locked select, 
+  .form-locked textarea,
+  .form-locked .select2-selection {
+    background-color: #e9ecef !important;
   }
 
-  /* Watermark for posted state */
+  /* WATERMARK FOR POSTED STATE */
   .posted-watermark {
     position: absolute;
     top: 50%;
@@ -307,19 +326,6 @@
     gap: 2px;
   }
   
-    .form-locked { position: relative; pointer-events: none !important; opacity: 0.8; }
-    .form-locked input, .form-locked .select2-container--default .select2-selection--single, .form-locked select, .form-locked textarea { 
-        background-color: #e9ecef !important; cursor: not-allowed !important; 
-    }
-    .form-locked .del-row, .form-locked #btnAdd, .form-locked #btnAddRV, .form-locked .btnRemRV { display: none !important; }
-    
-    .posted-watermark {
-        position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-30deg);
-        font-size: 100px; color: rgba(255, 0, 0, 0.1); font-weight: bold; pointer-events: none; z-index: 1000;
-        text-transform: uppercase; border: 10px solid rgba(255, 0, 0, 0.1); padding: 20px; border-radius: 20px; display: none;
-    }
-    .posted-watermark.show { display: block; }
-
     .btn-xs {
         padding: 1px 4px;
         font-size: 0.7rem;
@@ -1172,8 +1178,10 @@
                       $('#booking_id').val(res.booking_id);
                       $('#idBadge').text('ID: ' + res.booking_id).show();
                       $('#saleForm').addClass('form-locked');
-                      $('#saveDraftBtn, #postBtn').hide();
-                      $('#editBtn, #newBtn').show();
+                      // User requested all buttons stay visible
+                      $('#saveDraftBtn, #postBtn, #previewPrintBtn, #cancelBtn, #editBtn, #newBtn').show();
+                      // Change Post button to green as a visual cue
+                      $('#postBtn').removeClass('btn-primary').addClass('btn-success');
                       $('#statusBadge').removeClass('bg-warning').addClass('bg-info text-white').html('<i class="fa fa-pencil"></i> Unposted');
 
                       if (showMsg) {
@@ -1281,8 +1289,11 @@
 
       $('#editBtn').on('click', function() {
           $('#saleForm').removeClass('form-locked');
-          $('#saveDraftBtn, #postBtn').show();
-          $(this).hide();
+          // Update status if needed or just show a message
+          Swal.fire({ icon: 'info', title: 'Unlocked', text: 'Form is now editable.', timer: 1000, showConfirmButton: false });
+          // Note: User wants and asked for buttons to stay, so we don't hide this button necessarily, 
+          // but usually Edit hides when you ARE editing. Let's keep it visible per request or hide it to avoid confusion.
+          // The user specifically said "sary show hongey", so I'll keep it but maybe it does nothing when unlocked.
       });
 
       // KEYBOARD SHORTCUTS
@@ -1330,8 +1341,8 @@
       // On load, if booking_id exists, lock form
       if($('#booking_id').val()) {
           $('#saleForm').addClass('form-locked');
-          $('#saveDraftBtn, #postBtn').hide();
-          $('#editBtn, #newBtn').show();
+          $('#saveDraftBtn, #postBtn, #previewPrintBtn, #cancelBtn, #editBtn, #newBtn').show();
+          $('#postBtn').removeClass('btn-primary').addClass('btn-success');
           $('#idBadge').text('ID: ' + $('#booking_id').val()).show();
           $('#statusBadge').removeClass('bg-warning').addClass('bg-info text-white').html('<i class="fa fa-pencil"></i> Unposted');
       }
