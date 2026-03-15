@@ -84,10 +84,12 @@ class SaleController extends Controller
         $booking = Productbooking::with('items.product', 'customer')->findOrFail($id);
         $warehouses = Warehouse::all();
         $customers = Customer::all();
+        $accountHeads = AccountHead::all();
+        $accounts = Account::all();
         $lastInvoice = Productbooking::latest('id')->first();
         $nextInvoiceNumber = $lastInvoice ? intval($lastInvoice->invoice_no) + 1 : 1;
 
-        return view('admin_panel.sale.booking.edit', compact('booking', 'warehouses', 'customers', 'nextInvoiceNumber'));
+        return view('admin_panel.sale.booking.edit', compact('booking', 'warehouses', 'customers', 'nextInvoiceNumber', 'accountHeads', 'accounts'));
     }
 
     public function edit($id)
@@ -95,7 +97,9 @@ class SaleController extends Controller
         $sale = Sale::with('items')->findOrFail($id);
         $warehouses = Warehouse::all();
         $customers = Customer::all();
-        return view('admin_panel.sale.edit', compact('sale', 'warehouses', 'customers'));
+        $accountHeads = AccountHead::all();
+        $accounts = Account::all();
+        return view('admin_panel.sale.edit', compact('sale', 'warehouses', 'customers', 'accountHeads', 'accounts'));
     }
 
     public function update(Request $request, $id)
@@ -124,9 +128,19 @@ class SaleController extends Controller
 
         SaleItem::where('sale_id', $sale->id)->delete();
 
-        foreach ($request->warehouse_name ?? [] as $i => $warehouse_id) {
-            $productId = $request->input("product_id.$i");
-            $qty = (float) $request->input("sales-qty.$i", 0);
+        $productIds = $request->input('product_id', []);
+        $warehouseIds = $request->input('warehouse_name', []);
+        $stocks = $request->input('stock', []);
+        $salesPrices = $request->input('sales-price', []);
+        $salesQtys = $request->input('sales-qty', []);
+        $retailPrices = $request->input('retail-price', []);
+        $discPercents = $request->input('discount-percent', []);
+        $discAmounts = $request->input('discount-amount', []);
+        $amounts = $request->input('sales-amount', []);
+
+        foreach ($warehouseIds as $i => $warehouse_id) {
+            $productId = $productIds[$i] ?? null;
+            $qty = (float)($salesQtys[$i] ?? 0);
 
             if (($warehouse_id === null || $warehouse_id === '') || empty($productId) || $qty <= 0) {
                 continue;
@@ -136,14 +150,14 @@ class SaleController extends Controller
                 'sale_id' => $sale->id,
                 'warehouse_id' => $warehouse_id,
                 'product_id' => $productId,
-                'stock' => (float) $request->input("stock.$i", 0),
-                'price_level' => (float) $request->input("price.$i", 0),
-                'sales_price' => (float) $request->input("sales-price.$i", 0),
-                'sales_qty' => (float) $request->input("sales-qty.$i", 0),
-                'retail_price' => (float) $request->input("retail-price.$i", 0),
-                'discount_percent' => (float) $request->input("discount-percent.$i", 0),
-                'discount_amount' => (float) $request->input("discount-amount.$i", 0),
-                'amount' => (float) $request->input("sales-amount.$i", 0),
+                'stock' => (float)($stocks[$i] ?? 0),
+                'price_level' => 0,
+                'sales_price' => (float)($salesPrices[$i] ?? 0),
+                'sales_qty' => $qty,
+                'retail_price' => (float)($retailPrices[$i] ?? 0),
+                'discount_percent' => (float)($discPercents[$i] ?? 0),
+                'discount_amount' => (float)($discAmounts[$i] ?? 0),
+                'amount' => (float)($amounts[$i] ?? 0),
             ]);
         }
 
@@ -330,11 +344,20 @@ class SaleController extends Controller
             $booking->previous_balance = $request->previousBalance ?? 0;
             $booking->total_balance    = $request->totalBalance ?? 0;
             
-            // Sum up all receipt amounts from the array
-            $receiptAmounts = $request->input('receipt_amount', []);
-            $totalReceipts = array_sum(array_map('floatval', $receiptAmounts));
-            $booking->receipt1       = $totalReceipts;
-            $booking->receipt2       = 0;
+            // Sum up all receipt amounts and also save the details
+            $receiptHeads = $request->input('receipt_head_id', []);
+            $receiptAccounts = $request->input('receipt_account_id', []);
+            $receiptNarrations = $request->input('receipt_narration', []);
+            $receiptAmountsArr = $request->input('receipt_amount', []);
+            
+            $totalReceipts = array_sum(array_map('floatval', $receiptAmountsArr));
+            
+            $booking->receipt1 = $totalReceipts;
+            $booking->receipt2 = 0;
+            $booking->receipt_heads = json_encode($receiptHeads);
+            $booking->receipt_accounts = json_encode($receiptAccounts);
+            $booking->receipt_narrations = json_encode($receiptNarrations);
+            $booking->receipt_amounts_json = json_encode($receiptAmountsArr);
 
             $booking->final_balance1 = $request->finalBalance1 ?? 0;
             $booking->final_balance2 = $request->finalBalance2 ?? 0;
@@ -415,6 +438,10 @@ class SaleController extends Controller
                     'total_balance' => $booking->total_balance,
                     'receipt1' => $booking->receipt1,
                     'receipt2' => $booking->receipt2,
+                    'receipt_heads' => $booking->receipt_heads,
+                    'receipt_accounts' => $booking->receipt_accounts,
+                    'receipt_narrations' => $booking->receipt_narrations,
+                    'receipt_amounts_json' => $booking->receipt_amounts_json,
                     'final_balance1' => $booking->final_balance1,
                     'final_balance2' => $booking->final_balance2,
                     'weight' => $booking->weight,
@@ -517,6 +544,10 @@ class SaleController extends Controller
                 'total_balance' => $booking->total_balance,
                 'receipt1' => $booking->receipt1,
                 'receipt2' => $booking->receipt2,
+                'receipt_heads' => $booking->receipt_heads,
+                'receipt_accounts' => $booking->receipt_accounts,
+                'receipt_narrations' => $booking->receipt_narrations,
+                'receipt_amounts_json' => $booking->receipt_amounts_json,
                 'final_balance1' => $booking->final_balance1,
                 'final_balance2' => $booking->final_balance2,
                 'weight' => $booking->weight,

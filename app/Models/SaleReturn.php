@@ -27,6 +27,14 @@ class SaleReturn extends Model
     //     'sales_price','sales_qty','discount_percent','discount_amount','amount',
     // ];
 
-     public function product(){ return $this->belongsTo(Product::class); }
-    public function saleReturn(){ return $this->belongsTo(SaleReturn::class); }
+    public function items(){ return $this->hasMany(SaleReturnItem::class, 'sale_return_id'); }
+    public function sale(){ return $this->belongsTo(Sale::class, 'sale_id'); }
+    
+    public function getPartyNameAttribute() {
+        if ($this->party_type == 'vendor') {
+            return \App\Models\Vendor::find($this->customer_id)->name ?? 'N/A';
+        } else {
+            return \App\Models\Customer::find($this->customer_id)->customer_name ?? 'N/A';
+        }
+    }
 }

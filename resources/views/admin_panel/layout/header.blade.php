@@ -93,6 +93,7 @@
                  <p class="category-heading">Sales & Customers</p>
                  <ul class="submenu-item">
                      <li><a href="{{url('sale')}}"><i class="fas fa-receipt"></i> Sales</a></li>
+                     <li><a href="{{route('sale.return.home')}}"><i class="fas fa-undo"></i> Sale Return</a></li>
                      <li><a href="{{ route('stock-hold-list') }}"><i class="fas fa-receipt"></i> Stock hold</a></li>
                      <li><a href="{{ route('stock-relase-list') }}"><i class="fas fa-receipt"></i> Stock Realase</a></li>
                      <li><a href="{{url('customers')}}"><i class="fas fa-user"></i> Customer</a></li>

@@ -1,516 +1,296 @@
 @extends('admin_panel.layout.app')
 
 @section('content')
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-        .main-container {
-            font-size: 0.75rem;
-            max-width: 1200px;
-        }
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 
-        .header-text {
-            font-size: 1rem;
-            text-shadow: 1px 1px 1px #ccc;
-        }
+<style>
+  .main-container {
+    font-size: .85rem;
+    max-width: 1400px;
+  }
+  .form-control, .form-select, .btn {
+    font-size: .85rem;
+    padding: .4rem .6rem;
+    height: auto;
+  }
+  .input-readonly { background: #f9fbff; }
+  .form-locked input, .form-locked select, .form-locked textarea, .form-locked button {
+    pointer-events: none !important; opacity: 0.65 !important;
+  }
+  .form-locked input:not([type="hidden"]), .form-locked select, .form-locked textarea {
+    background-color: #e9ecef !important;
+  }
+  .table-responsive { max-height: 360px; overflow: auto; border: 1px solid #eee; border-radius: .5rem; }
+  .totals-card { background: #fcfcfe; border: 1px solid #eee; border-radius: .5rem; }
+  .loading-indicator { background-color: #fff9c4 !important; }
+</style>
 
-        .form-control,
-        .form-select,
-        .btn {
-            font-size: 0.75rem;
-            padding: 0.2rem 0.5rem;
-            height: auto;
-        }
-
-        .form-row {
-            align-items: center;
-            margin-bottom: 0.3rem;
-        }
-
-        .form-row label {
-            width: 100px;
-            white-space: nowrap;
-        }
-
-        .table {
-            --bs-table-padding-y: 0.2rem;
-            --bs-table-padding-x: 0.3rem;
-            font-size: 0.75rem;
-        }
-
-        .table th,
-        .table td {
-            white-space: nowrap;
-        }
-
-        .table thead th {
-            text-align: center;
-        }
-
-        .table-responsive {
-            max-height: 250px;
-            overflow-y: auto;
-        }
-
-        .footer-buttons .btn {
-            padding: 0.3rem 0.6rem;
-            font-size: 0.7rem;
-        }
-    </style>
-    <div class="container-fluid py-4">
-        <div class="main-container bg-white border shadow-sm mx-auto p-2">
-            @if (session('success'))
-                <div class="alert alert-success alert-dismissible fade show" role="alert">
-                    {{ session('success') }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div>
-            @endif
-
-            <form action="{{ route('sale.update', $sale->id) }}" method="POST">
-                @csrf
-
-                <div class="d-flex justify-content-between align-items-center p-2 border-bottom">
-                    <small class="text-secondary">Entry Date_Time: 01-07-24 &nbsp;&nbsp; 06:48 PM</small>
-                    <div class="d-flex align-items-center">
-                        <img src="https://i.imgur.com/L7p41j4.png" alt="Logo" height="25" class="me-2">
-                        <h5 class="header-text text-secondary fw-bold mb-0">Sales</h5>
-                    </div>
-                    <div class="d-flex align-items-center">
-                        <small class="text-secondary me-3">Date: &nbsp;&nbsp; 01-07-24</small>
-                        <button class="btn btn-sm btn-light border">Posted</button>
-                    </div>
-                </div>
-
-                <div class="d-flex border-bottom">
-                    <div class="p-3 border-end" style="min-width: 350px;">
-                        <div class="d-flex align-items-center mb-2">
-                            <label class="form-label fw-bold me-2">Invoice No.</label>
-                            <input type="text" class="form-control me-2" name="Invoice_no" style="width: 100px;"
-                                {{--  value="{{ $nextInvoiceNumber }}" readonly>  --}}
-
-                            <label class="form-label fw-bold me-2">M. Inv#</label>
-                            <input type="text" class="form-control" name="Invoice_main"
-                                placeholder="Enter manual invoice">
-                        </div>
-
-                        <div class="d-flex align-items-center mb-2">
-                            <label class="form-label fw-bold me-2">Customer:</label>
-                            <select class="form-select" name="customer" id="customerSelect">
-                                <option>Customer select</option>
-                                @foreach ($customers as $customer)
-                       <option value="{{ $customer->id }}" {{ $sale->customer_id == $customer->id ? 'selected' : '' }}>
-    {{ $customer->customer_id . ' ' . $customer->customer_name }}
-</option>
-
-                                @endforeach
-                            </select>
-                        </div>
-                        <div class="d-flex align-items-center mb-2">
-                            <label class="form-label fw-bold me-2">Sub Customer:</label>
-                       <select id="customerType" name="customerType" class="form-select me-2" style="width: 120px;">
-    <option value="">Sub Customer</option>
-    <option value="{{ $sale->sub_customer }}" selected>{{ $sale->sub_customer }}</option>
-</select>
-                         <input type="text" id="filerType" name="filerType" class="form-control" placeholder="Filer Type" value="{{ $sale->filer_type }}">
-
-                        </div>
-                        <div class="d-flex mb-2">
-                            <label class="form-label fw-bold me-2">Address</label>
-                         <textarea class="form-control" id="address" name="address" rows="2">{{ $sale->address }}</textarea>
-                        </div>
-                        <div class="d-flex align-items-center mb-2">
-                            <label class="form-label fw-bold me-2">Tel#</label>
-                          <input type="text" class="form-control" id="tel" name="tel" value="{{ $sale->tel }}">
-                        </div>
-                        <div class="d-flex mb-2">
-                            <label class="form-label fw-bold me-2">Remarks:</label>
-                           <textarea class="form-control" id="remarks" name="remarks" rows="2">{{ $sale->remarks }}</textarea>
-
-                        </div>
-                        <div class="text-end mt-3">
-                            <button id="clearCustomerData" class="btn btn-sm btn-secondary">Delete</button>
-                        </div>
-
-                    </div>
-
-                    <div class="flex-grow-1 p-3" style="max-width: 100%; overflow-x: auto;">
-                        <div class="table-responsive" style="max-width: 100%; overflow-x: auto;">
-                            <table class="table table-bordered mb-0" style="min-width: 1200px;">
-                                <thead>
-                                    <tr>
-                                        <th>Warehouse</th>
-                                        <th>product </th>
-                                        <th>stock</th>
-                                        <th>Price Level</th>
-                                        <th>Sales Price</th>
-                                        <th>Sales Qty</th>
-                                        <th>Retail Price</th>
-                                        <th>Dis. (%)</th>
-                                        <th>Dis. Amt.</th>
-                                        <th>Amount</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="salesTableBody">
-                                @foreach ($sale->items as $item)
-<tr>
-    <td>
-        <select class="form-select warehouse form-control" name="warehouse_name[]">
-            <option value="">Select</option>
-            @foreach ($warehouses as $wh)
-                <option value="{{ $wh->id }}" {{ $item->warehouse_id == $wh->id ? 'selected' : '' }}>
-                    {{ $wh->warehouse_name }}
-                </option>
-            @endforeach
-        </select>
-    </td>
-    <td>
-        <select class="form-select product form-control" name="product_name[]">
-            <option value="{{ $item->product_id }}" selected>
-                {{ $item->product_id}}
-            </option>
-        </select>
-    </td>
-    <td><input type="text" class="form-control stock text-danger text-center" name="stock[]" value="{{ $item->stock }}" readonly></td>
-    <td><input type="text" class="form-control text-end price" name="price[]" value="{{ $item->price_level }}" readonly></td>
-    <td><input type="text" class="form-control text-end sales-price" name="sales-price[]" value="{{ $item->sales_price }}"></td>
-    <td><input type="text" class="form-control text-end sales-qty" name="sales-qty[]" value="{{ $item->sales_qty }}"></td>
-    <td><input type="text" class="form-control text-end retail-price" name="retail-price[]" value="{{ $item->retail_price }}"></td>
-    <td><input type="text" class="form-control text-end discount-percent" name="discount-percent[]" value="{{ $item->discount_percent }}"></td>
-    <td><input type="text" class="form-control text-end discount-amount" name="discount-amount[]" value="{{ $item->discount_amount }}"></td>
-    <td><input type="text" class="form-control text-end sales-amount" name="sales-amount[]" value="{{ $item->amount }}" readonly></td>
-</tr>
-@endforeach
- <tr>
-                                    <td> <select class="form-select warehouse form-control" name="warehouse_name[]">
-                                            <option value="">Select</option>
-                                            @foreach ($warehouses as $wh)
-                                                <option value="{{ $wh->id }}">{{ $wh->warehouse_name }}</option>
-                                            @endforeach
-                                        </select>
-                                    </td>
-                                    <td>
-
-                                        <select class="form-select product form-control" name="product_name[]">
-                                           
-                                        </select>
-                                    </td>
-                                    <td><input type="text" class="form-control stock text-danger text-center" name="stock[]" readonly ></td>
-                                    <td><input type="text" class="form-control text-end price" name="price[]" readonly></td>
-                                 <td><input type="text" class="form-control text-end sales-price" name="sales-price[]" value="0"></td>
-<td><input type="text" class="form-control text-end sales-qty" value="0" name="sales-qty[]"></td>
-<td><input type="text" class="form-control text-end retail-price" name="retail-price[]" value="0"></td>
-<td><input type="text" class="form-control text-end discount-percent" name="discount-percent[]" value="0"></td>
-<td><input type="text" class="form-control text-end discount-amount" name="discount-amount[]" value="0"></td>
-<td><input type="text" class="form-control text-end sales-amount" name="sales-amount[]" value="0" readonly></td>
-
-
-                                </tr>
-
-                                    {{--  <tr>
-    <td colspan="9" class="text-end"><b>Total:</b></td>
-    <td><b id="totalAmount">0.00</b></td>
-</tr>  --}}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="d-flex justify-content-between p-3 border-bottom">
-                    <div style="min-width: 350px;">
-                        <p class="mb-1">Wednesday, 13 August, 2025</p>
-                        <div class="d-flex align-items-center mb-1">
-                            <label class="form-label fw-bold me-2">Sub Total-2:</label>
-                            <input type="text"
-                                class="form-control text-end fw-bold text-primary bg-info-subtle border-primary"
-                                value="0">
-                        </div>
-                        <div class="d-flex align-items-center mb-1">
-                            <label class="form-label fw-bold me-2">Advance Tax:</label>
-                            <input type="text" class="form-control text-end me-2" style="width: 70px;"
-                                value="0.00">
-                            <input type="text" class="form-control text-end" style="width: 70px;" value="0.00">
-                        </div>
-                    </div>
-                    <div class="flex-grow-1 ms-3">
-                        <div class="d-flex justify-content-end align-items-center mb-1">
-                            <label class="form-label me-2">Sub Total:</label>
-                            <input type="text" class="form-control text-end me-2" style="width: 70px;" 
-                                name="subTotal1" id="subTotal1" value="{{ $sale->sub_total1 }}">
-                            <input type="text" class="form-control text-end me-2" style="width: 70px;" 
-                                name="subTotal2" id="subTotal2" value="{{ $sale->sub_total2 }}">
-                            <input type="text" class="form-control text-end fw-bold text-primary"
-                                style="width: 150px;" value="0">
-                        </div>
-                        <div class="d-flex justify-content-end align-items-center mb-1">
-                            <label class="form-label me-2">Discount:</label>
-                            <input type="text" class="form-control text-end me-2" style="width: 120px;"
-                                value="{{ $sale->discount_percent }}" name="discountPercent" id="discountPercent">
-                            <input type="text" class="form-control text-end" style="width: 150px;" value="0">
-                        </div>
-                        <div class="d-flex justify-content-end align-items-center mb-1">
-                            <label class="form-label me-2">Discount Rs:</label>
-                            <input type="text" class="form-control text-end" style="width: 150px;" value="{{ $sale->discount_amount }}"
-                                name="discountAmount" id="discountAmount">
-                        </div>
-                        <div class="d-flex justify-content-end align-items-center mb-1">
-                            <label class="form-label text-danger me-2">Previous Balance:</label>
-                            <input type="text" class="form-control text-end text-danger" style="width: 150px;"
-                                value="{{ $sale->previous_balance }}" id="previousBalance" name="previousBalance">
-                        </div>
-                        <div class="d-flex justify-content-end align-items-center mb-1">
-                            <label class="form-label fw-bold text-primary me-2">Total Balance:</label>
-                            <input type="text"
-                                class="form-control text-end fw-bold text-primary bg-info-subtle border-primary"
-                                style="width: 150px;"  value="{{ $sale->total_balance }}" id="totalBalance" name="totalBalance">
-                        </div>
-                        <div class="d-flex justify-content-end align-items-center mb-1">
-                            <label class="form-label me-2">Receipt Voucher:</label>
-                            <input type="text" class="form-control me-2" style="width: 250px;" value="">
-                            <input type="text" class="form-control text-end me-2" style="width: 90px;"
-                                name="receipt1"  id="receipt1" value="{{ $sale->receipt1 }}">
-                            <input type="text" class="form-control text-end" style="width: 70px;"  value="{{ $sale->receipt2 }}"
-                                name="receipt2" id="receipt2">
-                        </div>
-                        <div class="d-flex justify-content-end align-items-center mb-1">
-                            <label class="form-label me-2">Final Balance:</label>
-                            <input type="text" class="form-control text-end me-2" style="width: 150px;"
-                               value="{{ $sale->final_balance1 }}" name="finalBalance1" id="finalBalance1">
-                            <input type="text" class="form-control text-end" style="width: 150px;"value="{{ $sale->final_balance2 }}"
-                                name="finalBalance2" id="finalBalance2">
-                        </div>
-                    </div>
-                </div>
-
-                <div class="footer-buttons d-flex justify-content-center p-3">
-                    <button class="btn btn-sm btn-light border me-1">First</button>
-                    <button class="btn btn-sm btn-light border me-1">Previous</button>
-                    <button class="btn btn-sm btn-light border me-1">Next</button>
-                    <button class="btn btn-sm btn-light border me-1">Last</button>
-                    <button class="btn btn-sm btn-primary me-1">Add</button>
-                    <button class="btn btn-sm btn-primary me-1">Edit</button>
-                    <button class="btn btn-sm btn-warning me-1">Revert</button>
-                    <button type="submit" class="btn btn-sm btn-success me-1 ">Save</button>
-                    <button class="btn btn-sm btn-danger me-1">Delete</button>
-                    <button class="btn btn-sm btn-info me-1">Receipt</button>
-                    <button class="btn btn-sm btn-secondary me-1">Print</button>
-                    <button class="btn btn-sm btn-secondary me-1">Print-2</button>
-                    <button class="btn btn-sm btn-secondary me-1">QC Print</button>
-                    <button class="btn btn-sm btn-dark">Exit</button>
-                </div>
-            </form>
-        </div>
+<div class="container-fluid py-4">
+  <div class="main-container bg-white border shadow-sm mx-auto p-2 rounded-3" style="max-width: 98%;">
+    <div class="d-flex justify-content-between align-items-center mb-3 bg-light p-2 rounded shadow-sm">
+      <div style="min-width:80px;"></div>
+      <div class="d-flex align-items-center gap-2 justify-content-center flex-grow-1">
+          <h6 class="mb-0 fw-bold">Edit Posted Sale</h6>
+          <span class="badge bg-success px-3 py-2 rounded-pill shadow-sm"><i class="fa fa-check"></i> Posted</span>
+          <span class="badge bg-primary px-3 py-2 rounded-pill shadow-sm"><i class="fa fa-tag"></i> ID: {{ $sale->id }}</span>
+      </div>
+      <a href="{{ route('sale.index') }}" class="btn btn-sm btn-outline-secondary rounded-pill px-3"><i class="fa fa-list"></i> List</a>
     </div>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script>
-        // When warehouse changes → load products
-        $(document).on('change', '.warehouse', function() {
-            var warehouseId = $(this).val();
-            var $productSelect = $(this).closest('tr').find('.product');
-            if (warehouseId) {
-                $.ajax({
-                    url: '{{ url('get-products-by-warehouse') }}/' + warehouseId,
-                    type: 'GET',
-                    success: function(data) {
-                        $productSelect.empty().append('<option value="">Select Product</option>');
-                        $.each(data, function(key, value) {
-                            $productSelect.append('<option value="' + value.item_name + '">' +
-                                value.item_name + '</option>');
-                        });
+    <form id="saleForm" action="{{ route('sale.update', $sale->id) }}" method="POST">
+      @csrf
+      <div class="d-flex gap-3 align-items-start border-bottom py-3">
+        <div class="bg-light border rounded-3 p-2 shadow-sm" style="min-width: 300px; max-width: 300px;">
+          <h6 class="fw-bold text-primary mb-2 border-bottom pb-1">Invoice & Customer</h6>
+          <div class="row g-1 mb-2">
+            <div class="col-6">
+              <label class="small text-muted mb-0">Inv#</label>
+              <input type="text" class="form-control form-control-sm bg-white border-0 fw-bold" value="{{ $sale->invoice_no }}" readonly>
+            </div>
+            <div class="col-6">
+              <label class="small text-muted mb-0">Manual#</label>
+              <input type="text" class="form-control form-control-sm" name="Invoice_main" value="{{ $sale->manual_invoice }}">
+            </div>
+          </div>
+          <div class="mb-2">
+             <select class="form-select form-select-sm" name="customer" id="customerSelect" data-old-val="{{ $sale->customer_id }}">
+                <option selected disabled>Loading...</option>
+             </select>
+          </div>
+          <div class="mb-2">
+            <label class="small text-muted mb-0">Address</label>
+            <textarea class="form-control form-control-sm" name="address" rows="1">{{ $sale->address }}</textarea>
+          </div>
+          <div class="row g-1 mb-2">
+            <div class="col-6"><label class="small text-muted mb-0">Tel#</label><input type="text" class="form-control form-control-sm" name="tel" value="{{ $sale->tel }}"></div>
+            <div class="col-6"><label class="small text-muted mb-0">Balance</label><input type="text" id="previousBalance" class="form-control form-control-sm text-end fw-bold input-readonly" value="{{ $sale->previous_balance }}" readonly></div>
+          </div>
+        </div>
+
+        <div class="flex-grow-1">
+          <div class="d-flex justify-content-between align-items-center mb-2"><div class="section-title">Items</div><button type="button" class="btn btn-sm btn-primary" id="btnAdd">Add Row</button></div>
+          <div class="table-responsive">
+            <table class="table table-bordered table-sm mb-0">
+              <thead class="table-light"><tr><th>ID</th><th>Product</th><th>Warehouse</th><th>Stock</th><th>Price</th><th>Qty</th><th>Retail</th><th>Disc%</th><th>Amount</th><th>—</th></tr></thead>
+              <tbody id="salesTableBody">
+                @foreach($sale->items as $item)
+                <tr>
+                  <td><input type="text" class="form-control form-control-sm item-id-input text-center" value="{{ $item->product_id }}"></td>
+                  <td><select name="product_id[]" class="form-control product-select"><option value="{{ $item->product_id }}" selected>{{ $item->product->name ?? '' }}</option></select></td>
+                  <td><select class="form-select form-select-sm warehouse" name="warehouse_name[]">
+                      <option value="0" {{ $item->warehouse_id == 0 ? 'selected' : '' }}>🏠 Shop</option>
+                      @foreach ($warehouses as $wh)<option value="{{ $wh->id }}" {{ $item->warehouse_id == $wh->id ? 'selected' : '' }}>📦 {{ $wh->warehouse_name }}</option>@endforeach
+                  </select></td>
+                  <td><input type="text" class="form-control form-control-sm stock text-center bg-light" value="{{ $item->stock }}" readonly></td>
+                  <td><input type="text" class="form-control form-control-sm text-end sales-price bg-light" value="{{ $item->sales_price }}" readonly></td>
+                  <td><input type="number" step="any" class="form-control form-control-sm text-center sales-qty" name="sales-qty[]" value="{{ $item->sales_qty }}"></td>
+                  <td><input type="text" class="form-control form-control-sm text-end retail-price bg-light" value="{{ $item->retail_price }}" readonly></td>
+                  <td><input type="number" class="form-control text-end discount-value" value="{{ $item->discount_percent }}"><input type="hidden" name="discount-percent[]" class="discount-percent" value="{{ $item->discount_percent }}"><input type="hidden" name="discount-amount[]" class="discount-amount" value="{{ $item->discount_amount }}"></td>
+                  <td><input type="text" class="form-control form-control-sm text-end sales-amount bg-light" value="{{ $item->amount }}" readonly></td>
+                  <td class="text-center"><button type="button" class="btn btn-xs btn-outline-danger del-row">&times;</button></td>
+                </tr>
+                @endforeach
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="row g-3 mt-3">
+        {{-- Receipt Vouchers Section --}}
+        <div class="col-lg-7">
+          <div class="bg-light border rounded-3 p-3 shadow-sm">
+            <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom">
+              <h6 class="mb-0 fw-bold text-success"><i class="fa fa-money me-2"></i>Receipt Vouchers</h6>
+              <button type="button" class="btn btn-success btn-sm rounded-pill" id="btnAddRV"><i class="fa fa-plus me-1"></i>Add Row</button>
+            </div>
+            <div id="rvWrapper">
+                @php
+                    $rHeads = json_decode($sale->receipt_heads, true) ?? [];
+                    $rAccounts = json_decode($sale->receipt_accounts, true) ?? [];
+                    $rNarrations = json_decode($sale->receipt_narrations, true) ?? [];
+                    $rAmounts = json_decode($sale->receipt_amounts_json, true) ?? [];
+                    
+                    if (empty($rAmounts) && $sale->receipt1 > 0) {
+                        $rAmounts = [$sale->receipt1];
+                        $rHeads = [null]; $rAccounts = [null]; $rNarrations = [null];
                     }
-                });
-            } else {
-                $productSelect.empty().append('<option value="">Select Product</option>');
-            }
-        });
+                @endphp
 
-        // When product changes → load stock
-        // When product changes → load stock + price
-        $(document).on('change', '.product', function() {
-            var productName = $(this).find(':selected').text();
-            var warehouseId = $(this).closest('tr').find('.warehouse').val();
-            var $row = $(this).closest('tr'); // pura row select
+                @foreach($rAmounts as $idx => $amt)
+                <div class="receipt-row bg-white border rounded-3 p-2 mb-2 shadow-sm rv-row">
+                  <div class="row g-2 align-items-center">
+                    <div class="col-md-3">
+                      <label class="small text-muted mb-1">Head</label>
+                      <select class="form-select form-select-sm rv-head" name="receipt_head_id[]">
+                        <option value="" disabled {{ !isset($rHeads[$idx]) ? 'selected' : '' }}>Select Head</option>
+                        @foreach ($accountHeads as $head)
+                          <option value="{{ $head->id }}" {{ (isset($rHeads[$idx]) && $rHeads[$idx] == $head->id) ? 'selected' : '' }}>{{ $head->name }}</option>
+                        @endforeach
+                      </select>
+                    </div>
+                    <div class="col-md-3">
+                      <label class="small text-muted mb-1">Account</label>
+                      <select class="form-select form-select-sm rv-account" name="receipt_account_id[]">
+                        <option value="" disabled>Select account</option>
+                        @if(isset($rHeads[$idx]))
+                            @foreach(\App\Models\Account::where('head_id', $rHeads[$idx])->get() as $acc)
+                                <option value="{{ $acc->id }}" {{ ($rAccounts[$idx] == $acc->id) ? 'selected' : '' }}>{{ $acc->title }}</option>
+                            @endforeach
+                        @endif
+                      </select>
+                    </div>
+                    <div class="col-md-2">
+                      <label class="small text-muted mb-1">Amount</label>
+                      <input type="text" class="form-control form-control-sm text-end fw-bold rv-amount" name="receipt_amount[]" value="{{ $amt }}">
+                    </div>
+                    <div class="col-md-3">
+                      <label class="small text-muted mb-1">Narration</label>
+                      <select class="form-select form-select-sm rv-narration" name="receipt_narration[]">
+                        <option value="">Select narration...</option>
+                        @if(isset($rNarrations[$idx]))
+                            <option value="{{ $rNarrations[$idx] }}" selected>{{ $rNarrations[$idx] }}</option>
+                        @endif
+                      </select>
+                    </div>
+                    <div class="col-md-1 text-center"><button type="button" class="btn btn-sm btn-outline-danger border-0 del-rv-row">&times;</button></div>
+                  </div>
+                </div>
+                @endforeach
+            </div>
+            <div class="d-flex justify-content-between p-2 bg-success bg-opacity-10 rounded border mt-2">
+              <span class="fw-bold text-success">Total Receipts:</span>
+              <span class="fw-bold text-success" id="receiptsTotalDisplay">0.00</span>
+            </div>
+          </div>
+        </div>
 
-            var $stockInput = $row.find('.stock');
-            var $priceInput = $row.find('.price'); // price input ka reference
+        <div class="col-lg-5">
+          <div class="totals-card p-3 shadow-sm bg-light border">
+            <div class="d-flex justify-content-between py-1 border-bottom"><span>Total Qty</span><span id="tQty" class="fw-bold">0</span></div>
+            <div class="d-flex justify-content-between py-2 border-bottom bg-info bg-opacity-10 rounded px-2"><span>Sub-Total</span><span id="tSub" class="fw-bold text-primary">0.00</span></div>
+            <div class="d-flex justify-content-between align-items-center py-1 mt-2">
+              <span>Order Discount</span>
+              <input type="number" step="0.01" class="form-control form-control-sm text-end" id="orderDiscountValue" name="order_discount_value" value="{{ $sale->discount_amount }}" style="width:80px">
+            </div>
+            <div class="d-flex justify-content-between py-2 bg-primary bg-opacity-10 rounded-3 px-2 mt-2">
+              <span class="fw-bold">Payable Total</span>
+              <span id="tPayable" class="fw-bold fs-4 text-primary">0.00</span>
+            </div>
+            <input type="hidden" name="subTotal1" id="subTotal1">
+            <input type="hidden" name="subTotal2" id="subTotal2">
+            <input type="hidden" name="discountAmount" id="discountAmount">
+            <input type="hidden" name="totalBalance" id="totalBalance">
+          </div>
+        </div>
+      </div>
+        <div class="d-flex gap-2 mt-4 justify-content-end border-top pt-3">
+            <button type="submit" class="btn btn-primary rounded-pill px-5">Update Sale</button>
+            <button type="button" id="editBtn" class="btn btn-warning rounded-pill px-5" style="display:none;">Edit</button>
+            <a href="{{ route('sale.index') }}" class="btn btn-danger rounded-pill px-5">Cancel</a>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+@endsection
 
-            if (warehouseId && productName) {
-                $.ajax({
-                    url: '{{ url('get-stock') }}/' + warehouseId + '/' + productName,
-                    type: 'GET',
-                    success: function(data) {
-                        $stockInput.val(data.stock); // stock set karega
-                        $priceInput.val(data.price); // price set karega
-                    }
-                });
-            } else {
-                $stockInput.val('');
-                $priceInput.val('');
-            }
-        });
+@section('scripts')
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script>
+  function toNum(v) { return parseFloat(v || 0) || 0; }
+  function updateGrandTotals() {
+    let tQty = 0, tSub = 0;
+    $('#salesTableBody tr').each(function() {
+      const $r = $(this), q = toNum($r.find('.sales-qty').val());
+      const sp = toNum($r.find('.sales-price').val()), disc = toNum($r.find('.discount-amount').val());
+      const net = (sp * q) - disc; $r.find('.sales-amount').val(net.toFixed(2));
+      tQty += q; tSub += net;
+    });
+    
+    let tRV = 0;
+    $('.rv-amount').each(function() { tRV += toNum($(this).val()); });
+    $('#receiptsTotalDisplay').text(tRV.toFixed(2));
 
-        {{--  totalcount  --}}
+    const od = toNum($('#orderDiscountValue').val()), prev = toNum($('#previousBalance').val());
+    const payable = (tSub - od + prev) - tRV;
 
-        $(document).on('input', '.sales-price, .sales-qty, .discount-percent, .discount-amount', function() {
-            let $row = $(this).closest('tr');
+    $('#tQty').text(tQty); $('#tSub').text(tSub.toFixed(2)); $('#tPayable').text(payable.toFixed(2));
+    
+    $('#subTotal1').val(tSub); $('#subTotal2').val(tSub); $('#discountAmount').val(od); 
+    $('#totalBalance').val(payable.toFixed(2));
+  }
 
-            // Values
-            let salesPrice = parseFloat($row.find('.sales-price').val()) || 0;
-            let salesQty = parseFloat($row.find('.sales-qty').val()) || 0;
-            let discountPercent = parseFloat($row.find('.discount-percent').val()) || 0;
-            let discountAmount = parseFloat($row.find('.discount-amount').val()) || 0;
+  function loadNarrationsInto($select) {
+    if ($select.hasClass('select2-hidden-accessible')) $select.select2('destroy');
+    const existingVal = $select.val();
+    $select.prop('disabled', true).empty().append('<option value="">Loading...</option>');
+    $.get('{{ route("narrations.receipts") }}', function(data) {
+      $select.empty().append('<option value="">Select narration...</option>');
+      (data || []).forEach(n => {
+          const text = n.narration_text || n.narration;
+          $select.append(new Option(text, text));
+      });
+      if (existingVal && !$select.find('option[value="'+existingVal+'"]').length) {
+          $select.append(new Option(existingVal, existingVal, true, true));
+      } else if (existingVal) { $select.val(existingVal); }
+      $select.prop('disabled', false).select2({ tags: true, width: '100%', dropdownParent: $select.parent() });
+    });
+  }
 
-            // Calculate Amount
-            let grossAmount = salesPrice * salesQty;
+  $(document).on('change', '.rv-head', function() {
+    const $row = $(this).closest('.rv-row'), $acc = $row.find('.rv-account').empty().append('<option disabled selected>Loading...</option>');
+    $.get('{{ url("get-accounts-by-head") }}/' + $(this).val()).done(list => {
+      $acc.empty().append('<option disabled selected>Select account</option>');
+      list.forEach(i => $acc.append(new Option(i.title, i.id)));
+    });
+  });
 
-            // If discount in %
-            if (discountPercent > 0) {
-                discountAmount = (grossAmount * discountPercent) / 100;
-                $row.find('.discount-amount').val(discountAmount.toFixed(2));
-            }
+  $(document).on('input', '.rv-amount', updateGrandTotals);
+  $(document).on('click', '#btnAddRV', function() {
+    const html = `<div class="receipt-row bg-white border rounded-3 p-2 mb-2 shadow-sm rv-row"><div class="row g-2 align-items-center"><div class="col-md-3"><label class="small text-muted mb-1">Head</label><select class="form-select form-select-sm rv-head" name="receipt_head_id[]"><option value="" disabled selected>Select Head</option>@foreach($accountHeads as $h)<option value="{{$h->id}}">{{$h->name}}</option>@endforeach</select></div><div class="col-md-3"><label class="small text-muted mb-1">Account</label><select class="form-select form-select-sm rv-account" name="receipt_account_id[]" disabled><option value="" disabled selected>Select account</option></select></div><div class="col-md-2"><label class="small text-muted mb-1">Amount</label><input type="text" class="form-control form-control-sm text-end fw-bold rv-amount" name="receipt_amount[]" placeholder="0.00"></div><div class="col-md-3"><label class="small text-muted mb-1">Narration</label><select class="form-select form-select-sm rv-narration" name="receipt_narration[]"><option value="">Select narration...</option></select></div><div class="col-md-1 text-center"><button type="button" class="btn btn-sm btn-outline-danger border-0 del-rv-row">&times;</button></div></div></div>`;
+    const $nr = $(html); $('#rvWrapper').append($nr); loadNarrationsInto($nr.find('.rv-narration'));
+  });
+  $(document).on('click', '.del-rv-row', function() { $(this).closest('.rv-row').remove(); updateGrandTotals(); });
 
-            let netAmount = grossAmount - discountAmount;
-            $row.find('.sales-amount').val(netAmount.toFixed(2));
+  function computeRow($row) {
+    const rp = toNum($row.find('.retail-price').val()), q = toNum($row.find('.sales-qty').val()), v = toNum($row.find('.discount-value').val());
+    const amt = (rp * q * v) / 100; $row.find('.discount-percent').val(v.toFixed(2)); $row.find('.discount-amount').val(amt.toFixed(2));
+    updateGrandTotals();
+  }
+  function initProductSelect($row) {
+    $row.find('.product-select').select2({ ajax: { url: '{{ route("search-products") }}', data: (p) => ({ q: p.term, warehouse_id: $row.find('.warehouse').val() }), processResults: (d) => ({ results: d.map(i => ({ id: i.id, text: i.name, stock: i.stock, sale_price: i.sale_price, retail_price: i.retail_price })) }) } }).on('select2:select', function(e) {
+      const d = e.params.data; $row.find('.item-id-input').val(d.id); $row.find('.stock').val(d.stock); $row.find('.sales-price').val(d.sale_price); $row.find('.retail-price').val(d.retail_price); computeRow($row); if($row.is(':last-child')) addNewRow(); $row.find('.sales-qty').focus();
+    });
+  }
+  function addNewRow() {
+    const wh = $('#salesTableBody tr:last .warehouse').val() || 0;
+    const html = `<tr><td><input type="text" class="form-control form-control-sm item-id-input text-center"></td><td><select name="product_id[]" class="form-control product-select"></select></td><td><select class="form-select form-select-sm warehouse" name="warehouse_name[]"><option value="0" ${wh==0?'selected':''}>🏠 Shop</option>@foreach($warehouses as $w)<option value="{{$w->id}}" ${wh=={{$w->id}}?'selected':''}>📦 {{$w->warehouse_name}}</option>@endforeach</select></td><td><input type="text" class="form-control form-control-sm stock bg-light" readonly></td><td><input type="text" class="form-control form-control-sm text-end sales-price bg-light" readonly></td><td><input type="number" class="form-control form-control-sm text-center sales-qty"></td><td><input type="text" class="form-control form-control-sm text-end retail-price bg-light" readonly></td><td><input type="number" class="form-control text-end discount-value"><input type="hidden" name="discount-percent[]" class="discount-percent"><input type="hidden" name="discount-amount[]" class="discount-amount"></td><td><input type="text" class="form-control form-control-sm text-end sales-amount bg-light" readonly></td><td class="text-center"><button type="button" class="btn btn-xs btn-outline-danger del-row">&times;</button></td></tr>`;
+    const $nr = $(html); $('#salesTableBody').append($nr); initProductSelect($nr);
+  }
+  $(document).on('input', '.sales-qty, .discount-value, #orderDiscountValue', function() { computeRow($(this).closest('tr')); });
+  $(document).on('click', '.del-row', function() { $(this).closest('tr').remove(); updateGrandTotals(); });
+  $(document).on('click', '#btnAdd', () => addNewRow());
+  $(function() {
+    $.get('{{ route("customers.filter") }}', { type: 'customer' }).done(list => {
+      const $s = $('#customerSelect').empty().append('<option disabled selected>Select...</option>');
+      list.forEach(i => $s.append(new Option(i.text, i.id)));
+      $s.val($s.data('old-val')).trigger('change').select2();
+    });
+    $('#salesTableBody tr').each(function() { initProductSelect($(this)); computeRow($(this)); });
+    $('.rv-narration').each(function() { loadNarrationsInto($(this)); });
+    if($('#salesTableBody tr').length === 0) addNewRow();
+    updateGrandTotals();
+    $('#saleForm').addClass('form-locked'); $('#editBtn').show();
+  });
+  $('#editBtn').click(function() { $('#saleForm').removeClass('form-locked'); $(this).hide(); });
 
-            // Update Total Sum
-            updateTotalAmount();
-        });
-
-        function updateTotalAmount() {
-            let total = 0;
-            $('.sales-amount').each(function() {
-                total += parseFloat($(this).val()) || 0;
-            });
-            $('#totalAmount').text(total.toFixed(2));
-        }
-
-
-        {{--  selct customer  --}}
-        {{--  $(document).ready(function () {  --}}
-        $(document).on('change', '#customerSelect', function() {
-            let id = $(this).val();
-            if (id) {
-                $.get('{{ url('/get-customer') }}/' + id, function(data) {
-
-                    // Filer type
-                    $('#filerType').val(data.filer_type);
-
-                    // Customer type (Sub Customer select)
-                    let $customerType = $('#customerType');
-                    $customerType.empty(); // pehle saare options clear karo
-                    $customerType.append('<option value="">Sub Customer</option>');
-                    if (data.customer_type) {
-                        $customerType.append('<option value="' + data.customer_type + '" selected>' + data
-                            .customer_type + '</option>');
-                    }
-
-                    // Baaki fields
-                    $('#address').val(data.address);
-                    $('#tel').val(data.mobile);
-                    $('#remarks').val(data.remarks);
-                });
-            }
-        });
-
-        // Delete button click
-        $(document).on('click', '#clearCustomerData', function() {
-            $('#customerSelect').val('');
-            $('#filerType').val('');
-            $('#customerType').empty().append('<option value="">Sub Customer</option>');
-            $('#address').val('');
-            $('#tel').val('');
-            $('#remarks').val('');
-        });
-
-        {{--  adding new row miltiple  --}}
-        $(document).ready(function() {
-            // Function to add a new empty row
-            function addNewRow() {
-                let newRow = `<tr>
-            <td>
-                <select class="form-select warehouse form-control" name="warehouse_name[]">
-                    <option value="">Select</option>
-                    @foreach ($warehouses as $wh)
-                        <option value="{{ $wh->id }}">{{ $wh->warehouse_name }}</option>
-                    @endforeach
-                </select>
-            </td>
-            <td><select class="form-select product form-control" name="product_name[]"></select></td>
-            <td><input type="text" class="form-control stock text-danger text-center" readonly  name="stock[]" ></td>
-            <td><input type="text" class="form-control text-end price"  name="stock[]" ></td>
-            <td><input type="text" class="form-control text-end sales-price" value="0"  name="sales-price[]"></td>
-            <td><input type="text" class="form-control text-end sales-qty" value="0" name="sales-qty[]"></td>
-            <td><input type="text" class="form-control text-end retail-price" value="0" name="retail-price[]"></td>
-            <td><input type="text" class="form-control text-end discount-percent" value="0" name="discount-percent[]" ></td>
-            <td><input type="text" class="form-control text-end discount-amount" value="0" name="discount-amount[]"> </td>
-            <td><input type="text" class="form-control text-end sales-amount" value="0" name="sales-amount[]" readonly></td>
-        </tr>`;
-                $('#salesTableBody').append(newRow);
-            }
-
-            // Jab qty fill ho jaye to nayi row aa jaye
-            $('#salesTableBody').on('input', '.sales-amount', function() {
-                let row = $(this).closest('tr');
-                let qty = $(this).val();
-
-                if (qty !== "" && row.is(':last-child')) {
-                    addNewRow();
-                }
-            });
-        });
-
-        {{--  total all rows sub discount  --}}
-    </script>
-    <script>
-        function calculateTotals() {
-            let subTotal1 = 0; // sum of grossAmount
-            let subTotal2 = 0; // sum of netAmount
-
-            $('#salesTableBody tr').each(function() {
-                let salesPrice = parseFloat($(this).find('.sales-price').val()) || 0;
-                let salesQty = parseFloat($(this).find('.sales-qty').val()) || 0;
-                let discountAmount = parseFloat($(this).find('.discount-amount').val()) || 0;
-
-                let grossAmount = salesPrice * salesQty;
-                let netAmount = grossAmount - discountAmount;
-
-                subTotal1 += grossAmount;
-                subTotal2 += netAmount;
-            });
-
-            // Update subtotals
-            $('#subTotal1').val(subTotal1.toFixed(2));
-            $('#subTotal2').val(subTotal2.toFixed(2));
-
-            // Discount %
-            let discountPercent = parseFloat($('#discountPercent').val() || 0);
-            let discountValue = (subTotal1 * discountPercent) / 100;
-            $('#discountAmount').val(discountValue.toFixed(2));
-
-            // Previous Balance
-            let prevBalance = parseFloat($('#previousBalance').val() || 0);
-
-            // Total Balance
-            let totalBalance = subTotal2 - discountValue + prevBalance;
-            $('#totalBalance').val(totalBalance.toFixed(2));
-
-            // Receipt
-            let receipt1 = parseFloat($('#receipt1').val() || 0);
-            let receipt2 = parseFloat($('#receipt2').val() || 0);
-
-            let finalBalance1 = totalBalance - receipt1;
-            let finalBalance2 = totalBalance - receipt2;
-
-            $('#finalBalance1').val(finalBalance1.toFixed(2));
-            $('#finalBalance2').val(finalBalance2.toFixed(2));
-        }
-
-        // Event listener har input change pe call
-        $(document).on('input',
-            '.sales-price, .sales-qty, .discount-percent, .discount-amount, #previousBalance, #discountPercent, #receipt1, #receipt2',
-            function() {
-                calculateTotals();
-            });
-    </script>
+  $(document).on('keydown', function(e) {
+    if (e.ctrlKey && (e.key === 'e' || e.key === 'E')) { e.preventDefault(); e.stopPropagation(); $('#editBtn').click(); }
+    if (e.ctrlKey && (e.key === 'l' || e.key === 'L')) { e.preventDefault(); e.stopPropagation(); window.location.href = '{{ route("sale.index") }}'; }
+    if (e.ctrlKey && e.key === 'Enter') { e.preventDefault(); e.stopPropagation(); $('#saleForm').submit(); }
+    if (e.key === 'Escape') window.location.href = '{{ route("sale.index") }}';
+  });
+</script>
 @endsection

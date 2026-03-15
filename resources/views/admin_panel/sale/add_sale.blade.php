@@ -1312,7 +1312,8 @@
           }
           if (e.ctrlKey && (e.key === 'e' || e.key === 'E')) {
               e.preventDefault();
-              $('#editBtn:visible').click();
+              e.stopPropagation();
+              $('#editBtn').click();
           }
           if (e.ctrlKey && (e.key === 'm' || e.key === 'M')) {
               e.preventDefault();

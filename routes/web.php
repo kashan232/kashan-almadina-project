@@ -277,6 +277,17 @@ Route::middleware('auth')->group(function () {
     Route::post('/purchase-returns/{id}/update', [\App\Http\Controllers\PurchaseReturnController::class, 'update'])->name('purchase.return.update');
     Route::delete('/purchase-returns/{id}/destroy', [\App\Http\Controllers\PurchaseReturnController::class, 'destroy'])->name('purchase.return.destroy');
 
+    // Sale Returns
+    Route::get('/sale-returns', [\App\Http\Controllers\SaleReturnController::class, 'index'])->name('sale.return.home');
+    Route::get('/sale-returns/add', [\App\Http\Controllers\SaleReturnController::class, 'create'])->name('sale.return.add');
+    Route::post('/sale-returns', [\App\Http\Controllers\SaleReturnController::class, 'store'])->name('sale.return.store');
+    Route::get('/sale-returns/get-sale/{invoice_no}', [\App\Http\Controllers\SaleReturnController::class, 'getSaleDetails']);
+    Route::post('/sale-returns/post/{id}', [\App\Http\Controllers\SaleReturnController::class, 'post'])->name('sale.return.post');
+    Route::get('/sale-returns/print/{id}', [\App\Http\Controllers\SaleReturnController::class, 'print'])->name('sale.return.print');
+    Route::get('/sale-returns/{id}/edit', [\App\Http\Controllers\SaleReturnController::class, 'edit'])->name('sale.return.edit');
+    Route::post('/sale-returns/{id}/update', [\App\Http\Controllers\SaleReturnController::class, 'update'])->name('sale.return.update');
+    Route::delete('/sale-returns/{id}/destroy', [\App\Http\Controllers\SaleReturnController::class, 'destroy'])->name('sale.return.destroy');
+
     // Route::get('/fetch-product', [PurchaseController::class, 'fetchProduct'])->name('item.search');
 
     // Route::post('/fetch-item-details', [PurchaseController::class, 'fetchItemDetails']);
