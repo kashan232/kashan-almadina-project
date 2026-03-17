@@ -43,6 +43,7 @@ use App\Http\Controllers\StockWastageController;
 |
 */
 // kashan connected
+// up
 Route::get('/home', [HomeController::class, 'index'])->middleware('auth')->name('home');
 
 // Route::get('/adminpage', [HomeController::class, 'adminpage'])->middleware(['auth','admin'])->name('adminpage');
