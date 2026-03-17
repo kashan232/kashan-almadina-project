@@ -711,7 +711,7 @@ class SaleController extends Controller
                 $rows->map(
                     fn($v) => [
                         'id' => $v->id,
-                        'text' => $v->name . ' - ' . ($v->phone ?? 'No phone'), // Display vendor name and phone
+                        'text' => $v->id . ' - ' . $v->name . ($v->phone ? ' (' . $v->phone . ')' : ''), 
                     ],
                 ),
             );
@@ -862,8 +862,13 @@ class SaleController extends Controller
         $type = strtolower($request->query('type', 'customer'));
 
         if ($type === 'vendor') {
-            $rows = \App\Models\Vendor::orderBy('name')->get(['id', 'name as text']);
-            return response()->json($rows->values());
+            $rows = \App\Models\Vendor::orderBy('name')->get();
+            return response()->json(
+                $rows->map(fn($v) => [
+                    'id' => $v->id,
+                    'text' => $v->id . ' - ' . $v->name
+                ])->values()
+            );
         }
 
         if ($type === 'walkin' || $type === 'walking') {

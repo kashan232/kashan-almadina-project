@@ -646,7 +646,7 @@ class PurchaseController extends Controller
         if ($type === 'vendor') {
             $data = Vendor::orderBy('name')->get();
             return response()->json($data->map(function($v) {
-                return ['id' => $v->id, 'text' => $v->name];
+                return ['id' => $v->id, 'text' => $v->id . ' - ' . $v->name];
             }));
         }
 
@@ -660,7 +660,7 @@ class PurchaseController extends Controller
 
         $data = $query->orderBy('customer_name')->get();
         return response()->json($data->map(function($c) {
-            return ['id' => $c->id, 'text' => $c->customer_name];
+            return ['id' => $c->id, 'text' => ($c->customer_id ?? $c->id) . ' - ' . $c->customer_name];
         }));
     }
     public function post(Request $request, $id)

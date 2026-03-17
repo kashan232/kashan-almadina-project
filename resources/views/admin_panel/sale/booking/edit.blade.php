@@ -699,19 +699,63 @@
     const $select = $row.find('.product-select');
     $select.select2({
       placeholder: "Select Product",
+      allowClear: true,
+      minimumInputLength: 1,
       ajax: {
         url: '{{ route("search-products") }}',
         dataType: 'json',
         delay: 100,
-        data: (params) => ({ q: params.term, warehouse_id: $row.find('.warehouse').val() }),
-        processResults: (data) => ({ results: data.map(i => ({ id: i.id, text: i.name, stock: i.stock, sale_price: i.sale_price, retail_price: i.retail_price })) })
+        cache: true,
+        data: function(params) {
+          return {
+            q: params.term,
+            warehouse_id: $row.find('.warehouse').val()
+          };
+        },
+        processResults: function(data, params) {
+          const term = (params.term || '').toLowerCase();
+          const results = data.map(function(item) {
+            return {
+              id: item.id,
+              text: item.name,
+              stock: item.stock || 0,
+              sale_price: item.sale_price || 0,
+              retail_price: item.retail_price || 0
+            };
+          });
+
+          // Prioritize exact matches (ID or Name) at the top of the list
+          results.sort((a, b) => {
+             if (String(a.id) === term || a.text.toLowerCase() === term) return -1;
+             if (String(b.id) === term || b.text.toLowerCase() === term) return 1;
+             return 0;
+          });
+
+          return { results };
+        }
       }
     });
 
     $select.on('select2:select', function(e) {
-      updateRowWithProductData($(this).closest('tr'), e.params.data);
-      if ($(this).closest('tr').is(':last-child')) addNewRow(false);
-      setTimeout(() => $(this).closest('tr').find('.sales-qty').focus(), 50);
+      const data = e.params.data;
+      const $currentRow = $(this).closest('tr');
+      updateRowWithProductData($currentRow, data);
+      
+      if ($currentRow.is(':last-child')) {
+          addNewRow(false);
+      }
+      setTimeout(() => $currentRow.find('.sales-qty').focus(), 50);
+    });
+
+    $select.on('select2:clear', function(e) {
+      const $currentRow = $(this).closest('tr');
+      $currentRow.find('input').not('.item-id-input').val('');
+      $currentRow.find('.item-id-input').val('');
+      $currentRow.find('.stock').val('');
+      $currentRow.find('.sales-price').val('0');
+      $currentRow.find('.retail-price').val('0');
+      computeRow($currentRow);
+      updateGrandTotals();
     });
   }
 
@@ -864,15 +908,128 @@
   // ID search
   $(document).on('keydown', '.item-id-input', function(e) {
     if(e.key === 'Enter' || e.key === 'Tab') {
-      const $r = $(this).closest('tr'), id = $(this).val().trim();
-      if(!id) return;
-      $(this).addClass('loading-indicator');
-      $.get('{{ route("search-products") }}', { q: id, warehouse_id: $r.find('.warehouse').val() }).done(res => {
-        $(this).removeClass('loading-indicator');
-        const item = res.find(i => String(i.id) === id) || res[0];
-        if(item) { updateRowWithProductData($r, item); if($r.is(':last-child')) addNewRow(false); $r.find('.sales-qty').focus(); }
+      const $input = $(this);
+      const id = $input.val().trim();
+      const $row = $input.closest('tr');
+      const $select = $row.find('.product-select');
+      
+      if (!id) {
+          if (e.key === 'Enter') e.preventDefault();
+          return;
+      }
+
+      if ($select.val() === String(id)) {
+          if ($row.is(':last-child')) addNewRow(false);
+          setTimeout(() => $row.find('.sales-qty').focus(), 50);
+          e.preventDefault();
+          return;
+      }
+
+      e.preventDefault();
+      $input.addClass('loading-indicator');
+      
+      $.get('{{ route("search-products") }}', { 
+          q: id, 
+          warehouse_id: $row.find('.warehouse').val() 
+      }).done(function(res) {
+        $input.removeClass('loading-indicator');
+        if (res && res.length > 0) {
+            // Precise matching prioritize: Exact ID -> Exact Name (Case Insensitive) -> First Result
+            let item = res.find(i => String(i.id) === String(id)) 
+                      || res.find(i => i.name.toLowerCase() === id.toLowerCase());
+            
+            if (!item && res.length === 1) {
+                item = res[0];
+            }
+
+            if(item) { 
+                updateRowWithProductData($row, {
+                    id: item.id,
+                    name: item.name,
+                    text: item.name,
+                    stock: item.stock,
+                    sale_price: item.sale_price,
+                    retail_price: item.retail_price
+                }); 
+                if($row.is(':last-child')) {
+                    addNewRow(false);
+                }
+                setTimeout(() => $row.find('.sales-qty').focus(), 50);
+            } else {
+                Swal.fire({ icon: 'error', title: 'Not Found', text: 'Product ID ' + id + ' not found.', timer: 2000, showConfirmButton: false });
+                $input.select().focus();
+            }
+        } else {
+            Swal.fire({ icon: 'error', title: 'Not Found', text: 'Product ID ' + id + ' not found.', timer: 2000, showConfirmButton: false });
+            $input.select().focus();
+        }
+      }).fail(function() {
+        $input.removeClass('loading-indicator');
+        Swal.fire({ icon: 'error', title: 'Error', text: 'Server error while fetching product.' });
+        $input.select().focus();
       });
     }
+  });
+
+  // Enter on discount adds row
+  $(document).on('keydown', '.discount-value', function(e) {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const $current = $(this).closest('tr');
+      computeRow($current);
+      updateGrandTotals();
+      addNewRow();
+      const $newRow = $('#salesTableBody tr:last-child');
+      setTimeout(() => $newRow.find('.item-id-input').focus(), 100);
+    }
+  });
+
+  // Sync warehouse across rows
+  $(document).on('change', '.warehouse', function() {
+      const selectedWH = $(this).val();
+      $('.warehouse').not(this).val(selectedWH);
+      $('#salesTableBody tr').each(function() {
+          const $r = $(this), productId = $r.find('.product-select').val();
+          if (!productId) return;
+          const $stock = $r.find('.stock');
+          $stock.addClass('loading-indicator');
+          $.get('{{ route("search-products") }}', { q: productId, warehouse_id: selectedWH }).done(res => {
+              $stock.removeClass('loading-indicator');
+              if (res && res.length > 0) {
+                  const item = res.find(i => String(i.id) === String(productId));
+                  if (item) $stock.val(item.stock || 0);
+              }
+          }).fail(() => $stock.removeClass('loading-indicator'));
+      });
+  });
+
+  // Party ID Lookup
+  $('#partyIdInput').on('keydown', function(e) {
+      if (e.key === 'Tab' || e.key === 'Enter') {
+          const pid = $(this).val().trim();
+          if (!pid) return;
+
+          let foundId = null;
+          $('#customerSelect option').each(function() {
+              const text = $(this).text();
+              const val = $(this).val();
+              if (text.startsWith(pid + ' -') || val === pid) {
+                  foundId = val;
+                  return false;
+              }
+          });
+
+          if (foundId) {
+              if ($('#customerSelect').val() !== foundId) {
+                  $('#customerSelect').val(foundId).trigger('change');
+              }
+              e.preventDefault();
+              setTimeout(() => $('#salesTableBody tr:first-child .item-id-input').focus(), 100);
+          } else {
+              $(this).addClass('is-invalid');
+              setTimeout(() => $(this).removeClass('is-invalid'), 1000);
+          }
+      }
   });
 
   // Customer logic
@@ -884,11 +1041,36 @@
       $s.select2();
     });
   }
+
   $(document).on('change', 'input[name="partyType"]', function() { loadCustomers(this.value); });
+
   $(document).on('change', '#customerSelect', function() {
-    const id = $(this).val(); if(!id) return;
-    $.get('{{ url("customers/show") }}/'+id+'?type='+$('input[name="partyType"]:checked').val()).done(d => {
-      $('#address').val(d.address); $('#tel').val(d.mobile); $('#previousBalance').val(toNum(d.previous_balance).toFixed(2)); updateGrandTotals();
+    let id = $(this).val();
+    if (!id) {
+        $('#partyIdInput').val('');
+        $('#address').val('');
+        $('#tel').val('');
+        $('#remarks').val('');
+        $('#previousBalance').val('0.00');
+        updateGrandTotals();
+        return;
+    }
+
+    const selectedText = $("#customerSelect option:selected").text();
+    const parts = selectedText.split(' - ');
+    if (parts.length > 1) {
+        $('#partyIdInput').val(parts[0]);
+    } else {
+        $('#partyIdInput').val(id);
+    }
+
+    let type = $('input[name="partyType"]:checked').val();
+    $.get('{{ route("customers.show", ["id" => "__ID__"]) }}'.replace('__ID__', id) + '?type=' + type, function(d) {
+      $('#address').val(d.address || '');
+      $('#tel').val(d.mobile || '');
+      $('#remarks').val(d.remarks || '');
+      $('#previousBalance').val((+d.previous_balance || 0).toFixed(2));
+      updateGrandTotals();
     });
   });
 
