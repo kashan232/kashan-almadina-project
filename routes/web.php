@@ -21,12 +21,13 @@ use App\Http\Controllers\IncentiveController;
 use App\Http\Controllers\NarrationController;
 use App\Http\Controllers\WarehouseController;
 use App\Http\Controllers\PermissionController;
-use App\Http\Controllers\SalereturnController;
+use App\Http\Controllers\SaleReturnController;
 use App\Http\Controllers\SubcategoryController;
 use App\Http\Controllers\AccountsHeadController;
 use App\Http\Controllers\SalesOfficerController;
 use App\Http\Controllers\StockTransferController;
 use App\Http\Controllers\InwardgatepassController;
+use App\Http\Controllers\PurchaseReturnController;
 use App\Http\Controllers\StockHoldController;
 use App\Http\Controllers\WarehouseStockController;
 use App\Http\Controllers\SubCustomerController;
@@ -267,27 +268,27 @@ Route::middleware('auth')->group(function () {
     Route::get('/getPartyList', [PurchaseController::class, 'getPartyList'])->name('purchase.party.list');
 
     // Purchase Returns
-    Route::get('/purchase-returns', [\App\Http\Controllers\PurchaseReturnController::class, 'index'])->name('purchase.return.home');
-    Route::get('/purchase-returns/add', [\App\Http\Controllers\PurchaseReturnController::class, 'create'])->name('purchase.return.add');
-    Route::post('/purchase-returns', [\App\Http\Controllers\PurchaseReturnController::class, 'store'])->name('purchase.return.store');
-    Route::get('/purchase-returns/get-purchase/{invoice_no}', [\App\Http\Controllers\PurchaseReturnController::class, 'getPurchaseDetails']);
-    Route::post('/purchase-returns/post/{id}', [\App\Http\Controllers\PurchaseReturnController::class, 'post'])->name('purchase.return.post');
-    Route::get('/purchase-returns/print/{id}', [\App\Http\Controllers\PurchaseReturnController::class, 'print'])->name('purchase.return.print');
+    Route::get('/purchase-returns', [PurchaseReturnController::class, 'index'])->name('purchase.return.home');
+    Route::get('/purchase-returns/add', [PurchaseReturnController::class, 'create'])->name('purchase.return.add');
+    Route::post('/purchase-returns', [PurchaseReturnController::class, 'store'])->name('purchase.return.store');
+    Route::get('/purchase-returns/get-purchase/{invoice_no}', [PurchaseReturnController::class, 'getPurchaseDetails']);
+    Route::post('/purchase-returns/post/{id}', [PurchaseReturnController::class, 'post'])->name('purchase.return.post');
+    Route::get('/purchase-returns/print/{id}', [PurchaseReturnController::class, 'print'])->name('purchase.return.print');
     /* Added routes for edit and update */
-    Route::get('/purchase-returns/{id}/edit', [\App\Http\Controllers\PurchaseReturnController::class, 'edit'])->name('purchase.return.edit');
-    Route::post('/purchase-returns/{id}/update', [\App\Http\Controllers\PurchaseReturnController::class, 'update'])->name('purchase.return.update');
-    Route::delete('/purchase-returns/{id}/destroy', [\App\Http\Controllers\PurchaseReturnController::class, 'destroy'])->name('purchase.return.destroy');
+    Route::get('/purchase-returns/{id}/edit', [PurchaseReturnController::class, 'edit'])->name('purchase.return.edit');
+    Route::post('/purchase-returns/{id}/update', [PurchaseReturnController::class, 'update'])->name('purchase.return.update');
+    Route::delete('/purchase-returns/{id}/destroy', [PurchaseReturnController::class, 'destroy'])->name('purchase.return.destroy');
 
     // Sale Returns
-    Route::get('/sale-returns', [\App\Http\Controllers\SaleReturnController::class, 'index'])->name('sale.return.home');
-    Route::get('/sale-returns/add', [\App\Http\Controllers\SaleReturnController::class, 'create'])->name('sale.return.add');
-    Route::post('/sale-returns', [\App\Http\Controllers\SaleReturnController::class, 'store'])->name('sale.return.store');
-    Route::get('/sale-returns/get-sale/{invoice_no}', [\App\Http\Controllers\SaleReturnController::class, 'getSaleDetails']);
-    Route::post('/sale-returns/post/{id}', [\App\Http\Controllers\SaleReturnController::class, 'post'])->name('sale.return.post');
-    Route::get('/sale-returns/print/{id}', [\App\Http\Controllers\SaleReturnController::class, 'print'])->name('sale.return.print');
-    Route::get('/sale-returns/{id}/edit', [\App\Http\Controllers\SaleReturnController::class, 'edit'])->name('sale.return.edit');
-    Route::post('/sale-returns/{id}/update', [\App\Http\Controllers\SaleReturnController::class, 'update'])->name('sale.return.update');
-    Route::delete('/sale-returns/{id}/destroy', [\App\Http\Controllers\SaleReturnController::class, 'destroy'])->name('sale.return.destroy');
+    Route::get('/sale-returns', [SaleReturnController::class, 'index'])->name('sale.return.home');
+    Route::get('/sale-returns/add', [SaleReturnController::class, 'create'])->name('sale.return.add');
+    Route::post('/sale-returns', [SaleReturnController::class, 'store'])->name('sale.return.store');
+    Route::get('/sale-returns/get-sale/{invoice_no}', [SaleReturnController::class, 'getSaleDetails']);
+    Route::post('/sale-returns/post/{id}', [SaleReturnController::class, 'post'])->name('sale.return.post');
+    Route::get('/sale-returns/print/{id}', [SaleReturnController::class, 'print'])->name('sale.return.print');
+    Route::get('/sale-returns/{id}/edit', [SaleReturnController::class, 'edit'])->name('sale.return.edit');
+    Route::post('/sale-returns/{id}/update', [SaleReturnController::class, 'update'])->name('sale.return.update');
+    Route::delete('/sale-returns/{id}/destroy', [SaleReturnController::class, 'destroy'])->name('sale.return.destroy');
 
     // Route::get('/fetch-product', [PurchaseController::class, 'fetchProduct'])->name('item.search');
 
@@ -305,8 +306,8 @@ Route::middleware('auth')->group(function () {
     //     route::get('/Booking/edit/{id}',[SaleController::class,'editBooking'])->name('editBooking.index');
 
     // // sale return
-    //     route::get('/sale/return',[SalereturnController::class,'index_salereturn'])->name('sale.retrun');
-    //     route::get('/sale/return/create/{id}',[SalereturnController::class,'index_salereturn_Add'])->name('sale.retrun.add');
+    //     route::get('/sale/return',[SaleReturnController::class,'index_salereturn'])->name('sale.retrun');
+    //     route::get('/sale/return/create/{id}',[SaleReturnController::class,'index_salereturn_Add'])->name('sale.retrun.add');
 
     //     // routes/web.php
     //     Route::get('/get-products-by-warehouse/{warehouseId}', [App\Http\Controllers\SaleController::class, 'getProductsByWarehouse']);
@@ -338,8 +339,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/stock-holds/edit/{id}', [StockHoldController::class, 'edit'])->name('stock-holds.edit');
     Route::post('/stock-holds/update/{id}', [StockHoldController::class, 'update'])->name('stock-holds.update');
     Route::post('/stock-holds/post/{id}', [StockHoldController::class, 'post'])->name('stock-holds.post');
-    Route::post('stock-holds/claim/invoice/{invoice}', [\App\Http\Controllers\StockHoldController::class, 'claimByInvoice'])->name('stock-holds.claim.invoice');
-    Route::post('stock-holds/claim/item', [\App\Http\Controllers\StockHoldController::class, 'claimItem'])->name('stock-holds.claim.item');
+    Route::post('stock-holds/claim/invoice/{invoice}', [StockHoldController::class, 'claimByInvoice'])->name('stock-holds.claim.invoice');
+    Route::post('stock-holds/claim/item', [StockHoldController::class, 'claimItem'])->name('stock-holds.claim.item');
 
     Route::get('/stock-hold-list', [StockHoldController::class, 'stockholdlist'])->name('stock-hold-list');
     Route::get('/stock-holds/{id}/release', [StockHoldController::class, 'createFromHold'])->name('stock-holds.release');
@@ -381,9 +382,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/accounts/list', [SaleController::class, 'getAccountList'])->name('accounts.list');
 
     // Sale Return (as-is)
-    Route::get('/sale/return', [SalereturnController::class, 'index_salereturn'])->name('sale.return');
-    Route::get('/sale/return/create/{sale}', [SalereturnController::class, 'index_salereturn_Add'])->name('sale.return.create');
-    Route::post('/sale/return/store', [SalereturnController::class, 'store'])->name('sale.return.store');
+    Route::get('/sale/return', [SaleReturnController::class, 'index_salereturn'])->name('sale.return');
+    Route::get('/sale/return/create/{sale}', [SaleReturnController::class, 'index_salereturn_Add'])->name('sale.return.create');
+    Route::post('/sale/return/store', [SaleReturnController::class, 'store'])->name('sale.return.store');
 
     Route::get('/sub-customers', [SubCustomerController::class, 'index'])->name('sub_customers.index');
     Route::get('/sub-customers/create', [SubCustomerController::class, 'create'])->name('sub_customers.create');
