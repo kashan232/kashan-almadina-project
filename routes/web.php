@@ -381,10 +381,7 @@ Route::middleware('auth')->group(function () {
     Route::delete('/customers/{customer}', [SaleController::class, 'deleteCustomer'])->name('customers.delete');
     Route::get('/accounts/list', [SaleController::class, 'getAccountList'])->name('accounts.list');
 
-    // Sale Return (as-is)
-    Route::get('/sale/return', [SaleReturnController::class, 'index_salereturn'])->name('sale.return');
-    Route::get('/sale/return/create/{sale}', [SaleReturnController::class, 'index_salereturn_Add'])->name('sale.return.create');
-    Route::post('/sale/return/store', [SaleReturnController::class, 'store'])->name('sale.return.store');
+
 
     Route::get('/sub-customers', [SubCustomerController::class, 'index'])->name('sub_customers.index');
     Route::get('/sub-customers/create', [SubCustomerController::class, 'create'])->name('sub_customers.create');
