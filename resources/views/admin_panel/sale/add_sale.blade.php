@@ -1357,7 +1357,10 @@
       type
     }, function(list) {
       $sel.empty().append('<option selected disabled value="">Select ' + (type === 'vendor' ? 'vendor' : (type === 'walking' ? 'walk-in customer' : 'customer')) + '</option>');
-      list.forEach(r => $sel.append('<option value="' + r.id + '">' + r.text + '</option>'));
+      list.forEach(r => {
+        let opt = $('<option>').val(r.id).text(r.text).attr('data-customer_id', r.customer_id);
+        $sel.append(opt);
+      });
       $sel.prop('disabled', false);
 
       // Initialize Select2 if not already initialized, or refresh it
@@ -1399,10 +1402,10 @@
           let foundId = null;
           // Try to match in the already loaded Select2 options
           $('#customerSelect option').each(function() {
-              const text = $(this).text();
+              const customerId = $(this).attr('data-customer_id');
               const val = $(this).val();
 
-              if (text.startsWith(pid + ' -') || val === pid) {
+              if (customerId == pid || val == pid) {
                   foundId = val;
                   return false;
               }
@@ -1435,11 +1438,10 @@
         return;
     }
 
-    // Update Party ID Input field with the display ID if possible
-    const selectedText = $("#customerSelect option:selected").text();
-    const parts = selectedText.split(' - ');
-    if (parts.length > 1) {
-        $('#partyIdInput').val(parts[0]);
+    // Update Party ID Input field with the display ID (customer_id)
+    const customerId = $("#customerSelect option:selected").attr('data-customer_id');
+    if (customerId) {
+        $('#partyIdInput').val(customerId);
     } else {
         $('#partyIdInput').val(id);
     }

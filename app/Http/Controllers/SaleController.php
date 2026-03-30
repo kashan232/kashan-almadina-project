@@ -711,7 +711,8 @@ class SaleController extends Controller
                 $rows->map(
                     fn($v) => [
                         'id' => $v->id,
-                        'text' => $v->id . ' - ' . $v->name . ($v->phone ? ' (' . $v->phone . ')' : ''), 
+                        'text' => $v->name . ($v->phone ? ' (' . $v->phone . ')' : ''), 
+                        'customer_id' => $v->id,
                     ],
                 ),
             );
@@ -728,7 +729,8 @@ class SaleController extends Controller
                 $rows->map(
                     fn($c) => [
                         'id' => $c->id,
-                        'text' => $c->customer_id . ' - ' . $c->customer_name, // Display customer ID and name
+                        'text' => $c->customer_name,
+                        'customer_id' => $c->customer_id,
                     ],
                 ),
             );
@@ -744,7 +746,8 @@ class SaleController extends Controller
             $rows->map(
                 fn($c) => [
                     'id' => $c->id,
-                    'text' => $c->customer_id . ' - ' . $c->customer_name, // Display customer ID and name
+                    'text' => $c->customer_name,
+                    'customer_id' => $c->customer_id,
                 ],
             ),
         );

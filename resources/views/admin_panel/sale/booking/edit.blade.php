@@ -1011,9 +1011,9 @@
 
           let foundId = null;
           $('#customerSelect option').each(function() {
-              const text = $(this).text();
+              const customerId = $(this).attr('data-customer_id');
               const val = $(this).val();
-              if (text.startsWith(pid + ' -') || val === pid) {
+              if (customerId == pid || val == pid) {
                   foundId = val;
                   return false;
               }
@@ -1036,7 +1036,10 @@
   function loadCustomers(type) {
     $.get('{{ route("customers.filter") }}', { type }).done(list => {
       const $s = $('#customerSelect').empty().append('<option disabled selected>Select...</option>');
-      list.forEach(i => $s.append(new Option(i.text, i.id)));
+      list.forEach(r => {
+        let opt = $('<option>').val(r.id).text(r.text).attr('data-customer_id', r.customer_id);
+        $s.append(opt);
+      });
       const old = $s.data('old-val'); if(old) $s.val(old).trigger('change');
       $s.select2();
     });
@@ -1056,10 +1059,9 @@
         return;
     }
 
-    const selectedText = $("#customerSelect option:selected").text();
-    const parts = selectedText.split(' - ');
-    if (parts.length > 1) {
-        $('#partyIdInput').val(parts[0]);
+    const customerId = $("#customerSelect option:selected").attr('data-customer_id');
+    if (customerId) {
+        $('#partyIdInput').val(customerId);
     } else {
         $('#partyIdInput').val(id);
     }
