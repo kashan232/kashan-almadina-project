@@ -324,7 +324,16 @@
         <div class="flex-grow-1">
           <div class="d-flex justify-content-between align-items-center mb-2">
             <div class="section-title mb-0">Items</div>
-            <button type="button" class="btn btn-sm btn-primary" id="btnAdd">Add Row</button>
+            <div class="d-flex align-items-center gap-2">
+                <label class="form-label text-muted small mb-0 fw-bold">Bulk Warehouse:</label>
+                <select class="form-select form-select-sm" id="globalWarehouse" style="width: 150px; font-size: 0.8rem;">
+                    <option value="0">🏠 Shop Stock</option>
+                    @foreach ($warehouses as $wh)
+                        <option value="{{ $wh->id }}">📦 {{ $wh->warehouse_name }}</option>
+                    @endforeach
+                </select>
+                <button type="button" class="btn btn-sm btn-primary" id="btnAdd">Add Row</button>
+            </div>
           </div>
 
           <div class="table-responsive">
@@ -536,8 +545,8 @@
 
               <!-- Sub-Total (Net) -->
               <div class="d-flex justify-content-between py-3 border-bottom bg-info bg-opacity-10 rounded px-2">
-                <span class="fw-bold fs-6">Sub-Total (Net)</span>
-                <span class="fw-bold fs-6 text-primary" id="tSub">0.00</span>
+                <span class="fw-bold fs-6 text-dark">Sub-Total (Net)</span>
+                <span class="fw-bold fs-6 text-dark" id="tSub">0.00</span>
               </div>
 
               <!-- Order Discount Input -->
@@ -561,6 +570,14 @@
               <div class="d-flex justify-content-between py-2 border-bottom">
                 <span class="text-muted small">Order Discount Rs</span>
                 <span class="fw-semibold text-danger" id="tOrderDisc">0.00</span>
+              </div>
+
+              <!-- Round Off -->
+              <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                <span class="text-muted small">Round Off</span>
+                <input type="number" step="0.01" class="form-control form-control-sm text-end" 
+                       id="roundOff" name="round_off" 
+                       value="{{ $booking->round_off ?? '0' }}" style="width:70px">
               </div>
 
               <!-- Current Invoice Total -->
@@ -761,7 +778,7 @@
 
   /* ---------- Add New Row ---------- */
   function addNewRow(focusNewRow = true) {
-    const wh = $('#salesTableBody tr:last .warehouse').val() || 0;
+    const wh = $('#globalWarehouse').val() || 0;
     const template = `
     <tr>
       <td style="width: 70px;"><input type="text" class="form-control form-control-sm item-id-input text-center" placeholder="ID"></td>
@@ -828,10 +845,17 @@
 
     const tRV = recomputeReceipts();
     const prev = toNum($('#previousBalance').val());
-    const payable = (tSub - orderDisc) + (prev - tRV);
+    const roundOffIntended = toNum($('#roundOff').val());
+
+    let currentInvoice = tSub - orderDisc;
+    if (roundOffIntended > 0) {
+        currentInvoice = roundOffIntended;
+    }
+
+    const payable = currentInvoice + (prev - tRV);
 
     $('#tQty').text(tQty); $('#tRetail').text(tRetail.toFixed(2)); $('#tSub').text(tSub.toFixed(2));
-    $('#tOrderDisc').text(orderDisc.toFixed(2)); $('#tCurrentInvoice').text((tSub - orderDisc).toFixed(2));
+    $('#tOrderDisc').text(orderDisc.toFixed(2)); $('#tCurrentInvoice').text(currentInvoice.toFixed(2));
     $('#tPrev').text(prev.toFixed(2)); $('#tReceiptsMirror').text(tRV.toFixed(2));
     $('#tBalAfterReceipt').text((prev - tRV).toFixed(2)); $('#tPayable').text(payable.toFixed(2));
     $('#totalAmount').text(tSub.toFixed(2));
@@ -854,7 +878,7 @@
     });
   });
 
-  $(document).on('input', '.rv-amount', updateGrandTotals);
+  $(document).on('input', '.rv-amount, #roundOff', updateGrandTotals);
 
   $(document).on('click', '#btnAddRV', function() {
     const template = `
@@ -902,7 +926,7 @@
   $(document).on('click', '#btnAdd', () => addNewRow());
   $(document).on('click', '.del-row', function() { $(this).closest('tr').remove(); updateGrandTotals(); });
   $(document).on('input', '.sales-qty, .discount-value', function() { computeRow($(this).closest('tr')); updateGrandTotals(); });
-  $(document).on('input', '#orderDiscountValue', updateGrandTotals);
+  $(document).on('input', '#orderDiscountValue, #roundOff', updateGrandTotals);
   $(document).on('click', '.order-disc-btn', function() { $('.order-disc-btn').removeClass('active'); $(this).addClass('active'); $('#orderDiscountMode').val($(this).data('mode')); updateGrandTotals(); });
 
   // ID search
@@ -984,23 +1008,29 @@
     }
   });
 
-  // Sync warehouse across rows
+  // Warehouse change -> re-fetch stock for CURRENT row only
   $(document).on('change', '.warehouse', function() {
       const selectedWH = $(this).val();
-      $('.warehouse').not(this).val(selectedWH);
-      $('#salesTableBody tr').each(function() {
-          const $r = $(this), productId = $r.find('.product-select').val();
-          if (!productId) return;
-          const $stock = $r.find('.stock');
-          $stock.addClass('loading-indicator');
-          $.get('{{ route("search-products") }}', { q: productId, warehouse_id: selectedWH }).done(res => {
-              $stock.removeClass('loading-indicator');
-              if (res && res.length > 0) {
-                  const item = res.find(i => String(i.id) === String(productId));
-                  if (item) $stock.val(item.stock || 0);
-              }
-          }).fail(() => $stock.removeClass('loading-indicator'));
-      });
+      const $r = $(this).closest('tr');
+      const productId = $r.find('.product-select').val();
+      if (!productId) return;
+
+      const $stock = $r.find('.stock');
+      $stock.addClass('loading-indicator');
+
+      $.get('{{ route("search-products") }}', { q: productId, warehouse_id: selectedWH }).done(res => {
+          $stock.removeClass('loading-indicator');
+          if (res && res.length > 0) {
+              const item = res.find(i => String(i.id) === String(productId));
+              if (item) $stock.val(item.stock || 0);
+          }
+      }).fail(() => $stock.removeClass('loading-indicator'));
+  });
+
+  // Global Warehouse Change -> Bulk Update ALL rows
+  $(document).on('change', '#globalWarehouse', function() {
+      const selectedWH = $(this).val();
+      $('.warehouse').not('#globalWarehouse').val(selectedWH).trigger('change');
   });
 
   // Party ID Lookup
@@ -1076,12 +1106,90 @@
     });
   });
 
+  function showToast(msg, type) {
+      type = type || 'success';
+      var icon = type === 'success' ? 'fa-check-circle' : 'fa-times-circle';
+      var color = type === 'success' ? '#28a745' : '#dc3545';
+      var $toast = $('<div>').css({
+          position: 'fixed', top: '20px', right: '20px', zIndex: 9999,
+          background: color, color: '#fff',
+          padding: '12px 20px', borderRadius: '8px',
+          boxShadow: '0 4px 15px rgba(0,0,0,.2)',
+          fontSize: '14px', fontWeight: '500',
+          display: 'flex', alignItems: 'center', gap: '8px',
+          minWidth: '280px'
+      }).html('<i class="fa ' + icon + '"></i> ' + msg);
+      $('body').append($toast);
+      setTimeout(function() { $toast.fadeOut(400, function(){ $(this).remove(); }); }, 3500);
+  }
+
   // Save/Post
   function ajaxSave() {
+    // Remove empty rows before save
+    $('#salesTableBody tr').each(function() {
+        const pid = $(this).find('.product-select').val();
+        if (!pid) {
+            $(this).remove();
+        }
+    });
+    updateGrandTotals();
+
+    $('.ajax-valid-error').remove();
     $('#saveDraftBtn').prop('disabled', true).text('Saving...');
-    $.post('{{ route("sale.ajax.save") }}', $('#saleForm').serialize()).done(res => {
-      if(res.ok) { Swal.fire('Saved', 'Sale saved successfully!', 'success'); $('#saleForm').addClass('form-locked'); $('#editBtn').show(); }
-    }).always(() => $('#saveDraftBtn').prop('disabled', false).html('<i class="fa fa-floppy-o me-1"></i> Save Draft'));
+    $.ajax({
+        url: '{{ route("sale.ajax.save") }}',
+        type: 'POST',
+        data: $('#saleForm').serialize(),
+        headers: { 'X-Requested-With': 'XMLHttpRequest' },
+        success: function(res) {
+          if(res.ok) { 
+              showToast('Sale saved successfully!', 'success');
+              $('#saleForm').addClass('form-locked'); 
+              $('#editBtn').show(); 
+          } else {
+              showToast(res.msg || 'Save failed', 'error');
+          }
+        },
+        error: function(xhr) {
+          $('.ajax-valid-error').remove();
+          var msg = 'Save failed.';
+          try {
+              var resp = JSON.parse(xhr.responseText);
+              msg = resp.msg || msg;
+              if(resp.errors) {
+                  $.each(resp.errors, function(key, val) {
+                      var fieldHtml = '<div class="text-danger fw-bold ajax-valid-error mb-1" style="font-size:11px;"><i class="fa fa-exclamation-triangle"></i> ' + val[0] + '</div>';
+                      if(key.indexOf('.') !== -1) {
+                          var parts = key.split('.');
+                          var fieldName = parts[0] + '[]';
+                          var index = parseInt(parts[1]);
+                          var $target = $('[name="' + fieldName + '"]').eq(index);
+                          if($target.length) {
+                              if ($target.is('select') || $target.is('input')) {
+                                  $target.closest('td, div').prepend(fieldHtml);
+                              } else {
+                                  $target.before(fieldHtml);
+                              }
+                          }
+                      } else {
+                          var $target = $('[name="' + key + '"]');
+                          if($target.length) {
+                              if($target.next('.select2-container').length) {
+                                  $target.next('.select2-container').before(fieldHtml);
+                              } else {
+                                  $target.before(fieldHtml);
+                              }
+                          }
+                      }
+                  });
+              }
+          } catch(e) {}
+          showToast(msg, 'error');
+        },
+        complete: function() {
+            $('#saveDraftBtn').prop('disabled', false).html('<i class="fa fa-floppy-o me-1"></i> Save Draft');
+        }
+    });
   }
 
   $('#saveDraftBtn').click(ajaxSave);

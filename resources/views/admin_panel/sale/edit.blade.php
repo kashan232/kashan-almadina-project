@@ -199,6 +199,13 @@
 @section('scripts')
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script>
+  $('#saleForm').on('submit', function() {
+      $('#salesTableBody tr').each(function() {
+          const pid = $(this).find('.product-select').val();
+          if (!pid) { $(this).remove(); }
+      });
+  });
+
   function toNum(v) { return parseFloat(v || 0) || 0; }
   function updateGrandTotals() {
     let tQty = 0, tSub = 0;
@@ -209,16 +216,20 @@
       tQty += q; tSub += net;
     });
     
-    let tRV = 0;
-    $('.rv-amount').each(function() { tRV += toNum($(this).val()); });
-    $('#receiptsTotalDisplay').text(tRV.toFixed(2));
+    const tRV = recomputeReceipts();
+    const orderDisc = toNum($('#orderDiscountValue').val());
+    const prev = toNum($('#previousBalance').val());
+    const roundOffIntended = toNum($('#roundOff').val());
 
-    const od = toNum($('#orderDiscountValue').val()), prev = toNum($('#previousBalance').val());
-    const payable = (tSub - od + prev) - tRV;
+    let currentInvoice = tSub - orderDisc;
+    if (roundOffIntended > 0) {
+        currentInvoice = roundOffIntended;
+    }
 
+    const payable = currentInvoice + (prev - tRV); 
     $('#tQty').text(tQty); $('#tSub').text(tSub.toFixed(2)); $('#tPayable').text(payable.toFixed(2));
     
-    $('#subTotal1').val(tSub); $('#subTotal2').val(tSub); $('#discountAmount').val(od); 
+    $('#subTotal1').val(tSub); $('#subTotal2').val(tSub); $('#discountAmount').val(orderDisc); 
     $('#totalBalance').val(payable.toFixed(2));
   }
 

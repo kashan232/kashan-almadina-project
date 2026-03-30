@@ -462,7 +462,16 @@
         <div class="flex-grow-1">
           <div class="d-flex justify-content-between align-items-center mb-2">
             <div class="section-title mb-0">Items</div>
-            <button type="button" class="btn btn-sm btn-primary" id="btnAdd">Add Row</button>
+            <div class="d-flex align-items-center gap-2">
+                <label class="form-label text-muted small mb-0 fw-bold">Bulk Warehouse:</label>
+                <select class="form-select form-select-sm" id="globalWarehouse" style="width: 150px; font-size: 0.8rem;">
+                    <option value="0">🏠 Shop Stock</option>
+                    @foreach ($warehouses as $wh)
+                        <option value="{{ $wh->id }}">📦 {{ $wh->warehouse_name }}</option>
+                    @endforeach
+                </select>
+                <button type="button" class="btn btn-sm btn-primary" id="btnAdd">Add Row</button>
+            </div>
           </div>
 
           <div class="table-responsive">
@@ -677,8 +686,8 @@
 
               <!-- Sub-Total (Net) -->
               <div class="d-flex justify-content-between py-3 border-bottom bg-info bg-opacity-10 rounded px-2">
-                <span class="fw-bold fs-6">Sub-Total (Net)</span>
-                <span class="fw-bold fs-6 text-primary" id="tSub">0.00</span>
+                <span class="fw-bold fs-6 text-dark">Sub-Total (Net)</span>
+                <span class="fw-bold fs-6 text-dark" id="tSub">0.00</span>
               </div>
 
               <!-- Order Discount Input -->
@@ -702,6 +711,14 @@
               <div class="d-flex justify-content-between py-2 border-bottom">
                 <span class="text-muted small">Order Discount Rs</span>
                 <span class="fw-semibold text-danger" id="tOrderDisc">0.00</span>
+              </div>
+
+              <!-- Round Off -->
+              <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                <span class="text-muted small">Round Off</span>
+                <input type="number" step="0.01" class="form-control form-control-sm text-end" 
+                       id="roundOff" name="round_off" 
+                       value="{{ old('round_off', '0') }}" style="width:70px">
               </div>
 
               <!-- Current Invoice Total -->
@@ -974,10 +991,8 @@
 
     const $newRow = $(template);
     
-    // Inherit warehouse from last row if exists
-    if ($last.length) {
-       $newRow.find('.warehouse').val($last.find('.warehouse').val());
-    }
+    // Inherit from Global Warehouse
+    $newRow.find('.warehouse').val($('#globalWarehouse').val());
     
     $('#salesTableBody').append($newRow);
     
@@ -1153,64 +1168,93 @@
   $(document).ready(function() {
       var _savedBookingId = null;
 
-      // AJAX Save Draft
+      function showToast(msg, type) {
+          type = type || 'success';
+          var icon = type === 'success' ? 'fa-check-circle' : 'fa-times-circle';
+          var color = type === 'success' ? '#28a745' : '#dc3545';
+          var $toast = $('<div>').css({
+              position: 'fixed', top: '20px', right: '20px', zIndex: 9999,
+              background: color, color: '#fff',
+              padding: '12px 20px', borderRadius: '8px',
+              boxShadow: '0 4px 15px rgba(0,0,0,.2)',
+              fontSize: '14px', fontWeight: '500',
+              display: 'flex', alignItems: 'center', gap: '8px',
+              minWidth: '280px'
+          }).html('<i class="fa ' + icon + '"></i> ' + msg);
+          $('body').append($toast);
+          setTimeout(function() { $toast.fadeOut(400, function(){ $(this).remove(); }); }, 3500);
+      }
+
       function ajaxSaveDraft(showMsg = true) {
-          // Explicitly check for Party/Customer
-          if (!$('#customerSelect').val()) {
-              if(showMsg) Swal.fire({ icon: 'warning', title: 'Party Required', text: 'Please select a customer/party before saving.' });
-              return Promise.reject();
-          }
+          // Remove empty rows before save
+          $('#salesTableBody tr').each(function() {
+              const pid = $(this).find('.product-select').val();
+              if (!pid) {
+                  $(this).remove();
+              }
+          });
+          updateGrandTotals();
 
-          if (!canPost()) {
-              if(showMsg) Swal.fire({ icon: 'error', title: 'Items Required', text: 'Add at least one item with quantity.' });
-              return Promise.reject();
-          }
-
+          $('.ajax-valid-error').remove();
           $('#saveDraftBtn').prop('disabled', true).html('<i class="fa fa-spinner fa-spin me-1"></i> Saving...');
           
           return $.ajax({
               url: '{{ route("sale.ajax.save") }}',
               type: 'POST',
               data: $('#saleForm').serialize(),
+              headers: { 'X-Requested-With': 'XMLHttpRequest' },
               success: function(res) {
                   if (res.ok) {
                       _savedBookingId = res.booking_id;
                       $('#booking_id').val(res.booking_id);
                       $('#idBadge').text('ID: ' + res.booking_id).show();
                       $('#saleForm').addClass('form-locked');
-                      // User requested all buttons stay visible
                       $('#saveDraftBtn, #postBtn, #previewPrintBtn, #cancelBtn, #editBtn, #newBtn').show();
-                      // Change Post button to green as a visual cue
                       $('#postBtn').removeClass('btn-primary').addClass('btn-success');
                       $('#statusBadge').removeClass('bg-warning').addClass('bg-info text-white').html('<i class="fa fa-pencil"></i> Unposted');
 
                       if (showMsg) {
-                          Swal.fire({ 
-                              icon: 'success', 
-                              title: 'Draft Saved', 
-                              text: 'Sale saved as draft. Esc to go back or Ctrl+E to edit.',
-                              timer: 2000, 
-                              showConfirmButton: false 
-                          });
+                          showToast('Draft Saved', 'success');
                       }
                   } else {
-                      Swal.fire({
-                          icon: 'error',
-                          title: 'Error',
-                          text: res.error || 'Save failed'
-                      });
+                      showToast(res.msg || 'Save failed', 'error');
                   }
               },
               error: function(xhr) {
-                  let msg = 'Save failed.';
+                  $('.ajax-valid-error').remove();
+                  var msg = 'Save failed.';
                   try {
-                      msg = JSON.parse(xhr.responseText).message || msg;
+                      var resp = JSON.parse(xhr.responseText);
+                      msg = resp.msg || msg;
+                      if(resp.errors) {
+                          $.each(resp.errors, function(key, val) {
+                              var fieldHtml = '<div class="text-danger fw-bold ajax-valid-error mb-1" style="font-size:11px;"><i class="fa fa-exclamation-triangle"></i> ' + val[0] + '</div>';
+                              if(key.indexOf('.') !== -1) {
+                                  var parts = key.split('.');
+                                  var fieldName = parts[0] + '[]';
+                                  var index = parseInt(parts[1]);
+                                  var $target = $('[name="' + fieldName + '"]').eq(index);
+                                  if($target.length) {
+                                      if ($target.is('select') || $target.is('input')) {
+                                          $target.closest('td, div').prepend(fieldHtml);
+                                      } else {
+                                          $target.before(fieldHtml);
+                                      }
+                                  }
+                              } else {
+                                  var $target = $('[name="' + key + '"]');
+                                  if($target.length) {
+                                      if($target.next('.select2-container').length) {
+                                          $target.next('.select2-container').before(fieldHtml);
+                                      } else {
+                                          $target.before(fieldHtml);
+                                      }
+                                  }
+                              }
+                          });
+                      }
                   } catch(e) {}
-                  Swal.fire({
-                      icon: 'error',
-                      title: 'Save Failed',
-                      text: msg
-                  });
+                  showToast(msg, 'error');
               },
               complete: function() {
                   $('#saveDraftBtn').prop('disabled', false).html('<i class="fa fa-floppy-o me-1"></i> Save Draft <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+S</kbd>');
@@ -1604,37 +1648,35 @@
     refreshPostedState();
   });
 
-  // Warehouse change -> re-fetch stock + Sync all rows
+  // Warehouse change -> re-fetch stock for CURRENT row only
   $(document).on('change', '.warehouse', function() {
       const selectedWH = $(this).val();
-      const $changedRow = $(this).closest('tr');
-      
-      // Update all other warehouse selects to match
-      $('.warehouse').not(this).val(selectedWH);
+      const $r = $(this).closest('tr');
+      const productId = $r.find('.product-select').val();
+      if (!productId) return;
 
-      // Re-fetch stock for ALL rows that have a product selected
-      $('#salesTableBody tr').each(function() {
-          const $r = $(this);
-          const productId = $r.find('.product-select').val();
-          if (!productId) return;
+      const $stock = $r.find('.stock');
+      $stock.addClass('loading-indicator');
 
-          const $stock = $r.find('.stock');
-          $stock.addClass('loading-indicator');
-
-          $.get('{{ route("search-products") }}', { q: productId, warehouse_id: selectedWH })
-              .done(function(res) {
-                  $stock.removeClass('loading-indicator');
-                  if (res && res.length > 0) {
-                      const item = res.find(i => String(i.id) === String(productId));
-                      if (item) {
-                          $stock.val(item.stock || 0);
-                      }
+      $.get('{{ route("search-products") }}', { q: productId, warehouse_id: selectedWH })
+          .done(function(res) {
+              $stock.removeClass('loading-indicator');
+              if (res && res.length > 0) {
+                  const item = res.find(i => String(i.id) === String(productId));
+                  if (item) {
+                      $stock.val(item.stock || 0);
                   }
-              })
-              .fail(function() {
-                  $stock.removeClass('loading-indicator');
-              });
-      });
+              }
+          })
+          .fail(function() {
+              $stock.removeClass('loading-indicator');
+          });
+  });
+
+  // Global Warehouse Change -> Bulk Update ALL rows
+  $(document).on('change', '#globalWarehouse', function() {
+      const selectedWH = $(this).val();
+      $('.warehouse').val(selectedWH).trigger('change');
   });
 
   // Receipt Voucher Account -> Amount Toggle
@@ -1716,8 +1758,13 @@
 
     const prev = toNum($('#previousBalance').val());
     const receipts = toNum($('#receiptsTotal').text());
+    const roundOffIntended = toNum($('#roundOff').val());
 
-    const currentInvoice = subTotal - orderDisc;
+    let currentInvoice = subTotal - orderDisc;
+    if (roundOffIntended > 0) {
+        currentInvoice = roundOffIntended;
+    }
+
     const balAfterReceipt = prev - receipts;
     const payable = currentInvoice + balAfterReceipt;
 
@@ -1757,7 +1804,9 @@
   });
 
   // Order Discount Value Input
-  $(document).on('input', '#orderDiscountValue', updateGrandTotals);
+    $(document).on('input', '#orderDiscountValue, #roundOff', function() {
+        updateGrandTotals();
+    });
   
   $(document).on('input', '#previousBalance, #discountPercent', updateGrandTotals);
 

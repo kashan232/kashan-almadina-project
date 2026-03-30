@@ -233,12 +233,17 @@
                                             </div>
                                         @endforeach
                                     </td>
-                                    <td class="small text-center">
-                                        @foreach($sale->items as $item)
-                                            <div class="item-detail-row">
-                                                {{ number_format($item->sales_qty ?? 0, 0) }}
-                                            </div>
-                                        @endforeach
+                                    <td class="small text-center qty-cell">
+                                        <div class="individual-qtys">
+                                            @foreach($sale->items as $item)
+                                                <div class="item-detail-row">
+                                                    {{ number_format($item->sales_qty ?? 0, 0) }}
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                        <div class="total-qty d-none fw-bold">
+                                            {{ number_format($sale->items->sum('sales_qty'), 0) }}
+                                        </div>
                                     </td>
                                     <td class="small text-end">
                                         @foreach($sale->items as $item)
@@ -372,6 +377,23 @@
             ]
         });
 
+        // Function to toggle individual vs total Qty
+        function updateQtyDisplay() {
+            if (!dt) return;
+            // Column 6 (index 5) is "Items"
+            const itemsVisible = dt.column(5).visible();
+            if (itemsVisible) {
+                $('.individual-qtys').removeClass('d-none');
+                $('.total-qty').addClass('d-none');
+            } else {
+                $('.individual-qtys').addClass('d-none');
+                $('.total-qty').removeClass('d-none');
+            }
+        }
+        
+        // Run once after initial setup
+        setTimeout(updateQtyDisplay, 100);
+
         // Handle Checkbox Change
         $('#columnPickerMenu input').on('change', function() {
             const colIdx = parseInt($(this).data('column'));
@@ -380,6 +402,10 @@
             // DataTable column index is 0-based, picker is 1-based
             dt.column(colIdx - 1).visible(isChecked);
             dt.columns.adjust().draw(false);
+            
+            // Update quantity display style
+            updateQtyDisplay();
+            
             saveState();
         });
 
@@ -394,6 +420,7 @@
                 dt.column(colIdx - 1).visible(checked);
             });
             dt.columns.adjust().draw(false);
+            updateQtyDisplay();
         }
     });
 </script>

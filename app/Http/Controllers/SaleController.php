@@ -302,6 +302,28 @@ class SaleController extends Controller
     /* -------- AJAX: Save as booking (no stock minus) -------- */
     public function ajaxSave(Request $request)
     {
+        $validator = \Illuminate\Support\Facades\Validator::make($request->all(), [
+            'partyType'    => 'required',
+            'customer'     => 'required',
+            'product_id'   => 'required|array|min:1',
+            'sales-qty'    => 'required|array',
+            'sales-qty.*'  => 'required|numeric|min:0.001',
+        ], [
+            'partyType.required'   => 'Please select party type.',
+            'customer.required'    => 'Please select a customer.',
+            'product_id.required'  => 'Add at least one item.',
+            'sales-qty.*.required' => 'Qty required.',
+            'sales-qty.*.min'      => 'Qty > 0.',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'ok'     => false, 
+                'errors' => $validator->errors(),
+                'msg'    => 'Validation failed. Please check the fields.'
+            ], 422);
+        }
+
         return DB::transaction(function () use ($request) {
             $attempts = 0;
             $maxAttempts = 5;
