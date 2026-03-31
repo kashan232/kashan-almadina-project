@@ -61,9 +61,10 @@
                                         <th>Product Name</th>
                                         <th class="text-center shop-col">Shop Stock</th>
                                         @foreach($warehouses as $wh)
-                                            <th class="text-center wh-col">{{ $wh->warehouse_name }}</th>
+                                            <th class="text-center wh-col text-primary" style="border-left: 1px solid #e2e8f0;">{{ $wh->warehouse_name }}</th>
                                         @endforeach
-                                        <th class="text-center total-col">Total Stock</th>
+                                        <th class="text-center text-danger" style="background-color: #fff5f5; border-left: 2px solid #e2e8f0; width: 100px;">Total Hold</th>
+                                        <th class="text-center total-col" style="width: 120px;">Net Total</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -71,6 +72,7 @@
                                         @php
                                             $shopStock = (float)$product->stock;
                                             $whSum = 0;
+                                            $holdSum = (float) $product->stockHolds->sum('hold_qty');
                                         @endphp
                                         <tr>
                                             <td class="text-muted small">#{{ $product->id }}</td>
@@ -90,7 +92,7 @@
                                                     $qty = $whStockObj ? (float)$whStockObj->quantity : 0;
                                                     $whSum += $qty;
                                                 @endphp
-                                                <td class="text-center wh-col">
+                                                <td class="text-center wh-col" style="border-left: 1px solid #f1f5f9;">
                                                     @if($qty > 0)
                                                         <span class="stock-badge text-dark">{{ number_format($qty, 0) }}</span>
                                                     @else
@@ -99,9 +101,25 @@
                                                 </td>
                                             @endforeach
 
+                                            {{-- Total Hold Column --}}
+                                            <td class="text-center" style="background-color: #fffcfc; border-left: 2px solid #f1f5f9;">
+                                                @if($holdSum > 0)
+                                                    <span class="stock-badge text-danger fw-bold">-{{ number_format($holdSum, 0) }}</span>
+                                                @else
+                                                    <span class="text-muted" style="opacity: 0.2;">0</span>
+                                                @endif
+                                            </td>
+
                                             {{-- Grand Total --}}
                                             <td class="text-center total-col">
-                                                <span class="fs-6">{{ number_format($shopStock + $whSum, 0) }}</span>
+                                                @php 
+                                                    $systemStock = ($shopStock + $whSum); 
+                                                    $physicalTotal = $systemStock + $holdSum;
+                                                @endphp
+                                                <span class="fs-6 d-block" title="Physical Total">{{ number_format($physicalTotal, 0) }}</span>
+                                                @if($holdSum > 0)
+                                                    <small class="text-primary fw-bold" style="font-size: 10px;">Available (System): {{ number_format($systemStock, 0) }}</small>
+                                                @endif
                                             </td>
                                         </tr>
                                     @endforeach

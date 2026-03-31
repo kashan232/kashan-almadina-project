@@ -1,123 +1,218 @@
 @extends('admin_panel.layout.app')
+
 @section('content')
+<style>
+    .table-responsive { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; margin-bottom: 1rem; }
+    #stockReleaseTable thead th { white-space: nowrap; background-color: #f8f9fa; color: #333; font-weight: 600; vertical-align: middle; }
+    #stockReleaseTable tbody td { white-space: nowrap; vertical-align: middle; }
+    .card { border-radius: 8px; box-shadow: 0 0.125rem 0.25rem rgba(0,0,0,.075); }
+    .card-header { background-color: #fff; border-bottom: 1px solid #edf2f9; }
+    .column-picker-dropdown { position: relative; display: inline-block; }
+    .column-picker-menu {
+        position: absolute; top: 100%; right: 0; z-index: 1000; display: none; min-width: 200px; padding: 5px 0; margin: 2px 0 0;
+        font-size: 14px; text-align: left; list-style: none; background-color: #fff; border: 1px solid rgba(0,0,0,.15);
+        border-radius: 4px; box-shadow: 0 6px 12px rgba(0,0,0,.175); max-height: 400px; overflow-y: auto;
+    }
+    .column-picker-menu.show { display: block; }
+    .column-picker-item { display: block; padding: 5px 15px; clear: both; font-weight: 400; line-height: 1.42857143; color: #333; white-space: nowrap; cursor: pointer; }
+    .column-picker-item:hover { background-color: #f5f5f5; }
+    .column-picker-item input { margin-right: 10px; cursor: pointer; }
+</style>
 
 <div class="main-content">
-  <div class="main-content-inner">
-    <div class="container-fluid">
+    <div class="main-content-inner">
+        <div class="container-fluid pt-4">
 
-      <div class="row p-1">
-        <div class="col-lg-12">
-          <div class="border mt-1 p-3 shadow rounded bg-white">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-              <h3 class="fw-bold text-dark">All Stock Releases</h3>
-              <a href="{{ route('create-stock-hold') }}" class="btn btn-primary">Create Stock Hold</a>
-            </div>
-            <div class="table-responsive">
-              <table class="table table-bordered table-striped align-middle">
-                <thead class="table-dark text-center">
-                  <tr>
-                    <th>ID</th>
-                    <th>Release#</th>
-                    <th>Hold#</th>
-                    <th>Sale ID</th>
-                    <th>Invoice ID</th>
-                    <th>Party Type</th>
-                    <th>Party ID</th>
-                    <th>Party Name</th>
-                    <th>Warehouse</th>
-                    <th>Product</th>
-                    <th>Item ID</th>
-                    <th>Sale Qty</th>
-                    <th>Release Qty</th>
-                    <th>Remarks</th>
-                    <th>Meta</th>
-                    <th>Created</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
+            @if(session('success'))
+                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                    <i class="fa fa-check-circle me-1"></i> {{ session('success') }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            @endif
+            @if(session('error'))
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <i class="fa fa-times-circle me-1"></i> {{ session('error') }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            @endif
 
-                <tbody class="text-center">
-                  @forelse($releases as $r)
-                    <tr>
-                      <td>{{ $r->id }}</td>
-                      <td>{{ $r->release_no ?? '-' }}</td>
-                      <td>
-                        @if($r->hold_id)
-                          <a href="{{ route('stock-holds.release', $r->hold_id) }}">{{ $r->hold_id }}</a>
-                        @else
-                          -
-                        @endif
-                      </td>
-                      <td>{{ $r->sale_id ?? '-' }}</td>
-                      <td>{{ $r->invoice_id ?? '-' }}</td>
-                      <td>{{ $r->party_type ?? '-' }}</td>
-                      <td>{{ $r->party_id ?? '-' }}</td>
-
-                      {{-- party name: try to fetch from hold (if available) or show - --}}
-                      <td class="text-start">
-                        @php
-                          $partyName = null;
-                          if ($r->hold && $r->hold->party_type === 'customer' && isset($r->hold->party_id)) {
-                              $partyName = optional($r->hold->partyCustomer)->customer_name ?? null;
-                          }
-                          if (! $partyName && $r->hold && $r->hold->party_type === 'vendor') {
-                              $partyName = optional($r->hold->partyVendor)->name ?? null;
-                          }
-                        @endphp
-                        {{ $partyName ?? '-' }}
-                      </td>
-
-                      <td>{{ $r->warehouse->warehouse_name ?? '-' }}</td>
-                      <td class="text-start">{{ $r->product->name ?? ('Product #' . ($r->product_id ?? '-')) }}</td>
-                      <td>{{ $r->item_id ?? '-' }}</td>
-                      <td>{{ $r->sale_qty !== null ? (string)$r->sale_qty : '-' }}</td>
-                      <td>{{ $r->release_qty !== null ? (string)$r->release_qty : '-' }}</td>
-                      <td class="text-start">{{ $r->remarks ? e($r->remarks) : '-' }}</td>
-
-                      {{-- meta pretty --}}
-                      <td>
-                        @php
-                          $meta = $r->meta;
-                          $source = null;
-                          if (is_array($meta) || is_object($meta)) {
-                            $meta = (array)$meta;
-                            $source = $meta['from_hold'] ?? null;
-                          } else {
-                            try { $dec = json_decode($r->meta, true); $source = $dec['from_hold'] ?? null; } catch(\Throwable $ex) {}
-                          }
-                        @endphp
-                        @if($source)
-                          <small class="text-muted">from hold #{{ $source }}</small>
-                        @else
-                          <pre style="white-space:pre-wrap; margin:0; max-width:160px;">{{ is_array($r->meta) ? json_encode($r->meta) : (string)$r->meta }}</pre>
-                        @endif
-                      </td>
-
-                      <td>{{ optional($r->created_at)->format('Y-m-d H:i') }}</td>
-
-                      <td>
-                        <div class="btn-group" role="group">
-                          <a href="{{ route('stock-holds.release', $r->hold_id ?? $r->id) }}" class="btn btn-sm btn-outline-primary">View</a>
-                          @if($r->hold_id)
-                            <a href="{{ route('stock-hold-list') }}#hold-{{ $r->hold_id }}" class="btn btn-sm btn-outline-secondary">Go to Hold</a>
-                          @endif
+            {{-- Filter Section --}}
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-body p-3">
+                            <form action="{{ route('stock-relase-list') }}" method="GET" class="row g-3 align-items-end">
+                                <div class="col-md-3">
+                                    <label class="form-label small fw-bold text-muted">Start Date</label>
+                                    <input type="date" name="start_date" class="form-control form-control-sm" value="{{ request('start_date') }}">
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label small fw-bold text-muted">End Date</label>
+                                    <input type="date" name="end_date" class="form-control form-control-sm" value="{{ request('end_date') }}">
+                                </div>
+                                <div class="col-md-2">
+                                    <label class="form-label small fw-bold text-muted">Status</label>
+                                    <select name="status" class="form-select form-select-sm">
+                                        <option value="">All Status</option>
+                                        <option value="Unposted" {{ request('status') == 'Unposted' ? 'selected' : '' }}>Unposted</option>
+                                        <option value="Posted" {{ request('status') == 'Posted' ? 'selected' : '' }}>Posted</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="d-flex gap-2">
+                                        <button type="submit" class="btn btn-primary btn-sm px-4 rounded-pill">
+                                            <i class="fa fa-filter me-1"></i> Filter
+                                        </button>
+                                        <a href="{{ route('stock-relase-list') }}" class="btn btn-outline-secondary btn-sm px-4 rounded-pill">
+                                            <i class="fa fa-refresh me-1"></i> Reset
+                                        </a>
+                                    </div>
+                                </div>
+                            </form>
                         </div>
-                      </td>
-                    </tr>
-                  @empty
-                    <tr>
-                      <td colspan="17" class="text-center text-muted">No Stock Release records found</td>
-                    </tr>
-                  @endforelse
-                </tbody>
-              </table>
-            </div> <!-- table-responsive -->
+                    </div>
+                </div>
+            </div>
 
-          </div> <!-- border -->
+            {{-- Main Table --}}
+            <div class="row">
+                <div class="col-12">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header d-flex justify-content-between align-items-center py-3">
+                            <h4 class="card-title mb-0 fw-bold text-dark">Stock Release Management</h4>
+                            <div class="d-flex gap-2">
+                                <div class="column-picker-dropdown">
+                                    <button class="btn btn-outline-secondary btn-sm px-3 rounded-pill" type="button" id="columnPickerBtn">
+                                        <i class="fa fa-columns me-1"></i> Columns
+                                    </button>
+                                    <div class="column-picker-menu shadow" id="columnPickerMenu">
+                                        <div class="p-2 border-bottom fw-bold small text-muted">Show/Hide Columns</div>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="1" checked> ID</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="2" checked> Date</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="3" checked> Party / Customer</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="4" checked> Warehouse</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="5" checked> Items Details</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="6" checked> Status</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="7" checked> Action</label>
+                                    </div>
+                                </div>
+                                <a class="btn btn-success btn-sm px-4 rounded-pill" href="{{ route('stock-holds.release.add') }}">
+                                    <i class="fa fa-plus me-1"></i> Add Stock Release
+                                </a>
+                            </div>
+                        </div>
+
+                        <div class="card-body p-3">
+                            <div class="table-responsive">
+                                <table id="stockReleaseTable" class="table table-striped table-bordered display w-100">
+                                    <thead class="bg-light">
+                                        <tr>
+                                            <th>ID</th>
+                                            <th>Date</th>
+                                            <th>Party / Customer</th>
+                                            <th>Warehouse</th>
+                                            <th>Items Details</th>
+                                            <th>Status</th>
+                                            <th>Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach($vouchers as $v)
+                                        <tr>
+                                            <td class="fw-bold text-center">{{ $v->voucher_no }}</td>
+                                            <td class="text-center">{{ \Carbon\Carbon::parse($v->date)->format('d-M-Y') }}</td>
+                                            <td>
+                                                @if($v->party_type == 'customer' || $v->party_type == 'walkin')
+                                                    <i class="fa fa-user me-1 text-info"></i> {{ $v->partyCustomer->customer_name ?? 'Walkin' }}
+                                                @else
+                                                    <i class="fa fa-truck me-1 text-warning"></i> {{ $v->partyVendor->name ?? '-' }}
+                                                @endif
+                                                <small class="text-muted d-block" style="font-size:10px;">{{ ucfirst($v->party_type) }}</small>
+                                            </td>
+                                            <td>{{ $v->warehouse->warehouse_name ?? '-' }}</td>
+                                            <td class="small">
+                                                @foreach($v->items as $item)
+                                                    <div style="font-size:11px; border-bottom:1px dashed #eee; padding:2px 0;">
+                                                        {{ $item->product->name ?? 'Product' }}
+                                                        <span class="text-muted">({{ (float)$item->release_qty }})</span>
+                                                    </div>
+                                                @endforeach
+                                            </td>
+                                            <td class="text-center">
+                                                @if($v->status == 'Posted')
+                                                    <span class="badge bg-success">Posted</span>
+                                                @else
+                                                    <span class="badge bg-warning text-dark">Unposted</span>
+                                                @endif
+                                            </td>
+                                            <td class="text-center">
+                                                <div class="d-flex gap-1 justify-content-center">
+                                                    @if($v->status != 'Posted')
+                                                        {{-- Post --}}
+                                                        <form action="{{ route('stock-holds.release.post', $v->id) }}" method="POST" class="post-form d-inline">
+                                                            @csrf
+                                                            <button type="submit" class="btn btn-outline-primary btn-sm rounded-pill px-2 post-btn" onclick="return confirm('Post this release?')" title="Post now">
+                                                                <i class="fa fa-send"></i> Post
+                                                            </button>
+                                                        </form>
+
+                                                        {{-- Edit --}}
+                                                        <a href="{{ route('stock-holds.release.edit', $v->id) }}" class="btn btn-outline-warning btn-sm rounded-circle" title="Edit">
+                                                            <i class="fa fa-pencil"></i>
+                                                        </a>
+                                                    @endif
+
+                                                    {{-- Print --}}
+                                                    <a href="{{ route('stock-holds.release.print', $v->id) }}" target="_blank" class="btn btn-outline-dark btn-sm rounded-circle" title="Print">
+                                                        <i class="fa fa-print"></i>
+                                                    </a>
+
+                                                    {{-- Link back to Hold --}}
+                                                    @if($v->hold_voucher_id)
+                                                    <a href="{{ route('stock-hold-list') }}#hold-{{ $v->hold_voucher_id }}" class="btn btn-outline-info btn-sm rounded-pill px-2" title="View Hold">
+                                                       Hold
+                                                    </a>
+                                                    @endif
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
         </div>
-      </div>
     </div>
-  </div>
 </div>
+@endsection
 
+@section('scripts')
+<script>
+    $(document).ready(function() {
+        $('#columnPickerBtn').on('click', function(e) {
+            e.stopPropagation();
+            $('#columnPickerMenu').toggleClass('show');
+        });
+        $(document).on('click', function(e) {
+            if (!$(e.target).closest('.column-picker-dropdown').length) {
+                $('#columnPickerMenu').removeClass('show');
+            }
+        });
+
+        var dt = $('#stockReleaseTable').DataTable({
+            scrollX: true, autoWidth: false, pageLength: 25, order: [[0, 'desc']],
+            language: { search: "_INPUT_", searchPlaceholder: "Search releases..." }
+        });
+
+        $('#columnPickerMenu input').on('change', function() {
+            var colIdx = $(this).data('column');
+            dt.column(colIdx - 1).visible($(this).is(':checked'));
+            dt.columns.adjust().draw(false);
+        });
+    });
+</script>
 @endsection

@@ -13,6 +13,11 @@ class StockRelease extends Model
         'release_qty' => 'float',
     ];
 
+    public function voucher()
+    {
+        return $this->belongsTo(StockReleaseVoucher::class, 'stock_release_voucher_id');
+    }
+
     public function hold()
     {
         return $this->belongsTo(StockHold::class, 'hold_id');

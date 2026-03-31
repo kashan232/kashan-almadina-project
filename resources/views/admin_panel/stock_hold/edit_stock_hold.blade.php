@@ -75,15 +75,8 @@
                                 <label class="form-label small fw-bold">Voucher No</label>
                                 <input type="text" class="form-control input-sm" value="{{ $voucher->voucher_no }}" readonly>
                             </div>
-                            <div class="col-md-3">
-                                <label class="form-label small fw-bold">Hold Type</label>
-                                <select name="hold_type" class="form-select input-sm">
-                                    <option value="hold" @if($voucher->hold_type == 'hold') selected @endif>Hold</option>
-                                    <option value="claim" @if($voucher->hold_type == 'claim') selected @endif>Claim</option>
-                                </select>
-                            </div>
-                            <div class="col-md-4 mt-2">
-                                <label class="form-label small fw-bold">Warehouse</label>
+                            <div class="col-md-2 mt-2">
+                                <label class="form-label small fw-bold">Location</label>
                                 <select name="warehouse_id" id="warehouse_id" class="form-select select2" required disabled>
                                     @foreach($warehouses as $wh)
                                         <option value="{{ $wh->id }}" @if($voucher->warehouse_id == $wh->id) selected @endif>{{ $wh->warehouse_name }}</option>
@@ -91,7 +84,7 @@
                                 </select>
                                 <input type="hidden" name="warehouse_id" value="{{ $voucher->warehouse_id }}">
                             </div>
-                            <div class="col-md-8 mt-2">
+                            <div class="col-md-10 mt-2">
                                 <label class="form-label small fw-bold">Remarks</label>
                                 <input type="text" name="remarks" class="form-control input-sm" value="{{ $voucher->remarks }}" placeholder="Any special notes...">
                             </div>

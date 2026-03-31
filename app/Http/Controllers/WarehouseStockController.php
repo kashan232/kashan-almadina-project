@@ -29,9 +29,10 @@ class WarehouseStockController extends Controller
 
         // Live Balances Mode
         // Fetch all products with their shop stock and warehouse stock relations
-        $products = Product::with(['warehouseStocks' => function($q) {
-            $q->where('status', 'Posted');
-        }])->orderBy('name')->get();
+        $products = Product::with([
+            'warehouseStocks' => function($q) { $q->where('status', 'Posted'); },
+            'stockHolds' => function($q) { $q->where('hold_qty', '>', 0); }
+        ])->orderBy('name')->get();
 
         return view('admin_panel.warehouses.warehouse_stocks.index', compact('products', 'warehouses', 'view'));
     }

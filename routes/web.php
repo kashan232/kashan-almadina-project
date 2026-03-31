@@ -349,6 +349,14 @@ Route::middleware('auth')->group(function () {
     // Legacy form submit (optional)
     Route::post('/sale/data', [SaleController::class, 'store'])->name('sale.store');
 
+    Route::post('/stock-holds/release/bulk-store', [StockHoldController::class, 'storeBulkRelease'])->name('stock-holds.release.bulk_store');
+    Route::get('/add-stock-release', [StockHoldController::class, 'createRelease'])->name('stock-holds.release.add');
+    Route::get('/stock-release/edit/{id}', [StockHoldController::class, 'editRelease'])->name('stock-holds.release.edit');
+    Route::post('/stock-release/update/{id}', [StockHoldController::class, 'updateRelease'])->name('stock-holds.release.update');
+    Route::post('/stock-release/post/{id}', [StockHoldController::class, 'postRelease'])->name('stock-holds.release.post');
+    Route::get('/stock-release/print/{id}', [StockHoldController::class, 'printRelease'])->name('stock-holds.release.print');
+    Route::get('/stock-holds/voucher/{id}/details', [StockHoldController::class, 'voucherDetails'])->name('stock-holds.voucher.details');
+    Route::get('stock-holds/list/json', [StockHoldController::class, 'holdVoucherList'])->name('stock-holds.list.json');
     Route::get('/stock-relase-list', [StockHoldController::class, 'stockrelaselist'])->name('stock-relase-list');
 
 

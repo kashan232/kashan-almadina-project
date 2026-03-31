@@ -60,4 +60,8 @@ class Product extends Model
     {
         return $this->hasMany(WarehouseStock::class);
     }
+    public function stockHolds()
+    {
+        return $this->hasMany(StockHold::class);
+    }
 }

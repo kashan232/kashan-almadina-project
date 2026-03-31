@@ -87,23 +87,26 @@ class StockHoldController extends Controller
 
     public function invoiceItems($id)
     {
+        $warehouse_id = null;
         // First try SaleItems (Posted Sale)
-        $items = \App\Models\SaleItem::where('sale_id', $id)
-            ->with('product:id,name')
-            ->get();
-            
-        if ($items->isEmpty()) {
+        $items = \App\Models\SaleItem::where('sale_id', $id)->with('product:id,name', 'sale')->get();
+        if ($items->isNotEmpty()) {
+            // Favor item-level warehouse_id first
+            $warehouse_id = $items->first()->warehouse_id ?: ($items->first()->sale->warehouse_id ?? null);
+        } else {
             // Try ProductBookingItem (Draft Booking)
-            $items = \App\Models\ProductBookingItem::where('booking_id', $id)
-                ->with('product:id,name')
-                ->get();
+            $items = \App\Models\ProductBookingItem::where('booking_id', $id)->with('product:id,name', 'booking')->get();
+            if ($items->isNotEmpty()) {
+                $warehouse_id = $items->first()->warehouse_id ?: ($items->first()->booking->warehouse_id ?? null);
+            }
         }
 
-        $res = $items->map(function ($it) {
+        $res = $items->map(function ($it) use ($warehouse_id) {
             return [
-                'product_id' => $it->product_id,
-                'item_name'  => optional($it->product)->name ?: 'Unknown',
-                'qty'        => (float) ($it->sales_qty ?? $it->quantity ?? 0),
+                'product_id'   => $it->product_id,
+                'item_name'    => optional($it->product)->name ?: 'Unknown',
+                'qty'          => (float) ($it->sales_qty ?? $it->quantity ?? 0),
+                'warehouse_id' => $warehouse_id
             ];
         });
         
@@ -391,16 +394,243 @@ class StockHoldController extends Controller
         return view('admin_panel.stock_hold.print', compact('voucher'));
     }
 
+    public function printRelease($id)
+    {
+        $voucher = \App\Models\StockReleaseVoucher::with(['items.product', 'warehouse', 'partyCustomer', 'partyVendor', 'holdVoucher'])->findOrFail($id);
+        return view('admin_panel.stock_hold.print_release', compact('voucher'));
+    }
+
     public function stockrelaselist()
     {
         // load releases with product, warehouse and hold + party info
-        $releases = StockRelease::with([
-            'product:id,name',
-            'warehouse:id,warehouse_name',
-            'hold', // to fetch original hold row
-            'hold.product:id,name',
+        $vouchers = \App\Models\StockReleaseVoucher::with([
+            'items.product',
+            'warehouse',
+            'holdVoucher',
+            'partyCustomer',
+            'partyVendor'
         ])->orderBy('id', 'desc')->get();
 
-        return view('admin_panel.stock_hold.stock_relase_list', compact('releases'));
+        return view('admin_panel.stock_hold.stock_relase_list', compact('vouchers'));
+    }
+    public function createRelease()
+    {
+        $warehouses = Warehouse::orderBy('warehouse_name')->get();
+        $releaseNo = \App\Models\StockReleaseVoucher::generateVoucherNo();
+        return view('admin_panel.stock_hold.create_release', compact('warehouses', 'releaseNo'));
+    }
+
+    public function holdVoucherList(Request $request)
+    {
+        return StockHoldVoucher::where('status', 'Posted')
+            ->latest()
+            ->get()
+            ->map(fn($v) => ['id' => $v->id, 'text' => $v->voucher_no . ' (ID: ' . $v->id . ')']);
+    }
+
+    public function voucherDetails($id)
+    {
+        $voucher = StockHoldVoucher::with(['items.product', 'warehouse', 'partyCustomer', 'partyVendor'])->findOrFail($id);
+        
+        $partyName = $voucher->party_type == 'vendor' ? ($voucher->partyVendor->name ?? '-') : ($voucher->partyCustomer->customer_name ?? '-');
+        
+        return response()->json([
+            'id' => $voucher->id,
+            'party_type' => $voucher->party_type,
+            'party_id' => $voucher->party_id,
+            'party_name' => $partyName,
+            'warehouse_id' => $voucher->warehouse_id,
+            'warehouse_name' => $voucher->warehouse->warehouse_name ?? '-',
+            'items' => $voucher->items->map(function($it) {
+                return [
+                    'product_id' => $it->product_id,
+                    'item_name' => $it->product->name ?? 'Product',
+                    'sale_qty' => (float)$it->sale_qty,
+                    'hold_qty' => (float)$it->hold_qty,
+                ];
+            })
+        ]);
+    }
+
+    public function storeBulkRelease(Request $request)
+    {
+        $request->validate([
+            'entry_date' => 'required|date',
+            'hold_voucher_id' => 'required',
+            'product_id' => 'required|array',
+            'release_qty' => 'required|array',
+        ]);
+
+        $status = $request->action === 'post' ? 'Posted' : 'Unposted';
+
+        try {
+            DB::beginTransaction();
+
+            $holdVoucher = \App\Models\StockHoldVoucher::findOrFail($request->hold_voucher_id);
+            
+            // Create Release Voucher
+            $voucher = \App\Models\StockReleaseVoucher::create([
+                'voucher_no'      => \App\Models\StockReleaseVoucher::generateVoucherNo(),
+                'date'            => $request->entry_date,
+                'hold_voucher_id' => $holdVoucher->id,
+                'party_type'      => $holdVoucher->party_type,
+                'party_id'        => $holdVoucher->party_id,
+                'warehouse_id'    => $holdVoucher->warehouse_id,
+                'remarks'         => $request->remarks,
+                'status'          => $status
+            ]);
+
+            foreach ($request->product_id as $index => $pid) {
+                $releaseQty = (float)($request->release_qty[$index] ?? 0);
+                if ($releaseQty <= 0) continue;
+
+                // Find original hold item
+                $holdItem = \App\Models\StockHold::where('stock_hold_voucher_id', $holdVoucher->id)
+                    ->where('product_id', $pid)
+                    ->where('status', 0) // only active holds
+                    ->first();
+
+                if (!$holdItem) continue;
+
+                // Create Release Record
+                \App\Models\StockRelease::create([
+                    'stock_release_voucher_id' => $voucher->id,
+                    'release_no'  => $voucher->voucher_no,
+                    'hold_id'     => $holdItem->id,
+                    'sale_id'     => $holdItem->sale_id,
+                    'party_type'  => $holdItem->party_type,
+                    'party_id'    => $holdItem->party_id,
+                    'warehouse_id' => $holdItem->warehouse_id,
+                    'product_id'  => $pid,
+                    'sale_qty'    => $holdItem->sale_qty,
+                    'release_qty' => $releaseQty,
+                    'remarks'     => $request->remarks,
+                    'status'      => $status
+                ]);
+
+                if ($status === 'Posted') {
+                    // Update Hold
+                    $remaining = (float)$holdItem->hold_qty - $releaseQty;
+                    if ($remaining <= 0) {
+                        $holdItem->hold_qty = 0;
+                        $holdItem->status = 1; // Released
+                    } else {
+                        $holdItem->hold_qty = $remaining;
+                    }
+                    $holdItem->save();
+                }
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Stock Released ' . ($status == 'Posted' ? 'Posted' : 'Saved') . ' successfully.',
+                'status'  => $status,
+                'id'      => $voucher->id
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    public function editRelease($id)
+    {
+        $voucher = \App\Models\StockReleaseVoucher::with('items.product', 'warehouse')->findOrFail($id);
+        $warehouses = Warehouse::orderBy('warehouse_name')->get();
+        return view('admin_panel.stock_hold.edit_release', compact('voucher', 'warehouses'));
+    }
+
+    public function updateRelease(Request $request, $id)
+    {
+        $request->validate([
+            'entry_date' => 'required|date',
+            'product_id' => 'required|array',
+            'release_qty' => 'required|array',
+        ]);
+
+        $status = $request->action === 'post' ? 'Posted' : 'Unposted';
+
+        try {
+            DB::beginTransaction();
+            $voucher = \App\Models\StockReleaseVoucher::findOrFail($id);
+            $voucher->update([
+                'date'    => $request->entry_date,
+                'remarks' => $request->remarks,
+                'status'  => $status
+            ]);
+
+            // Sync items (delete old then create new for simplicity as it's bulk updated)
+            $voucher->items()->delete();
+
+            foreach ($request->product_id as $index => $pid) {
+                $releaseQty = (float)($request->release_qty[$index] ?? 0);
+                if ($releaseQty <= 0) continue;
+
+                // Attempt to link to the original hold item
+                $holdItem = \App\Models\StockHold::where('stock_hold_voucher_id', $voucher->hold_voucher_id)
+                    ->where('product_id', $pid)
+                    ->first();
+
+                \App\Models\StockRelease::create([
+                    'stock_release_voucher_id' => $voucher->id,
+                    'release_no'  => $voucher->voucher_no,
+                    'hold_id'     => $holdItem->id ?? null,
+                    'sale_id'     => $holdItem->sale_id ?? null,
+                    'party_type'  => $voucher->party_type,
+                    'party_id'    => $voucher->party_id,
+                    'warehouse_id' => $voucher->warehouse_id,
+                    'product_id'  => $pid,
+                    'sale_qty'    => $holdItem->sale_qty ?? 0,
+                    'release_qty' => $releaseQty,
+                    'remarks'     => $request->remarks,
+                    'status'      => $status
+                ]);
+
+                if ($status === 'Posted' && $holdItem) {
+                    $remaining = (float)$holdItem->hold_qty - $releaseQty;
+                    $holdItem->hold_qty = max(0, $remaining);
+                    if ($holdItem->hold_qty <= 0) $holdItem->status = 1;
+                    $holdItem->save();
+                }
+            }
+
+            DB::commit();
+            return response()->json(['success' => true, 'message' => 'Release ' . $status, 'status' => $status, 'id' => $voucher->id]);
+        } catch (\Exception $e) { DB::rollBack(); return response()->json(['success' => false, 'message' => $e->getMessage()], 500); }
+    }
+
+    public function postRelease($id)
+    {
+        try {
+            DB::beginTransaction();
+            $voucher = \App\Models\StockReleaseVoucher::with('items.hold')->findOrFail($id);
+            if ($voucher->status === 'Posted') return response()->json(['success' => false, 'message' => 'Already posted']);
+
+            $voucher->update(['status' => 'Posted']);
+            foreach ($voucher->items as $item) {
+                $item->update(['status' => 'Posted']);
+                if ($item->hold) {
+                    $remaining = (float)$item->hold->hold_qty - (float)$item->release_qty;
+                    $item->hold->hold_qty = max(0, $remaining);
+                    if ($item->hold->hold_qty <= 0) $item->hold->status = 1;
+                    $item->hold->save();
+                }
+            }
+            DB::commit();
+            if (request()->ajax()) {
+                return response()->json(['success' => true, 'message' => 'Posted successfully']);
+            }
+            return redirect()->back()->with('success', 'Stock Release Posted successfully.');
+        } catch (\Exception $e) { 
+            DB::rollBack(); 
+            if (request()->ajax()) {
+                return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+            }
+            return redirect()->back()->with('error', $e->getMessage());
+        }
     }
 }
+

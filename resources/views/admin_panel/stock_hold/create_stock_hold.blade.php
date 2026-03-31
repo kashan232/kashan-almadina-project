@@ -82,23 +82,16 @@
                                     <option value="">Select Invoice</option>
                                 </select>
                             </div>
-                            <div class="col-md-3">
-                                <label class="form-label small fw-bold">Hold Type</label>
-                                <select name="hold_type" class="form-select input-sm">
-                                    <option value="hold" selected>Hold</option>
-                                    <option value="claim">Claim</option>
-                                </select>
-                            </div>
-                            <div class="col-md-4 mt-2">
-                                <label class="form-label small fw-bold">Warehouse</label>
+                            <div class="col-md-2 mt-2">
+                                <label class="form-label small fw-bold">Location</label>
                                 <select name="warehouse_id" id="warehouse_id" class="form-select select2" required>
-                                    <option value="" disabled selected>Select Warehouse</option>
+                                    <option value="" disabled selected>Select Location</option>
                                     @foreach($warehouses as $wh)
                                         <option value="{{ $wh->id }}">{{ $wh->warehouse_name }}</option>
                                     @endforeach
                                 </select>
                             </div>
-                            <div class="col-md-8 mt-2">
+                            <div class="col-md-10 mt-2">
                                 <label class="form-label small fw-bold">Remarks</label>
                                 <input type="text" name="remarks" class="form-control input-sm" placeholder="Any special notes...">
                             </div>
@@ -226,7 +219,14 @@ $(document).ready(function() {
         $('#sale_id').val(id);
         $('#itemRows').empty();
         $.get("{{ url('stock-holds/invoice') }}/" + id + "/items", function(items) {
-            items.forEach(item => addRow(item.product_id, item.item_name || 'Product', item.qty || item.quantity || 0, 1));
+            // Auto-select warehouse from the first item
+            if(items.length > 0 && items[0].warehouse_id) {
+                $('#warehouse_id').val(items[0].warehouse_id).trigger('change');
+            }
+            items.forEach(item => {
+                var saleQty = item.qty || item.quantity || 0;
+                addRow(item.product_id, item.item_name || 'Product', saleQty, saleQty);
+            });
         });
     });
 
