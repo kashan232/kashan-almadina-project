@@ -149,17 +149,18 @@
                                 <label class="column-picker-item"><input type="checkbox" data-column="4" checked> Party Type</label>
                                 <label class="column-picker-item"><input type="checkbox" data-column="5" checked> Customer/Vendor</label>
                                 <label class="column-picker-item"><input type="checkbox" data-column="6" checked> Items</label>
-                                <label class="column-picker-item"><input type="checkbox" data-column="7" checked> Rate</label>
-                                <label class="column-picker-item"><input type="checkbox" data-column="8" checked> Qty</label>
-                                <label class="column-picker-item"><input type="checkbox" data-column="9" checked> Sale Price</label>
-                                <label class="column-picker-item"><input type="checkbox" data-column="10" checked> Line Total</label>
-                                <label class="column-picker-item"><input type="checkbox" data-column="11" checked> Net Total</label>
-                                <label class="column-picker-item"><input type="checkbox" data-column="12" checked> Disc</label>
-                                <label class="column-picker-item"><input type="checkbox" data-column="13" checked> Prev Bal</label>
-                                <label class="column-picker-item"><input type="checkbox" data-column="14" checked> Receipts</label>
-                                <label class="column-picker-item"><input type="checkbox" data-column="15" checked> Payable</label>
-                                <label class="column-picker-item"><input type="checkbox" data-column="16" checked> Date</label>
-                                <label class="column-picker-item"><input type="checkbox" data-column="17" checked> Status</label>
+                                <label class="column-picker-item"><input type="checkbox" data-column="7" checked> Location</label>
+                                <label class="column-picker-item"><input type="checkbox" data-column="8" checked> Rate</label>
+                                <label class="column-picker-item"><input type="checkbox" data-column="9" checked> Qty</label>
+                                <label class="column-picker-item"><input type="checkbox" data-column="10" checked> Sale Price</label>
+                                <label class="column-picker-item"><input type="checkbox" data-column="11" checked> Line Total</label>
+                                <label class="column-picker-item"><input type="checkbox" data-column="12" checked> Net Total</label>
+                                <label class="column-picker-item"><input type="checkbox" data-column="13" checked> Disc</label>
+                                <label class="column-picker-item"><input type="checkbox" data-column="14" checked> Prev Bal</label>
+                                <label class="column-picker-item"><input type="checkbox" data-column="15" checked> Receipts</label>
+                                <label class="column-picker-item"><input type="checkbox" data-column="16" checked> Payable</label>
+                                <label class="column-picker-item"><input type="checkbox" data-column="17" checked> Date</label>
+                                <label class="column-picker-item"><input type="checkbox" data-column="18" checked> Status</label>
                             </div>
                         </div>
 
@@ -179,6 +180,7 @@
                                     <th>Party Type</th>
                                     <th>Customer/Vendor</th>
                                     <th>Items</th>
+                                    <th>Location</th>
                                     <th>Rate</th>
                                     <th>Qty</th>
                                     <th>Sale Price</th>
@@ -223,6 +225,17 @@
                                         @foreach($sale->items as $item)
                                             <div class="item-detail-row">
                                                 {{ $item->product->name ?? 'Product #'.$item->product_id }}
+                                            </div>
+                                        @endforeach
+                                    </td>
+                                    <td class="small text-muted">
+                                        @foreach($sale->items as $item)
+                                            <div class="item-detail-row">
+                                                @if($item->warehouse_id == 0)
+                                                    Shop
+                                                @else
+                                                    {{ $item->warehouse->warehouse_name ?? 'N/A' }}
+                                                @endif
                                             </div>
                                         @endforeach
                                     </td>
@@ -362,7 +375,7 @@
                 "searchPlaceholder": "Search sales..."
             },
             "columnDefs": [
-                { "orderable": false, "targets": [5, 6, 7, 8, 9, 17] } // Disable sort for details and actions
+                { "orderable": false, "targets": [5, 6, 7, 8, 9, 10, 18] } // Disable sort for detailed columns and Action
             ],
             dom: 'Bfrtip',
             buttons: [
@@ -380,7 +393,7 @@
         // Function to toggle individual vs total Qty
         function updateQtyDisplay() {
             if (!dt) return;
-            // Column 6 (index 5) is "Items"
+            // Column 6 (data-column 6, index 5) is "Items"
             const itemsVisible = dt.column(5).visible();
             if (itemsVisible) {
                 $('.individual-qtys').removeClass('d-none');

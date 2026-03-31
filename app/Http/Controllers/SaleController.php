@@ -23,10 +23,10 @@ class SaleController extends Controller
     public function index(Request $request)
     {
         // Fetch Posted Sales with items
-        $salesQuery = Sale::with(['customer', 'vendor', 'items.product'])->latest();
+        $salesQuery = Sale::with(['customer', 'vendor', 'items.product', 'items.warehouse'])->latest();
         
         // Fetch Unposted Bookings with items
-        $bookingsQuery = Productbooking::with(['customer', 'vendor', 'items.product'])->latest();
+        $bookingsQuery = Productbooking::with(['customer', 'vendor', 'items.product', 'items.warehouse'])->latest();
 
         // Filters
         if ($request->filled('start_date')) {

@@ -75,6 +75,9 @@
                         <div class="row g-3 mb-4 p-3 bg-light rounded shadow-sm">
                             <div class="col-md-2" id="vendor_type_col">
                                 <label class="form-label small fw-bold text-muted">Party Type</label>
+                                @error('vendor_type')
+                                    <div class="alert alert-danger p-1 mb-1 ajax-valid-error" style="font-size: 11px;"><i class="fa fa-exclamation-triangle"></i> {{ $message }}</div>
+                                @enderror
                                 <select name="vendor_type" id="vendor_type_select" class="form-select form-select-sm">
                                     <option value="" disabled selected>Select</option>
                                     <option value="vendor" {{ isset($returnData) && $returnData->party_type == 'vendor' ? 'selected' : '' }}>Vendor</option>
@@ -85,6 +88,9 @@
 
                             <div class="col-md-3" id="party_col">
                                 <label class="form-label small fw-bold text-muted">Select Party</label>
+                                @error('party_id')
+                                    <div class="alert alert-danger p-1 mb-1 ajax-valid-error" style="font-size: 11px;"><i class="fa fa-exclamation-triangle"></i> {{ $message }}</div>
+                                @enderror
                                 <select name="party_id" id="party_select" class="form-select form-select-sm select2">
                                     <option value="">Select Party</option>
                                     @if(isset($returnData))
@@ -96,6 +102,9 @@
 
                             <div class="col-md-3 invoice-only" id="invoice_col" style="{{ isset($returnData) && !$returnData->sale_id ? 'display:none;' : '' }}">
                                 <label class="form-label small fw-bold text-muted">Select Sale Invoice</label>
+                                @error('sale_id')
+                                    <div class="alert alert-danger p-1 mb-1 ajax-valid-error" style="font-size: 11px;"><i class="fa fa-exclamation-triangle"></i> {{ $message }}</div>
+                                @enderror
                                 <select id="sale_invoice_select" class="form-select form-select-sm select2">
                                     <option value="">Select Invoice</option>
                                     @if(isset($returnData) && $returnData->sale)
@@ -106,11 +115,17 @@
 
                             <div class="col-md-2">
                                 <label class="form-label small fw-bold text-muted">Return Date</label>
+                                @error('current_date')
+                                    <div class="alert alert-danger p-1 mb-1 ajax-valid-error" style="font-size: 11px;"><i class="fa fa-exclamation-triangle"></i> {{ $message }}</div>
+                                @enderror
                                 <input name="current_date" value="{{ $returnData->current_date ?? date('Y-m-d') }}" type="date" class="form-control form-control-sm" required>
                             </div>
 
                             <div class="col-md-2">
                                 <label class="form-label small fw-bold text-muted">Warehouse</label>
+                                @error('warehouse_id')
+                                    <div class="alert alert-danger p-1 mb-1 ajax-valid-error" style="font-size: 11px;"><i class="fa fa-exclamation-triangle"></i> {{ $message }}</div>
+                                @enderror
                                 <select name="warehouse_id" id="warehouse_select" class="form-select form-select-sm select2" required>
                                     <option value="">Select Warehouse/Shop</option>
                                     <option value="0" {{ isset($returnData) && optional($returnData->items->first())->warehouse_id == 0 ? 'selected' : '' }}>Shop Stock (Default)</option>
@@ -140,7 +155,8 @@
                                     <tr>
                                         <th style="width: 100px;">Item ID</th>
                                         <th style="width: 250px;">Product</th>
-                                        <th>Price</th>
+                                        <th>Sales Price</th>
+                                        <th>Pur. Price</th>
                                         <th>Retail Price</th>
                                         <th>Disc (%)</th>
                                         <th>Disc Amt</th>
@@ -164,6 +180,7 @@
                                                     </select>
                                                 </td>
                                                 <td><input type="number" step="0.01" name="price[]" class="form-control form-control-sm price text-end {{ isset($returnData) && $returnData->sale_id ? 'bg-light' : '' }}" value="{{ $item->sales_price }}" {{ isset($returnData) && $returnData->sale_id ? 'readonly' : '' }}></td>
+                                                <td><input type="number" step="0.01" name="purchase_price[]" class="form-control form-control-sm purchase_price text-end bg-light" value="{{ $item->product->latestPrice->purchase_net_amount ?? 0 }}" readonly></td>
                                                 <td><input type="number" step="0.01" name="retail_price[]" class="form-control form-control-sm retail_price text-end bg-light" value="{{ $item->retail_price }}" readonly></td>
                                                 <td><input type="number" step="0.01" name="discount_percent[]" class="form-control form-control-sm discount_percent text-center {{ isset($returnData) && $returnData->sale_id ? 'bg-light' : '' }}" value="{{ $item->discount_percent }}" {{ isset($returnData) && $returnData->sale_id ? 'readonly' : '' }}></td>
                                                 <td><input type="number" step="0.01" name="item_disc_amount[]" class="form-control form-control-sm disc_amount text-end bg-light" value="{{ $item->sales_qty > 0 ? ($item->discount_amount / $item->sales_qty) : 0 }}" readonly></td>
@@ -196,12 +213,20 @@
                                     <div class="card-body">
                                         <table class="table table-sm table-borderless mb-0">
                                             <tr>
-                                                <th class="text-secondary">Subtotal</th>
+                                                <th class="text-secondary">Sub-Total (Net)</th>
                                                 <td><input type="text" id="subtotal" name="subtotal" class="form-control form-control-sm text-end bg-white" readonly value="{{ $returnData->sub_total2 ?? 0 }}"></td>
                                             </tr>
                                             <tr>
-                                                <th class="text-secondary">Total Discount</th>
-                                                <td><input type="text" id="overallDiscount" name="discount" class="form-control form-control-sm text-end bg-white" readonly value="{{ $returnData->discount_amount ?? 0 }}"></td>
+                                                <th class="text-secondary">Order Discount</th>
+                                                <td>
+                                                    <div class="input-group input-group-sm">
+                                                        <input type="number" step="any" id="orderDiscountValue" name="order_discount_value" class="form-control text-end" value="{{ $returnData->discount_amount ?? 0 }}" placeholder="0">
+                                                        <input type="hidden" name="order_discount_mode" id="orderDiscountMode" value="pkr">
+                                                        <button type="button" class="btn btn-outline-secondary order-disc-btn active" data-mode="pkr">PKR</button>
+                                                        <button type="button" class="btn btn-outline-secondary order-disc-btn" data-mode="percent">%</button>
+                                                    </div>
+                                                    <input type="hidden" id="overallDiscount" name="discount" value="{{ $returnData->discount_amount ?? 0 }}">
+                                                </td>
                                             </tr>
 
                                             <tr class="border-top">
@@ -338,14 +363,8 @@ $(document).ready(function() {
     }
     
     function ajaxSaveDraft() {
-        if(!$('#party_select').val()) {
-            showToast('⚠️ Please select a party', 'error');
-            return;
-        }
-        if($('#saleItems tr').length === 0 || $('#saleItems .text-muted').length > 0) {
-            showToast('⚠️ Please select an invoice or add products first', 'error');
-            return;
-        }
+        $('.ajax-valid-error').remove();
+        $('#ajaxErrorSummary').hide().empty();
 
         var $form = $('#returnForm');
         $('#saveDraftBtn').prop('disabled', true).html('<i class="fa fa-spinner fa-spin me-1"></i> Saving...');
@@ -370,13 +389,9 @@ $(document).ready(function() {
                     $('#newInvoiceBtn').show();
                     $('#editInvoiceBtn').show();
                     
-                    // Lock form
                     $('#returnForm').addClass('form-locked');
-
-                    // Update action for future saves (becomes update)
                     $form.attr('action', '/sale-returns/' + res.id + '/update');
                     
-                    // Update print button
                     var printUrl = '/sale-returns/print/' + res.id;
                     if ($('#previewPrintBtn').length) {
                         $('#previewPrintBtn').replaceWith(
@@ -384,15 +399,42 @@ $(document).ready(function() {
                             .html('<i class="fa fa-print me-1"></i> Print <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+P</kbd>')
                         );
                     }
-                    
                     $('#saveDraftBtn').hide();
                 } else {
                     showToast('❌ ' + (res.message || 'Error saving draft.'), 'error');
                 }
             },
             error: function(xhr) {
+                $('.ajax-valid-error').remove();
                 var msg = 'Save failed.';
-                try { msg = JSON.parse(xhr.responseText).message || msg; } catch(e){}
+                try {
+                    var resp = JSON.parse(xhr.responseText);
+                    msg = resp.message || msg;
+                    if(resp.errors) {
+                        $.each(resp.errors, function(key, val) {
+                            var fieldHtml = '<div class="alert alert-danger p-1 mb-1 ajax-valid-error" style="font-size:11px;"><i class="fa fa-exclamation-triangle"></i> ' + val[0] + '</div>';
+                            
+                            if(key.indexOf('.') !== -1) {
+                                var parts = key.split('.');
+                                var fieldName = parts[0] + '[]';
+                                var index = parseInt(parts[1]);
+                                var $target = $('[name="' + fieldName + '"]').eq(index);
+                                if($target.length) $target.closest('td').prepend(fieldHtml);
+                            } else {
+                                var $target = $('[name="' + key + '"]');
+                                if(key === 'sale_id' || key === 'party_id') {
+                                     $target.closest('.col-md-3, .col-md-2').find('label').after(fieldHtml);
+                                } else if($target.length) {
+                                    if($target.hasClass('select2-hidden-accessible')) {
+                                        $target.next('.select2-container').before(fieldHtml);
+                                    } else {
+                                        $target.before(fieldHtml);
+                                    }
+                                }
+                            }
+                        });
+                    }
+                } catch(e){}
                 showToast('❌ ' + msg, 'error');
             },
             complete: function() {
@@ -445,62 +487,73 @@ $(document).ready(function() {
     });
 
     // --- BLOCK ENTER KEY (prevents accidental form submit on qty, price etc) ---
-    $(document).on('keydown', function(e) {
-        if (e.key === 'Enter') {
-            var $t = $(e.target);
-            // Only allow Enter in textarea
-            if (!$t.is('textarea') && !e.ctrlKey) {
-                e.preventDefault();
-                return false;
-            }
-        }
+    // --- KEYBOARD SHORTCUTS (Robust Layer) ---
+    document.addEventListener('keydown', function(e) {
+        var key = (e.key || '').toLowerCase();
+        var keyCode = e.keyCode || e.which;
 
-        // --- CTRL+S = Submit form ---
-        if (e.ctrlKey && (e.key === 's' || e.key === 'S')) {
+        // Ctrl + S (Save Draft)
+        if (e.ctrlKey && (key === 's' || keyCode === 83)) {
             e.preventDefault();
+            e.stopPropagation();
             if(!$('#returnForm').hasClass('form-locked')) {
                 ajaxSaveDraft();
             }
         }
 
-        // --- CTRL+L = Return List ---
-        if (e.ctrlKey && e.key.toLowerCase() === 'l') {
+        // Ctrl + Enter (Post)
+        if (e.ctrlKey && (key === 'enter' || keyCode === 13)) {
             e.preventDefault();
-            window.location.href = "{{ route('sale.return.home') }}";
+            e.stopPropagation();
+            if($('#postBtn').is(':visible') && !$('#postBtn').is(':disabled')) {
+                doPost();
+            }
         }
 
-        // --- CTRL+P = Print Preview / Real Print ---
-        if (e.ctrlKey && e.key.toLowerCase() === 'p') {
+        // Ctrl + P (Print)
+        if (e.ctrlKey && (key === 'p' || keyCode === 80)) {
             e.preventDefault();
-            if($('#realPrintBtn').length) {
+            e.stopPropagation();
+            if($('#realPrintBtn').is(':visible')) {
                 window.open($('#realPrintBtn').attr('href'), '_blank');
-            } else {
+            } else if($('#previewPrintBtn').is(':visible')) {
                 $('#previewPrintBtn').click();
             }
         }
 
-        // --- CTRL+Enter = Post ---
-        if (e.ctrlKey && e.key === 'Enter') {
+        // Ctrl + M (New)
+        if (e.ctrlKey && (key === 'm' || keyCode === 77)) {
             e.preventDefault();
-            $('#postBtn').click();
-        }
-
-        // --- CTRL+M = New ---
-        if (e.ctrlKey && (e.key === 'm' || e.key === 'M')) {
-            e.preventDefault();
+            e.stopPropagation();
             window.location.href = "{{ route('sale.return.add') }}";
         }
 
-        // --- CTRL+E = Edit ---
-        if (e.ctrlKey && (e.key === 'e' || e.key === 'E')) {
+        // Ctrl + E (Edit)
+        if (e.ctrlKey && (key === 'e' || keyCode === 69)) {
             e.preventDefault();
-            $('#editInvoiceBtn').click();
+            e.stopPropagation();
+            if($('#editInvoiceBtn').is(':visible')) {
+                $('#editInvoiceBtn').click();
+            }
         }
 
-        // --- ESC = Cancel ---
-        if (e.key === 'Escape') {
-            e.preventDefault();
-            window.location.href = "{{ route('sale.return.home') }}";
+        // Esc (List / Cancel)
+        if (key === 'escape' || keyCode === 27) {
+            // Only if not in a modal
+            if($('.modal.show').length === 0) {
+                window.location.href = "{{ route('sale.return.home') }}";
+            }
+        }
+    }, true); // useCapture = true to intercept before browser/select2
+
+    // --- BLOCK ENTER KEY (separate simpler listener for normal enter) ---
+    $(document).on('keydown', function(e) {
+        if (e.key === 'Enter' && !e.ctrlKey) {
+            var $t = $(e.target);
+            if (!$t.is('textarea') && !$t.is('button')) {
+                e.preventDefault();
+                return false;
+            }
         }
     });
 
@@ -600,7 +653,8 @@ $(document).ready(function() {
                         id: item.id,
                         text: item.name,
                         price: item.sale_net_amount,
-                        retail: item.sale_retail_price
+                        retail: item.sale_retail_price,
+                        purchase_price: item.purchase_net_amount
                     }))
                 }),
                 cache: true
@@ -650,7 +704,8 @@ $(document).ready(function() {
                                 id: product.id,
                                 text: product.name,
                                 price: product.sale_net_amount,
-                                retail: product.sale_retail_price
+                                retail: product.sale_retail_price,
+                                purchase_price: product.purchase_net_amount
                             }
                         }
                     });
@@ -669,6 +724,7 @@ $(document).ready(function() {
 
             $currentRow.find('.item-id-input').val(data.id);
             $currentRow.find('.price').val(data.price).trigger('input');
+            $currentRow.find('.purchase_price').val(data.purchase_price);
             $currentRow.find('.retail_price').val(data.retail);
             $currentRow.find('.quantity').val(1).trigger('input');
             $currentRow.find('.discount_percent').val(0);
@@ -696,6 +752,7 @@ $(document).ready(function() {
                     </select>
                 </td>
                 <td><input type="number" step="0.01" name="price[]" class="form-control form-control-sm price text-end"></td>
+                <td><input type="number" step="0.01" name="purchase_price[]" class="form-control form-control-sm purchase_price text-end bg-light" readonly></td>
                 <td><input type="number" step="0.01" name="retail_price[]" class="form-control form-control-sm retail_price text-end bg-light" readonly></td>
                 <td><input type="number" step="0.01" name="discount_percent[]" class="form-control form-control-sm discount_percent text-center"></td>
                 <td><input type="number" step="0.01" name="item_disc_amount[]" class="form-control form-control-sm disc_amount text-end bg-light" readonly></td>
@@ -753,6 +810,7 @@ $(document).ready(function() {
                 <input type="hidden" name="product_id[]" value="${item.product_id}">
             </td>
             <td><input type="number" step="0.01" name="price[]" class="form-control form-control-sm price text-end bg-light" value="${item.price}" readonly></td>
+            <td><input type="number" step="0.01" name="purchase_price[]" class="form-control form-control-sm purchase_price text-end bg-light" value="${item.purchase_price}" readonly></td>
             <td><input type="number" step="0.01" name="retail_price[]" class="form-control form-control-sm retail_price text-end bg-light" value="${item.retail_price}" readonly></td>
             <td><input type="number" step="0.01" name="discount_percent[]" class="form-control form-control-sm discount_percent text-center bg-light" value="${item.discount_percent}" readonly></td>
             <td><input type="number" step="0.01" name="item_disc_amount[]" class="form-control form-control-sm disc_amount text-end bg-light" value="${discAmt}" readonly></td>
@@ -798,24 +856,40 @@ $(document).ready(function() {
     }
 
     function recalcSummary() {
-        let subtotal = 0;
-        let discount = 0;
+        let subtotalNet = 0; // Sum of row-totals (already line-discounted)
 
         $('#saleItems tr').each(function() {
-            let qty = parseFloat($(this).find('.quantity').val()) || 0;
-            let price = parseFloat($(this).find('.price').val()) || 0;
-            let discAmt = parseFloat($(this).find('.disc_amount').val()) || 0;
-            
-            subtotal += (price * qty);
-            discount += (discAmt * qty);
+            let rowNet = parseFloat($(this).find('.row-total').val()) || 0;
+            subtotalNet += rowNet;
         });
 
-        let net = subtotal - discount;
+        // 2. Apply Order Discount
+        let orderDiscVal = parseFloat($('#orderDiscountValue').val()) || 0;
+        let orderDiscMode = $('#orderDiscountMode').val();
+        let totalDisc = 0;
 
-        $('#subtotal').val(subtotal.toFixed(2));
-        $('#overallDiscount').val(discount.toFixed(2));
-        $('#netAmount').val(net.toFixed(2));
+        if (orderDiscMode === 'percent') {
+            totalDisc = (subtotalNet * orderDiscVal) / 100;
+        } else {
+            totalDisc = orderDiscVal;
+        }
+
+        let finalNet = Math.max(0, subtotalNet - totalDisc);
+
+        $('#subtotal').val(subtotalNet.toFixed(2));
+        $('#overallDiscount').val(totalDisc.toFixed(2));
+        $('#netAmount').val(finalNet.toFixed(2));
     }
+
+    // Discount Toggle Buttons
+    $(document).on('click', '.order-disc-btn', function() {
+        $('.order-disc-btn').removeClass('active');
+        $(this).addClass('active');
+        $('#orderDiscountMode').val($(this).data('mode'));
+        recalcSummary();
+    });
+
+    $(document).on('input', '#orderDiscountValue', recalcSummary);
 
     // Initialize existing rows
     $('#saleItems tr').each(function() {

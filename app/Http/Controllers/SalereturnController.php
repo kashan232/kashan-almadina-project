@@ -37,7 +37,7 @@ class SaleReturnController extends Controller
     public function create()
     {
         $nextInvoice = $this->generateReturnNo();
-        $sales = Sale::get(['id', 'invoice_no', 'partyType', 'customer_id']);
+        $sales = Sale::orderBy('id', 'desc')->get(['id', 'invoice_no', 'partyType', 'customer_id']);
         $vendors = \App\Models\Vendor::all();
         $customers = \App\Models\Customer::all();
         $warehouses = \App\Models\Warehouse::all();
@@ -74,6 +74,7 @@ class SaleReturnController extends Controller
                     'product_id' => $item->product_id,
                     'product_name' => $product->name ?? 'N/A',
                     'price' => $item->sales_price,
+                    'purchase_price' => $product->latestPrice->purchase_net_amount ?? 0,
                     'qty' => $item->sales_qty,
                     'item_discount' => $item->discount_amount,
                     'discount_percent' => $item->discount_percent,
@@ -111,10 +112,19 @@ class SaleReturnController extends Controller
     public function store(Request $request)
     {
         $request->validate([
+            'vendor_type' => 'required',
+            'party_id' => 'required',
+            'sale_id' => 'required_if:return_mode,invoice',
             'current_date' => 'required|date',
-            'product_id' => 'required|array',
+            'product_id' => 'required|array|min:1',
             'qty' => 'required|array',
             'warehouse_id' => 'required',
+        ], [
+            'vendor_type.required' => 'Please select Party Type.',
+            'party_id.required' => 'Please select a Party.',
+            'sale_id.required_if' => 'Please select a Sale Invoice.',
+            'product_id.required' => 'Please add at least one item.',
+            'warehouse_id.required' => 'Please select a Warehouse.',
         ]);
 
         try {
@@ -195,7 +205,7 @@ class SaleReturnController extends Controller
     {
         $returnData = SaleReturn::with(['items.product.latestPrice'])->findOrFail($id);
         $nextInvoice = $returnData->invoice_no;
-        $sales = Sale::get(['id', 'invoice_no', 'partyType', 'customer_id']);
+        $sales = Sale::orderBy('id', 'desc')->get(['id', 'invoice_no', 'partyType', 'customer_id']);
         $vendors = \App\Models\Vendor::all();
         $customers = \App\Models\Customer::all();
         $warehouses = \App\Models\Warehouse::all();
@@ -206,10 +216,19 @@ class SaleReturnController extends Controller
     public function update(Request $request, $id)
     {
         $request->validate([
+            'vendor_type' => 'required',
+            'party_id' => 'required',
+            'sale_id' => 'required_if:return_mode,invoice',
             'current_date' => 'required|date',
-            'product_id' => 'required|array',
+            'product_id' => 'required|array|min:1',
             'qty' => 'required|array',
             'warehouse_id' => 'required',
+        ], [
+            'vendor_type.required' => 'Please select Party Type.',
+            'party_id.required' => 'Please select a Party.',
+            'sale_id.required_if' => 'Please select a Sale Invoice.',
+            'product_id.required' => 'Please add at least one item.',
+            'warehouse_id.required' => 'Please select a Warehouse.',
         ]);
 
         try {
