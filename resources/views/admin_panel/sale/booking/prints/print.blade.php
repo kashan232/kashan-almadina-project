@@ -305,26 +305,29 @@
     <div class="divider-solid"></div>
 
     <!-- Items Table -->
-    <div class="items-table">
-        <div class="items-header">
-            <span style="width: 50%;">Item</span>
-            <span style="width: 15%; text-align: center;">Qty</span>
-            <span style="width: 35%; text-align: right;">Amount</span>
-        </div>
-
-        @foreach($booking->items as $index => $item)
-        <div class="item-row">
-            <div class="item-name">{{ $index + 1 }}. {{ $item->product->name ?? 'Product' }}</div>
-            <div class="item-details">
-                <span>{{ number_format($item->sales_qty) }} × Rs.{{ number_format($item->sales_price, 2) }}</span>
-                @if($item->discount_amount > 0)
-                <span>-Rs.{{ number_format($item->discount_amount, 2) }}</span>
-                @endif
-                <span><strong>Rs.{{ number_format($item->amount, 2) }}</strong></span>
-            </div>
-        </div>
-        @endforeach
-    </div>
+    <table style="width: 100%; border-collapse: collapse; margin-bottom: 8px;">
+        <thead>
+            <tr style="border-top: 1px solid #000; border-bottom: 1px solid #000; font-size: 10px;">
+                <th style="text-align: left; padding: 3px 0; width: 40%;">Item</th>
+                <th style="text-align: center; padding: 3px 0; width: 10%;">Qty</th>
+                <th style="text-align: right; padding: 3px 0; width: 25%;">Rate</th>
+                <th style="text-align: right; padding: 3px 0; width: 25%;">Amount</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach($booking->items as $index => $item)
+            @php
+                $rate = $item->sales_rate > 0 ? $item->sales_rate : ($item->sales_qty > 0 ? ($item->retail_price - ($item->discount_amount / $item->sales_qty)) : $item->retail_price);
+            @endphp
+            <tr style="border-bottom: 1px dotted #000; vertical-align: top; font-size: 10px;">
+                <td style="padding: 4px 0;">{{ $index + 1 }}. {{ $item->product->name ?? 'Product' }}</td>
+                <td style="padding: 4px 0; text-align: center;">{{ number_format($item->sales_qty, 0) }}</td>
+                <td style="padding: 4px 0; text-align: right;">{{ number_format($rate, 0) }}</td>
+                <td style="padding: 4px 0; text-align: right; font-weight: 700;">{{ number_format($item->amount, 0) }}</td>
+            </tr>
+            @endforeach
+        </tbody>
+    </table>
 
     <!-- Totals Section -->
     <div class="totals-section">

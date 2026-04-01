@@ -485,7 +485,8 @@
                   <th style="width:10%" class="text-end">Sales Price</th>
                   <th style="width:7%" class="text-center">Qty</th>
                   <th style="width:10%" class="text-end">Retail Price</th>
-                  <th style="width:20%" class="text-center">Discount (% | Amt)</th>
+                  <th style="width:16%" class="text-center">Discount (% | Amt)</th>
+                  <th style="width:10%" class="text-end">Rate</th>
                   <th style="width:10%" class="text-end">Amount</th>
                   <th style="width:3%" class="text-center">—</th>
                 </tr>
@@ -543,6 +544,7 @@
                         <input type="hidden" class="discount-percent" name="discount-percent[]" value="{{ $dPct }}">
                         <input type="hidden" class="discount-amount" name="discount-amount[]" value="{{ $dAmt }}">
                       </td>
+                      <td style="width: 100px;"><input type="text" class="form-control form-control-sm text-end sales-rate input-readonly" name="sales-rate[]" value="{{ old('sales-rate')[$index] ?? 0 }}" readonly></td>
                       <td style="width: 100px;"><input type="text" class="form-control form-control-sm text-end sales-amount input-readonly" name="sales-amount[]" value="{{ $sAmount }}" readonly></td>
                       <td class="text-center" style="width: 40px;"><button type="button" class="btn btn-xs btn-outline-danger del-row">&times;</button></td>
                     </tr>
@@ -985,6 +987,7 @@
         <input type="hidden" class="discount-percent" name="discount-percent[]" value="0">
         <input type="hidden" class="discount-amount" name="discount-amount[]" value="0">
       </td>
+      <td style="width: 100px;"><input type="text" class="form-control form-control-sm text-end sales-rate input-readonly" name="sales-rate[]" value="0" readonly></td>
       <td style="width: 100px;"><input type="text" class="form-control form-control-sm text-end sales-amount input-readonly" name="sales-amount[]" value="0" readonly></td>
       <td class="text-center" style="width: 40px;"><button type="button" class="btn btn-xs btn-outline-danger del-row">&times;</button></td>
     </tr>`;
@@ -1623,6 +1626,15 @@
     
     // Update visible discount amount display
     $row.find('.discount-amount-display').val(discAmt.toFixed(2));
+
+    // Calculate Rate per Unit (Retail Price minus unit discount)
+    let rate = 0;
+    if (qty > 0) {
+        rate = rp - (discAmt / qty);
+    } else {
+        rate = rp;
+    }
+    $row.find('.sales-rate').val(rate.toFixed(2));
 
     // Calculate Net Amount for the row (Sales Price * Qty - Discount)
     const lineGross = sp * qty;

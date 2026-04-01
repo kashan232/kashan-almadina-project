@@ -150,7 +150,7 @@
                                         <label class="column-picker-item"><input type="checkbox" data-column="1" checked> ID</label>
                                         <label class="column-picker-item"><input type="checkbox" data-column="2" checked> Date</label>
                                         <label class="column-picker-item"><input type="checkbox" data-column="3" checked> Party / Customer</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="4" checked> Warehouse</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="4" checked> Location</label>
                                         <label class="column-picker-item"><input type="checkbox" data-column="5" checked> Items Details</label>
                                         <label class="column-picker-item"><input type="checkbox" data-column="6" checked> Status</label>
                                         <label class="column-picker-item"><input type="checkbox" data-column="7" checked> Action</label>
@@ -171,7 +171,7 @@
                                             <th>ID</th>
                                             <th>Date</th>
                                             <th>Party / Customer</th>
-                                            <th>Warehouse</th>
+                                            <th>Location</th>
                                             <th>Items Details</th>
                                             <th>Status</th>
                                             <th>Action</th>
@@ -190,7 +190,7 @@
                                                 @endif
                                                 <small class="text-muted d-block" style="font-size:10px;">{{ ucfirst($v->party_type) }}</small>
                                             </td>
-                                            <td>{{ $v->warehouse->warehouse_name ?? '-' }}</td>
+                                            <td>{{ $v->warehouse_id == 0 ? 'Shop' : ($v->warehouse->warehouse_name ?? '-') }}</td>
                                             <td class="small">
                                                 @foreach($v->items as $item)
                                                     <div style="font-size:11px; border-bottom:1px dashed #eee; padding:2px 0;">

@@ -85,7 +85,7 @@
                             <div class="col-md-2 mt-2">
                                 <label class="form-label small fw-bold">Location</label>
                                 <select name="warehouse_id" id="warehouse_id" class="form-select select2" required>
-                                    <option value="" disabled selected>Select Location</option>
+                                    <option value="0">Shop</option>
                                     @foreach($warehouses as $wh)
                                         <option value="{{ $wh->id }}">{{ $wh->warehouse_name }}</option>
                                     @endforeach
@@ -220,7 +220,7 @@ $(document).ready(function() {
         $('#itemRows').empty();
         $.get("{{ url('stock-holds/invoice') }}/" + id + "/items", function(items) {
             // Auto-select warehouse from the first item
-            if(items.length > 0 && items[0].warehouse_id) {
+            if(items.length > 0 && items[0].warehouse_id !== undefined && items[0].warehouse_id !== null) {
                 $('#warehouse_id').val(items[0].warehouse_id).trigger('change');
             }
             items.forEach(item => {

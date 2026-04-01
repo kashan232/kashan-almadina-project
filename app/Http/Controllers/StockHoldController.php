@@ -92,12 +92,18 @@ class StockHoldController extends Controller
         $items = \App\Models\SaleItem::where('sale_id', $id)->with('product:id,name', 'sale')->get();
         if ($items->isNotEmpty()) {
             // Favor item-level warehouse_id first
-            $warehouse_id = $items->first()->warehouse_id ?: ($items->first()->sale->warehouse_id ?? null);
+            $warehouse_id = $items->first()->warehouse_id;
+            if (is_null($warehouse_id)) {
+                $warehouse_id = $items->first()->sale->warehouse_id ?? null;
+            }
         } else {
             // Try ProductBookingItem (Draft Booking)
             $items = \App\Models\ProductBookingItem::where('booking_id', $id)->with('product:id,name', 'booking')->get();
             if ($items->isNotEmpty()) {
-                $warehouse_id = $items->first()->warehouse_id ?: ($items->first()->booking->warehouse_id ?? null);
+                $warehouse_id = $items->first()->warehouse_id;
+                if (is_null($warehouse_id)) {
+                    $warehouse_id = $items->first()->booking->warehouse_id ?? null;
+                }
             }
         }
 
@@ -440,7 +446,7 @@ class StockHoldController extends Controller
             'party_id' => $voucher->party_id,
             'party_name' => $partyName,
             'warehouse_id' => $voucher->warehouse_id,
-            'warehouse_name' => $voucher->warehouse->warehouse_name ?? '-',
+            'warehouse_name' => ($voucher->warehouse_id == 0) ? 'Shop' : ($voucher->warehouse->warehouse_name ?? '-'),
             'items' => $voucher->items->map(function($it) {
                 return [
                     'product_id' => $it->product_id,

@@ -156,7 +156,6 @@
                                         <th style="width: 100px;">Item ID</th>
                                         <th style="width: 250px;">Product</th>
                                         <th>Sales Price</th>
-                                        <th>Pur. Price</th>
                                         <th>Retail Price</th>
                                         <th>Disc (%)</th>
                                         <th>Disc Amt</th>
@@ -179,11 +178,10 @@
                                                         <option value="{{ $item->product_id }}" selected>{{ $item->product->name }}</option>
                                                     </select>
                                                 </td>
-                                                <td><input type="number" step="0.01" name="price[]" class="form-control form-control-sm price text-end {{ isset($returnData) && $returnData->sale_id ? 'bg-light' : '' }}" value="{{ $item->sales_price }}" {{ isset($returnData) && $returnData->sale_id ? 'readonly' : '' }}></td>
-                                                <td><input type="number" step="0.01" name="purchase_price[]" class="form-control form-control-sm purchase_price text-end bg-light" value="{{ $item->product->latestPrice->purchase_net_amount ?? 0 }}" readonly></td>
-                                                <td><input type="number" step="0.01" name="retail_price[]" class="form-control form-control-sm retail_price text-end bg-light" value="{{ $item->retail_price }}" readonly></td>
-                                                <td><input type="number" step="0.01" name="discount_percent[]" class="form-control form-control-sm discount_percent text-center {{ isset($returnData) && $returnData->sale_id ? 'bg-light' : '' }}" value="{{ $item->discount_percent }}" {{ isset($returnData) && $returnData->sale_id ? 'readonly' : '' }}></td>
-                                                <td><input type="number" step="0.01" name="item_disc_amount[]" class="form-control form-control-sm disc_amount text-end bg-light" value="{{ $item->sales_qty > 0 ? ($item->discount_amount / $item->sales_qty) : 0 }}" readonly></td>
+                                                <td><input type="number" step="0.01" name="price[]" class="form-control form-control-sm price text-end" value="{{ $item->sales_price }}"></td>
+                                                <td><input type="number" step="0.01" name="retail_price[]" class="form-control form-control-sm retail_price text-end" value="{{ $item->retail_price }}"></td>
+                                                <td><input type="number" step="0.01" name="discount_percent[]" class="form-control form-control-sm discount_percent text-center" value="{{ $item->discount_percent }}"></td>
+                                                <td><input type="number" step="0.01" name="item_disc_amount[]" class="form-control form-control-sm disc_amount text-end" value="{{ $item->sales_qty > 0 ? ($item->discount_amount / $item->sales_qty) : 0 }}"></td>
                                                 <td class="invoice-only"><input type="text" class="form-control form-control-sm bg-light text-center" value="{{ $item->sales_qty }}" readonly></td>
                                                 <td><input type="number" name="qty[]" class="form-control form-control-sm quantity text-center" value="{{ $item->sales_qty }}" min="0"></td>
                                                 <td><input type="text" name="line_amount[]" class="form-control form-control-sm row-amount text-end bg-white" readonly value="0"></td>
@@ -193,7 +191,7 @@
                                         @endforeach
                                     @else
                                         <tr>
-                                            <td colspan="11" class="text-center text-muted py-4">No invoice selected yet.</td>
+                                            <td colspan="10" class="text-center text-muted py-4">No invoice selected yet.</td>
                                         </tr>
                                     @endif
                                 </tbody>
@@ -752,10 +750,9 @@ $(document).ready(function() {
                     </select>
                 </td>
                 <td><input type="number" step="0.01" name="price[]" class="form-control form-control-sm price text-end"></td>
-                <td><input type="number" step="0.01" name="purchase_price[]" class="form-control form-control-sm purchase_price text-end bg-light" readonly></td>
-                <td><input type="number" step="0.01" name="retail_price[]" class="form-control form-control-sm retail_price text-end bg-light" readonly></td>
+                <td><input type="number" step="0.01" name="retail_price[]" class="form-control form-control-sm retail_price text-end"></td>
                 <td><input type="number" step="0.01" name="discount_percent[]" class="form-control form-control-sm discount_percent text-center"></td>
-                <td><input type="number" step="0.01" name="item_disc_amount[]" class="form-control form-control-sm disc_amount text-end bg-light" readonly></td>
+                <td><input type="number" step="0.01" name="item_disc_amount[]" class="form-control form-control-sm disc_amount text-end"></td>
                 <td class="invoice-only"><input type="text" class="form-control form-control-sm bg-light text-center" value="-" readonly></td>
                 <td><input type="number" name="qty[]" class="form-control form-control-sm quantity text-center" value="1" min="0"></td>
                 <td><input type="text" name="line_amount[]" class="form-control form-control-sm row-amount text-end bg-white" readonly value="0"></td>
@@ -809,11 +806,10 @@ $(document).ready(function() {
                 <input type="text" class="form-control form-control-sm bg-white" value="${item.product_name}" readonly title="${item.product_name}">
                 <input type="hidden" name="product_id[]" value="${item.product_id}">
             </td>
-            <td><input type="number" step="0.01" name="price[]" class="form-control form-control-sm price text-end bg-light" value="${item.price}" readonly></td>
-            <td><input type="number" step="0.01" name="purchase_price[]" class="form-control form-control-sm purchase_price text-end bg-light" value="${item.purchase_price}" readonly></td>
-            <td><input type="number" step="0.01" name="retail_price[]" class="form-control form-control-sm retail_price text-end bg-light" value="${item.retail_price}" readonly></td>
-            <td><input type="number" step="0.01" name="discount_percent[]" class="form-control form-control-sm discount_percent text-center bg-light" value="${item.discount_percent}" readonly></td>
-            <td><input type="number" step="0.01" name="item_disc_amount[]" class="form-control form-control-sm disc_amount text-end bg-light" value="${discAmt}" readonly></td>
+            <td><input type="number" step="0.01" name="price[]" class="form-control form-control-sm price text-end" value="${item.price}"></td>
+            <td><input type="number" step="0.01" name="retail_price[]" class="form-control form-control-sm retail_price text-end" value="${item.retail_price}"></td>
+            <td><input type="number" step="0.01" name="discount_percent[]" class="form-control form-control-sm discount_percent text-center" value="${item.discount_percent}"></td>
+            <td><input type="number" step="0.01" name="item_disc_amount[]" class="form-control form-control-sm disc_amount text-end" value="${discAmt}"></td>
             <td class="invoice-only"><input type="text" class="form-control form-control-sm bg-light text-center" value="${item.qty}" readonly></td>
             <td><input type="number" name="qty[]" class="form-control form-control-sm quantity text-center" value="${item.qty}" max="${item.qty}" min="0" title="Edit return quantity"></td>
             <td><input type="text" name="line_amount[]" class="form-control form-control-sm row-amount text-end bg-white" readonly value="0"></td>
@@ -829,8 +825,13 @@ $(document).ready(function() {
         recalcSummary();
     });
 
-    $(document).on('input change', '.quantity, .price, .discount_percent', function() {
+    $(document).on('input change', '.quantity, .price, .discount_percent, .disc_amount, .retail_price', function() {
         let row = $(this).closest('tr');
+        if ($(this).hasClass('disc_amount')) {
+            row.data('manual-disc', true);
+        } else if ($(this).hasClass('discount_percent')) {
+            row.data('manual-disc', false);
+        }
         if (row.length) recalcRow(row);
         recalcSummary();
     });
@@ -840,11 +841,19 @@ $(document).ready(function() {
         let price = parseFloat($row.find('.price').val()) || 0;
         let retail = parseFloat($row.find('.retail_price').val()) || 0;
         let discPercent = parseFloat($row.find('.discount_percent').val()) || 0;
+        let discAmt = parseFloat($row.find('.disc_amount').val()) || 0;
 
         let discBase = (retail > 0) ? retail : price;
-        let perUnitDisc = (discBase * discPercent) / 100;
+
+        if ($row.data('manual-disc') === true) {
+            discPercent = discBase > 0 ? (discAmt / discBase) * 100 : 0;
+            $row.find('.discount_percent').val(discPercent.toFixed(2));
+        } else {
+            discAmt = (discBase * discPercent) / 100;
+            $row.find('.disc_amount').val(discAmt.toFixed(2));
+        }
         
-        let totalDisc = perUnitDisc * qty;
+        let totalDisc = discAmt * qty;
         let grossAmount = price * qty;
         let netAmount = grossAmount - totalDisc;
 
@@ -852,7 +861,6 @@ $(document).ready(function() {
         $row.find('.row-amount').val(price.toFixed(2));
         // Total = Price * Qty - Discount
         $row.find('.row-total').val(netAmount.toFixed(2));
-        $row.find('.disc_amount').val(perUnitDisc.toFixed(2));
     }
 
     function recalcSummary() {

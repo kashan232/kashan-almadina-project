@@ -18,6 +18,7 @@ class ProductBookingItem extends Model
         'sales_price',
         'sales_qty',
         'retail_price',
+        'sales_rate',
         'discount_percent',
         'discount_amount',
         'amount',

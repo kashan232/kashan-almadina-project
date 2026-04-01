@@ -72,7 +72,7 @@
           <div class="d-flex justify-content-between align-items-center mb-2"><div class="section-title">Items</div><button type="button" class="btn btn-sm btn-primary" id="btnAdd">Add Row</button></div>
           <div class="table-responsive">
             <table class="table table-bordered table-sm mb-0">
-              <thead class="table-light"><tr><th>ID</th><th>Product</th><th>Warehouse</th><th>Stock</th><th>Price</th><th>Qty</th><th>Retail</th><th>Disc%</th><th>Amount</th><th>—</th></tr></thead>
+              <thead class="table-light"><tr><th>ID</th><th>Product</th><th>Warehouse</th><th>Stock</th><th>Price</th><th>Qty</th><th>Retail</th><th>Disc%</th><th class="text-end">Rate</th><th>Amount</th><th>—</th></tr></thead>
               <tbody id="salesTableBody">
                 @foreach($sale->items as $item)
                 <tr>
@@ -87,6 +87,7 @@
                   <td><input type="number" step="any" class="form-control form-control-sm text-center sales-qty" name="sales-qty[]" value="{{ $item->sales_qty }}"></td>
                   <td><input type="text" class="form-control form-control-sm text-end retail-price bg-light" value="{{ $item->retail_price }}" readonly></td>
                   <td><input type="number" class="form-control text-end discount-value" value="{{ $item->discount_percent }}"><input type="hidden" name="discount-percent[]" class="discount-percent" value="{{ $item->discount_percent }}"><input type="hidden" name="discount-amount[]" class="discount-amount" value="{{ $item->discount_amount }}"></td>
+                  <td><input type="text" class="form-control form-control-sm text-end sales-rate bg-light" name="sales-rate[]" value="{{ $item->sales_rate ?? 0 }}" readonly></td>
                   <td><input type="text" class="form-control form-control-sm text-end sales-amount bg-light" value="{{ $item->amount }}" readonly></td>
                   <td class="text-center"><button type="button" class="btn btn-xs btn-outline-danger del-row">&times;</button></td>
                 </tr>
@@ -268,6 +269,7 @@
   function computeRow($row) {
     const rp = toNum($row.find('.retail-price').val()), q = toNum($row.find('.sales-qty').val()), v = toNum($row.find('.discount-value').val());
     const amt = (rp * q * v) / 100; $row.find('.discount-percent').val(v.toFixed(2)); $row.find('.discount-amount').val(amt.toFixed(2));
+    const rate = q > 0 ? (rp - (amt / q)) : rp; $row.find('.sales-rate').val(rate.toFixed(2));
     updateGrandTotals();
   }
   function initProductSelect($row) {
@@ -277,7 +279,7 @@
   }
   function addNewRow() {
     const wh = $('#salesTableBody tr:last .warehouse').val() || 0;
-    const html = `<tr><td><input type="text" class="form-control form-control-sm item-id-input text-center"></td><td><select name="product_id[]" class="form-control product-select"></select></td><td><select class="form-select form-select-sm warehouse" name="warehouse_name[]"><option value="0" ${wh==0?'selected':''}>🏠 Shop</option>@foreach($warehouses as $w)<option value="{{$w->id}}" ${wh=={{$w->id}}?'selected':''}>📦 {{$w->warehouse_name}}</option>@endforeach</select></td><td><input type="text" class="form-control form-control-sm stock bg-light" readonly></td><td><input type="text" class="form-control form-control-sm text-end sales-price bg-light" readonly></td><td><input type="number" class="form-control form-control-sm text-center sales-qty"></td><td><input type="text" class="form-control form-control-sm text-end retail-price bg-light" readonly></td><td><input type="number" class="form-control text-end discount-value"><input type="hidden" name="discount-percent[]" class="discount-percent"><input type="hidden" name="discount-amount[]" class="discount-amount"></td><td><input type="text" class="form-control form-control-sm text-end sales-amount bg-light" readonly></td><td class="text-center"><button type="button" class="btn btn-xs btn-outline-danger del-row">&times;</button></td></tr>`;
+    const html = `<tr><td><input type="text" class="form-control form-control-sm item-id-input text-center"></td><td><select name="product_id[]" class="form-control product-select"></select></td><td><select class="form-select form-select-sm warehouse" name="warehouse_name[]"><option value="0" ${wh==0?'selected':''}>🏠 Shop</option>@foreach($warehouses as $w)<option value="{{$w->id}}" ${wh=={{$w->id}}?'selected':''}>📦 {{$w->warehouse_name}}</option>@endforeach</select></td><td><input type="text" class="form-control form-control-sm stock bg-light" readonly></td><td><input type="text" class="form-control form-control-sm text-end sales-price bg-light" readonly></td><td><input type="number" class="form-control form-control-sm text-center sales-qty"></td><td><input type="text" class="form-control form-control-sm text-end retail-price bg-light" readonly></td><td><input type="number" class="form-control text-end discount-value"><input type="hidden" name="discount-percent[]" class="discount-percent"><input type="hidden" name="discount-amount[]" class="discount-amount"></td><td><input type="text" class="form-control form-control-sm text-end sales-rate bg-light" name="sales-rate[]" readonly></td><td><input type="text" class="form-control form-control-sm text-end sales-amount bg-light" readonly></td><td class="text-center"><button type="button" class="btn btn-xs btn-outline-danger del-row">&times;</button></td></tr>`;
     const $nr = $(html); $('#salesTableBody').append($nr); initProductSelect($nr);
   }
   $(document).on('input', '.sales-qty, .discount-value, #orderDiscountValue', function() { computeRow($(this).closest('tr')); });

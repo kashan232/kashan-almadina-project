@@ -134,6 +134,7 @@ class SaleController extends Controller
         $salesPrices = $request->input('sales-price', []);
         $salesQtys = $request->input('sales-qty', []);
         $retailPrices = $request->input('retail-price', []);
+        $salesRates = $request->input('sales-rate', []);
         $discPercents = $request->input('discount-percent', []);
         $discAmounts = $request->input('discount-amount', []);
         $amounts = $request->input('sales-amount', []);
@@ -155,6 +156,7 @@ class SaleController extends Controller
                 'sales_price' => (float)($salesPrices[$i] ?? 0),
                 'sales_qty' => $qty,
                 'retail_price' => (float)($retailPrices[$i] ?? 0),
+                'sales_rate' => (float)($salesRates[$i] ?? 0),
                 'discount_percent' => (float)($discPercents[$i] ?? 0),
                 'discount_amount' => (float)($discAmounts[$i] ?? 0),
                 'amount' => (float)($amounts[$i] ?? 0),
@@ -216,6 +218,7 @@ class SaleController extends Controller
                     'sales_price' => (float) $request->input("sales-price.$i", 0),
                     'sales_qty' => $qty,
                     'retail_price' => (float) $request->input("retail-price.$i", 0),
+                    'sales_rate' => (float) $request->input("sales-rate.$i", 0),
                     'discount_percent' => (float) $request->input("discount-percent.$i", 0),
                     'discount_amount' => (float) $request->input("discount-amount.$i", 0),
                     'amount' => (float) $request->input("sales-amount.$i", 0),
@@ -289,6 +292,7 @@ class SaleController extends Controller
                     'sales_price' => (float) $request->input("sales-price.$i", 0),
                     'sales_qty' => $saleQty,
                     'retail_price' => (float) $request->input("retail-price.$i", 0),
+                    'sales_rate' => (float) $request->input("sales-rate.$i", 0),
                     'discount_percent' => (float) $request->input("discount-percent.$i", 0),
                     'discount_amount' => (float) $request->input("discount-amount.$i", 0),
                     'amount' => (float) $request->input("sales-amount.$i", 0),
@@ -391,6 +395,7 @@ class SaleController extends Controller
             $salesPrices = $request->input('sales-price', []);
             $salesQtys = $request->input('sales-qty', []);
             $retailPrices = $request->input('retail-price', []);
+            $salesRates = $request->input('sales-rate', []);
             $discPercents = $request->input('discount-percent', []);
             $discAmounts = $request->input('discount-amount', []);
             $amounts = $request->input('sales-amount', []);
@@ -507,6 +512,7 @@ class SaleController extends Controller
                         'sales_price' => $salesPrice,
                         'sales_qty' => $salesQty,
                         'retail_price' => $retail,
+                        'sales_rate' => (float) data_get($it, 'sales_rate', 0),
                         'discount_percent' => $discPct,
                         'discount_amount' => $discAmt,
                         'amount' => $amount,
@@ -602,6 +608,7 @@ class SaleController extends Controller
                     'sales_price' => (float)($it->sales_price ?? 0),
                     'sales_qty' => $salesQty,
                     'retail_price' => (float)($it->retail_price ?? 0),
+                    'sales_rate' => (float)($it->sales_rate ?? 0),
                     'discount_percent' => (float)($it->discount_percent ?? 0),
                     'discount_amount' => (float)($it->discount_amount ?? 0),
                     'amount' => (float)($it->amount ?? 0),
