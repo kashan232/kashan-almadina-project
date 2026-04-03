@@ -118,9 +118,22 @@ class VoucherController extends Controller
         //
     }
 
-    public function all_recepit_vochers()
+    public function all_recepit_vochers(Request $request)
     {
-        $receipts = \App\Models\ReceiptsVoucher::orderBy('id', 'DESC')->get();
+        $query = \App\Models\ReceiptsVoucher::query();
+
+        if ($request->filled('start_date')) {
+            $query->whereDate('receipt_date', '>=', $request->start_date);
+        }
+        if ($request->filled('end_date')) {
+            $query->whereDate('receipt_date', '<=', $request->end_date);
+        }
+        if ($request->filled('status')) {
+            // Mapping for draft/posted
+            $query->where('status', $request->status);
+        }
+
+        $receipts = $query->orderBy('id', 'DESC')->get();
 
         foreach ($receipts as $voucher) {
             $partyName = '-';
