@@ -37,6 +37,11 @@ class SaleController extends Controller
             $salesQuery->whereDate('created_at', '<=', $request->end_date);
             $bookingsQuery->whereDate('created_at', '<=', $request->end_date);
         }
+        if ($request->filled('sale_type')) {
+            $isOrder = $request->sale_type === 'order' ? 1 : 0;
+            $salesQuery->where('is_sale_order', $isOrder);
+            $bookingsQuery->where('is_sale_order', $isOrder);
+        }
 
         $salesRows = $salesQuery->get()->map(function($s) {
             $s->entry_status = 'Posted';
@@ -427,6 +432,7 @@ class SaleController extends Controller
             }
 
             $booking->quantity = $totalQty;
+            $booking->is_sale_order = $request->has('is_sale_order') ? 1 : 0;
             $booking->save();
 
             return response()->json(['ok' => true, 'booking_id' => $booking->id]);
@@ -449,6 +455,7 @@ class SaleController extends Controller
 
                 $sale = Sale::create([
                     'invoice_no' => $invNo,
+                    'is_sale_order' => $booking->is_sale_order,
                     'manual_invoice' => $booking->manual_invoice,
                     'partyType' => $booking->party_type,
                     'customer_id' => $booking->customer_id,
@@ -474,6 +481,19 @@ class SaleController extends Controller
                     'weight' => $booking->weight,
                 ]);
 
+                // If Sale Order, create a Stock Hold Voucher
+                $holdVoucher = null;
+                if ($sale->is_sale_order) {
+                    $holdVoucher = \App\Models\StockHoldVoucher::create([
+                        'sale_id' => $sale->id,
+                        'voucher_no' => \App\Models\StockHoldVoucher::generateVoucherNo(),
+                        'party_type' => $sale->partyType,
+                        'party_id' => $sale->customer_id,
+                        'date' => now(), // Changed from entry_date to date
+                        'remarks' => 'Auto-Hold from Sale Order #' . $sale->invoice_no,
+                    ]);
+                }
+
                 foreach ($booking->items as $it) {
                     if (!$it) {
                         continue;
@@ -486,21 +506,38 @@ class SaleController extends Controller
                     $discAmt = (float) data_get($it, 'discount_amount', 0);
                     $amount = (float) data_get($it, 'amount', 0);
 
-                    // Stock Logic: 0 = Shop, >0 = Warehouse
-                    if ($it->warehouse_id == 0) {
-                        // Shop Stock
-                        if ($p = Product::find($it->product_id)) {
-                            $p->stock = max(0, ($p->stock ?? 0) - $salesQty);
-                            $p->save();
+                    // Stock Logic: Skip deduction if is_sale_order
+                    if (!$sale->is_sale_order) {
+                        if ($it->warehouse_id == 0) {
+                            // Shop Stock
+                            if ($p = Product::find($it->product_id)) {
+                                $p->stock = max(0, ($p->stock ?? 0) - $salesQty);
+                                $p->save();
+                            }
+                        } else {
+                            // Warehouse Stock
+                            if ($ws = WarehouseStock::where('warehouse_id', $it->warehouse_id)
+                                ->where('product_id', $it->product_id)
+                                ->first()) {
+                                $ws->quantity = max(0, $ws->quantity - $salesQty);
+                                $ws->save();
+                            }
                         }
                     } else {
-                        // Warehouse Stock
-                        if ($ws = WarehouseStock::where('warehouse_id', $it->warehouse_id)
-                            ->where('product_id', $it->product_id)
-                            ->first()) {
-                            $ws->quantity = max(0, $ws->quantity - $salesQty);
-                            $ws->save();
-                        }
+                        // Create Stock Hold Record
+                        \App\Models\StockHold::create([
+                            'stock_hold_voucher_id' => $holdVoucher->id,
+                            'sale_id' => $sale->id,
+                            'party_type' => $sale->partyType,
+                            'party_id' => $sale->customer_id,
+                            'product_id' => $it->product_id,
+                            'warehouse_id' => $it->warehouse_id,
+                            'hold_qty' => $salesQty,
+                            'sale_qty' => $salesQty,
+                            'entry_date' => now(),
+                            'remarks' => 'Auto-Hold from Sale Order',
+                            'status' => 0, // 0 = Active Hold
+                        ]);
                     }
 
                     SaleItem::create([
@@ -556,6 +593,7 @@ class SaleController extends Controller
 
             $sale = Sale::create([
                 'invoice_no' => $invNo,
+                'is_sale_order' => $booking->is_sale_order,
                 'manual_invoice' => $booking->manual_invoice,
                 'partyType' => $booking->party_type,
                 'customer_id' => $booking->customer_id,
@@ -581,22 +619,52 @@ class SaleController extends Controller
                 'weight' => $booking->weight,
             ]);
 
+            // If Sale Order, create a Stock Hold Voucher
+            $holdVoucher = null;
+            if ($sale->is_sale_order) {
+                $holdVoucher = \App\Models\StockHoldVoucher::create([
+                    'sale_id' => $sale->id,
+                    'voucher_no' => \App\Models\StockHoldVoucher::generateVoucherNo(),
+                    'party_type' => $sale->partyType,
+                    'party_id' => $sale->customer_id,
+                    'date' => now(), // Changed from entry_date to date
+                    'remarks' => 'Auto-Hold from Sale Order #' . $sale->invoice_no,
+                ]);
+            }
+
             foreach ($booking->items as $it) {
                 $salesQty = (float)($it->sales_qty ?? 0);
                 
-                // Stock Logic
-                if ($it->warehouse_id == 0) {
-                    if ($p = Product::find($it->product_id)) {
-                        $p->stock = max(0, ($p->stock ?? 0) - $salesQty);
-                        $p->save();
+                // Stock Logic: Skip deduction if is_sale_order
+                if (!$sale->is_sale_order) {
+                    if ($it->warehouse_id == 0) {
+                        if ($p = Product::find($it->product_id)) {
+                            $p->stock = max(0, ($p->stock ?? 0) - $salesQty);
+                            $p->save();
+                        }
+                    } else {
+                        if ($ws = WarehouseStock::where('warehouse_id', $it->warehouse_id)
+                            ->where('product_id', $it->product_id)
+                            ->first()) {
+                            $ws->quantity = max(0, $ws->quantity - $salesQty);
+                            $ws->save();
+                        }
                     }
                 } else {
-                    if ($ws = WarehouseStock::where('warehouse_id', $it->warehouse_id)
-                        ->where('product_id', $it->product_id)
-                        ->first()) {
-                        $ws->quantity = max(0, $ws->quantity - $salesQty);
-                        $ws->save();
-                    }
+                    // Create Stock Hold Record
+                    \App\Models\StockHold::create([
+                        'stock_hold_voucher_id' => $holdVoucher->id,
+                        'sale_id' => $sale->id,
+                        'party_type' => $sale->partyType,
+                        'party_id' => $sale->customer_id,
+                        'product_id' => $it->product_id,
+                        'warehouse_id' => $it->warehouse_id,
+                        'hold_qty' => $salesQty,
+                        'sale_qty' => $salesQty,
+                        'entry_date' => now(),
+                        'remarks' => 'Auto-Hold from Sale Order',
+                        'status' => 0, // 0 = Active Hold
+                    ]);
                 }
 
                 SaleItem::create([

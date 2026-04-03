@@ -63,7 +63,7 @@
                                         @foreach($warehouses as $wh)
                                             <th class="text-center wh-col text-primary" style="border-left: 1px solid #e2e8f0;">{{ $wh->warehouse_name }}</th>
                                         @endforeach
-                                        <th class="text-center text-danger" style="background-color: #fff5f5; border-left: 2px solid #e2e8f0; width: 100px;">Total Hold</th>
+                                        <th class="text-center text-danger" style="background-color: #fff5f5; border-left: 2px solid #e2e8f0; width: 100px;">Total Reserved</th>
                                         <th class="text-center total-col" style="width: 120px;">Net Total</th>
                                     </tr>
                                 </thead>
@@ -101,7 +101,7 @@
                                                 </td>
                                             @endforeach
 
-                                            {{-- Total Hold Column --}}
+                                            {{-- Total Reserved Column --}}
                                             <td class="text-center" style="background-color: #fffcfc; border-left: 2px solid #f1f5f9;">
                                                 @if($holdSum > 0)
                                                     <span class="stock-badge text-danger fw-bold">-{{ number_format($holdSum, 0) }}</span>

@@ -116,6 +116,14 @@
                                         <option value="Posted" {{ request('status') == 'Posted' ? 'selected' : '' }}>Posted</option>
                                     </select>
                                 </div>
+                                <div class="col-md-2">
+                                    <label class="form-label small fw-bold text-muted">Sale Type</label>
+                                    <select name="sale_type" class="form-select form-select-sm">
+                                        <option value="">All Types</option>
+                                        <option value="regular" {{ request('sale_type') == 'regular' ? 'selected' : '' }}>Regular Sale</option>
+                                        <option value="order" {{ request('sale_type') == 'order' ? 'selected' : '' }}>Sale Order</option>
+                                    </select>
+                                </div>
                                 <div class="col-md-4">
                                     <div class="d-flex gap-2">
                                         <button type="submit" class="btn btn-primary btn-sm px-4 rounded-pill">
@@ -146,21 +154,22 @@
                                 <label class="column-picker-item"><input type="checkbox" data-column="1" checked> #</label>
                                 <label class="column-picker-item"><input type="checkbox" data-column="2" checked> Invoice#</label>
                                 <label class="column-picker-item"><input type="checkbox" data-column="3" checked> Manual Inv</label>
-                                <label class="column-picker-item"><input type="checkbox" data-column="4" checked> Party Type</label>
-                                <label class="column-picker-item"><input type="checkbox" data-column="5" checked> Customer/Vendor</label>
-                                <label class="column-picker-item"><input type="checkbox" data-column="6" checked> Items</label>
-                                <label class="column-picker-item"><input type="checkbox" data-column="7" checked> Location</label>
-                                <label class="column-picker-item"><input type="checkbox" data-column="8" checked> Rate</label>
-                                <label class="column-picker-item"><input type="checkbox" data-column="9" checked> Qty</label>
-                                <label class="column-picker-item"><input type="checkbox" data-column="10" checked> Sale Price</label>
-                                <label class="column-picker-item"><input type="checkbox" data-column="11" checked> Line Total</label>
-                                <label class="column-picker-item"><input type="checkbox" data-column="12" checked> Net Total</label>
-                                <label class="column-picker-item"><input type="checkbox" data-column="13" checked> Disc</label>
-                                <label class="column-picker-item"><input type="checkbox" data-column="14" checked> Prev Bal</label>
-                                <label class="column-picker-item"><input type="checkbox" data-column="15" checked> Receipts</label>
-                                <label class="column-picker-item"><input type="checkbox" data-column="16" checked> Payable</label>
-                                <label class="column-picker-item"><input type="checkbox" data-column="17" checked> Date</label>
-                                <label class="column-picker-item"><input type="checkbox" data-column="18" checked> Status</label>
+                                <label class="column-picker-item"><input type="checkbox" data-column="4" checked> Sale Type</label>
+                                <label class="column-picker-item"><input type="checkbox" data-column="5" checked> Party Type</label>
+                                <label class="column-picker-item"><input type="checkbox" data-column="6" checked> Customer/Vendor</label>
+                                <label class="column-picker-item"><input type="checkbox" data-column="7" checked> Items</label>
+                                <label class="column-picker-item"><input type="checkbox" data-column="8" checked> Location</label>
+                                <label class="column-picker-item"><input type="checkbox" data-column="9" checked> Rate</label>
+                                <label class="column-picker-item"><input type="checkbox" data-column="10" checked> Qty</label>
+                                <label class="column-picker-item"><input type="checkbox" data-column="11" checked> Sale Price</label>
+                                <label class="column-picker-item"><input type="checkbox" data-column="12" checked> Line Total</label>
+                                <label class="column-picker-item"><input type="checkbox" data-column="13" checked> Net Total</label>
+                                <label class="column-picker-item"><input type="checkbox" data-column="14" checked> Disc</label>
+                                <label class="column-picker-item"><input type="checkbox" data-column="15" checked> Prev Bal</label>
+                                <label class="column-picker-item"><input type="checkbox" data-column="16" checked> Receipts</label>
+                                <label class="column-picker-item"><input type="checkbox" data-column="17" checked> Payable</label>
+                                <label class="column-picker-item"><input type="checkbox" data-column="18" checked> Date</label>
+                                <label class="column-picker-item"><input type="checkbox" data-column="19" checked> Status</label>
                             </div>
                         </div>
 
@@ -177,6 +186,7 @@
                                     <th>#</th>
                                     <th>Invoice#</th>
                                     <th>Manual Inv</th>
+                                    <th>Sale Type</th>
                                     <th>Party Type</th>
                                     <th>Customer/Vendor</th>
                                     <th>Items</th>
@@ -187,9 +197,9 @@
                                     <th>Line Total</th>
                                     <th class="text-end">Net Total</th>
                                     <th class="text-end">Disc</th>
-                                    <th class="text-end">Prev Bal</th>
-                                    <th class="text-end">Receipts</th>
-                                    <th class="text-end text-primary">Payable</th>
+                                    <th class="text-end text-warning">Prev Bal</th>
+                                    <th class="text-end text-success">Receipts</th>
+                                    <th class="text-end text-primary">Payable Balance</th>
                                     <th>Date</th>
                                     <th class="text-center">Status</th>
                                     <th style="width: 120px;">Action</th>
@@ -201,6 +211,17 @@
                                     <td>{{ $key+1 }}</td>
                                     <td class="fw-bold text-primary">{{ $sale->invoice_no }}</td>
                                     <td>{{ $sale->manual_invoice ?? '-' }}</td>
+                                    <td>
+                                        @if($sale->is_sale_order)
+                                            <span class="badge bg-danger rounded-pill" style="font-size: 10px;">
+                                                <i class="fa fa-calendar-check-o me-1"></i> Sale Order
+                                            </span>
+                                        @else
+                                            <span class="badge bg-success rounded-pill" style="font-size: 10px;">
+                                                <i class="fa fa-check-circle me-1"></i> Proper Sale
+                                            </span>
+                                        @endif
+                                    </td>
                                     <td>
                                         @if($sale->p_type === 'vendor')
                                             <span class="badge bg-info">Vendor</span>
@@ -375,7 +396,7 @@
                 "searchPlaceholder": "Search sales..."
             },
             "columnDefs": [
-                { "orderable": false, "targets": [5, 6, 7, 8, 9, 10, 18] } // Disable sort for detailed columns and Action
+                { "orderable": false, "targets": [6, 7, 8, 9, 10, 11, 19] } // Disable sort for detailed columns and Action
             ],
             dom: 'Bfrtip',
             buttons: [
@@ -393,8 +414,8 @@
         // Function to toggle individual vs total Qty
         function updateQtyDisplay() {
             if (!dt) return;
-            // Column 6 (data-column 6, index 5) is "Items"
-            const itemsVisible = dt.column(5).visible();
+            // Column 7 (data-column 7, index 6) is "Items"
+            const itemsVisible = dt.column(6).visible();
             if (itemsVisible) {
                 $('.individual-qtys').removeClass('d-none');
                 $('.total-qty').addClass('d-none');
@@ -435,6 +456,9 @@
             dt.columns.adjust().draw(false);
             updateQtyDisplay();
         }
+
+        // Adjust sorting for the new column (column index 3 is now Sale Type)
+        // Previous targets [5, 6, 7... 18] now shift to [6, 7, 8... 19]
     });
 </script>
 @endsection

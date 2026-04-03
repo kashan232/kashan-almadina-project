@@ -391,6 +391,44 @@
             </div>
           </div>
 
+          <div class="mb-2">
+            <div class="sale-order-mode p-2 border rounded shadow-sm d-flex align-items-center justify-content-between transition-all" 
+                 id="saleOrderContainer" 
+                 style="background: #fff; cursor: pointer; border-left: 4px solid #6c757d !important;">
+                <div class="d-flex align-items-center">
+                    <div class="icon-box me-3 rounded-circle d-flex align-items-center justify-content-center" 
+                         style="width: 32px; height: 32px; background: #f8fafc; color: #6c757d;">
+                        <i class="fa fa-calendar-check-o"></i>
+                    </div>
+                    <div>
+                        <div class="fw-bold text-dark small mb-0">Sale Order Mode</div>
+                        <div class="text-muted" style="font-size: 10px;">Reserve stock (Alt + R)</div>
+                    </div>
+                </div>
+                <div class="form-check form-switch mb-0">
+                    <input class="form-check-input" type="checkbox" name="is_sale_order" id="isSaleOrder" value="1" style="width: 38px; height: 18px; cursor: pointer;">
+                </div>
+            </div>
+          </div>
+
+          <style>
+            .sale-order-mode.active-mode {
+                background: #fff5f5 !important;
+                border-left-color: #dc3545 !important;
+                border-color: #feb2b2 !important;
+            }
+            .sale-order-mode.active-mode .icon-box {
+                background: #ffebeb !important;
+                color: #dc3545 !important;
+            }
+            .sale-order-mode.active-mode .fw-bold {
+                color: #dc3545 !important;
+            }
+            .transition-all {
+                transition: all 0.3s ease;
+            }
+          </style>
+
           {{-- Party Type Toggle --}}
           <div class="mb-2">
             <div class="btn-group w-100" role="group">
@@ -462,7 +500,7 @@
         <div class="flex-grow-1">
           <div class="d-flex justify-content-between align-items-center mb-2">
             <div class="section-title mb-0">Items</div>
-            <div class="d-flex align-items-center gap-2">
+            <div class="d-flex align-items-center gap-2 wh-bulk-container">
                 <label class="form-label text-muted small mb-0 fw-bold">Bulk Warehouse:</label>
                 <select class="form-select form-select-sm" id="globalWarehouse" style="width: 150px; font-size: 0.8rem;">
                     <option value="0">🏠 Shop Stock</option>
@@ -480,7 +518,7 @@
                 <tr>
                   <th style="width:7%">Item ID</th>
                   <th style="width:18%">Product</th>
-                  <th style="width:11%">Warehouse</th>
+                  <th style="width:11%" class="wh-col">Warehouse</th>
                   <th style="width:8%" class="text-center">Stock</th>
                   <th style="width:10%" class="text-end">Sales Price</th>
                   <th style="width:7%" class="text-center">Qty</th>
@@ -965,7 +1003,7 @@
         </select>
         <input type="hidden" name="product_search[]" class="product_name_hidden">
       </td>
-      <td style="width: 120px;">
+      <td style="width: 120px;" class="wh-cell">
         <select class="form-select form-select-sm warehouse" name="warehouse_name[]">
             <option value="0" selected>🏠 Shop Stock</option>
           @foreach ($warehouses as $wh)
@@ -1439,6 +1477,48 @@
     $('#address,#tel,#remarks,#partyIdInput').val('');
     loadCustomersByType(this.value);
   });
+
+  // Sale Order Toggle UI Sync
+  function updateSaleOrderUI() {
+    const isChecked = $('#isSaleOrder').is(':checked');
+    if (isChecked) {
+        $('#saleOrderContainer').addClass('active-mode');
+        $('.wh-col, .wh-cell').hide();
+        $('.wh-bulk-container label, .wh-bulk-container select').hide();
+    } else {
+        $('#saleOrderContainer').removeClass('active-mode');
+        $('.wh-col, .wh-cell').show();
+        $('.wh-bulk-container label, .wh-bulk-container select').show();
+    }
+  }
+
+  $(document).on('change', '#isSaleOrder', function() {
+    updateSaleOrderUI();
+  });
+
+  // Make the entire container clickable
+  $('#saleOrderContainer').on('click', function(e) {
+    if (e.target !== document.getElementById('isSaleOrder')) {
+        $('#isSaleOrder').prop('checked', !$('#isSaleOrder').is(':checked')).trigger('change');
+    }
+  });
+
+  // Keyboard Shortcut: Alt + R for Reserve (Sale Order)
+  $(document).on('keydown', function(e) {
+    if (e.altKey && (e.key === 'r' || e.key === 'R')) {
+        e.preventDefault();
+        $('#isSaleOrder').prop('checked', !$('#isSaleOrder').is(':checked')).trigger('change');
+    }
+  });
+
+  // Update addNewRow to respect Sale Order state
+  const originalAddNewRow = addNewRow;
+  addNewRow = function(focusNewRow = true, force = false) {
+    originalAddNewRow(focusNewRow, force);
+    if ($('#isSaleOrder').is(':checked')) {
+        $('#salesTableBody tr:last-child .wh-cell').hide();
+    }
+  };
 
   // Party ID Lookup
   $('#partyIdInput').on('keydown', function(e) {
