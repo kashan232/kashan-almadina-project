@@ -186,7 +186,7 @@
                                   @endcan
                                   @can('Narrations')
                                   <li class="nav-item">
-                                      <a class="nav-link" href="{{ route('narrations.index') }}">
+                                      <a class="nav-link" href="{{ route('coa.narration') }}">
                                           <i class="fa-solid fa-money-bill-wave mr-2"></i>
                                           <span>Narrations</span>
                                       </a>

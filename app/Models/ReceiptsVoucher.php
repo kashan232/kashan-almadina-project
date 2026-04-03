@@ -14,16 +14,17 @@ class ReceiptsVoucher extends Model
     {
         $prefix = 'RVID-';
 
-        // Fetch last invoice
-        $lastInvoice = self::orderBy('id', 'desc')->first();
+        $lastInvoice = self::where('rvid', 'like', $prefix . '%')
+            ->orderByRaw('LENGTH(rvid) DESC, rvid DESC')
+            ->first();
 
         $lastNumber = 0;
-        if ($lastInvoice && $lastInvoice->invoice_no) {
-            $lastNumber = (int)substr($lastInvoice->invoice_no, strlen($prefix));
+        if ($lastInvoice && $lastInvoice->rvid) {
+            $numPart = substr($lastInvoice->rvid, strlen($prefix));
+            $lastNumber = (int) preg_replace('/[^0-9]/', '', $numPart);
         }
 
         $newNumber = str_pad($lastNumber + 1, 3, '0', STR_PAD_LEFT);
-
         return $prefix . $newNumber;
     }
 

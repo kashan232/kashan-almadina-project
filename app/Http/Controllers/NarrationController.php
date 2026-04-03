@@ -8,9 +8,18 @@ use Illuminate\Http\Request;
 
 class NarrationController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $narrations = Narration::latest()->get();
+        $query = Narration::query();
+
+        if ($request->filled('start_date')) {
+            $query->whereDate('created_at', '>=', $request->start_date);
+        }
+        if ($request->filled('end_date')) {
+            $query->whereDate('created_at', '<=', $request->end_date);
+        }
+
+        $narrations = $query->latest()->get();
         return view('admin_panel.accounts.narration', compact('narrations'));
     }
 
@@ -42,7 +51,7 @@ class NarrationController extends Controller
     public function destroy($id)
     {
         Narration::findOrFail($id)->delete();
-        return redirect()->route('narrations.index')->with('success', 'Narration deleted successfully.');
+        return redirect()->route('coa.narration')->with('success', 'Narration deleted successfully.');
     }
 
     // API: Get narrations for Receipt Vouchers (JSON)

@@ -54,13 +54,19 @@ Route::get('/', function () {
 });
 
 Route::get('/get-customers-by-type', [CustomerController::class, 'getByType']);
-Route::resource('narrations', NarrationController::class)->only(['index', 'store', 'destroy']);
+Route::resource('narrations', NarrationController::class)->only(['index', 'store', 'destroy'])->names([
+    'index' => 'coa.narration',
+]);
 Route::get('/narrations/receipts/json', [NarrationController::class, 'getForReceipts'])->name('narrations.receipts');
 Route::get('vouchers/{type}', [VoucherController::class, 'index'])->name('vouchers.index');
 Route::post('vouchers/store', [VoucherController::class, 'store'])->name('vouchers.store');
 
-Route::get('/recepit-vochers', [VoucherController::class, 'recepit_vochers'])->name('recepit-vochers');
-route::post('/recepit/vochers/stote', [VoucherController::class, 'store_rec_vochers'])->name('recepit.vochers.store');
+Route::get('/recepit-vochers/{id?}', [VoucherController::class, 'recepit_vochers'])->name('recepit-vochers');
+Route::post('/recepit/vochers/store', [VoucherController::class, 'store_rec_vochers'])->name('recepit.vochers.store');
+Route::post('/recepit/vochers/ajax-save', [VoucherController::class, 'ajax_save_receipt'])->name('recepit.vochers.ajax-save');
+Route::post('/recepit/vochers/post/{id}', [VoucherController::class, 'post_receipt'])->name('recepit.vochers.post');
+Route::post('/recepit/vochers/unpost/{id}', [VoucherController::class, 'unpost_receipt'])->name('recepit.vochers.unpost');
+Route::delete('/recepit/vochers/cancel/{id}', [VoucherController::class, 'cancel_receipt'])->name('recepit.vochers.cancel');
 
 Route::get('/all-recepit-vochers', [VoucherController::class, 'all_recepit_vochers'])->name('all-recepit-vochers');
 Route::get('/receipt-voucher/print/{id}', [VoucherController::class, 'print'])->name('receiptVoucher.print');
@@ -265,7 +271,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/purchase/{id}/post', [PurchaseController::class, 'post'])->name('purchase.post');
     Route::get('/purchase/{id}/invoice', [PurchaseController::class, 'Invoice'])->name('purchase.invoice');
     Route::get('/get-accounts-by-head/{headId}', [PurchaseController::class, 'getAccountsByHead']);
-    Route::get('/getPartyList', [PurchaseController::class, 'getPartyList'])->name('purchase.party.list');
+    Route::get('/getPartyList', [PurchaseController::class, 'getPartyList'])->name('party.list');
 
     // Purchase Returns
     Route::get('/purchase-returns', [PurchaseReturnController::class, 'index'])->name('purchase.return.home');

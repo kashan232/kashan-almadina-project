@@ -27,40 +27,43 @@
                                 <th>Amount</th>
                                 <th>Total Amount</th>
                                 <th>Created At</th>
+                                <th>Status</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
                             @foreach($receipts as $item)
                             @php
-                            // JSON decode for fields that are stored as arrays
                             $amounts = json_decode($item->amount, true);
                             $amount = is_array($amounts) ? (float)($amounts[0] ?? 0) : (float)$item->amount;
-
                             $refs = json_decode($item->reference_no, true);
                             $reference = is_array($refs) ? implode(', ', $refs) : $item->reference_no;
-
-                            $narrations = json_decode($item->narration_id, true);
-                            $narration = is_array($narrations) ? implode(', ', $narrations) : $item->narration_id;
                             @endphp
                             <tr>
                                 <td>{{ $item->id }}</td>
                                 <td>{{ $item->rvid }}</td>
                                 <td>{{ $item->receipt_date }}</td>
                                 <td>{{ $item->entry_date }}</td>
-                                <td>{{ $item->type_label }}</td>
-                                <td>{{ $item->party_name }}</td>
+                                <td>{{ $item->type_label ?? '-' }}</td>
+                                <td>{{ $item->party_name ?? '-' }}</td>
                                 <td>{{ $reference }}</td>
                                 <td>{{ $item->remarks }}</td>
                                 <td>{{ number_format($amount, 2) }}</td>
                                 <td>{{ number_format((float)$item->total_amount, 2) }}</td>
-                                <td>{{ $item->created_at }}</td>
                                 <td>
-                                    <a href="{{ route('receiptVoucher.print', $item->id) }}"
-                                        target="_blank"
-                                        class="btn btn-sm btn-danger">
-                                        <i class="bi bi-printer"></i>
-                                    </a>
+                                    <span class="badge {{ $item->status == 'posted' ? 'bg-success' : 'bg-warning text-dark' }}">
+                                        {{ ucfirst($item->status ?? 'posted') }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <div class="d-flex gap-1">
+                                        <a href="{{ route('recepit-vochers', $item->id) }}" class="btn btn-sm btn-primary">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                        <a href="{{ route('receiptVoucher.print', $item->id) }}" target="_blank" class="btn btn-sm btn-danger">
+                                            <i class="bi bi-printer"></i>
+                                        </a>
+                                    </div>
                                 </td>
                             </tr>
                             @endforeach

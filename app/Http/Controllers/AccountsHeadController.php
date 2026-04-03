@@ -39,9 +39,18 @@ class AccountsHeadController extends Controller
         return response()->json(['code' => $nextCode]);
     }
 
-    public function purcahse_account_allocation()
+    public function purcahse_account_allocation(Request $request)
     {
-        $histories = PurchaseAccountAllocaations::with(['head', 'account', 'purchase'])->get();
+        $query = PurchaseAccountAllocaations::with(['head', 'account', 'purchase']);
+
+        if ($request->filled('start_date')) {
+            $query->whereDate('created_at', '>=', $request->start_date);
+        }
+        if ($request->filled('end_date')) {
+            $query->whereDate('created_at', '<=', $request->end_date);
+        }
+
+        $histories = $query->latest()->get();
 
         return view('admin_panel.purcahse_account_allocation', compact('histories'));
     }

@@ -240,88 +240,115 @@ class VoucherController extends Controller
 
 
 
-    public function recepit_vochers()
+    public function recepit_vochers($id = null)
     {
+        if (!$id) {
+            // No ID passed, so we show a fresh "Add" page.
+            // We create a "temp" object to represent the next possible RVID
+            $receipt = new ReceiptsVoucher([
+                'rvid' => ReceiptsVoucher::generateInvoiceNo(),
+                'status' => 'draft',
+                'receipt_date' => now()->toDateString(),
+                'entry_date' => now()->toDateString(),
+            ]);
+        } else {
+            $receipt = ReceiptsVoucher::findOrFail($id);
+        }
+
         $narrations = \App\Models\Narration::where('expense_head', 'Receipts Voucher')
             ->pluck('narration', 'id');
         $AccountHeads = AccountHead::get();
 
-        // Last RVID nikalna
-        $lastVoucher = \App\Models\ReceiptsVoucher::latest('id')->first();
-
-        // Next ID generate karna
-        $nextId = $lastVoucher ? $lastVoucher->id + 1 : 1;
-        $nextRvid = 'RVID-' . str_pad($nextId, 3, '0', STR_PAD_LEFT);
-
-        return view('admin_panel.vochers.reciepts_vouchers', compact('narrations', 'AccountHeads', 'nextRvid'));
+        return view('admin_panel.vochers.reciepts_vouchers', compact('narrations', 'AccountHeads', 'receipt'));
     }
 
-
-    public function store_rec_vochers(Request $request)
+    public function ajax_save_receipt(Request $request)
     {
-        DB::beginTransaction();
         try {
-            $rvid = ReceiptsVoucher::generateInvoiceNo();
+            $id = $request->input('id');
+            
+            if ($id) {
+                $voucher = ReceiptsVoucher::findOrFail($id);
+                if ($voucher->status === 'posted') {
+                    return response()->json(['success' => false, 'message' => 'Cannot edit a posted voucher.']);
+                }
+            } else {
+                // If no ID, create a NEW record now. 
+                // We re-generate ID at save time to strictly avoid skips.
+                $voucher = ReceiptsVoucher::create([
+                    'rvid'   => ReceiptsVoucher::generateInvoiceNo(),
+                    'status' => 'draft'
+                ]);
+            }
+
             $narrationIds = [];
-
-            foreach ($request->narration_id as $index => $narrId) {
-                $manualText = $request->narration_text[$index] ?? null;
-                $manualType = $request->narration_type_text[$index] ?? 'Manual';
-
+            $nIds = $request->input('narration_id', []);
+            $nTexts = $request->input('narration_text', []);
+            
+            foreach ($nIds as $index => $narrId) {
+                $manualText = $nTexts[$index] ?? null;
                 if (empty($narrId) && !empty($manualText)) {
-                    // Auto expense_head set based on voucher type
-                    $expenseHead = 'Receipts Voucher';
-                    if (stripos($manualType, 'Receipt') !== false || $request->voucher_type == 'receipt') {
-                        $expenseHead = 'Receipts Voucher';
-                    }
-
                     $new = \App\Models\Narration::create([
-                        'expense_head' => $expenseHead,
+                        'expense_head' => 'Receipts Voucher',
                         'narration'    => $manualText,
                     ]);
-
-                    $narrationIds[] = (string)$new->id; // store as string → ["7"]
+                    $narrationIds[] = (string)$new->id;
                 } else {
-                    $narrationIds[] = (string)$narrId; // force string format
+                    $narrationIds[] = (string)$narrId;
                 }
             }
 
-
-            $voucherData = [
-                'rvid'             => $rvid,
+            $voucher->update([
                 'receipt_date'     => $request->receipt_date,
                 'entry_date'       => $request->entry_date,
                 'type'             => $request->vendor_type,
                 'party_id'         => $request->vendor_id,
                 'tel'              => $request->tel,
                 'remarks'          => $request->remarks,
-
-                'narration_id' => json_encode($narrationIds),
-                'reference_no'     => json_encode($request->reference_no),
-                'row_account_head' => json_encode($request->row_account_head),
-                'row_account_id'   => json_encode($request->row_account_id),
-                'discount_value'   => json_encode($request->discount_value),
-                'kg'               => json_encode($request->kg),
-                'rate'             => json_encode($request->rate),
-                'amount'           => json_encode($request->amount),
+                'narration_id'     => json_encode($narrationIds),
+                'reference_no'     => json_encode($request->input('reference_no', [])),
+                'row_account_head' => json_encode($request->input('row_account_head', [])),
+                'row_account_id'   => json_encode($request->input('row_account_id', [])),
+                'discount_value'   => json_encode($request->input('discount_value', [])),
+                'kg'               => json_encode($request->input('kg', [])),
+                'rate'               => json_encode($request->input('rate', [])),
+                'amount'           => json_encode($request->input('amount', [])),
                 'total_amount'     => $request->total_amount,
-            ];
+            ]);
 
-            ReceiptsVoucher::create($voucherData);
+            return response()->json([
+                'success' => true, 
+                'message' => 'Draft saved successfully!', 
+                'id' => $voucher->id, 
+                'rvid' => $voucher->rvid
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
+    }
 
-            // ✅ Ledger update logic
-            $amount = (float)$request->total_amount;
+    public function post_receipt(Request $request, $id)
+    {
+        DB::beginTransaction();
+        try {
+            $voucher = ReceiptsVoucher::findOrFail($id);
+            if ($voucher->status === 'posted') {
+                return back()->with('error', 'Already posted.');
+            }
 
-            if ($request->vendor_type === 'vendor') {
-                $ledger = VendorLedger::where('vendor_id', $request->vendor_id)->latest()->first();
+            // Perform ledger updates
+            $amount = (float)$voucher->total_amount;
+            $rvid = $voucher->rvid;
 
+            if ($voucher->type === 'vendor') {
+                $ledger = VendorLedger::where('vendor_id', $voucher->party_id)->latest()->first();
                 if ($ledger) {
                     $ledger->previous_balance = $ledger->closing_balance;
                     $ledger->closing_balance  = $ledger->closing_balance - $amount;
                     $ledger->save();
                 } else {
                     VendorLedger::create([
-                        'vendor_id'        => $request->vendor_id,
+                        'vendor_id'        => $voucher->party_id,
                         'admin_or_user_id' => auth()->id(),
                         'date'             => now(),
                         'description'      => "Receipt Voucher #$rvid",
@@ -332,15 +359,15 @@ class VoucherController extends Controller
                         'closing_balance'  => -$amount,
                     ]);
                 }
-            } elseif ($request->vendor_type === 'customer') {
-                $ledger = CustomerLedger::where('customer_id', $request->vendor_id)->latest()->first();
+            } elseif ($voucher->type === 'customer') {
+                $ledger = CustomerLedger::where('customer_id', $voucher->party_id)->latest()->first();
                 if ($ledger) {
                     $ledger->previous_balance = $ledger->closing_balance;
                     $ledger->closing_balance  = $ledger->closing_balance - $amount;
                     $ledger->save();
                 } else {
                     CustomerLedger::create([
-                        'customer_id'      => $request->vendor_id,
+                        'customer_id'      => $voucher->party_id,
                         'admin_or_user_id' => auth()->id(),
                         'previous_balance' => 0,
                         'opening_balance'  => 0,
@@ -348,35 +375,52 @@ class VoucherController extends Controller
                     ]);
                 }
             } else {
-                // Bank/Head case → pehle vendor/account side minus
-                $account = Account::find($request->vendor_id);
+                $account = Account::find($voucher->party_id);
                 if ($account) {
                     $account->opening_balance = $account->opening_balance - $amount;
                     $account->save();
                 }
             }
 
-            // ✅ Har case me row_account_id ka + hona zaroori hai
-            if ($request->row_account_id && $request->amount) {
-                foreach ($request->row_account_id as $index => $accId) {
-                    $rowAmount = isset($request->amount[$index]) ? (float)$request->amount[$index] : 0;
-
-                    if ($rowAmount > 0) {
-                        $rowAccount = Account::find($accId);
-                        if ($rowAccount) {
-                            $rowAccount->opening_balance = $rowAccount->opening_balance + $rowAmount;
-                            $rowAccount->save();
-                        }
+            // Update row accounts
+            $rowAccountIds = json_decode($voucher->row_account_id, true) ?? [];
+            $amounts = json_decode($voucher->amount, true) ?? [];
+            foreach ($rowAccountIds as $index => $accId) {
+                $rowAmount = isset($amounts[$index]) ? (float)$amounts[$index] : 0;
+                if ($rowAmount > 0) {
+                    $rowAccount = Account::find($accId);
+                    if ($rowAccount) {
+                        $rowAccount->opening_balance = $rowAccount->opening_balance + $rowAmount;
+                        $rowAccount->save();
                     }
                 }
             }
 
+            $voucher->status = 'posted';
+            $voucher->save();
+
             DB::commit();
-            return back()->with('success', 'Receipt Voucher saved successfully!');
+            return back()->with('success', 'Voucher posted successfully!');
         } catch (\Exception $e) {
             DB::rollBack();
             return back()->with('error', $e->getMessage());
         }
+    }
+
+    public function store_rec_vochers(Request $request)
+    {
+        // Fallback for non-ajax
+        return $this->post_receipt($request, $request->id);
+    }
+    
+    public function cancel_receipt($id)
+    {
+        $voucher = ReceiptsVoucher::findOrFail($id);
+        if ($voucher->status === 'posted') {
+            return back()->with('error', 'Cannot cancel a posted voucher.');
+        }
+        $voucher->delete();
+        return redirect()->route('all-recepit-vochers')->with('success', 'Voucher cancelled.');
     }
 
     public function Payment_vochers()
