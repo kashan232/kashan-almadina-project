@@ -214,11 +214,11 @@
                                     <td>
                                         @if($sale->is_sale_order)
                                             <span class="badge bg-danger rounded-pill" style="font-size: 10px;">
-                                                <i class="fa fa-calendar-check-o me-1"></i> Sale Order
+                                                <i class="fa fa-calendar-check-o me-1"></i> Order
                                             </span>
                                         @else
                                             <span class="badge bg-success rounded-pill" style="font-size: 10px;">
-                                                <i class="fa fa-check-circle me-1"></i> Proper Sale
+                                                <i class="fa fa-check-circle me-1"></i> Proper 
                                             </span>
                                         @endif
                                     </td>
