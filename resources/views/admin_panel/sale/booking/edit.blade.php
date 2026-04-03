@@ -142,6 +142,12 @@
     border: 1px solid #eee;
     border-radius: .5rem;
   }
+  
+  /* Additional Styles for Order Mode */
+  .wh-col, .wh-cell, .wh-bulk-container {
+    transition: opacity 0.3s ease;
+  }
+
 
   .totals-card .row+.row {
     border-top: 1px dashed #e5e7eb;
@@ -251,7 +257,43 @@
                      name="Invoice_main" placeholder="Optional" value="{{ $booking->manual_invoice }}" style="font-size: 0.8rem;">
             </div>
           </div>
+          <div class="mb-2">
+            <div class="sale-order-mode p-2 border rounded shadow-sm d-flex align-items-center justify-content-between transition-all" 
+                 id="saleOrderContainer" 
+                 style="background: #fff; cursor: pointer; border-left: 4px solid {{ $booking->is_sale_order ? '#dc3545' : '#6c757d' }} !important;">
+                <div class="d-flex align-items-center">
+                    <div class="icon-box me-3 rounded-circle d-flex align-items-center justify-content-center" 
+                         style="width: 32px; height: 32px; background: {{ $booking->is_sale_order ? '#ffebeb' : '#f8fafc' }}; color: {{ $booking->is_sale_order ? '#dc3545' : '#6c757d' }};">
+                        <i class="fa fa-calendar-check-o"></i>
+                    </div>
+                    <div>
+                        <div class="fw-bold text-dark small mb-0" style="color: {{ $booking->is_sale_order ? '#dc3545' : '#212529' }} !important;">Order Mode</div>
+                        <div class="text-muted" style="font-size: 10px;">Reserve stock (Alt + R)</div>
+                    </div>
+                </div>
+                <div class="form-check form-switch mb-0">
+                    <input class="form-check-input" type="checkbox" name="is_sale_order" id="isSaleOrder" value="1" {{ $booking->is_sale_order ? 'checked' : '' }} style="width: 38px; height: 18px; cursor: pointer;">
+                </div>
+            </div>
+          </div>
 
+          <style>
+            .sale-order-mode.active-mode {
+                background: #fff5f5 !important;
+                border-left-color: #dc3545 !important;
+                border-color: #feb2b2 !important;
+            }
+            .sale-order-mode.active-mode .icon-box {
+                background: #ffebeb !important;
+                color: #dc3545 !important;
+            }
+            .sale-order-mode.active-mode .fw-bold {
+                color: #dc3545 !important;
+            }
+            .transition-all {
+                transition: all 0.3s ease;
+            }
+          </style>
           {{-- Party Type Toggle --}}
           <div class="mb-2">
             <div class="btn-group w-100" role="group">
@@ -324,7 +366,7 @@
         <div class="flex-grow-1">
           <div class="d-flex justify-content-between align-items-center mb-2">
             <div class="section-title mb-0">Items</div>
-            <div class="d-flex align-items-center gap-2">
+            <div class="d-flex align-items-center gap-2 wh-bulk-container">
                 <label class="form-label text-muted small mb-0 fw-bold">Bulk Warehouse:</label>
                 <select class="form-select form-select-sm" id="globalWarehouse" style="width: 150px; font-size: 0.8rem;">
                     <option value="0">🏠 Shop Stock</option>
@@ -342,7 +384,7 @@
                 <tr>
                   <th style="width:7%">Item ID</th>
                   <th style="width:18%">Product</th>
-                  <th style="width:11%">Warehouse</th>
+                  <th style="width:11%" class="wh-col">Warehouse</th>
                   <th style="width:8%" class="text-center">Stock</th>
                   <th style="width:10%" class="text-end">Sales Price</th>
                   <th style="width:7%" class="text-center">Qty</th>
@@ -365,7 +407,7 @@
                         </select>
                         <input type="hidden" name="product_search[]" class="product_name_hidden" value="{{ $item->product->name ?? '' }}">
                       </td>
-                      <td style="width: 120px;">
+                      <td style="width: 120px;" class="wh-cell">
                         <select class="form-select form-select-sm warehouse" name="warehouse_name[]">
                             <option value="0" {{ $item->warehouse_id == 0 ? 'selected' : '' }}>🏠 Shop Stock</option>
                           @foreach ($warehouses as $wh)
@@ -682,6 +724,43 @@
 @section('scripts')
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script>
+  /* ---------- Sale Order / Reserve Mode ---------- */
+  function updateSaleOrderUI() {
+    const isChecked = $('#isSaleOrder').is(':checked');
+    if (isChecked) {
+        $('#saleOrderContainer').addClass('active-mode');
+        $('.wh-col, .wh-cell').hide();
+        $('.wh-bulk-container').addClass('d-none');
+    } else {
+        $('#saleOrderContainer').removeClass('active-mode');
+        $('.wh-col, .wh-cell').show();
+        $('.wh-bulk-container').removeClass('d-none');
+    }
+  }
+
+  $(document).on('change', '#isSaleOrder', function() {
+    updateSaleOrderUI();
+  });
+
+  // Make the entire container clickable
+  $('#saleOrderContainer').on('click', function(e) {
+    if (e.target !== document.getElementById('isSaleOrder')) {
+        $('#isSaleOrder').prop('checked', !$('#isSaleOrder').is(':checked')).trigger('change');
+    }
+  });
+
+  // Keyboard Shortcut: Alt + R for Reserve
+  $(document).on('keydown', function(e) {
+    if (e.altKey && (e.key === 'r' || e.key === 'R')) {
+        e.preventDefault();
+        $('#isSaleOrder').prop('checked', !$('#isSaleOrder').is(':checked')).trigger('change');
+    }
+  });
+
+  $(document).ready(function() {
+    updateSaleOrderUI();
+  });
+
   /* ---------- helpers ---------- */
   function pad(n) { return n < 10 ? '0' + n : n }
 
@@ -783,7 +862,7 @@
     <tr>
       <td style="width: 70px;"><input type="text" class="form-control form-control-sm item-id-input text-center" placeholder="ID"></td>
       <td><select name="product_id[]" class="form-control form-control-sm product-select" style="width: 100%;"><option value=""></option></select><input type="hidden" name="product_search[]" class="product_name_hidden"></td>
-      <td style="width: 120px;"><select class="form-select form-select-sm warehouse" name="warehouse_name[]">
+      <td style="width: 120px;" class="wh-cell ${$('#isSaleOrder').is(':checked') ? 'd-none' : ''}"><select class="form-select form-select-sm warehouse" name="warehouse_name[]">
           <option value="0" ${wh==0?'selected':''}>🏠 Shop Stock</option>
           @foreach ($warehouses as $wh)<option value="{{ $wh->id }}" ${wh=={{$wh->id}}?'selected':''}>📦 {{ $wh->warehouse_name }}</option>@endforeach
       </select></td>

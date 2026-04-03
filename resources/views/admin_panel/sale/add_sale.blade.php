@@ -401,7 +401,7 @@
                         <i class="fa fa-calendar-check-o"></i>
                     </div>
                     <div>
-                        <div class="fw-bold text-dark small mb-0">Sale Order Mode</div>
+                        <div class="fw-bold text-dark small mb-0">Order Mode</div>
                         <div class="text-muted" style="font-size: 10px;">Reserve stock (Alt + R)</div>
                     </div>
                 </div>
