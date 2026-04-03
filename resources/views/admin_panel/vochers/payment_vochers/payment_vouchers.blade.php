@@ -1,417 +1,418 @@
 @extends('admin_panel.layout.app')
+
 @section('content')
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<style>
+    .select2-container--default .select2-selection--single {
+        height: 31px !important;
+        padding: 2px 5px !important;
+        font-size: 0.85rem !important;
+        border: 1px solid #dee2e6 !important;
+    }
+    .select2-container--default .select2-selection--single .select2-selection__rendered { line-height: 25px !important; }
+    .select2-container--default .select2-selection--single .select2-selection__arrow { height: 30px !important; }
 
-<link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
+    .main-container { font-size: .85rem; max-width: 1400px; }
+    .form-control, .form-select, .btn { font-size: .85rem; padding: .4rem .6rem; }
 
-<div class="main-content">
-    <div class="container-fluid">
+    .table thead th {
+        background: #f8f9fa !important;
+        text-align: center;
+        font-size: 0.75rem;
+        padding: 8px !important;
+        white-space: nowrap;
+    }
+    .table td { vertical-align: middle; padding: 4px !important; }
 
-        <div class="d-flex justify-content-between align-items-center mb-2">
-            <h2 class="fw-bold mt-2">Payment Voucher</h2>
+    .posted-watermark {
+        position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-30deg);
+        font-size: 8rem; color: rgba(220, 53, 69, 0.1); font-weight: 900; text-transform: uppercase;
+        pointer-events: none; z-index: 1000; display: none; border: 10px solid rgba(220, 53, 69, 0.1); padding: 20px 50px; border-radius: 20px;
+    }
+
+    .form-locked {
+        pointer-events: none !important;
+    }
+    .form-locked #editBtn, .form-locked #previewPrintBtn, .form-locked #listBtn, .form-locked #newBtn {
+        pointer-events: auto !important;
+    }
+    .form-locked input, .form-locked select, .form-locked textarea, .form-locked .select2-selection {
+        background-color: #f8f9fa !important;
+    }
+</style>
+
+<div class="container-fluid py-4">
+    <div class="main-container bg-white border shadow-sm mx-auto p-4 rounded-3 position-relative" style="max-width: 98%;">
+        
+        <div id="alertBox" class="alert d-none mb-3" role="alert"></div>
+
+        <!-- Header Section -->
+        <div class="d-flex justify-content-between align-items-center mb-4 bg-light p-3 rounded shadow-sm border">
+            <div class="d-flex align-items-center gap-3">
+                <h5 class="page-title mb-0 fw-bold text-primary"><i class="fa fa-file-text-o me-2"></i>Payment Voucher</h5>
+                <span id="statusBadge" class="badge {{ $receipt->status == 'posted' ? 'bg-success' : 'bg-warning text-dark' }} px-3 py-2 rounded-pill shadow-sm">
+                    <i class="fa {{ $receipt->status == 'posted' ? 'fa-check-circle' : 'fa-pencil' }} me-1"></i> 
+                    {{ ucfirst($receipt->status) }}
+                </span>
+                <span class="badge bg-primary px-3 py-2 rounded-pill shadow-sm">
+                    <i class="fa fa-tag me-1"></i> <span id="pvidBadgeText">{{ $receipt->pvid }}</span>
+                </span>
+            </div>
+
+            <div class="d-flex align-items-center gap-2">
+                <a href="{{ route('all-Payment-vochers') }}" id="listBtn" class="btn btn-sm btn-outline-secondary rounded-pill px-3 shadow-sm">
+                    <i class="fa fa-list me-1"></i> View All
+                </a>
+            </div>
         </div>
-        <div class="card shadow">
-            <div class="card-body">
-                @if(session('success'))
-                <div class="alert alert-success">{{ session('success') }}</div>
-                @endif
-                <form action="{{ route('Payment.vochers.store') }}" method="POST">
-                    @csrf
-                    <div class="row mb-3">
-                        <div class="col-md-2">
-                            <label class="form-label fw-bold">PVID</label>
-                            <input type="text" class="form-control" name="pvid" value="{{ $nextPVID }}" readonly>
-                        </div>
-                        <div class="col-md-2">
-                            <label class="form-label fw-bold">Receipt Date</label>
-                            <input type="date" name="receipt_date" class="form-control">
-                        </div>
-                        <div class="col-md-2">
-                            <label class="form-label fw-bold">Entry Date</label>
-                            <input type="date" name="entry_date" class="form-control" value="{{ now()->toDateString() }}">
-                        </div>
-                        <div class="col-md-2">
-                            <label class="form-label fw-bold">Account Head</label>
-                            <select name="row_account_head[]" class="form-select rowAccountHead">
-                                <option value="">Select</option>
-                                @foreach($AccountHeads as $head)
-                                <option value="{{ $head->id }}">{{ $head->name }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div class="col-md-2">
-                            <label class="form-label fw-bold">Account</label>
-                            <select name="row_account_id[]" class="form-select rowAccountSub">
-                                <option value="">Select Account</option>
-                            </select>
-                        </div>
-                        <div class="col-md-2">
-                            <label class="form-label fw-bold">Remarks</label>
-                            <input type="text" name="remarks" class="form-control" id="remarks">
+
+        <form id="paymentForm" autocomplete="off" class="{{ ($receipt->id || $receipt->status == 'posted') ? 'form-locked' : '' }}">
+            @csrf
+            <input type="hidden" name="id" id="receipt_id" value="{{ $receipt->id }}">
+
+            <!-- Header Grid -->
+            <div class="row g-3 mb-4">
+                <div class="col-md-2">
+                    <div class="card border-0 bg-light p-2 shadow-sm h-100">
+                        <label class="form-label text-muted small fw-bold mb-1">PVID</label>
+                        <input type="text" class="form-control form-control-sm border-0 fw-bold text-primary bg-transparent" value="{{ $receipt->pvid }}" readonly>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="card border-0 bg-light p-2 shadow-sm h-100">
+                        <label class="form-label text-muted small fw-bold mb-1">Payment Date</label>
+                        <input type="date" name="receipt_date" class="form-control form-control-sm" value="{{ $receipt->receipt_date ?? now()->toDateString() }}">
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="card border-0 bg-light p-2 shadow-sm h-100">
+                        <label class="form-label text-muted small fw-bold mb-1">Entry Date</label>
+                        <input type="date" name="entry_date" class="form-control form-control-sm bg-transparent" value="{{ $receipt->entry_date ?? now()->toDateString() }}" readonly>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card border-0 bg-light p-2 shadow-sm h-100">
+                        <label class="form-label text-muted small fw-bold mb-1">Account Head <span class="text-danger">*</span></label>
+                        <select name="account_head" id="account_head" class="form-select form-select-sm">
+                            <option value="">Select Head...</option>
+                            @foreach($AccountHeads as $head)
+                            <option value="{{ $head->id }}" {{ ($receipt->row_account_head == $head->id) ? 'selected' : '' }}>{{ $head->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card border-0 bg-light p-2 shadow-sm h-100">
+                        <div class="row g-1">
+                            <div class="col-4">
+                                <label class="form-label text-muted small fw-bold mb-1">Account ID <span class="text-danger">*</span></label>
+                                <input type="text" id="account_code_input" class="form-control form-control-sm border-danger fw-bold text-danger text-center" placeholder="ID">
+                            </div>
+                            <div class="col-8">
+                                <label class="form-label text-muted small fw-bold mb-1">Account <span class="text-danger">*</span></label>
+                                <select name="account_id" id="account_id" class="form-select form-select-sm" data-selected="{{ $receipt->row_account_id }}">
+                                    <option value="">Select Account...</option>
+                                </select>
+                            </div>
                         </div>
                     </div>
+                </div>
+                <div class="col-md-12">
+                    <div class="card border-0 bg-light p-2 shadow-sm h-100">
+                        <label class="form-label text-muted small fw-bold mb-1">Remarks</label>
+                        <input type="text" name="remarks" class="form-control form-control-sm" placeholder="Enter general remarks..." value="{{ $receipt->remarks }}">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Table Section -->
+            <div class="card border shadow-sm mb-4">
+                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center border-bottom">
+                    <h6 class="mb-0 fw-bold text-dark"><i class="fa fa-list-ul me-2"></i>Payment Details</h6>
+                    <button type="button" class="btn btn-sm btn-primary rounded-pill px-3 shadow-sm" id="btnAddRow" {{ $receipt->status == 'posted' ? 'disabled' : '' }}>
+                        <i class="fa fa-plus me-1"></i> Add Row
+                    </button>
+                </div>
+                <div class="card-body p-0">
                     <div class="table-responsive">
-                        <table class="table table-bordered text-center align-middle" id="voucherTable">
-                            <thead class="table-light">
+                        <table class="table table-hover align-middle mb-0" id="voucherTable">
+                            <thead>
                                 <tr>
-                                    <th>Narration</th>
-                                    <th>Reference#</th>
-                                    <th>Type</th>
-                                    <th>Party</th>
-                                    <th>Code</th>
-                                    <th>Discount</th>
-                                    <th>KG</th>
-                                    <th>Rate</th>
-                                    <th>Amount</th>
-                                    <th>Action</th>
+                                    <th style="width: 15%;">Narration</th>
+                                    <th style="width: 10%;">Ref#</th>
+                                    <th style="width: 12%;">Party Type</th>
+                                    <th style="width: 10%;">Party ID</th>
+                                    <th style="width: 18%;">Party Name</th>
+                                    <th style="width: 8%;">Discount</th>
+                                    <th style="width: 7%;">KG</th>
+                                    <th style="width: 8%;">Rate</th>
+                                    <th style="width: 10%;">Amount</th>
+                                    <th style="width: 2%;">Act</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr>
-                                    <td>
-                                        <div class="input-group">
-                                            <input type="hidden" name="narration_text[]" class="narrationTextHidden">
-                                            <select name="narration_id[]" class="form-select narrationSelect">
-                                                <option value="">Select / Add New</option>
-                                                @foreach($narrations as $id => $name)
-                                                <option value="{{ $id }}">{{ $name }}</option>
-                                                @endforeach
-                                            </select>
-                                            <input type="text" class="form-control narrationInput" placeholder="Type new narration" style="display:none;">
-                                        </div>
-                                    </td>
-                                    <td><input name="reference_no[]" type="text" class="form-control"></td>
-                                    <td>
-                                        <select name="vendor_type" class="form-select">
-                                            <option disabled selected>Select</option>
-                                            @foreach($AccountHeads as $head)
-                                            <option value="{{ $head->id }}">{{ $head->name }}</option>
-                                            @endforeach
-                                            <option value="vendor">Vendor</option>
-                                            <option value="customer">Customer</option>
-                                            <option value="walkin">Walkin Customer</option>
-                                        </select>
-                                    </td>
-                                    <td>
-                                        <select name="vendor_id" class="form-select">
-                                            <option disabled selected>Select</option>
-                                        </select>
-                                    </td>
+                                @php
+                                    $nIds = json_decode($receipt->narration_id, true) ?? [null];
+                                    $refs = json_decode($receipt->reference_no, true) ?? [];
+                                    $types = json_decode($receipt->type, true) ?? [];
+                                    $parties = json_decode($receipt->party_id, true) ?? [];
+                                    $discounts = json_decode($receipt->discount_value, true) ?? [];
+                                    $kgs = json_decode($receipt->kg, true) ?? [];
+                                    $rates = json_decode($receipt->rate, true) ?? [];
+                                    $amounts = json_decode($receipt->amount, true) ?? [];
+                                @endphp
 
-                                    <td>
-                                        <input type="text" name="tel" id="tel" class="form-control" readonly>
-                                    </td>
-                                    <td><input name="discount_value[]" type="number" class="form-control discountValue" value="0"></td>
-                                    <td><input name="kg[]" type="number" class="form-control kg"></td>
-                                    <td><input name="rate[]" type="number" class="form-control rate"></td>
-                                    <td><input name="amount[]" type="text" class="form-control text-end amount"></td>
-                                    <td><button class="btn btn-danger btn-sm removeRow"><i class="bi bi-trash"></i></button></td>
-                                </tr>
-                            </tbody>
-                            <tfoot class="table-light">
+                                @foreach($nIds as $index => $nId)
                                 <tr>
-                                    <th colspan="8" class="text-end">Total:</th>
-                                    <th><input type="text" name="total_amount" class="form-control text-end fw-bold" id="totalAmount" readonly></th>
-                                    <th></th>
+                                    <td>
+                                        <select name="narration_id[]" class="form-select narrationSelect">
+                                            <option value="">Narration...</option>
+                                            @foreach($narrations as $id => $name)
+                                            <option value="{{ $id }}" {{ $nId == $id ? 'selected' : '' }}>{{ $name }}</option>
+                                            @endforeach
+                                            @if($nId && !isset($narrations[$nId]))
+                                                <option value="{{ $nId }}" selected>{{ $nId }}</option>
+                                            @endif
+                                        </select>
+                                    </td>
+                                    <td><input name="reference_no[]" type="text" class="form-control form-control-sm" value="{{ $refs[$index] ?? '' }}"></td>
+                                    <td>
+                                        <select name="party_type[]" class="form-select form-select-sm rowPartyType">
+                                            <option value="">Type...</option>
+                                            <option value="vendor" {{ ($types[$index] ?? '') == 'vendor' ? 'selected' : '' }}>Vendor</option>
+                                            <option value="customer" {{ ($types[$index] ?? '') == 'customer' ? 'selected' : '' }}>Customer</option>
+                                            @foreach($AccountHeads as $head)
+                                            <option value="{{ $head->id }}" {{ ($types[$index] ?? '') == $head->id ? 'selected' : '' }}>{{ $head->name }}</option>
+                                            @endforeach
+                                        </select>
+                                    </td>
+                                    <td><input type="text" name="row_party_id_input[]" class="form-control form-control-sm text-center rowPartyCode" placeholder="ID" value="{{ $parties[$index] ?? '' }}"></td>
+                                    <td>
+                                        <select name="row_party_id[]" class="form-select form-select-sm rowPartySelect" data-selected="{{ $parties[$index] ?? '' }}">
+                                            <option value="">Select Party...</option>
+                                        </select>
+                                    </td>
+                                    <td><input name="discount_value[]" type="number" step="any" class="form-control form-control-sm text-end discount" value="{{ $discounts[$index] ?? 0 }}"></td>
+                                    <td><input name="kg[]" type="number" step="any" class="form-control form-control-sm text-center kg" value="{{ $kgs[$index] ?? '' }}"></td>
+                                    <td><input name="rate[]" type="number" step="any" class="form-control form-control-sm text-end rate" value="{{ $rates[$index] ?? '' }}"></td>
+                                    <td><input name="amount[]" type="text" class="form-control form-control-sm text-end fw-bold amount" value="{{ $amounts[$index] ?? '' }}"></td>
+                                    <td class="text-center">
+                                        <button type="button" class="btn text-danger btn-xs removeRow"><i class="fa fa-trash"></i></button>
+                                    </td>
+                                </tr>
+                                @endforeach
+                            </tbody>
+                            <tfoot class="table-light fw-bold text-end">
+                                <tr>
+                                    <td colspan="8" class="py-3">GRAND TOTAL:</td>
+                                    <td class="bg-primary bg-opacity-10 py-3">
+                                        <input type="text" id="totalAmount" name="total_amount" class="form-control form-control-sm text-end fw-bold border-0 bg-transparent text-primary fs-6" readonly value="{{ $receipt->total_amount ?? '0.00' }}">
+                                    </td>
+                                    <td></td>
                                 </tr>
                             </tfoot>
                         </table>
                     </div>
-                    {{-- Footer Buttons --}}
-                    <div class="d-flex  mt-4">
-                        <div>
-                            <button class="btn btn-primary">Save</button>
-                            <button class="btn btn-outline-secondary">Exit</button>
-                        </div>
-                    </div>
-                </form>
-
+                </div>
             </div>
-        </div>
+
+            <!-- Footer Buttons -->
+            <div class="d-flex gap-2 justify-content-end align-items-center mt-4 pt-3 border-top">
+                @if($receipt->status == 'draft')
+                <button type="button" id="saveDraftBtn" class="btn btn-sm btn-warning text-dark fw-bold rounded-pill px-4 shadow-sm">
+                    <i class="fa fa-save me-1"></i> Save Draft <kbd class="ms-1 small opacity-75">Ctrl+S</kbd>
+                </button>
+                <button type="button" id="postBtn" class="btn btn-sm btn-primary text-dark fw-bold rounded-pill px-4 shadow-sm">
+                    <i class="fa fa-send me-1"></i> Save Post <kbd class="ms-1 small opacity-75">Ctrl+&#8629;</kbd>
+                </button>
+                <button type="button" id="editBtn" class="btn btn-sm btn-warning text-dark fw-bold rounded-pill px-4 shadow-sm" style="{{ $receipt->id ? 'display:block' : 'display:none' }}">
+                    <i class="fa fa-pencil me-1"></i> Edit <kbd class="ms-1 small opacity-75">Ctrl+E</kbd>
+                </button>
+                @endif
+                
+                @if($receipt->status == 'posted')
+                <button type="button" id="unpostBtn" class="btn btn-sm btn-danger text-dark fw-bold rounded-pill px-4 shadow-sm">
+                    <i class="fa fa-undo me-1"></i> Unpost
+                </button>
+                @endif
+
+                <a href="{{ $receipt->id ? route('PaymentVoucher.print', $receipt->id) : 'javascript:void(0)' }}" id="previewPrintBtn" target="_blank" class="btn btn-sm btn-outline-dark rounded-pill px-4 shadow-sm {{ !$receipt->id ? 'disabled' : '' }}">
+                    <i class="fa fa-print me-1"></i> Print Preview <kbd class="ms-1 small opacity-75">Ctrl+P</kbd>
+                </a>
+
+                <a href="{{ route('Payment-vochers') }}" class="btn btn-sm btn-info text-dark fw-bold rounded-pill px-4 shadow-sm">
+                    <i class="fa fa-plus me-1"></i> New <kbd class="ms-1 small opacity-75">Ctrl+M</kbd>
+                </a>
+                
+                <button type="button" id="deleteBtn" class="btn btn-sm btn-danger text-dark fw-bold rounded-pill px-4 shadow-sm" style="{{ !$receipt->id ? 'display:none' : '' }}">
+                    <i class="fa fa-trash me-1"></i> Delete
+                </button>
+            </div>
+        </form>
+
+        <div class="posted-watermark" id="postedWatermark" style="{{ $receipt->status == 'posted' ? 'display: block;' : '' }}">Posted</div>
     </div>
 </div>
 
 @endsection
 
 @section('scripts')
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script>
-    $(document).on('change', '.narrationSelect', function() {
-        let $row = $(this).closest('td');
-        let $input = $row.find('.narrationInput');
+$(document).ready(function() {
+    function initSelectors($container = $('body')) {
+        $container.find('.narrationSelect').select2({ placeholder: "Narration...", tags: true, width: '100%' });
+        $container.find('.rowPartySelect').select2({ placeholder: "Select Party...", allowClear: true, width: '100%' });
+    }
+    initSelectors();
 
-        if ($(this).val() === '') {
-            $input.show().focus();
-        } else {
-            $input.hide().val('');
+    // 🏦 Account Logic
+    $('#account_code_input').on('keydown', function(e) { 
+        if(e.which == 13 || e.which == 9) $('#account_id').val($(this).val()).trigger('change'); 
+    });
+    $('#account_code_input').on('blur', function() { 
+        if($(this).val()) $('#account_id').val($(this).val()).trigger('change'); 
+    });
+
+    $('#account_id').on('change', function() {
+        $('#account_code_input').val($(this).val() || '');
+    });
+
+    $('#account_head').on('change', function() {
+        let id = $(this).val();
+        let $sub = $('#account_id');
+        let selected = $sub.data('selected');
+        $sub.empty().append('<option value="">Loading...</option>');
+        if(id) {
+            $.get('{{ url("get-accounts-by-head") }}/' + id, res => {
+                $sub.empty().append('<option value="">Select Account...</option>');
+                res.forEach(a => $sub.append(`<option value="${a.id}" ${a.id == selected ? 'selected' : ''}>${a.title}</option>`));
+                if(selected) $('#account_code_input').val(selected);
+            });
         }
-    });
-    $(document).on('input', '.narrationInput', function() {
-        $(this).closest('td').find('.narrationTextHidden').val($(this).val());
-    });
+    }).trigger('change');
 
-    // Type change -> fetch parties
-    $(document).on('change', 'select[name="vendor_type"]', function() {
-        let $row = $(this).closest('tr'); // ✅ same row target
+    // 👤 Party Row Logic
+    $(document).on('change', '.rowPartyType', function() {
         let type = $(this).val();
-        let $vendorSelect = $row.find('select[name="vendor_id"]');
-        let $tel = $row.find('input[name="tel"]');
-
-        // Reset only this row’s fields
-        $tel.val('');
-        $('#remarks').val('');
-
-        $vendorSelect.empty().append('<option disabled selected>Loading...</option>');
-
-        if (type === 'vendor' || type === 'customer' || type === 'walkin') {
-            $.get('{{ route("party.list") }}?type=' + type, function(data) {
-                $vendorSelect.empty().append('<option disabled selected>Select</option>');
-                data.forEach(function(item) {
-                    $vendorSelect.append('<option value="' + item.id + '">' + item.text + '</option>');
-                });
-            });
-        } else if (type) {
-            $.get('{{ url("get-accounts-by-head") }}/' + type, function(data) {
-                $vendorSelect.empty().append('<option disabled selected>Select</option>');
-                data.forEach(function(acc) {
-                    $vendorSelect.append(
-                        '<option value="' + acc.id + '" data-code="' + acc.account_code + '">' +
-                        acc.title + ' (' + acc.account_code + ')' +
-                        '</option>'
-                    );
-                });
-            });
-        }
-    });
-
-
-    $(document).on('change', 'select[name="vendor_id"]', function() {
         let $row = $(this).closest('tr');
-        let $selected = $(this).find(':selected');
-        let id = $selected.val();
-        let type = $row.find('select[name="vendor_type"]').val()?.toLowerCase();
-        let $tel = $row.find('input[name="tel"]');
+        let $select = $row.find('.rowPartySelect');
+        let selected = $select.data('selected');
+        $select.empty().append('<option value="">Loading...</option>');
+        if(type) {
+            let url = (['vendor','customer'].includes(type)) ? '{{ route("party.list") }}?type=' + type : '{{ url("get-accounts-by-head") }}/' + type;
+            $.get(url, res => {
+                $select.empty().append('<option value="">Select Party...</option>');
+                res.forEach(i => $select.append(`<option value="${i.id}" ${i.id == selected ? 'selected' : ''}>${i.text || i.title}</option>`));
+                if(selected) $row.find('.rowPartyCode').val(selected);
+            });
+        } else { $select.empty().append('<option value="">Select Party...</option>'); }
+    });
+    $('.rowPartyType').trigger('change');
 
-        if (!id) return;
+    $(document).on('change', '.rowPartySelect', function() { $(this).closest('tr').find('.rowPartyCode').val($(this).val()); });
+    $(document).on('blur', '.rowPartyCode', function() { $(this).closest('tr').find('.rowPartySelect').val($(this).val()).trigger('change'); });
 
-        let accountCode = $selected.data('code');
-        if (accountCode) {
-            $tel.val(accountCode);
-            $('#remarks').val('');
-            return;
-        }
+    // ➕ Table
+    $('#btnAddRow').click(function() {
+        let row = `<tr>
+            <td><select name="narration_id[]" class="form-select narrationSelect"><option value="">Narration...</option>@foreach($narrations as $id => $name)<option value="{{ $id }}">{{ $name }}</option>@endforeach</select></td>
+            <td><input name="reference_no[]" type="text" class="form-control form-control-sm"></td>
+            <td><select name="party_type[]" class="form-select form-select-sm rowPartyType"><option value="">Type...</option><option value="vendor">Vendor</option><option value="customer">Customer</option>@foreach($AccountHeads as $head)<option value="{{ $head->id }}">{{ $head->name }}</option>@endforeach</select></td>
+            <td><input type="text" name="row_party_id_input[]" class="form-control form-control-sm text-center rowPartyCode" placeholder="ID"></td>
+            <td><select name="row_party_id[]" class="form-select form-select-sm rowPartySelect"><option value="">Select Party...</option></select></td>
+            <td><input name="discount_value[]" type="number" step="any" class="form-control form-control-sm text-end discount" value="0"></td>
+            <td><input name="kg[]" type="number" step="any" class="form-control form-control-sm text-center kg"></td>
+            <td><input name="rate[]" type="number" step="any" class="form-control form-control-sm text-end rate"></td>
+            <td><input name="amount[]" type="text" class="form-control form-control-sm text-end fw-bold amount"></td>
+            <td class="text-center"><button type="button" class="btn text-danger btn-xs removeRow"><i class="fa fa-trash"></i></button></td>
+        </tr>`;
+        $('#voucherTable tbody').append(row);
+        let $new = $('#voucherTable tbody tr').last();
+        initSelectors($new);
+    });
+    $(document).on('click', '.removeRow', function() { if($('#voucherTable tbody tr').length > 1) { $(this).closest('tr').remove(); calc(); } });
 
-        $.get('{{ route("customers.show", ["id" => "__ID__"]) }}'.replace('__ID__', id) + '?type=' + type, function(d) {
-            $tel.val(d.mobile || '');
-            $('#remarks').val(d.remarks || '');
-        });
+    // 🧮 Math
+    function calc() {
+        let t = 0;
+        $('.amount').each(function() { t += parseFloat($(this).val()) || 0; });
+        $('#totalAmount').val(t.toFixed(2));
+    }
+    $(document).on('input', '.kg, .rate, .discount, .amount', function() {
+        let $r = $(this).closest('tr');
+        let k = parseFloat($r.find('.kg').val()) || 0, rt = parseFloat($r.find('.rate').val()) || 0, d = parseFloat($r.find('.discount').val()) || 0;
+        if(k > 0 && rt > 0) $r.find('.amount').val(((k * rt) - d).toFixed(2));
+        calc();
     });
 
-
-    // ✅ Row Calculation
-    function calculateRow(row, manual = false) {
-        let kg = parseFloat(row.find('.kg').val()) || 0;
-        let rate = parseFloat(row.find('.rate').val()) || 0;
-        let discount = parseFloat(row.find('.discountValue').val()) || 0;
-        let baseAmount;
-
-        if (row.find('.baseAmount').length === 0) {
-            row.append('<input type="hidden" class="baseAmount" value="0">');
-        }
-
-        if (kg > 0 && rate > 0) {
-            baseAmount = kg * rate;
-        } else if (!manual && rate > 0) {
-            baseAmount = rate;
-        } else if (manual) {
-            baseAmount = parseFloat(row.find('.amount').val()) || 0;
-        } else {
-            baseAmount = parseFloat(row.find('.baseAmount').val()) || 0;
-        }
-
-        row.find('.baseAmount').val(baseAmount);
-
-        let finalAmount = baseAmount - discount;
-        if (finalAmount < 0) finalAmount = 0;
-
-        // ✅ Sirf tab overwrite karo jab manual == false
-        if (!manual) {
-            row.find('.amount').val(finalAmount.toFixed(2));
-        }
+    // 💾 AJAX
+    function showAlert(msg, type = 'success') {
+        let $box = $('#alertBox');
+        $box.removeClass('d-none alert-success alert-danger').addClass('alert-' + type).html(msg).fadeIn();
+        setTimeout(() => $box.fadeOut(() => $box.addClass('d-none')), 3000);
     }
 
-
-    function calculateTotals() {
-        let total = 0;
-        $('#voucherTable tbody tr').each(function() {
-            total += parseFloat($(this).find('.amount').val()) || 0;
-        });
-        $('#totalAmount').val(total.toFixed(2));
+    function saveDraft(silent = false) {
+        $('.ajax-valid-error').remove();
+        return $.post('{{ route("Payment.vochers.ajax-save") }}', $('#paymentForm').serialize())
+            .done(res => {
+                if(res.success) {
+                    $('#receipt_id').val(res.id); $('#pvidBadgeText').text(res.pvid);
+                    $('#previewPrintBtn').attr('href', '{{ route("PaymentVoucher.print", ":id") }}'.replace(':id', res.id)).removeClass('disabled');
+                    $('#deleteBtn, #editBtn').show();
+                    $('#paymentForm').addClass('form-locked');
+                    if(!silent) showAlert('<i class="fa fa-check-circle me-1"></i> Draft saved successfully! Form is now locked.');
+                }
+            })
+            .fail(xhr => {
+                if(xhr.status == 422) {
+                    let errs = xhr.responseJSON.errors;
+                    Object.keys(errs).forEach(k => {
+                        let $el = (k == 'account_id') ? $('#account_id').next('.select2') : $(`[name="${k}"], #${k}`);
+                        if(k.includes('row_party_id')) $el = $('[name="'+k+'"]').next('.select2');
+                        $el.after(`<div class="text-danger small fw-bold ajax-valid-error mb-1"><i class="fa fa-exclamation-circle"></i> ${errs[k][0]}</div>`);
+                    });
+                    showAlert('<i class="fa fa-exclamation-triangle me-1"></i> Please fix validation errors.', 'danger');
+                } else {
+                    showAlert('<i class="fa fa-times-circle me-1"></i> An error occurred while saving.', 'danger');
+                }
+            });
     }
 
-    // Auto calc
-    $(document).on('input', '.kg, .rate, .discountValue', function() {
-        let row = $(this).closest('tr');
-        calculateRow(row, false);
-        calculateTotals();
-    });
-
-    // Manual amount entry
-    $(document).on('input', '.amount', function() {
-        let row = $(this).closest('tr');
-        calculateRow(row, true);
-        calculateTotals();
-    });
-
-
-    // Add new row on Enter
-    $(document).on('keypress', '.amount', function(e) {
-        if (e.which === 13) {
-            e.preventDefault();
-            let newRow = `<tr>
-               <tr>
-                                    <td>
-                                        <div class="input-group">
-                                            <input type="hidden" name="narration_text[]" class="narrationTextHidden">
-                                            <select name="narration_id[]" class="form-select narrationSelect">
-                                                <option value="">Select / Add New</option>
-                                                @foreach($narrations as $id => $name)
-                                                <option value="{{ $id }}">{{ $name }}</option>
-                                                @endforeach
-                                            </select>
-                                            <input type="text" class="form-control narrationInput" placeholder="Type new narration" style="display:none;">
-                                        </div>
-                                    </td>
-                                    <td><input name="reference_no[]" type="text" class="form-control"></td>
-                                    <td>
-                                        <select name="vendor_type" class="form-select">
-                                            <option disabled selected>Select</option>
-                                            @foreach($AccountHeads as $head)
-                                            <option value="{{ $head->id }}">{{ $head->name }}</option>
-                                            @endforeach
-                                            <option value="vendor">Vendor</option>
-                                            <option value="customer">Customer</option>
-                                            <option value="walkin">Walkin Customer</option>
-                                        </select>
-                                    </td>
-                                    <td>
-                                        <select name="vendor_id" class="form-select">
-                                            <option disabled selected>Select</option>
-                                        </select>
-                                    </td>
-                                    <td>
-                                        <input type="text" name="tel" id="tel" class="form-control" readonly>
-                                    </td>
-                                    <td><input name="discount_value[]" type="number" class="form-control discountValue" value="0"></td>
-                                    <td><input name="kg[]" type="number" class="form-control kg"></td>
-                                    <td><input name="rate[]" type="number" class="form-control rate"></td>
-<td><input name="amount[]" type="text" class="form-control text-end amount"></td>
-                                    <td><button class="btn btn-danger btn-sm removeRow"><i class="bi bi-trash"></i></button></td>
-                                </tr>`;
-            $('#voucherTable tbody').append(newRow);
-        }
-    });
-
-    // Delete row
-    $(document).on('click', '.removeRow', function() {
-        $(this).closest('tr').remove();
-        calculateTotals();
-    });
-
-    // Next button refresh
-    $('#nextBtn').on('click', function() {
-        location.reload();
-    });
-
-    $(document).on('change', '.accountHead', function() {
-        let headId = $(this).val();
-        let $subSelect = $(this).closest('tr').find('.accountSub');
-
-        if (!headId) {
-            $subSelect.html('<option value="" disabled selected>Select Account</option>');
-            return;
-        }
-
-        $.ajax({
-            url: "{{ url('/get-accounts-by-head') }}/" + headId,
-            type: "GET",
-            success: function(res) {
-                let html = '<option value="" disabled selected>Select Account</option>';
-                res.forEach(acc => {
-                    html += `<option value="${acc.id}">${acc.title}</option>`;
-                });
-                $subSelect.html(html);
+    $('#saveDraftBtn').click(() => saveDraft());
+    $('#editBtn').click(function() { $('#paymentForm').removeClass('form-locked'); $(this).hide(); });
+    $('#postBtn').click(function() {
+        if(!confirm('Post this voucher?')) return;
+        saveDraft(true).done(res => {
+            if(res.success) {
+                let f = $('<form>', {action: '{{ route("Payment.vochers.post", ":id") }}'.replace(':id', res.id), method: 'POST'});
+                f.append($('<input>', {type: 'hidden', name: '_token', value: '{{ csrf_token() }}'}));
+                $('body').append(f); f.submit();
             }
         });
     });
-
-    $(document).on('change', '.rowAccountHead', function() {
-        let headId = $(this).val();
-
-        // row ke andar rowAccountSub select ko dhoondo
-        let $subSelect = $(this).closest('.row').find('.rowAccountSub');
-
-        if (!headId) {
-            $subSelect.html('<option value="">Select Account</option>');
-            return;
-        }
-
-        $.get('{{ url("get-accounts-by-head") }}/' + headId, function(res) {
-            let html = '<option value="">Select Account</option>';
-            res.forEach(acc => {
-                html += `<option value="${acc.id}">${acc.title}</option>`;
-            });
-            $subSelect.html(html);
-        });
+    $('#unpostBtn').click(function() {
+        if(!confirm('Unpost?')) return;
+        let f = $('<form>', {action: '{{ route("Payment.vochers.unpost", ":id") }}'.replace(':id', $('#receipt_id').val()), method: 'POST'});
+        f.append($('<input>', {type: 'hidden', name: '_token', value: '{{ csrf_token() }}'}));
+        $('body').append(f); f.submit();
+    });
+    $('#deleteBtn').click(function() {
+        if(!confirm('Delete?')) return;
+        let f = $('<form>', {action: '{{ route("Payment.vochers.cancel", ":id") }}'.replace(':id', $('#receipt_id').val()), method: 'POST'});
+        f.append($('<input>', {type: 'hidden', name: '_token', value: '{{ csrf_token() }}'}));
+        f.append($('<input>', {type: 'hidden', name: '_method', value: 'DELETE'}));
+        $('body').append(f); f.submit();
     });
 
-    function calculateAccountsTotal() {
-        let total = 0;
-        $('.accountAmount').each(function() {
-            total += parseFloat($(this).val()) || 0;
-        });
-        $('#accountsTotal').val(total.toFixed(2));
-    }
-
-    // Trigger when account amount changes
-    $(document).on('input', '.accountAmount', function() {
-        calculateAccountsTotal();
+    $(document).on('keydown', e => {
+        if(e.ctrlKey && e.which == 83) { e.preventDefault(); $('#saveDraftBtn').click(); }
+        if(e.ctrlKey && e.which == 13) { e.preventDefault(); $('#postBtn').click(); }
+        if(e.ctrlKey && e.which == 69) { e.preventDefault(); $('#editBtn').click(); }
+        if(e.ctrlKey && e.which == 80) { if(!$('#previewPrintBtn').hasClass('disabled')) window.open($('#previewPrintBtn').attr('href'), '_blank'); e.preventDefault(); }
+        if(e.altKey && e.which == 65) { e.preventDefault(); $('#btnAddRow').click(); }
     });
-
-    // Trigger when account row removed
-    $(document).on('click', '.removeAccountRow', function() {
-        $(this).closest('tr').remove();
-        calculateAccountsTotal();
-    });
-
-    // Trigger after adding new row
-    $('#addAccountRow').on('click', function() {
-        let newRow = `
-        <tr>
-            <td>
-                <select name="account_head_id[]" class="form-control form-control-sm accountHead">
-                    <option value="" disabled selected>Select Head</option>
-                    @foreach ($AccountHeads as $head)
-                        <option value="{{ $head->id }}">{{ $head->name }}</option>
-                    @endforeach
-                </select>
-            </td>
-            <td>
-                <select name="account_id[]" class="form-control form-control-sm accountSub">
-                    <option value="" disabled selected>Select Account</option>
-                </select>
-            </td>
-            <td>
-                <input type="number" step="0.01" name="account_amount[]" class="form-control form-control-sm accountAmount" value="0">
-            </td>
-            <td>
-                <button type="button" class="btn btn-sm btn-danger removeAccountRow">X</button>
-            </td>
-        </tr>`;
-        $('#accountsTable tbody').append(newRow);
-
-        // recalc after adding
-        calculateAccountsTotal();
-    });
+});
 </script>
-
 @endsection

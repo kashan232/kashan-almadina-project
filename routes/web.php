@@ -72,8 +72,13 @@ Route::get('/all-recepit-vochers', [VoucherController::class, 'all_recepit_voche
 Route::get('/receipt-voucher/print/{id}', [VoucherController::class, 'print'])->name('receiptVoucher.print');
 
 
-Route::get('/Payment-vochers', [VoucherController::class, 'Payment_vochers'])->name('Payment-vochers');
-route::post('/Payment/vochers/stote', [VoucherController::class, 'store_Pay_vochers'])->name('Payment.vochers.store');
+Route::get('/Payment-vochers/{id?}', [VoucherController::class, 'Payment_vochers'])->name('Payment-vochers');
+Route::post('/Payment/vochers/store', [VoucherController::class, 'store_Pay_vochers'])->name('Payment.vochers.store');
+Route::post('/Payment/vochers/ajax-save', [VoucherController::class, 'ajax_save_payment'])->name('Payment.vochers.ajax-save');
+Route::post('/Payment/vochers/post/{id}', [VoucherController::class, 'post_payment'])->name('Payment.vochers.post');
+Route::post('/Payment/vochers/unpost/{id}', [VoucherController::class, 'unpost_payment'])->name('Payment.vochers.unpost');
+Route::delete('/Payment/vochers/cancel/{id}', [VoucherController::class, 'cancel_payment'])->name('Payment.vochers.cancel');
+
 Route::get('/all-Payment-vochers', [VoucherController::class, 'all_Payment_vochers'])->name('all-Payment-vochers');
 Route::get('/Payment-voucher/print/{id}', [VoucherController::class, 'Paymentprint'])->name('PaymentVoucher.print');
 

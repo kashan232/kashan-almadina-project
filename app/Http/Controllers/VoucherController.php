@@ -277,6 +277,15 @@ class VoucherController extends Controller
 
     public function ajax_save_receipt(Request $request)
     {
+        // 🧩 Standard Validation
+        $request->validate([
+            'vendor_type' => 'required',
+            'vendor_id'   => 'required',
+        ], [
+            'vendor_type.required' => 'Please select a Party Type',
+            'vendor_id.required'   => 'Please select a Party',
+        ]);
+
         try {
             $id = $request->input('id');
             
@@ -296,16 +305,28 @@ class VoucherController extends Controller
 
             $narrationIds = [];
             $nIds = $request->input('narration_id', []);
-            $nTexts = $request->input('narration_text', []);
             
             foreach ($nIds as $index => $narrId) {
-                $manualText = $nTexts[$index] ?? null;
-                if (empty($narrId) && !empty($manualText)) {
-                    $new = \App\Models\Narration::create([
-                        'expense_head' => 'Receipts Voucher',
-                        'narration'    => $manualText,
-                    ]);
-                    $narrationIds[] = (string)$new->id;
+                if (empty($narrId)) {
+                    $narrationIds[] = "";
+                    continue;
+                }
+                
+                // 🧩 If narrId is NOT numeric, it means user typed a new narration (Select2 Tag)
+                if (!is_numeric($narrId)) {
+                    $existing = \App\Models\Narration::where('narration', $narrId)
+                        ->where('expense_head', 'Receipts Voucher')
+                        ->first();
+                    
+                    if ($existing) {
+                        $narrationIds[] = (string)$existing->id;
+                    } else {
+                        $new = \App\Models\Narration::create([
+                            'expense_head' => 'Receipts Voucher',
+                            'narration'    => $narrId,
+                        ]);
+                        $narrationIds[] = (string)$new->id;
+                    }
                 } else {
                     $narrationIds[] = (string)$narrId;
                 }
@@ -436,46 +457,228 @@ class VoucherController extends Controller
         return redirect()->route('all-recepit-vochers')->with('success', 'Voucher cancelled.');
     }
 
-    public function Payment_vochers()
+    public function Payment_vochers($id = null)
     {
         $narrations = \App\Models\Narration::where('expense_head', 'Payment voucher')
             ->pluck('narration', 'id');
         $AccountHeads = AccountHead::get();
 
-        // Last RVID nikalna
-        $lastVoucher = \App\Models\PaymentVoucher::latest('id')->first();
+        if ($id) {
+            $receipt = PaymentVoucher::findOrFail($id);
+            $nextPVID = $receipt->pvid;
+        } else {
+            $receipt = new PaymentVoucher([
+                'pvid' => PaymentVoucher::generateInvoiceNo(),
+                'status' => 'draft',
+                'entry_date' => now()->toDateString(),
+                'receipt_date' => now()->toDateString(),
+            ]);
+            $nextPVID = $receipt->pvid;
+        }
 
-        // Next ID generate karna
-        $nextId = $lastVoucher ? $lastVoucher->id + 1 : 1;
-        $nextPVID = 'PVID-' . str_pad($nextId, 3, '0', STR_PAD_LEFT);
+        return view('admin_panel.vochers.payment_vochers.payment_vouchers', compact('narrations', 'AccountHeads', 'nextPVID', 'receipt'));
+    }
 
-        return view('admin_panel.vochers.payment_vochers.payment_vouchers', compact('narrations', 'AccountHeads', 'nextPVID'));
+    public function ajax_save_payment(Request $request)
+    {
+        $id = $request->id;
+        $narrationIds = [];
+        $nIds = $request->input('narration_id', []);
+
+        foreach ($nIds as $narrId) {
+            if (empty($narrId)) {
+                $narrationIds[] = "";
+                continue;
+            }
+            if (!is_numeric($narrId)) {
+                $new = \App\Models\Narration::firstOrCreate(
+                    ['narration' => $narrId, 'expense_head' => 'Payment voucher']
+                );
+                $narrationIds[] = (string)$new->id;
+            } else {
+                $narrationIds[] = (string)$narrId;
+            }
+        }
+
+        $data = [
+            'receipt_date'     => $request->receipt_date,
+            'entry_date'       => $request->entry_date,
+            'type'             => json_encode($request->party_type), // JSON rows
+            'party_id'         => json_encode($request->row_party_id), // JSON rows
+            'tel'              => $request->tel,
+            'remarks'          => $request->remarks,
+            'narration_id'     => json_encode($narrationIds),
+            'reference_no'     => json_encode($request->reference_no),
+            'row_account_head' => $request->account_head, // Single (Header)
+            'row_account_id'   => $request->account_id,   // Single (Header)
+            'discount_value'   => json_encode($request->discount_value),
+            'kg'               => json_encode($request->kg),
+            'rate'             => json_encode($request->rate),
+            'amount'           => json_encode($request->amount),
+            'total_amount'     => $request->total_amount,
+        ];
+
+        if ($id) {
+            $voucher = PaymentVoucher::find($id);
+            $voucher->update($data);
+        } else {
+            $data['pvid'] = PaymentVoucher::generateInvoiceNo();
+            $data['status'] = 'draft';
+            $voucher = PaymentVoucher::create($data);
+        }
+
+        return response()->json(['success' => true, 'id' => $voucher->id, 'pvid' => $voucher->pvid]);
+    }
+
+    public function post_payment($id)
+    {
+        $voucher = PaymentVoucher::findOrFail($id);
+        if ($voucher->status == 'posted') return back()->with('error', 'Already posted.');
+
+        DB::beginTransaction();
+        try {
+            $voucher->status = 'posted';
+            $voucher->save();
+
+            $totalAmount = (float)$voucher->total_amount;
+            $pvid = $voucher->pvid;
+
+            // One Account (Source) -> MINUS
+            $accId = $voucher->row_account_id;
+            if ($accId) {
+                $acc = Account::find($accId);
+                if ($acc) {
+                    $acc->opening_balance -= $totalAmount;
+                    $acc->save();
+                }
+            }
+
+            // Multiple Parties (Destinations) -> PLUS
+            $partyTypes = json_decode($voucher->type, true) ?? [];
+            $partyIds = json_decode($voucher->party_id, true) ?? [];
+            $rowAmounts = json_decode($voucher->amount, true) ?? [];
+            
+            foreach ($partyIds as $index => $partyId) {
+                $rowAmount = (float)($rowAmounts[$index] ?? 0);
+                $pType = $partyTypes[$index] ?? '';
+                
+                if ($rowAmount > 0 && $partyId) {
+                    if ($pType === 'vendor') {
+                        $ledger = VendorLedger::where('vendor_id', $partyId)->latest()->first();
+                        $prev = $ledger ? $ledger->closing_balance : 0;
+                        VendorLedger::create([
+                            'vendor_id' => $partyId,
+                            'admin_or_user_id' => auth()->id(),
+                            'date' => now(),
+                            'description' => "Payment Voucher #$pvid",
+                            'debit' => $rowAmount,
+                            'credit' => 0,
+                            'previous_balance' => $prev,
+                            'closing_balance' => $prev + $rowAmount,
+                        ]);
+                    } elseif ($pType === 'customer') {
+                        $ledger = CustomerLedger::where('customer_id', $partyId)->latest()->first();
+                        $prev = $ledger ? $ledger->closing_balance : 0;
+                        CustomerLedger::create([
+                            'customer_id' => $partyId,
+                            'admin_or_user_id' => auth()->id(),
+                            'date' => now(),
+                            'description' => "Payment Voucher #$pvid",
+                            'debit' => $rowAmount,
+                            'credit' => 0,
+                            'previous_balance' => $prev,
+                            'closing_balance' => $prev + $rowAmount,
+                        ]);
+                    }
+                }
+            }
+
+            DB::commit();
+            return back()->with('success', 'Voucher posted successfully!');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->with('error', 'Error: ' . $e->getMessage());
+        }
+    }
+
+    public function unpost_payment($id)
+    {
+        $voucher = PaymentVoucher::findOrFail($id);
+        if ($voucher->status != 'posted') return back()->with('error', 'Not posted.');
+
+        DB::beginTransaction();
+        try {
+            $voucher->status = 'draft';
+            $voucher->save();
+
+            $totalAmount = (float)$voucher->total_amount;
+            
+            // Reverse account reduction
+            $accId = $voucher->row_account_id;
+            if ($accId) {
+                $acc = Account::find($accId);
+                if ($acc) {
+                    $acc->opening_balance += $totalAmount;
+                    $acc->save();
+                }
+            }
+            
+            DB::commit();
+            return back()->with('success', 'Voucher unposted. Status reset to draft.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->with('error', 'Error: ' . $e->getMessage());
+        }
+    }
+
+    public function cancel_payment($id)
+    {
+        $voucher = PaymentVoucher::findOrFail($id);
+        $voucher->delete();
+        return redirect()->route('all-Payment-vochers')->with('success', 'Voucher deleted.');
     }
 
     public function store_Pay_vochers(Request $request)
     {
+        // 🧩 Standard Validation
+        $request->validate([
+            'vendor_type' => 'required',
+            'vendor_id'   => 'required',
+            'total_amount' => 'required|numeric|min:0.01',
+        ], [
+            'vendor_type.required' => 'Please select a Party Type',
+            'vendor_id.required'   => 'Please select a Party',
+            'total_amount.required' => 'Voucher total cannot be zero',
+        ]);
+
         DB::beginTransaction();
         try {
             $pvid = PaymentVoucher::generateInvoiceNo();
             $narrationIds = [];
+            $nIds = $request->input('narration_id', []);
 
-            foreach ($request->narration_id as $index => $narrId) {
-                $manualText = $request->narration_text[$index] ?? null;
-                $manualType = $request->narration_type_text[$index] ?? 'Manual';
-
-                if (empty($narrId) && !empty($manualText)) {
-                    // Auto expense_head set based on voucher type
+            foreach ($nIds as $index => $narrId) {
+                if (empty($narrId)) {
+                    $narrationIds[] = "";
+                    continue;
+                }
+                
+                // 🧩 If narrId is NOT numeric, it means user typed a new narration (Select2 Tag)
+                if (!is_numeric($narrId)) {
                     $expenseHead = 'Payment voucher';
-                    if (stripos($manualType, 'Receipt') !== false || $request->voucher_type == 'receipt') {
-                        $expenseHead = 'Payment voucher';
+                    $existing = \App\Models\Narration::where('narration', $narrId)
+                        ->where('expense_head', $expenseHead)
+                        ->first();
+                    
+                    if ($existing) {
+                        $narrationIds[] = (string)$existing->id;
+                    } else {
+                        $new = \App\Models\Narration::create([
+                            'expense_head' => $expenseHead,
+                            'narration'    => $narrId,
+                        ]);
+                        $narrationIds[] = (string)$new->id;
                     }
-
-                    $new = \App\Models\Narration::create([
-                        'expense_head' => $expenseHead,
-                        'narration'    => $manualText,
-                    ]);
-
-                    $narrationIds[] = (string)$new->id; // store as string → ["7"]
                 } else {
                     $narrationIds[] = (string)$narrId; // force string format
                 }
@@ -578,36 +781,39 @@ class VoucherController extends Controller
         $receipts = \App\Models\PaymentVoucher::orderBy('id', 'DESC')->get();
 
         foreach ($receipts as $voucher) {
-            $partyName = '-';
-            $typeLabel = '-';
+            $partyNames = [];
+            $typeLabels = [];
 
-            // 🧩 If type is numeric → Account Head / Account
-            if (is_numeric($voucher->type)) {
-                $accountHead = DB::table('account_heads')->where('id', $voucher->type)->first();
-                $account = DB::table('accounts')->where('id', $voucher->party_id)->first();
+            $typesRaw = json_decode($voucher->type, true) ?: [$voucher->type];
+            $partyIdsRaw = json_decode($voucher->party_id, true) ?: [$voucher->party_id];
 
-                $typeLabel = $accountHead->name ?? 'Account';
-                $partyName = $account->title ?? '-';
-            } elseif ($voucher->type === 'vendor') {
-                $vendor = DB::table('vendors')->where('id', $voucher->party_id)->first();
-                $typeLabel = 'Vendor';
-                $partyName = $vendor->name ?? '-';
-            } elseif ($voucher->type === 'customer') {
-                $customer = DB::table('customers')->where('id', $voucher->party_id)->first();
-                $typeLabel = 'Customer';
-                $partyName = $customer->customer_name ?? '-';
-            } elseif ($voucher->type === 'walkin') {
-                $walkin = DB::table('customers')
-                    ->where('id', $voucher->party_id)
-                    ->where('customer_type', 'Walking Customer')
-                    ->first();
-                $typeLabel = 'Walk-in';
-                $partyName = $walkin->customer_name ?? '-';
+            foreach ($partyIdsRaw as $index => $pId) {
+                if (empty($pId)) continue;
+                $pType = $typesRaw[$index] ?? '';
+
+                if (is_numeric($pType)) {
+                    $accountHead = DB::table('account_heads')->where('id', $pType)->first();
+                    $account = DB::table('accounts')->where('id', $pId)->first();
+                    $typeLabels[] = $accountHead->name ?? 'Account';
+                    $partyNames[] = $account->title ?? '-';
+                } elseif ($pType === 'vendor') {
+                    $vendor = DB::table('vendors')->where('id', $pId)->first();
+                    $typeLabels[] = 'Vendor';
+                    $partyNames[] = $vendor->name ?? '-';
+                } elseif ($pType === 'customer') {
+                    $customer = DB::table('customers')->where('id', $pId)->first();
+                    $typeLabels[] = 'Customer';
+                    $partyNames[] = $customer->customer_name ?? '-';
+                } elseif ($pType === 'walkin') {
+                    $typeLabels[] = 'Walk-in';
+                    $partyNames[] = 'Walk-in';
+                }
             }
 
-            // Attach extra fields for Blade
-            $voucher->type_label = $typeLabel;
-            $voucher->party_name = $partyName;
+            // Summarize for list view
+            $uTypes = array_unique($typeLabels);
+            $voucher->type_label = count($uTypes) > 1 ? 'Multiple Heads' : ($uTypes[0] ?? '-');
+            $voucher->party_name = count($partyNames) > 1 ? count($partyNames) . ' Parties' : ($partyNames[0] ?? '-');
         }
 
         return view('admin_panel.vochers.payment_vochers.all_payment_vochers', compact('receipts'));

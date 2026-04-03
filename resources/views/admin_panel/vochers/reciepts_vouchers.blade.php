@@ -1,7 +1,21 @@
 @extends('admin_panel.layout.app')
 
 @section('content')
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 <style>
+    .select2-container--default .select2-selection--single {
+        height: 31px !important;
+        padding: 2px 5px !important;
+        font-size: 0.85rem !important;
+        border: 1px solid #dee2e6 !important;
+    }
+    .select2-container--default .select2-selection--single .select2-selection__rendered {
+        line-height: 25px !important;
+    }
+    .select2-container--default .select2-selection--single .select2-selection__arrow {
+        height: 30px !important;
+    }
+
     .main-container {
         font-size: .85rem;
         max-width: 1400px;
@@ -62,8 +76,9 @@
         opacity: 0.75 !important;
     }
 
-    .form-locked input, .form-locked select, .form-locked textarea, .form-locked button:not(#newBtn):not(#cancelBtn):not(#previewPrintBtn) {
+    .form-locked input, .form-locked select, .form-locked textarea, .form-locked .select2-selection {
         background-color: #f8f9fa !important;
+        pointer-events: none !important;
     }
 
     .loading-indicator {
@@ -77,6 +92,24 @@
     <div class="main-container bg-white border shadow-sm mx-auto p-4 rounded-3 position-relative" style="max-width: 98%;">
         
         <div id="alertBox" class="alert d-none mb-3" role="alert"></div>
+
+        @if(session('success'))
+        <div class="alert alert-success shadow-sm mb-4 d-flex align-items-center" role="alert">
+            <i class="fa fa-check-circle-o fs-4 me-2"></i>
+            <div>
+                <strong>Success!</strong> {{ session('success') }}
+            </div>
+        </div>
+        @endif
+
+        @if(session('error'))
+        <div class="alert alert-danger shadow-sm mb-4 d-flex align-items-center" role="alert">
+            <i class="fa fa-exclamation-triangle fs-4 me-2"></i>
+            <div>
+                <strong>Error!</strong> {{ session('error') }}
+            </div>
+        </div>
+        @endif
 
         <!-- Header Section -->
         <div class="d-flex justify-content-between align-items-center mb-4 bg-light p-3 rounded shadow-sm border">
@@ -98,7 +131,7 @@
             </div>
         </div>
 
-        <form id="receiptForm" autocomplete="off" class="{{ $receipt->status == 'posted' ? 'form-locked' : '' }}">
+        <form id="receiptForm" autocomplete="off" class="{{ ($receipt->id || $receipt->status == 'posted') ? 'form-locked' : '' }}">
             @csrf
             <input type="hidden" name="id" id="receipt_id" value="{{ $receipt->id }}">
 
@@ -124,7 +157,7 @@
                 </div>
                 <div class="col-md-3">
                     <div class="card border-0 bg-light p-2 shadow-sm h-100">
-                        <label class="form-label text-muted small fw-bold mb-1">Party Type</label>
+                        <label class="form-label text-muted small fw-bold mb-1">Party Type <span class="text-danger">*</span></label>
                         <select name="vendor_type" id="vendor_type" class="form-select form-select-sm">
                             <option value="">Select Type...</option>
                             @foreach($AccountHeads as $head)
@@ -138,10 +171,18 @@
                 </div>
                 <div class="col-md-3">
                     <div class="card border-0 bg-light p-2 shadow-sm h-100">
-                        <label class="form-label text-muted small fw-bold mb-1">Party</label>
-                        <select name="vendor_id" id="vendor_id" class="form-select form-select-sm" data-selected-id="{{ $receipt->party_id }}">
-                            <option value="">Select Party...</option>
-                        </select>
+                        <div class="row g-1">
+                            <div class="col-4">
+                                <label class="form-label text-muted small fw-bold mb-1">Party ID <span class="text-danger">*</span></label>
+                                <input type="text" id="party_code_input" class="form-control form-control-sm border-danger fw-bold text-danger text-center" placeholder="ID" value="{{ $receipt->party_id }}">
+                            </div>
+                            <div class="col-8">
+                                <label class="form-label text-muted small fw-bold mb-1">Party <span class="text-danger">*</span></label>
+                                <select name="vendor_id" id="vendor_id" class="form-select form-select-sm" data-selected-id="{{ $receipt->party_id }}">
+                                    <option value="">Select Party...</option>
+                                </select>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -204,16 +245,12 @@
                                 @foreach($narrations_json as $index => $nId)
                                 <tr>
                                     <td>
-                                        <div class="input-group input-group-sm">
-                                            <input type="hidden" name="narration_text[]" class="narrationTextHidden">
-                                            <select name="narration_id[]" class="form-select narrationSelect">
-                                                <option value="">+ Add New</option>
-                                                @foreach($narrations as $id => $name)
-                                                <option value="{{ $id }}" {{ $nId == $id ? 'selected' : '' }}>{{ $name }}</option>
-                                                @endforeach
-                                            </select>
-                                            <input type="text" class="form-control narrationInput" placeholder="Manual text..." style="display:none;">
-                                        </div>
+                                        <select name="narration_id[]" class="form-select narrationSelect">
+                                            <option value="">Search or type narration...</option>
+                                            @foreach($narrations as $id => $name)
+                                            <option value="{{ $id }}" {{ $nId == $id ? 'selected' : '' }}>{{ $name }}</option>
+                                            @endforeach
+                                        </select>
                                     </td>
                                     <td><input name="reference_no[]" type="text" class="form-control form-control-sm" value="{{ $references[$index] ?? '' }}"></td>
                                     <td>
@@ -256,16 +293,16 @@
             <!-- Action Buttons -->
             <div class="d-flex gap-2 mt-4 pt-4 border-top justify-content-end">
                 @if($receipt->status == 'draft')
-                <button type="button" id="saveDraftBtn" class="btn btn-sm btn-warning text-dark rounded-pill px-4 shadow-sm">
+                <button type="button" id="saveDraftBtn" class="btn btn-sm btn-warning text-dark fw-bold rounded-pill px-4 shadow-sm">
                     <i class="fa fa-floppy-o me-1"></i> Save Draft
                     <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+S</kbd>
                 </button>
-                <button type="button" id="postBtn" class="btn btn-sm btn-primary rounded-pill px-4 shadow-sm">
+                <button type="button" id="postBtn" class="btn btn-sm btn-primary text-dark fw-bold rounded-pill px-4 shadow-sm">
                     <i class="fa fa-send me-1"></i> Save Post
                     <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+&#8629;</kbd>
                 </button>
 
-                <button type="button" id="editBtn" class="btn btn-sm btn-warning text-dark rounded-pill px-4 shadow-sm" style="display:none;">
+                <button type="button" id="editBtn" class="btn btn-sm btn-warning text-dark fw-bold rounded-pill px-4 shadow-sm" style="{{ ($receipt->id && $receipt->status == 'draft') ? 'display:block' : 'display:none' }};">
                     <i class="fa fa-pencil me-1"></i> Edit
                     <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+E</kbd>
                 </button>
@@ -279,12 +316,12 @@
                     <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+P</kbd>
                 </a>
 
-                <a href="{{ route('recepit-vochers') }}" id="newBtn" class="btn btn-sm btn-info text-dark rounded-pill px-4 shadow-sm">
+                <a href="{{ route('recepit-vochers') }}" id="newBtn" class="btn btn-sm btn-info text-dark fw-bold rounded-pill px-4 shadow-sm">
                     <i class="fa fa-plus me-1"></i> New
                     <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+M</kbd>
                 </a>
                 
-                <button type="button" id="cancelBtn" onclick="handleCancel()" class="btn btn-sm btn-danger rounded-pill px-4 shadow-sm text-white">
+                <button type="button" id="cancelBtn" onclick="handleCancel()" class="btn btn-sm btn-danger text-dark fw-bold rounded-pill px-4 shadow-sm">
                     <i class="fa fa-times me-1"></i> Cancel
                     <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Esc</kbd>
                 </button>
@@ -300,8 +337,63 @@
 @endsection
 
 @section('scripts')
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script>
 $(document).ready(function() {
+    // 🛠️ Select2 Initialization
+    function initSelect2() {
+        $('#vendor_id').select2({
+            placeholder: "Select Party...",
+            allowClear: true,
+            width: '100%'
+        });
+
+        $('.narrationSelect').select2({
+            placeholder: "Narration...",
+            tags: true,
+            width: '100%'
+        });
+    }
+
+    initSelect2();
+
+    // 🛠️ Party ID -> Select2 Sync
+    function syncPartyIdToSelect2() {
+        let val = $('#party_code_input').val();
+        if (val) {
+            // Find option with exact value match
+            let option = $('#vendor_id option').filter(function() {
+                return $(this).val() == val;
+            });
+
+            if (option.length > 0) {
+                $('#vendor_id').val(val).trigger('change');
+            } else {
+                showAlert('Party ID not found in current list!', 'danger');
+            }
+        }
+    }
+
+    $('#party_code_input').on('keydown', function(e) {
+        if (e.key === 'Enter' || e.keyCode === 13 || e.key === 'Tab' || e.keyCode === 9) {
+            // Only prevent default on Enter, let Tab move focus
+            if (e.key === 'Enter' || e.keyCode === 13) e.preventDefault();
+            syncPartyIdToSelect2();
+        }
+    }).on('blur', function() {
+        syncPartyIdToSelect2();
+    });
+
+    // 🛠️ Select2 -> Party ID Sync
+    $('#vendor_id').on('select2:select', function(e) {
+        let val = e.params.data.id;
+        $('#party_code_input').val(val);
+    });
+
+    $('#vendor_id').on('select2:clear', function() {
+        $('#party_code_input').val('');
+    });
+
     $.ajaxSetup({
         headers: {
             'X-CSRF-TOKEN': $('input[name="_token"]').val()
@@ -333,6 +425,9 @@ $(document).ready(function() {
                     $partySelect.append(`<option value="${item.id}" ${sel}>${item.text}</option>`);
                 });
                 $partySelect.trigger('change');
+                
+                // Set initial Party ID if editing
+                if (selectedId) $('#party_code_input').val(selectedId);
             });
         } else {
             $.get('{{ url("get-accounts-by-head") }}/' + type, function(data) {
@@ -367,16 +462,12 @@ $(document).ready(function() {
     $('#btnAddRow').click(function() {
         let newRow = `<tr>
             <td>
-                <div class="input-group input-group-sm">
-                    <input type="hidden" name="narration_text[]" class="narrationTextHidden">
-                    <select name="narration_id[]" class="form-select narrationSelect">
-                        <option value="">+ Add New</option>
-                        @foreach($narrations as $id => $name)
-                        <option value="{{ $id }}">{{ $name }}</option>
-                        @endforeach
-                    </select>
-                    <input type="text" class="form-control narrationInput" placeholder="Manual text..." style="display:none;">
-                </div>
+                <select name="narration_id[]" class="form-select narrationSelect">
+                    <option value="">Search or type narration...</option>
+                    @foreach($narrations as $id => $name)
+                    <option value="{{ $id }}">{{ $name }}</option>
+                    @endforeach
+                </select>
             </td>
             <td><input name="reference_no[]" type="text" class="form-control form-control-sm"></td>
             <td>
@@ -401,6 +492,11 @@ $(document).ready(function() {
             </td>
         </tr>`;
         $('#voucherTable tbody').append(newRow);
+        $('.narrationSelect').last().select2({
+            placeholder: "Narration...",
+            tags: true,
+            width: '100%'
+        });
     });
 
     $(document).on('click', '.removeRow', function() {
@@ -430,19 +526,8 @@ $(document).ready(function() {
         if ($(this).val()) $(this).trigger('change');
     });
 
-    $(document).on('change', '.narrationSelect', function() {
-        let $container = $(this).closest('.input-group');
-        if ($(this).val() === "") {
-            $container.find('.narrationInput').show().focus();
-        } else {
-            $container.find('.narrationInput').hide().val('');
-            $container.find('.narrationTextHidden').val('');
-        }
-    });
+    // Removed old narration show/hide logic (Select2 handles this via tags:true)
 
-    $(document).on('input', '.narrationInput', function() {
-        $(this).closest('.input-group').find('.narrationTextHidden').val($(this).val());
-    });
 
     // 🧩 Calculations
     function calculateTotals() {
@@ -506,9 +591,36 @@ $(document).ready(function() {
             },
             error: function(xhr) {
                 $('#saveDraftBtn').removeClass('loading-indicator');
+                $('.ajax-valid-error').remove(); // Clear previous errors
+
                 let errorMsg = 'Server error while saving.';
-                if (xhr.status === 419) errorMsg = 'Session expired. Please refresh the page.';
-                if (xhr.responseJSON && xhr.responseJSON.message) errorMsg = xhr.responseJSON.message;
+                if (xhr.status === 422) {
+                    // Validation error
+                    let errors = xhr.responseJSON.errors;
+                    $.each(errors, function(key, val) {
+                        let fieldHtml = '<div class="text-danger fw-bold ajax-valid-error mb-1" style="font-size:11px;"><i class="fa fa-exclamation-triangle"></i> ' + val[0] + '</div>';
+                        
+                        // Handle array fields or normal fields
+                        let $target = $('[name="' + key + '"]');
+                        if (!$target.length && key.includes('.')) {
+                             let parts = key.split('.');
+                             $target = $('[name="' + parts[0] + '[]"]').eq(parts[1]);
+                        }
+
+                        if ($target.length) {
+                            if ($target.hasClass('select2-hidden-accessible')) {
+                                $target.next('.select2-container').before(fieldHtml);
+                            } else {
+                                $target.before(fieldHtml);
+                            }
+                        }
+                    });
+                    errorMsg = 'Please fix the required fields.';
+                } else {
+                    if (xhr.status === 419) errorMsg = 'Session expired. Please refresh the page.';
+                    if (xhr.responseJSON && xhr.responseJSON.message) errorMsg = xhr.responseJSON.message;
+                }
+                
                 showAlert(errorMsg, 'danger');
                 console.error(xhr.responseText);
             }
@@ -516,6 +628,10 @@ $(document).ready(function() {
     });
 
     $('#postBtn').click(function() {
+        if (!confirm('Are you sure you want to Save & Post this voucher? \n\nThis will update your ledgers and mark the record as final.')) {
+            return;
+        }
+
         // Auto save draft first
         $.post('{{ route("recepit.vochers.ajax-save") }}', $('#receiptForm').serialize(), function(res) {
             if(res.success) {
