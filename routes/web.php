@@ -82,10 +82,15 @@ Route::delete('/Payment/vochers/cancel/{id}', [VoucherController::class, 'cancel
 Route::get('/all-Payment-vochers', [VoucherController::class, 'all_Payment_vochers'])->name('all-Payment-vochers');
 Route::get('/Payment-voucher/print/{id}', [VoucherController::class, 'Paymentprint'])->name('PaymentVoucher.print');
 
-Route::get('/expense-vochers', [VoucherController::class, 'expense_vochers'])->name('expense-vochers');
-route::post('/expense/vochers/stote', [VoucherController::class, 'store_expense_vochers'])->name('expense.vochers.store');
+Route::get('/expense-vochers/{id?}', [VoucherController::class, 'expense_vochers'])->name('expense-vochers');
+Route::post('/expense/vochers/store', [VoucherController::class, 'store_expense_vochers'])->name('expense.vochers.store');
+Route::post('/expense/vochers/ajax-save', [VoucherController::class, 'ajax_save_expense'])->name('Expense.vochers.ajax-save');
+Route::post('/expense/vochers/post/{id}', [VoucherController::class, 'post_expense'])->name('Expense.vochers.post');
+Route::post('/expense/vochers/unpost/{id}', [VoucherController::class, 'unpost_expense'])->name('Expense.vochers.unpost');
+Route::delete('/expense/vochers/cancel/{id}', [VoucherController::class, 'cancel_expense'])->name('Expense.vochers.cancel');
+
 Route::get('/all-expense-vochers', [VoucherController::class, 'all_expense_vochers'])->name('all-expense-vochers');
-Route::get('/expense-voucher/print/{id}', [VoucherController::class, 'expenseprint'])->name('expenseVoucher.print');
+Route::get('/expense-voucher/print/{id}', [VoucherController::class, 'expenseprint'])->name('ExpenseVoucher.print');
 
 // Route::get('/dashboard', function () {
 //     return view('dashboard');
