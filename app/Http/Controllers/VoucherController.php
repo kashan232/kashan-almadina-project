@@ -776,11 +776,23 @@ class VoucherController extends Controller
         }
     }
 
-    public function all_Payment_vochers()
+    public function all_Payment_vochers(Request $request)
     {
-        $receipts = \App\Models\PaymentVoucher::orderBy('id', 'DESC')->get();
+        $query = \App\Models\PaymentVoucher::query();
 
-        foreach ($receipts as $voucher) {
+        if ($request->filled('start_date')) {
+            $query->whereDate('entry_date', '>=', $request->start_date);
+        }
+        if ($request->filled('end_date')) {
+            $query->whereDate('entry_date', '<=', $request->end_date);
+        }
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
+
+        $payments = $query->orderBy('id', 'DESC')->get();
+
+        foreach ($payments as $voucher) {
             $partyNames = [];
             $typeLabels = [];
 
@@ -816,7 +828,7 @@ class VoucherController extends Controller
             $voucher->party_name = count($partyNames) > 1 ? count($partyNames) . ' Parties' : ($partyNames[0] ?? '-');
         }
 
-        return view('admin_panel.vochers.payment_vochers.all_payment_vochers', compact('receipts'));
+        return view('admin_panel.vochers.payment_vochers.all_payment_vochers', compact('payments'));
     }
 
     public function Paymentprint($id)

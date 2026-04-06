@@ -178,7 +178,7 @@
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        @foreach($receipts as $item)
+                                        @foreach($payments as $item)
                                         @php
                                             $refs = json_decode($item->reference_no, true);
                                             $reference = is_array($refs) ? implode(', ', $refs) : $item->reference_no;
