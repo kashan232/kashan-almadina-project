@@ -154,9 +154,9 @@
                 <div class="col-md-6">
                     <div class="card border-0 bg-light p-2 shadow-sm h-100">
                         <div class="row g-1">
-                            <div class="col-4">
-                                <label class="form-label text-muted small fw-bold mb-1">Party ID <span class="text-danger">*</span></label>
-                                <input type="text" id="party_code_input" class="form-control form-control-sm border-danger fw-bold text-danger text-center" placeholder="ID" value="{{ $receipt->party_id }}">
+                            <div class="col-4 text-center">
+                                <label class="form-label text-muted small fw-bold mb-1">Code / ID <span class="text-danger">*</span></label>
+                                <input type="text" id="party_code_input" class="form-control form-control-sm border-danger fw-bold text-danger text-center" placeholder="Code/ID" value="{{ $receipt->party_id }}">
                             </div>
                             <div class="col-8">
                                 <label class="form-label text-muted small fw-bold mb-1">Party <span class="text-danger">*</span></label>
@@ -194,7 +194,7 @@
                                 <tr>
                                     <th width="25%">Narration</th>
                                     <th width="20%">Account Head</th>
-                                    <th width="10%">ID</th>
+                                    <th width="10%">Code</th>
                                     <th width="25%">Account</th>
                                     <th width="15%">Amount</th>
                                     <th width="5%">Act</th>
@@ -228,7 +228,7 @@
                                         </select>
                                     </td>
                                     <td>
-                                        <input type="text" class="form-control form-control-sm account-id-lookup" value="{{ $rowAccs[$idx] ?? '' }}">
+                                        <input type="text" class="form-control form-control-sm account-id-lookup" placeholder="Code" value="{{ $rowAccs[$idx] ?? '' }}">
                                     </td>
                                     <td>
                                         <select name="row_account_id[]" class="form-select form-select-sm rowAccountSub" data-selected="{{ $rowAccs[$idx] ?? '' }}">
@@ -323,22 +323,41 @@ $(document).ready(function() {
     function syncPartyIdToSelect2() {
         let val = $('#party_code_input').val();
         if (val) {
-            let option = $('#vendor_id option').filter(function() { return $(this).val() == val; });
-            if (option.length > 0) { $('#vendor_id').val(val).trigger('change'); }
-            else { showAlert('Party ID not found!', 'danger'); }
+            // Find by primary ID
+            let optById = $('#vendor_id option').filter(function() { return $(this).val() == val; });
+            if (optById.length > 0) {
+                $('#vendor_id').val(val).trigger('change');
+                return;
+            }
+            // Find by Account Code
+            let optByCode = $('#vendor_id option').filter(function() { return $(this).attr('data-code') == val; });
+            if (optByCode.length > 0) {
+                $('#vendor_id').val(optByCode.val()).trigger('change');
+            } else {
+                showAlert('Code / ID not found!', 'danger');
+            }
         }
     }
     $('#party_code_input').on('keydown', function(e) {
-        if (e.key === 'Enter' || e.keyCode === 13) { e.preventDefault(); syncPartyIdToSelect2(); }
+        if (e.key === 'Enter' || e.keyCode === 13 || e.key === 'Tab') { 
+            if(e.key === 'Enter') e.preventDefault();
+            syncPartyIdToSelect2(); 
+        }
     }).on('blur', syncPartyIdToSelect2);
 
-    $('#vendor_id').on('select2:select', function(e) { $('#party_code_input').val(e.params.data.id); });
+    $('#vendor_id').on('change', function() {
+        let code = $(this).find('option:selected').attr('data-code');
+        $('#party_code_input').val(code || $(this).val() || '');
+    });
 
     // Load Parties based on Type
     $('#vendor_type').change(function() {
         let type = $(this).val();
         let $partySelect = $('#vendor_id');
         let selectedId = $partySelect.data('selected-id');
+
+        // 🔄 Reset Code and Select
+        $('#party_code_input').val('');
         $partySelect.html('<option value="">Loading...</option>');
         
         if (!type) { $partySelect.html('<option value="">Select Type...</option>'); return; }
@@ -350,18 +369,21 @@ $(document).ready(function() {
         $.get(url, function(data) {
             $partySelect.html('<option value="">Select Party...</option>');
             data.forEach(item => {
-                let tel = item.mobile || item.account_code || '';
+                let code = item.account_code || '';
                 let sel = (item.id == selectedId) ? 'selected' : '';
-                $partySelect.append(`<option value="${item.id}" data-tel="${tel}" ${sel}>${item.text || item.title} (${tel})</option>`);
+                $partySelect.append(`<option value="${item.id}" data-code="${code}" ${sel}>${item.text || item.title} ${code ? '('+code+')' : ''}</option>`);
             });
-            $partySelect.trigger('change').trigger('select2:select', {params: {data: {id: selectedId}}});
-            if (selectedId) $('#party_code_input').val(selectedId);
+            $partySelect.trigger('change');
+            if (selectedId) {
+                let code = $partySelect.find('option:selected').attr('data-code');
+                $('#party_code_input').val(code || selectedId);
+            }
         });
     }).trigger('change');
 
     $('#vendor_id').change(function() {
         let selected = $(this).find(':selected');
-        $('#tel').val(selected.data('tel') || '');
+        // Any specific source info logic if needed
     });
 
     // Row Logic
@@ -370,28 +392,47 @@ $(document).ready(function() {
         let headId = $(this).val();
         let $subSelect = $row.find('.rowAccountSub');
         let selected = $subSelect.data('selected');
+
+        // 🔄 Reset Code and Select
+        $row.find('.account-id-lookup').val('');
         $subSelect.html('<option value="">Loading...</option>');
+
         if (headId) {
             $.get('{{ url("get-accounts-by-head") }}/' + headId, function(res) {
                 $subSelect.html('<option value="">Select Account</option>');
                 res.forEach(acc => {
                     let sel = (acc.id == selected) ? 'selected' : '';
-                    $subSelect.append(`<option value="${acc.id}" ${sel}>${acc.title} (${acc.account_code})</option>`);
+                    $subSelect.append(`<option value="${acc.id}" data-code="${acc.account_code}" ${sel}>${acc.title} (${acc.account_code})</option>`);
                 });
-                $subSelect.trigger('change');
+                
+                if(selected) {
+                    let code = $subSelect.find('option:selected').attr('data-code');
+                    $row.find('.account-id-lookup').val(code || selected);
+                }
             });
         }
     }).each(function() { if ($(this).val()) $(this).trigger('change'); });
 
-    $(document).on('change', '.account-id-lookup', function() {
-        let id = $(this).val();
+    $(document).on('blur keydown', '.account-id-lookup', function(e) {
+        if(e.type === 'keydown' && e.which != 13 && e.which != 9) return;
+        let idVal = $(this).val();
         let $row = $(this).closest('tr');
         let $select = $row.find('.rowAccountSub');
-        if($select.find('option[value="'+id+'"]').length) { $select.val(id).trigger('change'); }
-        else { showAlert('Account ID not found!', 'danger'); }
+        if(idVal) {
+            // Priority 1: Match by raw ID
+            let optById = $select.find('option').filter(function() { return $(this).val() == idVal; });
+            if(optById.length > 0) { $select.val(idVal).trigger('change'); return; }
+            // Priority 2: Match by Code
+            let optByCode = $select.find('option').filter(function() { return $(this).attr('data-code') == idVal; });
+            if(optByCode.length > 0) { $select.val(optByCode.val()).trigger('change'); }
+            else { showAlert('Code / ID not found!', 'danger'); }
+        }
     });
 
-    $(document).on('change', '.rowAccountSub', function() { $(this).closest('tr').find('.account-id-lookup').val($(this).val()); });
+    $(document).on('change', '.rowAccountSub', function() { 
+        let code = $(this).find('option:selected').attr('data-code');
+        $(this).closest('tr').find('.account-id-lookup').val(code || $(this).val() || ''); 
+    });
 
     // Math
     function calculateTotals() {
@@ -419,7 +460,7 @@ $(document).ready(function() {
                     @endforeach
                 </select>
             </td>
-            <td><input type="text" class="form-control form-control-sm account-id-lookup"></td>
+            <td><input type="text" class="form-control form-control-sm account-id-lookup" placeholder="Code/ID"></td>
             <td>
                 <select name="row_account_id[]" class="form-select form-select-sm rowAccountSub">
                     <option value="">Select Account...</option>

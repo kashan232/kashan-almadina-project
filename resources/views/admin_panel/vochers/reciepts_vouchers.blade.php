@@ -172,9 +172,9 @@
                 <div class="col-md-3">
                     <div class="card border-0 bg-light p-2 shadow-sm h-100">
                         <div class="row g-1">
-                            <div class="col-4">
-                                <label class="form-label text-muted small fw-bold mb-1">Party ID <span class="text-danger">*</span></label>
-                                <input type="text" id="party_code_input" class="form-control form-control-sm border-danger fw-bold text-danger text-center" placeholder="ID" value="{{ $receipt->party_id }}">
+                            <div class="col-4 text-center">
+                                <label class="form-label text-muted small fw-bold mb-1">Code / ID <span class="text-danger">*</span></label>
+                                <input type="text" id="party_code_input" class="form-control form-control-sm border-danger fw-bold text-danger text-center" placeholder="Code/ID" value="{{ $receipt->party_id }}">
                             </div>
                             <div class="col-8">
                                 <label class="form-label text-muted small fw-bold mb-1">Party <span class="text-danger">*</span></label>
@@ -219,6 +219,7 @@
                                     <th style="width: 20%;">Narration</th>
                                     <th style="width: 12%;">Reference#</th>
                                     <th style="width: 15%;">Account Head</th>
+                                    <th style="width: 8%;">Code</th>
                                     <th style="width: 15%;">Account</th>
                                     <th style="width: 8%;">Discount</th>
                                     <th style="width: 8%;">KG</th>
@@ -261,6 +262,7 @@
                                             @endforeach
                                         </select>
                                     </td>
+                                    <td><input type="text" class="form-control form-control-sm text-center rowAccountCode" placeholder="Code" value=""></td>
                                     <td>
                                         <select name="row_account_id[]" class="form-select form-select-sm rowAccountSub" data-selected="{{ $rowAccounts[$index] ?? '' }}">
                                             <option value="">Select Account</option>
@@ -361,15 +363,25 @@ $(document).ready(function() {
     function syncPartyIdToSelect2() {
         let val = $('#party_code_input').val();
         if (val) {
-            // Find option with exact value match
-            let option = $('#vendor_id option').filter(function() {
+            // Priority 1: Check match by primary ID
+            let optionById = $('#vendor_id option').filter(function() {
                 return $(this).val() == val;
             });
 
-            if (option.length > 0) {
+            if (optionById.length > 0) {
                 $('#vendor_id').val(val).trigger('change');
+                return;
+            }
+
+            // Priority 2: Check match by Account Code (data-code attribute)
+            let optionByCode = $('#vendor_id option').filter(function() {
+                return $(this).attr('data-code') == val;
+            });
+
+            if (optionByCode.length > 0) {
+                $('#vendor_id').val(optionByCode.val()).trigger('change');
             } else {
-                showAlert('Party ID not found in current list!', 'danger');
+                showAlert('Code / ID not found in current list!', 'danger');
             }
         }
     }
@@ -410,6 +422,10 @@ $(document).ready(function() {
         let $partySelect = $('#vendor_id');
         let selectedId = $partySelect.data('selected-id');
 
+        // 🔄 Reset Code / ID and Tel when type changes
+        $('#party_code_input').val('');
+        $('#tel').val('');
+        
         $partySelect.html('<option value="">Loading...</option>');
         
         if (!type) {
@@ -478,6 +494,7 @@ $(document).ready(function() {
                     @endforeach
                 </select>
             </td>
+            <td><input type="text" class="form-control form-control-sm text-center rowAccountCode" placeholder="Code"></td>
             <td>
                 <select name="row_account_id[]" class="form-select form-select-sm rowAccountSub">
                     <option value="">Select Account</option>
@@ -510,20 +527,67 @@ $(document).ready(function() {
         let $row = $(this).closest('tr');
         let headId = $(this).val();
         let $subSelect = $row.find('.rowAccountSub');
+        let $codeField = $row.find('.rowAccountCode');
         let selected = $subSelect.data('selected');
 
+        // 🔄 Reset Code and Account Sub when Head changes
+        $codeField.val('');
         $subSelect.html('<option value="">Loading...</option>');
+
         if (headId) {
             $.get('{{ url("get-accounts-by-head") }}/' + headId, function(res) {
                 $subSelect.html('<option value="">Select Account</option>');
                 res.forEach(acc => {
                     let sel = (acc.id == selected) ? 'selected' : '';
-                    $subSelect.append(`<option value="${acc.id}" ${sel}>${acc.title}</option>`);
+                    $subSelect.append(`<option value="${acc.id}" data-code="${acc.account_code}" ${sel}>${acc.title} (${acc.account_code})</option>`);
                 });
+                
+                // If there's an already selected ID, maybe update the code input too
+                if (selected) {
+                   let code = $subSelect.find('option:selected').data('code');
+                   $row.find('.rowAccountCode').val(code || '');
+                }
             });
         }
     }).each(function() {
         if ($(this).val()) $(this).trigger('change');
+    });
+
+    $(document).on('change', '.rowAccountSub', function() {
+        let code = $(this).find('option:selected').data('code');
+        $(this).closest('tr').find('.rowAccountCode').val(code || '');
+    });
+
+    $(document).on('keydown', '.rowAccountCode', function(e) {
+        if (e.key === 'Tab' || e.key === 'Enter') {
+            let code = $(this).val();
+            if (code) {
+                let $row = $(this).closest('tr');
+                let $subSelect = $row.find('.rowAccountSub');
+                let $opt = $subSelect.find('option').filter(function() {
+                    return $(this).attr('data-code') == code;
+                });
+
+                if ($opt.length > 0) {
+                    $subSelect.val($opt.val()).trigger('change');
+                }
+            }
+        }
+    });
+
+    $(document).on('blur', '.rowAccountCode', function() {
+        let code = $(this).val();
+        if (code) {
+            let $row = $(this).closest('tr');
+            let $subSelect = $row.find('.rowAccountSub');
+            let $opt = $subSelect.find('option').filter(function() {
+                return $(this).attr('data-code') == code;
+            });
+
+            if ($opt.length > 0) {
+                $subSelect.val($opt.val()).trigger('change');
+            }
+        }
     });
 
     // Removed old narration show/hide logic (Select2 handles this via tags:true)

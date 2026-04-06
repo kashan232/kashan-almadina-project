@@ -104,9 +104,9 @@
                 <div class="col-md-3">
                     <div class="card border-0 bg-light p-2 shadow-sm h-100">
                         <div class="row g-1">
-                            <div class="col-4">
-                                <label class="form-label text-muted small fw-bold mb-1">Account ID <span class="text-danger">*</span></label>
-                                <input type="text" id="account_code_input" class="form-control form-control-sm border-danger fw-bold text-danger text-center" placeholder="ID">
+                            <div class="col-4 text-center">
+                                <label class="form-label text-muted small fw-bold mb-1">Code <span class="text-danger">*</span></label>
+                                <input type="text" id="account_code_input" class="form-control form-control-sm border-danger fw-bold text-danger text-center" placeholder="Code">
                             </div>
                             <div class="col-8">
                                 <label class="form-label text-muted small fw-bold mb-1">Account <span class="text-danger">*</span></label>
@@ -141,7 +141,7 @@
                                     <th style="width: 15%;">Narration</th>
                                     <th style="width: 10%;">Ref#</th>
                                     <th style="width: 12%;">Party Type</th>
-                                    <th style="width: 10%;">Party ID</th>
+                                    <th style="width: 10%;">Code / ID</th>
                                     <th style="width: 18%;">Party Name</th>
                                     <th style="width: 8%;">Discount</th>
                                     <th style="width: 7%;">KG</th>
@@ -186,7 +186,7 @@
                                             @endforeach
                                         </select>
                                     </td>
-                                    <td><input type="text" name="row_party_id_input[]" class="form-control form-control-sm text-center rowPartyCode" placeholder="ID" value="{{ $parties[$index] ?? '' }}"></td>
+                                    <td><input type="text" name="row_party_id_input[]" class="form-control form-control-sm text-center rowPartyCode" placeholder="Code/ID" value="{{ $parties[$index] ?? '' }}"></td>
                                     <td>
                                         <select name="row_party_id[]" class="form-select form-select-sm rowPartySelect" data-selected="{{ $parties[$index] ?? '' }}">
                                             <option value="">Select Party...</option>
@@ -267,27 +267,55 @@ $(document).ready(function() {
     initSelectors();
 
     // 🏦 Account Logic
+    function syncAccountIdToCodeField() {
+        let val = $('#account_code_input').val();
+        if (val) {
+            // Find by primary ID
+            let optById = $('#account_id option').filter(function() { return $(this).val() == val; });
+            if (optById.length > 0) {
+                $('#account_id').val(val).trigger('change');
+                return;
+            }
+            // Find by Account Code
+            let optByCode = $('#account_id option').filter(function() { return $(this).attr('data-code') == val; });
+            if (optByCode.length > 0) {
+                $('#account_id').val(optByCode.val()).trigger('change');
+            }
+        }
+    }
+
     $('#account_code_input').on('keydown', function(e) { 
-        if(e.which == 13 || e.which == 9) $('#account_id').val($(this).val()).trigger('change'); 
+        if(e.which == 13 || e.which == 9) {
+            if(e.which == 13) e.preventDefault();
+            syncAccountIdToCodeField();
+        }
     });
     $('#account_code_input').on('blur', function() { 
-        if($(this).val()) $('#account_id').val($(this).val()).trigger('change'); 
+        syncAccountIdToCodeField();
     });
 
     $('#account_id').on('change', function() {
-        $('#account_code_input').val($(this).val() || '');
+        let code = $(this).find('option:selected').attr('data-code');
+        $('#account_code_input').val(code || $(this).val() || '');
     });
 
     $('#account_head').on('change', function() {
         let id = $(this).val();
         let $sub = $('#account_id');
         let selected = $sub.data('selected');
+        
+        // 🔄 Reset Code and Sub-account
+        $('#account_code_input').val('');
         $sub.empty().append('<option value="">Loading...</option>');
+
         if(id) {
             $.get('{{ url("get-accounts-by-head") }}/' + id, res => {
                 $sub.empty().append('<option value="">Select Account...</option>');
-                res.forEach(a => $sub.append(`<option value="${a.id}" ${a.id == selected ? 'selected' : ''}>${a.title}</option>`));
-                if(selected) $('#account_code_input').val(selected);
+                res.forEach(a => $sub.append(`<option value="${a.id}" data-code="${a.account_code}" ${a.id == selected ? 'selected' : ''}>${a.title} (${a.account_code})</option>`));
+                if(selected) {
+                    let code = $sub.find('option:selected').attr('data-code');
+                    $('#account_code_input').val(code || selected);
+                }
             });
         }
     }).trigger('change');
@@ -298,20 +326,47 @@ $(document).ready(function() {
         let $row = $(this).closest('tr');
         let $select = $row.find('.rowPartySelect');
         let selected = $select.data('selected');
+
+        // 🔄 Reset Code and Select
+        $row.find('.rowPartyCode').val('');
         $select.empty().append('<option value="">Loading...</option>');
+
         if(type) {
             let url = (['vendor','customer'].includes(type)) ? '{{ route("party.list") }}?type=' + type : '{{ url("get-accounts-by-head") }}/' + type;
             $.get(url, res => {
                 $select.empty().append('<option value="">Select Party...</option>');
-                res.forEach(i => $select.append(`<option value="${i.id}" ${i.id == selected ? 'selected' : ''}>${i.text || i.title}</option>`));
-                if(selected) $row.find('.rowPartyCode').val(selected);
+                res.forEach(i => {
+                    let code = i.account_code || '';
+                    $select.append(`<option value="${i.id}" data-code="${code}" ${i.id == selected ? 'selected' : ''}>${i.text || i.title} ${code ? '('+code+')' : ''}</option>`);
+                });
+                if(selected) {
+                    let code = $select.find('option:selected').attr('data-code');
+                    $row.find('.rowPartyCode').val(code || selected);
+                }
             });
         } else { $select.empty().append('<option value="">Select Party...</option>'); }
     });
     $('.rowPartyType').trigger('change');
 
-    $(document).on('change', '.rowPartySelect', function() { $(this).closest('tr').find('.rowPartyCode').val($(this).val()); });
-    $(document).on('blur', '.rowPartyCode', function() { $(this).closest('tr').find('.rowPartySelect').val($(this).val()).trigger('change'); });
+    $(document).on('change', '.rowPartySelect', function() { 
+        let code = $(this).find('option:selected').attr('data-code');
+        $(this).closest('tr').find('.rowPartyCode').val(code || $(this).val() || ''); 
+    });
+
+    $(document).on('blur keydown', '.rowPartyCode', function(e) {
+        if(e.type === 'keydown' && e.which != 13 && e.which != 9) return;
+        let $row = $(this).closest('tr');
+        let val = $(this).val();
+        if(val) {
+            let $sel = $row.find('.rowPartySelect');
+            // Try ID
+            let optById = $sel.find('option').filter(function() { return $(this).val() == val; });
+            if(optById.length > 0) { $sel.val(val).trigger('change'); return; }
+            // Try Code
+            let optByCode = $sel.find('option').filter(function() { return $(this).attr('data-code') == val; });
+            if(optByCode.length > 0) { $sel.val(optByCode.val()).trigger('change'); }
+        }
+    });
 
     // ➕ Table
     $('#btnAddRow').click(function() {
@@ -319,7 +374,7 @@ $(document).ready(function() {
             <td><select name="narration_id[]" class="form-select narrationSelect"><option value="">Narration...</option>@foreach($narrations as $id => $name)<option value="{{ $id }}">{{ $name }}</option>@endforeach</select></td>
             <td><input name="reference_no[]" type="text" class="form-control form-control-sm"></td>
             <td><select name="party_type[]" class="form-select form-select-sm rowPartyType"><option value="">Type...</option><option value="vendor">Vendor</option><option value="customer">Customer</option>@foreach($AccountHeads as $head)<option value="{{ $head->id }}">{{ $head->name }}</option>@endforeach</select></td>
-            <td><input type="text" name="row_party_id_input[]" class="form-control form-control-sm text-center rowPartyCode" placeholder="ID"></td>
+            <td><input type="text" name="row_party_id_input[]" class="form-control form-control-sm text-center rowPartyCode" placeholder="Code/ID"></td>
             <td><select name="row_party_id[]" class="form-select form-select-sm rowPartySelect"><option value="">Select Party...</option></select></td>
             <td><input name="discount_value[]" type="number" step="any" class="form-control form-control-sm text-end discount" value="0"></td>
             <td><input name="kg[]" type="number" step="any" class="form-control form-control-sm text-center kg"></td>
