@@ -167,7 +167,7 @@
                       @endcanany
 
                       {{-- Vouchers Section --}}
-                      @canany(['Chart Of Accounts', 'Narrations', 'Receipts Voucher', 'Payment Voucher', 'Expense Voucher', 'Journal Voucher'])
+                      @canany(['Chart Of Accounts', 'Narrations', 'Receipts Voucher', 'Payment Voucher', 'Expense Voucher', 'Income Voucher', 'Journal Voucher'])
                       <li class="nav-item">
                           <a href="#" class="nav-link">
                               <i class="menu_icon feather ft-clipboard"></i>
@@ -216,6 +216,14 @@
                                       </a>
                                   </li>
                                   @endcan
+                                  {{-- @can('Income Voucher') --}}
+                                  <li class="nav-item">
+                                      <a class="nav-link" href="{{ route('all-income-vochers') }}">
+                                          <i class="fa-solid fa-line-chart mr-2"></i>
+                                          <span>Income Voucher</span>
+                                      </a>
+                                  </li>
+                                  {{-- @endcan --}}
                                   @can('Journal Voucher')
                                   <li class="nav-item">
                                       <a class="nav-link" href="{{ route('vouchers.index', 'journal voucher') }}">

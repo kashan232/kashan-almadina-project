@@ -218,6 +218,7 @@
                         <option value="" disabled selected>Choose Head...</option>
                         <option value="Receipts Voucher">Receipts Voucher</option>
                         <option value="Expense voucher">Expense voucher</option>
+                        <option value="Income voucher">Income voucher</option>
                         <option value="Journal voucher">Journal voucher</option>
                         <option value="Payment voucher">Payment voucher</option>
                     </select>

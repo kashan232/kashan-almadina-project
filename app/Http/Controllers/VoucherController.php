@@ -13,6 +13,7 @@ use App\Models\PaymentVoucher;
 use App\Models\ReceiptsVoucher;
 use App\Models\VendorLedger;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
 
 class VoucherController extends Controller
 {
@@ -1218,5 +1219,287 @@ class VoucherController extends Controller
         }
 
         return view('admin_panel.vochers.expense_vochers.print', compact('voucher', 'rows', 'party', 'previousBalance'));
+    }
+
+    // ==========================================
+    // INCOME VOUCHER METHODS
+    // ==========================================
+
+    public function income_vochers($id = null)
+    {
+        $receipt = $id ? \App\Models\IncomeVoucher::findOrFail($id) : new \App\Models\IncomeVoucher();
+        $AccountHeads = DB::table('account_heads')->get();
+        // Narrations specifically for Income voucher or 'all'
+        $narrationsList = DB::table('narrations')->where('expense_head', 'Income voucher')->pluck('narration', 'id');
+        
+        $nextIvid = null;
+        if (!$id) {
+            $last = \App\Models\IncomeVoucher::orderBy('id', 'desc')->first();
+            $num = $last ? (int)str_replace('IVID-', '', $last->ivid) + 1 : 1;
+            $nextIvid = 'IVID-' . str_pad($num, 3, '0', STR_PAD_LEFT);
+        }
+
+        return view('admin_panel.vochers.income_vouchers.income_vouchers', compact('receipt', 'AccountHeads', 'narrationsList', 'nextIvid'));
+    }
+
+    public function ajax_save_income(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'account_head' => 'required',
+            'account_id'   => 'required',
+            'entry_date'   => 'required|date',
+            'narration_id' => 'required|array',
+            'amount'       => 'required|array',
+            'amount.*'     => 'required|numeric|min:0.01',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
+        }
+
+        try {
+            $id = $request->id;
+            $voucher = $id ? \App\Models\IncomeVoucher::findOrFail($id) : new \App\Models\IncomeVoucher();
+
+            if (!$id) {
+                $last = \App\Models\IncomeVoucher::orderBy('id', 'desc')->first();
+                $num = $last ? (int)str_replace('IVID-', '', $last->ivid) + 1 : 1;
+                $voucher->ivid = 'IVID-' . str_pad($num, 3, '0', STR_PAD_LEFT);
+                $voucher->status = 'draft';
+            }
+
+            // 🧩 Narration Tag handling (Auto-create narrations if they are tags)
+            $narrationIds = [];
+            foreach ($request->input('narration_id', []) as $narrId) {
+                if (empty($narrId)) { $narrationIds[] = ""; continue; }
+                if (!is_numeric($narrId)) {
+                    $new = \App\Models\Narration::firstOrCreate(
+                        ['narration' => $narrId, 'expense_head' => 'Income voucher']
+                    );
+                    $narrationIds[] = (string)$new->id;
+                } else {
+                    $narrationIds[] = (string)$narrId;
+                }
+            }
+
+            $voucher->entry_date   = $request->entry_date;
+            $voucher->account_head = $request->account_head;
+            $voucher->account_id   = $request->account_id;
+            $voucher->remarks      = $request->remarks;
+            $voucher->narration_id = json_encode($narrationIds);
+            $voucher->party_type   = json_encode($request->input('party_type', []));
+            $voucher->party_id     = json_encode($request->input('party_id', []));
+            $voucher->reference_no = json_encode($request->input('reference_no', []));
+            $voucher->amount       = json_encode($request->input('amount', []));
+            $voucher->total_amount = $request->total_amount;
+            
+            $voucher->save();
+
+            return response()->json(['success' => true, 'id' => $voucher->id, 'ivid' => $voucher->ivid]);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    public function post_income($id)
+    {
+        $voucher = \App\Models\IncomeVoucher::findOrFail($id);
+        if ($voucher->status === 'posted') return back()->with('error', 'Already posted.');
+
+        DB::beginTransaction();
+        try {
+            $totalAmount = (float)$voucher->total_amount;
+            $ivid = $voucher->ivid;
+
+            // 🏦 1. Update Header Account (Destination) -> DEBIT (Increase)
+            $headerAcc = \App\Models\Account::find($voucher->account_id);
+            if ($headerAcc) {
+                $headerAcc->opening_balance += $totalAmount;
+                $headerAcc->save();
+            }
+
+            // 🧩 2. Update Row Sources (Parties) -> CREDIT (Impact depends on type)
+            $types = json_decode($voucher->party_type, true) ?? [];
+            $pIds = json_decode($voucher->party_id, true) ?? [];
+            $amounts = json_decode($voucher->amount, true) ?? [];
+
+            foreach ($pIds as $idx => $pId) {
+                $rowAmount = (float)($amounts[$idx] ?? 0);
+                $pType = $types[$idx] ?? '';
+                if ($rowAmount <= 0) continue;
+
+                if ($pType === 'vendor') {
+                    $ledger = \App\Models\VendorLedger::where('vendor_id', $pId)->latest()->first();
+                    $prev = $ledger ? $ledger->closing_balance : 0;
+                    \App\Models\VendorLedger::create([
+                        'vendor_id'        => $pId,
+                        'admin_or_user_id' => auth()->id(),
+                        'date'             => now(),
+                        'description'      => "Income Voucher #$ivid",
+                        'debit'            => 0,
+                        'credit'           => $rowAmount,
+                        'previous_balance' => $prev,
+                        'closing_balance'  => $prev - $rowAmount,
+                    ]);
+                } elseif ($pType === 'customer' || $pType === 'walkin') {
+                    $ledger = \App\Models\CustomerLedger::where('customer_id', $pId)->latest()->first();
+                    $prev = $ledger ? $ledger->closing_balance : 0;
+                    \App\Models\CustomerLedger::create([
+                        'customer_id'      => $pId,
+                        'admin_or_user_id' => auth()->id(),
+                        'date'             => now(),
+                        'description'      => "Income Voucher #$ivid",
+                        'debit'            => 0,
+                        'credit'           => $rowAmount,
+                        'previous_balance' => $prev,
+                        'closing_balance'  => $prev - $rowAmount,
+                    ]);
+                } else {
+                    // It's a standard Chart of Accounts entry (e.g. Sales Income Account)
+                    $acc = \App\Models\Account::find($pId);
+                    if ($acc) {
+                        $acc->opening_balance -= $rowAmount;
+                        $acc->save();
+                    }
+                }
+            }
+
+            $voucher->status = 'posted';
+            $voucher->save();
+
+            DB::commit();
+            return redirect()->route('income-vochers')->with('success', 'Income Voucher Posted Successfully and Ledgers Updated');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->with('error', 'Error: ' . $e->getMessage());
+        }
+    }
+
+    public function unpost_income($id)
+    {
+        $voucher = \App\Models\IncomeVoucher::findOrFail($id);
+        if ($voucher->status !== 'posted') return back()->with('error', 'Voucher is not posted.');
+
+        DB::beginTransaction();
+        try {
+            $totalAmount = (float)$voucher->total_amount;
+            $ivid = $voucher->ivid;
+
+            // 🏦 1. Reverse Header Account Destination -> DEBIT (Decrease)
+            $headerAcc = \App\Models\Account::find($voucher->account_id);
+            if ($headerAcc) {
+                $headerAcc->opening_balance -= $totalAmount;
+                $headerAcc->save();
+            }
+
+            // 🧩 2. Reverse Row Sources (Delete created ledgers & reverse COA accounts)
+            $types = json_decode($voucher->party_type, true) ?? [];
+            $pIds = json_decode($voucher->party_id, true) ?? [];
+            $amounts = json_decode($voucher->amount, true) ?? [];
+
+            foreach ($pIds as $idx => $pId) {
+                $rowAmount = (float)($amounts[$idx] ?? 0);
+                $pType = $types[$idx] ?? '';
+                if ($rowAmount <= 0) continue;
+
+                if ($pType === 'vendor') {
+                    // Logic: Delete the newest ledger entry for this voucher
+                    \App\Models\VendorLedger::where('vendor_id', $pId)->where('description', "Income Voucher #$ivid")->delete();
+                } elseif ($pType === 'customer' || $pType === 'walkin') {
+                    \App\Models\CustomerLedger::where('customer_id', $pId)->where('description', "Income Voucher #$ivid")->delete();
+                } else {
+                    // Reverse COA accounts (Credit side reverse = ADD back)
+                    $acc = \App\Models\Account::find($pId);
+                    if ($acc) {
+                        $acc->opening_balance += $rowAmount;
+                        $acc->save();
+                    }
+                }
+            }
+
+            $voucher->status = 'draft';
+            $voucher->save();
+
+            DB::commit();
+            return redirect()->route('income-vochers', $id)->with('success', 'Income Voucher Unposted and Ledgers Reversed.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->with('error', 'Error reversing ledgers: ' . $e->getMessage());
+        }
+    }
+
+    public function cancel_income($id)
+    {
+        $voucher = \App\Models\IncomeVoucher::findOrFail($id);
+        if ($voucher->status === 'posted') return back()->with('error', 'Cannot delete posted voucher. Unpost first.');
+        $voucher->delete();
+        return redirect()->route('all-income-vochers')->with('success', 'Income Voucher Deleted Successfully.');
+    }
+
+    public function all_income_vochers(Request $request)
+    {
+        $query = \App\Models\IncomeVoucher::query();
+
+        if ($request->filled('start_date')) $query->whereDate('entry_date', '>=', $request->start_date);
+        if ($request->filled('end_date')) $query->whereDate('entry_date', '<=', $request->end_date);
+        if ($request->filled('status')) $query->where('status', $request->status);
+
+        $incomes = $query->orderBy('id', 'DESC')->get();
+
+        foreach ($incomes as $v) {
+            $accountHead = DB::table('account_heads')->where('id', $v->account_head)->first();
+            $account = DB::table('accounts')->where('id', $v->account_id)->first();
+            
+            $v->type_label = $accountHead->name ?? 'Account';
+            $v->party_name = $account->title ?? '-';
+            $v->party_code = $account->account_code ?? '-';
+            $v->total_amount = $v->total_amount ?: 0;
+        }
+
+        return view('admin_panel.vochers.income_vouchers.all_income_vouchers', compact('incomes'));
+    }
+
+    public function incomeprint($id)
+    {
+        $voucher = \App\Models\IncomeVoucher::findOrFail($id);
+        
+        $narrations = json_decode($voucher->narration_id, true) ?? [];
+        $types = json_decode($voucher->party_type, true) ?? [];
+        $pIds = json_decode($voucher->party_id, true) ?? [];
+        $refs = json_decode($voucher->reference_no, true) ?? [];
+        $amounts = json_decode($voucher->amount, true) ?? [];
+
+        $rows = [];
+        foreach ($narrations as $i => $nId) {
+            if (empty($nId)) continue;
+            
+            $pName = '-';
+            $type = $types[$i] ?? null;
+            $pid = $pIds[$i] ?? null;
+            
+            if ($type == 'vendor') $pName = DB::table('vendors')->where('id', $pid)->value('name');
+            elseif (in_array($type, ['customer', 'walkin'])) $pName = DB::table('customers')->where('id', $pid)->value('customer_name');
+            else $pName = DB::table('accounts')->where('id', $pid)->value('title');
+
+            $rows[] = [
+                'narration' => DB::table('narrations')->where('id', $nId)->value('narration'),
+                'party_name' => $pName,
+                'party_type' => $type,
+                'reference' => $refs[$i] ?? '',
+                'amount' => (float)($amounts[$i] ?? 0)
+            ];
+        }
+
+        $headerAccount = DB::table('accounts')->where('id', $voucher->account_id)->first();
+        
+        // Match Expense Voucher print variables
+        $party = $headerAccount;
+        $party->head_name = DB::table('account_heads')->where('id', $party->head_id)->value('name');
+        $party->name = $party->title;
+        $party->phone = $party->account_code; // Using code as phone placeholder for account type
+        
+        $previousBalance = (float)($headerAccount->opening_balance ?? 0);
+
+        return view('admin_panel.vochers.income_vouchers.print', compact('voucher', 'rows', 'headerAccount', 'party', 'previousBalance'));
     }
 }

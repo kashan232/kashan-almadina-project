@@ -92,6 +92,15 @@ Route::delete('/expense/vochers/cancel/{id}', [VoucherController::class, 'cancel
 Route::get('/all-expense-vochers', [VoucherController::class, 'all_expense_vochers'])->name('all-expense-vochers');
 Route::get('/expense-voucher/print/{id}', [VoucherController::class, 'expenseprint'])->name('ExpenseVoucher.print');
 
+// Income Voucher Routes
+Route::get('/income-vochers/{id?}', [VoucherController::class, 'income_vochers'])->name('income-vochers');
+Route::post('/income/vochers/ajax-save', [VoucherController::class, 'ajax_save_income'])->name('income.vochers.ajax-save');
+Route::post('/income/vochers/post/{id}', [VoucherController::class, 'post_income'])->name('income.vochers.post');
+Route::post('/income/vochers/unpost/{id}', [VoucherController::class, 'unpost_income'])->name('income.vochers.unpost');
+Route::delete('/income/vochers/cancel/{id}', [VoucherController::class, 'cancel_income'])->name('income.vochers.cancel');
+Route::get('/all-income-vochers', [VoucherController::class, 'all_income_vochers'])->name('all-income-vochers');
+Route::get('/income-voucher/print/{id}', [VoucherController::class, 'incomeprint'])->name('incomeVoucher.print');
+
 // Route::get('/dashboard', function () {
 //     return view('dashboard');
 // })->middleware(['auth', 'verified'])->name('dashboard');
