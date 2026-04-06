@@ -796,8 +796,15 @@ class VoucherController extends Controller
             $partyNames = [];
             $typeLabels = [];
 
-            $typesRaw = json_decode($voucher->type, true) ?: [$voucher->type];
-            $partyIdsRaw = json_decode($voucher->party_id, true) ?: [$voucher->party_id];
+            $typesRaw = json_decode($voucher->type, true);
+            if (!is_array($typesRaw)) {
+                $typesRaw = [$voucher->type];
+            }
+
+            $partyIdsRaw = json_decode($voucher->party_id, true);
+            if (!is_array($partyIdsRaw)) {
+                $partyIdsRaw = [$voucher->party_id];
+            }
 
             foreach ($partyIdsRaw as $index => $pId) {
                 if (empty($pId)) continue;
