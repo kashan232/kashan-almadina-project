@@ -311,7 +311,7 @@ $(document).ready(function() {
         if(id) {
             $.get('{{ url("get-accounts-by-head") }}/' + id, res => {
                 $sub.empty().append('<option value="">Select Account...</option>');
-                res.forEach(a => $sub.append(`<option value="${a.id}" data-code="${a.account_code}" ${a.id == selected ? 'selected' : ''}>${a.title} (${a.account_code})</option>`));
+                res.forEach(a => $sub.append(`<option value="${a.id}" data-code="${a.account_code}" ${a.id == selected ? 'selected' : ''}>${a.title}</option>`));
                 if(selected) {
                     let code = $sub.find('option:selected').attr('data-code');
                     $('#account_code_input').val(code || selected);
@@ -337,7 +337,7 @@ $(document).ready(function() {
                 $select.empty().append('<option value="">Select Party...</option>');
                 res.forEach(i => {
                     let code = i.account_code || '';
-                    $select.append(`<option value="${i.id}" data-code="${code}" ${i.id == selected ? 'selected' : ''}>${i.text || i.title} ${code ? '('+code+')' : ''}</option>`);
+                    $select.append(`<option value="${i.id}" data-code="${code}" ${i.id == selected ? 'selected' : ''}>${i.text || i.title}</option>`);
                 });
                 if(selected) {
                     let code = $select.find('option:selected').attr('data-code');

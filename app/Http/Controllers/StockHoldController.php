@@ -59,7 +59,7 @@ class StockHoldController extends Controller
     {
         $type = $request->type; // vendor, customer, walkin
         if ($type === 'vendor') {
-            return Vendor::orderBy('name')->get()->map(fn($v) => ['id' => $v->id, 'text' => $v->id . ' - ' . $v->name]);
+            return Vendor::orderBy('name')->get()->map(fn($v) => ['id' => $v->id, 'text' => $v->name]);
         }
         
         $customerType = ($type === 'walkin' || $type === 'walking') ? 'Walking Customer' : 'Main Customer';
@@ -67,7 +67,7 @@ class StockHoldController extends Controller
         return Customer::where('customer_type', $customerType)
             ->orderBy('customer_name')
             ->get()
-            ->map(fn($c) => ['id' => $c->id, 'text' => ($c->customer_id ?? $c->id) . ' - ' . $c->customer_name]);
+            ->map(fn($c) => ['id' => $c->id, 'text' => $c->customer_name]);
     }
 
     public function partyInvoices(Request $request, $partyId)

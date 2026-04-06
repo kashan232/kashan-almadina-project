@@ -450,7 +450,7 @@ $(document).ready(function() {
                 $partySelect.html('<option value="">Select Account...</option>');
                 data.forEach(acc => {
                     let sel = (acc.id == selectedId) ? 'selected' : '';
-                    $partySelect.append(`<option value="${acc.id}" data-code="${acc.account_code}" ${sel}>${acc.title} (${acc.account_code})</option>`);
+                    $partySelect.append(`<option value="${acc.id}" data-code="${acc.account_code}" ${sel}>${acc.title}</option>`);
                 });
                 $partySelect.trigger('change');
             });
@@ -539,7 +539,7 @@ $(document).ready(function() {
                 $subSelect.html('<option value="">Select Account</option>');
                 res.forEach(acc => {
                     let sel = (acc.id == selected) ? 'selected' : '';
-                    $subSelect.append(`<option value="${acc.id}" data-code="${acc.account_code}" ${sel}>${acc.title} (${acc.account_code})</option>`);
+                    $subSelect.append(`<option value="${acc.id}" data-code="${acc.account_code}" ${sel}>${acc.title}</option>`);
                 });
                 
                 // If there's an already selected ID, maybe update the code input too
