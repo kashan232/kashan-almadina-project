@@ -221,6 +221,7 @@
                         <option value="Income voucher">Income voucher</option>
                         <option value="Journal voucher">Journal voucher</option>
                         <option value="Payment voucher">Payment voucher</option>
+                        <option value="Adjustment voucher">Adjustment voucher</option>
                     </select>
                 </div>
 

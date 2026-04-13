@@ -191,6 +191,7 @@
 
         // Force relative position to avoid overlap
         allPermissions.forEach(p => {
+            if (p.name === 'Reports') return; // Skip Reports permission
             let isChecked = assignedPerms.includes(p.name) ? 'checked' : '';
             let html = `
                 <div class="col">

@@ -1743,8 +1743,17 @@ $(document).ready(function() {
     // =============================================
     function ajaxSaveDraft() {
         $('.ajax-valid-error').remove();
-        var $form  = $('#purchaseForm');
+        
+        // ✨ Remove empty product rows before saving
+        $('#purchaseItems tr').each(function() {
+            var pid = $(this).find('.product-select').val();
+            if (!pid && $('#purchaseItems tr').length > 1) {
+                $(this).remove();
+            }
+        });
+        if (typeof window.recalcSummary === 'function') window.recalcSummary();
 
+        var $form  = $('#purchaseForm');
         $('#saveDraftBtn').prop('disabled', true).html('<i class="fa fa-spinner fa-spin me-1"></i> Saving...');
 
         $.ajax({

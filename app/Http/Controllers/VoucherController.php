@@ -12,6 +12,9 @@ use App\Models\Narration;
 use App\Models\PaymentVoucher;
 use App\Models\ReceiptsVoucher;
 use App\Models\VendorLedger;
+use App\Models\IncomeVoucher;
+use App\Models\AdjustmentVoucher;
+use App\Models\JournalVoucher;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 
@@ -1227,14 +1230,14 @@ class VoucherController extends Controller
 
     public function income_vochers($id = null)
     {
-        $receipt = $id ? \App\Models\IncomeVoucher::findOrFail($id) : new \App\Models\IncomeVoucher();
+        $receipt = $id ? IncomeVoucher::findOrFail($id) : new IncomeVoucher();
         $AccountHeads = DB::table('account_heads')->get();
         // Narrations specifically for Income voucher or 'all'
         $narrationsList = DB::table('narrations')->where('expense_head', 'Income voucher')->pluck('narration', 'id');
         
         $nextIvid = null;
         if (!$id) {
-            $last = \App\Models\IncomeVoucher::orderBy('id', 'desc')->first();
+            $last = IncomeVoucher::orderBy('id', 'desc')->first();
             $num = $last ? (int)str_replace('IVID-', '', $last->ivid) + 1 : 1;
             $nextIvid = 'IVID-' . str_pad($num, 3, '0', STR_PAD_LEFT);
         }
@@ -1259,10 +1262,10 @@ class VoucherController extends Controller
 
         try {
             $id = $request->id;
-            $voucher = $id ? \App\Models\IncomeVoucher::findOrFail($id) : new \App\Models\IncomeVoucher();
+            $voucher = $id ? IncomeVoucher::findOrFail($id) : new IncomeVoucher();
 
             if (!$id) {
-                $last = \App\Models\IncomeVoucher::orderBy('id', 'desc')->first();
+                $last = IncomeVoucher::orderBy('id', 'desc')->first();
                 $num = $last ? (int)str_replace('IVID-', '', $last->ivid) + 1 : 1;
                 $voucher->ivid = 'IVID-' . str_pad($num, 3, '0', STR_PAD_LEFT);
                 $voucher->status = 'draft';
@@ -1303,7 +1306,7 @@ class VoucherController extends Controller
 
     public function post_income($id)
     {
-        $voucher = \App\Models\IncomeVoucher::findOrFail($id);
+        $voucher = IncomeVoucher::findOrFail($id);
         if ($voucher->status === 'posted') return back()->with('error', 'Already posted.');
 
         DB::beginTransaction();
@@ -1377,7 +1380,7 @@ class VoucherController extends Controller
 
     public function unpost_income($id)
     {
-        $voucher = \App\Models\IncomeVoucher::findOrFail($id);
+        $voucher = IncomeVoucher::findOrFail($id);
         if ($voucher->status !== 'posted') return back()->with('error', 'Voucher is not posted.');
 
         DB::beginTransaction();
@@ -1430,7 +1433,7 @@ class VoucherController extends Controller
 
     public function cancel_income($id)
     {
-        $voucher = \App\Models\IncomeVoucher::findOrFail($id);
+        $voucher = IncomeVoucher::findOrFail($id);
         if ($voucher->status === 'posted') return back()->with('error', 'Cannot delete posted voucher. Unpost first.');
         $voucher->delete();
         return redirect()->route('all-income-vochers')->with('success', 'Income Voucher Deleted Successfully.');
@@ -1438,7 +1441,7 @@ class VoucherController extends Controller
 
     public function all_income_vochers(Request $request)
     {
-        $query = \App\Models\IncomeVoucher::query();
+        $query = IncomeVoucher::query();
 
         if ($request->filled('start_date')) $query->whereDate('entry_date', '>=', $request->start_date);
         if ($request->filled('end_date')) $query->whereDate('entry_date', '<=', $request->end_date);
@@ -1461,7 +1464,7 @@ class VoucherController extends Controller
 
     public function incomeprint($id)
     {
-        $voucher = \App\Models\IncomeVoucher::findOrFail($id);
+        $voucher = IncomeVoucher::findOrFail($id);
         
         $narrations = json_decode($voucher->narration_id, true) ?? [];
         $types = json_decode($voucher->party_type, true) ?? [];
@@ -1502,4 +1505,502 @@ class VoucherController extends Controller
 
         return view('admin_panel.vochers.income_vouchers.print', compact('voucher', 'rows', 'headerAccount', 'party', 'previousBalance'));
     }
+
+
+    public function adjustmentprint($id)
+    {
+        $voucher = AdjustmentVoucher::findOrFail($id);
+        $narrs = json_decode($voucher->narration_id, true) ?? [];
+        $accHeads = json_decode($voucher->account_head, true) ?? [];
+        $accIds = json_decode($voucher->account_id, true) ?? [];
+        $refs = json_decode($voucher->reference_no, true) ?? [];
+        $amounts = json_decode($voucher->amount, true) ?? [];
+
+        $rows = [];
+        for ($i = 0; $i < count($narrs); $i++) {
+            $nId = $narrs[$i] ?? "";
+            $aid = $accIds[$i] ?? "";
+            $hId = $accHeads[$i] ?? "";
+
+            $accName = DB::table('accounts')->where('id', $aid)->value('title');
+            $headName = DB::table('account_heads')->where('id', $hId)->value('name');
+
+            $rows[] = [
+                'narration' => DB::table('narrations')->where('id', $nId)->value('narration'),
+                'account_name' => $accName,
+                'head_name' => $headName,
+                'reference' => $refs[$i] ?? '',
+                'amount' => (float)($amounts[$i] ?? 0)
+            ];
+        }
+
+        $party = null;
+        $type = $voucher->party_type;
+        $pid = $voucher->party_id;
+        if ($type == 'vendor') $party = DB::table('vendors')->where('id', $pid)->first();
+        elseif (in_array($type, ['customer', 'walkin'])) $party = DB::table('customers')->where('id', $pid)->first();
+        else {
+            $party = DB::table('accounts')->where('id', $pid)->first();
+            if ($party) {
+                // Formatting for uniform print object
+                $party->name = $party->title;
+                $party->phone = $party->account_code;
+            }
+        }
+        
+        $party->head_name = (is_numeric($type)) ? DB::table('account_heads')->where('id', $type)->value('name') : ucfirst($type);
+        
+        $previousBalance = 0;
+        if ($type == 'vendor') {
+            $previousBalance = (float)DB::table('vendor_ledgers')->where('vendor_id', $pid)->orderBy('id','desc')->value('closing_balance');
+        } elseif (in_array($type, ['customer', 'walkin'])) {
+            $previousBalance = (float)DB::table('customer_ledgers')->where('customer_id', $pid)->orderBy('id','desc')->value('closing_balance');
+        } else {
+            $previousBalance = (float)DB::table('accounts')->where('id', $pid)->value('opening_balance');
+        }
+
+        return view('admin_panel.vochers.adjustment_vouchers.print', compact('voucher', 'rows', 'party', 'previousBalance'));
+    }
+
+    public function adjustment_vochers($id = null)
+    {
+        $receipt = $id ? AdjustmentVoucher::findOrFail($id) : new AdjustmentVoucher();
+        $AccountHeads = DB::table('account_heads')->get();
+        // Narrations specifically for Adjustment voucher or 'all'
+        $narrationsList = DB::table('narrations')->where('expense_head', 'Adjustment voucher')->pluck('narration', 'id');
+        
+        $nextAvid = null;
+        if (!$id) {
+            $last = AdjustmentVoucher::orderBy('id', 'desc')->first();
+            $num = $last ? (int)str_replace('AVID-', '', $last->avid) + 1 : 1;
+            $nextAvid = 'AVID-' . str_pad($num, 3, '0', STR_PAD_LEFT);
+        }
+
+        return view('admin_panel.vochers.adjustment_vouchers.adjustment_vouchers', compact('receipt', 'AccountHeads', 'narrationsList', 'nextAvid'));
+    }
+
+    public function ajax_save_adjustment(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'party_type' => 'required',
+            'party_id' => 'required',
+            'entry_date' => 'required|date',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
+        }
+
+        try {
+            $data = $request->only(['entry_date', 'party_type', 'party_id', 'remarks', 'total_amount']);
+            
+            // Handle Narrations (Select2 Tags)
+            $narrationIds = [];
+            foreach ($request->input('narration_id', []) as $nId) {
+                if ($nId && !is_numeric($nId)) {
+                    $newN = \App\Models\Narration::firstOrCreate(['narration' => $nId, 'expense_head' => 'Adjustment voucher']);
+                    $narrationIds[] = (string)$newN->id;
+                } else {
+                    $narrationIds[] = (string)$nId;
+                }
+            }
+
+            $data['narration_id'] = json_encode($narrationIds);
+            $data['account_head'] = json_encode($request->account_head);
+            $data['account_id'] = json_encode($request->account_id);
+            $data['reference_no'] = json_encode($request->reference_no);
+            $data['amount'] = json_encode($request->amount);
+
+            if ($request->id) {
+                $voucher = AdjustmentVoucher::findOrFail($request->id);
+                if ($voucher->status == 'posted') return response()->json(['success' => false, 'message' => 'Cannot edit posted voucher.'], 403);
+                $voucher->update($data);
+            } else {
+                $last = AdjustmentVoucher::orderBy('id', 'desc')->first();
+                $num = $last ? (int)str_replace('AVID-', '', $last->avid) + 1 : 1;
+                $data['avid'] = 'AVID-' . str_pad($num, 3, '0', STR_PAD_LEFT);
+                $data['status'] = 'draft';
+                $voucher = AdjustmentVoucher::create($data);
+            }
+
+            return response()->json(['success' => true, 'id' => $voucher->id, 'avid' => $voucher->avid]);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    public function post_adjustment($id)
+    {
+        $voucher = AdjustmentVoucher::findOrFail($id);
+        if ($voucher->status === 'posted') return back()->with('error', 'Already posted.');
+
+        DB::beginTransaction();
+        try {
+            $totalAmount = (float)$voucher->total_amount;
+            $avid = $voucher->avid;
+
+            // 1. Update Header Party (Source) -> CREDIT (Decrease balance)
+            $pType = $voucher->party_type;
+            $pId = $voucher->party_id;
+
+            if ($pType === 'vendor') {
+                $ledger = \App\Models\VendorLedger::where('vendor_id', $pId)->latest()->first();
+                $prev = $ledger ? $ledger->closing_balance : 0;
+                \App\Models\VendorLedger::create([
+                    'vendor_id'        => $pId,
+                    'admin_or_user_id' => auth()->id(),
+                    'date'             => now(),
+                    'description'      => "Adjustment Voucher #$avid",
+                    'debit'            => 0,
+                    'credit'           => $totalAmount,
+                    'previous_balance' => $prev,
+                    'closing_balance'  => $prev - $totalAmount,
+                ]);
+            } elseif ($pType === 'customer' || $pType === 'walkin') {
+                $ledger = \App\Models\CustomerLedger::where('customer_id', $pId)->latest()->first();
+                $prev = $ledger ? $ledger->closing_balance : 0;
+                \App\Models\CustomerLedger::create([
+                    'customer_id'      => $pId,
+                    'admin_or_user_id' => auth()->id(),
+                    'date'             => now(),
+                    'description'      => "Adjustment Voucher #$avid",
+                    'debit'            => 0,
+                    'credit'           => $totalAmount,
+                    'previous_balance' => $prev,
+                    'closing_balance'  => $prev - $totalAmount,
+                ]);
+            } else {
+                // Head/Account based Source
+                $headerAcc = \App\Models\Account::find($pId);
+                if ($headerAcc) {
+                    $headerAcc->opening_balance -= $totalAmount;
+                    $headerAcc->save();
+                }
+            }
+
+            // 2. Update Row Accounts (Destinations) -> DEBIT (Increase)
+            $accIds = json_decode($voucher->account_id, true) ?? [];
+            $amounts = json_decode($voucher->amount, true) ?? [];
+
+            foreach ($accIds as $idx => $accId) {
+                $rowAmount = (float)($amounts[$idx] ?? 0);
+                if ($rowAmount <= 0) continue;
+
+                $rowAcc = \App\Models\Account::find($accId);
+                if ($rowAcc) {
+                    $rowAcc->opening_balance += $rowAmount;
+                    $rowAcc->save();
+                }
+            }
+
+            $voucher->status = 'posted';
+            $voucher->save();
+
+            DB::commit();
+            return back()->with('success', 'Adjustment Voucher posted successfully!');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->with('error', $e->getMessage());
+        }
+    }
+
+
+    public function cancel_adjustment($id)
+    {
+        $voucher = AdjustmentVoucher::findOrFail($id);
+        if ($voucher->status === 'posted') return back()->with('error', 'Cannot cancel a posted voucher.');
+        $voucher->delete();
+        return redirect()->route('all-adjustment-vochers')->with('success', 'Adjustment Voucher deleted successfully.');
+    }
+
+    public function all_adjustment_vochers(Request $request)
+    {
+        $query = AdjustmentVoucher::query();
+        if ($request->filled('start_date')) $query->whereDate('entry_date', '>=', $request->start_date);
+        if ($request->filled('end_date')) $query->whereDate('entry_date', '<=', $request->end_date);
+        if ($request->filled('status')) $query->where('status', $request->status);
+
+        $vouchers = $query->orderBy('id', 'DESC')->get();
+
+        foreach ($vouchers as $v) {
+            $partyCode = '-';
+            if (is_numeric($v->party_type)) {
+                $head = DB::table('account_heads')->where('id', $v->party_type)->first();
+                $acc = DB::table('accounts')->where('id', $v->party_id)->first();
+                $typeLabel = $head->name ?? 'Account';
+                $partyName = $acc->title ?? '-';
+                $partyCode = $acc->account_code ?? $v->party_id;
+            } elseif ($v->party_type === 'vendor') {
+                $vendor = DB::table('vendors')->where('id', $v->party_id)->first();
+                $partyName = $vendor->name ?? '-';
+                $partyCode = $vendor->id ?? '-';
+                $typeLabel = 'Vendor';
+            } elseif ($v->party_type === 'customer' || $v->party_type === 'walkin') {
+                $customer = DB::table('customers')->where('id', $v->party_id)->first();
+                $partyName = $customer->customer_name ?? '-';
+                $partyCode = $customer->id ?? '-';
+                $typeLabel = ($v->party_type === 'walkin') ? 'Walk-in' : 'Customer';
+            }
+
+            $v->type_label = $typeLabel;
+            $v->party_name = $partyName;
+            $v->party_code = $partyCode;
+
+            // Extract Accounts (Side 2)
+            $rowAccIds = json_decode($v->account_id, true) ?? [];
+            $rowAccHeads = json_decode($v->account_head, true) ?? [];
+            $accountsList = [];
+            foreach ($rowAccIds as $idx => $aid) {
+                if (!$aid) continue;
+                $acc = DB::table('accounts')->where('id', $aid)->first();
+                if ($acc) {
+                    $headName = DB::table('account_heads')->where('id', $rowAccHeads[$idx] ?? null)->value('name');
+                    $accountsList[] = ($headName ? "[$headName] " : "") . $acc->title . ($acc->account_code ? " (#{$acc->account_code})" : "");
+                }
+            }
+            $v->accounts_detail = implode('<br>', $accountsList);
+        }
+
+        return view('admin_panel.vochers.adjustment_vouchers.all_adjustment_vouchers', compact('vouchers'));
+    }
+
+    // ==========================================
+    // JOURNAL VOUCHER (GENERAL VOUCHER) METHODS
+    // ==========================================
+
+    public function journal_vochers($id = null)
+    {
+        $receipt = $id ? JournalVoucher::findOrFail($id) : new JournalVoucher();
+        $AccountHeads = DB::table('account_heads')->get();
+        // Filter narrations for Journal Voucher
+        $narrationsList = DB::table('narrations')->where('expense_head', 'Journal voucher')->pluck('narration', 'id');
+        
+        $nextJvid = null;
+        if (!$id) {
+            $last = JournalVoucher::orderBy('id', 'desc')->first();
+            $num = $last ? (int)str_replace('JV-', '', $last->jvid) + 1 : 1;
+            $nextJvid = 'JV-' . str_pad($num, 3, '0', STR_PAD_LEFT);
+        }
+
+        return view('admin_panel.vochers.journal_vouchers.journal_vouchers', compact('receipt', 'AccountHeads', 'narrationsList', 'nextJvid'));
+    }
+
+    public function ajax_save_journal(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'entry_date' => 'required|date',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
+        }
+
+        try {
+            $pTypes = $request->input('party_type', []);
+            $pIds = $request->input('party_id', []);
+            $drCrs = $request->input('dr_cr', []);
+
+            if (count($pIds) < 2) {
+                return response()->json(['success' => false, 'message' => 'At least 2 rows are required for a Journal Voucher.'], 422);
+            }
+
+            // Row-wise validation
+            foreach ($pTypes as $idx => $type) {
+                if (empty($type) || empty($pIds[$idx]) || empty($drCrs[$idx])) {
+                    return response()->json(['success' => false, 'message' => 'Please select Party Type, Name, and DR/CR for all rows.'], 422);
+                }
+            }
+
+            $totalDr = (float)$request->total_debit;
+            $totalCr = (float)$request->total_credit;
+            if (abs($totalDr - $totalCr) > 0.01) {
+                return response()->json(['success' => false, 'message' => 'Total Debit must equal Total Credit.'], 422);
+            }
+
+            $data = $request->only(['entry_date', 'reference_no', 'remarks', 'total_debit', 'total_credit']);
+            
+            // Handle Narrations
+            $narrationIds = [];
+            foreach ($request->input('narration_id', []) as $nId) {
+                if ($nId && !is_numeric($nId)) {
+                    $newN = \App\Models\Narration::firstOrCreate(['narration' => $nId, 'expense_head' => 'Journal voucher']);
+                    $narrationIds[] = (string)$newN->id;
+                } else {
+                    $narrationIds[] = (string)$nId;
+                }
+            }
+
+            $data['narration_id'] = json_encode($narrationIds);
+            $data['party_type'] = json_encode($request->party_type);
+            $data['party_id'] = json_encode($request->party_id);
+            $data['dr_cr'] = json_encode($request->dr_cr);
+            $data['debit'] = json_encode($request->debit);
+            $data['credit'] = json_encode($request->credit);
+
+            if ($request->id) {
+                $voucher = JournalVoucher::findOrFail($request->id);
+                if ($voucher->status == 'posted') return response()->json(['success' => false, 'message' => 'Cannot edit posted voucher.'], 403);
+                $voucher->update($data);
+            } else {
+                $last = JournalVoucher::orderBy('id', 'desc')->first();
+                $num = $last ? (int)str_replace('JV-', '', $last->jvid) + 1 : 1;
+                $data['jvid'] = 'JV-' . str_pad($num, 3, '0', STR_PAD_LEFT);
+                $data['status'] = 'draft';
+                $voucher = JournalVoucher::create($data);
+            }
+
+            return response()->json(['success' => true, 'id' => $voucher->id, 'jvid' => $voucher->jvid]);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    public function post_journal($id)
+    {
+        $voucher = JournalVoucher::findOrFail($id);
+        if ($voucher->status === 'posted') return back()->with('error', 'Already posted.');
+
+        DB::beginTransaction();
+        try {
+            $jvid = $voucher->jvid;
+            $entryDate = $voucher->entry_date ?: now();
+
+            // 1. Post Rows (Each row is a separate entry)
+            $pTypes = json_decode($voucher->party_type, true) ?? [];
+            $pIds = json_decode($voucher->party_id, true) ?? [];
+            $debits = json_decode($voucher->debit, true) ?? [];
+            $credits = json_decode($voucher->credit, true) ?? [];
+
+            foreach ($pTypes as $idx => $type) {
+                $dr = (float)($debits[$idx] ?? 0);
+                $cr = (float)($credits[$idx] ?? 0);
+                $impact = $dr - $cr; // Debit is positive impact, Credit is negative
+                
+                if ($impact == 0) continue;
+
+                $pid = $pIds[$idx] ?? null;
+                if (!$pid) continue;
+
+                if ($type === 'vendor') {
+                    $ledger = \App\Models\VendorLedger::where('vendor_id', $pid)->latest()->first();
+                    $prev = $ledger ? $ledger->closing_balance : 0;
+                    \App\Models\VendorLedger::create([
+                        'vendor_id' => $pid, 'admin_or_user_id' => auth()->id(), 'date' => $entryDate,
+                        'description' => "Journal Voucher #$jvid", 'debit' => $dr, 'credit' => $cr,
+                        'previous_balance' => $prev, 'closing_balance' => $prev + $impact
+                    ]);
+                } elseif ($type === 'customer' || $type === 'walkin') {
+                    $ledger = \App\Models\CustomerLedger::where('customer_id', $pid)->latest()->first();
+                    $prev = $ledger ? $ledger->closing_balance : 0;
+                    \App\Models\CustomerLedger::create([
+                        'customer_id' => $pid, 'admin_or_user_id' => auth()->id(), 'date' => $entryDate,
+                        'description' => "Journal Voucher #$jvid", 'debit' => $dr, 'credit' => $cr,
+                        'previous_balance' => $prev, 'closing_balance' => $prev + $impact
+                    ]);
+                } else {
+                    // It's an Account Head
+                    $acc = \App\Models\Account::find($pid);
+                    if ($acc) {
+                        $acc->opening_balance += $impact;
+                        $acc->save();
+                    }
+                }
+            }
+
+            $voucher->status = 'posted';
+            $voucher->save();
+            DB::commit();
+            return back()->with('success', 'Journal Voucher posted successfully!');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->with('error', $e->getMessage());
+        }
+    }
+
+    public function cancel_journal($id)
+    {
+        $voucher = JournalVoucher::findOrFail($id);
+        if ($voucher->status === 'posted') return back()->with('error', 'Cannot delete posted voucher.');
+        $voucher->delete();
+        return redirect()->route('all-journal-vochers')->with('success', 'Journal Voucher deleted.');
+    }
+
+    public function all_journal_vochers(Request $request)
+    {
+        $query = JournalVoucher::query();
+        if ($request->filled('start_date')) $query->whereDate('entry_date', '>=', $request->start_date);
+        if ($request->filled('end_date')) $query->whereDate('entry_date', '<=', $request->end_date);
+        if ($request->filled('status')) $query->where('status', $request->status);
+
+        $vouchers = $query->orderBy('id', 'DESC')->get();
+
+        foreach ($vouchers as $v) {
+            // Rows Summary
+            $pTypes = json_decode($v->party_type, true) ?? [];
+            $pIds = json_decode($v->party_id, true) ?? [];
+            $debits = json_decode($v->debit, true) ?? [];
+            $credits = json_decode($v->credit, true) ?? [];
+            $summary = [];
+            foreach ($pTypes as $idx => $type) {
+                $pid = $pIds[$idx] ?? null;
+                if (!$pid) continue;
+                
+                $pName = '-';
+                if ($type === 'vendor') $pName = DB::table('vendors')->where('id', $pid)->value('name');
+                elseif ($type === 'customer' || $type === 'walkin') $pName = DB::table('customers')->where('id', $pid)->value('customer_name');
+                else $pName = DB::table('accounts')->where('id', $pid)->value('title');
+
+                $dr = (float)($debits[$idx] ?? 0);
+                $cr = (float)($credits[$idx] ?? 0);
+                $summary[] = "($pName) Dr: $dr, Cr: $cr";
+            }
+            $v->accounts_detail = implode('<br>', $summary);
+        }
+
+        return view('admin_panel.vochers.journal_vouchers.all_journal_vouchers', compact('vouchers'));
+    }
+
+    public function journalprint($id)
+    {
+        $voucher = JournalVoucher::findOrFail($id);
+        $narrs = json_decode($voucher->narration_id, true) ?? [];
+        $pTypes = json_decode($voucher->party_type, true) ?? [];
+        $pIds = json_decode($voucher->party_id, true) ?? [];
+        $debits = json_decode($voucher->debit, true) ?? [];
+        $credits = json_decode($voucher->credit, true) ?? [];
+
+        $rows = [];
+        for ($i = 0; $i < count($pTypes); $i++) {
+            $type = $pTypes[$i] ?? "";
+            $pid = $pIds[$i] ?? "";
+            if (!$pid) continue;
+
+            $pName = '-';
+            $pCode = '-';
+            if ($type === 'vendor') {
+                $p = DB::table('vendors')->where('id', $pid)->first();
+                $pName = $p->name ?? '-';
+                $pCode = $p->id ?? '-';
+            } elseif ($type === 'customer' || $type === 'walkin') {
+                $p = DB::table('customers')->where('id', $pid)->first();
+                $pName = $p->customer_name ?? '-';
+                $pCode = $p->id ?? '-';
+            } else {
+                $p = DB::table('accounts')->where('id', $pid)->first();
+                $pName = $p->title ?? '-';
+                $pCode = $p->account_code ?? '-';
+            }
+
+            $rows[] = [
+                'narration' => DB::table('narrations')->where('id', $narrs[$i] ?? null)->value('narration'),
+                'account_name' => $pName,
+                'account_code' => $pCode,
+                'debit' => (float)($debits[$i] ?? 0),
+                'credit' => (float)($credits[$i] ?? 0)
+            ];
+        }
+
+        return view('admin_panel.vochers.journal_vouchers.print', compact('voucher', 'rows'));
+    }
 }
+

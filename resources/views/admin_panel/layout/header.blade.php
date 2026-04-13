@@ -167,7 +167,7 @@
                       @endcanany
 
                       {{-- Vouchers Section --}}
-                      @canany(['Chart Of Accounts', 'Narrations', 'Receipts Voucher', 'Payment Voucher', 'Expense Voucher', 'Income Voucher', 'Journal Voucher'])
+                      @canany(['Chart Of Accounts', 'Narrations', 'Receipts Voucher', 'Payment Voucher', 'Expense Voucher', 'Income Voucher', 'Journal Voucher', 'Adjustment Voucher'])
                       <li class="nav-item">
                           <a href="#" class="nav-link">
                               <i class="menu_icon feather ft-clipboard"></i>
@@ -216,26 +216,34 @@
                                       </a>
                                   </li>
                                   @endcan
-                                  {{-- @can('Income Voucher') --}}
+                                  @can('Income Voucher')
                                   <li class="nav-item">
                                       <a class="nav-link" href="{{ route('all-income-vochers') }}">
                                           <i class="fa-solid fa-line-chart mr-2"></i>
                                           <span>Income Voucher</span>
                                       </a>
                                   </li>
-                                  {{-- @endcan --}}
+                                  @endcan
                                   @can('Journal Voucher')
                                   <li class="nav-item">
-                                      <a class="nav-link" href="{{ route('vouchers.index', 'journal voucher') }}">
+                                      <a class="nav-link" href="{{ route('all-journal-vochers') }}">
                                           <i class="fa-solid fa-wallet mr-2"></i>
                                           <span>Journal Voucher</span>
                                       </a>
                                   </li>
                                   @endcan
+                                  <li class="nav-item">
+                                      <a class="nav-link" href="{{ route('all-adjustment-vochers') }}">
+                                          <i class="fa-solid fa-adjust mr-2"></i>
+                                          <span>Adjustment Voucher</span>
+                                      </a>
+                                  </li>
+
                               </ul>
                           </div>
                       </li>
                       @endcanany
+
 
                   </ul>
               </div>

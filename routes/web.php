@@ -101,6 +101,22 @@ Route::delete('/income/vochers/cancel/{id}', [VoucherController::class, 'cancel_
 Route::get('/all-income-vochers', [VoucherController::class, 'all_income_vochers'])->name('all-income-vochers');
 Route::get('/income-voucher/print/{id}', [VoucherController::class, 'incomeprint'])->name('incomeVoucher.print');
 
+// Adjustment Voucher Routes
+Route::get('/adjustment-vochers/{id?}', [VoucherController::class, 'adjustment_vochers'])->name('adjustment-vochers');
+Route::post('/adjustment/vochers/ajax-save', [VoucherController::class, 'ajax_save_adjustment'])->name('adjustment.vochers.ajax-save');
+Route::post('/adjustment/vochers/post/{id}', [VoucherController::class, 'post_adjustment'])->name('adjustment.vochers.post');
+Route::delete('/adjustment/vochers/cancel/{id}', [VoucherController::class, 'cancel_adjustment'])->name('adjustment.vochers.cancel');
+Route::get('/all-adjustment-vochers', [VoucherController::class, 'all_adjustment_vochers'])->name('all-adjustment-vochers');
+Route::get('/adjustment-voucher/print/{id}', [VoucherController::class, 'adjustmentprint'])->name('adjustmentVoucher.print');
+
+// Journal Voucher Routes
+Route::get('/journal-vochers/{id?}', [VoucherController::class, 'journal_vochers'])->name('journal-vochers');
+Route::post('/journal-vochers/ajax-save', [VoucherController::class, 'ajax_save_journal'])->name('journal.vochers.ajax-save');
+Route::post('/journal-vochers/post/{id?}', [VoucherController::class, 'post_journal'])->name('journal.vochers.post');
+Route::delete('/journal-vochers/{id}', [VoucherController::class, 'cancel_journal'])->name('journal.vochers.cancel');
+Route::get('/all-journal-vochers', [VoucherController::class, 'all_journal_vochers'])->name('all-journal-vochers');
+Route::get('/journalVoucher-print/{id}', [VoucherController::class, 'journalprint'])->name('journalVoucher.print');
+
 // Route::get('/dashboard', function () {
 //     return view('dashboard');
 // })->middleware(['auth', 'verified'])->name('dashboard');
