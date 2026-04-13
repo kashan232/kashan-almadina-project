@@ -84,8 +84,8 @@
                                 <tr>
                                     <th width="15%">Narration</th>
                                     <th width="15%">Party Type <span class="text-danger">*</span></th>
+                                    <th width="12%">Code <span class="text-danger">*</span></th>
                                     <th width="20%">Party Name <span class="text-danger">*</span></th>
-                                    <th width="10%">Code</th>
                                     <th width="12%">Debit</th>
                                     <th width="12%">Credit</th>
                                     <th width="6%">Act</th>
@@ -121,12 +121,12 @@
                                             <option value="walkin" {{ ($pTypes[$idx] ?? '') == 'walkin' ? 'selected' : '' }}>Walkin</option>
                                         </select>
                                     </td>
+                                    <td><input type="text" class="form-control form-control-sm text-center rowPartyCode" placeholder="Code" value="{{ is_numeric($pIds[$idx] ?? '') ? (DB::table('accounts')->where('id', $pIds[$idx])->value('account_code') ?: $pIds[$idx]) : ($pIds[$idx] ?? '') }}"></td>
                                     <td>
                                         <select name="party_id[]" class="form-select form-select-sm rowPartyName" data-selected="{{ $pIds[$idx] ?? '' }}" required>
                                             <option value="">Select Party...</option>
                                         </select>
                                     </td>
-                                    <td><input type="text" class="form-control form-control-sm text-center rowPartyCode" placeholder="Code" readonly></td>
                                     <td><input type="number" step="0.01" name="debit[]" class="form-control form-control-sm text-end row-debit" value="{{ $debits[$idx] ?? '' }}"></td>
                                     <td><input type="number" step="0.01" name="credit[]" class="form-control form-control-sm text-end row-credit" value="{{ $credits[$idx] ?? '' }}"></td>
                                     <td class="text-center"><button type="button" class="btn text-danger btn-xs removeRow"><i class="fa fa-trash"></i></button></td>
@@ -222,7 +222,20 @@ $(document).ready(function() {
 
     $(document).on('change', '.rowPartyName', function() {
         let code = $(this).find('option:selected').attr('data-code');
-        $(this).closest('tr').find('.rowPartyCode').val(code || '');
+        $(this).closest('tr').find('.rowPartyCode').val(code || $(this).val() || '');
+    });
+
+    $(document).on('blur keydown', '.rowPartyCode', function(e) {
+        if(e.type === 'keydown' && e.which != 13 && e.which != 9) return;
+        let $row = $(this).closest('tr');
+        let val = $(this).val();
+        if(val) {
+            let $sel = $row.find('.rowPartyName');
+            let optById = $sel.find('option').filter(function() { return $(this).val() == val; });
+            if(optById.length > 0) { $sel.val(val).trigger('change'); return; }
+            let optByCode = $sel.find('option').filter(function() { return $(this).attr('data-code') == val; });
+            if(optByCode.length > 0) { $sel.val(optByCode.val()).trigger('change'); }
+        }
     });
 
     // Removed rowDrCr change handler
@@ -240,8 +253,8 @@ $(document).ready(function() {
         let row = `<tr class="entry-row">
             <td><select name="narration_id[]" class="form-select narrationSelect"><option value="">Narration...</option>@foreach($narrationsList as $lid => $lname)<option value="{{ $lid }}">{{ $lname }}</option>@endforeach</select></td>
             <td><select name="party_type[]" class="form-select form-select-sm rowPartyType" required><option value="">Select Type...</option>@foreach($AccountHeads as $head)<option value="{{ $head->id }}">{{ $head->name }}</option>@endforeach<option value="vendor">Vendor</option><option value="customer">Customer</option><option value="walkin">Walkin</option></select></td>
+            <td><input type="text" class="form-control form-control-sm text-center rowPartyCode" placeholder="Code" required></td>
             <td><select name="party_id[]" class="form-select form-select-sm rowPartyName" required><option value="">Select Party...</option></select></td>
-            <td><input type="text" class="form-control form-control-sm text-center rowPartyCode" placeholder="Code" readonly></td>
             <td><input type="number" step="0.01" name="debit[]" class="form-control form-control-sm text-end row-debit"></td>
             <td><input type="number" step="0.01" name="credit[]" class="form-control form-control-sm text-end row-credit"></td>
             <td class="text-center"><button type="button" class="btn text-danger btn-xs removeRow"><i class="fa fa-trash"></i></button></td>
