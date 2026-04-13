@@ -1798,16 +1798,15 @@ class VoucherController extends Controller
         try {
             $pTypes = $request->input('party_type', []);
             $pIds = $request->input('party_id', []);
-            $drCrs = $request->input('dr_cr', []);
 
             if (count($pIds) < 2) {
                 return response()->json(['success' => false, 'message' => 'At least 2 rows are required for a Journal Voucher.'], 422);
             }
 
-            // Row-wise validation
+            // Row-wise validation (Only Type and Name required now)
             foreach ($pTypes as $idx => $type) {
-                if (empty($type) || empty($pIds[$idx]) || empty($drCrs[$idx])) {
-                    return response()->json(['success' => false, 'message' => 'Please select Party Type, Name, and DR/CR for all rows.'], 422);
+                if (empty($type) || empty($pIds[$idx])) {
+                    return response()->json(['success' => false, 'message' => 'Please select Party Type and Name for all rows.'], 422);
                 }
             }
 
@@ -1833,9 +1832,9 @@ class VoucherController extends Controller
             $data['narration_id'] = json_encode($narrationIds);
             $data['party_type'] = json_encode($request->party_type);
             $data['party_id'] = json_encode($request->party_id);
-            $data['dr_cr'] = json_encode($request->dr_cr);
             $data['debit'] = json_encode($request->debit);
             $data['credit'] = json_encode($request->credit);
+            $data['dr_cr'] = json_encode([]); // No longer needed but stored for structure
 
             if ($request->id) {
                 $voucher = JournalVoucher::findOrFail($request->id);

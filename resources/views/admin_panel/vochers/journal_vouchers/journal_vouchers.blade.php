@@ -86,7 +86,6 @@
                                     <th width="15%">Party Type <span class="text-danger">*</span></th>
                                     <th width="20%">Party Name <span class="text-danger">*</span></th>
                                     <th width="10%">Code</th>
-                                    <th width="10%">Type <span class="text-danger">*</span></th>
                                     <th width="12%">Debit</th>
                                     <th width="12%">Credit</th>
                                     <th width="6%">Act</th>
@@ -128,21 +127,15 @@
                                         </select>
                                     </td>
                                     <td><input type="text" class="form-control form-control-sm text-center rowPartyCode" placeholder="Code" readonly></td>
-                                    <td>
-                                        <select name="dr_cr[]" class="form-select form-select-sm rowDrCr" required>
-                                            <option value="DR" {{ ($drCr[$idx] ?? '') == 'DR' ? 'selected' : '' }}>DEBIT</option>
-                                            <option value="CR" {{ ($drCr[$idx] ?? '') == 'CR' ? 'selected' : '' }}>CREDIT</option>
-                                        </select>
-                                    </td>
-                                    <td><input type="number" step="0.01" name="debit[]" class="form-control form-control-sm text-end row-debit" value="{{ $debits[$idx] ?? '' }}" {{ ($drCr[$idx] ?? 'DR') == 'CR' ? 'readonly' : '' }}></td>
-                                    <td><input type="number" step="0.01" name="credit[]" class="form-control form-control-sm text-end row-credit" value="{{ $credits[$idx] ?? '' }}" {{ ($drCr[$idx] ?? 'DR') == 'DR' ? 'readonly' : '' }}></td>
+                                    <td><input type="number" step="0.01" name="debit[]" class="form-control form-control-sm text-end row-debit" value="{{ $debits[$idx] ?? '' }}"></td>
+                                    <td><input type="number" step="0.01" name="credit[]" class="form-control form-control-sm text-end row-credit" value="{{ $credits[$idx] ?? '' }}"></td>
                                     <td class="text-center"><button type="button" class="btn text-danger btn-xs removeRow"><i class="fa fa-trash"></i></button></td>
                                 </tr>
                                 @endforeach
                             </tbody>
                             <tfoot class="table-light">
                                 <tr class="fw-bold">
-                                    <td colspan="5" class="text-end py-3">GRAND TOTALS:</td>
+                                    <td colspan="4" class="text-end py-3">GRAND TOTALS:</td>
                                     <td class="text-end py-3 bg-primary bg-opacity-10">
                                         <input type="text" name="total_debit" id="totalDebit" class="form-control form-control-sm text-end border-0 bg-transparent fw-bold text-primary fs-6" readonly value="{{ $receipt->total_debit ?? '0.00' }}">
                                     </td>
@@ -196,15 +189,6 @@ $(document).ready(function() {
         $row.find('.narrationSelect').select2({ placeholder: "Narration...", tags: true, width: '100%' });
         $row.find('.rowPartyName').select2({ placeholder: "Select Party...", allowClear: true, width: '100%' });
         
-        let type = $row.find('.rowDrCr').val();
-        if(type === 'DR') {
-            $row.find('.row-credit').attr('readonly', true);
-            $row.find('.row-debit').attr('readonly', false);
-        } else {
-            $row.find('.row-debit').attr('readonly', true);
-            $row.find('.row-credit').attr('readonly', false);
-        }
-
         // Trigger party load for existing rows if needed
         if($row.find('.rowPartyType').val()) {
             $row.find('.rowPartyType').trigger('change');
@@ -241,18 +225,7 @@ $(document).ready(function() {
         $(this).closest('tr').find('.rowPartyCode').val(code || '');
     });
 
-    $(document).on('change', '.rowDrCr', function() {
-        let type = $(this).val();
-        let $row = $(this).closest('tr');
-        if(type === 'DR') {
-            $row.find('.row-credit').val('').attr('readonly', true);
-            $row.find('.row-debit').attr('readonly', false);
-        } else {
-            $row.find('.row-debit').val('').attr('readonly', true);
-            $row.find('.row-credit').attr('readonly', false);
-        }
-        calc();
-    });
+    // Removed rowDrCr change handler
 
     function calc() {
         let dr = 0, cr = 0;
@@ -269,9 +242,8 @@ $(document).ready(function() {
             <td><select name="party_type[]" class="form-select form-select-sm rowPartyType" required><option value="">Select Type...</option>@foreach($AccountHeads as $head)<option value="{{ $head->id }}">{{ $head->name }}</option>@endforeach<option value="vendor">Vendor</option><option value="customer">Customer</option><option value="walkin">Walkin</option></select></td>
             <td><select name="party_id[]" class="form-select form-select-sm rowPartyName" required><option value="">Select Party...</option></select></td>
             <td><input type="text" class="form-control form-control-sm text-center rowPartyCode" placeholder="Code" readonly></td>
-            <td><select name="dr_cr[]" class="form-select form-select-sm rowDrCr" required><option value="DR">DEBIT</option><option value="CR">CREDIT</option></select></td>
             <td><input type="number" step="0.01" name="debit[]" class="form-control form-control-sm text-end row-debit"></td>
-            <td><input type="number" step="0.01" name="credit[]" class="form-control form-control-sm text-end row-credit" readonly></td>
+            <td><input type="number" step="0.01" name="credit[]" class="form-control form-control-sm text-end row-credit"></td>
             <td class="text-center"><button type="button" class="btn text-danger btn-xs removeRow"><i class="fa fa-trash"></i></button></td>
         </tr>`;
         $('#voucherTable tbody').append(row);
