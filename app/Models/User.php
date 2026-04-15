@@ -51,5 +51,8 @@ class User extends Authenticatable
 //         return $this->belongsToMany(Role::class, 'model_has_roles', 'model_id', 'role_id')
 //                     ->where('model_type', User::class);
 //     }
-    
+    public function userGroups()
+    {
+        return $this->belongsToMany(UserGroup::class, 'user_group_assignments', 'user_id', 'user_group_id');
+    }
 }

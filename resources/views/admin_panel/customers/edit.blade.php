@@ -106,6 +106,35 @@
                             </div>
 
                             <div class="col-md-6">
+                                <label><strong>Assigned User Groups:</strong></label>
+                                @if(Auth::user()->roles->pluck('name')->first() == 'Admin')
+                                    <select name="user_group_ids[]" class="form-control select2" multiple>
+                                        @foreach($userGroups as $group)
+                                            <option value="{{ $group->id }}" 
+                                                {{ in_array($group->id, (array)old('user_group_ids', $customer->user_group_ids ?? [])) ? 'selected' : '' }}>
+                                                {{ $group->group_name }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                @else
+                                    <div class="form-control bg-light" style="height: auto; min-height: 38px;">
+                                        @if(!empty($customer->user_group_ids))
+                                            @foreach($customer->user_group_ids as $groupId)
+                                                @php $group = $userGroups->find($groupId); @endphp
+                                                <span class="badge bg-info text-dark">{{ $group->group_name ?? 'N/A' }}</span>
+                                                <input type="hidden" name="user_group_ids[]" value="{{ $groupId }}">
+                                            @endforeach
+                                        @else
+                                            <span class="text-muted">No Groups Assigned</span>
+                                        @endif
+                                    </div>
+                                    <small class="text-muted">Groups are managed by Admin.</small>
+                                @endif
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-12">
                                 <label class="float-end"><strong>Transporter (اردو):</strong></label>
                                 <input rows="3" class="form-control text-end" dir="rtl" name="transport_ur" value="{{ old('transport_ur', $customer->transport_ur) }}">
                             </div>

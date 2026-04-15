@@ -32,6 +32,7 @@ use App\Http\Controllers\StockHoldController;
 use App\Http\Controllers\WarehouseStockController;
 use App\Http\Controllers\SubCustomerController;
 use App\Http\Controllers\StockWastageController;
+use App\Http\Controllers\UserGroupController;
 
 /*
 |--------------------------------------------------------------------------
@@ -282,6 +283,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/users/delete/{id}', [UserController::class, 'delete'])->name('users.delete');
     Route::post('/admin/users/update-roles', [UserController::class, 'updateRoles'])->name('users.update.roles');
     // Route::put('/users/{id}/roles', [UserController::class, 'updateRoles'])->name('users.update.roles');
+
+    // User Groups
+    Route::resource('user-group', UserGroupController::class);
 
     // Zone
     Route::get('zone', [ZoneController::class, 'index'])->name('zone.index');

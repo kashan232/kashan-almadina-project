@@ -11,14 +11,43 @@ use App\Models\CustomerLedger;
 use Illuminate\Support\Facades\Auth;
 use App\Models\CustomerPayment;
 use Illuminate\Support\Facades\DB;
+use App\Models\UserGroup;
+use App\Models\User;
 
 class CustomerController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $customers = Customer::with('customerLedger')->latest()->get(); // Eager load the customer ledger relationship
+        $query = Customer::with(['customerLedger', 'creator']);
 
-        return view('admin_panel.customers.index', compact('customers'));
+        // Check if user is NOT an admin
+        if (Auth::user()->roles->pluck('name')->first() !== 'Admin') {
+            $userId = Auth::id();
+            $userGroupIds = Auth::user()->userGroups()->pluck('user_groups.id')->toArray();
+            
+            $query->where(function($q) use ($userId, $userGroupIds) {
+                // Customer created by the user
+                $q->where('created_by', $userId);
+                
+                // OR Customer belongs to user's group
+                if (!empty($userGroupIds)) {
+                    foreach ($userGroupIds as $groupId) {
+                        $q->orWhereJsonContains('user_group_ids', (string)$groupId);
+                    }
+                }
+            });
+        } else {
+            // Admin can filter by user
+            if ($request->has('created_by') && $request->created_by != '') {
+                $query->where('created_by', $request->created_by);
+            }
+        }
+
+        $customers = $query->latest()->get();
+        $userGroups = UserGroup::all()->keyBy('id');
+        $users = User::all(); // To populate filter dropdown
+
+        return view('admin_panel.customers.index', compact('customers', 'userGroups', 'users'));
     }
 
     public function toggleStatus($id)
@@ -72,10 +101,10 @@ class CustomerController extends Controller
     {
         $zones = Zone::all();
         $SalesOfficer = SalesOfficer::all();
+        $userGroups = UserGroup::all();
         $latestId = 'CUST-' . str_pad(Customer::max('id') + 1, 1, STR_PAD_LEFT);
-        //     $latestId = 'CUST-' . str_pad(Customer::max('id') + 1, 4, '0', STR_PAD_LEFT);
 
-        return view('admin_panel.customers.create', compact('latestId', 'SalesOfficer', 'zones'));
+        return view('admin_panel.customers.create', compact('latestId', 'SalesOfficer', 'zones', 'userGroups'));
     }
 
     // public function store(Request $request)
@@ -124,7 +153,10 @@ class CustomerController extends Controller
             'address_ur' => 'nullable', // ← Urdu Address Added
             'transport_ur' => 'nullable', // ← Urdu Address Added
             'customer_type' => 'nullable',
+            'user_group_ids' => 'nullable|array',
         ]);
+
+        $data['created_by'] = Auth::id();
 
         $customer = Customer::create($data);
 
@@ -155,7 +187,8 @@ class CustomerController extends Controller
         $customer = Customer::findOrFail($id);
         $zones = Zone::all();
         $SalesOfficer = SalesOfficer::all();
-        return view('admin_panel.customers.edit', compact('customer', 'zones', 'SalesOfficer'));
+        $userGroups = UserGroup::all();
+        return view('admin_panel.customers.edit', compact('customer', 'zones', 'SalesOfficer', 'userGroups'));
     }
 
 
@@ -182,6 +215,7 @@ class CustomerController extends Controller
             'address_ur' => 'nullable', // ← Urdu Address Added
             'transport_ur' => 'nullable', // ← Urdu Address Added
             'customer_type' => 'nullable',
+            'user_group_ids' => 'nullable|array',
         ]);
 
         // Update model

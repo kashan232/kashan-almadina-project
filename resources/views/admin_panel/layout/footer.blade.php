@@ -17,6 +17,8 @@
 
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/metisMenu/3.0.7/metisMenu.min.js"></script>
+    {{-- ✅ Select2 JS --}}
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
     <!-- Sparkline -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-sparklines/2.1.2/jquery.sparkline.min.js"></script>
@@ -46,6 +48,10 @@
             items: 1
         });
         $(document).ready(function() {
+            $('.select2').select2({
+                width: '100%'
+            });
+
             $('#example').DataTable({
                 dom: 'Bfrtip',
                 order: [[0, "desc"]],

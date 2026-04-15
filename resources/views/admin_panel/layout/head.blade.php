@@ -85,6 +85,8 @@
  {{-- ✅ DataTables CSS --}}
  <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.13.7/css/jquery.dataTables.min.css">
  <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.dataTables.min.css">
+ {{-- ✅ Select2 CSS --}}
+ <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 
  {{-- jQuery + Bootstrap --}}
  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>

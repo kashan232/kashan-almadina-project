@@ -9,9 +9,13 @@
                   <div class="nav_wrapper_main d-flex align-items-center justify-content-between flex-grow-1">
                       <ul class="navbar-nav navbar-nav-right mr-0 ml-auto">
                           <li class="nav-item">
+                              <span class="nav-link text-white me-3" style="cursor: default;">
+                                  <i class="fa-solid fa-user-circle me-1"></i> {{ Auth::user()->name }}
+                              </span>
+                          </li>
+                          <li class="nav-item">
                               <a class="nav-link" href="#" onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
-                                   <span class="profile_name">Logout <i
-                                          class="feather ft-chevron-down" style="display:none;"></i></span>
+                                   <span class="profile_name"><i class="fa-solid fa-sign-out-alt me-1"></i> Logout</span>
                               </a>
                               <div class="dropdown-menu dropdown-menu-right navbar-dropdown pt-2" style="display:none;"
                                   aria-labelledby="profileDropdown">
@@ -161,6 +165,8 @@
                                   <li class="nav-item"><a class="nav-link" href="{{ route('branch.index') }}"><i
                                               class="fa-solid fa-code-branch mr-2"></i><span>Branches</span></a></li>
                                   @endcan
+                                  <li class="nav-item"><a class="nav-link" href="{{ route('user-group.index') }}"><i
+                                              class="fa-solid fa-users-rectangle mr-2"></i><span>User Groups</span></a></li>
                               </ul>
                           </div>
                       </li>
