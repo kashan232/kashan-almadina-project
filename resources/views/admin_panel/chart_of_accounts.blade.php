@@ -143,8 +143,10 @@
                                         <label class="column-picker-item"><input type="checkbox" data-column="2" checked> Account Code</label>
                                         <label class="column-picker-item"><input type="checkbox" data-column="3" checked> Head</label>
                                         <label class="column-picker-item"><input type="checkbox" data-column="4" checked> Account Title</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="5" checked> Balance</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="6" checked> Status</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="5" checked> Groups</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="6" checked> Balance</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="7" checked> Status</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="8" checked> Actions</label>
                                     </div>
                                 </div>
                             </div>
@@ -159,8 +161,10 @@
                                             <th>Account Code</th>
                                             <th>Expense Head</th>
                                             <th>Account Title</th>
+                                            <th>Groups</th>
                                             <th class="text-end">Closing Balance</th>
                                             <th class="text-center">Status</th>
+                                            <th class="text-center">Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -170,6 +174,16 @@
                                             <td class="fw-bold">{{ $account->account_code }}</td>
                                             <td><span class="badge bg-light text-dark border">{{ $account->head->name }}</span></td>
                                             <td>{{ $account->title }}</td>
+                                            <td>
+                                                @if(!empty($account->user_group_ids))
+                                                    @foreach($account->user_group_ids as $groupId)
+                                                        @php $group = $userGroups->find($groupId); @endphp
+                                                        <span class="badge bg-info text-dark border">{{ $group->group_name ?? 'N/A' }}</span>
+                                                    @endforeach
+                                                @else
+                                                    <span class="text-muted small">Global</span>
+                                                @endif
+                                            </td>
                                             <td class="text-end fw-bold text-danger">{{ number_format($account->opening_balance, 2) }}</td>
                                             <td class="text-center">
                                                 @if($account->status)
@@ -177,6 +191,19 @@
                                                 @else
                                                     <span class="badge badge-soft-danger text-dark  rounded-pill px-3">Inactive</span>
                                                 @endif
+                                            </td>
+                                            <td class="text-center">
+                                                <button class="btn btn-xs btn-outline-primary edit-account-btn" 
+                                                    data-id="{{ $account->id }}"
+                                                    data-head_id="{{ $account->head_id }}"
+                                                    data-code="{{ $account->account_code }}"
+                                                    data-title="{{ $account->title }}"
+                                                    data-balance="{{ $account->opening_balance }}"
+                                                    data-status="{{ $account->status }}"
+                                                    data-groups="{{ json_encode($account->user_group_ids ?? []) }}"
+                                                    data-bs-toggle="modal" data-bs-target="#addAccountModal">
+                                                    <i class="fa fa-edit"></i>
+                                                </button>
                                             </td>
                                         </tr>
                                         @endforeach
@@ -230,6 +257,29 @@
                 <div class="form-check form-switch mt-3">
                     <input class="form-check-input" name="status" type="checkbox" value="on" id="accStatus" checked>
                     <label class="form-check-label fw-bold" for="accStatus">Active Status</label>
+                </div>
+
+                <div class="mt-4">
+                    <label class="form-label fw-bold">Assigned User Groups</label>
+                    @if($isAdmin)
+                        <select name="user_group_ids[]" id="accGroups" class="form-control select2-groups" multiple style="width: 100%;" data-placeholder="Select Groups">
+                            @foreach($userGroups as $group)
+                                <option value="{{ $group->id }}">{{ $group->group_name }}</option>
+                            @endforeach
+                        </select>
+                    @else
+                        <div class="form-control bg-light" style="height: auto; min-height: 38px;">
+                            @php $myGroups = Auth::user()->userGroups; @endphp
+                            @if($myGroups->count() > 0)
+                                @foreach($myGroups as $group)
+                                    <span class="badge bg-info text-dark">{{ $group->group_name }}</span>
+                                    <input type="hidden" name="user_group_ids[]" value="{{ $group->id }}">
+                                @endforeach
+                            @else
+                                <span class="text-muted small">No Groups Assigned</span>
+                            @endif
+                        </div>
+                    @endif
                 </div>
             </div>
             <div class="modal-footer bg-light border-0">
@@ -343,6 +393,14 @@
             dom: '<"d-flex justify-content-between align-items-center mb-3"lf>rtip'
         });
 
+        // Initialize Select2 in modal
+        $('#addAccountModal').on('shown.bs.modal', function() {
+            $('.select2-groups').select2({
+                dropdownParent: $('#addAccountModal'),
+                width: '100%'
+            });
+        });
+
         if (savedState) {
             const columns = JSON.parse(savedState);
             $('#columnPickerMenu input').each(function() {
@@ -391,6 +449,34 @@
             } else {
                 codeInput.val('');
             }
+        });
+
+        // Edit Account functionality
+        $(document).on('click', '.edit-account-btn', function() {
+            const btn = $(this);
+            const modal = $('#addAccountModal');
+            
+            modal.find('.modal-title').html('<i class="fa fa-edit me-2"></i>Edit Account');
+            modal.find('select[name="head_id"]').val(btn.data('head_id'));
+            modal.find('input[name="account_code"]').val(btn.data('code')).attr('readonly', true);
+            modal.find('input[name="title"]').val(btn.data('title'));
+            modal.find('input[name="opening_balance"]').val(btn.data('balance'));
+            modal.find('#accStatus').prop('checked', btn.data('status') == 1);
+            
+            const groups = btn.data('groups') ?? [];
+            modal.find('#accGroups').val(groups).trigger('change');
+        });
+
+        // Clear modal on hide
+        $('#addAccountModal').on('hidden.bs.modal', function() {
+            const modal = $(this);
+            modal.find('.modal-title').html('<i class="fa fa-plus-circle me-2"></i>Add New Account');
+            modal.find('select[name="head_id"]').val('');
+            modal.find('input[name="account_code"]').val('').attr('readonly', false);
+            modal.find('input[name="title"]').val('');
+            modal.find('input[name="opening_balance"]').val('0.00');
+            modal.find('#accStatus').prop('checked', true);
+            modal.find('#accGroups').val([]).trigger('change');
         });
     });
 </script>

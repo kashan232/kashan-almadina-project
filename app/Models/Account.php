@@ -17,9 +17,13 @@ class Account extends Model
         'total_debit',
         'total_credit',
         'status',        // active/inactive
-        'opening_balance',        // active/inactive
+        'opening_balance',
+        'user_group_ids',
+        'created_by',
+    ];
 
-        
+    protected $casts = [
+        'user_group_ids' => 'array',
     ];
 
     // Relation with AccountHead
