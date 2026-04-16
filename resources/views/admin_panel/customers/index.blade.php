@@ -135,7 +135,7 @@
             </div>
             @endif
             <div class="table-responsive">
-                <table id="example" class="display" style="width:100%">
+                <table id="customerTable" class="display table table-bordered" style="width:100%">
                     <thead class="table-light">
                         <tr>
                             <th>Customer ID</th>
@@ -250,6 +250,19 @@
 @section('scripts')
 <script>
     $(document).ready(function() {
+         // Initialize DataTables
+         const table = $('#customerTable').DataTable({
+             dom: 'Bfrtip',
+             order: [[0, "desc"]],
+             buttons: [
+                 'copyHtml5',
+                 'excelHtml5',
+                 'csvHtml5',
+                 'pdfHtml5',
+                 'colvis'
+             ]
+         });
+
          // Toggle Column Picker Menu
          $('#columnPickerBtn').on('click', function(e) {
              e.stopPropagation();
@@ -273,8 +286,10 @@
              $('#columnPickerMenu input').each(function() {
                  const colIdx = $(this).data('column');
                  if (columns.hasOwnProperty(colIdx)) {
-                     $(this).prop('checked', columns[colIdx]);
-                     toggleColumn(colIdx, columns[colIdx]);
+                     const isChecked = columns[colIdx];
+                     $(this).prop('checked', isChecked);
+                     // Using DataTables API for column visibility
+                     table.column(colIdx - 1).visible(isChecked);
                  }
              });
          }
@@ -284,19 +299,10 @@
              const colIdx = $(this).data('column');
              const isChecked = $(this).is(':checked');
              
-             toggleColumn(colIdx, isChecked);
+             // Using DataTables API for column visibility
+             table.column(colIdx - 1).visible(isChecked);
              saveState();
          });
-
-         function toggleColumn(index, show) {
-             const table = $('#example');
-             const cells = table.find(`th:nth-child(${index}), td:nth-child(${index})`);
-             if (show) {
-                 cells.removeClass('column-hidden');
-             } else {
-                 cells.addClass('column-hidden');
-             }
-         }
 
          function saveState() {
              const state = {};
