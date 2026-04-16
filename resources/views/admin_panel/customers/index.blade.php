@@ -1,6 +1,6 @@
 @extends('admin_panel.layout.app')
 @section('content')
-@php $isAdmin = Auth::user()->roles->pluck('name')->contains('Admin'); @endphp
+@php $isAdmin = Auth::user()->roles->pluck('name')->contains('Admin') || Auth::user()->usertype == 'admin'; @endphp
 <style>
     .btn-sm i.fa-toggle-on {
         color: green;

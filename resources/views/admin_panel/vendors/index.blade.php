@@ -22,7 +22,7 @@
                 </div>
             </div>
 
-            @if(Auth::user()->roles->pluck('name')->first() == 'Admin')
+            @if($isAdmin)
             <div class="row mb-3 align-items-end">
                 <div class="col-md-4">
                     <form action="{{ url('vendor') }}" method="GET" class="d-flex gap-2">
@@ -60,7 +60,7 @@
                                 <th>#</th>
                                 <th>Name</th>
                                 <th>Groups</th>
-                                @if(Auth::user()->roles->pluck('name')->first() == 'Admin')
+                                @if($isAdmin)
                                     <th>Created By</th>
                                 @endif
                                 <th>Phone</th>
@@ -87,7 +87,7 @@
                                         <span class="text-muted small">No Group</span>
                                     @endif
                                 </td>
-                                @if(Auth::user()->roles->pluck('name')->first() == 'Admin')
+                                @if($isAdmin)
                                     <td>{{ $v->creator->name ?? 'System' }}</td>
                                 @endif
                                 <td>{{ $v->phone }}</td>
@@ -148,7 +148,7 @@
                     </div>
                     <div class="mb-2">
                         <label><strong>Assigned User Groups:</strong></label>
-                        @if(Auth::user()->roles->pluck('name')->contains('Admin'))
+                        @if($isAdmin)
                             <select name="user_group_ids[]" class="form-control select2-groups" multiple style="width: 100%;" data-placeholder="Select Groups">
                                 @foreach(\App\Models\UserGroup::all() as $group)
                                     <option value="{{ $group->id }}">{{ $group->group_name }}</option>
@@ -204,7 +204,7 @@
                     </div>
                     <div class="mb-2">
                         <label><strong>Assigned User Groups:</strong></label>
-                        @if(Auth::user()->roles->pluck('name')->contains('Admin'))
+                        @if($isAdmin)
                             <select name="user_group_ids[]" id="edit_vgroups" class="form-control select2-groups" multiple style="width: 100%;" data-placeholder="Select Groups">
                                 @foreach(\App\Models\UserGroup::all() as $group)
                                     <option value="{{ $group->id }}">{{ $group->group_name }}</option>

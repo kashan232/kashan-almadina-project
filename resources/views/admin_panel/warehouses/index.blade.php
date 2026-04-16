@@ -15,7 +15,7 @@
                 </div>
             </div>
 
-            @if(Auth::user()->roles->pluck('name')->first() == 'Admin')
+            @if($isAdmin)
             <div class="row mb-3 align-items-end">
                 <div class="col-md-4">
                     <form action="{{ url('warehouse') }}" method="GET" class="d-flex gap-2">
@@ -53,7 +53,7 @@
                                 <th>#</th>
                                 <th>Name</th>
                                 <th>Groups</th>
-                                @if(Auth::user()->roles->pluck('name')->first() == 'Admin')
+                                @if($isAdmin)
                                     <th>Created By</th>
                                 @endif
                                 <th>Location</th>
@@ -78,7 +78,7 @@
                                         <span class="text-muted small">No Group</span>
                                     @endif
                                 </td>
-                                @if(Auth::user()->roles->pluck('name')->first() == 'Admin')
+                                @if($isAdmin)
                                     <td>{{ $w->creator->name ?? 'System' }}</td>
                                 @endif
                                 <td>{{ $w->location }}</td>

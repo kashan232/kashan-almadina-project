@@ -18,8 +18,9 @@ class VendorController extends Controller
     {
         $query = Vendor::with(['latestLedger', 'creator']);
 
+        $isAdmin = Auth::user()->roles->pluck('name')->contains('Admin') || Auth::user()->usertype == 'admin';
         // Check if user is NOT an admin
-        if (!Auth::user()->hasRole('Admin')) {
+        if (!$isAdmin) {
             $userId = Auth::id();
             $userGroupIds = Auth::user()->userGroups()->pluck('user_groups.id')->toArray();
             
@@ -45,7 +46,7 @@ class VendorController extends Controller
         $userGroups = UserGroup::all();
         $users = User::all();
 
-        return view('admin_panel.vendors.index', compact('vendors', 'userGroups', 'users'));
+        return view('admin_panel.vendors.index', compact('vendors', 'userGroups', 'users', 'isAdmin'));
     }
 
 

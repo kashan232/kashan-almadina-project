@@ -11,12 +11,10 @@ use Illuminate\Support\Facades\Auth;
 
 class WarehouseController extends Controller
 {
-    public function index(Request $request)
-    {
         $query = Warehouse::with(['creator']);
-
+        $isAdmin = Auth::user()->roles->pluck('name')->contains('Admin') || Auth::user()->usertype == 'admin';
         // Check if user is NOT an admin
-        if (!Auth::user()->roles->pluck('name')->contains('Admin')) {
+        if (!$isAdmin) {
             $userId = Auth::id();
             $userGroupIds = Auth::user()->userGroups()->pluck('user_groups.id')->toArray();
             
@@ -43,7 +41,7 @@ class WarehouseController extends Controller
         $userGroups = UserGroup::all();
         $branches = Branch::all();
 
-        return view('admin_panel.warehouses.index', compact('warehouses', 'users', 'userGroups', 'branches'));
+        return view('admin_panel.warehouses.index', compact('warehouses', 'users', 'userGroups', 'branches', 'isAdmin'));
     }
 
     public function store(Request $request)
