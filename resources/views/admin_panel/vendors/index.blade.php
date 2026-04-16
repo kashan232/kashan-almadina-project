@@ -22,6 +22,32 @@
                 </div>
             </div>
 
+            @if(Auth::user()->roles->pluck('name')->first() == 'Admin')
+            <div class="row mb-3 align-items-end">
+                <div class="col-md-4">
+                    <form action="{{ url('vendor') }}" method="GET" class="d-flex gap-2">
+                        <div class="flex-grow-1">
+                            <label class="form-label small fw-bold">Filter by User:</label>
+                            <select name="created_by" class="form-control form-control-sm select2">
+                                <option value="">All Users</option>
+                                @foreach($users as $user)
+                                    <option value="{{ $user->id }}" {{ request('created_by') == $user->id ? 'selected' : '' }}>
+                                        {{ $user->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div>
+                            <button type="submit" class="btn btn-sm btn-info mt-4">Filter</button>
+                            @if(request('created_by'))
+                                <a href="{{ url('vendor') }}" class="btn btn-sm btn-secondary mt-4">Reset</a>
+                            @endif
+                        </div>
+                    </form>
+                </div>
+            </div>
+            @endif
+
             <div class="card">
                 <div class="card-body">
                     @if (session()->has('success'))
@@ -33,6 +59,10 @@
                             <tr>
                                 <th>#</th>
                                 <th>Name</th>
+                                <th>Groups</th>
+                                @if(Auth::user()->roles->pluck('name')->first() == 'Admin')
+                                    <th>Created By</th>
+                                @endif
                                 <th>Phone</th>
                                 <th>Opening Balance</th>
                                 <th>Closing Balance</th>
@@ -41,10 +71,25 @@
                             </tr>
                         </thead>
                         <tbody>
+                            @php $userGroupsKeyed = $userGroups->keyBy('id'); @endphp
                             @foreach($vendors as $key => $v)
                             <tr>
                                 <td>{{ $key+1 }}</td>
                                 <td>{{ $v->name }}</td>
+                                <td>
+                                    @if(!empty($v->user_group_ids))
+                                        @foreach($v->user_group_ids as $groupId)
+                                            <span class="badge bg-light text-dark border">
+                                                {{ $userGroupsKeyed[$groupId]->group_name ?? 'N/A' }}
+                                            </span>
+                                        @endforeach
+                                    @else
+                                        <span class="text-muted small">No Group</span>
+                                    @endif
+                                </td>
+                                @if(Auth::user()->roles->pluck('name')->first() == 'Admin')
+                                    <td>{{ $v->creator->name ?? 'System' }}</td>
+                                @endif
                                 <td>{{ $v->phone }}</td>
                                 <td>{{ $v->latestLedger->opening_balance ?? 0 }}</td>
                                 <td>{{ $v->latestLedger->closing_balance ?? 0 }}</td>
@@ -57,6 +102,7 @@
                                         data-phone="{{ $v->phone }}"
                                         data-address="{{ $v->address }}"
                                         data-opening_balance="{{ $v->opening_balance ?? 0 }}"
+                                        data-user_group_ids="{{ json_encode($v->user_group_ids ?? []) }}"
                                         data-bs-toggle="modal"
                                         data-bs-target="#editVendorModal">
                                         Edit
@@ -100,6 +146,29 @@
                     <div class="mb-2">
                         <textarea class="form-control" name="address" id="add_vaddress" placeholder="Address"></textarea>
                     </div>
+                    <div class="mb-2">
+                        <label><strong>Assigned User Groups:</strong></label>
+                        @if(Auth::user()->roles->pluck('name')->contains('Admin'))
+                            <select name="user_group_ids[]" class="form-control select2-groups" multiple style="width: 100%;" data-placeholder="Select Groups">
+                                @foreach(\App\Models\UserGroup::all() as $group)
+                                    <option value="{{ $group->id }}">{{ $group->group_name }}</option>
+                                @endforeach
+                            </select>
+                        @else
+                            <div class="form-control bg-light" style="height: auto; min-height: 38px;">
+                                @php $myGroups = Auth::user()->userGroups; @endphp
+                                @if($myGroups->count() > 0)
+                                    @foreach($myGroups as $group)
+                                        <span class="badge bg-info text-dark">{{ $group->group_name }}</span>
+                                        <input type="hidden" name="user_group_ids[]" value="{{ $group->id }}">
+                                    @endforeach
+                                @else
+                                    <span class="text-muted">No Groups Assigned to You</span>
+                                @endif
+                            </div>
+                            <small class="text-muted">Your groups are automatically assigned.</small>
+                        @endif
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button type="submit" class="btn btn-primary">Save</button>
@@ -133,6 +202,28 @@
                     <div class="mb-2">
                         <textarea class="form-control" name="address" id="edit_vaddress" placeholder="Address"></textarea>
                     </div>
+                    <div class="mb-2">
+                        <label><strong>Assigned User Groups:</strong></label>
+                        @if(Auth::user()->roles->pluck('name')->contains('Admin'))
+                            <select name="user_group_ids[]" id="edit_vgroups" class="form-control select2-groups" multiple style="width: 100%;" data-placeholder="Select Groups">
+                                @foreach(\App\Models\UserGroup::all() as $group)
+                                    <option value="{{ $group->id }}">{{ $group->group_name }}</option>
+                                @endforeach
+                            </select>
+                        @else
+                            <div class="form-control bg-light" style="height: auto; min-height: 38px;">
+                                @php $myGroups = Auth::user()->userGroups; @endphp
+                                @if($myGroups->count() > 0)
+                                    @foreach($myGroups as $group)
+                                        <span class="badge bg-info text-dark">{{ $group->group_name }}</span>
+                                        <input type="hidden" name="user_group_ids[]" value="{{ $group->id }}">
+                                    @endforeach
+                                @else
+                                    <span class="text-muted">No Groups Assigned to You</span>
+                                @endif
+                            </div>
+                        @endif
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button type="submit" class="btn btn-primary">Update</button>
@@ -145,8 +236,19 @@
 @endsection
 @section('scripts')
 <script>
-    // init datatable (call after table exists)
+$(document).ready(function() {
     $('.datanew').DataTable();
+    
+    // Handle Select2 for Modals using a unique class to avoid double-init
+    $('.select2-groups').each(function() {
+        var modal = $(this).closest('.modal');
+        $(this).select2({
+            dropdownParent: modal,
+            width: '100%',
+            placeholder: $(this).data('placeholder')
+        });
+    });
+});
 
     // --- ADD modal helpers ---
     function clearAddVendor() {
@@ -154,6 +256,7 @@
         $('#add_vphone').val('');
         $('#add_vopening').val('');
         $('#add_vaddress').val('');
+        $('#addVendorModal .select2').val([]).trigger('change');
     }
     // Ensure Add modal cleared when hidden
     document.getElementById('addVendorModal')?.addEventListener('hidden.bs.modal', function() {
@@ -182,6 +285,10 @@
         $('#edit_vaddress').val(address);
         $('#edit_vopening').val(opening);
 
+        // handle groups
+        const groups = btn.data('user_group_ids') ?? [];
+        $('#edit_vgroups').val(groups).trigger('change');
+
         // show modal using Bootstrap API (works even if data-bs-toggle omitted)
         const modalEl = document.getElementById('editVendorModal');
         if (modalEl) {
@@ -205,6 +312,7 @@
         $('#edit_vphone').val('');
         $('#edit_vaddress').val('');
         $('#edit_vopening').val('');
+        $('#edit_vgroups').val([]).trigger('change');
     });
 
     // prevent double submit

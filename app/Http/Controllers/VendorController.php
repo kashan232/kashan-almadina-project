@@ -8,16 +8,44 @@ use App\Models\VendorLedger;
 use Illuminate\Support\Facades\Auth;
 use App\Models\VendorPayment;
 use Illuminate\Support\Facades\DB;
+use App\Models\UserGroup;
+use App\Models\User;
 
 class VendorController extends Controller
 {
     // VendorController.php aur WarehouseController.php same hoga
-    public function index()
+    public function index(Request $request)
     {
-        // eager load latestLedger and also load purchases_count for delete logic
-        $vendors = Vendor::with('latestLedger')->withCount('purchases')->get();
+        $query = Vendor::with(['latestLedger', 'creator']);
 
-        return view('admin_panel.vendors.index', compact('vendors'));
+        // Check if user is NOT an admin
+        if (!Auth::user()->hasRole('Admin')) {
+            $userId = Auth::id();
+            $userGroupIds = Auth::user()->userGroups()->pluck('user_groups.id')->toArray();
+            
+            $query->where(function($q) use ($userId, $userGroupIds) {
+                // Vendor created by the user
+                $q->where('created_by', $userId);
+                
+                // OR Vendor belongs to user's group
+                if (!empty($userGroupIds)) {
+                    foreach ($userGroupIds as $groupId) {
+                        $q->orWhereJsonContains('user_group_ids', (string)$groupId);
+                    }
+                }
+            });
+        } else {
+            // Admin can filter by user
+            if ($request->has('created_by') && $request->created_by != '') {
+                $query->where('created_by', $request->created_by);
+            }
+        }
+
+        $vendors = $query->withCount('purchases')->latest()->get();
+        $userGroups = UserGroup::all();
+        $users = User::all();
+
+        return view('admin_panel.vendors.index', compact('vendors', 'userGroups', 'users'));
     }
 
 
@@ -28,6 +56,7 @@ class VendorController extends Controller
             'phone' => 'nullable|string',
             'address' => 'nullable|string',
             'opening_balance' => 'nullable|numeric',
+            'user_group_ids' => 'nullable|array',
         ]);
 
         $userId = Auth::id();
@@ -40,6 +69,7 @@ class VendorController extends Controller
                 'phone' => $request->phone,
                 'address' => $request->address,
                 'opening_balance' => intval($request->opening_balance ?? 0),
+                'user_group_ids' => $request->user_group_ids,
             ]);
 
             // Yahan agar edit ke waqt ledger bhi update karna hai to extra logic dalna hoga
@@ -50,6 +80,8 @@ class VendorController extends Controller
                 'phone' => $request->phone,
                 'address' => $request->address,
                 'opening_balance' => intval($request->opening_balance ?? 0),
+                'user_group_ids' => $request->user_group_ids,
+                'created_by' => $userId,
             ]);
 
             $opening = intval($request->opening_balance ?? 0);

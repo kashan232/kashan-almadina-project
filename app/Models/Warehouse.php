@@ -11,6 +11,15 @@ class Warehouse extends Model
 
     protected $guarded = [];
 
+    protected $casts = [
+        'user_group_ids' => 'array',
+    ];
+
+    public function creator()
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
     public function user(){
         return $this->belongsTo(User::class, 'creater_id');
     }

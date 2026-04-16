@@ -8,10 +8,19 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Vendor extends Model
 {
-    protected $fillable = ['name', 'email', 'phone', 'address', 'debit', 'credit'];
+    protected $fillable = ['name', 'email', 'phone', 'address', 'debit', 'credit', 'user_group_ids', 'created_by'];
+
+    protected $casts = [
+        'user_group_ids' => 'array',
+    ];
 
     use HasFactory;
     // app/Models/Vendor.php
+
+    public function creator()
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
 
     public function ledgers()
     {
