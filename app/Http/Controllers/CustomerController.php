@@ -43,7 +43,7 @@ class CustomerController extends Controller
             }
         }
 
-        $customers = $query->latest()->get();
+        $customers = $query->withCount('sales')->latest()->get();
         $userGroups = UserGroup::all()->keyBy('id');
         $users = User::all(); // To populate filter dropdown
 
