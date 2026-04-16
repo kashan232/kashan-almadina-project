@@ -107,7 +107,7 @@
 
                             <div class="col-md-6">
                                 <label><strong>Assigned User Groups:</strong></label>
-                                @if(Auth::user()->roles->pluck('name')->first() == 'Admin')
+                                @if($isAdmin)
                                     <select name="user_group_ids[]" class="form-control select2" multiple>
                                         @foreach($userGroups as $group)
                                             <option value="{{ $group->id }}" 
