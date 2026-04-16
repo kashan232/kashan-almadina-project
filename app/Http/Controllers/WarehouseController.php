@@ -11,6 +11,8 @@ use Illuminate\Support\Facades\Auth;
 
 class WarehouseController extends Controller
 {
+    public function index(Request $request)
+    {
         $query = Warehouse::with(['creator']);
         $isAdmin = Auth::user()->roles->pluck('name')->contains('Admin') || Auth::user()->usertype == 'admin';
         // Check if user is NOT an admin
