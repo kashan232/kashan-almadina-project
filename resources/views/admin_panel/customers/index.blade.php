@@ -1,5 +1,6 @@
 @extends('admin_panel.layout.app')
 @section('content')
+@php $isAdmin = Auth::user()->roles->pluck('name')->contains('Admin'); @endphp
 <style>
     .btn-sm i.fa-toggle-on {
         color: green;
@@ -81,11 +82,11 @@
                         <label class="column-picker-item"><input type="checkbox" data-column="2" checked> Type</label>
                         <label class="column-picker-item"><input type="checkbox" data-column="3" checked> Name</label>
                         <label class="column-picker-item"><input type="checkbox" data-column="4" checked> Groups</label>
-                        @if(Auth::user()->roles->pluck('name')->first() == 'Admin')
+                        @if($isAdmin)
                             <label class="column-picker-item"><input type="checkbox" data-column="5" checked> Created By</label>
                         @endif
                         {{-- Note: Indices shift based on Admin role --}}
-                        @php $shift = (Auth::user()->roles->pluck('name')->first() == 'Admin') ? 0 : -1; @endphp
+                        @php $shift = $isAdmin ? 0 : -1; @endphp
                         <label class="column-picker-item"><input type="checkbox" data-column="{{ 6 + $shift }}" checked> Mobile</label>
                         <label class="column-picker-item"><input type="checkbox" data-column="{{ 7 + $shift }}" checked> Zone</label>
                         <label class="column-picker-item"><input type="checkbox" data-column="{{ 8 + $shift }}" checked> Opening</label>
@@ -100,7 +101,7 @@
         </div>
 
         <div class="card-body">
-            @if(Auth::user()->roles->pluck('name')->first() == 'Admin')
+            @if($isAdmin)
             <div class="row mb-3 align-items-end">
                 <div class="col-md-4">
                     <form action="{{ route('customers.index') }}" method="GET" class="d-flex gap-2">
@@ -142,7 +143,7 @@
                             <th>Type</th>
                             <th>Name</th>
                             <th>Groups</th>
-                            @if(Auth::user()->roles->pluck('name')->first() == 'Admin')
+                            @if($isAdmin)
                                 <th>Created By</th>
                             @endif
                             <th>Mobile</th>
@@ -179,7 +180,7 @@
                                     <span class="text-muted small">No Group</span>
                                 @endif
                             </td>
-                            @if(Auth::user()->roles->pluck('name')->first() == 'Admin')
+                            @if($isAdmin)
                                 <td>{{ $customer->creator->name ?? 'System' }}</td>
                             @endif
                             <td>{{ $customer->mobile }}</td>
@@ -234,7 +235,7 @@
                             </td>
                         </tr>
                         @empty
-                        @php $totalCols = (Auth::user()->roles->pluck('name')->first() == 'Admin') ? 12 : 11; @endphp
+                        @php $totalCols = $isAdmin ? 12 : 11; @endphp
                         <tr>
                             <td colspan="{{ $totalCols }}" class="text-center text-muted">No customers found.</td>
                         </tr>
