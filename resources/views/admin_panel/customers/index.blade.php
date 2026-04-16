@@ -234,8 +234,9 @@
                             </td>
                         </tr>
                         @empty
+                        @php $totalCols = (Auth::user()->roles->pluck('name')->first() == 'Admin') ? 12 : 11; @endphp
                         <tr>
-                            <td colspan="12" class="text-center text-muted">No customers found.</td>
+                            <td colspan="{{ $totalCols }}" class="text-center text-muted">No customers found.</td>
                         </tr>
                         @endforelse
                     </tbody>
