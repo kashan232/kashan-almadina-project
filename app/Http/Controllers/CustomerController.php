@@ -19,8 +19,6 @@ class CustomerController extends Controller
     public function index(Request $request)
     {
         $query = Customer::with(['customerLedger', 'creator']);
-
-        // Check if user is NOT an admin
         if (Auth::user()->roles->pluck('name')->first() !== 'Admin') {
             $userId = Auth::id();
             $userGroupIds = Auth::user()->userGroups()->pluck('user_groups.id')->toArray();
@@ -150,8 +148,8 @@ class CustomerController extends Controller
             'email_address_2' => 'nullable|email',
             'opening_balance' => 'nullable|numeric',
             'address' => 'nullable',
-            'address_ur' => 'nullable', // ← Urdu Address Added
-            'transport_ur' => 'nullable', // ← Urdu Address Added
+            'address_ur' => 'nullable',
+            'transport_ur' => 'nullable',
             'customer_type' => 'nullable',
             'user_group_ids' => 'nullable|array',
         ]);
@@ -212,8 +210,8 @@ class CustomerController extends Controller
             'email_address_2' => 'nullable|email',
             'opening_balance' => 'nullable|numeric',
             'address' => 'nullable',
-            'address_ur' => 'nullable', // ← Urdu Address Added
-            'transport_ur' => 'nullable', // ← Urdu Address Added
+            'address_ur' => 'nullable',
+            'transport_ur' => 'nullable',
             'customer_type' => 'nullable',
             'user_group_ids' => 'nullable|array',
         ]);

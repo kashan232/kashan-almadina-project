@@ -78,21 +78,22 @@
                     </button>
                     <div class="column-picker-menu shadow" id="columnPickerMenu">
                         <div class="p-2 border-bottom fw-bold small text-muted">Show/Hide Columns</div>
-                        <label class="column-picker-item"><input type="checkbox" data-column="1" checked> ID</label>
-                        <label class="column-picker-item"><input type="checkbox" data-column="2" checked> Type</label>
-                        <label class="column-picker-item"><input type="checkbox" data-column="3" checked> Name</label>
-                        <label class="column-picker-item"><input type="checkbox" data-column="4" checked> Groups</label>
+                        <label class="column-picker-item"><input type="checkbox" data-column="1" checked> DB ID</label>
+                        <label class="column-picker-item"><input type="checkbox" data-column="2" checked> ID</label>
+                        <label class="column-picker-item"><input type="checkbox" data-column="3" checked> Type</label>
+                        <label class="column-picker-item"><input type="checkbox" data-column="4" checked> Name</label>
+                        <label class="column-picker-item"><input type="checkbox" data-column="5" checked> Groups</label>
                         @if($isAdmin)
-                            <label class="column-picker-item"><input type="checkbox" data-column="5" checked> Created By</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="6" checked> Created By</label>
                         @endif
                         {{-- Note: Indices shift based on Admin role --}}
                         @php $shift = $isAdmin ? 0 : -1; @endphp
-                        <label class="column-picker-item"><input type="checkbox" data-column="{{ 6 + $shift }}" checked> Mobile</label>
-                        <label class="column-picker-item"><input type="checkbox" data-column="{{ 7 + $shift }}" checked> Zone</label>
-                        <label class="column-picker-item"><input type="checkbox" data-column="{{ 8 + $shift }}" checked> Opening</label>
-                        <label class="column-picker-item"><input type="checkbox" data-column="{{ 9 + $shift }}" checked> Closing</label>
-                        <label class="column-picker-item"><input type="checkbox" data-column="{{ 10 + $shift }}" checked> Filer</label>
-                        <label class="column-picker-item"><input type="checkbox" data-column="{{ 11 + $shift }}" checked> Status</label>
+                        <label class="column-picker-item"><input type="checkbox" data-column="{{ 7 + $shift }}" checked> Mobile</label>
+                        <label class="column-picker-item"><input type="checkbox" data-column="{{ 8 + $shift }}" checked> Zone</label>
+                        <label class="column-picker-item"><input type="checkbox" data-column="{{ 9 + $shift }}" checked> Opening</label>
+                        <label class="column-picker-item"><input type="checkbox" data-column="{{ 10 + $shift }}" checked> Closing</label>
+                        <label class="column-picker-item"><input type="checkbox" data-column="{{ 11 + $shift }}" checked> Filer</label>
+                        <label class="column-picker-item"><input type="checkbox" data-column="{{ 12 + $shift }}" checked> Status</label>
                     </div>
                 </div>
 
@@ -139,6 +140,7 @@
                 <table id="customerTable" class="display table table-bordered" style="width:100%">
                     <thead class="table-light">
                         <tr>
+                            <th>ID</th>
                             <th>Customer ID</th>
                             <th>Type</th>
                             <th>Name</th>
@@ -158,6 +160,7 @@
                     <tbody>
                         @forelse($customers as $customer)
                         <tr>
+                            <td>{{ $customer->id }}</td>
                             <td>{{ $customer->customer_id }}</td>
                             <td>
                                 @if($customer->customer_type == 'Main Customer')
@@ -235,7 +238,7 @@
                             </td>
                         </tr>
                         @empty
-                        @php $totalCols = $isAdmin ? 12 : 11; @endphp
+                        @php $totalCols = $isAdmin ? 13 : 12; @endphp
                         <tr>
                             <td colspan="{{ $totalCols }}" class="text-center text-muted">No customers found.</td>
                         </tr>
