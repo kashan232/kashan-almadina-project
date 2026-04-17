@@ -1,5 +1,4 @@
 @extends('admin_panel.layout.app')
-<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 <style>
     /* Select2 customizations to match theme */
     .select2-container .select2-selection--single {
@@ -378,13 +377,14 @@
 
 
 
-<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         // Global helper for initializing Select2 on a row
         window.initProductSelect = function($row) {
             const $select = $row.find('.product-select');
             
+            if ($select.hasClass('select2-hidden-accessible')) return;
+
             $select.select2({
                 placeholder: "Select Product",
                 allowClear: true,

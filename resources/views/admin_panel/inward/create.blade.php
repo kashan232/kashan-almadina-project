@@ -1,6 +1,4 @@
-@extends('admin_panel.layout.app')
-
-<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+@section('content')
 <style>
     .select2-container .select2-selection--single {
         height: 31px !important;
@@ -58,6 +56,7 @@
     }
 </style>
 
+@extends('admin_panel.layout.app')
 @section('content')
 <div class="main-content">
     <div class="main-content-inner">
@@ -304,11 +303,14 @@
 @endsection
 
 @section('scripts')
-<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script>
     $(document).ready(function() {
         // Initialize static Select2
-        $('.select2').select2({ width: '100%' });
+        $('.select2').each(function() {
+            if (!$(this).hasClass('select2-hidden-accessible')) {
+                $(this).select2({ width: '100%' });
+            }
+        });
 
         var _savedGatepassId = "{{ isset($gatepass) ? $gatepass->id : '' }}";
         if(_savedGatepassId) {
@@ -460,7 +462,9 @@
 
         // Row Management
         window.initProductSelect = function($row) {
-            $row.find('.product-select').select2({
+            const $select = $row.find('.product-select');
+            if ($select.hasClass('select2-hidden-accessible')) return;
+            $select.select2({
                 placeholder: "Select Product",
                 width: '100%',
                 ajax: {

@@ -29,8 +29,7 @@
 
     <!-- Owl Carousel JS -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/OwlCarousel2/2.3.4/owl.carousel.min.js"></script>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
 
 
     <script src="{{ asset('assets/js/home.js') }}"></script>
@@ -48,8 +47,10 @@
             items: 1
         });
         $(document).ready(function() {
-            $('.select2').select2({
-                width: '100%'
+            $('.select2').each(function() {
+                if (!$(this).hasClass('select2-hidden-accessible')) {
+                    $(this).select2({ width: '100%' });
+                }
             });
 
             $('#example').DataTable({

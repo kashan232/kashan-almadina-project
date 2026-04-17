@@ -152,6 +152,37 @@
                             </div>
                         </div>
 
+                        <div class="row mb-4">
+                            <div class="col-md-12">
+                                <label><strong>Assigned User Groups:</strong></label>
+                                @if($isAdmin)
+                                    <select name="user_group_ids[]" class="form-control select2-groups" multiple style="width: 100%;" data-placeholder="Select Groups">
+                                        @foreach($userGroups as $group)
+                                            <option value="{{ $group->id }}" {{ (is_array(old('user_group_ids', $customer->user_group_ids)) && in_array($group->id, old('user_group_ids', $customer->user_group_ids ?? []))) ? 'selected' : '' }}>
+                                                {{ $group->group_name }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                @else
+                                    <div class="form-control bg-light" style="height: auto; min-height: 38px;">
+                                        @php $myGroups = Auth::user()->userGroups; @endphp
+                                        @if($myGroups->count() > 0)
+                                            @foreach($myGroups as $group)
+                                                <span class="badge bg-primary me-1">{{ $group->group_name }}</span>
+                                                {{-- Hidden input to maintain existing groups if not admin --}}
+                                                <input type="hidden" name="user_group_ids[]" value="{{ $group->id }}">
+                                            @endforeach
+                                        @else
+                                            <span class="text-muted small">No Groups Assigned to You</span>
+                                        @endif
+                                    </div>
+                                @endif
+                                @error('user_group_ids')
+                                    <div class="text-danger small">{{ $message }}</div>
+                                @enderror
+                            </div>
+                        </div>
+
                         <div class="text-center">
                             <button type="submit" class="btn btn-primary px-5">Update Customer</button>
                         </div>

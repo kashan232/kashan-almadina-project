@@ -35,15 +35,21 @@ class AccountsHeadController extends Controller
                         $q->orWhereJsonContains('user_group_ids', (string)$groupId);
                     }
                 }
-            });
+             });
+        } else {
+            // Admin can filter by user
+            if (request('created_by')) {
+                $query->where('created_by', request('created_by'));
+            }
         }
 
         $accounts = $query->get();
         $heads = AccountHead::all();
         $userGroups = UserGroup::all();
+        $users = User::all(); // To populate filter for Admin
         // Calculate next Head Code (ID)
         $nextHeadId = AccountHead::max('id') + 1;
-        return view('admin_panel.chart_of_accounts', compact('accounts', 'heads', 'nextHeadId', 'isAdmin', 'userGroups'));
+        return view('admin_panel.chart_of_accounts', compact('accounts', 'heads', 'nextHeadId', 'isAdmin', 'userGroups', 'users'));
     }
 
     public function getNextAccountCode($headId)

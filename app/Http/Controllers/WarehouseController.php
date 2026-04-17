@@ -15,6 +15,7 @@ class WarehouseController extends Controller
     {
         $query = Warehouse::with(['creator']);
         $isAdmin = Auth::user()->roles->pluck('name')->contains('Admin') || Auth::user()->usertype == 'admin';
+        
         // Check if user is NOT an admin
         if (!$isAdmin) {
             $userId = Auth::id();

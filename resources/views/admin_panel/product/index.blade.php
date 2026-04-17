@@ -436,49 +436,6 @@
              }
          });
 
-         // Column Persistence with LocalStorage
-         const storageKey = 'product_table_columns_v1';
-         
-         // Load initial state
-         const savedState = localStorage.getItem(storageKey);
-         if (savedState) {
-             const columns = JSON.parse(savedState);
-             $('#columnPickerMenu input').each(function() {
-                 const colIdx = $(this).data('column');
-                 if (columns.hasOwnProperty(colIdx)) {
-                     $(this).prop('checked', columns[colIdx]);
-                     toggleColumn(colIdx, columns[colIdx]);
-                 }
-             });
-         }
-
-         // Handle Checkbox Change
-         $('#columnPickerMenu input').on('change', function() {
-             const colIdx = $(this).data('column');
-             const isChecked = $(this).is(':checked');
-             
-             toggleColumn(colIdx, isChecked);
-             saveState();
-         });
-
-         function toggleColumn(index, show) {
-             const table = $('#example');
-             const cells = table.find(`th:nth-child(${index}), td:nth-child(${index})`);
-             if (show) {
-                 cells.removeClass('column-hidden');
-             } else {
-                 cells.addClass('column-hidden');
-             }
-         }
-
-         function saveState() {
-             const state = {};
-             $('#columnPickerMenu input').each(function() {
-                 state[$(this).data('column')] = $(this).is(':checked');
-             });
-             localStorage.setItem(storageKey, JSON.stringify(state));
-         }
-
          // Initialize DataTable
          var table = $('#example').DataTable({
              destroy: true, // Allow re-initialization if already handled by global layout
@@ -491,6 +448,41 @@
                  searchPlaceholder: "Search products..."
              }
          });
+
+         // Column Persistence with LocalStorage
+         const storageKey = 'product_table_columns_v1';
+         
+         // Load initial state
+         const savedState = localStorage.getItem(storageKey);
+         if (savedState) {
+             const columns = JSON.parse(savedState);
+             $('#columnPickerMenu input').each(function() {
+                 const colIdx = parseInt($(this).data('column'));
+                 if (columns.hasOwnProperty(colIdx)) {
+                     const isChecked = columns[colIdx];
+                     $(this).prop('checked', isChecked);
+                     table.column(colIdx - 1).visible(isChecked);
+                 }
+             });
+         }
+
+         // Handle Checkbox Change
+         $('#columnPickerMenu input').on('change', function() {
+             const colIdx = parseInt($(this).data('column'));
+             const isChecked = $(this).is(':checked');
+             
+             table.column(colIdx - 1).visible(isChecked);
+             saveState();
+             table.columns.adjust().draw(false);
+         });
+
+         function saveState() {
+             const state = {};
+             $('#columnPickerMenu input').each(function() {
+                 state[$(this).data('column')] = $(this).is(':checked');
+             });
+             localStorage.setItem(storageKey, JSON.stringify(state));
+         }
 
         // =============================================
         //  VIEW PRODUCT MODAL LOGIC

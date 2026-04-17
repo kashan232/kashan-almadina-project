@@ -127,6 +127,30 @@
                 </div>
             </div>
 
+            @if($isAdmin)
+            <div class="row mb-4">
+                <div class="col-md-4">
+                    <form action="{{ route('view_all') }}" method="GET" class="d-flex gap-2 align-items-end card border-0 shadow-sm p-3">
+                        <div class="flex-grow-1">
+                            <label class="form-label small fw-bold mb-1">Filter by Creator:</label>
+                            <select name="created_by" class="form-control form-control-sm select2">
+                                <option value="">All Users</option>
+                                @foreach($users as $user)
+                                    <option value="{{ $user->id }}" {{ request('created_by') == $user->id ? 'selected' : '' }}>
+                                        {{ $user->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-sm px-3 shadow-sm">Filter</button>
+                        @if(request('created_by'))
+                            <a href="{{ route('view_all') }}" class="btn btn-outline-secondary btn-sm px-3">X</a>
+                        @endif
+                    </form>
+                </div>
+            </div>
+            @endif
+
             <div class="row">
                 <div class="col-12">
                     <div class="card border-0">

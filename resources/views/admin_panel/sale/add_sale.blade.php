@@ -1,8 +1,6 @@
 @extends('admin_panel.layout.app')
 
 @section('content')
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 
 <style>
   .main-container {
@@ -862,7 +860,6 @@
 @endsection
 
 @section('scripts')
-<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script>
   /* ---------- helpers ---------- */
   function pad(n) {
@@ -916,6 +913,9 @@
   /* ---------- Select2 Product Initialization ---------- */
   function initProductSelect($row) {
     const $select = $row.find('.product-select');
+    if ($select.hasClass('select2-hidden-accessible')) {
+        return; // Already initialized
+    }
     $select.select2({
       placeholder: "Select Product",
       allowClear: true,
@@ -1088,24 +1088,9 @@
     });
   }
 
-  // Page load initialization
+  // Initializing rows and narration - handled by init() at the bottom
   $(function() {
-    $('.rv-narration').each(function() {
-      loadNarrationsInto($(this));
-    });
-
-    // If rows exist (from old input), initialize them
-    $('#salesTableBody tr').each(function() {
-        initProductSelect($(this));
-    });
-
-    if ($('#salesTableBody tr').length > 0) {
-        updateGrandTotals();
-        recomputeReceipts();
-    } else {
-        // If no rows, add one empty row
-        addNewRow();
-    }
+    // Only handle things that need ready() and aren't in init()
   });
 
   function isRowMeaningful($row) {
@@ -2057,7 +2042,23 @@
 
   /* ---------- init ---------- */
   function init() {
-    addNewRow();
+    // 1. Initialize existing rows (from PHP old input or edit)
+    $('#salesTableBody tr').each(function() {
+      initProductSelect($(this));
+    });
+
+    // 2. Add blank row if needed
+    if ($('#salesTableBody tr').length === 0) {
+      addNewRow();
+    } else {
+      // Check if last row is empty; if not, you might want to add another blank row or just leave it.
+      // For now, let's just make sure the last row is focused if it's empty.
+      const $last = $('#salesTableBody tr:last-child');
+      if ($last.find('.product-select').val()) {
+          addNewRow(false);
+      }
+    }
+
     loadCustomersByType('customer');
     loadNarrationsInto($('.rv-narration'));
 
@@ -2073,7 +2074,9 @@
     refreshPostedState();
   }
 
-  init();
+  $(function() {
+    init();
+  });
 
   function markInvalid($el) {
     // add visuals; $el can be input/select/td

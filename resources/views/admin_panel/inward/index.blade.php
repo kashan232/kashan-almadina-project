@@ -7,6 +7,20 @@
     #gpTable tbody td { white-space: nowrap; vertical-align: middle; }
     .card { border-radius: 8px; box-shadow: 0 0.125rem 0.25rem rgba(0,0,0,.075); }
     .card-header { background-color: #fff; border-bottom: 1px solid #edf2f9; }
+
+    /* Column Picker Styles */
+    .column-picker-dropdown { position: relative; display: inline-block; }
+    .column-picker-menu {
+        position: absolute; top: 100%; right: 0; z-index: 1000; display: none; min-width: 200px;
+        padding: 5px 0; margin: 2px 0 0; font-size: 14px; text-align: left; list-style: none;
+        background-color: #fff; background-clip: padding-box; border: 1px solid rgba(0,0,0,.15);
+        border-radius: 4px; box-shadow: 0 6px 12px rgba(0,0,0,.175); max-height: 400px; overflow-y: auto;
+    }
+    .column-picker-menu.show { display: block; }
+    .column-picker-item { display: block; padding: 5px 15px; clear: both; font-weight: 400; line-height: 1.42857143; color: #333; white-space: nowrap; cursor: pointer; }
+    .column-picker-item:hover { background-color: #f5f5f5; }
+    .column-picker-item input { margin-right: 10px; cursor: pointer; }
+    .column-hidden { display: none !important; }
 </style>
 
 <div class="main-content">
@@ -74,7 +88,26 @@
                     <div class="card border-0">
                         <div class="card-header d-flex justify-content-between align-items-center py-3">
                             <h4 class="card-title mb-0 fw-bold text-dark">Inward Gatepass Management</h4>
-                            <div class="d-flex gap-2">
+                            <div class="d-flex gap-2 align-items-center">
+                                <div class="column-picker-dropdown">
+                                    <button class="btn btn-outline-secondary btn-sm px-3 rounded-pill" type="button" id="columnPickerBtn">
+                                        <i class="fa fa-columns me-1"></i> Columns
+                                    </button>
+                                    <div class="column-picker-menu shadow" id="columnPickerMenu">
+                                        <div class="p-2 border-bottom fw-bold small text-muted">Show/Hide Columns</div>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="0" checked> Invoice#</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="1" checked> Date</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="2" checked> Branch</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="3" checked> Warehouse</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="4" checked> Vendor</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="5" checked> Transport</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="6" checked> Bilty#</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="7" checked> Items</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="8" checked> Note</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="9" checked> Status</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="10" checked> Action</label>
+                                    </div>
+                                </div>
                                 <a class="btn btn-primary btn-sm px-4 rounded-pill" href="{{ route('add_inwardgatepass') }}">
                                     <i class="fa fa-plus me-1"></i> Add Inward
                                 </a>
@@ -175,7 +208,7 @@
 @section('scripts')
 <script>
     $(document).ready(function() {
-        $('#gpTable').DataTable({
+        var dt = $('#gpTable').DataTable({
             destroy: true,
             scrollX: true,
             autoWidth: false,
@@ -185,6 +218,44 @@
                 search: "_INPUT_",
                 searchPlaceholder: "Search gatepasses..."
             }
+        });
+
+        // Column Picker Logic
+        $('#columnPickerBtn').on('click', function(e) {
+            e.stopPropagation();
+            $('#columnPickerMenu').toggleClass('show');
+        });
+
+        $(document).on('click', function(e) {
+            if (!$(e.target).closest('.column-picker-dropdown').length) {
+                $('#columnPickerMenu').removeClass('show');
+            }
+        });
+
+        const storageKey = 'inward_gp_table_columns_v1';
+        const savedState = localStorage.getItem(storageKey);
+
+        if (savedState) {
+            const columns = JSON.parse(savedState);
+            $('#columnPickerMenu input').each(function() {
+                const colIdx = parseInt($(this).data('column'));
+                const checked = columns.hasOwnProperty(colIdx) ? columns[colIdx] : true;
+                $(this).prop('checked', checked);
+                dt.column(colIdx).visible(checked);
+            });
+        }
+
+        $('#columnPickerMenu input').on('change', function() {
+            const colIdx = $(this).data('column');
+            const isChecked = $(this).is(':checked');
+            dt.column(parseInt(colIdx)).visible(isChecked);
+            
+            const state = {};
+            $('#columnPickerMenu input').each(function() {
+                state[$(this).data('column')] = $(this).is(':checked');
+            });
+            localStorage.setItem(storageKey, JSON.stringify(state));
+            dt.columns.adjust().draw(false);
         });
 
         // Delete confirm

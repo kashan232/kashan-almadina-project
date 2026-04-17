@@ -1,5 +1,6 @@
 @extends('admin_panel.layout.app')
-<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+
+@section('content')
 <style>
                 @media print {
                     body * {
@@ -71,7 +72,6 @@
     }
     @keyframes spin { 100% { transform:rotate(360deg); } }
 </style>
-@section('content')
 <div class="main-content bg-white">
     <div class="main-content-inner">
         <div class="row">
@@ -584,7 +584,6 @@
 @endsection
 
 @section('scripts')
-<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
 
 
@@ -616,10 +615,77 @@
 
 
     <script>
+        window.appendBlankRow = function(force = false, focus = true) {
+            const lastRow = $('#purchaseItems tr:last');
+            if (!force && lastRow.length > 0) {
+                const pid = lastRow.find('.product-select').val();
+                if(!pid) {
+                    lastRow.find('.item-id-input').focus();
+                    return;
+                }
+            }
+
+            const newRowHtml = `
+                <tr>
+                    <td style="width:100px;">
+                       <input type="text" class="form-control form-control-sm item-id-input" placeholder="ID">
+                    </td>
+                    <td style="width: 250px;">
+                      <select name="product_id[]" class="form-control form-control-sm product-select" style="width: 100%;">
+                        <option value="" disabled selected>Select Product</option>
+                      </select>
+                      <input type="hidden" name="product_name[]" class="product_name_hidden">
+                    </td>
+                    <td class="uom border">
+                        <input type="text" name="brand[]" class="form-control form-control-sm brand-name" readonly>
+                    </td>
+                    <td>
+                        <input type="number" step="0.01" name="price[]" class="form-control form-control-sm price">
+                    </td>
+                    <td>
+                        <input type="text" name="retail_price_show[]" class="form-control form-control-sm retail_price_show" readonly>
+                    </td>
+                    <td>
+                      <div class="input-group">
+                        <input type="number" step="0.01" min="0" name="item_disc[]" class="form-control form-control-sm item_disc" placeholder="%" value="">
+                        <input type="text" name="item_disc_amount[]" class="form-control form-control-sm disc_amount" readonly placeholder="Disc Amt">
+                      </div>
+                      <input type="hidden" name="purchase_retail_price[]" class="purchase_retail_price">
+                      <input type="hidden" name="purchase_net_amount[]" class="purchase_net_amount">
+                    </td>
+                    <td>
+                        <input type="number" name="qty[]" class="form-control form-control-sm quantity" value="1" min="1">
+                    </td>
+                    <td>
+                        <input type="text" name="amount[]" class="form-control form-control-sm row-amount" readonly>
+                    </td>
+                    <td>
+                        <input type="text" name="total[]" class="form-control form-control-sm row-total" readonly>
+                    </td>
+                    <td>
+                        <button type="button" class="btn btn-sm btn-danger remove-row" title="Delete Row (Ctrl+X)">
+                            X <span style="font-size: 8px; opacity: 0.8; margin-left: 1px;">Ctrl+X</span>
+                        </button>
+                    </td>
+                </tr>`;
+            
+            const $row = $(newRowHtml);
+            $('#purchaseItems').append($row);
+            if (window.initProductSelect) window.initProductSelect($row);
+            
+            if (focus) {
+                setTimeout(() => { $row.find('.item-id-input').focus(); }, 50);
+            }
+        };
+
         // Global helper for initializing Select2 on a row
         window.initProductSelect = function($row) {
             const $select = $row.find('.product-select');
             
+            if ($select.hasClass('select2-hidden-accessible')) {
+                return; // Already initialized
+            }
+
             $select.select2({
                 placeholder: "Select Product",
                 allowClear: true,
@@ -784,23 +850,12 @@
             });
         };
 
-    document.addEventListener('DOMContentLoaded', function() {
-
-        // Initialize any existing rows
-        $('#purchaseItems tr').each(function() {
-             window.initProductSelect($(this));
+        // Initialize any existing rows immediately if they exist
+        $(function() {
+            $('#purchaseItems tr').each(function() {
+                if (window.initProductSelect) window.initProductSelect($(this));
+            });
         });
-
-        // AUTO-ADD ROW on last product selection
-        // REMOVED: Handled inside select2:select for better control
-        /*
-        $(document).on('select2:select', '.product-select', function() {
-            if ($(this).closest('tr').is(':last-child')) {
-                if(typeof window.appendBlankRow === 'function') window.appendBlankRow();
-            }
-        });
-        */
-    });
     </script>
 
 {{-- Item Row Autocomplete + Add/Remove --}}
@@ -1114,13 +1169,13 @@
             if (typeof recalcAccountsTotal === 'function') recalcAccountsTotal();
         }
 
-        // Run restore on DOM ready (after your other handlers)
-        document.addEventListener('DOMContentLoaded', function() {
+        // Run restore on DOM ready
+        $(function() {
             try {
                 restoreProducts();
                 restoreAccounts();
             } catch (e) {
-                console && console.error && console.error('restore error', e);
+                console.error('restore error', e);
             }
         });
     })();
@@ -1254,14 +1309,13 @@
 
 
         // Initial entry setup
-        $(document).ready(function() {
+        $(function() {
             // Initialize Select2 on any rows that were rendered by Blade
             $('#purchaseItems tr').each(function() {
                 if (typeof window.initProductSelect === 'function') window.initProductSelect($(this));
             });
             
-            // If table is still empty after restoration scripts (run on DOMContentLoaded), add a blank row
-            // Note: restoreProducts is already triggered on DOMContentLoaded
+            // If table is still empty after restoration scripts, add a blank row
             setTimeout(() => {
                 const $itemRows = $('#purchaseItems tr');
                 if ($itemRows.length === 0) {
@@ -1269,7 +1323,6 @@
                         window.appendBlankRow();
                     }
                 } else {
-                    // Recalculate each existing row to be sure
                     $itemRows.each(function() {
                         if (typeof window.recalcRow === 'function') window.recalcRow($(this));
                     });
@@ -1928,73 +1981,7 @@ $(document).ready(function() {
         }
     }, true);
 
-    // =============================================
-    //  FLAGSHIP ITEM ROW MANAGEMENT
-    // =============================================
-    
-    window.appendBlankRow = function(force = false, focus = true) {
-        console.log('Global appendBlankRow triggered');
-        const lastRow = $('#purchaseItems tr:last');
-        if (!force && lastRow.length > 0) {
-            const pid = lastRow.find('.product-select').val();
-            if(!pid) {
-                lastRow.find('.item-id-input').focus();
-                return;
-            }
-        }
-
-        const newRowHtml = `
-            <tr>
-                <td style="width:100px;">
-                   <input type="text" class="form-control form-control-sm item-id-input" placeholder="ID">
-                </td>
-                <td style="width: 250px;">
-                  <select name="product_id[]" class="form-control form-control-sm product-select" style="width: 100%;">
-                    <option value="" disabled selected>Select Product</option>
-                  </select>
-                  <input type="hidden" name="product_name[]" class="product_name_hidden">
-                </td>
-                <td class="uom border">
-                    <input type="text" name="brand[]" class="form-control form-control-sm brand-name" readonly>
-                </td>
-                <td>
-                    <input type="number" step="0.01" name="price[]" class="form-control form-control-sm price">
-                </td>
-                <td>
-                    <input type="text" name="retail_price_show[]" class="form-control form-control-sm retail_price_show" readonly>
-                </td>
-                <td>
-                  <div class="input-group">
-                    <input type="number" step="0.01" min="0" name="item_disc[]" class="form-control form-control-sm item_disc" placeholder="%" value="">
-                    <input type="text" name="item_disc_amount[]" class="form-control form-control-sm disc_amount" readonly placeholder="Disc Amt">
-                  </div>
-                  <input type="hidden" name="purchase_retail_price[]" class="purchase_retail_price">
-                  <input type="hidden" name="purchase_net_amount[]" class="purchase_net_amount">
-                </td>
-                <td class="qty">
-                    <input type="number" name="qty[]" class="form-control form-control-sm quantity" value="1" min="1">
-                </td>
-                <td>
-                    <input type="text" name="amount[]" class="form-control form-control-sm row-amount" readonly>
-                </td>
-                <td class="total border">
-                    <input type="text" name="total[]" class="form-control form-control-sm row-total" readonly>
-                </td>
-                <td>
-                    <button type="button" class="btn btn-sm btn-danger remove-row" title="Delete Row (Ctrl+X)">
-                        X <span style="font-size: 8px; opacity: 0.8; margin-left: 1px;">Ctrl+X</span>
-                    </button>
-                </td>
-            </tr>`;
-        
-        const $row = $(newRowHtml);
-        $('#purchaseItems').append($row);
-        if (window.initProductSelect) window.initProductSelect($row);
-        
-        if (focus) {
-            setTimeout(() => { $row.find('.item-id-input').focus(); }, 50);
-        }
-    };
+    // Removed redundant definition from ready block
     // Ctrl+X shortcut to remove the current row
     $(document).on('keydown', 'input, select', function(e) {
         if (e.ctrlKey && (e.key === 'x' || e.key === 'X')) {

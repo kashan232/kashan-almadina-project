@@ -793,6 +793,9 @@
   /* ---------- Select2 Product Initialization ---------- */
   function initProductSelect($row) {
     const $select = $row.find('.product-select');
+    if ($select.hasClass('select2-hidden-accessible')) {
+        return; // Already initialized
+    }
     $select.select2({
       placeholder: "Select Product",
       allowClear: true,
