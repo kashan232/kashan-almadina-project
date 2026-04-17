@@ -265,7 +265,7 @@
                 </div>
                 <div class="mb-3">
                     <label class="form-label fw-bold">Account Code</label>
-                    <input type="text" name="account_code" class="form-control" placeholder="Auto-generated" required>
+                    <input type="text" name="account_code" class="form-control bg-light" placeholder="Auto-generated" readonly required>
                 </div>
                 <div class="mb-3">
                     <label class="form-label fw-bold">Account Title</label>
@@ -482,7 +482,7 @@
             
             modal.find('.modal-title').html('<i class="fa fa-edit me-2"></i>Edit Account');
             modal.find('select[name="head_id"]').val(btn.data('head_id'));
-            modal.find('input[name="account_code"]').val(btn.data('code')).attr('readonly', true);
+            modal.find('input[name="account_code"]').val(btn.data('code'));
             modal.find('input[name="title"]').val(btn.data('title'));
             modal.find('input[name="opening_balance"]').val(btn.data('balance'));
             modal.find('#accStatus').prop('checked', btn.data('status') == 1);
@@ -496,7 +496,7 @@
             const modal = $(this);
             modal.find('.modal-title').html('<i class="fa fa-plus-circle me-2"></i>Add New Account');
             modal.find('select[name="head_id"]').val('');
-            modal.find('input[name="account_code"]').val('').attr('readonly', false);
+            modal.find('input[name="account_code"]').val('');
             modal.find('input[name="title"]').val('');
             modal.find('input[name="opening_balance"]').val('0.00');
             modal.find('#accStatus').prop('checked', true);

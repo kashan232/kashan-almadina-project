@@ -275,7 +275,7 @@ class SaleController extends Controller
                 if ($warehouse_id == 0) {
                     // Shop Stock
                     if ($p = Product::find($productId)) {
-                        $p->stock = max(0, ($p->stock ?? 0) - $saleQty);
+                        $p->stock = ($p->stock ?? 0) - $saleQty;
                         $p->save();
                     }
                 } else {
@@ -283,7 +283,7 @@ class SaleController extends Controller
                     if ($ws = WarehouseStock::where('warehouse_id', $warehouse_id)
                         ->where('product_id', $productId)
                         ->first()) {
-                        $ws->quantity = max(0, $ws->quantity - $saleQty);
+                        $ws->quantity = ($ws->quantity ?? 0) - $saleQty;
                         $ws->save();
                     }
                 }
@@ -511,7 +511,7 @@ class SaleController extends Controller
                         if ($it->warehouse_id == 0) {
                             // Shop Stock
                             if ($p = Product::find($it->product_id)) {
-                                $p->stock = max(0, ($p->stock ?? 0) - $salesQty);
+                                $p->stock = ($p->stock ?? 0) - $salesQty;
                                 $p->save();
                             }
                         } else {
@@ -519,7 +519,7 @@ class SaleController extends Controller
                             if ($ws = WarehouseStock::where('warehouse_id', $it->warehouse_id)
                                 ->where('product_id', $it->product_id)
                                 ->first()) {
-                                $ws->quantity = max(0, $ws->quantity - $salesQty);
+                                $ws->quantity = ($ws->quantity ?? 0) - $salesQty;
                                 $ws->save();
                             }
                         }
@@ -639,14 +639,14 @@ class SaleController extends Controller
                 if (!$sale->is_sale_order) {
                     if ($it->warehouse_id == 0) {
                         if ($p = Product::find($it->product_id)) {
-                            $p->stock = max(0, ($p->stock ?? 0) - $salesQty);
+                            $p->stock = ($p->stock ?? 0) - $salesQty;
                             $p->save();
                         }
                     } else {
                         if ($ws = WarehouseStock::where('warehouse_id', $it->warehouse_id)
                             ->where('product_id', $it->product_id)
                             ->first()) {
-                            $ws->quantity = max(0, $ws->quantity - $salesQty);
+                            $ws->quantity = ($ws->quantity ?? 0) - $salesQty;
                             $ws->save();
                         }
                     }
