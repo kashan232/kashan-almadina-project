@@ -529,7 +529,6 @@ $(document).ready(function() {
     });
 
     $('#postBtn').click(function() {
-        if (!confirm('Save & Post this voucher?')) return;
         $('.ajax-valid-error').remove();
         $.post('{{ route("Expense.vochers.ajax-save") }}', $('#expenseForm').serialize(), function(res) {
             if(res.success) {

@@ -160,9 +160,6 @@
                         <label class="form-label text-muted small fw-bold mb-1">Party Type <span class="text-danger">*</span></label>
                         <select name="vendor_type" id="vendor_type" class="form-select form-select-sm">
                             <option value="">Select Type...</option>
-                            @foreach($AccountHeads as $head)
-                                <option value="{{ $head->id }}" {{ $receipt->type == $head->id ? 'selected' : '' }}>{{ $head->name }}</option>
-                            @endforeach
                             <option value="vendor" {{ $receipt->type == 'vendor' ? 'selected' : '' }}>Vendor</option>
                             <option value="customer" {{ $receipt->type == 'customer' ? 'selected' : '' }}>Customer</option>
                             <option value="walkin" {{ $receipt->type == 'walkin' ? 'selected' : '' }}>Walkin Customer</option>
@@ -692,9 +689,6 @@ $(document).ready(function() {
     });
 
     $('#postBtn').click(function() {
-        if (!confirm('Are you sure you want to Save & Post this voucher? \n\nThis will update your ledgers and mark the record as final.')) {
-            return;
-        }
 
         // Auto save draft first
         $.post('{{ route("recepit.vochers.ajax-save") }}', $('#receiptForm').serialize(), function(res) {

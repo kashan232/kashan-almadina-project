@@ -92,12 +92,12 @@
                 </div>
                 <div class="col-md-3">
                     <div class="card border-0 bg-light p-2 shadow-sm h-100">
-                        <label class="form-label text-muted small fw-bold mb-1">Account Head <span class="text-danger">*</span></label>
-                        <select name="account_head" id="account_head" class="form-select form-select-sm">
-                            <option value="">Select Head...</option>
-                            @foreach($AccountHeads as $head)
-                            <option value="{{ $head->id }}" {{ ($receipt->row_account_head == $head->id) ? 'selected' : '' }}>{{ $head->name }}</option>
-                            @endforeach
+                        <label class="form-label text-muted small fw-bold mb-1">Party Type <span class="text-danger">*</span></label>
+                        <select name="party_type" id="party_type" class="form-select form-select-sm">
+                            <option value="">Select Type...</option>
+                            <option value="vendor" {{ $receipt->type == 'vendor' ? 'selected' : '' }}>Vendor</option>
+                            <option value="customer" {{ $receipt->type == 'customer' ? 'selected' : '' }}>Customer</option>
+                            <option value="walkin" {{ $receipt->type == 'walkin' ? 'selected' : '' }}>Walkin Customer</option>
                         </select>
                     </div>
                 </div>
@@ -105,13 +105,13 @@
                     <div class="card border-0 bg-light p-2 shadow-sm h-100">
                         <div class="row g-1">
                             <div class="col-4 text-center">
-                                <label class="form-label text-muted small fw-bold mb-1">Code <span class="text-danger">*</span></label>
-                                <input type="text" id="account_code_input" class="form-control form-control-sm border-danger fw-bold text-danger text-center" placeholder="Code">
+                                <label class="form-label text-muted small fw-bold mb-1">Code / ID <span class="text-danger">*</span></label>
+                                <input type="text" id="party_code_input" class="form-control form-control-sm border-danger fw-bold text-danger text-center" placeholder="Code/ID" value="{{ $receipt->party_id }}">
                             </div>
                             <div class="col-8">
-                                <label class="form-label text-muted small fw-bold mb-1">Account <span class="text-danger">*</span></label>
-                                <select name="account_id" id="account_id" class="form-select form-select-sm" data-selected="{{ $receipt->row_account_id }}">
-                                    <option value="">Select Account...</option>
+                                <label class="form-label text-muted small fw-bold mb-1">Party <span class="text-danger">*</span></label>
+                                <select name="party_id" id="party_id" class="form-select form-select-sm" data-selected="{{ $receipt->party_id }}">
+                                    <option value="">Select Party...</option>
                                 </select>
                             </div>
                         </div>
@@ -140,9 +140,9 @@
                                 <tr>
                                     <th style="width: 15%;">Narration</th>
                                     <th style="width: 10%;">Ref#</th>
-                                    <th style="width: 12%;">Party Type</th>
-                                    <th style="width: 10%;">Code / ID</th>
-                                    <th style="width: 18%;">Party Name</th>
+                                    <th style="width: 15%;">Account Head</th>
+                                    <th style="width: 10%;">Code</th>
+                                    <th style="width: 20%;">Account</th>
                                     <th style="width: 8%;">Discount</th>
                                     <th style="width: 7%;">KG</th>
                                     <th style="width: 8%;">Rate</th>
@@ -154,8 +154,8 @@
                                 @php
                                     $nIds = json_decode($receipt->narration_id, true) ?? [null];
                                     $refs = json_decode($receipt->reference_no, true) ?? [];
-                                    $types = json_decode($receipt->type, true) ?? [];
-                                    $parties = json_decode($receipt->party_id, true) ?? [];
+                                    $rowHeads = json_decode($receipt->row_account_head, true) ?? [];
+                                    $rowAccounts = json_decode($receipt->row_account_id, true) ?? [];
                                     $discounts = json_decode($receipt->discount_value, true) ?? [];
                                     $kgs = json_decode($receipt->kg, true) ?? [];
                                     $rates = json_decode($receipt->rate, true) ?? [];
@@ -177,19 +177,17 @@
                                     </td>
                                     <td><input name="reference_no[]" type="text" class="form-control form-control-sm" value="{{ $refs[$index] ?? '' }}"></td>
                                     <td>
-                                        <select name="party_type[]" class="form-select form-select-sm rowPartyType">
-                                            <option value="">Type...</option>
-                                            <option value="vendor" {{ ($types[$index] ?? '') == 'vendor' ? 'selected' : '' }}>Vendor</option>
-                                            <option value="customer" {{ ($types[$index] ?? '') == 'customer' ? 'selected' : '' }}>Customer</option>
+                                        <select name="row_account_head[]" class="form-select form-select-sm rowAccountHead">
+                                            <option value="">Select Head...</option>
                                             @foreach($AccountHeads as $head)
-                                            <option value="{{ $head->id }}" {{ ($types[$index] ?? '') == $head->id ? 'selected' : '' }}>{{ $head->name }}</option>
+                                            <option value="{{ $head->id }}" {{ ($rowHeads[$index] ?? '') == $head->id ? 'selected' : '' }}>{{ $head->name }}</option>
                                             @endforeach
                                         </select>
                                     </td>
-                                    <td><input type="text" name="row_party_id_input[]" class="form-control form-control-sm text-center rowPartyCode" placeholder="Code/ID" value="{{ $parties[$index] ?? '' }}"></td>
+                                    <td><input type="text" name="row_account_code[]" class="form-control form-control-sm text-center rowAccountCode" placeholder="Code" value=""></td>
                                     <td>
-                                        <select name="row_party_id[]" class="form-select form-select-sm rowPartySelect" data-selected="{{ $parties[$index] ?? '' }}">
-                                            <option value="">Select Party...</option>
+                                        <select name="row_account_id[]" class="form-select form-select-sm rowAccountSelect" data-selected="{{ $rowAccounts[$index] ?? '' }}">
+                                            <option value="">Select Account...</option>
                                         </select>
                                     </td>
                                     <td><input name="discount_value[]" type="number" step="any" class="form-control form-control-sm text-end discount" value="{{ $discounts[$index] ?? 0 }}"></td>
@@ -262,120 +260,117 @@
 $(document).ready(function() {
     function initSelectors($container = $('body')) {
         $container.find('.narrationSelect').select2({ placeholder: "Narration...", tags: true, width: '100%' });
-        $container.find('.rowPartySelect').select2({ placeholder: "Select Party...", allowClear: true, width: '100%' });
+        $container.find('.rowAccountSelect').select2({ placeholder: "Select Account...", allowClear: true, width: '100%' });
+        $container.find('#party_id').select2({ placeholder: "Select Party...", allowClear: true, width: '100%' });
     }
     initSelectors();
 
-    // 🏦 Account Logic
-    function syncAccountIdToCodeField() {
-        let val = $('#account_code_input').val();
+    // 👤 Header Party Logic
+    function syncPartyIdToCodeField() {
+        let val = $('#party_code_input').val();
         if (val) {
-            // Find by primary ID
-            let optById = $('#account_id option').filter(function() { return $(this).val() == val; });
+            let optById = $('#party_id option').filter(function() { return $(this).val() == val; });
             if (optById.length > 0) {
-                $('#account_id').val(val).trigger('change');
+                $('#party_id').val(val).trigger('change');
                 return;
             }
-            // Find by Account Code
-            let optByCode = $('#account_id option').filter(function() { return $(this).attr('data-code') == val; });
+            let optByCode = $('#party_id option').filter(function() { return $(this).attr('data-code') == val; });
             if (optByCode.length > 0) {
-                $('#account_id').val(optByCode.val()).trigger('change');
+                $('#party_id').val(optByCode.val()).trigger('change');
             }
         }
     }
 
-    $('#account_code_input').on('keydown', function(e) { 
-        if(e.which == 13 || e.which == 9) {
-            if(e.which == 13) e.preventDefault();
-            syncAccountIdToCodeField();
-        }
-    });
-    $('#account_code_input').on('blur', function() { 
-        syncAccountIdToCodeField();
+    $('#party_code_input').on('keydown blur', function(e) { 
+        if(e.type === 'keydown' && e.which != 13 && e.which != 9) return;
+        if(e.which == 13) e.preventDefault();
+        syncPartyIdToCodeField();
     });
 
-    $('#account_id').on('change', function() {
+    $('#party_id').on('change', function() {
         let code = $(this).find('option:selected').attr('data-code');
-        $('#account_code_input').val(code || $(this).val() || '');
+        $('#party_code_input').val(code || $(this).val() || '');
     });
 
-    $('#account_head').on('change', function() {
+    $('#party_type').on('change', function() {
         let id = $(this).val();
-        let $sub = $('#account_id');
+        let $sub = $('#party_id');
         let selected = $sub.data('selected');
-        
-        // 🔄 Reset Code and Sub-account
-        $('#account_code_input').val('');
+        $('#party_code_input').val('');
         $sub.empty().append('<option value="">Loading...</option>');
 
         if(id) {
-            $.get('{{ url("get-accounts-by-head") }}/' + id, res => {
-                $sub.empty().append('<option value="">Select Account...</option>');
-                res.forEach(a => $sub.append(`<option value="${a.id}" data-code="${a.account_code}" ${a.id == selected ? 'selected' : ''}>${a.title}</option>`));
+            let url = (['vendor','customer','walkin'].includes(id)) ? '{{ route("party.list") }}?type=' + id : '{{ url("get-accounts-by-head") }}/' + id;
+            $.get(url, res => {
+                $sub.empty().append('<option value="">Select Party...</option>');
+                res.forEach(i => {
+                    let code = i.account_code || '';
+                    $sub.append(`<option value="${i.id}" data-code="${code}" ${i.id == selected ? 'selected' : ''}>${i.text || i.title}</option>`);
+                });
                 if(selected) {
                     let code = $sub.find('option:selected').attr('data-code');
-                    $('#account_code_input').val(code || selected);
+                    $('#party_code_input').val(code || selected);
                 }
             });
         }
     }).trigger('change');
 
-    // 👤 Party Row Logic
-    $(document).on('change', '.rowPartyType', function() {
-        let type = $(this).val();
+    // 🏦 Row Account Logic
+    $(document).on('change', '.rowAccountHead', function() {
+        let headId = $(this).val();
         let $row = $(this).closest('tr');
-        let $select = $row.find('.rowPartySelect');
+        let $select = $row.find('.rowAccountSelect');
         let selected = $select.data('selected');
 
-        // 🔄 Reset Code and Select
-        $row.find('.rowPartyCode').val('');
+        $row.find('.rowAccountCode').val('');
         $select.empty().append('<option value="">Loading...</option>');
 
-        if(type) {
-            let url = (['vendor','customer'].includes(type)) ? '{{ route("party.list") }}?type=' + type : '{{ url("get-accounts-by-head") }}/' + type;
-            $.get(url, res => {
-                $select.empty().append('<option value="">Select Party...</option>');
-                res.forEach(i => {
-                    let code = i.account_code || '';
-                    $select.append(`<option value="${i.id}" data-code="${code}" ${i.id == selected ? 'selected' : ''}>${i.text || i.title}</option>`);
-                });
+        if(headId) {
+            $.get('{{ url("get-accounts-by-head") }}/' + headId, res => {
+                $select.empty().append('<option value="">Select Account...</option>');
+                res.forEach(a => $select.append(`<option value="${a.id}" data-code="${a.account_code}" ${a.id == selected ? 'selected' : ''}>${a.title}</option>`));
                 if(selected) {
                     let code = $select.find('option:selected').attr('data-code');
-                    $row.find('.rowPartyCode').val(code || selected);
+                    $row.find('.rowAccountCode').val(code || selected);
                 }
             });
-        } else { $select.empty().append('<option value="">Select Party...</option>'); }
+        }
     });
-    $('.rowPartyType').trigger('change');
+    $('.rowAccountHead').trigger('change');
 
-    $(document).on('change', '.rowPartySelect', function() { 
+    $(document).on('change', '.rowAccountSelect', function() { 
         let code = $(this).find('option:selected').attr('data-code');
-        $(this).closest('tr').find('.rowPartyCode').val(code || $(this).val() || ''); 
+        $(this).closest('tr').find('.rowAccountCode').val(code || $(this).val() || ''); 
     });
 
-    $(document).on('blur keydown', '.rowPartyCode', function(e) {
+    $(document).on('blur keydown', '.rowAccountCode', function(e) {
         if(e.type === 'keydown' && e.which != 13 && e.which != 9) return;
         let $row = $(this).closest('tr');
         let val = $(this).val();
         if(val) {
-            let $sel = $row.find('.rowPartySelect');
-            // Try ID
+            let $sel = $row.find('.rowAccountSelect');
             let optById = $sel.find('option').filter(function() { return $(this).val() == val; });
             if(optById.length > 0) { $sel.val(val).trigger('change'); return; }
-            // Try Code
             let optByCode = $sel.find('option').filter(function() { return $(this).attr('data-code') == val; });
             if(optByCode.length > 0) { $sel.val(optByCode.val()).trigger('change'); }
         }
     });
 
-    // ➕ Table
+    // ➕ Table Actions
     $('#btnAddRow').click(function() {
         let row = `<tr>
             <td><select name="narration_id[]" class="form-select narrationSelect"><option value="">Narration...</option>@foreach($narrations as $id => $name)<option value="{{ $id }}">{{ $name }}</option>@endforeach</select></td>
             <td><input name="reference_no[]" type="text" class="form-control form-control-sm"></td>
-            <td><select name="party_type[]" class="form-select form-select-sm rowPartyType"><option value="">Type...</option><option value="vendor">Vendor</option><option value="customer">Customer</option>@foreach($AccountHeads as $head)<option value="{{ $head->id }}">{{ $head->name }}</option>@endforeach</select></td>
-            <td><input type="text" name="row_party_id_input[]" class="form-control form-control-sm text-center rowPartyCode" placeholder="Code/ID"></td>
-            <td><select name="row_party_id[]" class="form-select form-select-sm rowPartySelect"><option value="">Select Party...</option></select></td>
+            <td>
+                <select name="row_account_head[]" class="form-select form-select-sm rowAccountHead">
+                    <option value="">Select Head...</option>
+                    @foreach($AccountHeads as $head)
+                    <option value="{{ $head->id }}">{{ $head->name }}</option>
+                    @endforeach
+                </select>
+            </td>
+            <td><input type="text" name="row_account_code[]" class="form-control form-control-sm text-center rowAccountCode" placeholder="Code"></td>
+            <td><select name="row_account_id[]" class="form-select form-select-sm rowAccountSelect"><option value="">Select Account...</option></select></td>
             <td><input name="discount_value[]" type="number" step="any" class="form-control form-control-sm text-end discount" value="0"></td>
             <td><input name="kg[]" type="number" step="any" class="form-control form-control-sm text-center kg"></td>
             <td><input name="rate[]" type="number" step="any" class="form-control form-control-sm text-end rate"></td>
@@ -383,17 +378,19 @@ $(document).ready(function() {
             <td class="text-center"><button type="button" class="btn text-danger btn-xs removeRow"><i class="fa fa-trash"></i></button></td>
         </tr>`;
         $('#voucherTable tbody').append(row);
-        let $new = $('#voucherTable tbody tr').last();
-        initSelectors($new);
+        initSelectors($('#voucherTable tbody tr').last());
     });
-    $(document).on('click', '.removeRow', function() { if($('#voucherTable tbody tr').length > 1) { $(this).closest('tr').remove(); calc(); } });
 
-    // 🧮 Math
+    $(document).on('click', '.removeRow', function() { 
+        if($('#voucherTable tbody tr').length > 1) { $(this).closest('tr').remove(); calc(); } 
+    });
+
     function calc() {
         let t = 0;
         $('.amount').each(function() { t += parseFloat($(this).val()) || 0; });
         $('#totalAmount').val(t.toFixed(2));
     }
+
     $(document).on('input', '.kg, .rate, .discount, .amount', function() {
         let $r = $(this).closest('tr');
         let k = parseFloat($r.find('.kg').val()) || 0, rt = parseFloat($r.find('.rate').val()) || 0, d = parseFloat($r.find('.discount').val()) || 0;
@@ -401,7 +398,7 @@ $(document).ready(function() {
         calc();
     });
 
-    // 💾 AJAX
+    // 💾 Storage Logic
     function showAlert(msg, type = 'success') {
         let $box = $('#alertBox');
         $box.removeClass('d-none alert-success alert-danger').addClass('alert-' + type).html(msg).fadeIn();
@@ -417,20 +414,18 @@ $(document).ready(function() {
                     $('#previewPrintBtn').attr('href', '{{ route("PaymentVoucher.print", ":id") }}'.replace(':id', res.id)).removeClass('disabled');
                     $('#deleteBtn, #editBtn').show();
                     $('#paymentForm').addClass('form-locked');
-                    if(!silent) showAlert('<i class="fa fa-check-circle me-1"></i> Draft saved successfully! Form is now locked.');
+                    if(!silent) showAlert('<i class="fa fa-check-circle me-1"></i> Draft saved successfully!');
                 }
             })
             .fail(xhr => {
                 if(xhr.status == 422) {
                     let errs = xhr.responseJSON.errors;
                     Object.keys(errs).forEach(k => {
-                        let $el = (k == 'account_id') ? $('#account_id').next('.select2') : $(`[name="${k}"], #${k}`);
-                        if(k.includes('row_party_id')) $el = $('[name="'+k+'"]').next('.select2');
+                        let $el = $(`[name="${k}"], #${k}`);
+                        if(k.includes('.')) { let p = k.split('.'); $el = $(`[name="${p[0]}[]"]`).eq(p[1]); }
                         $el.after(`<div class="text-danger small fw-bold ajax-valid-error mb-1"><i class="fa fa-exclamation-circle"></i> ${errs[k][0]}</div>`);
                     });
-                    showAlert('<i class="fa fa-exclamation-triangle me-1"></i> Please fix validation errors.', 'danger');
-                } else {
-                    showAlert('<i class="fa fa-times-circle me-1"></i> An error occurred while saving.', 'danger');
+                    showAlert('Please fix errors.', 'danger');
                 }
             });
     }
@@ -438,7 +433,6 @@ $(document).ready(function() {
     $('#saveDraftBtn').click(() => saveDraft());
     $('#editBtn').click(function() { $('#paymentForm').removeClass('form-locked'); $(this).hide(); });
     $('#postBtn').click(function() {
-        if(!confirm('Post this voucher?')) return;
         saveDraft(true).done(res => {
             if(res.success) {
                 let f = $('<form>', {action: '{{ route("Payment.vochers.post", ":id") }}'.replace(':id', res.id), method: 'POST'});
@@ -447,14 +441,16 @@ $(document).ready(function() {
             }
         });
     });
+
     $('#unpostBtn').click(function() {
-        if(!confirm('Unpost?')) return;
+        if(!confirm('Unpost this voucher?')) return;
         let f = $('<form>', {action: '{{ route("Payment.vochers.unpost", ":id") }}'.replace(':id', $('#receipt_id').val()), method: 'POST'});
         f.append($('<input>', {type: 'hidden', name: '_token', value: '{{ csrf_token() }}'}));
         $('body').append(f); f.submit();
     });
+
     $('#deleteBtn').click(function() {
-        if(!confirm('Delete?')) return;
+        if(!confirm('Delete this voucher?')) return;
         let f = $('<form>', {action: '{{ route("Payment.vochers.cancel", ":id") }}'.replace(':id', $('#receipt_id').val()), method: 'POST'});
         f.append($('<input>', {type: 'hidden', name: '_token', value: '{{ csrf_token() }}'}));
         f.append($('<input>', {type: 'hidden', name: '_method', value: 'DELETE'}));
@@ -465,7 +461,7 @@ $(document).ready(function() {
         if(e.ctrlKey && e.which == 83) { e.preventDefault(); $('#saveDraftBtn').click(); }
         if(e.ctrlKey && e.which == 13) { e.preventDefault(); $('#postBtn').click(); }
         if(e.ctrlKey && e.which == 69) { e.preventDefault(); $('#editBtn').click(); }
-        if(e.ctrlKey && e.which == 80) { if(!$('#previewPrintBtn').hasClass('disabled')) window.open($('#previewPrintBtn').attr('href'), '_blank'); e.preventDefault(); }
+        if(e.ctrlKey && e.which == 80) e.preventDefault();
         if(e.altKey && e.which == 65) { e.preventDefault(); $('#btnAddRow').click(); }
     });
 });

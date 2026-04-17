@@ -358,7 +358,6 @@ $(document).ready(function() {
     $('#editBtn').click(function() { $('#adjustmentForm').removeClass('form-locked'); $(this).hide(); });
 
     $('#postBtn').click(function() {
-        if(!confirm('Post this Adjustment Voucher?')) return;
         $('#saveDraftBtn').click();
         setTimeout(() => {
             let id = $('#receipt_id').val();

@@ -397,7 +397,7 @@ class VoucherController extends Controller
                         'closing_balance'  => -$amount,
                     ]);
                 }
-            } elseif ($voucher->type === 'customer') {
+            } elseif ($voucher->type === 'customer' || $voucher->type === 'walkin') {
                 $ledger = CustomerLedger::where('customer_id', $voucher->party_id)->latest()->first();
                 if ($ledger) {
                     $ledger->previous_balance = $ledger->closing_balance;
@@ -507,14 +507,14 @@ class VoucherController extends Controller
         $data = [
             'receipt_date'     => $request->receipt_date,
             'entry_date'       => $request->entry_date,
-            'type'             => json_encode($request->party_type), // JSON rows
-            'party_id'         => json_encode($request->row_party_id), // JSON rows
+            'type'             => $request->party_type, // Single from Header
+            'party_id'         => $request->party_id,   // Single from Header
             'tel'              => $request->tel,
             'remarks'          => $request->remarks,
             'narration_id'     => json_encode($narrationIds),
             'reference_no'     => json_encode($request->reference_no),
-            'row_account_head' => $request->account_head, // Single (Header)
-            'row_account_id'   => $request->account_id,   // Single (Header)
+            'row_account_head' => json_encode($request->row_account_head), // JSON from Rows
+            'row_account_id'   => json_encode($request->row_account_id),   // JSON from Rows
             'discount_value'   => json_encode($request->discount_value),
             'kg'               => json_encode($request->kg),
             'rate'             => json_encode($request->rate),
@@ -547,26 +547,32 @@ class VoucherController extends Controller
             $totalAmount = (float)$voucher->total_amount;
             $pvid = $voucher->pvid;
 
-            // One Account (Source) -> MINUS
-            $accId = $voucher->row_account_id;
-            if ($accId) {
-                $acc = Account::find($accId);
-                if ($acc) {
-                    $acc->opening_balance -= $totalAmount;
-                    $acc->save();
+            // Multiple Accounts (Sources) -> MINUS
+            $accIds = json_decode($voucher->row_account_id, true);
+            $rowAmounts = json_decode($voucher->amount, true);
+            
+            if (is_array($accIds)) {
+                foreach ($accIds as $index => $accId) {
+                    $rowAmount = (float)($rowAmounts[$index] ?? 0);
+                    if ($accId && $rowAmount > 0) {
+                        $acc = Account::find($accId);
+                        if ($acc) {
+                            $acc->opening_balance -= $rowAmount;
+                            $acc->save();
+                        }
+                    }
                 }
             }
 
-            // Multiple Parties (Destinations) -> PLUS
-            $partyTypes = json_decode($voucher->type, true) ?? [];
-            $partyIds = json_decode($voucher->party_id, true) ?? [];
-            $rowAmounts = json_decode($voucher->amount, true) ?? [];
-            
-            foreach ($partyIds as $index => $partyId) {
-                $rowAmount = (float)($rowAmounts[$index] ?? 0);
-                $pType = $partyTypes[$index] ?? '';
-                
-                if ($rowAmount > 0 && $partyId) {
+            // One Party (Destination) -> PLUS
+            $partyId = $voucher->party_id;
+            $pType = $voucher->type;
+
+            if ($partyId && $pType && is_array($rowAmounts)) {
+                foreach ($rowAmounts as $index => $rowAmount) {
+                    $rowAmount = (float)$rowAmount;
+                    if ($rowAmount <= 0) continue;
+
                     if ($pType === 'vendor') {
                         $ledger = VendorLedger::where('vendor_id', $partyId)->latest()->first();
                         $prev = $ledger ? $ledger->closing_balance : 0;
@@ -575,12 +581,13 @@ class VoucherController extends Controller
                             'admin_or_user_id' => auth()->id(),
                             'date' => now(),
                             'description' => "Payment Voucher #$pvid",
+                            'opening_balance' => $prev,
                             'debit' => $rowAmount,
                             'credit' => 0,
                             'previous_balance' => $prev,
                             'closing_balance' => $prev + $rowAmount,
                         ]);
-                    } elseif ($pType === 'customer') {
+                    } elseif ($pType === 'customer' || $pType === 'walkin') {
                         $ledger = CustomerLedger::where('customer_id', $partyId)->latest()->first();
                         $prev = $ledger ? $ledger->closing_balance : 0;
                         CustomerLedger::create([
@@ -588,11 +595,19 @@ class VoucherController extends Controller
                             'admin_or_user_id' => auth()->id(),
                             'date' => now(),
                             'description' => "Payment Voucher #$pvid",
+                            'opening_balance' => $prev,
                             'debit' => $rowAmount,
                             'credit' => 0,
                             'previous_balance' => $prev,
                             'closing_balance' => $prev + $rowAmount,
                         ]);
+                    } else {
+                        // Numeric head or other account
+                        $partyAcc = Account::find($partyId);
+                        if ($partyAcc) {
+                            $partyAcc->opening_balance += $rowAmount;
+                            $partyAcc->save();
+                        }
                     }
                 }
             }
@@ -616,14 +631,31 @@ class VoucherController extends Controller
             $voucher->save();
 
             $totalAmount = (float)$voucher->total_amount;
-            
-            // Reverse account reduction
-            $accId = $voucher->row_account_id;
-            if ($accId) {
-                $acc = Account::find($accId);
-                if ($acc) {
-                    $acc->opening_balance += $totalAmount;
-                    $acc->save();
+            $rowAmounts = json_decode($voucher->amount, true);
+            $partyId = $voucher->party_id;
+            $pType = $voucher->type;
+
+            // 1. Reverse Multiple Accounts (Sources) -> Add back
+            $accIds = json_decode($voucher->row_account_id, true);
+            if (is_array($accIds)) {
+                foreach ($accIds as $index => $accId) {
+                    $rowAmount = (float)($rowAmounts[$index] ?? 0);
+                    if ($accId && $rowAmount > 0) {
+                        $acc = Account::find($accId);
+                        if ($acc) {
+                            $acc->opening_balance += $rowAmount;
+                            $acc->save();
+                        }
+                    }
+                }
+            }
+
+            // 2. Reverse Party (Destination) -> Subtract back
+            if ($partyId && !in_array($pType, ['vendor', 'customer', 'walkin'])) {
+                $partyAcc = Account::find($partyId);
+                if ($partyAcc) {
+                    $partyAcc->opening_balance -= $totalAmount;
+                    $partyAcc->save();
                 }
             }
             

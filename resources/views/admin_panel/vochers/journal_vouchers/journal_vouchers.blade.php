@@ -321,7 +321,6 @@ $(document).ready(function() {
     });
 
     $('#postBtn').click(function() {
-        if(!confirm('Post this Journal Voucher?')) return;
         $('#saveDraftBtn').trigger('click');
         setTimeout(() => {
             let id = $('#receipt_id').val();

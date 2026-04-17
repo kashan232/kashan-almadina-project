@@ -361,7 +361,6 @@ $(document).ready(function() {
     $('#editBtn').click(function() { $('#incomeForm').removeClass('form-locked'); $(this).hide(); });
 
     $('#postBtn').click(function() {
-        if(!confirm('Post this Income Voucher?')) return;
         $('#saveDraftBtn').click();
         setTimeout(() => {
             let id = $('#receipt_id').val();
