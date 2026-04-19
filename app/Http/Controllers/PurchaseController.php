@@ -654,8 +654,7 @@ class PurchaseController extends Controller
         if ($type === 'walkin') {
             $query->where('customer_type', 'Walking Customer');
         } elseif ($type === 'customer') {
-            // If you want to exclude walkin from 'customer' type, add:
-            // $query->where('customer_type', '!=', 'Walking Customer');
+            $query->where('customer_type', '!=', 'Walking Customer');
         }
 
         $data = $query->orderBy('customer_name')->get();

@@ -381,8 +381,8 @@ class VoucherController extends Controller
             if ($voucher->type === 'vendor') {
                 $ledger = VendorLedger::where('vendor_id', $voucher->party_id)->latest()->first();
                 if ($ledger) {
-                    $ledger->previous_balance = $ledger->closing_balance;
-                    $ledger->closing_balance  = $ledger->closing_balance - $amount;
+                    $ledger->previous_balance = (float)$ledger->closing_balance;
+                    $ledger->closing_balance  = (float)$ledger->closing_balance - $amount;
                     $ledger->save();
                 } else {
                     VendorLedger::create([
@@ -400,8 +400,8 @@ class VoucherController extends Controller
             } elseif ($voucher->type === 'customer' || $voucher->type === 'walkin') {
                 $ledger = CustomerLedger::where('customer_id', $voucher->party_id)->latest()->first();
                 if ($ledger) {
-                    $ledger->previous_balance = $ledger->closing_balance;
-                    $ledger->closing_balance  = $ledger->closing_balance - $amount;
+                    $ledger->previous_balance = (float)$ledger->closing_balance;
+                    $ledger->closing_balance  = (float)$ledger->closing_balance - $amount;
                     $ledger->save();
                 } else {
                     CustomerLedger::create([
@@ -415,21 +415,24 @@ class VoucherController extends Controller
             } else {
                 $account = Account::find($voucher->party_id);
                 if ($account) {
-                    $account->opening_balance = $account->opening_balance - $amount;
+                    $account->opening_balance = (float)($account->opening_balance ?? 0) - $amount;
                     $account->save();
                 }
             }
 
-            // Update row accounts
-            $rowAccountIds = json_decode($voucher->row_account_id, true) ?? [];
-            $amounts = json_decode($voucher->amount, true) ?? [];
-            foreach ($rowAccountIds as $index => $accId) {
-                $rowAmount = isset($amounts[$index]) ? (float)$amounts[$index] : 0;
-                if ($rowAmount > 0) {
-                    $rowAccount = Account::find($accId);
-                    if ($rowAccount) {
-                        $rowAccount->opening_balance = $rowAccount->opening_balance + $rowAmount;
-                        $rowAccount->save();
+            // Update row accounts (Sources) -> PLUS
+            $rowAccountIds = json_decode($voucher->row_account_id, true);
+            $amountsList = json_decode($voucher->amount, true);
+            
+            if (is_array($rowAccountIds) && is_array($amountsList)) {
+                foreach ($rowAccountIds as $index => $accId) {
+                    $rowAmount = (float)($amountsList[$index] ?? 0);
+                    if ($rowAmount > 0 && $accId) {
+                        $rowAccount = Account::find($accId);
+                        if ($rowAccount) {
+                            $rowAccount->opening_balance = (float)($rowAccount->opening_balance ?? 0) + $rowAmount;
+                            $rowAccount->save();
+                        }
                     }
                 }
             }
@@ -439,6 +442,67 @@ class VoucherController extends Controller
 
             DB::commit();
             return back()->with('success', 'Voucher posted successfully!');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->with('error', $e->getMessage());
+        }
+    }
+
+    public function unpost_receipt($id)
+    {
+        DB::beginTransaction();
+        try {
+            $voucher = ReceiptsVoucher::findOrFail($id);
+            if ($voucher->status !== 'posted') {
+                return back()->with('error', 'Only posted vouchers can be unposted.');
+            }
+
+            $amount = (float)$voucher->total_amount;
+            
+            // 1. Reverse Header Party (Destination) -> Add back
+            if ($voucher->type === 'vendor') {
+                $ledger = VendorLedger::where('vendor_id', $voucher->party_id)->latest()->first();
+                if ($ledger) {
+                    $ledger->previous_balance = (float)$ledger->closing_balance;
+                    $ledger->closing_balance  = (float)$ledger->closing_balance + $amount;
+                    $ledger->save();
+                }
+            } elseif ($voucher->type === 'customer' || $voucher->type === 'walkin') {
+                $ledger = CustomerLedger::where('customer_id', $voucher->party_id)->latest()->first();
+                if ($ledger) {
+                    $ledger->previous_balance = (float)$ledger->closing_balance;
+                    $ledger->closing_balance  = (float)$ledger->closing_balance + $amount;
+                    $ledger->save();
+                }
+            } else {
+                $account = Account::find($voucher->party_id);
+                if ($account) {
+                    $account->opening_balance = (float)($account->opening_balance ?? 0) + $amount;
+                    $account->save();
+                }
+            }
+
+            // 2. Reverse row accounts (Sources) -> Subtract back
+            $rowAccountIds = json_decode($voucher->row_account_id, true);
+            $amountsList = json_decode($voucher->amount, true);
+            if (is_array($rowAccountIds) && is_array($amountsList)) {
+                foreach ($rowAccountIds as $index => $accId) {
+                    $rowAmount = (float)($amountsList[$index] ?? 0);
+                    if ($rowAmount > 0 && $accId) {
+                        $rowAccount = Account::find($accId);
+                        if ($rowAccount) {
+                            $rowAccount->opening_balance = (float)($rowAccount->opening_balance ?? 0) - $rowAmount;
+                            $rowAccount->save();
+                        }
+                    }
+                }
+            }
+
+            $voucher->status = 'draft';
+            $voucher->save();
+
+            DB::commit();
+            return back()->with('success', 'Voucher unposted successfully!');
         } catch (\Exception $e) {
             DB::rollBack();
             return back()->with('error', $e->getMessage());

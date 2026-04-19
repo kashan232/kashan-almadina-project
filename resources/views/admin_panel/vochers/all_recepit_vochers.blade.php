@@ -226,6 +226,15 @@
                                                         </form>
                                                     @endif
                                                     
+                                                    @if($item->status === 'posted')
+                                                    <form action="{{ route('recepit.vochers.unpost', $item->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Unpost this voucher?')">
+                                                        @csrf
+                                                        <button type="submit" class="btn btn-outline-danger btn-sm rounded-pill px-2" title="Unpost">
+                                                            <i class="fa fa-undo"></i> Unpost
+                                                        </button>
+                                                    </form>
+                                                    @endif
+
                                                     <a href="{{ route('receiptVoucher.print', $item->id) }}" target="_blank" class="btn btn-outline-dark btn-sm rounded-circle" title="Print">
                                                         <i class="fa fa-print"></i>
                                                     </a>
