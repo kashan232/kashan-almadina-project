@@ -33,6 +33,7 @@ use App\Http\Controllers\WarehouseStockController;
 use App\Http\Controllers\SubCustomerController;
 use App\Http\Controllers\StockWastageController;
 use App\Http\Controllers\UserGroupController;
+use App\Http\Controllers\CustomerClaimController;
 
 /*
 |--------------------------------------------------------------------------
@@ -44,6 +45,12 @@ use App\Http\Controllers\UserGroupController;
 | be assigned to the "web" middleware group. Make something great!
 |
 */
+
+// Customer Claim Routes
+Route::middleware(['auth'])->group(function () {
+    Route::get('/customer-claims', [CustomerClaimController::class, 'index'])->name('customer-claims.index');
+    Route::get('/customer-claims/add', [CustomerClaimController::class, 'create'])->name('customer-claims.create');
+});
 // kashan connected
 // up
 Route::get('/home', [HomeController::class, 'index'])->middleware('auth')->name('home');

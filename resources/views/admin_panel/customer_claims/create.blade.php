@@ -1,0 +1,291 @@
+@extends('admin_panel.layout.app')
+
+@section('content')
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<style>
+    .select2-container .select2-selection--single { height: 31px !important; border: 1px solid #ced4da; }
+    .select2-container .select2-selection--single .select2-selection__rendered { line-height: 31px !important; padding-left: 8px; font-size: 13px; }
+    .select2-container .select2-selection--single .select2-selection__arrow { height: 31px !important; }
+    .input-sm { height: 31px; padding: 2px 8px; font-size: 13px; }
+    .table td, .table th { vertical-align: middle !important; padding: 4px !important; font-size: 13px; }
+    
+    .form-label { font-size: 12px; font-weight: 700; margin-bottom: 2px; }
+
+    .form-locked { position: relative; opacity: 0.8; }
+    .form-locked .card-body { pointer-events: none !important; }
+    .form-locked input, .form-locked .select2-container--default .select2-selection--single, .form-locked select, .form-locked textarea { 
+        background-color: #e9ecef !important; cursor: not-allowed !important; 
+    }
+    
+    .posted-watermark {
+        position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-30deg);
+        font-size: 100px; color: rgba(255, 0, 0, 0.1); font-weight: bold; pointer-events: none; z-index: 1000;
+        text-transform: uppercase; border: 10px solid rgba(255, 0, 0, 0.1); padding: 20px; border-radius: 20px; display: none;
+    }
+    .posted-watermark.show { display: block; }
+</style>
+
+<div class="main-content">
+    <div class="main-content-inner">
+        <div class="container-fluid pt-3">
+            
+            {{-- TOP BAR --}}
+            <div class="d-flex justify-content-between align-items-center mb-3 bg-light p-2 rounded shadow-sm">
+                <div style="min-width:80px;"></div>
+                <div class="d-flex align-items-center gap-2 justify-content-center flex-grow-1">
+                    <h6 class="page-title mb-0 fw-bold">Customer Claim Entry</h6>
+                    <span id="statusBadge" class="badge bg-warning text-dark px-3 py-2 rounded-pill shadow-sm" style="font-size:12px;">
+                        <i class="fa fa-pencil me-1"></i> New Claim
+                    </span>
+                    <span id="idBadge" class="badge bg-primary px-3 py-2 rounded-pill shadow-sm" style="display:none;font-size:12px;">
+                        <i class="fa fa-tag me-1"></i> ID: NEW
+                    </span>
+                </div>
+                <div class="d-flex align-items-center justify-content-end" style="min-width:115px;">
+                    <a href="{{ route('customer-claims.index') }}" id="listBtn" class="btn btn-sm btn-outline-secondary rounded-pill px-3">
+                        <i class="fa fa-list me-1"></i> List <kbd style="font-size:9px;opacity:.7;margin-left:4px;">Ctrl+L</kbd>
+                    </a>
+                </div>
+            </div>
+
+            <form action="#" method="POST" id="claimForm" class="position-relative">
+                @csrf
+                <input type="hidden" name="action" id="formAction" value="save">
+                <div class="posted-watermark" id="postedWatermark">Posted</div>
+
+                <div class="card shadow-sm mb-3">
+                    <div class="card-body">
+                        <div class="row g-2">
+                            <!-- Main Row -->
+                            <div class="col-md-2">
+                                <label class="form-label">Claim No</label>
+                                <input type="text" class="form-control input-sm bg-light fw-bold text-primary" value="{{ $claimNo }}" readonly>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label">Claim Date</label>
+                                <input type="date" name="claim_date" class="form-control input-sm" value="{{ date('Y-m-d') }}" required>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label">Claim Type <span class="text-danger">*</span></label>
+                                <select name="claim_type" id="claim_type" class="form-select input-sm fw-bold">
+                                    <option value="item_return">Item Return</option>
+                                    <option value="credit_note">Credit Note</option>
+                                    <option value="claim_hold">Claim Hold</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Party Type</label>
+                                <select name="party_type" id="party_type" class="form-select input-sm">
+                                    <option value="customer">Customer</option>
+                                    <option value="vendor">Vendor</option>
+                                    <option value="walkin">Walk-in Customer</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Sub Dealer / Party <span class="text-danger">*</span></label>
+                                <select name="party_id" id="party_id" class="form-select select2" required>
+                                    <option value="">Search Party...</option>
+                                </select>
+                            </div>
+
+                            <!-- Row 2 -->
+                            <div class="col-md-2 mt-1">
+                                <label class="form-label">Claim Item <span class="text-danger">*</span></label>
+                                <select name="product_id" id="product_id" class="form-select select2" required>
+                                    <option value="">Select Battery...</option>
+                                    @foreach($products as $p)
+                                        <option value="{{ $p->id }}">{{ $p->name }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="col-md-2 mt-1">
+                                <label class="form-label">MFG Date</label>
+                                <input type="text" name="mfg_date" class="form-control input-sm" placeholder="BH JC BD">
+                            </div>
+                            <div class="col-md-2 mt-1">
+                                <label class="form-label font-weight-bold">Sales Price</label>
+                                <input type="number" name="sales_price" id="sales_price" class="form-control input-sm text-end fw-bold text-danger" placeholder="0.00" disabled>
+                            </div>
+                            <div class="col-md-2 mt-1">
+                                <label class="form-label">Card No</label>
+                                <input type="text" name="card_no" class="form-control input-sm">
+                            </div>
+                            <div class="col-md-2 mt-1">
+                                <label class="form-label">Bill Date</label>
+                                <input type="date" name="bill_date" class="form-control input-sm">
+                            </div>
+                            <div class="col-md-2 mt-1">
+                                <label class="form-label border-primary border-bottom">Claim WH (To)</label>
+                                <select name="claim_warehouse_id" class="form-select input-sm">
+                                    @foreach($warehouses as $wh)
+                                        <option value="{{ $wh->id }}">{{ $wh->warehouse_name }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+
+                            <div class="col-md-6 mt-1">
+                                <label class="form-label">Fault Found / Analysis</label>
+                                <textarea name="fault_found" class="form-control input-sm" rows="1" placeholder="Detail fault..."></textarea>
+                            </div>
+                            <div class="col-md-6 mt-1">
+                                <label class="form-label">Remarks</label>
+                                <textarea name="remarks" class="form-control input-sm" rows="1" placeholder="General remarks..."></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Replacement Details -->
+                <div id="replacementContainer" class="card shadow-sm mb-3 d-none bg-light border-info border-opacity-25">
+                    <div class="card-header py-1 bg-info text-white fw-bold small">REPLACEMENT INFORMATION</div>
+                    <div class="card-body py-2">
+                        <div class="row g-2">
+                            <div class="col-md-4">
+                                <label class="form-label">Replace With</label>
+                                <select name="replacement_product_id" class="form-select select2">
+                                    <option value="">Select Replacement...</option>
+                                    @foreach($products as $p)
+                                        <option value="{{ $p->id }}">{{ $p->name }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label">New MFG</label>
+                                <input type="text" name="replacement_mfg_date" class="form-control input-sm">
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label">New Expire</label>
+                                <input type="date" name="replacement_expiry" class="form-control input-sm">
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label text-primary">Adj. Amount</label>
+                                <input type="number" name="adjustment_amount" class="form-control input-sm text-end fw-bold" placeholder="0.00">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Bar -->
+                <div class="card shadow-sm">
+                    <div class="card-footer bg-white py-3">
+                        <div class="d-flex justify-content-end gap-2">
+                            <button type="button" id="saveDraftBtn" class="btn btn-sm btn-warning rounded-pill px-4 shadow-sm">
+                                <i class="fa fa-floppy-o me-1"></i> Save Draft <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+S</kbd>
+                            </button>
+                            <button type="button" id="previewPrintBtn" class="btn btn-sm btn-outline-dark rounded-pill px-4">
+                                <i class="fa fa-print me-1"></i> Print Preview <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+P</kbd>
+                            </button>
+                            <button type="button" id="postBtn" class="btn btn-sm btn-primary rounded-pill px-4 shadow-sm">
+                                <i class="fa fa-send me-1"></i> Save & Post <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+&#8629;</kbd>
+                            </button>
+                            <button type="button" id="editBtn" class="btn btn-sm btn-warning rounded-pill px-4 shadow-sm" style="display:none;">
+                                <i class="fa fa-pencil me-1"></i> Edit <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+E</kbd>
+                            </button>
+                            <a href="{{ route('customer-claims.create') }}" id="newBtn" class="btn btn-sm btn-info rounded-pill px-4 shadow-sm text-white" style="display:none;">
+                                <i class="fa fa-plus me-1"></i> New <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+M</kbd>
+                            </a>
+                            <a href="{{ route('customer-claims.index') }}" id="cancelBtn" class="btn btn-sm btn-danger rounded-pill px-4 shadow-sm text-white">
+                                <i class="fa fa-times me-1"></i> Cancel <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Esc</kbd>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@endsection
+
+@section('scripts')
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script>
+$(document).ready(function() {
+    $('.select2').select2({ width: '100%' });
+    var _savedId = null;
+
+    function showToast(msg, type = 'success') {
+        var icon = type === 'success' ? 'fa-check-circle' : 'fa-times-circle';
+        var color = type === 'success' ? '#28a745' : '#dc3545';
+        var $toast = $('<div>').css({
+            position: 'fixed', top: '20px', right: '20px', zIndex: 9999,
+            background: color, color: '#fff', padding: '12px 20px', borderRadius: '8px',
+            boxShadow: '0 4px 15px rgba(0,0,0,.2)', display: 'flex', alignItems: 'center', gap: '8px'
+        }).html('<i class="fa ' + icon + '"></i> ' + msg);
+        $('body').append($toast);
+        setTimeout(() => $toast.fadeOut(400, () => $(this).remove()), 2000);
+    }
+
+    // Handle Type Changes
+    $('#claim_type').change(function() {
+        let type = $(this).val();
+        if(type === 'item_return') {
+            $('#sales_price').prop('disabled', true).val('');
+            $('#replacementContainer').addClass('d-none');
+        } else if(type === 'credit_note') {
+            $('#sales_price').prop('disabled', false);
+            $('#replacementContainer').removeClass('d-none');
+        } else if(type === 'claim_hold') {
+            $('#sales_price').prop('disabled', true).val('');
+            $('#replacementContainer').addClass('d-none');
+        }
+    });
+
+    // Party Loading Logic
+    $('#party_type').on('change', function() {
+        var type = $(this).val();
+        $.get("{{ route('stock-holds.party.list') }}", { type: type }, function(res) {
+            var $p = $('#party_id').empty().append('<option value="">Select Party</option>');
+            res.forEach(item => $p.append(`<option value="${item.id}">${item.text}</option>`));
+            $p.trigger('change');
+        });
+    });
+
+    // Auto load initial parties
+    $('#party_type').trigger('change');
+
+    function save(act) {
+        $('#formAction').val(act);
+        var $form = $('#claimForm');
+        if(!$form[0].checkValidity()) { $form[0].reportValidity(); return; }
+
+        var btn = act === 'post' ? '#postBtn' : '#saveDraftBtn';
+        $(btn).prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i>');
+
+        // Logic will be added in next phase (backend)
+        setTimeout(() => {
+            $(btn).prop('disabled', false).html(act === 'post' ? '<i class="fa fa-send"></i> Save & Post' : '<i class="fa fa-floppy-o"></i> Save Draft');
+            showToast('Form ready! Backend logic will be active soon.', 'success');
+            
+            // Simulation
+            $('#claimForm').addClass('form-locked');
+            $('#saveDraftBtn').hide();
+            $('#postBtn, #editBtn, #newBtn').show();
+            $('#idBadge').show();
+            if(act === 'post') {
+                $('#statusBadge').removeClass('bg-warning').addClass('bg-success text-white').html('<i class="fa fa-check"></i> Posted');
+                $('#postedWatermark').addClass('show');
+            }
+        }, 1000);
+    }
+
+    $('#saveDraftBtn').on('click', () => save('save'));
+    $('#postBtn').on('click', () => save('post'));
+    $('#editBtn').on('click', function() { 
+        $('#claimForm').removeClass('form-locked'); 
+        $('#saveDraftBtn, #postBtn').show(); 
+        $(this).hide(); 
+    });
+
+    $(document).on('keydown', function(e) {
+        if(e.ctrlKey && e.key === 's') { e.preventDefault(); $('#saveDraftBtn:visible').click(); }
+        if(e.ctrlKey && e.key === 'Enter') { e.preventDefault(); $('#postBtn:visible').click(); }
+        if(e.ctrlKey && e.key === 'p') { e.preventDefault(); $('#previewPrintBtn:visible').click(); }
+        if(e.ctrlKey && e.key === 'e') { e.preventDefault(); $('#editBtn:visible').click(); }
+        if(e.ctrlKey && e.key === 'm') { e.preventDefault(); window.location.href = "{{ route('customer-claims.create') }}"; }
+        if(e.ctrlKey && e.key === 'l') { e.preventDefault(); window.location.href = "{{ route('customer-claims.index') }}"; }
+        if(e.key === 'Escape') { window.location.href = "{{ route('customer-claims.index') }}"; }
+    });
+});
+</script>
+@endsection
