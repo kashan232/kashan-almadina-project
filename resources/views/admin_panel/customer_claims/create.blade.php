@@ -74,12 +74,20 @@
                                 </select>
                             </div>
                             <div class="col-md-3">
-                                <label class="form-label">Party Type</label>
-                                <select name="party_type" id="party_type" class="form-select input-sm">
-                                    <option value="customer">Customer</option>
-                                    <option value="vendor">Vendor</option>
-                                    <option value="walkin">Walk-in Customer</option>
-                                </select>
+                                <div class="row g-1">
+                                    <div class="col-8">
+                                        <label class="form-label">Party Type</label>
+                                        <select name="party_type" id="party_type" class="form-select input-sm">
+                                            <option value="customer">Customer</option>
+                                            <option value="vendor">Vendor</option>
+                                            <option value="walkin">Walk-in Customer</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-4">
+                                        <label class="form-label">Code/ID</label>
+                                        <input type="text" id="party_code_input" class="form-control input-sm border-danger fw-bold text-danger text-center" placeholder="ID">
+                                    </div>
+                                </div>
                             </div>
                             <div class="col-md-3">
                                 <label class="form-label">Sub Dealer / Party <span class="text-danger">*</span></label>
@@ -89,22 +97,30 @@
                             </div>
 
                             <!-- Row 2 -->
-                            <div class="col-md-2 mt-1">
-                                <label class="form-label">Claim Item <span class="text-danger">*</span></label>
-                                <select name="product_id" id="product_id" class="form-select select2" required>
-                                    <option value="">Select Battery...</option>
-                                    @foreach($products as $p)
-                                        <option value="{{ $p->id }}">{{ $p->name }}</option>
-                                    @endforeach
-                                </select>
+                            <div class="col-md-3 mt-1">
+                                <div class="row g-1">
+                                    <div class="col-4">
+                                        <label class="form-label">Item ID</label>
+                                        <input type="text" id="item_id_input" class="form-control input-sm border-primary fw-bold text-primary text-center" placeholder="ID">
+                                    </div>
+                                    <div class="col-8">
+                                        <label class="form-label">Claim Item <span class="text-danger">*</span></label>
+                                        <select name="product_id" id="product_id" class="form-select select2" required>
+                                            <option value="">Select Battery...</option>
+                                            @foreach($products as $p)
+                                                <option value="{{ $p->id }}">{{ $p->name }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="col-md-2 mt-1">
+                            <div class="col-md-1 mt-1">
                                 <label class="form-label">MFG Date</label>
                                 <input type="text" name="mfg_date" class="form-control input-sm" placeholder="BH JC BD">
                             </div>
                             <div class="col-md-2 mt-1">
                                 <label class="form-label font-weight-bold">Sales Price</label>
-                                <input type="number" name="sales_price" id="sales_price" class="form-control input-sm text-end fw-bold text-danger" placeholder="0.00" disabled>
+                                <input type="number" name="sales_price" id="sales_price" class="form-control input-sm text-end fw-bold text-danger" placeholder="0.00" readonly>
                             </div>
                             <div class="col-md-2 mt-1">
                                 <label class="form-label">Card No</label>
@@ -114,20 +130,33 @@
                                 <label class="form-label">Bill Date</label>
                                 <input type="date" name="bill_date" class="form-control input-sm">
                             </div>
+                            <div class="col-md-2 mt-1" id="original_warehouse_div">
+                                <label class="form-label border-danger border-bottom">Deliver From</label>
+                                <select name="original_warehouse_id" class="form-select input-sm">
+                                    <option value="0">Shop</option>
+                                    @foreach($warehouses as $wh)
+                                        <option value="{{ $wh->id }}">{{ $wh->warehouse_name }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
                             <div class="col-md-2 mt-1">
-                                <label class="form-label border-primary border-bottom">Claim WH (To)</label>
+                                <label class="form-label border-primary border-bottom font-weight-bold">Claim WH (To)</label>
                                 <select name="claim_warehouse_id" class="form-select input-sm">
                                     @foreach($warehouses as $wh)
                                         <option value="{{ $wh->id }}">{{ $wh->warehouse_name }}</option>
                                     @endforeach
                                 </select>
                             </div>
+                            <div class="col-md-2 mt-1">
+                                <label class="form-label text-success fw-bold">Claim Income</label>
+                                <input type="number" name="claim_income" class="form-control input-sm text-end fw-bold" placeholder="0.00">
+                            </div>
 
-                            <div class="col-md-6 mt-1">
+                            <div class="col-md-4 mt-1">
                                 <label class="form-label">Fault Found / Analysis</label>
                                 <textarea name="fault_found" class="form-control input-sm" rows="1" placeholder="Detail fault..."></textarea>
                             </div>
-                            <div class="col-md-6 mt-1">
+                            <div class="col-md-4 mt-1">
                                 <label class="form-label">Remarks</label>
                                 <textarea name="remarks" class="form-control input-sm" rows="1" placeholder="General remarks..."></textarea>
                             </div>
@@ -137,29 +166,46 @@
 
                 <!-- Replacement Details -->
                 <div id="replacementContainer" class="card shadow-sm mb-3 d-none bg-light border-info border-opacity-25">
-                    <div class="card-header py-1 bg-info text-white fw-bold small">REPLACEMENT INFORMATION</div>
+                    <div class="card-header py-1 bg-info text-white fw-bold small">CREDIT NOTE / REPLACEMENT INFO</div>
                     <div class="card-body py-2">
                         <div class="row g-2">
-                            <div class="col-md-4">
-                                <label class="form-label">Replace With</label>
-                                <select name="replacement_product_id" class="form-select select2">
-                                    <option value="">Select Replacement...</option>
-                                    @foreach($products as $p)
-                                        <option value="{{ $p->id }}">{{ $p->name }}</option>
+                            <div class="col-md-6">
+                                <div class="row g-1">
+                                    <div class="col-3">
+                                        <label class="form-label">Item ID</label>
+                                        <input type="text" id="replacement_item_id_input" class="form-control input-sm border-primary fw-bold text-primary text-center" placeholder="ID">
+                                    </div>
+                                    <div class="col-9">
+                                        <label class="form-label">Replace With (Select Item)</label>
+                                        <select name="replacement_product_id" id="replacement_product_id" class="form-select select2">
+                                            <option value="">Select Replacement...</option>
+                                            @foreach($products as $p)
+                                                <option value="{{ $p->id }}">{{ $p->name }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label text-primary fw-bold">Sales Price</label>
+                                <input type="number" name="replacement_sales_price" id="replacement_sales_price" class="form-control input-sm text-end fw-bold" placeholder="0.00" readonly>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label border-danger border-bottom">Deliver From</label>
+                                <select name="replacement_from_warehouse_id" class="form-select input-sm">
+                                    <option value="0">Shop</option>
+                                    @foreach($warehouses as $wh)
+                                        <option value="{{ $wh->id }}">{{ $wh->warehouse_name }}</option>
                                     @endforeach
                                 </select>
                             </div>
                             <div class="col-md-2">
-                                <label class="form-label">New MFG</label>
-                                <input type="text" name="replacement_mfg_date" class="form-control input-sm">
-                            </div>
-                            <div class="col-md-2">
-                                <label class="form-label">New Expire</label>
-                                <input type="date" name="replacement_expiry" class="form-control input-sm">
-                            </div>
-                            <div class="col-md-2">
-                                <label class="form-label text-primary">Adj. Amount</label>
-                                <input type="number" name="adjustment_amount" class="form-control input-sm text-end fw-bold" placeholder="0.00">
+                                <label class="form-label border-primary border-bottom">Claim WH (To)</label>
+                                <select name="replacement_to_warehouse_id" class="form-select input-sm">
+                                    @foreach($warehouses as $wh)
+                                        <option value="{{ $wh->id }}">{{ $wh->warehouse_name }}</option>
+                                    @endforeach
+                                </select>
                             </div>
                         </div>
                     </div>
@@ -220,16 +266,98 @@ $(document).ready(function() {
     $('#claim_type').change(function() {
         let type = $(this).val();
         if(type === 'item_return') {
-            $('#sales_price').prop('disabled', true).val('');
             $('#replacementContainer').addClass('d-none');
+            $('#original_warehouse_div').removeClass('d-none');
         } else if(type === 'credit_note') {
-            $('#sales_price').prop('disabled', false);
             $('#replacementContainer').removeClass('d-none');
+            $('#original_warehouse_div').addClass('d-none');
         } else if(type === 'claim_hold') {
-            $('#sales_price').prop('disabled', true).val('');
             $('#replacementContainer').addClass('d-none');
+            $('#original_warehouse_div').addClass('d-none');
+        }
+    }).trigger('change');
+
+    // Party Selection Sync
+    $('#party_id').on('change', function() {
+        $('#party_code_input').val($(this).val());
+    });
+    $('#party_code_input').on('keyup', function() {
+        var val = $(this).val();
+        if($('#party_id option[value="'+val+'"]').length) {
+            $('#party_id').val(val).trigger('change.select2');
         }
     });
+
+    // Item Selection Sync - Precise Lookup on Enter/Tab (Sale Style)
+    function handleItemIdLookup($input, targetDropdown, targetPriceInput, nextFocus) {
+        $input.on('keydown', function(e) {
+            if (e.key === 'Enter' || e.key === 'Tab') {
+                const id = $(this).val().trim();
+                if (!id) return;
+
+                $input.addClass('loading-indicator');
+                $.get("{{ route('search-products') }}", { q: id }, function(res) {
+                    $input.removeClass('loading-indicator');
+                    if(res && res.length) {
+                        var prod = res.find(p => String(p.id) === String(id)) || res[0];
+                        if(prod) {
+                            var $option = $(targetDropdown).find('option[value="'+prod.id+'"]');
+                            if ($option.length) {
+                                $(targetDropdown).val(prod.id).trigger('change.select2');
+                            } else {
+                                // Add option if not exists (for select2 with ajax etc, but here we have preloaded)
+                                var newOption = new Option(prod.name, prod.id, true, true);
+                                $(targetDropdown).append(newOption).trigger('change.select2');
+                            }
+                            
+                            var price = prod.sale_price || prod.net_price || 0;
+                            $(targetPriceInput).val(parseFloat(price).toFixed(2));
+                            $(this).val(prod.id);
+
+                            if (nextFocus) {
+                                setTimeout(() => $(nextFocus).focus(), 100);
+                            }
+                        }
+                    } else {
+                        showToast('Product not found', 'error');
+                    }
+                }).fail(function() {
+                    $input.removeClass('loading-indicator');
+                });
+                
+                if (e.key === 'Enter') e.preventDefault();
+            }
+        });
+    }
+
+    handleItemIdLookup($('#item_id_input'), '#product_id', '#sales_price', 'input[name="mfg_date"]');
+    handleItemIdLookup($('#replacement_item_id_input'), '#replacement_product_id', '#replacement_sales_price', null);
+
+    $('#product_id').on('change', function() {
+        var val = $(this).val();
+        $('#item_id_input').val(val);
+        fetchPrice(val, '#sales_price');
+    });
+
+    $('#replacement_product_id').on('change', function() {
+        var val = $(this).val();
+        $('#replacement_item_id_input').val(val);
+        fetchPrice(val, '#replacement_sales_price');
+    });
+
+    // Product Price Fetching
+    function fetchPrice(productId, targetInputId) {
+        if(!productId) { $(targetInputId).val('0.00'); return; }
+        $.get("{{ route('search-products') }}", { q: productId }, function(res) {
+            if(res && res.length) {
+                var prod = res.find(p => p.id == productId) || res[0];
+                if(prod) {
+                    var price = prod.sale_price || prod.net_price || 0;
+                    $(targetInputId).val(parseFloat(price).toFixed(2));
+                }
+            }
+        });
+    }
 
     // Party Loading Logic
     $('#party_type').on('change', function() {
