@@ -50,6 +50,10 @@ use App\Http\Controllers\CustomerClaimController;
 Route::middleware(['auth'])->group(function () {
     Route::get('/customer-claims', [CustomerClaimController::class, 'index'])->name('customer-claims.index');
     Route::get('/customer-claims/add', [CustomerClaimController::class, 'create'])->name('customer-claims.create');
+    Route::post('/customer-claims/ajax-save', [CustomerClaimController::class, 'ajaxSave'])->name('customer-claims.ajax-save');
+    Route::post('/customer-claims/post/{id}', [CustomerClaimController::class, 'post'])->name('customer-claims.post');
+    Route::get('/customer-claims/edit/{id}', [CustomerClaimController::class, 'edit'])->name('customer-claims.edit');
+    Route::get('/customer-claims/search-products', [ProductController::class, 'searchProducts'])->name('customer-claims.search-products');
 });
 // kashan connected
 // up
