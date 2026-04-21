@@ -65,11 +65,19 @@
                                 <label class="form-label small fw-bold">Release No</label>
                                 <input type="text" name="release_no" class="form-control input-sm" value="{{ $releaseNo }}" readonly>
                             </div>
+                            <div class="col-md-2">
+                                <label class="form-label small fw-bold text-danger">Release Type <span class="text-danger">*</span></label>
+                                <select name="release_type" id="release_type" class="form-select input-sm" required>
+                                    <option value="stock">Stock Release</option>
+                                    <option value="claim">Claim Release</option>
+                                </select>
+                            </div>
                             <div class="col-md-3">
-                                <label class="form-label small fw-bold text-primary">Search Hold ID / Voucher</label>
+                                <label class="form-label small fw-bold text-primary" id="search_label">Search Hold ID / Voucher</label>
                                 <select id="hold_select" class="form-select select2" required>
                                     <option value="">Select Hold Voucher</option>
                                 </select>
+                                <input type="hidden" name="claim_id" id="form_claim_id">
                             </div>
                             <div class="col-md-3">
                                 <label class="form-label small fw-bold">Party Details</label>
@@ -77,12 +85,18 @@
                                 <input type="hidden" name="vendor_type" id="vendor_type">
                                 <input type="hidden" name="vendor_id" id="vendor_id">
                             </div>
-                            <div class="col-md-2">
-                                <label class="form-label small fw-bold">Warehouse</label>
-                                <input type="text" id="warehouse_name_display" class="form-control input-sm bg-light" placeholder="From Hold..." readonly>
-                                <input type="hidden" name="warehouse_id" id="warehouse_id">
+
+                            <div class="col-md-3 mt-1">
+                                <label class="form-label small fw-bold font-weight-bold">Deliver From <span class="text-danger">*</span></label>
+                                <select name="warehouse_id" id="warehouse_id" class="form-select input-sm" required>
+                                    <option value="0">Shop</option>
+                                    @foreach($warehouses as $wh)
+                                        <option value="{{ $wh->id }}">{{ $wh->warehouse_name }}</option>
+                                    @endforeach
+                                </select>
                             </div>
-                            <div class="col-md-12 mt-2">
+
+                            <div class="col-md-9 mt-1">
                                 <label class="form-label small fw-bold">Remarks</label>
                                 <input type="text" name="remarks" class="form-control input-sm" placeholder="Any special notes for release...">
                             </div>
@@ -161,32 +175,71 @@ $(document).ready(function() {
     // Initialize Hold Select
     $('#hold_select').select2({
         ajax: {
-            url: "{{ route('stock-holds.list.json') }}",
+            url: function() {
+                var type = $('#release_type').val();
+                return type === 'claim' ? "{{ route('customer-claims.release.hold-list.json') }}" : "{{ route('stock-holds.list.json') }}";
+            },
             dataType: 'json', delay: 250,
             data: function(params) { return { q: params.term }; },
             processResults: function(data) { return { results: data }; }
         }
     });
 
-    // Hold Voucher Details Loading
+    // Handle Type Change
+    $('#release_type').on('change', function() {
+        var type = $(this).val();
+        $('#search_label').text(type === 'claim' ? 'Search Claim ID' : 'Search Hold ID / Voucher');
+        $('#hold_select').val(null).trigger('change');
+        $('#hold_select').select2('destroy').select2({
+            ajax: {
+                url: function() {
+                    return type === 'claim' ? "{{ route('customer-claims.release.hold-list.json') }}" : "{{ route('stock-holds.list.json') }}";
+                },
+                dataType: 'json', delay: 250,
+                data: function(params) { return { q: params.term }; },
+                processResults: function(data) { return { results: data }; }
+            }
+        });
+        $('#itemRows').empty();
+        $('#party_name_display').val('');
+        $('#form_claim_id').val('');
+        updateCount();
+    });
+
+    // Hold / Claim Selection
     $('#hold_select').on('change', function() {
         var id = $(this).val();
         if(!id) return;
-        $('#hold_voucher_id').val(id);
         
-        $.get("{{ url('stock-holds/voucher') }}/" + id + "/details", function(res) {
-            $('#vendor_type').val(res.party_type);
-            $('#vendor_id').val(res.party_id);
-            $('#party_name_display').val(res.party_name);
-            $('#warehouse_id').val(res.warehouse_id);
-            $('#warehouse_name_display').val(res.warehouse_name);
-            
-            $('#itemRows').empty();
-            res.items.forEach(item => {
-                var releaseQty = item.hold_qty || 0;
-                addRow(item.product_id, item.item_name, item.sale_qty, item.hold_qty, releaseQty);
+        var type = $('#release_type').val();
+
+        if(type === 'claim') {
+            $('#hold_voucher_id').val('');
+            $('#form_claim_id').val(id);
+            $.get("{{ url('customer-claims-release/details') }}/" + id, function(res) {
+                $('#vendor_type').val(res.party_type);
+                $('#vendor_id').val(res.party_id);
+                $('#party_name_display').val(res.party_name);
+                $('#warehouse_id').val(res.warehouse_id);
+                
+                $('#itemRows').empty();
+                addRow(res.product_id, res.product_name, res.hold_qty, res.hold_qty, res.hold_qty);
             });
-        });
+        } else {
+            $('#hold_voucher_id').val(id);
+            $('#form_claim_id').val('');
+            $.get("{{ url('stock-holds/voucher') }}/" + id + "/details", function(res) {
+                $('#vendor_type').val(res.party_type);
+                $('#vendor_id').val(res.party_id);
+                $('#party_name_display').val(res.party_name);
+                $('#warehouse_id').val(res.warehouse_id);
+                
+                $('#itemRows').empty();
+                res.items.forEach(item => {
+                    addRow(item.product_id, item.item_name, item.sale_qty, item.hold_qty, item.hold_qty);
+                });
+            });
+        }
     });
 
     function addRow(pid, name, saleQty, holdQty, releaseQty) {

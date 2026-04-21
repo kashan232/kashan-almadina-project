@@ -462,9 +462,9 @@ class StockHoldController extends Controller
     {
         $request->validate([
             'entry_date' => 'required|date',
-            'hold_voucher_id' => 'required',
             'product_id' => 'required|array',
             'release_qty' => 'required|array',
+            'release_type' => 'required'
         ]);
 
         $status = $request->action === 'post' ? 'Posted' : 'Unposted';
@@ -472,16 +472,19 @@ class StockHoldController extends Controller
         try {
             DB::beginTransaction();
 
-            $holdVoucher = \App\Models\StockHoldVoucher::findOrFail($request->hold_voucher_id);
+            $holdVoucherId = $request->hold_voucher_id;
+            $claimId = $request->claim_id;
             
             // Create Release Voucher
             $voucher = \App\Models\StockReleaseVoucher::create([
                 'voucher_no'      => \App\Models\StockReleaseVoucher::generateVoucherNo(),
                 'date'            => $request->entry_date,
-                'hold_voucher_id' => $holdVoucher->id,
-                'party_type'      => $holdVoucher->party_type,
-                'party_id'        => $holdVoucher->party_id,
-                'warehouse_id'    => $holdVoucher->warehouse_id,
+                'release_type'    => $request->release_type,
+                'hold_voucher_id' => $holdVoucherId,
+                'claim_id'        => $claimId,
+                'party_type'      => $request->vendor_type,
+                'party_id'        => $request->vendor_id,
+                'warehouse_id'    => $request->warehouse_id,
                 'remarks'         => $request->remarks,
                 'status'          => $status
             ]);
@@ -491,10 +494,17 @@ class StockHoldController extends Controller
                 if ($releaseQty <= 0) continue;
 
                 // Find original hold item
-                $holdItem = \App\Models\StockHold::where('stock_hold_voucher_id', $holdVoucher->id)
-                    ->where('product_id', $pid)
-                    ->where('status', 0) // only active holds
-                    ->first();
+                if ($request->release_type === 'claim') {
+                    $holdItem = \App\Models\StockHold::where('meta->claim_id', (string)$claimId)
+                        ->where('product_id', $pid)
+                        ->where('status', 0)
+                        ->first();
+                } else {
+                    $holdItem = \App\Models\StockHold::where('stock_hold_voucher_id', $holdVoucherId)
+                        ->where('product_id', $pid)
+                        ->where('status', 0)
+                        ->first();
+                }
 
                 if (!$holdItem) continue;
 
@@ -506,7 +516,7 @@ class StockHoldController extends Controller
                     'sale_id'     => $holdItem->sale_id,
                     'party_type'  => $holdItem->party_type,
                     'party_id'    => $holdItem->party_id,
-                    'warehouse_id' => $holdItem->warehouse_id,
+                    'warehouse_id' => $request->warehouse_id, // Local selection
                     'product_id'  => $pid,
                     'sale_qty'    => $holdItem->sale_qty,
                     'release_qty' => $releaseQty,
@@ -515,15 +525,16 @@ class StockHoldController extends Controller
                 ]);
 
                 if ($status === 'Posted') {
-                    // Update Hold
+                    // 1. Subtract from Logic Reserve (StockHold)
                     $remaining = (float)$holdItem->hold_qty - $releaseQty;
-                    if ($remaining <= 0) {
-                        $holdItem->hold_qty = 0;
+                    $holdItem->hold_qty = max(0, $remaining);
+                    if ($holdItem->hold_qty <= 0) {
                         $holdItem->status = 1; // Released
-                    } else {
-                        $holdItem->hold_qty = $remaining;
                     }
                     $holdItem->save();
+
+                    // 2. Physical Stock Deduction
+                    $this->adjustStock($request->warehouse_id, $pid, -$releaseQty);
                 }
             }
 
@@ -539,6 +550,25 @@ class StockHoldController extends Controller
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    private function adjustStock($warehouseId, $productId, $qty)
+    {
+        if ($warehouseId == 0) {
+            $product = Product::find($productId);
+            if ($product) {
+                $product->stock = ($product->stock ?? 0) + $qty;
+                $product->save();
+            }
+        } else {
+            $stock = \App\Models\WarehouseStock::firstOrNew([
+                'warehouse_id' => $warehouseId,
+                'product_id'   => $productId
+            ]);
+            $stock->quantity = ($stock->quantity ?? 0) + $qty;
+            if (!$stock->exists) $stock->status = 'Posted';
+            $stock->save();
         }
     }
 

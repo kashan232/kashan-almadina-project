@@ -64,10 +64,19 @@ class CustomerClaimReleaseController extends Controller
     public function getHoldClaims(Request $request)
     {
         $q = $request->q;
+        $partyType = $request->party_type;
+        $partyId = $request->party_id;
+
         $claims = CustomerClaim::where('claim_type', 'claim_hold')
             ->where('status', 'Posted')
             ->whereDoesntHave('release', function($query) {
                 $query->where('status', 'Posted');
+            })
+            ->when($partyType, function($query) use ($partyType) {
+                $query->where('party_type', $partyType);
+            })
+            ->when($partyId, function($query) use ($partyId) {
+                $query->where('party_id', $partyId);
             })
             ->when($q, function($query) use ($q) {
                 $query->where('claim_no', 'like', "%$q%");

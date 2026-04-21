@@ -89,11 +89,12 @@
                                         <div class="p-2 border-bottom fw-bold small text-muted">Show/Hide Columns</div>
                                         <label class="column-picker-item"><input type="checkbox" data-column="1" checked> ID</label>
                                         <label class="column-picker-item"><input type="checkbox" data-column="2" checked> Date</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="3" checked> Party / Customer</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="4" checked> Location</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="5" checked> Items Details</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="6" checked> Status</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="7" checked> Action</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="3" checked> Type</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="4" checked> Party / Customer</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="5" checked> Location</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="6" checked> Items Details</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="7" checked> Status</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="8" checked> Action</label>
                                     </div>
                                 </div>
                                 <a class="btn btn-success btn-sm px-4 rounded-pill" href="{{ route('stock-holds.release.add') }}">
@@ -109,6 +110,7 @@
                                         <tr>
                                             <th>ID</th>
                                             <th>Date</th>
+                                            <th>Type</th>
                                             <th>Party / Customer</th>
                                             <th>Location</th>
                                             <th>Items Details</th>
@@ -121,6 +123,13 @@
                                         <tr>
                                             <td class="fw-bold text-center">{{ $v->voucher_no }}</td>
                                             <td class="text-center">{{ \Carbon\Carbon::parse($v->date)->format('d-M-Y') }}</td>
+                                            <td class="text-center">
+                                                @if(($v->release_type ?? 'stock') == 'claim')
+                                                    <span class="badge bg-info text-dark" style="font-size:10px;">Claim Release</span>
+                                                @else
+                                                    <span class="badge bg-secondary" style="font-size:10px;">Stock Release</span>
+                                                @endif
+                                            </td>
                                             <td>
                                                 @if($v->party_type == 'customer' || $v->party_type == 'walkin')
                                                     <i class="fa fa-user me-1 text-info"></i> {{ $v->partyCustomer->customer_name ?? 'Walkin' }}

@@ -52,8 +52,6 @@
                 @csrf
                 <input type="hidden" name="id" id="release_id" value="">
                 <input type="hidden" name="action" id="formAction" value="save">
-                <input type="hidden" name="party_type" id="party_type">
-                <input type="hidden" name="party_id" id="party_id">
                 <input type="hidden" name="product_id" id="product_id">
                 
                 <div class="posted-watermark" id="postedWatermark">Posted</div>
@@ -69,19 +67,29 @@
                                 <label class="form-label">Release Date</label>
                                 <input type="date" name="release_date" class="form-control input-sm" value="{{ date('Y-m-d') }}" required>
                             </div>
-                            <div class="col-md-3">
-                                <label class="form-label text-primary">Search Claim Hold <span class="text-danger">*</span></label>
-                                <select name="claim_id" id="claim_id" class="form-select select2" required>
-                                    <option value="">Select Hold Claim...</option>
+
+                            <div class="col-md-2">
+                                <label class="form-label text-primary">Party Type <span class="text-danger">*</span></label>
+                                <select name="party_type" id="party_type_select" class="form-select form-select-sm" required>
+                                    <option value="">Select Type...</option>
+                                    <option value="customer">Customer</option>
+                                    <option value="vendor">Vendor</option>
+                                    <option value="walkin">Walkin</option>
                                 </select>
                             </div>
-                            <div class="col-md-2">
-                                <label class="form-label">Party Type</label>
-                                <input type="text" id="party_type_display" class="form-control input-sm bg-light text-uppercase small fw-bold" placeholder="---" readonly>
-                            </div>
+
                             <div class="col-md-3">
-                                <label class="form-label">Party Name</label>
-                                <input type="text" id="party_name_display" class="form-control input-sm bg-light fw-bold" placeholder="Auto-filled..." readonly>
+                                <label class="form-label text-primary">Party Name <span class="text-danger">*</span></label>
+                                <select name="party_id" id="party_id_select" class="form-select select2" required disabled>
+                                    <option value="">Choose Type First...</option>
+                                </select>
+                            </div>
+
+                            <div class="col-md-3">
+                                <label class="form-label text-success fw-bold">Search Claim Hold <span class="text-danger">*</span></label>
+                                <select name="claim_id" id="claim_id" class="form-select select2" required disabled>
+                                    <option value="">Choose Party First...</option>
+                                </select>
                             </div>
 
                             <div class="col-md-3 mt-1">
@@ -172,12 +180,50 @@ $(document).ready(function() {
         setTimeout(() => $toast.fadeOut(400, () => $(this).remove()), 2000);
     }
 
-    // Initialize Hold Claim Select
+    // Party Type Change -> Load Parties
+    $('#party_type_select').on('change', function() {
+        var type = $(this).val();
+        var $party = $('#party_id_select');
+        var $claim = $('#claim_id');
+        
+        $party.val('').trigger('change').prop('disabled', !type);
+        $claim.val('').trigger('change').prop('disabled', true);
+        $('#itemRows').empty().append('<tr id="emptyRow"><td colspan="4" class="text-center text-muted py-3">Select a Hold Claim to see item details</td></tr>');
+
+        if(type) {
+            $party.html('<option value="">Loading...</option>');
+            $.get("{{ route('stock-holds.party.list') }}", { type: type }, function(res) {
+                var html = '<option value="">Select ' + type + '...</option>';
+                res.forEach(p => html += `<option value="${p.id}">${p.text}</option>`);
+                $party.html(html).trigger('change');
+            });
+        } else {
+            $party.html('<option value="">Choose Type First...</option>');
+        }
+    });
+
+    // Party Name Change -> Enable Claim search
+    $('#party_id_select').on('change', function() {
+        var pid = $(this).val();
+        var $claim = $('#claim_id');
+        $claim.val('').trigger('change').prop('disabled', !pid);
+        if(!pid) {
+            $claim.html('<option value="">Choose Party First...</option>');
+        }
+    });
+
+    // Initialize Hold Claim Select with filters
     $('#claim_id').select2({
         ajax: {
             url: "{{ route('customer-claims.release.hold-list.json') }}",
             dataType: 'json', delay: 250,
-            data: function(params) { return { q: params.term }; },
+            data: function(params) { 
+                return { 
+                    q: params.term,
+                    party_type: $('#party_type_select').val(),
+                    party_id: $('#party_id_select').val()
+                }; 
+            },
             processResults: function(data) { return { results: data }; }
         }
     });
@@ -188,16 +234,9 @@ $(document).ready(function() {
         if(!id) return;
         
         $.get("{{ url('customer-claims-release/details') }}/" + id, function(res) {
-            $('#party_id').val(res.party_id);
-            $('#party_type').val(res.party_type);
-            $('#party_name_display').val(res.party_name);
-            $('#party_type_display').val(res.party_type);
             $('#product_id').val(res.product_id);
-            
-            // Clear and Add Row
             $('#itemRows').empty();
             addItemRow(res.product_id, res.product_name, res.hold_qty);
-            
             $('#warehouse_id').val(res.warehouse_id);
         });
     });
