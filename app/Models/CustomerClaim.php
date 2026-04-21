@@ -30,6 +30,11 @@ class CustomerClaim extends Model
         return $this->belongsTo(\App\Models\Warehouse::class, 'original_warehouse_id');
     }
 
+    public function replacementFromWarehouse()
+    {
+        return $this->belongsTo(\App\Models\Warehouse::class, 'replacement_from_warehouse_id');
+    }
+
     public function party()
     {
         if ($this->party_type === 'vendor') {
@@ -41,5 +46,10 @@ class CustomerClaim extends Model
     public function creator()
     {
         return $this->belongsTo(\App\Models\User::class, 'created_by');
+    }
+
+    public function release()
+    {
+        return $this->hasOne(\App\Models\CustomerClaimRelease::class, 'claim_id');
     }
 }

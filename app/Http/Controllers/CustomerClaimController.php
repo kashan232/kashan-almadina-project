@@ -19,7 +19,7 @@ class CustomerClaimController extends Controller
 {
     public function index()
     {
-        $claims = CustomerClaim::with(['party', 'product', 'warehouse'])->latest()->get();
+        $claims = CustomerClaim::with(['party', 'product', 'warehouse', 'originalWarehouse', 'replacementProduct', 'replacementFromWarehouse', 'creator'])->latest()->get();
         return view('admin_panel.customer_claims.index', compact('claims'));
     }
 

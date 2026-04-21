@@ -134,11 +134,24 @@
                                         <label class="column-picker-item"><input type="checkbox" data-column="1" checked> Claim No</label>
                                         <label class="column-picker-item"><input type="checkbox" data-column="2" checked> Date</label>
                                         <label class="column-picker-item"><input type="checkbox" data-column="3" checked> Type</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="4" checked> Party Name</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="5" checked> Item</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="6" checked> Serial / Card</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="7" checked> Income</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="8" checked> Status</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="4" checked> Party Type</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="5" checked> Party Name</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="6" checked> Item</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="7" checked> MFG Date</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="8" checked> Sales Price</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="9" checked> Serial / Card</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="10" checked> Bill Date</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="11" checked> Deliver From</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="12" checked> Claim WH</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="13" checked> Income</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="14" checked> Fault Found</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="15" checked> Remarks</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="16" checked> Replace Item</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="17" checked> Replace Price</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="18" checked> Replace From</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="19" checked> Status</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="20" checked> Created By</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="21" checked> Created At</label>
                                     </div>
                                 </div>
                                 <a class="btn btn-primary btn-sm px-4 rounded-pill shadow-sm" href="{{ route('customer-claims.create') }}">
@@ -149,41 +162,62 @@
 
                         <div class="card-body p-3 bg-white">
                             <div class="table-responsive">
-                                <table id="claimsTable" class="table table-striped table-bordered display w-100">
-                                    <thead>
+                                <table id="claimsTable" class="table table-sm table-striped table-bordered display nowrap w-100">
+                                    <thead class="bg-light">
                                         <tr>
                                             <th>Claim No</th>
                                             <th>Date</th>
                                             <th>Type</th>
+                                            <th>Party Type</th>
                                             <th>Party Name</th>
                                             <th>Item</th>
+                                            <th>MFG Date</th>
+                                            <th>Sales Price</th>
                                             <th>Serial / Card</th>
+                                            <th>Bill Date</th>
+                                            <th>Deliver From</th>
+                                            <th>Claim WH</th>
                                             <th class="text-end">Income</th>
+                                            <th>Fault Found</th>
+                                            <th>Remarks</th>
+                                            <th>Replace Item</th>
+                                            <th>Replace Price</th>
+                                            <th>Replace From</th>
                                             <th class="text-center">Status</th>
+                                            <th>Created By</th>
+                                            <th>Created At</th>
                                             <th class="text-center">Action</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         @foreach ($claims as $claim)
                                         <tr>
-                                            <td class="fw-bold">{{ $claim->claim_no }}</td>
+                                            <td class="fw-bold text-primary">{{ $claim->claim_no }}</td>
                                             <td>{{ \Carbon\Carbon::parse($claim->claim_date)->format('d-M-Y') }}</td>
                                             <td>
                                                 @if($claim->claim_type === 'item_return')
-                                                    <span class="badge bg-soft-info text-info border border-info px-2">Item Return</span>
+                                                    <span class="badge bg-info px-2">Item Return</span>
                                                 @elseif($claim->claim_type === 'credit_note')
-                                                    <span class="badge bg-soft-primary text-primary border border-primary px-2">Credit Note</span>
+                                                    <span class="badge bg-primary px-2">Credit Note</span>
                                                 @else
-                                                    <span class="badge bg-soft-secondary text-secondary border border-secondary px-2">Hold</span>
+                                                    <span class="badge bg-secondary px-2">Hold</span>
                                                 @endif
                                             </td>
-                                            <td>
-                                                <div class="fw-bold">{{ $claim->party->customer_name ?? ($claim->party->name ?? 'N/A') }}</div>
-                                                <small class="text-muted text-uppercase" style="font-size: 10px;">{{ $claim->party_type }}</small>
-                                            </td>
+                                            <td class="text-uppercase small fw-bold text-muted">{{ $claim->party_type }}</td>
+                                            <td class="fw-bold text-dark">{{ $claim->party->customer_name ?? ($claim->party->name ?? 'N/A') }}</td>
                                             <td>{{ $claim->product->name ?? 'N/A' }}</td>
+                                            <td>{{ $claim->mfg_date ?: '-' }}</td>
+                                            <td class="text-end fw-bold">{{ number_format($claim->sales_price, 2) }}</td>
                                             <td>{{ $claim->card_no ?: '-' }}</td>
+                                            <td>{{ $claim->bill_date ? \Carbon\Carbon::parse($claim->bill_date)->format('d-M-Y') : '-' }}</td>
+                                            <td>{{ $claim->original_warehouse_id == 0 ? 'Shop' : ($claim->originalWarehouse->warehouse_name ?? 'N/A') }}</td>
+                                            <td>{{ $claim->warehouse->warehouse_name ?? 'N/A' }}</td>
                                             <td class="text-end fw-bold text-success">{{ number_format($claim->claim_income, 2) }}</td>
+                                            <td><small>{{ Str::limit($claim->fault_found, 30) ?: '-' }}</small></td>
+                                            <td><small>{{ Str::limit($claim->remarks, 30) ?: '-' }}</small></td>
+                                            <td>{{ $claim->replacementProduct->name ?? '-' }}</td>
+                                            <td class="text-end fw-bold text-info">{{ $claim->replacement_sales_price ? number_format($claim->replacement_sales_price, 2) : '-' }}</td>
+                                            <td>{{ $claim->replacement_from_warehouse_id == 0 ? 'Shop' : ($claim->replacementFromWarehouse->warehouse_name ?? '-') }}</td>
                                             <td class="text-center">
                                                 @if($claim->status === 'Posted')
                                                     <span class="badge bg-success rounded-pill px-3">Posted</span>
@@ -191,20 +225,22 @@
                                                     <span class="badge bg-warning text-dark rounded-pill px-3">Draft</span>
                                                 @endif
                                             </td>
+                                            <td>{{ $claim->creator->name ?? 'System' }}</td>
+                                            <td>{{ $claim->created_at->format('d-M-Y H:i') }}</td>
                                             <td class="text-center">
                                                 <div class="d-flex gap-1 justify-content-center">
                                                      @if($claim->status === 'Draft')
                                                         <form action="{{ route('customer-claims.post', $claim->id) }}" method="POST" class="d-inline">
                                                             @csrf
-                                                            <button type="submit" class="btn btn-outline-primary btn-sm rounded-pill px-2" title="Post Now">
+                                                            <button type="submit" class="btn btn-primary btn-xs px-2 py-0" title="Post Now" style="font-size: 10px;">
                                                                 <i class="fa fa-send"></i> Post
                                                             </button>
                                                         </form>
-                                                         <a href="{{ route('customer-claims.edit', $claim->id) }}" class="btn btn-outline-warning btn-sm rounded-circle" title="Edit">
+                                                         <a href="{{ route('customer-claims.edit', $claim->id) }}" class="btn btn-outline-warning btn-xs px-1 py-0" title="Edit">
                                                              <i class="fa fa-edit"></i>
                                                          </a>
                                                      @endif
-                                                    <a href="#" class="btn btn-outline-dark btn-sm rounded-circle" title="Print">
+                                                    <a href="#" class="btn btn-outline-dark btn-xs px-1 py-0" title="Print">
                                                         <i class="fa fa-print"></i>
                                                     </a>
                                                 </div>
@@ -238,52 +274,57 @@
             }
         });
 
-        const storageKey = 'claims_table_cols_v1';
-        
-        // Load initial state
+        const storageKey = 'claims_table_cols_v4';
         const savedState = localStorage.getItem(storageKey);
+        
         if (savedState) {
-            const columns = JSON.parse(savedState);
+            const colSettings = JSON.parse(savedState);
             $('#columnPickerMenu input').each(function() {
-                const colIdx = $(this).data('column');
-                if (columns.hasOwnProperty(colIdx)) {
-                    $(this).prop('checked', columns[colIdx]);
+                const colNum = $(this).data('column');
+                if (colSettings.hasOwnProperty(colNum)) {
+                    $(this).prop('checked', colSettings[colNum]);
                 }
             });
         }
 
-        // Initialize DataTable
+        // Initialize DataTable with initial visibility
+        const columnDefs = [];
+        $('#columnPickerMenu input').each(function() {
+            const colIdx = parseInt($(this).data('column')) - 1;
+            columnDefs.push({
+                targets: [colIdx],
+                visible: $(this).is(':checked')
+            });
+        });
+        columnDefs.push({ targets: [21], visible: true, orderable: false });
+
         var dt = $('#claimsTable').DataTable({
             scrollX: true,
             autoWidth: false,
             pageLength: 25,
             order: [[0, 'desc']],
+            columnDefs: columnDefs,
             language: {
                 search: "_INPUT_",
                 searchPlaceholder: "Search claims..."
+            },
+            initComplete: function() {
+                this.api().columns.adjust();
             }
         });
 
-        // Apply column visibility
-        const applyVisibility = () => {
-            $('#columnPickerMenu input').each(function() {
-                const colIdx = parseInt($(this).data('column')) - 1;
-                const checked = $(this).is(':checked');
-                dt.column(colIdx).visible(checked);
-            });
-            dt.columns.adjust().draw(false);
-        };
-
+        // Handle dynamically changing visibility
         $('#columnPickerMenu input').on('change', function() {
-            const state = {};
-            $('#columnPickerMenu input').each(function() {
-                state[$(this).data('column')] = $(this).is(':checked');
-            });
-            localStorage.setItem(storageKey, JSON.stringify(state));
-            applyVisibility();
-        });
+            const colIdx = parseInt($(this).data('column')) - 1;
+            dt.column(colIdx).visible($(this).is(':checked'));
+            dt.columns.adjust();
 
-        if (savedState) applyVisibility();
+            const newState = {};
+            $('#columnPickerMenu input').each(function() {
+                newState[$(this).data('column')] = $(this).is(':checked');
+            });
+            localStorage.setItem(storageKey, JSON.stringify(newState));
+        });
     });
 </script>
 @endsection

@@ -261,12 +261,15 @@ $(document).ready(function() {
         if(type === 'item_return') {
             $('#replacementContainer').addClass('d-none');
             $('#original_warehouse_div').removeClass('d-none');
+            $('#sales_price, #replacement_sales_price').prop('readonly', true);
         } else if(type === 'credit_note') {
             $('#replacementContainer').removeClass('d-none');
             $('#original_warehouse_div').addClass('d-none');
+            $('#sales_price, #replacement_sales_price').prop('readonly', false);
         } else if(type === 'claim_hold') {
             $('#replacementContainer').addClass('d-none');
             $('#original_warehouse_div').addClass('d-none');
+            $('#sales_price, #replacement_sales_price').prop('readonly', true);
         }
     }).trigger('change');
 

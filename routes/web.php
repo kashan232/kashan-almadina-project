@@ -34,6 +34,7 @@ use App\Http\Controllers\SubCustomerController;
 use App\Http\Controllers\StockWastageController;
 use App\Http\Controllers\UserGroupController;
 use App\Http\Controllers\CustomerClaimController;
+use App\Http\Controllers\CustomerClaimReleaseController;
 
 /*
 |--------------------------------------------------------------------------
@@ -54,6 +55,14 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/customer-claims/post/{id}', [CustomerClaimController::class, 'post'])->name('customer-claims.post');
     Route::get('/customer-claims/edit/{id}', [CustomerClaimController::class, 'edit'])->name('customer-claims.edit');
     Route::get('/customer-claims/search-products', [ProductController::class, 'searchProducts'])->name('customer-claims.search-products');
+    
+    // Customer Claim Release Routes
+    Route::get('/customer-claims-release', [CustomerClaimReleaseController::class, 'index'])->name('customer-claims.release.index');
+    Route::get('/customer-claims-release/add', [CustomerClaimReleaseController::class, 'create'])->name('customer-claims.release.create');
+    Route::post('/customer-claims-release/ajax-save', [CustomerClaimReleaseController::class, 'ajaxSave'])->name('customer-claims.release.ajax-save');
+    Route::post('/customer-claims-release/post/{id}', [CustomerClaimReleaseController::class, 'post'])->name('customer-claims.release.post');
+    Route::get('/customer-claims-release/hold-list/json', [CustomerClaimReleaseController::class, 'getHoldClaims'])->name('customer-claims.release.hold-list.json');
+    Route::get('/customer-claims-release/details/{id}', [CustomerClaimReleaseController::class, 'getClaimDetails'])->name('customer-claims.release.details');
 });
 // kashan connected
 // up
