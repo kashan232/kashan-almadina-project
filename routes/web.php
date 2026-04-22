@@ -63,6 +63,17 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/customer-claims-release/post/{id}', [CustomerClaimReleaseController::class, 'post'])->name('customer-claims.release.post');
     Route::get('/customer-claims-release/hold-list/json', [CustomerClaimReleaseController::class, 'getHoldClaims'])->name('customer-claims.release.hold-list.json');
     Route::get('/customer-claims-release/details/{id}', [CustomerClaimReleaseController::class, 'getClaimDetails'])->name('customer-claims.release.details');
+
+    // Claim Acceptance Routes
+    Route::get('/claim-acceptance', [\App\Http\Controllers\ClaimAcceptanceController::class, 'index'])->name('claim-acceptance.index');
+    Route::get('/claim-acceptance/add', [\App\Http\Controllers\ClaimAcceptanceController::class, 'create'])->name('claim-acceptance.create');
+    Route::post('/claim-acceptance/ajax-save', [\App\Http\Controllers\ClaimAcceptanceController::class, 'ajaxSave'])->name('claim-acceptance.ajax-save');
+    Route::post('/claim-acceptance/post/{id}', [\App\Http\Controllers\ClaimAcceptanceController::class, 'post'])->name('claim-acceptance.post');
+    Route::get('/claim-acceptance/edit/{id}', [\App\Http\Controllers\ClaimAcceptanceController::class, 'edit'])->name('claim-acceptance.edit');
+    Route::get('/claim-acceptance/print/{id}', [\App\Http\Controllers\ClaimAcceptanceController::class, 'print'])->name('claim-acceptance.print');
+    Route::delete('/claim-acceptance/destroy/{id}', [\App\Http\Controllers\ClaimAcceptanceController::class, 'destroy'])->name('claim-acceptance.destroy');
+    Route::get('/claim-acceptance/party-list', [\App\Http\Controllers\ClaimAcceptanceController::class, 'partyList'])->name('claim-acceptance.party-list');
+    Route::get('/products/get-by-id/{id}', [\App\Http\Controllers\ProductController::class, 'getProductById'])->name('products.get_by_id');
 });
 // kashan connected
 // up

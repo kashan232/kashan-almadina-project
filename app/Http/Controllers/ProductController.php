@@ -491,6 +491,18 @@ class ProductController extends Controller
             return response()->json(['status' => 'success', 'message' => 'Selected products deactivated.']);
         }
 
-        return response()->json(['status' => 'error', 'message' => 'Invalid action.'], 400);
+    }
+
+    public function getProductById($id)
+    {
+        $product = Product::with(['latestPrice'])->find($id);
+        if (!$product) return response()->json(['success' => false], 404);
+        
+        return response()->json([
+            'success' => true,
+            'id' => $product->id,
+            'name' => $product->name,
+            'price' => $product->latestPrice->sale_net_amount ?? 0
+        ]);
     }
 }
