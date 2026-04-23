@@ -481,24 +481,29 @@ class SaleController extends Controller
                     'weight' => $booking->weight,
                 ]);
 
-                // If Sale Order, create a Stock Hold Voucher
+                // If Sale Order, create a Stock Hold Voucher (Prevent Double)
                 $holdVoucher = null;
                 if ($sale->is_sale_order) {
-                    $holdVoucher = \App\Models\StockHoldVoucher::create([
-                        'sale_id' => $sale->id,
-                        'voucher_no' => \App\Models\StockHoldVoucher::generateVoucherNo(),
-                        'party_type' => $sale->partyType,
-                        'party_id' => $sale->customer_id,
-                        'date' => now(), // Changed from entry_date to date
-                        'remarks' => 'Auto-Hold from Sale Order #' . $sale->invoice_no,
-                    ]);
+                    $holdVoucher = \App\Models\StockHoldVoucher::where('sale_id', $sale->id)->first();
+                    if (!$holdVoucher) {
+                        $holdVoucher = \App\Models\StockHoldVoucher::create([
+                            'sale_id' => $sale->id,
+                            'voucher_no' => \App\Models\StockHoldVoucher::generateVoucherNo(),
+                            'party_type' => $sale->partyType,
+                            'party_id' => $sale->customer_id,
+                            'date' => now(),
+                            'status' => 'Posted', // Automate posting for auto-holds
+                            'remarks' => 'Auto-Hold from Sale Order #' . $sale->invoice_no,
+                        ]);
+                    } else {
+                        // Hold already exists, skip creating items to avoid double
+                        $holdVoucher = null; 
+                    }
                 }
 
                 foreach ($booking->items as $it) {
-                    if (!$it) {
-                        continue;
-                    } // guard
-
+                    if (!$it) continue;
+                    
                     $salesQty = (float) data_get($it, 'sales_qty', 0);
                     $salesPrice = (float) data_get($it, 'sales_price', 0);
                     $retail = (float) data_get($it, 'retail_price', 0);
@@ -523,8 +528,8 @@ class SaleController extends Controller
                                 $ws->save();
                             }
                         }
-                    } else {
-                        // Create Stock Hold Record
+                    } elseif ($holdVoucher) {
+                        // Create Stock Hold Record (Only if we created/found a voucher just now)
                         \App\Models\StockHold::create([
                             'stock_hold_voucher_id' => $holdVoucher->id,
                             'sale_id' => $sale->id,
@@ -535,8 +540,7 @@ class SaleController extends Controller
                             'hold_qty' => $salesQty,
                             'sale_qty' => $salesQty,
                             'entry_date' => now(),
-                            'remarks' => 'Auto-Hold from Sale Order',
-                            'status' => 0, // 0 = Active Hold
+                            'status' => 0,
                         ]);
                     }
 
@@ -619,17 +623,23 @@ class SaleController extends Controller
                 'weight' => $booking->weight,
             ]);
 
-            // If Sale Order, create a Stock Hold Voucher
+            // If Sale Order, create a Stock Hold Voucher (Prevent Double)
             $holdVoucher = null;
             if ($sale->is_sale_order) {
-                $holdVoucher = \App\Models\StockHoldVoucher::create([
-                    'sale_id' => $sale->id,
-                    'voucher_no' => \App\Models\StockHoldVoucher::generateVoucherNo(),
-                    'party_type' => $sale->partyType,
-                    'party_id' => $sale->customer_id,
-                    'date' => now(), // Changed from entry_date to date
-                    'remarks' => 'Auto-Hold from Sale Order #' . $sale->invoice_no,
-                ]);
+                $holdVoucher = \App\Models\StockHoldVoucher::where('sale_id', $sale->id)->first();
+                if (!$holdVoucher) {
+                    $holdVoucher = \App\Models\StockHoldVoucher::create([
+                        'sale_id' => $sale->id,
+                        'voucher_no' => \App\Models\StockHoldVoucher::generateVoucherNo(),
+                        'party_type' => $sale->partyType,
+                        'party_id' => $sale->customer_id,
+                        'date' => now(),
+                        'status' => 'Posted', // Automate posting for auto-holds
+                        'remarks' => 'Auto-Hold from Sale Order #' . $sale->invoice_no,
+                    ]);
+                } else {
+                    $holdVoucher = null; // Already exists
+                }
             }
 
             foreach ($booking->items as $it) {
@@ -650,8 +660,8 @@ class SaleController extends Controller
                             $ws->save();
                         }
                     }
-                } else {
-                    // Create Stock Hold Record
+                } elseif ($holdVoucher) {
+                    // Create Stock Hold Record (Only if we created/found a voucher just now)
                     \App\Models\StockHold::create([
                         'stock_hold_voucher_id' => $holdVoucher->id,
                         'sale_id' => $sale->id,
@@ -662,7 +672,6 @@ class SaleController extends Controller
                         'hold_qty' => $salesQty,
                         'sale_qty' => $salesQty,
                         'entry_date' => now(),
-                        'remarks' => 'Auto-Hold from Sale Order',
                         'status' => 0, // 0 = Active Hold
                     ]);
                 }

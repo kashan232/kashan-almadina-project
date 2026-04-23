@@ -50,6 +50,7 @@
             <form action="{{ route('stock-holds.store') }}" method="POST" id="stockHoldForm" class="position-relative">
                 @csrf
                 <input type="hidden" name="action" id="formAction" value="save">
+                <input type="hidden" name="id" id="voucher_id">
                 <input type="hidden" name="sale_id" id="sale_id">
                 <div class="posted-watermark" id="postedWatermark">Posted</div>
 
@@ -274,6 +275,7 @@ $(document).ready(function() {
             success: function(res) {
                 if(res.success) {
                     _savedVoucherId = res.id;
+                    $('#voucher_id').val(res.id);
                     $('#idBadge').text('ID: ' + res.id).show();
                     $('#stockHoldForm').addClass('form-locked');
                     $('#saveDraftBtn').hide();

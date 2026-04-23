@@ -134,18 +134,38 @@ class StockHoldController extends Controller
 
         try {
             DB::beginTransaction();
+            
+            $voucherId = $request->id;
+            $voucher = $voucherId ? StockHoldVoucher::findOrFail($voucherId) : new StockHoldVoucher();
 
-            $voucher = StockHoldVoucher::create([
-                'voucher_no'   => StockHoldVoucher::generateVoucherNo(),
-                'date'         => $request->entry_date,
-                'party_type'   => $request->vendor_type,
-                'party_id'     => $request->vendor_id,
-                'warehouse_id' => $request->warehouse_id,
-                'sale_id'      => $request->sale_id,
-                'hold_type'    => $request->hold_type ?? 'hold',
-                'remarks'      => $request->remarks,
-                'status'       => $status,
-            ]);
+            // Prevent Double Hold for same Sale (Excluding current voucher if updating)
+            if ($request->filled('sale_id')) {
+                $query = StockHold::where('sale_id', $request->sale_id);
+                if ($voucherId) {
+                    $query->where('stock_hold_voucher_id', '!=', $voucherId);
+                }
+                if ($query->exists()) {
+                    return response()->json(['success' => false, 'message' => 'This Sale/Invoice already has hold records. Duplicate holds are not allowed.'], 422);
+                }
+            }
+
+            if (!$voucherId) {
+                $voucher->voucher_no = StockHoldVoucher::generateVoucherNo();
+            }
+            
+            $voucher->date         = $request->entry_date;
+            $voucher->party_type   = $request->vendor_type;
+            $voucher->party_id     = $request->vendor_id;
+            $voucher->warehouse_id = $request->warehouse_id;
+            $voucher->sale_id      = $request->sale_id;
+            $voucher->hold_type    = $request->hold_type ?? 'hold';
+            $voucher->remarks      = $request->remarks;
+            $voucher->status       = $status;
+            $voucher->save();
+
+            if ($voucherId) {
+                $voucher->items()->delete();
+            }
 
             foreach ($request->product_id as $index => $productId) {
                 $qty = (float) $request->hold_qty[$index];
@@ -428,10 +448,43 @@ class StockHoldController extends Controller
 
     public function holdVoucherList(Request $request)
     {
-        return StockHoldVoucher::where('status', 'Posted')
+        $q = $request->q;
+        $partyType = $request->party_type;
+        $partyId = $request->party_id;
+
+        $query = StockHoldVoucher::where('status', 'Posted')
+            ->when($partyType, function($query) use ($partyType) {
+                $query->where('party_type', $partyType);
+            })
+            ->when($partyId, function($query) use ($partyId) {
+                $query->where('party_id', $partyId);
+            })
+            ->when($q, function($query) use ($q) {
+                $query->where('voucher_no', 'like', "%$q%");
+            })
             ->latest()
             ->get()
-            ->map(fn($v) => ['id' => $v->id, 'text' => $v->voucher_no . ' (ID: ' . $v->id . ')']);
+            ->map(fn($v) => ['id' => 'hold:' . $v->id, 'text' => 'Hold: ' . $v->voucher_no . ' (Date: ' . $v->date . ')']);
+
+        if($request->include_claims) {
+            $claims = \App\Models\CustomerClaim::where('status', 'Posted')
+                ->where('claim_type', 'claim_hold')
+                ->when($partyType, function($query) use ($partyType) {
+                    $query->where('party_type', $partyType);
+                })
+                ->when($partyId, function($query) use ($partyId) {
+                    $query->where('party_id', $partyId);
+                })
+                ->when($q, function($query) use ($q) {
+                    $query->where('claim_no', 'like', "%$q%");
+                })
+                ->get()
+                ->map(fn($v) => ['id' => 'claim:' . $v->id, 'text' => 'Claim: ' . $v->claim_no . ' (Date: ' . $v->claim_date . ')']);
+            
+            return $query->merge($claims);
+        }
+
+        return $query;
     }
 
     public function voucherDetails($id)
@@ -464,10 +517,10 @@ class StockHoldController extends Controller
             'entry_date' => 'required|date',
             'product_id' => 'required|array',
             'release_qty' => 'required|array',
-            'release_type' => 'required'
         ]);
 
         $status = $request->action === 'post' ? 'Posted' : 'Unposted';
+        $releaseType = $request->claim_id ? 'claim' : 'stock';
 
         try {
             DB::beginTransaction();
@@ -479,7 +532,7 @@ class StockHoldController extends Controller
             $voucher = \App\Models\StockReleaseVoucher::create([
                 'voucher_no'      => \App\Models\StockReleaseVoucher::generateVoucherNo(),
                 'date'            => $request->entry_date,
-                'release_type'    => $request->release_type,
+                'release_type'    => $releaseType,
                 'hold_voucher_id' => $holdVoucherId,
                 'claim_id'        => $claimId,
                 'party_type'      => $request->vendor_type,
@@ -494,7 +547,7 @@ class StockHoldController extends Controller
                 if ($releaseQty <= 0) continue;
 
                 // Find original hold item
-                if ($request->release_type === 'claim') {
+                if ($releaseType === 'claim') {
                     $holdItem = \App\Models\StockHold::where('meta->claim_id', (string)$claimId)
                         ->where('product_id', $pid)
                         ->where('status', 0)
