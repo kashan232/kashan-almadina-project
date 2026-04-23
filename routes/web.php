@@ -35,6 +35,7 @@ use App\Http\Controllers\StockWastageController;
 use App\Http\Controllers\UserGroupController;
 use App\Http\Controllers\CustomerClaimController;
 use App\Http\Controllers\CustomerClaimReleaseController;
+use App\Http\Controllers\ClaimItemReceiptController;
 
 /*
 |--------------------------------------------------------------------------
@@ -434,6 +435,15 @@ Route::middleware('auth')->group(function () {
     Route::get('/stock-holds/voucher/{id}/details', [StockHoldController::class, 'voucherDetails'])->name('stock-holds.voucher.details');
     Route::get('stock-holds/list/json', [StockHoldController::class, 'holdVoucherList'])->name('stock-holds.list.json');
     Route::get('/stock-relase-list', [StockHoldController::class, 'stockrelaselist'])->name('stock-relase-list');
+
+    // Claim Item Receipt Routes
+    Route::get('/claim-item-receipt', [ClaimItemReceiptController::class, 'index'])->name('claim-item-receipt.index');
+    Route::get('/claim-item-receipt/add', [ClaimItemReceiptController::class, 'create'])->name('claim-item-receipt.create');
+    Route::get('/claim-item-receipt/edit/{id}', [ClaimItemReceiptController::class, 'edit'])->name('claim-item-receipt.edit');
+    Route::get('/claim-item-receipt/fetch-btr', [ClaimItemReceiptController::class, 'fetchByBTR'])->name('claim-item-receipt.fetch-btr');
+    Route::post('/claim-item-receipt/ajax-save', [ClaimItemReceiptController::class, 'ajaxSave'])->name('claim-item-receipt.ajax-save');
+    Route::post('/claim-item-receipt/post/{id}', [ClaimItemReceiptController::class, 'post'])->name('claim-item-receipt.post');
+    Route::get('/claim-item-receipt/print/{id}', [ClaimItemReceiptController::class, 'print'])->name('claim-item-receipt.print');
 
 
     // AJAX (no refresh)

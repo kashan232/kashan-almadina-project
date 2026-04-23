@@ -136,8 +136,9 @@
                                           <li><a href="{{url('zone')}}"><i class="fas fa-map-marker-alt"></i> Zone</a></li>
                                           @endcan
                                           <li><a href="{{ route('customer-claims.index') }}"><i class="fas fa-shield-alt"></i> Customer Claim</a></li>
-                                          <li><a href="{{ route('customer-claims.release.index') }}"><i class="fas fa-truck-loading"></i> Claim Release</a></li>
+                                          {{-- <li><a href="{{ route('customer-claims.release.index') }}"><i class="fas fa-truck-loading"></i> Claim Release</a></li> --}}
                                           <li><a href="{{ route('claim-acceptance.index') }}"><i class="fas fa-check-circle"></i> Claim Acceptance</a></li>
+                                          <li><a href="{{ route('claim-item-receipt.index') }}"><i class="fas fa-file-invoice"></i> Claim Receipt</a></li>
                                       </ul>
                                   </div>
                               </div>
