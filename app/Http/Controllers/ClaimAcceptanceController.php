@@ -35,7 +35,8 @@ class ClaimAcceptanceController extends Controller
     public function create()
     {
         $voucherNo = ClaimAcceptance::generateVoucherNo();
-        return view('admin_panel.claim_acceptance.create', compact('voucherNo'));
+        $warehouses = Warehouse::orderBy('warehouse_name')->get();
+        return view('admin_panel.claim_acceptance.create', compact('voucherNo', 'warehouses'));
     }
 
     public function edit($id)
@@ -44,7 +45,8 @@ class ClaimAcceptanceController extends Controller
         if ($voucher->status === 'Posted') {
             return redirect()->route('claim-acceptance.index')->with('error', 'Posted vouchers cannot be edited.');
         }
-        return view('admin_panel.claim_acceptance.create', compact('voucher'));
+        $warehouses = Warehouse::orderBy('warehouse_name')->get();
+        return view('admin_panel.claim_acceptance.create', compact('voucher', 'warehouses'));
     }
 
     public function ajaxSave(Request $request)
@@ -53,11 +55,13 @@ class ClaimAcceptanceController extends Controller
         $status = $request->action === 'post' ? 'Posted' : 'Draft';
         
         $rules = [
-            'date'       => 'required|date',
-            'party_type' => 'required',
-            'party_id'   => 'required',
-            'product_id' => 'required|array',
-            'quantity'   => 'required|array',
+            'date'              => 'required|date',
+            'from_warehouse_id' => 'required',
+            'to_warehouse_id'   => 'required',
+            'party_type'        => 'required',
+            'party_id'          => 'required',
+            'product_id'        => 'required|array',
+            'quantity'          => 'required|array',
         ];
 
         $validator = Validator::make($request->all(), $rules);
@@ -78,12 +82,14 @@ class ClaimAcceptanceController extends Controller
                 $voucher->voucher_no = ClaimAcceptance::generateVoucherNo();
             }
             
-            $voucher->date       = $request->date;
-            $voucher->party_type = $request->party_type;
-            $voucher->party_id   = $request->party_id;
-            $voucher->remarks    = $request->remarks;
-            $voucher->status     = $status;
-            $voucher->created_by = auth()->id();
+            $voucher->date              = $request->date;
+            $voucher->from_warehouse_id = $request->from_warehouse_id;
+            $voucher->to_warehouse_id   = $request->to_warehouse_id;
+            $voucher->party_type        = $request->party_type;
+            $voucher->party_id          = $request->party_id;
+            $voucher->remarks           = $request->remarks;
+            $voucher->status            = $status;
+            $voucher->created_by        = auth()->id();
             $voucher->save();
 
             // Clear old items if editing
@@ -104,9 +110,11 @@ class ClaimAcceptanceController extends Controller
                 ]);
 
                 if ($status === 'Posted') {
-                    // Update Stock: It's an acceptance, so stock + (incoming goods)
-                    // We'll use Shop stock (ID 0) as default for acceptance
-                    $this->adjustStock(0, $pid, $qty);
+                    // 1. Deduct from Source Warehouse
+                    $this->adjustStock($voucher->from_warehouse_id, $pid, -$qty);
+                    
+                    // 2. Add to Destination Warehouse
+                    $this->adjustStock($voucher->to_warehouse_id, $pid, $qty);
                 }
             }
 
@@ -134,11 +142,16 @@ class ClaimAcceptanceController extends Controller
             $voucher->update(['status' => 'Posted']);
             foreach ($voucher->items as $item) {
                 $item->update(['status' => 'Posted']);
-                $this->adjustStock(0, $item->product_id, $item->quantity);
+                
+                // 1. Deduct from Source Warehouse
+                $this->adjustStock($voucher->from_warehouse_id, $item->product_id, -$item->quantity);
+                
+                // 2. Add to Destination Warehouse
+                $this->adjustStock($voucher->to_warehouse_id, $item->product_id, $item->quantity);
             }
 
             DB::commit();
-            return back()->with('success', 'Claim Acceptance Posted and Stock Updated.');
+            return back()->with('success', 'Claim Acceptance Posted. Stock transferred successfully.');
         } catch (\Exception $e) {
             DB::rollBack();
             return back()->with('error', $e->getMessage());

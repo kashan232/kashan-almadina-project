@@ -65,7 +65,31 @@
                 </div>
                 <div class="col-md-2">
                     <div class="card border-0 bg-light p-2 shadow-sm h-100">
-                        <label class="form-label text-muted small fw-bold mb-1">Type <span class="text-danger">*</span></label>
+                        <label class="form-label text-muted small fw-bold mb-1">Claim From <span class="text-danger">*</span></label>
+                        <select name="from_warehouse_id" class="form-select form-select-sm" required>
+                            <option value="">Select Source...</option>
+                            <option value="0" @selected(isset($voucher) && $voucher->from_warehouse_id == 0)>Shop Stock</option>
+                            @foreach($warehouses as $w)
+                                <option value="{{ $w->id }}" @selected(isset($voucher) && $voucher->from_warehouse_id == $w->id)>{{ $w->warehouse_name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="card border-0 bg-light p-2 shadow-sm h-100">
+                        <label class="form-label text-muted small fw-bold mb-1">Accept In <span class="text-danger">*</span></label>
+                        <select name="to_warehouse_id" class="form-select form-select-sm" required>
+                            <option value="">Select Dest...</option>
+                            <option value="0" @selected(isset($voucher) && $voucher->to_warehouse_id == 0)>Shop Stock</option>
+                            @foreach($warehouses as $w)
+                                <option value="{{ $w->id }}" @selected(isset($voucher) && $voucher->to_warehouse_id == $w->id)>{{ $w->warehouse_name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="card border-0 bg-light p-2 shadow-sm h-100">
+                        <label class="form-label text-muted small fw-bold mb-1">Party Type <span class="text-danger">*</span></label>
                         <select name="party_type" id="party_type" class="form-select form-select-sm" required>
                             <option value="vendor" @selected(isset($voucher) && $voucher->party_type == 'vendor')>Vendor</option>
                             <option value="customer" @selected(isset($voucher) && $voucher->party_type == 'customer')>Customer</option>
@@ -73,7 +97,7 @@
                         </select>
                     </div>
                 </div>
-                <div class="col-md-8">
+                <div class="col-md-4">
                     <div class="card border-0 bg-light p-2 shadow-sm h-100">
                         <label class="form-label text-muted small fw-bold mb-1">Party Details <span class="text-danger">*</span></label>
                         <select name="party_id" id="party_id" class="form-select select2" required>
@@ -270,8 +294,9 @@ $(document).ready(function() {
             var id = $(this).val();
             if (!id) return;
             $.get("{{ url('products/get-by-id') }}/" + id, (res) => {
-                if (res) {
-                    $row.find('.product-select').html(`<option value="${res.id}" selected>${res.text}</option>`).trigger('change');
+                if (res && res.success) {
+                    var prodName = res.name || res.text || 'N/A';
+                    $row.find('.product-select').html(`<option value="${res.id}" selected>${prodName}</option>`).trigger('change');
                     $row.find('.quantity-input').focus().select();
                     autoAddRow($row);
                 } else {
