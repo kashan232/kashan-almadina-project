@@ -37,8 +37,9 @@ class ClaimItemReceiptController extends Controller
     public function create()
     {
         $voucherNo = ClaimItemReceipt::generateVoucherNo();
+        $creditNoteVoucherNo = \App\Models\ClaimCreditNote::generateVoucherNo();
         $warehouses = Warehouse::orderBy('warehouse_name')->get();
-        return view('admin_panel.claim_item_receipt.create', compact('voucherNo', 'warehouses'));
+        return view('admin_panel.claim_item_receipt.create', compact('voucherNo', 'creditNoteVoucherNo', 'warehouses'));
     }
 
     public function edit($id)

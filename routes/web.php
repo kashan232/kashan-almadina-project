@@ -36,6 +36,8 @@ use App\Http\Controllers\UserGroupController;
 use App\Http\Controllers\CustomerClaimController;
 use App\Http\Controllers\CustomerClaimReleaseController;
 use App\Http\Controllers\ClaimItemReceiptController;
+use App\Http\Controllers\ClaimCreditNoteController;
+use App\Http\Controllers\RollbackController;
 
 /*
 |--------------------------------------------------------------------------
@@ -50,6 +52,10 @@ use App\Http\Controllers\ClaimItemReceiptController;
 
 // Customer Claim Routes
 Route::middleware(['auth'])->group(function () {
+    // Rollback Routes
+    Route::get('/rollback', [RollbackController::class, 'index'])->name('rollback.index');
+    Route::post('/rollback/process', [RollbackController::class, 'process'])->name('rollback.process');
+
     Route::get('/customer-claims', [CustomerClaimController::class, 'index'])->name('customer-claims.index');
     Route::get('/customer-claims/add', [CustomerClaimController::class, 'create'])->name('customer-claims.create');
     Route::post('/customer-claims/ajax-save', [CustomerClaimController::class, 'ajaxSave'])->name('customer-claims.ajax-save');
@@ -445,6 +451,15 @@ Route::middleware('auth')->group(function () {
     Route::post('/claim-item-receipt/post/{id}', [ClaimItemReceiptController::class, 'post'])->name('claim-item-receipt.post');
     Route::get('/claim-item-receipt/print/{id}', [ClaimItemReceiptController::class, 'print'])->name('claim-item-receipt.print');
 
+    // Claim Credit Note Routes
+    Route::get('/claim-credit-note', [ClaimCreditNoteController::class, 'index'])->name('claim-credit-note.index');
+    Route::get('/claim-credit-note/add', [ClaimCreditNoteController::class, 'create'])->name('claim-credit-note.create');
+    Route::get('/claim-credit-note/edit/{id}', [ClaimCreditNoteController::class, 'edit'])->name('claim-credit-note.edit');
+    Route::get('/claim-credit-note/fetch-btr', [ClaimCreditNoteController::class, 'fetchByBTR'])->name('claim-credit-note.fetch-btr');
+    Route::post('/claim-credit-note/ajax-save', [ClaimCreditNoteController::class, 'ajaxSave'])->name('claim-credit-note.ajax-save');
+    Route::post('/claim-credit-note/post/{id}', [ClaimCreditNoteController::class, 'post'])->name('claim-credit-note.post');
+    Route::get('/claim-credit-note/print/{id}', [ClaimCreditNoteController::class, 'print'])->name('claim-credit-note.print');
+
 
     // AJAX (no refresh)
     Route::post('/sale/ajax/save', [SaleController::class, 'ajaxSave'])->name('sale.ajax.save');
@@ -488,6 +503,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/sub-customers/by-type', [SubCustomerController::class, 'getByType']);
     // SubCustomer inactive list
     Route::get('/sub_customers/inactive', [SubCustomerController::class, 'inactive'])->name('sub_customers.inactive');
+    // Reports Routes
+    Route::get('/reports/dashboard', [HomeController::class, 'dashboardReport'])->name('reports.dashboard');
+
+
 });
 Route::get('sale/invoice/{id}', [SaleController::class, 'invoice'])->name('sale.invoice');
 // SubCustomer Payments

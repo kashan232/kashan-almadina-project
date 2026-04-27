@@ -560,6 +560,62 @@ class SaleController extends Controller
                     ]);
                 }
 
+                // --- Ledger & Accounts Update ---
+                $partyId = $sale->customer_id;
+                $pType = strtolower($sale->partyType);
+                $netAmount = (float)$sale->total_balance;
+                $receiptAmount = (float)($sale->receipt1 + $sale->receipt2);
+
+                if ($pType === 'vendor') {
+                    $ledger = VendorLedger::where('vendor_id', $partyId)->latest('id')->first();
+                    if ($ledger) {
+                        $ledger->previous_balance = $ledger->closing_balance;
+                        $ledger->closing_balance += ($netAmount - $receiptAmount);
+                        $ledger->save();
+                    } else {
+                        VendorLedger::create([
+                            'vendor_id' => $partyId,
+                            'admin_or_user_id' => auth()->id(),
+                            'date' => now(),
+                            'description' => 'Sale ID: ' . $sale->invoice_no,
+                            'previous_balance' => 0,
+                            'closing_balance' => ($netAmount - $receiptAmount),
+                            'opening_balance' => ($netAmount - $receiptAmount),
+                        ]);
+                    }
+                } elseif ($pType === 'customer' || $pType === 'walkin' || $pType === 'walking') {
+                    $ledger = CustomerLedger::where('customer_id', $partyId)->latest('id')->first();
+                    if ($ledger) {
+                        $ledger->previous_balance = $ledger->closing_balance;
+                        $ledger->closing_balance += ($netAmount - $receiptAmount);
+                        $ledger->save();
+                    } else {
+                        CustomerLedger::create([
+                            'customer_id' => $partyId,
+                            'admin_or_user_id' => auth()->id(),
+                            'previous_balance' => 0,
+                            'closing_balance' => ($netAmount - $receiptAmount),
+                            'opening_balance' => ($netAmount - $receiptAmount),
+                        ]);
+                    }
+                }
+
+                // Account Updates for Receipts
+                $receiptAccounts = json_decode($sale->receipt_accounts, true);
+                $receiptAmounts = json_decode($sale->receipt_amounts_json, true);
+                if (is_array($receiptAccounts)) {
+                    foreach ($receiptAccounts as $idx => $accId) {
+                        $accAmt = (float)($receiptAmounts[$idx] ?? 0);
+                        if ($accAmt > 0) {
+                            $acc = Account::find($accId);
+                            if ($acc) {
+                                $acc->opening_balance = ($acc->opening_balance ?? 0) + $accAmt;
+                                $acc->save();
+                            }
+                        }
+                    }
+                }
+
                 // FIX: Delete the booking (draft) after it has been converted to a Sale
                 $booking->items()->delete();
                 $booking->delete();
@@ -690,6 +746,62 @@ class SaleController extends Controller
                     'discount_amount' => (float)($it->discount_amount ?? 0),
                     'amount' => (float)($it->amount ?? 0),
                 ]);
+            }
+
+            // --- Ledger & Accounts Update ---
+            $partyId = $sale->customer_id;
+            $pType = strtolower($sale->partyType);
+            $netAmount = (float)$sale->total_balance;
+            $receiptAmount = (float)($sale->receipt1 + $sale->receipt2);
+
+            if ($pType === 'vendor') {
+                $ledger = VendorLedger::where('vendor_id', $partyId)->latest('id')->first();
+                if ($ledger) {
+                    $ledger->previous_balance = $ledger->closing_balance;
+                    $ledger->closing_balance += ($netAmount - $receiptAmount);
+                    $ledger->save();
+                } else {
+                    VendorLedger::create([
+                        'vendor_id' => $partyId,
+                        'admin_or_user_id' => auth()->id(),
+                        'date' => now(),
+                        'description' => 'Sale ID: ' . $sale->invoice_no,
+                        'previous_balance' => 0,
+                        'closing_balance' => ($netAmount - $receiptAmount),
+                        'opening_balance' => ($netAmount - $receiptAmount),
+                    ]);
+                }
+            } elseif ($pType === 'customer' || $pType === 'walkin' || $pType === 'walking') {
+                $ledger = CustomerLedger::where('customer_id', $partyId)->latest('id')->first();
+                if ($ledger) {
+                    $ledger->previous_balance = $ledger->closing_balance;
+                    $ledger->closing_balance += ($netAmount - $receiptAmount);
+                    $ledger->save();
+                } else {
+                    CustomerLedger::create([
+                        'customer_id' => $partyId,
+                        'admin_or_user_id' => auth()->id(),
+                        'previous_balance' => 0,
+                        'closing_balance' => ($netAmount - $receiptAmount),
+                        'opening_balance' => ($netAmount - $receiptAmount),
+                    ]);
+                }
+            }
+
+            // Account Updates for Receipts
+            $receiptAccounts = json_decode($sale->receipt_accounts, true);
+            $receiptAmounts = json_decode($sale->receipt_amounts_json, true);
+            if (is_array($receiptAccounts)) {
+                foreach ($receiptAccounts as $idx => $accId) {
+                    $accAmt = (float)($receiptAmounts[$idx] ?? 0);
+                    if ($accAmt > 0) {
+                        $acc = Account::find($accId);
+                        if ($acc) {
+                            $acc->opening_balance = ($acc->opening_balance ?? 0) + $accAmt;
+                            $acc->save();
+                        }
+                    }
+                }
             }
 
             $booking->items()->delete();

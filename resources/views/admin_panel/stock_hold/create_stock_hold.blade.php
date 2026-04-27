@@ -146,21 +146,21 @@
                     </div>
                     <div class="card-footer bg-white py-3">
                         <div class="d-flex justify-content-end gap-2">
+                            <a href="{{ route('create-stock-hold') }}" id="newBtn" class="btn btn-sm btn-info rounded-pill px-4 shadow-sm text-white" style="display:none;">
+                                <i class="fa fa-plus me-1"></i> New <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+M</kbd>
+                            </a>
+                            <button type="button" id="editBtn" class="btn btn-sm btn-warning rounded-pill px-4 shadow-sm" style="display:none;">
+                                <i class="fa fa-pencil me-1"></i> Edit <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+E</kbd>
+                            </button>
                             <button type="button" id="saveDraftBtn" class="btn btn-sm btn-warning rounded-pill px-4 shadow-sm">
                                 <i class="fa fa-floppy-o me-1"></i> Save Draft <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+S</kbd>
                             </button>
-                            <button type="button" id="previewPrintBtn" class="btn btn-sm btn-outline-dark rounded-pill px-4">
+                            <button type="button" id="previewPrintBtn" class="btn btn-sm btn-dark rounded-pill px-4 shadow-sm">
                                 <i class="fa fa-print me-1"></i> Print Preview <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+P</kbd>
                             </button>
                             <button type="button" id="postBtn" class="btn btn-sm btn-primary rounded-pill px-4 shadow-sm">
                                 <i class="fa fa-send me-1"></i> Save & Post <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+&#8629;</kbd>
                             </button>
-                            <button type="button" id="editBtn" class="btn btn-sm btn-warning rounded-pill px-4 shadow-sm" style="display:none;">
-                                <i class="fa fa-pencil me-1"></i> Edit <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+E</kbd>
-                            </button>
-                            <a href="{{ route('create-stock-hold') }}" id="newBtn" class="btn btn-sm btn-info rounded-pill px-4 shadow-sm text-white" style="display:none;">
-                                <i class="fa fa-plus me-1"></i> New <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+M</kbd>
-                            </a>
                             <a href="{{ route('stock-hold-list') }}" id="cancelBtn" class="btn btn-sm btn-danger rounded-pill px-4 shadow-sm text-white">
                                 <i class="fa fa-times me-1"></i> Cancel <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Esc</kbd>
                             </a>
@@ -312,10 +312,12 @@ $(document).ready(function() {
     });
 
     $(document).on('keydown', function(e) {
-        if(e.ctrlKey && e.key === 's') { e.preventDefault(); $('#saveDraftBtn:visible').click(); }
+        if(e.ctrlKey && (e.key === 's' || e.key === 'S')) { e.preventDefault(); $('#saveDraftBtn:visible').click(); }
         if(e.ctrlKey && e.key === 'Enter') { e.preventDefault(); $('#postBtn:visible').click(); }
-        if(e.ctrlKey && e.key === 'e') { e.preventDefault(); $('#editBtn:visible').click(); }
-        if(e.ctrlKey && e.key === 'm') { e.preventDefault(); window.location.href = "{{ route('create-stock-hold') }}"; }
+        if(e.ctrlKey && (e.key === 'p' || e.key === 'P')) { e.preventDefault(); $('#previewPrintBtn:visible').click(); }
+        if(e.ctrlKey && (e.key === 'e' || e.key === 'E')) { e.preventDefault(); $('#editBtn:visible').click(); }
+        if(e.ctrlKey && (e.key === 'm' || e.key === 'M')) { e.preventDefault(); window.location.href = "{{ route('create-stock-hold') }}"; }
+        if(e.ctrlKey && (e.key === 'l' || e.key === 'L')) { e.preventDefault(); window.location.href = "{{ route('stock-hold-list') }}"; }
         if(e.key === 'Escape') { window.location.href = "{{ route('stock-hold-list') }}"; }
     });
 });
