@@ -505,6 +505,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/sub_customers/inactive', [SubCustomerController::class, 'inactive'])->name('sub_customers.inactive');
     // Reports Routes
     Route::get('/reports/dashboard', [HomeController::class, 'dashboardReport'])->name('reports.dashboard');
+    Route::get('/reports/sales', [\App\Http\Controllers\SalesReportController::class, 'index'])->name('reports.sales.index');
+    Route::post('/reports/sales/preview', [\App\Http\Controllers\SalesReportController::class, 'preview'])->name('reports.sales.preview');
 
 
 });

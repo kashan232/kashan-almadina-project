@@ -365,6 +365,12 @@
                                           <span>Dashboard</span>
                                       </a>
                                   </li>
+                                  <li class="nav-item">
+                                      <a class="nav-link" href="{{ route('reports.sales.index') }}">
+                                          <i class="fa-solid fa-file-invoice mr-2"></i>
+                                          <span>Sales Report</span>
+                                      </a>
+                                  </li>
                               </ul>
                           </div>
                       </li>
