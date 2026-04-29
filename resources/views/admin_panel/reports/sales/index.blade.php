@@ -4,11 +4,17 @@
 <div class="main-content">
     <div class="container-fluid p-3">
         <div class="card border-0 shadow-sm">
-            <div class="card-header bg-white py-3 border-bottom-0">
-                <h4 class="mb-0 fw-bold text-center" style="color: #6a1b9a;">Sales Report Filters</h4>
+            <div class="card-header bg-white py-3 border-bottom-0 d-flex justify-content-between align-items-center">
+                <h4 class="mb-0 fw-bold" style="color: #6a1b9a;">Sales Report Filters</h4>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="globalSelectAll">
+                    <label class="form-check-label fw-bold text-danger" for="globalSelectAll" style="cursor:pointer;">
+                        SELECT ALL FILTERS
+                    </label>
+                </div>
             </div>
             <div class="card-body pt-0">
-                <form action="{{ route('reports.sales.preview') }}" method="POST" target="_blank" id="reportForm">
+                <form action="{{ route('reports.sales.preview') }}" method="POST" id="reportForm">
                     @csrf
                     
                     <div class="filter-grid-container">
@@ -53,6 +59,10 @@
                                         <input type="checkbox" class="select-all" data-target="warehouse-list"> Warehouse
                                     </div>
                                     <div class="filter-list" id="warehouse-list">
+                                        <div class="filter-item">
+                                            <input type="checkbox" name="warehouse[]" value="0">
+                                            <span>Shop</span>
+                                        </div>
                                         @foreach($warehouses as $w)
                                             <div class="filter-item">
                                                 <input type="checkbox" name="warehouse[]" value="{{ $w->id }}">
@@ -138,9 +148,9 @@
                                         <input type="checkbox" class="select-all" data-target="partytype-list"> Party Type
                                     </div>
                                     <div class="filter-list" id="partytype-list">
-                                        <div class="filter-item"><input type="checkbox" name="party_type[]" value="Customer"><span>Customer</span></div>
+                                        <div class="filter-item"><input type="checkbox" name="party_type[]" value="Main Customer"><span>Main Customer</span></div>
+                                        <div class="filter-item"><input type="checkbox" name="party_type[]" value="Walking Customer"><span>Walking Customer</span></div>
                                         <div class="filter-item"><input type="checkbox" name="party_type[]" value="Vendor"><span>Vendor</span></div>
-                                        <div class="filter-item"><input type="checkbox" name="party_type[]" value="Walkin"><span>Walkin</span></div>
                                     </div>
                                 </div>
                             </div>
@@ -170,16 +180,20 @@
                                     </div>
                                     <div class="mb-2">
                                         <label class="fw-bold small">Report Type</label>
-                                        <select name="report_type" class="form-select form-select-sm" required>
+                                        <select name="report_type" id="report_type_select" class="form-select form-select-sm" required>
                                             <option value="Invoice Wise">Invoice Wise</option>
                                             <option value="Item Wise">Item Wise</option>
                                             <option value="Party Wise">Party Wise</option>
+                                            <option value="Qty Wise">Qty Wise</option>
+                                            <option value="Claim Ratio">Claim Ratio</option>
+                                            <option value="Tax Summary">Tax Summary</option>
+                                            <option value="Sale vs List">Sale vs List</option>
                                         </select>
                                     </div>
                                     <div class="row g-2">
                                         <div class="col-6">
                                             <label class="fw-bold small">From</label>
-                                            <input type="date" name="from_date" class="form-control form-control-sm" value="{{ date('Y-m-d') }}">
+                                            <input type="date" name="from_date" class="form-control form-control-sm" value="{{ date('Y-m-01') }}">
                                         </div>
                                         <div class="col-6">
                                             <label class="fw-bold small">To</label>
@@ -195,11 +209,10 @@
                     <div class="mt-4 text-center pb-4">
                         <div class="d-flex justify-content-center gap-2 flex-wrap">
                             <button type="submit" class="btn btn-erp px-4">Preview</button>
-                            <button type="button" class="btn btn-erp px-4">Preview (Qty Wise)</button>
-                            <button type="button" class="btn btn-erp px-4">Preview (%)</button>
-                            <button type="button" class="btn btn-erp px-4">Summary</button>
-                            <button type="button" class="btn btn-erp px-4">Tax Detail</button>
-                            <button type="button" class="btn btn-erp px-4">Tax Summary</button>
+                            <button type="submit" onclick="$('#report_type_select').val('Qty Wise')" class="btn btn-erp px-4">Preview (Qty Wise)</button>
+                            <button type="submit" onclick="$('#report_type_select').val('Claim Ratio')" class="btn btn-erp px-4">Preview (Claim Ratio)</button>
+                            <button type="submit" onclick="$('#report_type_select').val('Sale vs List')" class="btn btn-erp px-4">Sale vs List</button>
+                            <button type="submit" onclick="$('#report_type_select').val('Tax Summary')" class="btn btn-erp px-4">Tax Summary</button>
                             <button type="button" class="btn btn-danger btn-sm px-4" onclick="location.reload()">Reset</button>
                         </div>
                     </div>
@@ -333,6 +346,21 @@
                     cb.prop('checked', isChecked);
                     $(this).toggleClass('selected', isChecked);
                 }
+            });
+        });
+
+        // Global Select All
+        $('#globalSelectAll').on('change', function() {
+            const isChecked = $(this).prop('checked');
+            
+            // 1. Check/Uncheck all category-specific select-alls
+            $('.select-all').prop('checked', isChecked);
+            
+            // 2. Check/Uncheck all actual filter items and toggle classes
+            $('.filter-item').each(function() {
+                const cb = $(this).find('input[type="checkbox"]');
+                cb.prop('checked', isChecked);
+                $(this).toggleClass('selected', isChecked);
             });
         });
 

@@ -2,109 +2,269 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Professional Party Report - Al-Madina Battery</title>
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
+    <title>Sales Note Report (Party Wise)</title>
     <style>
-        @page { size: A4; margin: 0; }
-        body { font-family: 'Montserrat', sans-serif; font-size: 11px; margin: 0; padding: 15mm; color: #333; background: #fff; }
-        
-        .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 4px solid #1a237e; padding-bottom: 10px; margin-bottom: 20px; }
-        .header h1 { margin: 0; font-size: 28px; color: #1a237e; }
-        .header .meta { text-align: right; color: #666; font-size: 10px; }
+        @page {
+            size: A4;
+            margin: 5mm;
+        }
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 11px;
+            color: #000;
+            margin: 0;
+            padding: 10mm;
+            background-color: #fff;
+        }
+        .no-print {
+            padding: 10px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #ddd;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .report-header {
+            text-align: center;
+            position: relative;
+            margin-bottom: 15px;
+        }
+        .report-title {
+            color: #c2185b;
+            font-size: 22px;
+            font-weight: bold;
+            text-decoration: underline;
+            margin: 0;
+            display: inline-block;
+        }
+        .date-range {
+            position: absolute;
+            right: 0;
+            top: 5px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .date-range span {
+            text-decoration: underline;
+        }
 
-        .report-title { background: #e91e63; color: #fff; display: inline-block; padding: 5px 20px; border-radius: 20px; font-weight: 700; margin-bottom: 20px; text-transform: uppercase; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            border: 1px solid #000;
+            margin-bottom: 20px;
+        }
+        th {
+            background-color: #cfd8dc;
+            border: 1px solid #000;
+            padding: 6px 2px;
+            font-size: 11px;
+            font-weight: bold;
+            text-align: center;
+        }
+        td {
+            border: 1px solid #999;
+            padding: 4px 6px;
+            vertical-align: middle;
+        }
 
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        th { background: #1a237e; color: #fff; padding: 10px 5px; font-size: 10px; text-transform: uppercase; border: none; text-align: center; }
-        td { padding: 8px 5px; border-bottom: 1px solid #eee; }
-        
-        .party-row { background: #f0f2f5; font-weight: 700; color: #1a237e; font-size: 13px; }
-        .party-row td { border-bottom: 2px solid #1a237e; }
-        
-        .subtotal-row { background: #fff9c4; font-weight: 700; font-size: 12px; }
-        .grand-total { background: #1a237e; color: #fff; font-weight: 700; font-size: 14px; }
-        .grand-total td { padding: 15px 10px; }
+        /* Party Heading Row */
+        .party-heading-row td {
+            background-color: #fff;
+            border: none;
+            padding: 15px 6px 5px 6px;
+            font-weight: bold;
+            font-size: 12px;
+        }
+        .party-name {
+            color: #0d47a1;
+            text-decoration: underline;
+        }
 
-        .text-left { text-align: left !important; }
-        .text-right { text-align: right !important; }
-        .text-center { text-align: center !important; }
-        .fw-bold { font-weight: 700; }
-        .text-pink { color: #e91e63; }
+        /* Data Row */
+        .data-row td {
+            border: 1px solid #999;
+        }
+        .bold-val {
+            font-weight: bold;
+        }
+
+        /* Total Row */
+        .total-row td {
+            font-weight: bold;
+            border: 1px solid #000;
+            padding: 5px 6px;
+        }
+        .qty-box {
+            background-color: #c8e6c9;
+            text-align: center;
+        }
+        .val-box {
+            background-color: #fff;
+            text-align: right;
+        }
+        .sales-amt-box {
+            background-color: #cfd8dc;
+            text-align: right;
+        }
+
+        /* Grand Total Row */
+        .grand-total-row td {
+            font-weight: bold;
+            font-size: 12px;
+            padding: 10px 6px;
+            border-top: 2px solid #000;
+        }
+
+        .text-right { text-align: right; }
+        .text-center { text-align: center; }
+        .text-left { text-align: left; }
+
+        .footer {
+            margin-top: 40px;
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+            color: #555;
+        }
+
+        @media print {
+            .no-print { display: none !important; }
+            body { padding: 0; }
+            tr { page-break-inside: avoid; }
+        }
     </style>
 </head>
-<body onload="window.print()">
+<body>
 
-    <div class="header">
-        <div>
-            <h1>AL-MADINA</h1>
-            <p style="margin:0; font-weight:600; color:#1a237e;">BATTERY SOLUTIONS & SERVICES</p>
-        </div>
-        <div class="meta">
-            <strong>REPORT:</strong> PARTY WISE SALES NOTE<br>
-            <strong>DATE:</strong> {{ $from_date ?? 'ALL' }} - {{ $to_date ?? 'ALL' }}<br>
-            <strong>PRINTED:</strong> {{ now()->format('d-M-Y H:i') }}
-        </div>
+    <div class="no-print">
+        <button onclick="window.print()" style="padding: 10px 25px; background: #c2185b; color: #fff; border: none; cursor: pointer; font-weight: bold; border-radius: 4px;">Print Report</button>
     </div>
 
-    <div class="report-title">Sales Note Report (Party Wise)</div>
+    <div class="report-header">
+        <h1 class="report-title">Sales Note Report (Party Wise)</h1>
+        <div class="date-range">
+            From: <span>{{ \Carbon\Carbon::parse($from_date)->format('d-m-y') }}</span> 
+            To: <span>{{ \Carbon\Carbon::parse($to_date)->format('d-m-y') }}</span>
+        </div>
+    </div>
 
     <table>
         <thead>
             <tr>
-                <th width="10%">Inv No.</th>
+                <th width="8%">Invoice No.</th>
                 <th width="10%">Date</th>
-                <th width="35%" class="text-left">Item Description</th>
-                <th width="10%">Brand</th>
-                <th width="7%">Qty</th>
-                <th width="13%" class="text-right">Price</th>
-                <th width="15%" class="text-right">Net Amount</th>
+                <th width="20%" class="text-left">Item Description</th>
+                <th width="8%">Brand</th>
+                <th width="5%">Qty</th>
+                <th width="8%">Retail Price</th>
+                <th width="10%">Retail Amount</th>
+                <th width="8%">Sales Price</th>
+                <th width="10%">Sales Amount</th>
+                <th width="5%">Add. Disc</th>
+                <th width="8%">Invoice Amount</th>
             </tr>
         </thead>
         <tbody>
-            @php $g_qty = 0; $g_amount = 0; @endphp
+            @php 
+                $grand_qty = 0; 
+                $grand_retail_amt = 0; 
+                $grand_sales_amt = 0; 
+                $grand_invoice_amt = 0; 
+            @endphp
+
+            @if($grouped->isEmpty())
+                <tr>
+                    <td colspan="11" style="text-align: center; padding: 50px;">No Data Found</td>
+                </tr>
+            @endif
 
             @foreach($grouped as $customerId => $items)
                 @php
                     $customer = $items->first()->sale->customer;
-                    $s_qty = 0; $s_amount = 0;
+                    $party_qty = 0;
+                    $party_retail_amt = 0;
+                    $party_sales_amt = 0;
+                    $party_invoice_amt = 0;
                 @endphp
-                <tr class="party-row">
-                    <td colspan="4" class="text-left">PARTY: {{ $customer ? $customer->customer_name : 'CASH CUSTOMER' }}</td>
-                    <td colspan="3" class="text-right">MOBILE: {{ $customer ? $customer->mobile : '-' }}</td>
+                
+                <!-- Party Heading -->
+                <tr class="party-heading-row">
+                    <td colspan="6" class="text-left">
+                        <span class="party-name">{{ $customer ? strtoupper($customer->customer_name) : 'CASH CUSTOMER' }}</span>
+                    </td>
+                    <td colspan="5" class="text-right">
+                        <span class="party-name">{{ $customer ? $customer->cnic : '' }}</span>
+                    </td>
                 </tr>
+
                 @foreach($items as $item)
                     @php
                         $qty = $item->sales_qty;
-                        $amount = $item->amount;
-                        $s_qty += $qty; $s_amount += $amount;
+                        $retail_p = $item->retail_price ?? 0;
+                        $retail_a = $retail_p * $qty;
+                        $sales_p = $item->sales_price;
+                        $sales_a = $item->amount;
+                        $add_disc = $item->discount_amount ?? 0;
+                        $invoice_a = $sales_a - $add_disc;
+
+                        $party_qty += $qty;
+                        $party_retail_amt += $retail_a;
+                        $party_sales_amt += $sales_a;
+                        $party_invoice_amt += $invoice_a;
                     @endphp
-                    <tr>
+                    <tr class="data-row">
                         <td class="text-center">{{ $item->sale->invoice_no }}</td>
                         <td class="text-center">{{ \Carbon\Carbon::parse($item->sale->created_at)->format('d-m-y') }}</td>
-                        <td class="text-left fw-bold">{{ $item->product ? $item->product->name : '' }}</td>
+                        <td class="text-left">{{ $item->product ? $item->product->name : 'N/A' }}</td>
                         <td class="text-center">{{ $item->product && $item->product->brandRelation ? $item->product->brandRelation->name : '-' }}</td>
-                        <td class="text-center">{{ $qty }}</td>
-                        <td class="text-right">{{ number_format($item->sales_price, 0) }}</td>
-                        <td class="text-right fw-bold">{{ number_format($amount, 0) }}</td>
+                        <td class="text-center">{{ number_format($qty) }}</td>
+                        <td class="text-right">{{ number_format($retail_p, 0) }}</td>
+                        <td class="text-right bold-val">{{ number_format($retail_a, 0) }}</td>
+                        <td class="text-right">{{ number_format($sales_p, 0) }}</td>
+                        <td class="text-right bold-val">{{ number_format($sales_a, 0) }}</td>
+                        <td class="text-right">{{ $add_disc > 0 ? number_format($add_disc, 0) : '' }}</td>
+                        <td class="text-right bold-val">{{ number_format($invoice_a, 0) }}</td>
                     </tr>
                 @endforeach
-                <tr class="subtotal-row">
-                    <td colspan="4" class="text-right">PARTY TOTAL:</td>
-                    <td class="text-center">{{ number_format($s_qty) }}</td>
-                    <td></td>
-                    <td class="text-right text-pink">Rs. {{ number_format($s_amount, 0) }}</td>
+
+                <!-- Party Total Row -->
+                <tr class="total-row">
+                    <td colspan="4" class="text-right">Total:</td>
+                    <td class="qty-box">{{ number_format($party_qty) }}</td>
+                    <td style="border:none; background:none;"></td>
+                    <td class="val-box">{{ number_format($party_retail_amt, 0) }}</td>
+                    <td style="border:none; background:none;"></td>
+                    <td class="sales-amt-box">{{ number_format($party_sales_amt, 0) }}</td>
+                    <td style="border:none; background:none;"></td>
+                    <td class="val-box">{{ number_format($party_invoice_amt, 0) }}</td>
                 </tr>
-                @php $g_qty += $s_qty; $g_amount += $s_amount; @endphp
+
+                @php
+                    $grand_qty += $party_qty;
+                    $grand_retail_amt += $party_retail_amt;
+                    $grand_sales_amt += $party_sales_amt;
+                    $grand_invoice_amt += $party_invoice_amt;
+                @endphp
             @endforeach
 
-            <tr class="grand-total">
-                <td colspan="4" class="text-right">GRAND TOTAL SUMMARY:</td>
-                <td class="text-center">{{ number_format($g_qty) }}</td>
-                <td></td>
-                <td class="text-right">Rs. {{ number_format($g_amount, 0) }}</td>
+            <!-- Grand Total -->
+            <tr class="grand-total-row">
+                <td colspan="4" class="text-right">Grand Total:</td>
+                <td class="qty-box" style="background-color: #cfd8dc;">{{ number_format($grand_qty) }}</td>
+                <td style="border:none; background:none;"></td>
+                <td class="val-box" style="background-color: #bbdefb;">{{ number_format($grand_retail_amt, 0) }}</td>
+                <td style="border:none; background:none;"></td>
+                <td class="sales-amt-box" style="background-color: #bbdefb;">{{ number_format($grand_sales_amt, 0) }}</td>
+                <td style="border:none; background:none;"></td>
+                <td class="val-box" style="background-color: #bbdefb;">{{ number_format($grand_invoice_amt, 0) }}</td>
             </tr>
         </tbody>
     </table>
+
+    <div class="footer">
+        <div>{{ now()->format('l, F d, Y') }}</div>
+        <div>Page 1 of 1</div>
+    </div>
 
 </body>
 </html>

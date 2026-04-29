@@ -52,14 +52,14 @@ class SalesReportController extends Controller
 
         // Build Query
         $query = SaleItem::with(['sale.customer', 'product.brandRelation', 'warehouse'])
-            ->whereHas('sale', function($q) use ($from_date, $to_date, $invoice_no, $parties, $zones, $party_types) {
-                if ($from_date) {
+            ->whereHas('sale', function($q) use ($from_date, $to_date, $invoice_no, $parties, $zones, $party_types, $sales_officers) {
+                if (!empty($from_date)) {
                     $q->whereDate('created_at', '>=', $from_date);
                 }
-                if ($to_date) {
+                if (!empty($to_date)) {
                     $q->whereDate('created_at', '<=', $to_date);
                 }
-                if ($invoice_no) {
+                if (!empty($invoice_no)) {
                     $q->where('invoice_no', 'like', "%$invoice_no%");
                 }
                 if (!empty($parties)) {
@@ -106,9 +106,109 @@ class SalesReportController extends Controller
             return $this->previewItemWise($saleItems, $from_date, $to_date);
         } elseif ($report_type == 'Invoice Wise') {
             return $this->previewInvoiceWise($saleItems, $from_date, $to_date);
+        } elseif ($report_type == 'Claim Ratio') {
+            return $this->previewClaimRatio($from_date, $to_date);
+        } elseif ($report_type == 'Tax Summary') {
+            return $this->previewTaxSummary($from_date, $to_date);
+        } elseif ($report_type == 'Qty Wise') {
+            return $this->previewQtyWise($saleItems, $from_date, $to_date);
+        } elseif ($report_type == 'Sale vs List') {
+            return $this->previewSaleVsList($from_date, $to_date);
         } else {
             return back()->with('error', 'Invalid Report Type Selected');
         }
+    }
+
+    private function previewSaleVsList($from_date, $to_date)
+    {
+        $saleItems = SaleItem::with(['sale.customer', 'product.brandRelation'])
+            ->whereHas('sale', function($q) use ($from_date, $to_date) {
+                if ($from_date) $q->whereDate('created_at', '>=', $from_date);
+                if ($to_date) $q->whereDate('created_at', '<=', $to_date);
+            })->get();
+
+        // Group by Item (Product)
+        $grouped = $saleItems->groupBy('product_id');
+
+        return view('admin_panel.reports.sales.preview_sale_vs_list', compact('grouped', 'from_date', 'to_date'));
+    }
+
+    private function previewTaxSummary($from_date, $to_date)
+    {
+        $saleItems = SaleItem::with(['sale.customer', 'product.latestPrice'])
+            ->whereHas('sale', function($q) use ($from_date, $to_date) {
+                if ($from_date) $q->whereDate('created_at', '>=', $from_date);
+                if ($to_date) $q->whereDate('created_at', '<=', $to_date);
+            })->get();
+
+        // Group by Filer Type (Filer, Non Filer, Exempt)
+        $grouped = $saleItems->groupBy(function($item) {
+            $type = $item->sale->customer->filer_type ?? 'Non Filer';
+            return ucwords(strtolower($type));
+        })->map(function($items) {
+            // Group by Customer ID
+            return $items->groupBy(function($item) {
+                return $item->sale->customer_id;
+            });
+        });
+
+        return view('admin_panel.reports.sales.preview_tax_summary', compact('grouped', 'from_date', 'to_date'));
+    }
+
+    private function previewClaimRatio($from_date, $to_date)
+    {
+        // 1. Fetch Sales Data grouped by Month
+        $saleItems = SaleItem::with('sale')
+            ->whereHas('sale', function($q) use ($from_date, $to_date) {
+                if ($from_date) $q->whereDate('created_at', '>=', $from_date);
+                if ($to_date) $q->whereDate('created_at', '<=', $to_date);
+            })->get();
+
+        // 2. Fetch Claim Data grouped by Month
+        $claims = \App\Models\CustomerClaim::whereDate('created_at', '>=', $from_date)
+            ->whereDate('created_at', '<=', $to_date)
+            ->get();
+
+        // 3. Process Months
+        $data = [];
+        $months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+        
+        foreach($months as $monthName) {
+            $monthSales = $saleItems->filter(function($si) use ($monthName) {
+                return Carbon::parse($si->sale->created_at)->format('F') == $monthName;
+            });
+            
+            $monthClaims = $claims->filter(function($c) use ($monthName) {
+                return Carbon::parse($c->created_at)->format('F') == $monthName;
+            });
+            
+            if ($monthSales->isNotEmpty() || $monthClaims->isNotEmpty()) {
+                $qty = $monthSales->sum('sales_qty');
+                $retail_amt = $monthSales->sum(function($si){ return ($si->retail_price ?? 0) * $si->sales_qty; });
+                $sales_amt = $monthSales->sum('amount');
+                $claim_qty = $monthClaims->count(); // Each record is 1 claim item
+                
+                $data[$monthName] = [
+                    'qty' => $qty,
+                    'retail_amount' => $retail_amt,
+                    'sales_amount' => $sales_amt,
+                    'claim_qty' => $claim_qty,
+                    'claim_percentage' => $qty > 0 ? ($claim_qty / $qty) * 100 : 0
+                ];
+            }
+        }
+
+        return view('admin_panel.reports.sales.preview_claim_ratio', compact('data', 'from_date', 'to_date'));
+    }
+
+    private function previewQtyWise($saleItems, $from_date, $to_date)
+    {
+        // Group by Brand (Product Brand Relation)
+        $grouped = $saleItems->groupBy(function($item) {
+            return $item->product && $item->product->brandRelation ? $item->product->brandRelation->name : 'Other';
+        });
+
+        return view('admin_panel.reports.sales.preview_qty_wise', compact('grouped', 'from_date', 'to_date'));
     }
 
     private function previewPartyWise($saleItems, $from_date, $to_date)
