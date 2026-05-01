@@ -5,7 +5,7 @@
     <title>Sale vs List Comparison Report</title>
     <style>
         @page {
-            size: A4;
+            size: A4 portrait;
             margin: 5mm;
         }
         body {

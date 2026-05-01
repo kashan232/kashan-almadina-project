@@ -139,16 +139,17 @@
                                     <div class="column-picker-menu shadow" id="columnPickerMenu">
                                         <div class="p-2 border-bottom fw-bold small text-muted">Show/Hide Columns</div>
                                         <label class="column-picker-item"><input type="checkbox" data-column="1" checked> ID</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="2" checked> Voucher No</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="3" checked> Receipt Date</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="4" checked> Entry Date</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="5" checked> Type</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="6" checked> Party</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="7" checked> Reference No</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="8" checked> Remarks</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="9" checked> Total Amount</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="10" checked> Created At</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="11" checked> Status</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="2" checked> Type</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="3" checked> Inv#</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="4" checked> Receipt Date</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="5" checked> Entry Date</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="6" checked> Type</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="7" checked> Party</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="8" checked> Reference No</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="9" checked> Remarks</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="10" checked> Total Amount</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="11" checked> Created At</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="12" checked> Status</label>
                                     </div>
                                 </div>
 
@@ -164,7 +165,8 @@
                                     <thead>
                                         <tr>
                                             <th>ID</th>
-                                            <th>Voucher No</th>
+                                            <th>Type</th>
+                                            <th>Inv#</th>
                                             <th>Receipt Date</th>
                                             <th>Entry Date</th>
                                             <th>Type</th>
@@ -185,7 +187,8 @@
                                         @endphp
                                         <tr>
                                             <td>{{ $item->id }}</td>
-                                            <td class="fw-bold">{{ $item->pvid }}</td>
+                                            <td>PV</td>
+                                            <td class="fw-bold">{{ (int) preg_replace('/[^0-9]/', '', substr($item->pvid, strlen('PVID-'))) }}</td>
                                             <td>{{ $item->receipt_date ? \Carbon\Carbon::parse($item->receipt_date)->format('d-M-Y') : '-' }}</td>
                                             <td>{{ $item->entry_date ? \Carbon\Carbon::parse($item->entry_date)->format('d-M-Y') : '-' }}</td>
                                             <td class="text-center">

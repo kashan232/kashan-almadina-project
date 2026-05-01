@@ -138,7 +138,7 @@
                 <div class="col-12">
                     <div class="card border-0">
                         <div class="card-header d-flex justify-content-between align-items-center py-3">
-                            <h4 class="card-title mb-0 fw-bold text-dark">Stock Wastage Management</h4>
+                            <h4 class="card-title mb-0 fw-bold text-dark">Wastage of Goods Management</h4>
                             <div class="d-flex gap-2">
                                 <!-- Column Picker Button -->
                                 <div class="column-picker-dropdown">
@@ -147,16 +147,17 @@
                                     </button>
                                     <div class="column-picker-menu shadow" id="columnPickerMenu">
                                         <div class="p-2 border-bottom fw-bold small text-muted">Show/Hide Columns</div>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="1" checked> GWN ID</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="2" checked> Date</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="3" checked> Warehouse</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="4" checked> Expense Head</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="5" checked> Expense A/C</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="6" checked> Items</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="7" checked> Remarks</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="8" checked> Amount</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="9" checked> Status</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="10" checked> Action</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="1" checked> Type</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="2" checked> Inv#</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="3" checked> Date</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="4" checked> Warehouse</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="5" checked> Expense Head</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="6" checked> Expense A/C</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="7" checked> Items</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="8" checked> Remarks</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="9" checked> Amount</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="10" checked> Status</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="11" checked> Action</label>
                                     </div>
                                 </div>
 
@@ -171,7 +172,8 @@
                                 <table id="wastageTable" class="table table-striped table-bordered display w-100">
                                     <thead>
                                         <tr>
-                                            <th>GWN ID</th>
+                                            <th>Type</th>
+                                            <th>Inv#</th>
                                             <th>Date</th>
                                             <th>Warehouse</th>
                                             <th>Expense Head</th>
@@ -186,6 +188,7 @@
                                     <tbody>
                                         @foreach($wastages as $wastage)
                                         <tr>
+                                            <td>WT</td>
                                             <td class="fw-bold">{{ $wastage->gwn_id }}</td>
                                             <td>{{ \Carbon\Carbon::parse($wastage->date)->format('d-M-Y') }}</td>
                                             <td>{{ $wastage->warehouse->warehouse_name ?? '🏠 Shop Stock' }}</td>

@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Sales Report only Retail Value</title>
+    <title>Purchase Note Report (Item Wise)</title>
     <style>
         @page {
             size: A4 portrait;
@@ -29,17 +29,19 @@
             margin-bottom: 15px;
         }
         .report-title {
-            color: #c2185b;
-            font-size: 20px;
+            color: #0d47a1;
+            font-size: 22px;
             font-weight: bold;
+            text-decoration: underline;
             margin: 0;
             display: inline-block;
         }
         .date-range {
-            text-align: center;
-            font-size: 11px;
+            position: absolute;
+            right: 0;
+            top: 5px;
+            font-size: 12px;
             font-weight: bold;
-            margin-top: 5px;
         }
         .date-range span {
             text-decoration: underline;
@@ -65,22 +67,20 @@
             vertical-align: middle;
         }
 
-        /* Sub-Category Heading Row */
-        .brand-heading-row td {
+        .item-heading-row td {
             background-color: #fff;
             border: none;
-            padding: 10px 0 5px 0;
+            padding: 10px 6px 5px 6px;
             font-weight: bold;
-            font-size: 13px;
+            font-size: 12px;
             color: #0d47a1;
         }
 
-        /* Data Row */
-        .item-row td {
+        .data-row td {
             border: 1px solid #999;
         }
+        .bold-val { font-weight: bold; }
 
-        /* Total Row */
         .total-row td {
             font-weight: bold;
             border: 1px solid #000;
@@ -91,11 +91,10 @@
             text-align: center;
         }
         .val-box {
-            background-color: #cfd8dc;
+            background-color: #fff;
             text-align: right;
         }
 
-        /* Grand Total Row */
         .grand-total-row td {
             font-weight: bold;
             font-size: 12px;
@@ -125,11 +124,11 @@
 <body>
 
     <div class="no-print">
-        <button onclick="window.print()" style="padding: 10px 25px; background: #c2185b; color: #fff; border: none; cursor: pointer; font-weight: bold; border-radius: 4px;">Print Report</button>
+        <button onclick="window.print()" style="padding: 10px 25px; background: #0d47a1; color: #fff; border: none; cursor: pointer; font-weight: bold; border-radius: 4px;">Print Report</button>
     </div>
 
     <div class="report-header">
-        <h1 class="report-title">Sales Report only Retail Value</h1>
+        <h1 class="report-title">Purchase Note Report (Item Wise)</h1>
         <div class="date-range">
             From: <span>{{ \Carbon\Carbon::parse($from_date)->format('d-m-y') }}</span> 
             To: <span>{{ \Carbon\Carbon::parse($to_date)->format('d-m-y') }}</span>
@@ -139,76 +138,84 @@
     <table>
         <thead>
             <tr>
-                <th width="15%">Sub-Category</th>
-                <th width="45%" class="text-left">Item Name</th>
+                <th width="15%">PUR No.</th>
+                <th width="15%">Date</th>
+                <th width="30%" class="text-left">Vendor Name</th>
                 <th width="10%">Qty</th>
-                <th width="15%">Retail Price</th>
-                <th width="15%">Retail Value</th>
+                <th width="15%">Price</th>
+                <th width="15%">Amount</th>
             </tr>
         </thead>
         <tbody>
-            @php $g_qty = 0; $g_retail_val = 0; @endphp
+            @php 
+                $grand_qty = 0; 
+                $grand_amount = 0; 
+            @endphp
 
             @if($grouped->isEmpty())
                 <tr>
-                    <td colspan="5" style="text-align: center; padding: 50px;">No Data Found</td>
+                    <td colspan="6" style="text-align: center; padding: 50px;">No Data Found</td>
                 </tr>
             @endif
 
-            @foreach($grouped as $brandName => $items)
+            @foreach($grouped as $productId => $items)
                 @php
-                    $b_qty = 0; $b_retail_val = 0;
+                    $product = $items->first()->product;
+                    $item_qty = 0;
+                    $item_amount = 0;
                 @endphp
                 
-                <!-- Sub-Category Heading -->
-                <tr class="brand-heading-row">
-                    <td colspan="5" class="text-left" style="border-top: 2px solid #000; padding-top: 15px;">{{ strtoupper($brandName) }}</td>
+                <tr class="item-heading-row">
+                    <td colspan="6" class="text-left" style="border-top: 2px solid #000;">
+                        ITEM: {{ $product ? strtoupper($product->name) : 'N/A' }} 
+                        <span class="ms-3" style="color: #666;">( {{ $product && $product->sub_category_relation ? strtoupper($product->sub_category_relation->name) : '-' }} )</span>
+                    </td>
                 </tr>
 
                 @foreach($items as $item)
                     @php
-                        $qty = $item->sales_qty;
-                        $price = $item->retail_price ?? 0;
-                        $value = $qty * $price;
+                        $qty = $item->qty;
+                        $amount = $item->line_total;
 
-                        $b_qty += $qty;
-                        $b_retail_val += $value;
+                        $item_qty += $qty;
+                        $item_amount += $amount;
                     @endphp
-                    <tr class="item-row">
-                        <td class="text-left">{{ $item->product && $item->product->sub_category_relation ? $item->product->sub_category_relation->name : 'N/A' }}</td>
-                        <td class="text-left">{{ $item->product ? $item->product->name : 'N/A' }}</td>
+                    <tr class="data-row">
+                        <td class="text-center">{{ $item->purchase->invoice_no }}</td>
+                        <td class="text-center">{{ \Carbon\Carbon::parse($item->purchase->created_at)->format('d-m-y') }}</td>
+                        <td class="text-left">{{ $item->purchase->vendor ? strtoupper($item->purchase->vendor->name) : 'N/A' }}</td>
                         <td class="text-center">{{ number_format($qty) }}</td>
-                        <td class="text-right">{{ number_format($price, 0) }}</td>
-                        <td class="text-right"><b>{{ number_format($value, 0) }}</b></td>
+                        <td class="text-right">{{ number_format($item->price, 2) }}</td>
+                        <td class="text-right bold-val">{{ number_format($amount, 2) }}</td>
                     </tr>
                 @endforeach
 
-                <!-- Brand Total Row -->
                 <tr class="total-row">
-                    <td colspan="2" class="text-right">{{ $brandName }} Total:</td>
-                    <td class="qty-box">{{ number_format($b_qty) }}</td>
+                    <td colspan="3" class="text-right">Total:</td>
+                    <td class="qty-box">{{ number_format($item_qty) }}</td>
                     <td style="border:none; background:none;"></td>
-                    <td class="val-box">{{ number_format($b_retail_val, 0) }}</td>
+                    <td class="val-box">{{ number_format($item_amount, 2) }}</td>
                 </tr>
-                <!-- Separation Gap -->
-                <tr style="height: 20px;"><td colspan="5" style="border:none;"></td></tr>
+                <tr style="height: 25px;"><td colspan="6" style="border:none;"></td></tr>
 
-                @php $g_qty += $b_qty; $g_retail_val += $b_retail_val; @endphp
+                @php
+                    $grand_qty += $item_qty;
+                    $grand_amount += $item_amount;
+                @endphp
             @endforeach
 
-            <!-- Grand Total -->
             <tr class="grand-total-row">
-                <td colspan="2" class="text-right">Grand Total:</td>
-                <td class="qty-box" style="background-color: #cfd8dc;">{{ number_format($g_qty) }}</td>
+                <td colspan="3" class="text-right">Grand Total:</td>
+                <td class="qty-box" style="background-color: #cfd8dc;">{{ number_format($grand_qty) }}</td>
                 <td style="border:none; background:none;"></td>
-                <td class="val-box" style="background-color: #bbdefb;">{{ number_format($g_retail_val, 0) }}</td>
+                <td class="val-box" style="background-color: #bbdefb;">{{ number_format($grand_amount, 2) }}</td>
             </tr>
         </tbody>
     </table>
 
     <div class="footer">
         <div>{{ now()->format('l, F d, Y') }}</div>
-        <div>Page 1 of 1</div>
+        <div>Generated by ERP System</div>
     </div>
 
 </body>

@@ -139,15 +139,16 @@
                                     <div class="column-picker-menu shadow" id="columnPickerMenu">
                                         <div class="p-2 border-bottom fw-bold small text-muted">Show/Hide Columns</div>
                                         <label class="column-picker-item"><input type="checkbox" data-column="1" checked> ID</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="2" checked> Return No</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="3" checked> Original Sale</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="4" checked> Supplier</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="5" checked> Items</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="6" checked> Qty</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="7" checked> Date</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="8" checked> Net Amount</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="9" checked> Status</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="10" checked> Action</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="2" checked> Type</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="3" checked> Inv#</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="4" checked> Original Sale</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="5" checked> Supplier</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="6" checked> Items</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="7" checked> Qty</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="8" checked> Date</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="9" checked> Net Amount</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="10" checked> Status</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="11" checked> Action</label>
                                     </div>
                                 </div>
                                 <a class="btn btn-danger btn-sm px-4 rounded-pill" href="{{ route('sale.return.add') }}">
@@ -162,7 +163,8 @@
                                     <thead>
                                         <tr>
                                             <th>ID</th>
-                                            <th>Return No</th>
+                                            <th>Type</th>
+                                            <th>Inv#</th>
                                             <th>Original Sale</th>
                                             <th>Supplier</th>
                                             <th>Items</th>
@@ -177,7 +179,8 @@
                                         @foreach ($SaleReturns as $ret)
                                         <tr>
                                             <td>{{ $ret->id }}</td>
-                                            <td class="fw-bold">{{ $ret->invoice_no }}</td>
+                                            <td>SRJ</td>
+                                            <td class="fw-bold">{{ (int) preg_replace('/[^0-9]/', '', substr($ret->invoice_no, strlen('SR-'))) }}</td>
                                             <td>{{ $ret->sale->invoice_no ?? 'N/A' }}</td>
                                             <td>{{ $ret->party_name }}</td>
                                             <td class="small">

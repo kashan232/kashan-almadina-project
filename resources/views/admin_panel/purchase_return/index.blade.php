@@ -92,7 +92,8 @@
                                     <thead>
                                         <tr>
                                             <th>ID</th>
-                                            <th>Return No</th>
+                                            <th>Type</th>
+                                            <th>Inv#</th>
                                             <th>Original Purchase</th>
                                             <th>Supplier</th>
                                             <th>Items</th>
@@ -107,7 +108,8 @@
                                         @foreach ($PurchaseReturns as $ret)
                                         <tr>
                                             <td>{{ $ret->id }}</td>
-                                            <td class="fw-bold">{{ $ret->invoice_no }}</td>
+                                            <td>PRJ</td>
+                                            <td class="fw-bold">{{ (int) preg_replace('/[^0-9]/', '', substr($ret->invoice_no, strlen('PUR-RET-'))) }}</td>
                                             <td>{{ $ret->purchase->invoice_no ?? 'N/A' }}</td>
                                             <td>{{ $ret->purchasable->name ?? ($ret->purchasable->customer_name ?? 'N/A') }}</td>
                                             <td class="small">

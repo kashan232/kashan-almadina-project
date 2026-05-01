@@ -131,27 +131,28 @@
                                     </button>
                                     <div class="column-picker-menu shadow" id="columnPickerMenu">
                                         <div class="p-2 border-bottom fw-bold small text-muted">Show/Hide Columns</div>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="1" checked> Claim No</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="2" checked> Date</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="3" checked> Type</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="4" checked> Party Type</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="5" checked> Party Name</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="6" checked> Item</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="7" checked> MFG Date</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="8" checked> Sales Price</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="9" checked> Serial / Card</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="10" checked> Bill Date</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="11" checked> Deliver From</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="12" checked> Claim WH</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="13" checked> Income</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="14" checked> Fault Found</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="15" checked> Remarks</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="16" checked> Replace Item</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="17" checked> Replace Price</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="18" checked> Replace From</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="19" checked> Status</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="20" checked> Created By</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="21" checked> Created At</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="1" checked> Type</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="2" checked> Inv#</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="3" checked> Date</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="4" checked> Type</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="5" checked> Party Type</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="6" checked> Party Name</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="7" checked> Item</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="8" checked> MFG Date</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="9" checked> Sales Price</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="10" checked> Serial / Card</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="11" checked> Bill Date</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="12" checked> Deliver From</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="13" checked> Claim WH</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="14" checked> Income</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="15" checked> Fault Found</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="16" checked> Remarks</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="17" checked> Replace Item</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="18" checked> Replace Price</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="19" checked> Replace From</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="20" checked> Status</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="21" checked> Created By</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="22" checked> Created At</label>
                                     </div>
                                 </div>
                                 <a class="btn btn-primary btn-sm px-4 rounded-pill shadow-sm" href="{{ route('customer-claims.create') }}">
@@ -165,7 +166,8 @@
                                 <table id="claimsTable" class="table table-sm table-striped table-bordered display nowrap w-100">
                                     <thead class="bg-light">
                                         <tr>
-                                            <th>Claim No</th>
+                                            <th>Type</th>
+                                            <th>Inv#</th>
                                             <th>Date</th>
                                             <th>Type</th>
                                             <th>Party Type</th>
@@ -192,7 +194,8 @@
                                     <tbody>
                                         @foreach ($claims as $claim)
                                         <tr>
-                                            <td class="fw-bold text-primary">{{ $claim->claim_no }}</td>
+                                            <td>CLM</td>
+                                            <td class="fw-bold text-primary">{{ (int) preg_replace('/[^0-9]/', '', substr($claim->claim_no, strlen('CLM-'))) }}</td>
                                             <td>{{ \Carbon\Carbon::parse($claim->claim_date)->format('d-M-Y') }}</td>
                                             <td>
                                                 @if($claim->claim_type === 'item_return')

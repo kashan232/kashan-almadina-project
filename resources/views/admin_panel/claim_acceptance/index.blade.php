@@ -73,7 +73,8 @@
                                 <table id="acceptanceTable" class="table table-striped table-bordered display w-100">
                                     <thead class="bg-light">
                                         <tr>
-                                            <th class="text-center">Voucher No</th>
+                                            <th class="text-center">Type</th>
+                                            <th class="text-center">Inv#</th>
                                             <th class="text-center">Date</th>
                                             <th class="text-center">BTR#</th>
                                             <th>Party / Supplier</th>
@@ -85,7 +86,8 @@
                                     <tbody>
                                         @foreach($vouchers as $v)
                                         <tr>
-                                            <td class="fw-bold text-center text-primary">{{ $v->voucher_no }}</td>
+                                            <td class="text-center">CLA</td>
+                                            <td class="fw-bold text-center text-primary">{{ (int) preg_replace('/[^0-9]/', '', substr($v->voucher_no, strlen('ACC-'))) }}</td>
                                             <td class="text-center">{{ \Carbon\Carbon::parse($v->date)->format('d-M-Y') }}</td>
                                             <td class="text-center">{{ $v->btr_no ?? '-' }}</td>
                                             <td>

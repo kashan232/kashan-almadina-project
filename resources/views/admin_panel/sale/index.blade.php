@@ -152,24 +152,25 @@
                             <div class="column-picker-menu shadow" id="columnPickerMenu">
                                 <div class="p-2 border-bottom fw-bold small text-muted">Show/Hide Columns</div>
                                 <label class="column-picker-item"><input type="checkbox" data-column="1" checked> #</label>
-                                <label class="column-picker-item"><input type="checkbox" data-column="2" checked> Invoice#</label>
-                                <label class="column-picker-item"><input type="checkbox" data-column="3" checked> Manual Inv</label>
-                                <label class="column-picker-item"><input type="checkbox" data-column="4" checked> Sale Type</label>
-                                <label class="column-picker-item"><input type="checkbox" data-column="5" checked> Party Type</label>
-                                <label class="column-picker-item"><input type="checkbox" data-column="6" checked> Customer/Vendor</label>
-                                <label class="column-picker-item"><input type="checkbox" data-column="7" checked> Items</label>
-                                <label class="column-picker-item"><input type="checkbox" data-column="8" checked> Location</label>
-                                <label class="column-picker-item"><input type="checkbox" data-column="9" checked> Rate</label>
-                                <label class="column-picker-item"><input type="checkbox" data-column="10" checked> Qty</label>
-                                <label class="column-picker-item"><input type="checkbox" data-column="11" checked> Sale Price</label>
-                                <label class="column-picker-item"><input type="checkbox" data-column="12" checked> Line Total</label>
-                                <label class="column-picker-item"><input type="checkbox" data-column="13" checked> Net Total</label>
-                                <label class="column-picker-item"><input type="checkbox" data-column="14" checked> Disc</label>
-                                <label class="column-picker-item"><input type="checkbox" data-column="15" checked> Prev Bal</label>
-                                <label class="column-picker-item"><input type="checkbox" data-column="16" checked> Receipts</label>
-                                <label class="column-picker-item"><input type="checkbox" data-column="17" checked> Payable</label>
-                                <label class="column-picker-item"><input type="checkbox" data-column="18" checked> Date</label>
-                                <label class="column-picker-item"><input type="checkbox" data-column="19" checked> Status</label>
+                                <label class="column-picker-item"><input type="checkbox" data-column="2" checked> Type</label>
+                                <label class="column-picker-item"><input type="checkbox" data-column="3" checked> Inv#</label>
+                                <label class="column-picker-item"><input type="checkbox" data-column="4" checked> Manual Inv</label>
+                                <label class="column-picker-item"><input type="checkbox" data-column="5" checked> Sale Type</label>
+                                <label class="column-picker-item"><input type="checkbox" data-column="6" checked> Party Type</label>
+                                <label class="column-picker-item"><input type="checkbox" data-column="7" checked> Customer/Vendor</label>
+                                <label class="column-picker-item"><input type="checkbox" data-column="8" checked> Items</label>
+                                <label class="column-picker-item"><input type="checkbox" data-column="9" checked> Location</label>
+                                <label class="column-picker-item"><input type="checkbox" data-column="10" checked> Rate</label>
+                                <label class="column-picker-item"><input type="checkbox" data-column="11" checked> Qty</label>
+                                <label class="column-picker-item"><input type="checkbox" data-column="12" checked> Sale Price</label>
+                                <label class="column-picker-item"><input type="checkbox" data-column="13" checked> Line Total</label>
+                                <label class="column-picker-item"><input type="checkbox" data-column="14" checked> Net Total</label>
+                                <label class="column-picker-item"><input type="checkbox" data-column="15" checked> Disc</label>
+                                <label class="column-picker-item"><input type="checkbox" data-column="16" checked> Prev Bal</label>
+                                <label class="column-picker-item"><input type="checkbox" data-column="17" checked> Receipts</label>
+                                <label class="column-picker-item"><input type="checkbox" data-column="18" checked> Payable</label>
+                                <label class="column-picker-item"><input type="checkbox" data-column="19" checked> Date</label>
+                                <label class="column-picker-item"><input type="checkbox" data-column="20" checked> Status</label>
                             </div>
                         </div>
 
@@ -184,7 +185,8 @@
                             <thead>
                                 <tr>
                                     <th>#</th>
-                                    <th>Invoice#</th>
+                                    <th>Type</th>
+                                    <th>Inv#</th>
                                     <th>Manual Inv</th>
                                     <th>Sale Type</th>
                                     <th>Party Type</th>
@@ -209,7 +211,8 @@
                                 @foreach($sales as $key => $sale)
                                 <tr>
                                     <td>{{ $key+1 }}</td>
-                                    <td class="fw-bold text-primary">{{ $sale->invoice_no }}</td>
+                                    <td>SJ</td>
+                                    <td class="fw-bold text-primary">{{ (int) preg_replace('/[^0-9]/', '', substr($sale->invoice_no, strlen('INVSLE-'))) }}</td>
                                     <td>{{ $sale->manual_invoice ?? '-' }}</td>
                                     <td>
                                         @if($sale->is_sale_order)

@@ -140,7 +140,7 @@
                 <div class="col-12">
                     <div class="card border-0">
                         <div class="card-header d-flex justify-content-between align-items-center py-3">
-                            <h4 class="card-title mb-0 fw-bold text-dark">Stock Transfer Management</h4>
+                            <h4 class="card-title mb-0 fw-bold text-dark">Transfer of Goods Management</h4>
                             <div class="d-flex gap-2">
                                 <!-- Column Picker Button -->
                                 <div class="column-picker-dropdown">
@@ -149,15 +149,16 @@
                                     </button>
                                     <div class="column-picker-menu shadow" id="columnPickerMenu">
                                         <div class="p-2 border-bottom fw-bold small text-muted">Show/Hide Columns</div>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="1" checked> TR ID</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="2" checked> Date</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="3" checked> From Warehouse</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="4" checked> To Warehouse</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="5" checked> Items</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="6" checked> Amount</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="7" checked> Prepared By</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="8" checked> Status</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="9" checked> Action</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="1" checked> Type</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="2" checked> Inv#</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="3" checked> Date</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="4" checked> From Warehouse</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="5" checked> To Warehouse</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="6" checked> Items</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="7" checked> Amount</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="8" checked> Prepared By</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="9" checked> Status</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="10" checked> Action</label>
                                     </div>
                                 </div>
 
@@ -172,7 +173,8 @@
                                 <table id="transferTable" class="table table-striped table-bordered display w-100">
                                     <thead>
                                         <tr>
-                                            <th>TR ID</th>
+                                            <th>Type</th>
+                                            <th>Inv#</th>
                                             <th>Date</th>
                                             <th>From Warehouse</th>
                                             <th>To Warehouse</th>
@@ -186,6 +188,7 @@
                                     <tbody>
                                         @foreach($transfers as $t)
                                         <tr>
+                                            <td>GT</td>
                                             <td class="fw-bold">#{{ $t->id }}</td>
                                             <td>{{ \Carbon\Carbon::parse($t->created_at)->format('d-M-Y') }}</td>
                                             <td>

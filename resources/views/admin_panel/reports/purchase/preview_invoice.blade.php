@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Sales Note Report (Invoice Wise)</title>
+    <title>Purchase Note Report (Invoice Wise)</title>
     <style>
         @page {
             size: A4 portrait;
@@ -29,7 +29,7 @@
             margin-bottom: 15px;
         }
         .report-title {
-            color: #c2185b;
+            color: #0d47a1;
             font-size: 22px;
             font-weight: bold;
             text-decoration: underline;
@@ -65,35 +65,24 @@
             vertical-align: middle;
         }
 
-        /* Customer Row */
-        .customer-row {
-            background-color: #e3f2fd;
+        .party-row {
+            background-color: #f1f8e9;
             border-top: 2px solid #000;
         }
-        .customer-row td {
-            color: #0d47a1;
+        .party-row td {
+            color: #2e7d32;
             font-weight: bold;
             font-size: 12px;
             border: 1px solid #000;
         }
 
-        /* Invoice Meta Row (Date/InvNo) */
-        .inv-meta-row td {
-            background-color: #fff;
-            border-bottom: none;
-            padding: 2px 6px;
-            font-weight: bold;
-        }
-
-        /* Data Row */
         .item-row td {
             border-bottom: 1px solid #ccc;
         }
-        .item-row .bold-val {
+        .bold-val {
             font-weight: bold;
         }
 
-        /* Subtotal Row */
         .subtotal-row td {
             font-weight: bold;
             padding: 5px 6px;
@@ -109,7 +98,6 @@
             border: 1px solid #000 !important;
         }
 
-        /* Grand Total Row */
         .grand-total-row td {
             font-weight: bold;
             font-size: 12px;
@@ -149,11 +137,11 @@
 <body>
 
     <div class="no-print">
-        <button onclick="window.print()" style="padding: 10px 25px; background: #c2185b; color: #fff; border: none; cursor: pointer; font-weight: bold; border-radius: 4px;">Print Report</button>
+        <button onclick="window.print()" style="padding: 10px 25px; background: #0d47a1; color: #fff; border: none; cursor: pointer; font-weight: bold; border-radius: 4px;">Print Report</button>
     </div>
 
     <div class="report-header">
-        <h1 class="report-title">Sales Note Report (Invoice Wise)</h1>
+        <h1 class="report-title">Purchase Note Report (Invoice Wise)</h1>
         <div class="date-range">
             From: <span>{{ \Carbon\Carbon::parse($from_date)->format('d-m-y') }}</span> 
             To: <span>{{ \Carbon\Carbon::parse($to_date)->format('d-m-y') }}</span>
@@ -164,119 +152,87 @@
         <thead>
             <tr>
                 <th width="30%">Item Description</th>
-                <th width="10%">Sub-Category</th>
-                <th width="5%">Qty</th>
-                <th width="8%">Retail Price</th>
-                <th width="10%">Retail Amount</th>
-                <th width="8%">Sales Price</th>
-                <th width="10%">Sales Amount</th>
-                <th width="8%">Add. Disc</th>
-                <th width="11%">Invoice Amount</th>
+                <th width="15%">Sub-Category</th>
+                <th width="10%">Qty</th>
+                <th width="15%">Unit Price</th>
+                <th width="15%">Line Amount</th>
+                <th width="15%">Net Amount</th>
             </tr>
         </thead>
         <tbody>
             @php 
                 $grand_qty = 0; 
-                $grand_retail_amt = 0; 
-                $grand_sales_amt = 0; 
-                $grand_invoice_amt = 0; 
+                $grand_amount = 0; 
             @endphp
 
-            @foreach($grouped as $customerId => $invoices)
+            @foreach($grouped as $vendorId => $invoices)
                 @foreach($invoices as $invoiceNo => $items)
                     @php
                         $firstItem = $items->first();
-                        $sale = $firstItem->sale;
-                        $customer = $sale->customer;
-                        $saleDate = \Carbon\Carbon::parse($sale->created_at)->format('d-m-y');
+                        $purchase = $firstItem->purchase;
+                        $vendor = $purchase->vendor;
+                        $purchaseDate = \Carbon\Carbon::parse($purchase->created_at)->format('d-m-y');
                         
                         $inv_qty = 0;
-                        $inv_retail_amt = 0;
-                        $inv_sales_amt = 0;
-                        $inv_invoice_amt = 0;
+                        $inv_amount = 0;
                     @endphp
                     
-                    <!-- Invoice Heading Row -->
-                    <tr class="customer-row">
-                        <td colspan="4" class="text-left">
-                            Inv.No: <b style="color: #000;">{{ $invoiceNo }}</b> &nbsp;&nbsp;&nbsp; 
-                            Date: <b style="color: #000;">{{ $saleDate }}</b>
+                    <tr class="party-row">
+                        <td colspan="3" class="text-left">
+                            PUR No: <b style="color: #000;">{{ $invoiceNo }}</b> &nbsp;&nbsp;&nbsp; 
+                            Date: <b style="color: #000;">{{ $purchaseDate }}</b>
                         </td>
-                        <td colspan="5" class="text-right">
-                            Customer: <b style="color: #000;">{{ $customer ? strtoupper($customer->customer_name) : 'CASH CUSTOMER' }}</b> 
-                            {{ $customer && $customer->cnic ? ' - '.$customer->cnic : '' }}
+                        <td colspan="3" class="text-right">
+                            Vendor: <b style="color: #000;">{{ $vendor ? strtoupper($vendor->name) : 'N/A' }}</b>
                         </td>
                     </tr>
 
-                    <!-- Data Rows -->
                     @foreach($items as $item)
                         @php
-                            $qty = $item->sales_qty;
-                            $retail_p = $item->retail_price ?? 0;
-                            $retail_a = $retail_p * $qty;
-                            $sales_p = $item->sales_price;
-                            $sales_a = $item->amount;
-                            $add_disc = $item->discount_amount ?? 0;
-                            $invoice_a = $sales_a - $add_disc;
+                            $qty = $item->qty;
+                            $price = $item->price;
+                            $amount = $item->line_total;
 
                             $inv_qty += $qty;
-                            $inv_retail_amt += $retail_a;
-                            $inv_sales_amt += $sales_a;
-                            $inv_invoice_amt += $invoice_a;
+                            $inv_amount += $amount;
                         @endphp
                         <tr class="item-row">
                             <td>{{ $item->product ? $item->product->name : 'N/A' }}</td>
                             <td class="text-center">{{ $item->product && $item->product->sub_category_relation ? $item->product->sub_category_relation->name : '-' }}</td>
                             <td class="text-center">{{ number_format($qty) }}</td>
-                            <td class="text-right">{{ number_format($retail_p, 0) }}</td>
-                            <td class="text-right">{{ number_format($retail_a, 0) }}</td>
-                            <td class="text-right">{{ number_format($sales_p, 0) }}</td>
-                            <td class="text-right bold-val">{{ number_format($sales_a, 0) }}</td>
-                            <td class="text-right">{{ $add_disc > 0 ? number_format($add_disc, 0) : '' }}</td>
-                            <td class="text-right bold-val">{{ number_format($invoice_a, 0) }}</td>
+                            <td class="text-right">{{ number_format($price, 2) }}</td>
+                            <td class="text-right">{{ number_format($amount, 2) }}</td>
+                            <td class="text-right bold-val">{{ number_format($amount, 2) }}</td>
                         </tr>
                     @endforeach
 
-                    <!-- Invoice Total Row -->
                     <tr class="subtotal-row">
                         <td colspan="2" class="text-right">Total:</td>
                         <td class="qty-box">{{ number_format($inv_qty) }}</td>
-                        <td style="border:none; background:none;"></td>
-                        <td class="val-box">{{ number_format($inv_retail_amt, 0) }}</td>
-                        <td style="border:none; background:none;"></td>
-                        <td class="val-box">{{ number_format($inv_sales_amt, 0) }}</td>
-                        <td style="border:none; background:none;"></td>
-                        <td class="val-box">{{ number_format($inv_invoice_amt, 0) }}</td>
+                        <td colspan="2" style="border:none; background:none;"></td>
+                        <td class="val-box">{{ number_format($inv_amount, 2) }}</td>
                     </tr>
-                    <!-- Separation Gap -->
-                    <tr style="height: 25px;"><td colspan="9" style="border:none;"></td></tr>
+                    <tr style="height: 20px;"><td colspan="6" style="border:none;"></td></tr>
 
                     @php
                         $grand_qty += $inv_qty;
-                        $grand_retail_amt += $inv_retail_amt;
-                        $grand_sales_amt += $inv_sales_amt;
-                        $grand_invoice_amt += $inv_invoice_amt;
+                        $grand_amount += $inv_amount;
                     @endphp
                 @endforeach
             @endforeach
 
-            <!-- Grand Total -->
             <tr class="grand-total-row">
                 <td colspan="2" class="text-right">Grand Total:</td>
                 <td class="grand-qty-box">{{ number_format($grand_qty) }}</td>
-                <td style="border:none; background:none;"></td>
-                <td class="grand-val-box">{{ number_format($grand_retail_amt, 0) }}</td>
-                <td style="border:none; background:none;"></td>
-                <td class="grand-val-box">{{ number_format($grand_sales_amt, 0) }}</td>
-                <td style="border:none; background:none;"></td>
-                <td class="grand-val-box">{{ number_format($grand_invoice_amt, 0) }}</td>
+                <td colspan="2" style="border:none; background:none;"></td>
+                <td class="grand-val-box">{{ number_format($grand_amount, 2) }}</td>
             </tr>
         </tbody>
     </table>
 
     <div class="footer">
         <div>{{ now()->format('l, F d, Y') }}</div>
-        <div>Page 1 of 1</div>
+        <div>Generated by ERP System</div>
     </div>
 
 </body>

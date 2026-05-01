@@ -15,8 +15,8 @@
   .form-control,
   .form-select,
   .btn {
-    font-size: .85rem;
-    padding: .4rem .6rem;
+    font-size: .8rem;
+    padding: .25rem .5rem;
     height: auto;
   }
 
@@ -336,26 +336,23 @@
   }
 </style>
 
-<div class="container-fluid py-4">
+<div class="container-fluid py-2">
   <div class="main-container bg-white border shadow-sm mx-auto p-2 rounded-3" style="max-width: 98%;">
 
-    <div id="alertBox" class="alert d-none mb-3" role="alert"></div>
+    <div id="alertBox" class="alert d-none mb-2" role="alert"></div>
 
-    <div class="d-flex justify-content-between align-items-center mb-3 bg-light p-2 rounded shadow-sm">
-      <div style="min-width:80px;"></div>
-
-      <div class="d-flex align-items-center gap-2 justify-content-center flex-grow-1">
-          <h6 class="page-title mb-0 fw-bold">Create Sale</h6>
-          <span id="statusBadge" class="badge bg-warning text-dark px-3 py-2 rounded-pill shadow-sm" style="font-size:12px;">
+    <div class="d-flex justify-content-between align-items-center mb-2 bg-light p-1 rounded shadow-sm px-3">
+      <div class="d-flex align-items-center gap-2">
+          <span id="statusBadge" class="badge bg-warning text-dark px-2 py-1 rounded shadow-sm" style="font-size:11px;">
               <i class="fa fa-pencil me-1"></i> New Sale
           </span>
-          <span id="idBadge" class="badge bg-primary px-3 py-2 rounded-pill shadow-sm" style="display:none;font-size:12px;">
+          <span id="idBadge" class="badge bg-primary px-2 py-1 rounded shadow-sm" style="display:none;font-size:11px;">
               <i class="fa fa-tag me-1"></i> ID: N/A
           </span>
       </div>
 
       <div class="d-flex align-items-center gap-2">
-          <a href="{{ route('sale.index') }}" id="listBtn" class="btn btn-sm btn-outline-secondary rounded-pill px-3">
+          <a href="{{ route('sale.index') }}" id="listBtn" class="btn btn-sm btn-outline-secondary py-0 px-3">
               <i class="fa fa-list me-1"></i> List <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+L</kbd>
           </a>
       </div>
@@ -366,9 +363,9 @@
       <input type="hidden" id="booking_id" name="booking_id" value="">
 
 
-      <div class="d-flex gap-3 align-items-start border-bottom py-3">
+      <div class="d-flex gap-2 align-items-start border-bottom py-2">
         {{-- LEFT: Invoice & Customer --}}
-        <div class="bg-light border rounded-3 p-2 shadow-sm" style="min-width: 300px; max-width: 300px; font-size: 0.8rem;">
+        <div class="bg-light border rounded-3 p-2 shadow-sm" style="min-width: 280px; max-width: 280px; font-size: 0.8rem;">
           <div class="d-flex align-items-center justify-content-between mb-2 pb-1 border-bottom">
             <h6 class="mb-0 fw-bold text-primary">
               <i class="bi bi-receipt me-1"></i>Invoice & Customer
@@ -588,9 +585,12 @@
                   @endforeach
                 @endif
               </tbody>
-              <tfoot>
+              <tfoot class="table-light">
                 <tr>
-                  <td colspan="8" class="text-end fw-bold">Total:</td>
+                  <td colspan="5" class="text-end fw-bold">Totals:</td>
+                  <td class="text-center fw-bold"><span id="tQty">0</span></td>
+                  <td class="text-end fw-bold"><span id="tRetail">0.00</span></td>
+                  <td colspan="2"></td>
                   <td class="text-end fw-bold"><span id="totalAmount">0.00</span></td>
                   <td></td>
                 </tr>
@@ -604,11 +604,11 @@
       <div class="row g-3 mt-3">
         {{-- Receipt Vouchers --}}
         <div class="col-lg-7">
-          <div class="bg-light border rounded-3 p-3 shadow-sm">
-            <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom">
-              <h5 class="mb-0 fw-bold text-success">
+          <div class="bg-light border rounded-3 p-2 shadow-sm">
+            <div class="d-flex align-items-center justify-content-between mb-2 pb-1 border-bottom">
+              <h6 class="mb-0 fw-bold text-success">
                 <i class="bi bi-cash-stack me-2"></i>Receipt Vouchers
-              </h5>
+              </h6>
               <button type="button" class="btn btn-success btn-sm" id="btnAddRV">
                 <i class="bi bi-plus-circle me-1"></i>Add Receipt
               </button>
@@ -617,10 +617,10 @@
             <div id="rvWrapper">
               @if(old('receipt_account_id'))
                   @foreach(old('receipt_account_id') as $index => $accId)
-                      <div class="receipt-row bg-white border rounded-3 p-2 mb-2 shadow-sm rv-row">
+                      <div class="receipt-row bg-white border rounded p-1 mb-1 shadow-sm rv-row">
                         <div class="row g-2 align-items-center">
                           <div class="col-md-3">
-                            <label class="form-label text-muted small mb-1">Head</label>
+                            <label class="form-label text-muted small mb-0" style="font-size:0.7rem;">Head</label>
                             <select class="form-select form-select-sm rv-head" name="receipt_head_id[]">
                               <option value="" disabled selected>Select Head</option>
                               @foreach ($accountHeads as $head)
@@ -629,19 +629,19 @@
                             </select>
                           </div>
                           <div class="col-md-3">
-                            <label class="form-label text-muted small mb-1">Account</label>
+                            <label class="form-label text-muted small mb-0" style="font-size:0.7rem;">Account</label>
                             <select class="form-select form-select-sm rv-account" name="receipt_account_id[]" data-selected="{{ $accId }}">
                               <option value="" disabled selected>Select account</option>
                             </select>
                           </div>
                           <div class="col-md-2">
-                            <label class="form-label text-muted small mb-1">Amount</label>
+                            <label class="form-label text-muted small mb-0" style="font-size:0.7rem;">Amount</label>
                             <input type="text" class="form-control form-control-sm text-end fw-bold rv-amount" 
                                    name="receipt_amount[]" placeholder="0.00" value="{{ old('receipt_amount')[$index] ?? '' }}"
                                    {{ !$accId ? 'disabled' : '' }}>
                           </div>
                           <div class="col-md-3">
-                            <label class="form-label text-muted small mb-1">Narration</label>
+                            <label class="form-label text-muted small mb-0" style="font-size:0.7rem;">Narration</label>
                             <select class="form-select form-select-sm rv-narration" name="receipt_narration[]" 
                                     data-selected="{{ old('receipt_narration')[$index] ?? '' }}">
                               <option value="">Select narration...</option>
@@ -659,10 +659,10 @@
                       </div>
                   @endforeach
               @else
-                  <div class="receipt-row bg-white border rounded-3 p-2 mb-2 shadow-sm rv-row">
+                  <div class="receipt-row bg-white border rounded p-1 mb-1 shadow-sm rv-row">
                     <div class="row g-2 align-items-center">
                       <div class="col-md-3">
-                        <label class="form-label text-muted small mb-1">Head</label>
+                        <label class="form-label text-muted small mb-0" style="font-size:0.7rem;">Head</label>
                         <select class="form-select form-select-sm rv-head" name="receipt_head_id[]">
                           <option value="" disabled selected>Select Head</option>
                           @foreach ($accountHeads as $head)
@@ -671,18 +671,18 @@
                         </select>
                       </div>
                       <div class="col-md-3">
-                        <label class="form-label text-muted small mb-1">Account</label>
+                        <label class="form-label text-muted small mb-0" style="font-size:0.7rem;">Account</label>
                         <select class="form-select form-select-sm rv-account" name="receipt_account_id[]" disabled>
                           <option value="" disabled selected>Select account</option>
                         </select>
                       </div>
                       <div class="col-md-2">
-                        <label class="form-label text-muted small mb-1">Amount</label>
+                        <label class="form-label text-muted small mb-0" style="font-size:0.7rem;">Amount</label>
                         <input type="text" class="form-control form-control-sm text-end fw-bold rv-amount" 
                                name="receipt_amount[]" placeholder="0.00" disabled>
                       </div>
                       <div class="col-md-3">
-                        <label class="form-label text-muted small mb-1">Narration</label>
+                        <label class="form-label text-muted small mb-0" style="font-size:0.7rem;">Narration</label>
                         <select class="form-select form-select-sm rv-narration" name="receipt_narration[]">
                           <option value="">Select narration...</option>
                         </select>
@@ -702,31 +702,17 @@
 
         {{-- Totals --}}
         <div class="col-lg-5">
-          <div class="bg-light border rounded-3 p-3 shadow-sm">
-            <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom">
-              <h5 class="mb-0 fw-bold text-info">
+          <div class="bg-light border rounded-3 p-2 shadow-sm">
+            <div class="d-flex align-items-center justify-content-between mb-2 pb-1 border-bottom">
+              <h6 class="mb-0 fw-bold text-info">
                 <i class="bi bi-calculator me-2"></i>Totals
-              </h5>
+              </h6>
             </div>
 
             <div class="totals-card">
-              <!-- Total Qty -->
-              <div class="d-flex justify-content-between py-2 border-bottom">
-                <span class="text-muted small">Total Qty</span>
-                <span class="fw-semibold" id="tQty">0</span>
-              </div>
+              <!-- Qty and Retail moved to table footer -->
 
-              <!-- Retail Total -->
-              <div class="d-flex justify-content-between py-2 border-bottom">
-                <span class="text-muted small">Total Retail Price</span>
-                <span class="fw-semibold" id="tRetail">0.00</span>
-              </div>
-
-              <!-- Sub-Total (Net) -->
-              <div class="d-flex justify-content-between py-3 border-bottom bg-info bg-opacity-10 rounded px-2">
-                <span class="fw-bold fs-6 text-dark">Sub-Total (Net)</span>
-                <span class="fw-bold fs-6 text-dark" id="tSub">0.00</span>
-              </div>
+              <!-- Sub-Total moved to table footer -->
 
               <!-- Order Discount Input -->
               <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
@@ -751,20 +737,6 @@
                 <span class="fw-semibold text-danger" id="tOrderDisc">0.00</span>
               </div>
 
-              <!-- Round Off -->
-              <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
-                <span class="text-muted small">Round Off</span>
-                <input type="number" step="0.01" class="form-control form-control-sm text-end" 
-                       id="roundOff" name="round_off" 
-                       value="{{ old('round_off', '0') }}" style="width:70px">
-              </div>
-
-              <!-- Current Invoice Total -->
-              <div class="d-flex justify-content-between py-2 border-bottom bg-light">
-                <span class="text-dark small fw-bold">Current Invoice</span>
-                <span class="fw-bold" id="tCurrentInvoice">0.00</span>
-              </div>
-
               <!-- Previous Balance -->
               <div class="d-flex justify-content-between py-2 border-bottom">
                 <span class="text-warning small fw-semibold">Previous Balance</span>
@@ -784,9 +756,9 @@
               </div>
 
               <!-- Payable / Total Balance -->
-              <div class="d-flex justify-content-between py-3 bg-primary bg-opacity-10 rounded-3 px-2 mt-2">
+              <div class="d-flex justify-content-between py-2 bg-primary bg-opacity-10 rounded-3 px-2 mt-1">
                 <span class="fw-bold text-primary">Payable / Total Balance</span>
-                <span class="fw-bold fs-4 text-primary" id="tPayable">0.00</span>
+                <span class="fw-bold fs-5 text-primary" id="tPayable">0.00</span>
               </div>
 
               {{-- hidden mirrors for backend --}}
@@ -1994,27 +1966,27 @@
     @endforeach
 
     $('#rvWrapper').append(`
-    <div class="receipt-row bg-white border rounded-3 p-2 mb-2 shadow-sm rv-row">
+    <div class="receipt-row bg-white border rounded p-1 mb-1 shadow-sm rv-row">
       <div class="row g-2 align-items-center">
         <div class="col-md-3">
-          <label class="form-label text-muted small mb-1">Head</label>
+          <label class="form-label text-muted small mb-0" style="font-size:0.7rem;">Head</label>
           <select class="form-select form-select-sm rv-head" name="receipt_head_id[]">
             ${headOptions}
           </select>
         </div>
         <div class="col-md-3">
-          <label class="form-label text-muted small mb-1">Account</label>
+          <label class="form-label text-muted small mb-0" style="font-size:0.7rem;">Account</label>
           <select class="form-select form-select-sm rv-account" name="receipt_account_id[]" disabled>
             <option value="" disabled selected>Select account</option>
           </select>
         </div>
         <div class="col-md-2">
-          <label class="form-label text-muted small mb-1">Amount</label>
+          <label class="form-label text-muted small mb-0" style="font-size:0.7rem;">Amount</label>
           <input type="text" class="form-control form-control-sm text-end fw-bold rv-amount" 
                  name="receipt_amount[]" placeholder="0.00" disabled>
         </div>
         <div class="col-md-3">
-          <label class="form-label text-muted small mb-1">Narration</label>
+          <label class="form-label text-muted small mb-0" style="font-size:0.7rem;">Narration</label>
           <select class="form-select form-select-sm rv-narration" name="receipt_narration[]">
             <option value="">Select narration...</option>
           </select>

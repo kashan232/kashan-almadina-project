@@ -5,7 +5,7 @@
     <div class="container-fluid p-3">
         <div class="card border-0 shadow-sm">
             <div class="card-header bg-white py-3 border-bottom-0 d-flex justify-content-between align-items-center">
-                <h4 class="mb-0 fw-bold" style="color: #0d47a1;">Sales Report Filters</h4>
+                <h4 class="mb-0 fw-bold" style="color: #0d47a1;">Purchase Report Filters</h4>
                 <div class="form-check">
                     <input class="form-check-input" type="checkbox" id="globalSelectAll">
                     <label class="form-check-label fw-bold text-danger" for="globalSelectAll" style="cursor:pointer;">
@@ -14,43 +14,11 @@
                 </div>
             </div>
             <div class="card-body pt-0">
-                <form action="{{ route('reports.sales.preview') }}" method="POST" id="reportForm">
+                <form action="{{ route('reports.purchase.preview') }}" method="POST" id="reportForm">
                     @csrf
                     
                     <div class="filter-grid-container">
                         <div class="row g-1 mb-3">
-                            <!-- Zone -->
-                            <div class="col-md-1">
-                                <div class="filter-column">
-                                    <div class="filter-header">
-                                        <input type="checkbox" class="select-all" data-target="zone-list"> Zone
-                                    </div>
-                                    <div class="filter-list" id="zone-list">
-                                        @foreach($zones as $z)
-                                            <div class="filter-item">
-                                                <input type="checkbox" name="zone[]" value="{{ $z->zone }}">
-                                                <span>{{ $z->zone }}</span>
-                                            </div>
-                                        @endforeach
-                                    </div>
-                                </div>
-                            </div>
-                            <!-- Sales Officer -->
-                            <div class="col-md-1" style="min-width: 110px;">
-                                <div class="filter-column">
-                                    <div class="filter-header">
-                                        <input type="checkbox" class="select-all" data-target="officer-list"> Officer
-                                    </div>
-                                    <div class="filter-list" id="officer-list">
-                                        @foreach($users as $u)
-                                            <div class="filter-item">
-                                                <input type="checkbox" name="sales_officer[]" value="{{ $u->id }}">
-                                                <span>{{ $u->name }}</span>
-                                            </div>
-                                        @endforeach
-                                    </div>
-                                </div>
-                            </div>
                             <!-- Warehouse -->
                             <div class="col-md-1">
                                 <div class="filter-column">
@@ -121,7 +89,7 @@
                             </div>
 
                             <!-- Items -->
-                            <div class="col-md-2">
+                            <div class="col-md-4">
                                 <div class="filter-column">
                                     <div class="filter-header">
                                         <input type="checkbox" class="select-all" data-target="item-list"> Item
@@ -139,33 +107,21 @@
                                     </div>
                                 </div>
                             </div>
-                            <!-- Party Type -->
-                            <div class="col-md-1" style="min-width: 90px;">
+                            
+                            <!-- Vendor -->
+                            <div class="col-md-4 flex-grow-1">
                                 <div class="filter-column">
                                     <div class="filter-header">
-                                        <input type="checkbox" class="select-all" data-target="partytype-list"> Type
-                                    </div>
-                                    <div class="filter-list" id="partytype-list">
-                                        <div class="filter-item"><input type="checkbox" name="party_type[]" value="Main Customer"><span>Main</span></div>
-                                        <div class="filter-item"><input type="checkbox" name="party_type[]" value="Walking Customer"><span>Walk-in</span></div>
-                                        <div class="filter-item"><input type="checkbox" name="party_type[]" value="Vendor"><span>Vendor</span></div>
-                                    </div>
-                                </div>
-                            </div>
-                            <!-- Party -->
-                            <div class="col-md-1" style="min-width: 130px;">
-                                <div class="filter-column">
-                                    <div class="filter-header">
-                                        <input type="checkbox" class="select-all" data-target="party-list"> Party
+                                        <input type="checkbox" class="select-all" data-target="vendor-list"> Vendor
                                     </div>
                                     <div class="p-1 bg-light border-bottom">
-                                        <input type="text" class="form-control form-control-sm" id="partySearch" placeholder="Search party..." style="height: 24px; font-size: 11px;">
+                                        <input type="text" class="form-control form-control-sm" id="vendorSearch" placeholder="Search vendor..." style="height: 24px; font-size: 11px;">
                                     </div>
-                                    <div class="filter-list" id="party-list">
-                                        @foreach($customers as $cust)
-                                            <div class="filter-item" data-search="{{ strtolower($cust->customer_name) }}">
-                                                <input type="checkbox" name="party[]" value="{{ $cust->id }}">
-                                                <span>{{ $cust->customer_name }}</span>
+                                    <div class="filter-list" id="vendor-list">
+                                        @foreach($vendors as $v)
+                                            <div class="filter-item" data-search="{{ strtolower($v->name) }}">
+                                                <input type="checkbox" name="vendor[]" value="{{ $v->id }}">
+                                                <span>{{ $v->name }}</span>
                                             </div>
                                         @endforeach
                                     </div>
@@ -174,7 +130,7 @@
                         </div>
                     </div>
 
-                    <!-- Report Settings (Moved to Bottom) -->
+                    <!-- Report Settings -->
                     <div class="card border border-primary mb-3 shadow-sm">
                         <div class="card-header py-1 bg-primary text-white fw-bold small">
                             <i class="fas fa-cog me-1"></i> REPORT SETTINGS
@@ -182,8 +138,8 @@
                         <div class="card-body p-2">
                             <div class="row g-2 align-items-end">
                                 <div class="col-md-3">
-                                    <label class="fw-bold mb-1" style="font-size: 11px;">Invoice No.</label>
-                                    <input type="text" name="invoice_no" class="form-control form-control-sm" placeholder="Invoice No" style="height: 30px; font-size: 12px;">
+                                    <label class="fw-bold mb-1" style="font-size: 11px;">Purchase No.</label>
+                                    <input type="text" name="invoice_no" class="form-control form-control-sm" placeholder="PUR-..." style="height: 30px; font-size: 12px;">
                                 </div>
                                 <div class="col-md-3">
                                     <label class="fw-bold mb-1" style="font-size: 11px;">Report Type</label>
@@ -191,10 +147,6 @@
                                         <option value="Invoice Wise">Invoice Wise</option>
                                         <option value="Item Wise">Item Wise</option>
                                         <option value="Party Wise">Party Wise</option>
-                                        <option value="Qty Wise">Qty Wise</option>
-                                        <option value="Claim Ratio">Claim Ratio</option>
-                                        <option value="Tax Summary">Tax Summary</option>
-                                        <option value="Sale vs List">Sale vs List</option>
                                     </select>
                                 </div>
                                 <div class="col-md-3">
@@ -237,7 +189,7 @@
         overflow: hidden;
         display: flex;
         flex-direction: column;
-        height: 280px !important; /* Force same height for all */
+        height: 280px !important; 
     }
     
     .filter-header {
@@ -258,10 +210,6 @@
         padding: 0;
     }
     
-    .item-list-wide {
-        height: 250px;
-    }
-    
     .filter-item {
         padding: 3px 10px;
         cursor: pointer;
@@ -275,55 +223,20 @@
         user-select: none;
     }
     
-    .filter-item:last-child {
-        border-bottom: none;
-    }
-    
-    .filter-item:hover {
-        background-color: #f8f9fa;
-    }
+    .filter-item:hover { background-color: #f8f9fa; }
     
     .filter-item.selected {
         background-color: #3498db !important;
         color: #fff !important;
     }
     
-    .filter-item input[type="checkbox"] {
-        display: none;
-    }
+    .filter-item input[type="checkbox"] { display: none; }
     
-    /* Scrollbar Styling */
-    .filter-list::-webkit-scrollbar {
-        width: 6px;
-    }
-    .filter-list::-webkit-scrollbar-track {
-        background: #f1f1f1;
-    }
+    .filter-list::-webkit-scrollbar { width: 6px; }
+    .filter-list::-webkit-scrollbar-track { background: #f1f1f1; }
     .filter-list::-webkit-scrollbar-thumb {
         background: #ccc;
         border-radius: 3px;
-    }
-    .filter-list::-webkit-scrollbar-thumb:hover {
-        background: #bbb;
-    }
-
-    .btn-erp {
-        background-color: #dee2e6;
-        border: 1px solid #adb5bd;
-        color: #212529;
-        font-weight: 600;
-        font-size: 13px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-    }
-    
-    .btn-erp:hover {
-        background-color: #ced4da;
-        border-color: #6c757d;
-    }
-
-    #itemSearch, #partySearch {
-        height: 24px;
-        font-size: 11px;
     }
 </style>
 
@@ -335,7 +248,6 @@
         // Toggle item selection
         $(document).on('click', '.filter-item', function(e) {
             if ($(e.target).is('input[type="checkbox"]')) return;
-            
             const checkbox = $(this).find('input[type="checkbox"]');
             checkbox.prop('checked', !checkbox.prop('checked'));
             $(this).toggleClass('selected', checkbox.prop('checked'));
@@ -346,8 +258,6 @@
             const targetId = $(this).data('target');
             const isChecked = $(this).prop('checked');
             const $list = $('#' + targetId);
-            
-            // Only affect visible items (if filtered)
             $list.find('.filter-item').each(function() {
                 if ($(this).css('display') !== 'none') {
                     const cb = $(this).find('input[type="checkbox"]');
@@ -360,11 +270,7 @@
         // Global Select All
         $('#globalSelectAll').on('change', function() {
             const isChecked = $(this).prop('checked');
-            
-            // 1. Check/Uncheck all category-specific select-alls
             $('.select-all').prop('checked', isChecked);
-            
-            // 2. Check/Uncheck all actual filter items and toggle classes
             $('.filter-item').each(function() {
                 const cb = $(this).find('input[type="checkbox"]');
                 cb.prop('checked', isChecked);
@@ -372,7 +278,7 @@
             });
         });
 
-        // Search functionality for Item
+        // Search functionality
         $('#itemSearch').on('keyup', function() {
             const value = $(this).val().toLowerCase();
             $('#item-list .filter-item').each(function() {
@@ -381,10 +287,9 @@
             });
         });
 
-        // Search functionality for Party
-        $('#partySearch').on('keyup', function() {
+        $('#vendorSearch').on('keyup', function() {
             const value = $(this).val().toLowerCase();
-            $('#party-list .filter-item').each(function() {
+            $('#vendor-list .filter-item').each(function() {
                 const text = $(this).data('search');
                 $(this).toggle(text.indexOf(value) > -1);
             });

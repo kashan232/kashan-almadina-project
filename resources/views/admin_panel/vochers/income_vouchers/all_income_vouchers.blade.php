@@ -132,14 +132,15 @@
                                     <div class="column-picker-menu shadow" id="columnPickerMenu">
                                         <div class="p-2 border-bottom fw-bold small text-muted">Show/Hide Columns</div>
                                         <label class="column-picker-item"><input type="checkbox" data-column="1" checked> ID</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="2" checked> Voucher No</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="3" checked> Entry Date</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="4" checked> Type</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="5" checked> Party</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="6" checked> Remarks</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="7" checked> Total Amount</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="8" checked> Created At</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="9" checked> Status</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="2" checked> Type</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="3" checked> Inv#</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="4" checked> Entry Date</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="5" checked> Type</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="6" checked> Party</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="7" checked> Remarks</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="8" checked> Total Amount</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="9" checked> Created At</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="10" checked> Status</label>
                                     </div>
                                 </div>
                                 <a class="btn btn-success btn-sm px-4 rounded-pill shadow-sm" href="{{ route('income-vochers') }}">
@@ -154,7 +155,8 @@
                                     <thead>
                                         <tr>
                                             <th>ID</th>
-                                            <th>Voucher No</th>
+                                            <th>Type</th>
+                                            <th>Inv#</th>
                                             <th>Entry Date</th>
                                             <th>Type</th>
                                             <th>Party</th>
@@ -169,7 +171,8 @@
                                         @foreach($incomes as $item)
                                         <tr>
                                             <td>{{ $item->id }}</td>
-                                            <td class="fw-bold text-success">{{ $item->ivid }}</td>
+                                            <td>IV</td>
+                                            <td class="fw-bold text-success">{{ (int) preg_replace('/[^0-9]/', '', substr($item->ivid, strlen('IVID-'))) }}</td>
                                             <td>{{ $item->entry_date ? \Carbon\Carbon::parse($item->entry_date)->format('d-M-Y') : '-' }}</td>
                                             <td class="text-center">
                                                 <span class="badge bg-secondary px-2 rounded-pill">{{ $item->type_label ?? '-' }}</span>

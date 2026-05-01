@@ -139,21 +139,22 @@
                                     <div class="column-picker-menu shadow" id="columnPickerMenu">
                                         <div class="p-2 border-bottom fw-bold small text-muted">Show/Hide Columns</div>
                                         <label class="column-picker-item"><input type="checkbox" data-column="1" checked> ID</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="2" checked> Invoice</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="3" checked> Source</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="4" checked> Party Type</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="5" checked> Supplier</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="6" checked> Items</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="7" checked> Rate</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="8" checked> Qty</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="9" checked> Date</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="10" checked> Warehouse</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="11" checked> DC / Bilty</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="12" checked> Subtotal</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="13" checked> Disc</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="14" checked> WHT</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="15" checked> Net</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="16" checked> Status</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="2" checked> Type</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="3" checked> Inv#</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="4" checked> Source</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="5" checked> Party Type</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="6" checked> Supplier</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="7" checked> Items</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="8" checked> Rate</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="9" checked> Qty</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="10" checked> Date</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="11" checked> Warehouse</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="12" checked> DC / Bilty</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="13" checked> Subtotal</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="14" checked> Disc</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="15" checked> WHT</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="16" checked> Net</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="17" checked> Status</label>
                                     </div>
                                 </div>
 
@@ -169,7 +170,8 @@
                                     <thead>
                                         <tr>
                                             <th>ID</th>
-                                            <th>Invoice</th>
+                                            <th>Type</th>
+                                            <th>Inv#</th>
                                             <th>Source</th>
                                             <th>Party Type</th>
                                             <th>Supplier</th>
@@ -191,7 +193,8 @@
                                         @foreach ($Purchase as $purchase)
                                         <tr>
                                             <td>{{ $purchase->id }}</td>
-                                            <td class="fw-bold">{{ $purchase->invoice_no ?? '-' }}</td>
+                                            <td>PJ</td>
+                                            <td class="fw-bold">{{ (int) preg_replace('/[^0-9]/', '', substr($purchase->invoice_no, strlen('PUR-'))) }}</td>
                                             <td class="text-center">
                                                 @if($purchase->inward_id)
                                                     <span class="badge bg-info">Inward ({{ $purchase->inward_id }})</span>

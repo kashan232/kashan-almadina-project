@@ -53,6 +53,7 @@ class SalesReportController extends Controller
         // Build Query
         $query = SaleItem::with(['sale.customer', 'product.brandRelation', 'warehouse'])
             ->whereHas('sale', function($q) use ($from_date, $to_date, $invoice_no, $parties, $zones, $party_types, $sales_officers) {
+                $q->where('is_sale_order', 0);
                 if (!empty($from_date)) {
                     $q->whereDate('created_at', '>=', $from_date);
                 }
@@ -123,6 +124,7 @@ class SalesReportController extends Controller
     {
         $saleItems = SaleItem::with(['sale.customer', 'product.brandRelation'])
             ->whereHas('sale', function($q) use ($from_date, $to_date) {
+                $q->where('is_sale_order', 0);
                 if ($from_date) $q->whereDate('created_at', '>=', $from_date);
                 if ($to_date) $q->whereDate('created_at', '<=', $to_date);
             })->get();
@@ -137,6 +139,7 @@ class SalesReportController extends Controller
     {
         $saleItems = SaleItem::with(['sale.customer', 'product.latestPrice'])
             ->whereHas('sale', function($q) use ($from_date, $to_date) {
+                $q->where('is_sale_order', 0);
                 if ($from_date) $q->whereDate('created_at', '>=', $from_date);
                 if ($to_date) $q->whereDate('created_at', '<=', $to_date);
             })->get();
@@ -160,6 +163,7 @@ class SalesReportController extends Controller
         // 1. Fetch Sales Data grouped by Month
         $saleItems = SaleItem::with('sale')
             ->whereHas('sale', function($q) use ($from_date, $to_date) {
+                $q->where('is_sale_order', 0);
                 if ($from_date) $q->whereDate('created_at', '>=', $from_date);
                 if ($to_date) $q->whereDate('created_at', '<=', $to_date);
             })->get();
@@ -203,9 +207,9 @@ class SalesReportController extends Controller
 
     private function previewQtyWise($saleItems, $from_date, $to_date)
     {
-        // Group by Brand (Product Brand Relation)
+        // Group by Sub-Category (Product Sub-Category Relation)
         $grouped = $saleItems->groupBy(function($item) {
-            return $item->product && $item->product->brandRelation ? $item->product->brandRelation->name : 'Other';
+            return $item->product && $item->product->sub_category_relation ? $item->product->sub_category_relation->name : 'Other';
         });
 
         return view('admin_panel.reports.sales.preview_qty_wise', compact('grouped', 'from_date', 'to_date'));

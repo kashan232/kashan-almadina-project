@@ -5,7 +5,7 @@
     <title>Sales Note Report (Party Wise)</title>
     <style>
         @page {
-            size: A4;
+            size: A4 portrait;
             margin: 5mm;
         }
         body {
@@ -154,7 +154,7 @@
                 <th width="8%">Invoice No.</th>
                 <th width="10%">Date</th>
                 <th width="20%" class="text-left">Item Description</th>
-                <th width="8%">Brand</th>
+                <th width="8%">Sub-Category</th>
                 <th width="5%">Qty</th>
                 <th width="8%">Retail Price</th>
                 <th width="10%">Retail Amount</th>
@@ -216,7 +216,7 @@
                         <td class="text-center">{{ $item->sale->invoice_no }}</td>
                         <td class="text-center">{{ \Carbon\Carbon::parse($item->sale->created_at)->format('d-m-y') }}</td>
                         <td class="text-left">{{ $item->product ? $item->product->name : 'N/A' }}</td>
-                        <td class="text-center">{{ $item->product && $item->product->brandRelation ? $item->product->brandRelation->name : '-' }}</td>
+                        <td class="text-center">{{ $item->product && $item->product->sub_category_relation ? $item->product->sub_category_relation->name : '-' }}</td>
                         <td class="text-center">{{ number_format($qty) }}</td>
                         <td class="text-right">{{ number_format($retail_p, 0) }}</td>
                         <td class="text-right bold-val">{{ number_format($retail_a, 0) }}</td>
@@ -238,6 +238,8 @@
                     <td style="border:none; background:none;"></td>
                     <td class="val-box">{{ number_format($party_invoice_amt, 0) }}</td>
                 </tr>
+                <!-- Separation Gap -->
+                <tr style="height: 25px;"><td colspan="11" style="border:none;"></td></tr>
 
                 @php
                     $grand_qty += $party_qty;

@@ -371,6 +371,12 @@
                                           <span>Sales Report</span>
                                       </a>
                                   </li>
+                                  <li class="nav-item">
+                                      <a class="nav-link" href="{{ route('reports.purchase.index') }}">
+                                          <i class="fa-solid fa-cart-shopping mr-2"></i>
+                                          <span>Purchase Report</span>
+                                      </a>
+                                  </li>
                               </ul>
                           </div>
                       </li>

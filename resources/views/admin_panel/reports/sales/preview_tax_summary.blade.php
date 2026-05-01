@@ -5,7 +5,7 @@
     <title>Tax Summary Report</title>
     <style>
         @page {
-            size: A4;
+            size: A4 portrait;
             margin: 5mm;
         }
         body {

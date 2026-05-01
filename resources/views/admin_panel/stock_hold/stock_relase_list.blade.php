@@ -87,9 +87,9 @@
                                     </button>
                                     <div class="column-picker-menu shadow" id="columnPickerMenu">
                                         <div class="p-2 border-bottom fw-bold small text-muted">Show/Hide Columns</div>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="1" checked> ID</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="2" checked> Date</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="3" checked> Type</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="1" checked> Type</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="2" checked> Inv#</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="3" checked> Date</label>
                                         <label class="column-picker-item"><input type="checkbox" data-column="4" checked> Party / Customer</label>
                                         <label class="column-picker-item"><input type="checkbox" data-column="5" checked> Location</label>
                                         <label class="column-picker-item"><input type="checkbox" data-column="6" checked> Items Details</label>
@@ -108,7 +108,8 @@
                                 <table id="stockReleaseTable" class="table table-striped table-bordered display w-100">
                                     <thead class="bg-light">
                                         <tr>
-                                            <th>ID</th>
+                                            <th>Type</th>
+                                            <th>Inv#</th>
                                             <th>Date</th>
                                             <th>Type</th>
                                             <th>Party / Customer</th>
@@ -121,7 +122,8 @@
                                     <tbody>
                                         @foreach($vouchers as $v)
                                         <tr>
-                                            <td class="fw-bold text-center">{{ $v->voucher_no }}</td>
+                                            <td class="text-center">SRJ</td>
+                                            <td class="fw-bold text-center text-primary">{{ (int) preg_replace('/[^0-9]/', '', substr($v->voucher_no, strlen('SR-'))) }}</td>
                                             <td class="text-center">{{ \Carbon\Carbon::parse($v->date)->format('d-M-Y') }}</td>
                                             <td class="text-center">
                                                 @if(($v->release_type ?? 'stock') == 'claim')

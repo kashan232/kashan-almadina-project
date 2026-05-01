@@ -147,13 +147,14 @@
                                     </button>
                                     <div class="column-picker-menu shadow" id="columnPickerMenu">
                                         <div class="p-2 border-bottom fw-bold small text-muted">Show/Hide Columns</div>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="1" checked> ID</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="2" checked> Date</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="3" checked> Party / Customer</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="4" checked> Location</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="5" checked> Items Details</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="6" checked> Status</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="7" checked> Action</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="1" checked> Type</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="2" checked> Inv#</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="3" checked> Date</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="4" checked> Party / Customer</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="5" checked> Location</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="6" checked> Items Details</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="7" checked> Status</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="8" checked> Action</label>
                                     </div>
                                 </div>
 
@@ -168,7 +169,8 @@
                                 <table id="stockHoldTable" class="table table-striped table-bordered display w-100">
                                     <thead>
                                         <tr>
-                                            <th>ID</th>
+                                            <th>Type</th>
+                                            <th>Inv#</th>
                                             <th>Date</th>
                                             <th>Party / Customer</th>
                                             <th>Location</th>
@@ -180,7 +182,8 @@
                                     <tbody>
                                         @foreach($vouchers as $v)
                                         <tr>
-                                            <td class="fw-bold text-center">HOLD-{{ $v->id }}</td>
+                                            <td class="text-center">SH</td>
+                                            <td class="fw-bold text-center text-primary">{{ (int) preg_replace('/[^0-9]/', '', substr($v->voucher_no, strlen('SH-'))) }}</td>
                                             <td class="text-center">{{ \Carbon\Carbon::parse($v->date)->format('d-M-Y') }}</td>
                                             <td>
                                                 @if($v->party_type == 'customer' || $v->party_type == 'walkin')

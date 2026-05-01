@@ -5,7 +5,7 @@
     <title>Sales Note Report (Item Wise)</title>
     <style>
         @page {
-            size: A4;
+            size: A4 portrait;
             margin: 5mm;
         }
         body {
@@ -186,7 +186,7 @@
                 <!-- Item Heading -->
                 <tr class="item-heading-row">
                     <td colspan="6" class="text-left">{{ $product ? strtoupper($product->name) : 'N/A' }}</td>
-                    <td colspan="4" class="text-left">{{ $product && $product->brandRelation ? strtoupper($product->brandRelation->name) : '-' }}</td>
+                    <td colspan="4" class="text-left">{{ $product && $product->sub_category_relation ? strtoupper($product->sub_category_relation->name) : '-' }}</td>
                 </tr>
 
                 @foreach($items as $item)
@@ -229,6 +229,8 @@
                     <td style="border:none; background:none;"></td>
                     <td class="val-box">{{ number_format($item_invoice_amt, 0) }}</td>
                 </tr>
+                <!-- Separation Gap -->
+                <tr style="height: 25px;"><td colspan="10" style="border:none;"></td></tr>
 
                 @php
                     $grand_qty += $item_qty;

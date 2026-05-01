@@ -5,7 +5,7 @@
     <title>Sales Report Month Wise with Claim Ratio</title>
     <style>
         @page {
-            size: A4;
+            size: A4 portrait;
             margin: 5mm;
         }
         body {
