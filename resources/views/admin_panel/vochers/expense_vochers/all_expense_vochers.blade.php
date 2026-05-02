@@ -12,15 +12,21 @@
     
     #example thead th {
         white-space: nowrap;
-        background-color: #f8f9fa;
-        color: #333;
+        background-color: #f8f9fa !important;
+        color: #333 !important;
         font-weight: 600;
         vertical-align: middle;
+        padding: 8px 10px !important;
+        font-size: 12px;
+        text-transform: uppercase;
     }
     
     #example tbody td {
         white-space: nowrap;
         vertical-align: middle;
+        padding: 4px 10px !important;
+        font-size: 12px;
+        color: #333;
     }
 
     /* Column Picker Styles */
@@ -68,66 +74,48 @@
         margin-right: 10px;
         cursor: pointer;
     }
-    .column-hidden {
-        display: none !important;
-    }
 
     /* Card styling */
     .card {
         border-radius: 8px;
         box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
-    }
-    
-    .card-header {
-        background-color: #fff;
-        border-bottom: 1px solid #edf2f9;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 1rem 1.5rem;
+        border: none;
     }
 </style>
 
 <div class="main-content">
     <div class="main-content-inner">
-        <div class="container-fluid pt-4">
+        <div class="container-fluid pt-3">
             
-            @if(session('success'))
-            <div class="alert alert-success alert-dismissible fade show mb-4" role="alert">
-                <i class="fa fa-check-circle me-2"></i> {{ session('success') }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>
-            @endif
-
-            <!-- Filter Section -->
-            <div class="row mb-4">
+            <!-- Filters Section -->
+            <div class="row mb-3">
                 <div class="col-12">
                     <div class="card border-0 shadow-sm">
-                        <div class="card-body p-3">
-                            <form action="{{ route('all-expense-vochers') }}" method="GET" class="row g-3 align-items-end">
+                        <div class="card-body p-2">
+                            <form action="{{ route('all-expense-vochers') }}" method="GET" class="row g-2 align-items-center">
                                 <div class="col-md-3">
-                                    <label class="form-label small fw-bold text-muted">Start Date</label>
-                                    <input type="date" name="start_date" class="form-control form-control-sm" value="{{ request('start_date') }}">
+                                    <h6 class="mb-0 fw-bold text-dark ms-2"><i class="fa fa-money me-2 text-danger"></i>Expense Vouchers</h6>
                                 </div>
                                 <div class="col-md-3">
-                                    <label class="form-label small fw-bold text-muted">End Date</label>
-                                    <input type="date" name="end_date" class="form-control form-control-sm" value="{{ request('end_date') }}">
+                                    <div class="input-group input-group-sm">
+                                        <span class="input-group-text bg-white border-end-0 small fw-bold text-muted">Range</span>
+                                        <input type="date" name="start_date" class="form-control border-start-0" value="{{ request('start_date') }}">
+                                        <input type="date" name="end_date" class="form-control" value="{{ request('end_date') }}">
+                                    </div>
                                 </div>
                                 <div class="col-md-2">
-                                    <label class="form-label small fw-bold text-muted">Status</label>
-                                    <select name="status" class="form-select form-select-sm">
+                                    <select name="status" class="form-select form-select-sm select2">
                                         <option value="">All Status</option>
                                         <option value="draft" {{ request('status') == 'draft' ? 'selected' : '' }}>Unposted</option>
                                         <option value="posted" {{ request('status') == 'posted' ? 'selected' : '' }}>Posted</option>
                                     </select>
                                 </div>
-                                <div class="col-md-4">
-                                    <div class="d-flex gap-2">
-                                        <button type="submit" class="btn btn-primary btn-sm px-4 rounded-pill shadow-sm">
-                                            <i class="fa fa-filter me-1"></i> Filter
-                                        </button>
-                                        <a href="{{ route('all-expense-vochers') }}" class="btn btn-outline-secondary btn-sm px-4 rounded-pill">
-                                            <i class="fa fa-refresh me-1"></i> Reset
+                                <div class="col-md-4 text-end">
+                                    <div class="d-flex gap-1 justify-content-end align-items-center">
+                                        <button type="submit" class="btn btn-primary btn-sm rounded-pill px-3 shadow-sm">Filter</button>
+                                        <a href="{{ route('all-expense-vochers') }}" class="btn btn-outline-secondary btn-sm rounded-pill px-2" title="Reset"><i class="fa fa-refresh"></i></a>
+                                        <a class="btn btn-danger btn-sm rounded-pill px-4 shadow-sm ms-2" href="{{ route('expense-vochers') }}">
+                                            <i class="fa fa-plus me-1"></i> Add Expense
                                         </a>
                                     </div>
                                 </div>
@@ -140,72 +128,62 @@
             <div class="row">
                 <div class="col-12">
                     <div class="card border-0 shadow-sm">
-                        <div class="card-header bg-white border-bottom py-3">
-                            <h4 class="card-title mb-0 fw-bold text-dark"><i class="fa fa-money me-2 text-danger"></i>Expense Vouchers</h4>
-                            <div class="d-flex gap-2">
-                                <!-- Column Picker Button -->
-                                <div class="column-picker-dropdown">
-                                    <button class="btn btn-outline-secondary btn-sm px-3 rounded-pill" type="button" id="columnPickerBtn">
-                                        <i class="fa fa-columns me-1"></i> Columns
-                                    </button>
-                                    <div class="column-picker-menu shadow" id="columnPickerMenu">
-                                        <div class="p-2 border-bottom fw-bold small text-muted">Show/Hide Columns</div>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="1" checked> ID</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="2" checked> Type</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="3" checked> Inv#</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="4" checked> Entry Date</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="5" checked> Type</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="6" checked> Party</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="7" checked> Remarks</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="8" checked> Total Amount</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="9" checked> Created At</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="10" checked> Status</label>
-                                    </div>
+                        <div class="card-header bg-white d-flex justify-content-between align-items-center py-2 border-bottom">
+                            <span class="fw-bold text-muted small text-uppercase">Expenses Registry</span>
+                            <div class="column-picker-dropdown">
+                                <button class="btn btn-outline-secondary btn-sm px-3 rounded-pill" type="button" id="columnPickerBtn">
+                                    <i class="fa fa-columns me-1"></i> Columns
+                                </button>
+                                <div class="column-picker-menu shadow" id="columnPickerMenu">
+                                    <div class="p-2 border-bottom fw-bold small text-muted">Show/Hide Columns</div>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="1" checked> ID</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="2" checked> Type</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="3" checked> Inv#</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="4" checked> Entry Date</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="5" checked> Type Label</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="6" checked> Party</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="7" checked> Remarks</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="8" checked> Total Amount</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="9" checked> Status</label>
                                 </div>
-
-                                <a class="btn btn-danger btn-sm px-4 rounded-pill shadow-sm" href="{{ route('expense-vochers') }}">
-                                    <i class="fa fa-plus me-1"></i> Add Expense Voucher
-                                </a>
                             </div>
                         </div>
 
-                        <div class="card-body p-3">
+                        <div class="card-body p-0">
                             <div class="table-responsive">
-                                <table id="example" class="table table-hover table-striped table-bordered display w-100">
+                                <table id="example" class="table table-sm table-striped table-bordered w-100 mb-0">
                                     <thead>
                                         <tr>
                                             <th>ID</th>
                                             <th>Type</th>
                                             <th>Inv#</th>
                                             <th>Entry Date</th>
-                                            <th>Type</th>
+                                            <th>Party Type</th>
                                             <th>Party</th>
                                             <th>Remarks</th>
                                             <th class="text-end">Total Amount</th>
-                                            <th>Created At</th>
-                                            <th>Status</th>
-                                            <th class="text-center">Action</th>
+                                            <th class="text-center">Status</th>
+                                            <th class="text-center" style="min-width: 140px;">Action</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         @foreach($expenses as $item)
                                         <tr>
-                                            <td>{{ $item->id }}</td>
-                                            <td>EV</td>
+                                            <td class="text-center text-muted small">{{ $item->id }}</td>
+                                            <td class="text-center small">EV</td>
                                             <td class="fw-bold text-danger">{{ (int) preg_replace('/[^0-9]/', '', substr($item->evid, strlen('EVID-'))) }}</td>
-                                            <td>{{ $item->entry_date ? \Carbon\Carbon::parse($item->entry_date)->format('d-M-Y') : '-' }}</td>
+                                            <td class="small">{{ $item->entry_date ? \Carbon\Carbon::parse($item->entry_date)->format('d-M-Y') : '-' }}</td>
                                             <td class="text-center">
-                                                <span class="badge bg-secondary px-2 rounded-pill">{{ $item->type_label ?? '-' }}</span>
+                                                <span class="badge bg-light text-danger border-0 rounded-pill px-2" style="font-size: 9px;">{{ $item->type_label ?? '-' }}</span>
                                             </td>
-                                            <td class="fw-bold">{{ $item->party_name ?? '-' }}</td>
-                                            <td>{{ \Illuminate\Support\Str::limit($item->remarks, 30) }}</td>
-                                            <td class="text-end fw-bold text-primary">{{ number_format((float)$item->total_amount, 2) }}</td>
-                                            <td>{{ $item->created_at ? \Carbon\Carbon::parse($item->created_at)->format('d-M-Y g:i A') : '-' }}</td>
+                                            <td class="fw-semibold text-dark small">{{ $item->party_name ?? '-' }}</td>
+                                            <td class="small text-muted">{{ Str::limit($item->remarks, 30) }}</td>
+                                            <td class="text-end fw-bold">{{ number_format((float)$item->total_amount, 0) }}</td>
                                             <td class="text-center">
                                                 @if($item->status === 'posted')
-                                                    <span class="badge bg-success px-3 rounded-pill">Posted</span>
+                                                    <span class="badge bg-success rounded-pill px-3">Posted</span>
                                                 @else
-                                                    <span class="badge bg-warning text-dark px-3 rounded-pill">Unposted</span>
+                                                    <span class="badge bg-warning text-dark rounded-pill px-3">Unposted</span>
                                                 @endif
                                             </td>
                                             <td class="text-center">
@@ -213,25 +191,24 @@
                                                     @if($item->status === 'draft' || $item->status === 'Unposted')
                                                         <form action="{{ route('Expense.vochers.post', $item->id) }}" method="POST" class="d-inline">
                                                             @csrf
-                                                            <button type="submit" class="btn btn-outline-primary btn-sm rounded-pill px-2" title="Post now">
+                                                            <button type="submit" class="btn btn-primary btn-xs px-2 py-0" title="Post now" style="font-size: 10px;">
                                                                 <i class="fa fa-send"></i> Post
                                                             </button>
                                                         </form>
                                                         
-                                                        <a href="{{ route('expense-vochers', $item->id) }}" class="btn btn-outline-warning btn-sm rounded-circle" title="Edit">
-                                                           <i class="fa fa-edit"></i>
+                                                        <a href="{{ route('expense-vochers', $item->id) }}" class="btn btn-outline-warning btn-xs px-1 py-0" title="Edit" style="height: 20px;">
+                                                            <i class="fa fa-edit text-dark"></i>
                                                         </a>
 
                                                         <form action="{{ route('Expense.vochers.cancel', $item->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Delete this unposted voucher?')">
-                                                            @csrf
-                                                            @method('DELETE')
-                                                            <button type="submit" class="btn btn-outline-danger btn-sm rounded-circle" title="Delete">
+                                                            @csrf @method('DELETE')
+                                                            <button type="submit" class="btn btn-outline-danger btn-xs px-1 py-0" title="Delete" style="height: 20px;">
                                                                 <i class="fa fa-trash"></i>
                                                             </button>
                                                         </form>
                                                     @endif
                                                     
-                                                    <a href="{{ route('ExpenseVoucher.print', $item->id) }}" target="_blank" class="btn btn-outline-dark btn-sm rounded-circle" title="Print">
+                                                    <a href="{{ route('ExpenseVoucher.print', $item->id) }}" target="_blank" class="btn btn-outline-dark btn-xs px-1 py-0" title="Print" style="height: 20px;">
                                                         <i class="fa fa-print"></i>
                                                     </a>
                                                 </div>
@@ -253,37 +230,23 @@
 @section('scripts')
 <script>
     $(document).ready(function() {
+        $('.select2').select2({ width: '100%' });
+
         // Toggle Column Picker Menu
         $('#columnPickerBtn').on('click', function(e) {
             e.stopPropagation();
             $('#columnPickerMenu').toggleClass('show');
         });
 
-        // Close menu when clicking outside
         $(document).on('click', function(e) {
             if (!$(e.target).closest('.column-picker-dropdown').length) {
                 $('#columnPickerMenu').removeClass('show');
             }
         });
 
-        // Column Persistence with LocalStorage
-        const storageKey = 'expense_voucher_table_columns_v1';
+        const storageKey = 'expense_voucher_table_columns_v2';
         
-        // Load initial state
-        const savedState = localStorage.getItem(storageKey);
-        if (savedState) {
-            const columns = JSON.parse(savedState);
-            $('#columnPickerMenu input').each(function() {
-                const colIdx = $(this).data('column');
-                if (columns.hasOwnProperty(colIdx)) {
-                    $(this).prop('checked', columns[colIdx]);
-                }
-            });
-        }
-
-        // Initialize DataTable
         var dt = $('#example').DataTable({
-            destroy: true,
             scrollX: true,
             autoWidth: false,
             pageLength: 25,
@@ -294,17 +257,8 @@
             }
         });
 
-        // Handle Checkbox Change
-        $('#columnPickerMenu input').on('change', function() {
-            const colIdx = parseInt($(this).data('column'));
-            const isChecked = $(this).is(':checked');
-            
-            dt.column(colIdx - 1).visible(isChecked);
-            dt.columns.adjust().draw(false);
-            saveState();
-        });
-
-        // Re-apply saved column visibility after DataTable init
+        // Apply saved column visibility
+        const savedState = localStorage.getItem(storageKey);
         if (savedState) {
             const columns = JSON.parse(savedState);
             $('#columnPickerMenu input').each(function() {
@@ -316,13 +270,20 @@
             dt.columns.adjust().draw(false);
         }
 
-        function saveState() {
+        // Handle Checkbox Change
+        $('#columnPickerMenu input').on('change', function() {
+            const colIdx = parseInt($(this).data('column'));
+            const isChecked = $(this).is(':checked');
+            
+            dt.column(colIdx - 1).visible(isChecked);
+            dt.columns.adjust().draw(false);
+            
             const state = {};
             $('#columnPickerMenu input').each(function() {
                 state[$(this).data('column')] = $(this).is(':checked');
             });
             localStorage.setItem(storageKey, JSON.stringify(state));
-        }
+        });
     });
 </script>
 @endsection

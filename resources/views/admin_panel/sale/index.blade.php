@@ -12,17 +12,21 @@
     
     #saleListingTable thead th {
         white-space: nowrap;
-        background-color: #f8f9fa;
-        color: #333;
+        background-color: #f8f9fa !important;
+        color: #333 !important;
         font-weight: 600;
         vertical-align: middle;
-        font-size: 13px;
+        padding: 8px 10px !important;
+        font-size: 12px;
+        text-transform: uppercase;
     }
     
     #saleListingTable tbody td {
         white-space: nowrap;
         vertical-align: middle;
-        font-size: 13px;
+        padding: 4px 10px !important;
+        font-size: 12px;
+        color: #333;
     }
 
     /* Column Picker Styles */
@@ -70,67 +74,54 @@
         margin-right: 10px;
         cursor: pointer;
     }
-    .column-hidden {
-        display: none !important;
-    }
 
-    .badge-unposted {
-        background-color: #ffc107;
-        color: #000;
-    }
-    .badge-posted {
-        background-color: #198754;
-        color: #fff;
+    .card {
+        border-radius: 8px;
+        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+        border: none;
     }
     
     .item-detail-row {
-        font-size: 11px;
+        font-size: 10.5px;
         border-bottom: 1px dashed #eee;
-        padding: 2px 0;
+        padding: 1px 0;
+        line-height: 1.2;
     }
 </style>
 
 <div class="main-content">
     <div class="main-content-inner">
-        <div class="container-fluid pt-4">
+        <div class="container-fluid pt-3">
             
             <!-- Filters Section -->
-            <div class="row mb-4">
+            <div class="row mb-3">
                 <div class="col-12">
                     <div class="card border-0 shadow-sm">
-                        <div class="card-body p-3">
-                            <form action="{{ route('sale.index') }}" method="GET" class="row g-3 align-items-end">
+                        <div class="card-body p-2">
+                            <form action="{{ route('sale.index') }}" method="GET" class="row g-2 align-items-center">
                                 <div class="col-md-3">
-                                    <label class="form-label small fw-bold text-muted">Start Date</label>
-                                    <input type="date" name="start_date" class="form-control form-control-sm" value="{{ request('start_date') }}">
+                                    <h6 class="mb-0 fw-bold text-dark ms-2"><i class="fa fa-shopping-cart me-2 text-primary"></i>Sales & Bookings</h6>
                                 </div>
                                 <div class="col-md-3">
-                                    <label class="form-label small fw-bold text-muted">End Date</label>
-                                    <input type="date" name="end_date" class="form-control form-control-sm" value="{{ request('end_date') }}">
+                                    <div class="input-group input-group-sm">
+                                        <span class="input-group-text bg-white border-end-0 small fw-bold text-muted">Range</span>
+                                        <input type="date" name="start_date" class="form-control border-start-0" value="{{ request('start_date') }}">
+                                        <input type="date" name="end_date" class="form-control" value="{{ request('end_date') }}">
+                                    </div>
                                 </div>
                                 <div class="col-md-2">
-                                    <label class="form-label small fw-bold text-muted">Status</label>
-                                    <select name="status" class="form-select form-select-sm">
+                                    <select name="status" class="form-select form-select-sm select2">
                                         <option value="">All Status</option>
                                         <option value="Unposted" {{ request('status') == 'Unposted' ? 'selected' : '' }}>Unposted</option>
                                         <option value="Posted" {{ request('status') == 'Posted' ? 'selected' : '' }}>Posted</option>
                                     </select>
                                 </div>
-                                <div class="col-md-2">
-                                    <label class="form-label small fw-bold text-muted">Sale Type</label>
-                                    <select name="sale_type" class="form-select form-select-sm">
-                                        <option value="">All Types</option>
-                                        <option value="regular" {{ request('sale_type') == 'regular' ? 'selected' : '' }}>Regular Sale</option>
-                                        <option value="order" {{ request('sale_type') == 'order' ? 'selected' : '' }}>Sale Order</option>
-                                    </select>
-                                </div>
-                                <div class="col-md-4">
-                                    <div class="d-flex gap-2">
-                                        <button type="submit" class="btn btn-primary btn-sm px-4 rounded-pill">
-                                            <i class="fa fa-filter me-1"></i> Filter
-                                        </button>
-                                        <a href="{{ route('sale.index') }}" class="btn btn-outline-secondary btn-sm px-4 rounded-pill">
-                                            <i class="fa fa-refresh me-1"></i> Reset
+                                <div class="col-md-4 text-end">
+                                    <div class="d-flex gap-1 justify-content-end align-items-center">
+                                        <button type="submit" class="btn btn-primary btn-sm rounded-pill px-3 shadow-sm">Filter</button>
+                                        <a href="{{ route('sale.index') }}" class="btn btn-outline-secondary btn-sm rounded-pill px-2" title="Reset"><i class="fa fa-refresh"></i></a>
+                                        <a class="btn btn-primary btn-sm rounded-pill px-4 shadow-sm ms-2" href="{{ route('sale.add') }}">
+                                            <i class="fa fa-plus me-1"></i> Add Sale
                                         </a>
                                     </div>
                                 </div>
@@ -140,48 +131,36 @@
                 </div>
             </div>
 
-            <div class="card shadow border-0">
-                <div class="card-header d-flex justify-content-between align-items-center py-3">
-                    <h4 class="mb-0 fw-bold">Sales & Bookings Management</h4>
-                    <div class="d-flex gap-2">
-                        <!-- Column Picker Button -->
-                        <div class="column-picker-dropdown">
-                            <button class="btn btn-outline-secondary btn-sm px-3 rounded-pill" type="button" id="columnPickerBtn">
-                                <i class="fa fa-columns me-1"></i> Columns
-                            </button>
-                            <div class="column-picker-menu shadow" id="columnPickerMenu">
-                                <div class="p-2 border-bottom fw-bold small text-muted">Show/Hide Columns</div>
-                                <label class="column-picker-item"><input type="checkbox" data-column="1" checked> #</label>
-                                <label class="column-picker-item"><input type="checkbox" data-column="2" checked> Type</label>
-                                <label class="column-picker-item"><input type="checkbox" data-column="3" checked> Inv#</label>
-                                <label class="column-picker-item"><input type="checkbox" data-column="4" checked> Manual Inv</label>
-                                <label class="column-picker-item"><input type="checkbox" data-column="5" checked> Sale Type</label>
-                                <label class="column-picker-item"><input type="checkbox" data-column="6" checked> Party Type</label>
-                                <label class="column-picker-item"><input type="checkbox" data-column="7" checked> Customer/Vendor</label>
-                                <label class="column-picker-item"><input type="checkbox" data-column="8" checked> Items</label>
-                                <label class="column-picker-item"><input type="checkbox" data-column="9" checked> Location</label>
-                                <label class="column-picker-item"><input type="checkbox" data-column="10" checked> Rate</label>
-                                <label class="column-picker-item"><input type="checkbox" data-column="11" checked> Qty</label>
-                                <label class="column-picker-item"><input type="checkbox" data-column="12" checked> Sale Price</label>
-                                <label class="column-picker-item"><input type="checkbox" data-column="13" checked> Line Total</label>
-                                <label class="column-picker-item"><input type="checkbox" data-column="14" checked> Net Total</label>
-                                <label class="column-picker-item"><input type="checkbox" data-column="15" checked> Disc</label>
-                                <label class="column-picker-item"><input type="checkbox" data-column="16" checked> Prev Bal</label>
-                                <label class="column-picker-item"><input type="checkbox" data-column="17" checked> Receipts</label>
-                                <label class="column-picker-item"><input type="checkbox" data-column="18" checked> Payable</label>
-                                <label class="column-picker-item"><input type="checkbox" data-column="19" checked> Date</label>
-                                <label class="column-picker-item"><input type="checkbox" data-column="20" checked> Status</label>
-                            </div>
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center py-2 border-bottom">
+                    <span class="fw-bold text-muted small text-uppercase">Sales Ledger</span>
+                    <div class="column-picker-dropdown">
+                        <button class="btn btn-outline-secondary btn-sm px-3 rounded-pill" type="button" id="columnPickerBtn">
+                            <i class="fa fa-columns me-1"></i> Columns
+                        </button>
+                        <div class="column-picker-menu shadow" id="columnPickerMenu">
+                            <div class="p-2 border-bottom fw-bold small text-muted">Show/Hide Columns</div>
+                            <label class="column-picker-item"><input type="checkbox" data-column="1" checked> #</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="2" checked> Type</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="3" checked> Inv#</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="4" checked> Manual Inv</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="5" checked> Sale Type</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="6" checked> Party Type</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="7" checked> Customer/Vendor</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="8" checked> Items</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="9" checked> Location</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="10" checked> Net Total</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="11" checked> Disc</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="12" checked> Receipts</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="13" checked> Payable Balance</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="14" checked> Date</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="15" checked> Status</label>
                         </div>
-
-                        <a class="btn btn-primary btn-sm px-4 rounded-pill" href="{{ route('sale.add') }}">
-                            <i class="fa fa-plus me-1"></i> Add Sale
-                        </a>
                     </div>
                 </div>
-                <div class="card-body">
+                <div class="card-body p-0">
                     <div class="table-responsive">
-                        <table id="saleListingTable" class="table table-striped table-bordered display w-100">
+                        <table id="saleListingTable" class="table table-sm table-striped table-bordered w-100 mb-0">
                             <thead>
                                 <tr>
                                     <th>#</th>
@@ -193,62 +172,51 @@
                                     <th>Customer/Vendor</th>
                                     <th>Items</th>
                                     <th>Location</th>
-                                    <th>Rate</th>
-                                    <th>Qty</th>
-                                    <th>Sale Price</th>
-                                    <th>Line Total</th>
                                     <th class="text-end">Net Total</th>
                                     <th class="text-end">Disc</th>
-                                    <th class="text-end text-warning">Prev Bal</th>
                                     <th class="text-end text-success">Receipts</th>
                                     <th class="text-end text-primary">Payable Balance</th>
                                     <th>Date</th>
                                     <th class="text-center">Status</th>
-                                    <th style="width: 120px;">Action</th>
+                                    <th class="text-center" style="min-width: 120px;">Action</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 @foreach($sales as $key => $sale)
                                 <tr>
-                                    <td>{{ $key+1 }}</td>
-                                    <td>SJ</td>
+                                    <td class="text-muted">{{ $key+1 }}</td>
+                                    <td class="text-muted small">SJ</td>
                                     <td class="fw-bold text-primary">{{ (int) preg_replace('/[^0-9]/', '', substr($sale->invoice_no, strlen('INVSLE-'))) }}</td>
                                     <td>{{ $sale->manual_invoice ?? '-' }}</td>
                                     <td>
                                         @if($sale->is_sale_order)
-                                            <span class="badge bg-danger rounded-pill" style="font-size: 10px;">
-                                                <i class="fa fa-calendar-check-o me-1"></i> Order
-                                            </span>
+                                            <span class="badge bg-danger rounded-pill px-2" style="font-size: 9px;"><i class="fa fa-calendar-check-o me-1"></i> Order</span>
                                         @else
-                                            <span class="badge bg-success rounded-pill" style="font-size: 10px;">
-                                                <i class="fa fa-check-circle me-1"></i> Proper 
-                                            </span>
+                                            <span class="badge bg-success rounded-pill px-2" style="font-size: 9px;"><i class="fa fa-check-circle me-1"></i> Proper</span>
                                         @endif
                                     </td>
                                     <td>
                                         @if($sale->p_type === 'vendor')
-                                            <span class="badge bg-info">Vendor</span>
+                                            <span class="badge bg-info-subtle text-info border border-info px-1 py-0" style="font-size: 10px;">Vendor</span>
                                         @elseif($sale->p_type === 'customer')
-                                            <span class="badge bg-primary">Customer</span>
-                                        @elseif($sale->p_type === 'walking')
-                                            <span class="badge bg-secondary">Walk-in</span>
+                                            <span class="badge bg-primary-subtle text-primary border border-primary px-1 py-0" style="font-size: 10px;">Customer</span>
                                         @else
-                                            <span class="badge bg-light text-dark">{{ ucfirst($sale->p_type ?? 'N/A') }}</span>
+                                            <span class="badge bg-secondary-subtle text-secondary border border-secondary px-1 py-0" style="font-size: 10px;">{{ ucfirst($sale->p_type ?? 'N/A') }}</span>
                                         @endif
                                     </td>
                                     <td>
                                         @if($sale->p_type === 'vendor')
-                                            <span class="fw-bold">{{ $sale->vendor->name ?? 'N/A' }}</span>
+                                            <span class="fw-bold text-dark small">{{ $sale->vendor->name ?? 'N/A' }}</span>
                                         @else
-                                            <span class="fw-bold">{{ $sale->customer->customer_name ?? 'N/A' }}</span>
+                                            <span class="fw-bold text-dark small">{{ $sale->customer->customer_name ?? 'N/A' }}</span>
                                         @endif
                                     </td>
                                     
-                                    {{-- Items Detailed Columns --}}
-                                    <td class="small">
+                                    <td class="py-1">
                                         @foreach($sale->items as $item)
                                             <div class="item-detail-row">
                                                 {{ $item->product->name ?? 'Product #'.$item->product_id }}
+                                                <span class="text-primary fw-bold ms-1">({{ number_format($item->sales_qty ?? 0, 0) }})</span>
                                             </div>
                                         @endforeach
                                     </td>
@@ -258,91 +226,52 @@
                                                 @if($item->warehouse_id == 0)
                                                     Shop
                                                 @else
-                                                    {{ $item->warehouse->warehouse_name ?? 'N/A' }}
+                                                    {{ Str::limit($item->warehouse->warehouse_name ?? 'N/A', 15) }}
                                                 @endif
                                             </div>
                                         @endforeach
                                     </td>
-                                    <td class="small text-end">
-                                        @foreach($sale->items as $item)
-                                            <div class="item-detail-row">
-                                                {{ number_format($item->retail_price ?? 0, 0) }}
-                                            </div>
-                                        @endforeach
-                                    </td>
-                                    <td class="small text-center qty-cell">
-                                        <div class="individual-qtys">
-                                            @foreach($sale->items as $item)
-                                                <div class="item-detail-row">
-                                                    {{ number_format($item->sales_qty ?? 0, 0) }}
-                                                </div>
-                                            @endforeach
-                                        </div>
-                                        <div class="total-qty d-none fw-bold">
-                                            {{ number_format($sale->items->sum('sales_qty'), 0) }}
-                                        </div>
-                                    </td>
-                                    <td class="small text-end">
-                                        @foreach($sale->items as $item)
-                                            <div class="item-detail-row">
-                                                {{ number_format($item->sales_price ?? 0, 0) }}
-                                            </div>
-                                        @endforeach
-                                    </td>
-                                    <td class="small text-end">
-                                        @foreach($sale->items as $item)
-                                            <div class="item-detail-row fw-semibold">
-                                                {{ number_format($item->amount ?? 0, 0) }}
-                                            </div>
-                                        @endforeach
-                                    </td>
 
-                                    {{-- Financial Summary --}}
-                                    <td class="text-end">{{ number_format($sale->sub_total2 ?? ($sale->items->sum('amount') ?? 0), 0) }}</td>
+                                    <td class="text-end fw-bold">{{ number_format($sale->sub_total2 ?? ($sale->items->sum('amount') ?? 0), 0) }}</td>
                                     <td class="text-end text-danger">{{ number_format($sale->discount_amount ?? 0, 0) }}</td>
-                                    <td class="text-end text-warning">{{ number_format($sale->previous_balance ?? 0, 0) }}</td>
-                                    <td class="text-end text-success">
-                                        {{ number_format(($sale->receipt1 ?? 0) + ($sale->receipt2 ?? 0), 0) }}
-                                    </td>
+                                    <td class="text-end text-success">{{ number_format(($sale->receipt1 ?? 0) + ($sale->receipt2 ?? 0), 0) }}</td>
                                     <td class="text-end fw-bold text-primary">{{ number_format($sale->total_balance, 0) }}</td>
                                     
-                                    <td data-order="{{ $sale->created_at }}">
-                                        {{ \Carbon\Carbon::parse($sale->created_at)->format('d-M-Y') }}
-                                    </td>
+                                    <td class="small">{{ \Carbon\Carbon::parse($sale->created_at)->format('d-M-Y') }}</td>
                                     <td class="text-center">
                                         @if($sale->entry_status === 'Posted')
-                                            <span class="badge badge-posted px-2 py-1 shadow-sm">Posted</span>
+                                            <span class="badge bg-success rounded-pill px-3">Posted</span>
                                         @else
-                                            <span class="badge badge-unposted px-2 py-1 shadow-sm">Unposted</span>
+                                            <span class="badge bg-warning text-dark rounded-pill px-3">Unposted</span>
                                         @endif
                                     </td>
-                                    <td>
+                                    <td class="text-center">
                                         <div class="d-flex gap-1 justify-content-center">
                                             @if($sale->entry_status === 'Unposted')
                                                 <form action="{{ route('sale.post', $sale->id) }}" method="POST" class="d-inline">
                                                     @csrf
-                                                    <button type="submit" class="btn btn-outline-primary btn-sm rounded-pill px-2" title="Post now">
+                                                    <button type="submit" class="btn btn-primary btn-xs px-2 py-0" title="Post now" style="font-size: 10px;">
                                                         <i class="fa fa-send"></i> Post
                                                     </button>
                                                 </form>
 
-                                                <a class="btn btn-outline-warning btn-sm rounded-circle" href="{{ route('editBooking.index', $sale->id) }}" title="Edit">
-                                                    <i class="fa fa-edit"></i>
+                                                <a class="btn btn-outline-warning btn-xs px-1 py-0" href="{{ route('editBooking.index', $sale->id) }}" title="Edit" style="height: 20px;">
+                                                    <i class="fa fa-edit text-dark"></i>
                                                 </a>
 
                                                 <form action="{{ route('sale.destroy', $sale->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Delete this unposted booking?')">
                                                     @csrf
                                                     @method('DELETE')
-                                                    <button type="submit" class="btn btn-outline-danger btn-sm rounded-circle" title="Delete">
+                                                    <button type="submit" class="btn btn-outline-danger btn-xs px-1 py-0" title="Delete" style="height: 20px;">
                                                         <i class="fa fa-trash"></i>
                                                     </button>
                                                 </form>
 
-                                                <a class="btn btn-outline-dark btn-sm rounded-circle" href="{{ route('booking.print', $sale->id) }}" title="Print Preview">
+                                                <a class="btn btn-outline-dark btn-xs px-1 py-0" href="{{ route('booking.print', $sale->id) }}" title="Print Preview" style="height: 20px;">
                                                    <i class="fa fa-file-text-o"></i>
                                                </a>
                                             @else
-                                                <a class="btn btn-outline-dark btn-sm rounded-circle" href="{{ route('sale.invoice', $sale->id) }}" title="Invoice">
+                                                <a class="btn btn-outline-dark btn-xs px-1 py-0" href="{{ route('sale.invoice', $sale->id) }}" title="Invoice" style="height: 20px;">
                                                     <i class="fa fa-print"></i>
                                                 </a>
                                             @endif
@@ -364,33 +293,25 @@
 @section('scripts')
 <script>
     $(document).ready(function() {
+        $('.select2').select2({ width: '100%' });
+
         // Toggle Column Picker Menu
         $('#columnPickerBtn').on('click', function(e) {
             e.stopPropagation();
             $('#columnPickerMenu').toggleClass('show');
         });
 
-        // Close menu when clicking outside
         $(document).on('click', function(e) {
             if (!$(e.target).closest('.column-picker-dropdown').length) {
                 $('#columnPickerMenu').removeClass('show');
             }
         });
 
-        // Column Persistence with LocalStorage
-        const storageKey = 'sale_table_columns_v1';
+        const storageKey = 'sale_table_cols_v2';
         
-        function saveState() {
-            const state = {};
-            $('#columnPickerMenu input').each(function() {
-                state[$(this).data('column')] = $(this).is(':checked');
-            });
-            localStorage.setItem(storageKey, JSON.stringify(state));
-        }
-
         // Initialize DataTable
         var dt = $('#saleListingTable').DataTable({
-            "order": [[1, 'desc']], // Default sort by Invoice# Descending
+            "order": [[2, 'desc']], // Default sort by Inv#
             "pageLength": 25,
             "scrollX": true,
             "autoWidth": false,
@@ -398,55 +319,13 @@
                 "search": "_INPUT_",
                 "searchPlaceholder": "Search sales..."
             },
-            "columnDefs": [
-                { "orderable": false, "targets": [6, 7, 8, 9, 10, 11, 19] } // Disable sort for detailed columns and Action
-            ],
             dom: 'Bfrtip',
             buttons: [
-                'copyHtml5',
-                'excelHtml5',
-                'csvHtml5',
-                {
-                    extend: 'pdfHtml5',
-                    orientation: 'landscape',
-                    pageSize: 'A4'
-                }
+                'copyHtml5', 'excelHtml5', 'csvHtml5'
             ]
         });
 
-        // Function to toggle individual vs total Qty
-        function updateQtyDisplay() {
-            if (!dt) return;
-            // Column 7 (data-column 7, index 6) is "Items"
-            const itemsVisible = dt.column(6).visible();
-            if (itemsVisible) {
-                $('.individual-qtys').removeClass('d-none');
-                $('.total-qty').addClass('d-none');
-            } else {
-                $('.individual-qtys').addClass('d-none');
-                $('.total-qty').removeClass('d-none');
-            }
-        }
-        
-        // Run once after initial setup
-        setTimeout(updateQtyDisplay, 100);
-
-        // Handle Checkbox Change
-        $('#columnPickerMenu input').on('change', function() {
-            const colIdx = parseInt($(this).data('column'));
-            const isChecked = $(this).is(':checked');
-            
-            // DataTable column index is 0-based, picker is 1-based
-            dt.column(colIdx - 1).visible(isChecked);
-            dt.columns.adjust().draw(false);
-            
-            // Update quantity display style
-            updateQtyDisplay();
-            
-            saveState();
-        });
-
-        // Load initial state
+        // Apply saved column visibility
         const savedState = localStorage.getItem(storageKey);
         if (savedState) {
             const columns = JSON.parse(savedState);
@@ -457,11 +336,22 @@
                 dt.column(colIdx - 1).visible(checked);
             });
             dt.columns.adjust().draw(false);
-            updateQtyDisplay();
         }
 
-        // Adjust sorting for the new column (column index 3 is now Sale Type)
-        // Previous targets [5, 6, 7... 18] now shift to [6, 7, 8... 19]
+        // Handle Checkbox Change
+        $('#columnPickerMenu input').on('change', function() {
+            const colIdx = parseInt($(this).data('column'));
+            const isChecked = $(this).is(':checked');
+            
+            dt.column(colIdx - 1).visible(isChecked);
+            dt.columns.adjust().draw(false);
+            
+            const state = {};
+            $('#columnPickerMenu input').each(function() {
+                state[$(this).data('column')] = $(this).is(':checked');
+            });
+            localStorage.setItem(storageKey, JSON.stringify(state));
+        });
     });
 </script>
 @endsection

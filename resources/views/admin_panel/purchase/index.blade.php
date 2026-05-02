@@ -10,17 +10,22 @@
         margin-bottom: 1rem;
     }
     
-    #example thead th {
+    #purchaseTable thead th {
         white-space: nowrap;
         background-color: #f8f9fa;
         color: #333;
         font-weight: 600;
         vertical-align: middle;
+        padding: 6px 10px !important;
+        font-size: 13px;
     }
     
-    #example tbody td {
+    #purchaseTable tbody td {
         white-space: nowrap;
         vertical-align: middle;
+        padding: 3px 10px !important;
+        font-size: 12px;
+        color: #333;
     }
 
     /* Column Picker Styles */
@@ -77,22 +82,31 @@
         border-radius: 8px;
         box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
     }
-    
-    .card-header {
-        background-color: #fff;
-        border-bottom: 1px solid #edf2f9;
-    }
 </style>
 
 <div class="main-content">
     <div class="main-content-inner">
         <div class="container-fluid pt-4">
+
+            @if(session('success'))
+                <div class="alert alert-success alert-dismissible fade show shadow-sm border-0" role="alert">
+                    <i class="fa fa-check-circle me-1"></i> {{ session('success') }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            @endif
+            @if(session('error'))
+                <div class="alert alert-danger alert-dismissible fade show shadow-sm border-0" role="alert">
+                    <i class="fa fa-times-circle me-1"></i> {{ session('error') }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            @endif
+
             <!-- Filter Section -->
-            <div class="row mb-4">
+            <div class="row mb-3">
                 <div class="col-12">
                     <div class="card border-0 shadow-sm">
                         <div class="card-body p-3">
-                            <form action="{{ route('Purchase.home') }}" method="GET" class="row g-3 align-items-end">
+                            <form action="{{ route('Purchase.home') }}" method="GET" class="row g-2 align-items-end">
                                 <div class="col-md-3">
                                     <label class="form-label small fw-bold text-muted">Start Date</label>
                                     <input type="date" name="start_date" class="form-control form-control-sm" value="{{ request('start_date') }}">
@@ -111,7 +125,7 @@
                                 </div>
                                 <div class="col-md-4">
                                     <div class="d-flex gap-2">
-                                        <button type="submit" class="btn btn-primary btn-sm px-4 rounded-pill">
+                                        <button type="submit" class="btn btn-primary btn-sm px-4 rounded-pill shadow-sm">
                                             <i class="fa fa-filter me-1"></i> Filter
                                         </button>
                                         <a href="{{ route('Purchase.home') }}" class="btn btn-outline-secondary btn-sm px-4 rounded-pill">
@@ -127,9 +141,9 @@
 
             <div class="row">
                 <div class="col-12">
-                    <div class="card border-0">
-                        <div class="card-header d-flex justify-content-between align-items-center py-3">
-                            <h4 class="card-title mb-0 fw-bold text-dark">Purchase Management</h4>
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-white d-flex justify-content-between align-items-center py-3 border-bottom">
+                            <h4 class="card-title mb-0 fw-bold text-dark"><i class="fa fa-shopping-cart me-2 text-primary"></i>Purchase Management</h4>
                             <div class="d-flex gap-2">
                                 <!-- Column Picker Button -->
                                 <div class="column-picker-dropdown">
@@ -158,16 +172,16 @@
                                     </div>
                                 </div>
 
-                                <a class="btn btn-primary btn-sm px-4 rounded-pill" href="{{ route('add_purchase') }}">
+                                <a class="btn btn-primary btn-sm px-4 rounded-pill shadow-sm" href="{{ route('add_purchase') }}">
                                     <i class="fa fa-plus me-1"></i> Add Purchase
                                 </a>
                             </div>
                         </div>
 
-                        <div class="card-body p-3">
+                        <div class="card-body p-0 bg-white">
                             <div class="table-responsive">
-                                <table id="example" class="table table-striped table-bordered display w-100">
-                                    <thead>
+                                <table id="purchaseTable" class="table table-sm table-striped table-bordered w-100 mb-0">
+                                    <thead class="bg-light">
                                         <tr>
                                             <th>ID</th>
                                             <th>Type</th>
@@ -181,12 +195,12 @@
                                             <th>Date</th>
                                             <th>Warehouse</th>
                                             <th>DC / Bilty</th>
-                                            <th>Subtotal</th>
-                                            <th>Disc</th>
-                                            <th>WHT</th>
-                                            <th>Net</th>
-                                            <th>Status</th>
-                                            <th>Action</th>
+                                            <th class="text-end">Subtotal</th>
+                                            <th class="text-end">Disc</th>
+                                            <th class="text-end">WHT</th>
+                                            <th class="text-end">Net</th>
+                                            <th class="text-center">Status</th>
+                                            <th class="text-center">Action</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -194,12 +208,12 @@
                                         <tr>
                                             <td>{{ $purchase->id }}</td>
                                             <td>PJ</td>
-                                            <td class="fw-bold">{{ (int) preg_replace('/[^0-9]/', '', substr($purchase->invoice_no, strlen('PUR-'))) }}</td>
+                                            <td class="fw-bold text-primary">{{ (int) preg_replace('/[^0-9]/', '', substr($purchase->invoice_no, strlen('PUR-'))) }}</td>
                                             <td class="text-center">
                                                 @if($purchase->inward_id)
-                                                    <span class="badge bg-info">Inward ({{ $purchase->inward_id }})</span>
+                                                    <span class="badge bg-info px-2">Inward ({{ $purchase->inward_id }})</span>
                                                 @else
-                                                    <span class="badge bg-success">Direct</span>
+                                                    <span class="badge bg-success px-2">Direct</span>
                                                 @endif
                                             </td>
                                             <td class="text-center">
@@ -210,40 +224,40 @@
 
                                                 @if($pType)
                                                     @if(str_contains($pType, 'Vendor'))
-                                                        <span class="badge bg-primary">Vendor</span>
+                                                        <span class="badge bg-primary px-2">Vendor</span>
                                                     @elseif(str_contains($pType, 'Customer'))
                                                         @if(optional($model)->customer_type == 'Walking Customer')
-                                                            <span class="badge bg-secondary">Walking Customer</span>
+                                                            <span class="badge bg-secondary px-2">Walkin</span>
                                                         @else
-                                                            <span class="badge bg-warning text-dark">Customer</span>
+                                                            <span class="badge bg-warning text-dark px-2">Customer</span>
                                                         @endif
                                                     @else
-                                                        <span class="badge bg-secondary">{{ class_basename($pType) }}</span>
+                                                        <span class="badge bg-secondary px-2">{{ class_basename($pType) }}</span>
                                                     @endif
                                                 @else
-                                                    <span class="badge bg-secondary">N/A</span>
+                                                    <span class="badge bg-secondary px-2">N/A</span>
                                                 @endif
                                             </td>
-                                            <td>{{ $purchase->purchasable->name ?? ($purchase->purchasable->customer_name ?? ($purchase->vendor->name ?? 'N/A')) }}</td>
+                                            <td class="fw-bold text-dark">{{ $purchase->purchasable->name ?? ($purchase->purchasable->customer_name ?? ($purchase->vendor->name ?? 'N/A')) }}</td>
                                             
-                                            <td class="small">
+                                            <td class="small py-1">
                                                 @foreach($purchase->items as $item)
-                                                    <div style="font-size: 11px; border-bottom: 1px dashed #eee; padding: 2px 0;">
+                                                    <div style="font-size: 10.5px; border-bottom: 1px dashed #f0f0f0; padding: 1px 0; line-height: 1.2;">
                                                         {{ $item->product->name ?? 'Unknown' }}
                                                     </div>
                                                 @endforeach
                                             </td>
-                                            <td class="small text-end">
+                                            <td class="small text-end fw-bold py-1">
                                                 @foreach($purchase->items as $item)
-                                                    <div style="font-size: 11px; border-bottom: 1px dashed #eee; padding: 2px 0;">
+                                                    <div style="font-size: 10.5px; border-bottom: 1px dashed #f0f0f0; padding: 1px 0; line-height: 1.2;">
                                                         {{ number_format($item->price, 0) }}
                                                     </div>
                                                 @endforeach
                                             </td>
-                                            <td class="small text-center">
+                                            <td class="small text-center fw-bold text-muted py-1">
                                                 @foreach($purchase->items as $item)
-                                                    <div style="font-size: 11px; border-bottom: 1px dashed #eee; padding: 2px 0;">
-                                                        {{ $item->qty }}
+                                                    <div style="font-size: 10.5px; border-bottom: 1px dashed #f0f0f0; padding: 1px 0; line-height: 1.2;">
+                                                        {{ (float)$item->qty }}
                                                     </div>
                                                 @endforeach
                                             </td>
@@ -251,26 +265,26 @@
                                             <td>{{ \Carbon\Carbon::parse($purchase->current_date)->format('d-M-Y') }}</td>
                                             <td>
                                                 @if($purchase->warehouse_id == 0 || !$purchase->warehouse)
-                                                    <span class="text-primary fw-bold">🏠 Shop</span>
+                                                    <span class="text-primary fw-bold px-1">🏠 Shop Stock</span>
                                                 @else
-                                                    <span class="text-muted">📦 {{ $purchase->warehouse->warehouse_name }}</span>
+                                                    <span class="text-muted fw-bold">📦 {{ $purchase->warehouse->warehouse_name }}</span>
                                                 @endif
                                             </td>
                                             
                                             <td>
-                                                @if($purchase->dc) <div><small>DC:</small> {{ $purchase->dc }}</div> @endif
-                                                @if($purchase->bilty_no) <div><small>Bilty:</small> {{ $purchase->bilty_no }}</div> @endif
+                                                @if($purchase->dc) <div><small class="text-muted">DC:</small> {{ $purchase->dc }}</div> @endif
+                                                @if($purchase->bilty_no) <div><small class="text-muted">Bilty:</small> {{ $purchase->bilty_no }}</div> @endif
                                             </td>
 
-                                            <td class="text-end">{{ number_format($purchase->subtotal, 0) }}</td>
-                                            <td class="text-end text-danger">{{ number_format($purchase->discount, 0) }}</td>
-                                            <td class="text-end">{{ number_format($purchase->wht, 0) }}</td>
-                                            <td class="text-end fw-bold">{{ number_format($purchase->net_amount, 0) }}</td>
+                                            <td class="text-end fw-bold">{{ number_format($purchase->subtotal, 0) }}</td>
+                                            <td class="text-end text-danger fw-bold">{{ number_format($purchase->discount, 0) }}</td>
+                                            <td class="text-end fw-bold">{{ number_format($purchase->wht, 0) }}</td>
+                                            <td class="text-end fw-bold text-success">{{ number_format($purchase->net_amount, 0) }}</td>
                                             <td class="text-center">
                                                 @if($purchase->status === 'Posted')
-                                                    <span class="badge bg-success">Posted</span>
+                                                    <span class="badge bg-success rounded-pill px-3">Posted</span>
                                                 @else
-                                                    <span class="badge bg-warning text-dark">Unposted</span>
+                                                    <span class="badge bg-warning text-dark rounded-pill px-3">Unposted</span>
                                                 @endif
                                             </td>
                                              <td class="text-center">
@@ -278,25 +292,25 @@
                                                      @if($purchase->status === 'Unposted')
                                                          <form action="{{ route('purchase.post', $purchase->id) }}" method="POST" class="d-inline">
                                                              @csrf
-                                                             <button type="submit" class="btn btn-outline-primary btn-sm rounded-pill px-2" title="Post now">
+                                                             <button type="submit" class="btn btn-primary btn-xs px-2 py-0" title="Post now" style="font-size: 10px;">
                                                                  <i class="fa fa-send"></i> Post
                                                              </button>
                                                          </form>
                                                          
-                                                         <a href="{{ route('purchase.edit', $purchase->id) }}" class="btn btn-outline-warning btn-sm rounded-circle" title="Edit">
+                                                         <a href="{{ route('purchase.edit', $purchase->id) }}" class="btn btn-outline-warning btn-xs px-1 py-0" title="Edit">
                                                             <i class="fa fa-edit"></i>
                                                          </a>
 
                                                          <form action="{{ route('purchase.destroy', $purchase->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Delete this unposted purchase?')">
                                                              @csrf
                                                              @method('DELETE')
-                                                             <button type="submit" class="btn btn-outline-danger btn-sm rounded-circle" title="Delete">
+                                                             <button type="submit" class="btn btn-outline-danger btn-xs px-1 py-0" title="Delete">
                                                                  <i class="fa fa-trash"></i>
                                                              </button>
                                                          </form>
                                                      @endif
                                                      
-                                                     <a href="{{ route('purchase.invoice', $purchase->id) }}" class="btn btn-outline-dark btn-sm rounded-circle" title="Print Invoice">
+                                                     <a href="{{ route('purchase.invoice', $purchase->id) }}" class="btn btn-outline-dark btn-xs px-1 py-0" title="Print Invoice">
                                                          <i class="fa fa-print"></i>
                                                      </a>
                                                  </div>
@@ -324,59 +338,16 @@
             $('#columnPickerMenu').toggleClass('show');
         });
 
-        // Close menu when clicking outside
         $(document).on('click', function(e) {
             if (!$(e.target).closest('.column-picker-dropdown').length) {
                 $('#columnPickerMenu').removeClass('show');
             }
         });
 
-        // Column Persistence with LocalStorage
-        const storageKey = 'purchase_table_columns_v2';
+        const storageKey = 'purchase_table_columns_v3';
         
-        // Load initial state
-        const savedState = localStorage.getItem(storageKey);
-        if (savedState) {
-            const columns = JSON.parse(savedState);
-            $('#columnPickerMenu input').each(function() {
-                const colIdx = $(this).data('column');
-                if (columns.hasOwnProperty(colIdx)) {
-                    $(this).prop('checked', columns[colIdx]);
-                    toggleColumn(colIdx, columns[colIdx]);
-                }
-            });
-        }
-
-        // Handle Checkbox Change
-        $('#columnPickerMenu input').on('change', function() {
-            const colIdx = $(this).data('column');
-            const isChecked = $(this).is(':checked');
-            
-            toggleColumn(colIdx, isChecked);
-            saveState();
-        });
-
-        function toggleColumn(index, show) {
-            const table = $('#example');
-            // nth-child is 1-indexed
-            const cells = table.find(`th:nth-child(${index}), td:nth-child(${index})`);
-            if (show) {
-                cells.removeClass('column-hidden');
-            } else {
-                cells.addClass('column-hidden');
-            }
-        }
-
-        function saveState() {
-            const state = {};
-            $('#columnPickerMenu input').each(function() {
-                state[$(this).data('column')] = $(this).is(':checked');
-            });
-            localStorage.setItem(storageKey, JSON.stringify(state));
-        }
-
         // Initialize DataTable
-        var dt = $('#example').DataTable({
+        var dt = $('#purchaseTable').DataTable({
             destroy: true,
             scrollX: true,
             autoWidth: false,
@@ -388,25 +359,33 @@
             }
         });
 
-        // Re-apply saved column visibility after DataTable init
-        const savedState2 = localStorage.getItem(storageKey);
-        if (savedState2) {
-            const columns = JSON.parse(savedState2);
+        // Apply saved column visibility
+        const savedState = localStorage.getItem(storageKey);
+        if (savedState) {
+            const columns = JSON.parse(savedState);
             $('#columnPickerMenu input').each(function() {
                 const colIdx = parseInt($(this).data('column'));
                 const checked = columns.hasOwnProperty(colIdx) ? columns[colIdx] : true;
                 $(this).prop('checked', checked);
-                // DataTable column index is 0-based, picker is 1-based
                 dt.column(colIdx - 1).visible(checked);
             });
             dt.columns.adjust().draw(false);
         }
 
-        // Override toggleColumn to use DataTable API
-        toggleColumn = function(index, show) {
-            dt.column(parseInt(index) - 1).visible(show);
+        // Handle Checkbox Change
+        $('#columnPickerMenu input').on('change', function() {
+            const colIdx = parseInt($(this).data('column'));
+            const isChecked = $(this).is(':checked');
+            
+            dt.column(colIdx - 1).visible(isChecked);
             dt.columns.adjust().draw(false);
-        };
+            
+            const state = {};
+            $('#columnPickerMenu input').each(function() {
+                state[$(this).data('column')] = $(this).is(':checked');
+            });
+            localStorage.setItem(storageKey, JSON.stringify(state));
+        });
     });
 
     $(document).on('submit', '.myform', function(e) {

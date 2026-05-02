@@ -12,15 +12,21 @@
     
     #narrationsTable thead th {
         white-space: nowrap;
-        background-color: #f8f9fa;
-        color: #333;
+        background-color: #f8f9fa !important;
+        color: #333 !important;
         font-weight: 600;
         vertical-align: middle;
+        padding: 8px 10px !important;
+        font-size: 12px;
+        text-transform: uppercase;
     }
     
     #narrationsTable tbody td {
         white-space: nowrap;
         vertical-align: middle;
+        padding: 4px 10px !important;
+        font-size: 12px;
+        color: #333;
     }
 
     /* Column Picker Styles */
@@ -68,60 +74,51 @@
         margin-right: 10px;
         cursor: pointer;
     }
-    .column-hidden {
-        display: none !important;
-    }
 
     /* Card styling */
     .card {
         border-radius: 8px;
         box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+        border: none;
     }
     
     .card-header {
         background-color: #fff;
         border-bottom: 1px solid #edf2f9;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
     }
 </style>
 
 <div class="main-content">
     <div class="main-content-inner">
-        <div class="container-fluid pt-4">
+        <div class="container-fluid pt-3">
             
             @if(session('success'))
-            <div class="alert alert-success alert-dismissible fade show border-0 shadow-sm mb-4" role="alert">
+            <div class="alert alert-success alert-dismissible fade show border-0 shadow-sm mb-3" role="alert">
                 <i class="fa fa-check-circle me-2"></i> {{ session('success') }}
                 <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
             </div>
             @endif
 
-            <!-- Filter Section -->
-            <div class="row mb-4">
+            <!-- Header and Filters -->
+            <div class="row mb-3">
                 <div class="col-12">
                     <div class="card border-0 shadow-sm">
-                        <div class="card-body p-3">
-                            <form action="{{ route('coa.narration') }}" method="GET" class="row g-3 align-items-end">
-                                <div class="col-md-3">
-                                    <label class="form-label small fw-bold text-muted">Start Date</label>
-                                    <input type="date" name="start_date" class="form-control form-control-sm" value="{{ request('start_date') }}">
+                        <div class="card-body p-2 d-flex flex-wrap align-items-center justify-content-between gap-2">
+                            <div class="d-flex align-items-center">
+                                <h6 class="mb-0 fw-bold text-dark ms-2 me-4"><i class="fa fa-commenting-o me-2 text-primary"></i>Voucher Narrations</h6>
+                                <button class="btn btn-primary btn-sm rounded-pill px-3 shadow-sm" id="addBtn">
+                                    <i class="fa fa-plus-circle me-1"></i> Add Narration
+                                </button>
+                            </div>
+                            
+                            <form action="{{ route('coa.narration') }}" method="GET" class="d-flex gap-1 align-items-center">
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text bg-white border-end-0 small fw-bold text-muted">Range</span>
+                                    <input type="date" name="start_date" class="form-control border-start-0" value="{{ request('start_date') }}">
+                                    <input type="date" name="end_date" class="form-control" value="{{ request('end_date') }}">
                                 </div>
-                                <div class="col-md-3">
-                                    <label class="form-label small fw-bold text-muted">End Date</label>
-                                    <input type="date" name="end_date" class="form-control form-control-sm" value="{{ request('end_date') }}">
-                                </div>
-                                <div class="col-md-4">
-                                    <div class="d-flex gap-2">
-                                        <button type="submit" class="btn btn-primary btn-sm px-4 rounded-pill">
-                                            <i class="fa fa-filter me-1"></i> Filter
-                                        </button>
-                                        <a href="{{ route('coa.narration') }}" class="btn btn-outline-secondary btn-sm px-4 rounded-pill">
-                                            <i class="fa fa-refresh me-1"></i> Reset
-                                        </a>
-                                    </div>
-                                </div>
+                                <button type="submit" class="btn btn-primary btn-sm rounded-pill px-3">Filter</button>
+                                <a href="{{ route('coa.narration') }}" class="btn btn-outline-secondary btn-sm rounded-pill px-2" title="Reset"><i class="fa fa-refresh"></i></a>
                             </form>
                         </div>
                     </div>
@@ -130,58 +127,54 @@
 
             <div class="row">
                 <div class="col-12">
-                    <div class="card border-0">
-                        <div class="card-header py-3">
-                            <h4 class="card-title mb-0 fw-bold text-dark">Voucher Narrations Log</h4>
-                            <div class="d-flex gap-2">
-                                <div class="column-picker-dropdown">
-                                    <button class="btn btn-outline-secondary btn-sm px-3 rounded-pill" type="button" id="columnPickerBtn">
-                                        <i class="fa fa-columns me-1"></i> Columns
-                                    </button>
-                                    <div class="column-picker-menu shadow" id="columnPickerMenu">
-                                        <div class="p-2 border-bottom fw-bold small text-muted">Show/Hide Columns</div>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="1" checked> #</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="2" checked> Voucher Type</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="3" checked> Narration</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="4" checked> Date</label>
-                                    </div>
-                                </div>
-                                <button class="btn btn-primary btn-sm px-4 rounded-pill shadow-sm" id="addBtn">
-                                    <i class="fa fa-plus-circle me-1"></i> Add Narration
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-white d-flex justify-content-between align-items-center py-2 border-bottom">
+                            <span class="fw-bold text-muted small text-uppercase">Narrations Log</span>
+                            <div class="column-picker-dropdown">
+                                <button class="btn btn-outline-secondary btn-sm px-3 rounded-pill" type="button" id="columnPickerBtn">
+                                    <i class="fa fa-columns me-1"></i> Columns
                                 </button>
+                                <div class="column-picker-menu shadow" id="columnPickerMenu">
+                                    <div class="p-2 border-bottom fw-bold small text-muted">Show/Hide Columns</div>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="1" checked> #</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="2" checked> Voucher Type</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="3" checked> Narration Text</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="4" checked> Date</label>
+                                </div>
                             </div>
                         </div>
 
-                        <div class="card-body p-3">
+                        <div class="card-body p-0">
                             <div class="table-responsive">
-                                <table id="narrationsTable" class="table table-striped table-bordered display w-100">
+                                <table id="narrationsTable" class="table table-sm table-striped table-bordered w-100 mb-0">
                                     <thead>
                                         <tr>
                                             <th>#</th>
                                             <th>Voucher Type</th>
                                             <th>Narration Text</th>
                                             <th class="text-center">Date</th>
-                                            <th class="text-center" style="width: 100px;">Actions</th>
+                                            <th class="text-center" style="width: 100px;">Action</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         @foreach($narrations as $key => $row)
                                         <tr>
-                                            <td>{{ $key+1 }}</td>
-                                            <td><span class="badge bg-light text-dark border">{{ $row->expense_head }}</span></td>
-                                            <td>{{ $row->narration }}</td>
-                                            <td class="text-center">{{ $row->created_at->format('d-M-Y') }}</td>
+                                            <td class="text-center text-muted small">{{ $key+1 }}</td>
+                                            <td><span class="small fw-semibold text-primary">{{ $row->expense_head }}</span></td>
+                                            <td class="text-dark small">{{ $row->narration }}</td>
+                                            <td class="text-center small text-muted">{{ $row->created_at->format('d-M-Y') }}</td>
                                             <td class="text-center">
                                                 <div class="d-flex gap-1 justify-content-center">
-                                                    <button class="btn btn-outline-warning btn-sm rounded-circle editBtn" 
+                                                    <button class="btn btn-outline-warning btn-xs px-1 py-0 editBtn" 
                                                         data-id="{{ $row->id }}"
                                                         data-expense="{{ $row->expense_head }}"
-                                                        data-narration="{{ $row->narration }}" title="Edit">
-                                                        <i class="fa fa-edit"></i>
+                                                        data-narration="{{ $row->narration }}" title="Edit"
+                                                        style="height: 20px;">
+                                                        <i class="fa fa-edit text-dark"></i>
                                                     </button>
                                                     <form action="{{ route('narrations.destroy', $row->id) }}" method="POST" class="d-inline">
                                                         @csrf @method('DELETE')
-                                                        <button type="submit" onclick="return confirm('Delete this narration?')" class="btn btn-outline-danger btn-sm rounded-circle" title="Delete">
+                                                        <button type="submit" onclick="return confirm('Delete this narration?')" class="btn btn-outline-danger btn-xs px-1 py-0" title="Delete" style="height: 20px;">
                                                             <i class="fa fa-trash"></i>
                                                         </button>
                                                     </form>
@@ -205,16 +198,16 @@
     <div class="modal-dialog">
         <form action="{{ route('narrations.store') }}" method="POST" id="narrationForm" class="modal-content border-0 shadow">
             @csrf
-            <div class="modal-header bg-primary text-white">
-                <h5 class="modal-title" id="modalTitle"><i class="fa fa-plus-circle me-2"></i>Add Narration</h5>
+            <div class="modal-header bg-primary text-white py-2">
+                <h6 class="modal-title fw-bold" id="modalTitle"><i class="fa fa-plus-circle me-2"></i>Narration Setup</h6>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body p-4">
+            <div class="modal-body p-3">
                 <input type="hidden" name="id" id="narration_id">
 
-                <div class="mb-3">
-                    <label class="form-label fw-bold">Select Voucher Head</label>
-                    <select name="expense_head" id="expense_head" class="form-select" required>
+                <div class="mb-2">
+                    <label class="form-label small fw-bold">Select Voucher Head</label>
+                    <select name="expense_head" id="expense_head" class="form-select form-select-sm" required>
                         <option value="" disabled selected>Choose Head...</option>
                         <option value="Receipts Voucher">Receipts Voucher</option>
                         <option value="Expense voucher">Expense voucher</option>
@@ -225,14 +218,14 @@
                     </select>
                 </div>
 
-                <div class="mb-3">
-                    <label class="form-label fw-bold">Narration Text</label>
-                    <textarea name="narration" id="narration" class="form-control" rows="4" placeholder="Enter narration text here..." required></textarea>
+                <div class="mb-2">
+                    <label class="form-label small fw-bold">Narration Text</label>
+                    <textarea name="narration" id="narration" class="form-control form-control-sm" rows="3" placeholder="Enter narration text here..." required></textarea>
                 </div>
             </div>
-            <div class="modal-footer bg-light border-0">
-                <button type="button" class="btn btn-secondary btn-sm px-4 rounded-pill" data-bs-dismiss="modal">Cancel</button>
-                <button type="submit" class="btn btn-primary btn-sm px-4 rounded-pill shadow-sm" id="saveBtn">Save Narration</button>
+            <div class="modal-footer py-1">
+                <button type="button" class="btn btn-light btn-sm px-3" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-primary btn-sm px-4 shadow-sm" id="saveBtn">Save Narration</button>
             </div>
         </form>
     </div>
@@ -249,17 +242,14 @@ $(document).ready(function(){
         $('#columnPickerMenu').toggleClass('show');
     });
 
-    // Close menu when clicking outside
     $(document).on('click', function(e) {
         if (!$(e.target).closest('.column-picker-dropdown').length) {
             $('#columnPickerMenu').removeClass('show');
         }
     });
 
-    // Column Persistence
-    const storageKey = 'narration_columns_v1';
-    const savedState = localStorage.getItem(storageKey);
-
+    const storageKey = 'narration_columns_v2';
+    
     var dt = $('#narrationsTable').DataTable({
         scrollX: true,
         autoWidth: false,
@@ -268,10 +258,11 @@ $(document).ready(function(){
         language: {
             search: "_INPUT_",
             searchPlaceholder: "Search narrations..."
-        },
-        dom: '<"d-flex justify-content-between align-items-center mb-3"lf>rtip'
+        }
     });
 
+    // Apply saved column visibility
+    const savedState = localStorage.getItem(storageKey);
     if (savedState) {
         const columns = JSON.parse(savedState);
         $('#columnPickerMenu input').each(function() {
@@ -280,6 +271,7 @@ $(document).ready(function(){
             $(this).prop('checked', checked);
             dt.column(colIdx - 1).visible(checked);
         });
+        dt.columns.adjust().draw(false);
     }
 
     // Handle Checkbox Change

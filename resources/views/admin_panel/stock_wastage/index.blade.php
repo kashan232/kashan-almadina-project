@@ -14,10 +14,14 @@
         color: #333;
         font-weight: 600;
         vertical-align: middle;
+        padding: 6px 10px !important;
+        font-size: 13px;
     }
     #wastageTable tbody td {
         white-space: nowrap;
         vertical-align: middle;
+        padding: 3px 10px !important;
+        font-size: 12px;
     }
     .card {
         border-radius: 8px;
@@ -83,24 +87,24 @@
         <div class="container-fluid pt-4">
 
             @if(session('success'))
-                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                <div class="alert alert-success alert-dismissible fade show shadow-sm border-0" role="alert">
                     <i class="fa fa-check-circle me-1"></i> {{ session('success') }}
                     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
             @endif
             @if(session('error'))
-                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <div class="alert alert-danger alert-dismissible fade show shadow-sm border-0" role="alert">
                     <i class="fa fa-times-circle me-1"></i> {{ session('error') }}
                     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
             @endif
 
             {{-- Filter Section --}}
-            <div class="row mb-4">
+            <div class="row mb-3">
                 <div class="col-12">
                     <div class="card border-0 shadow-sm">
                         <div class="card-body p-3">
-                            <form action="{{ route('stock-wastage.index') }}" method="GET" class="row g-3 align-items-end">
+                            <form action="{{ route('stock-wastage.index') }}" method="GET" class="row g-2 align-items-end">
                                 <div class="col-md-3">
                                     <label class="form-label small fw-bold text-muted">Start Date</label>
                                     <input type="date" name="start_date" class="form-control form-control-sm" value="{{ request('start_date') }}">
@@ -119,7 +123,7 @@
                                 </div>
                                 <div class="col-md-4">
                                     <div class="d-flex gap-2">
-                                        <button type="submit" class="btn btn-primary btn-sm px-4 rounded-pill">
+                                        <button type="submit" class="btn btn-primary btn-sm px-4 rounded-pill shadow-sm">
                                             <i class="fa fa-filter me-1"></i> Filter
                                         </button>
                                         <a href="{{ route('stock-wastage.index') }}" class="btn btn-outline-secondary btn-sm px-4 rounded-pill">
@@ -136,9 +140,9 @@
             {{-- Main Table --}}
             <div class="row">
                 <div class="col-12">
-                    <div class="card border-0">
-                        <div class="card-header d-flex justify-content-between align-items-center py-3">
-                            <h4 class="card-title mb-0 fw-bold text-dark">Wastage of Goods Management</h4>
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-white d-flex justify-content-between align-items-center py-3 border-bottom">
+                            <h4 class="card-title mb-0 fw-bold text-dark"><i class="fa fa-recycle me-2 text-primary"></i>Stock Wastage Management</h4>
                             <div class="d-flex gap-2">
                                 <!-- Column Picker Button -->
                                 <div class="column-picker-dropdown">
@@ -157,20 +161,19 @@
                                         <label class="column-picker-item"><input type="checkbox" data-column="8" checked> Remarks</label>
                                         <label class="column-picker-item"><input type="checkbox" data-column="9" checked> Amount</label>
                                         <label class="column-picker-item"><input type="checkbox" data-column="10" checked> Status</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="11" checked> Action</label>
                                     </div>
                                 </div>
 
-                                <a class="btn btn-primary btn-sm px-4 rounded-pill" href="{{ route('stock-wastage.create') }}">
+                                <a class="btn btn-primary btn-sm px-4 rounded-pill shadow-sm" href="{{ route('stock-wastage.create') }}">
                                     <i class="fa fa-plus me-1"></i> Add Wastage
                                 </a>
                             </div>
                         </div>
 
-                        <div class="card-body p-3">
+                        <div class="card-body p-3 bg-white">
                             <div class="table-responsive">
-                                <table id="wastageTable" class="table table-striped table-bordered display w-100">
-                                    <thead>
+                                <table id="wastageTable" class="table table-sm table-striped table-bordered display nowrap w-100">
+                                    <thead class="bg-light">
                                         <tr>
                                             <th>Type</th>
                                             <th>Inv#</th>
@@ -180,35 +183,41 @@
                                             <th>Expense A/C</th>
                                             <th>Items</th>
                                             <th>Remarks</th>
-                                            <th>Amount</th>
-                                            <th>Status</th>
-                                            <th>Action</th>
+                                            <th class="text-end">Amount</th>
+                                            <th class="text-center">Status</th>
+                                            <th class="text-center">Action</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         @foreach($wastages as $wastage)
                                         <tr>
                                             <td>WT</td>
-                                            <td class="fw-bold">{{ $wastage->gwn_id }}</td>
+                                            <td class="fw-bold text-primary">{{ $wastage->gwn_id }}</td>
                                             <td>{{ \Carbon\Carbon::parse($wastage->date)->format('d-M-Y') }}</td>
-                                            <td>{{ $wastage->warehouse->warehouse_name ?? '🏠 Shop Stock' }}</td>
-                                            <td>{{ $wastage->accountHead->name ?? '-' }}</td>
-                                            <td>{{ $wastage->account->title ?? '-' }}</td>
+                                            <td>
+                                                @if(!$wastage->warehouse_id)
+                                                    <span class="badge bg-info px-2">🏠 Shop Stock</span>
+                                                @else
+                                                    <span class="fw-bold text-dark">{{ $wastage->warehouse->warehouse_name ?? '-' }}</span>
+                                                @endif
+                                            </td>
+                                            <td><small class="fw-bold text-muted">{{ $wastage->accountHead->name ?? '-' }}</small></td>
+                                            <td><span class="badge bg-outline-secondary text-dark border">{{ $wastage->account->title ?? '-' }}</span></td>
                                             <td class="small">
                                                 @foreach($wastage->items as $item)
                                                     <div style="font-size:11px; border-bottom:1px dashed #eee; padding:2px 0;">
                                                         {{ $item->product->name ?? 'Unknown' }}
-                                                        <span class="text-muted">({{ $item->qty }})</span>
+                                                        <span class="text-muted fw-bold">({{ (float)$item->qty }})</span>
                                                     </div>
                                                 @endforeach
                                             </td>
-                                            <td>{{ $wastage->remarks ?? '-' }}</td>
-                                            <td class="text-end fw-bold">{{ number_format($wastage->total_amount, 0) }}</td>
+                                            <td><small class="text-muted">{{ Str::limit($wastage->remarks, 30) ?: '-' }}</small></td>
+                                            <td class="text-end fw-bold text-danger">{{ number_format($wastage->total_amount, 0) }}</td>
                                             <td class="text-center">
                                                 @if($wastage->status == 'Posted')
-                                                    <span class="badge bg-success">Posted</span>
+                                                    <span class="badge bg-success rounded-pill px-3">Posted</span>
                                                 @else
-                                                    <span class="badge bg-warning text-dark">Unposted</span>
+                                                    <span class="badge bg-warning text-dark rounded-pill px-3">Unposted</span>
                                                 @endif
                                             </td>
                                             <td class="text-center">
@@ -217,13 +226,13 @@
                                                         {{-- Post --}}
                                                         <form action="{{ route('stock-wastage.post', $wastage->id) }}" method="POST" class="d-inline">
                                                             @csrf
-                                                            <button type="submit" class="btn btn-outline-primary btn-sm rounded-pill px-2" title="Post now">
+                                                            <button type="submit" class="btn btn-primary btn-xs px-2 py-0" title="Post now" style="font-size: 10px;">
                                                                 <i class="fa fa-send"></i> Post
                                                             </button>
                                                         </form>
 
                                                         {{-- Edit --}}
-                                                        <a href="{{ route('stock-wastage.edit', $wastage->id) }}" class="btn btn-outline-warning btn-sm rounded-circle" title="Edit">
+                                                        <a href="{{ route('stock-wastage.edit', $wastage->id) }}" class="btn btn-outline-warning btn-xs px-1 py-0" title="Edit">
                                                             <i class="fa fa-pencil"></i>
                                                         </a>
 
@@ -231,14 +240,14 @@
                                                         <form action="{{ route('stock-wastage.destroy', $wastage->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Delete this wastage?')">
                                                             @csrf
                                                             @method('DELETE')
-                                                            <button type="submit" class="btn btn-outline-danger btn-sm rounded-circle" title="Delete">
+                                                            <button type="submit" class="btn btn-outline-danger btn-xs px-1 py-0" title="Delete">
                                                                 <i class="fa fa-trash"></i>
                                                             </button>
                                                         </form>
                                                     @endif
 
                                                     {{-- Print (always) --}}
-                                                    <a href="{{ route('stock-wastage.print', $wastage->id) }}" target="_blank" class="btn btn-outline-dark btn-sm rounded-circle" title="Print">
+                                                    <a href="{{ route('stock-wastage.print', $wastage->id) }}" target="_blank" class="btn btn-outline-dark btn-xs px-1 py-0" title="Print">
                                                         <i class="fa fa-print"></i>
                                                     </a>
                                                 </div>

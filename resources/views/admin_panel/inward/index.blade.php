@@ -3,10 +3,9 @@
 @section('content')
 <style>
     .table-responsive { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; margin-bottom: 1rem; }
-    #gpTable thead th { white-space: nowrap; background-color: #f8f9fa; color: #333; font-weight: 600; vertical-align: middle; }
-    #gpTable tbody td { white-space: nowrap; vertical-align: middle; }
+    #gpTable thead th { white-space: nowrap; background-color: #f8f9fa; color: #333; font-weight: 600; vertical-align: middle; padding: 6px 10px !important; font-size: 13px; }
+    #gpTable tbody td { white-space: nowrap; vertical-align: middle; padding: 3px 10px !important; font-size: 12px; }
     .card { border-radius: 8px; box-shadow: 0 0.125rem 0.25rem rgba(0,0,0,.075); }
-    .card-header { background-color: #fff; border-bottom: 1px solid #edf2f9; }
 
     /* Column Picker Styles */
     .column-picker-dropdown { position: relative; display: inline-block; }
@@ -28,24 +27,24 @@
         <div class="container-fluid pt-4">
 
             @if(session('success'))
-                <div class="alert alert-success alert-dismissible fade show" role="alert">
+                <div class="alert alert-success alert-dismissible fade show shadow-sm border-0" role="alert">
                     <i class="fa fa-check-circle me-1"></i> {{ session('success') }}
                     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
             @endif
             @if(session('error'))
-                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <div class="alert alert-danger alert-dismissible fade show shadow-sm border-0" role="alert">
                     <i class="fa fa-times-circle me-1"></i> {{ session('error') }}
                     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
             @endif
 
             {{-- Filter Section --}}
-            <div class="row mb-4">
+            <div class="row mb-3">
                 <div class="col-12">
                     <div class="card border-0 shadow-sm">
                         <div class="card-body p-3">
-                            <form action="{{ route('InwardGatepass.home') }}" method="GET" class="row g-3 align-items-end">
+                            <form action="{{ route('InwardGatepass.home') }}" method="GET" class="row g-2 align-items-end">
                                 <div class="col-md-2">
                                     <label class="form-label small fw-bold text-muted">Start Date</label>
                                     <input type="date" name="start_date" class="form-control form-control-sm" value="{{ request('start_date') }}">
@@ -68,7 +67,7 @@
                                 </div>
                                 <div class="col-md-4">
                                     <div class="d-flex gap-2">
-                                        <button type="submit" class="btn btn-primary btn-sm px-4 rounded-pill">
+                                        <button type="submit" class="btn btn-primary btn-sm px-4 rounded-pill shadow-sm">
                                             <i class="fa fa-filter me-1"></i> Filter
                                         </button>
                                         <a href="{{ route('InwardGatepass.home') }}" class="btn btn-outline-secondary btn-sm px-4 rounded-pill">
@@ -85,9 +84,9 @@
             {{-- Main Table --}}
             <div class="row">
                 <div class="col-12">
-                    <div class="card border-0">
-                        <div class="card-header d-flex justify-content-between align-items-center py-3">
-                            <h4 class="card-title mb-0 fw-bold text-dark">Inward Gatepass Management</h4>
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-white d-flex justify-content-between align-items-center py-3 border-bottom">
+                            <h4 class="card-title mb-0 fw-bold text-dark"><i class="fa fa-truck me-2 text-primary"></i>Inward Gatepass Management</h4>
                             <div class="d-flex gap-2 align-items-center">
                                 <div class="column-picker-dropdown">
                                     <button class="btn btn-outline-secondary btn-sm px-3 rounded-pill" type="button" id="columnPickerBtn">
@@ -104,19 +103,18 @@
                                         <label class="column-picker-item"><input type="checkbox" data-column="6" checked> Items</label>
                                         <label class="column-picker-item"><input type="checkbox" data-column="7" checked> Note</label>
                                         <label class="column-picker-item"><input type="checkbox" data-column="8" checked> Status</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="9" checked> Action</label>
                                     </div>
                                 </div>
-                                <a class="btn btn-primary btn-sm px-4 rounded-pill" href="{{ route('add_inwardgatepass') }}">
+                                <a class="btn btn-primary btn-sm px-4 rounded-pill shadow-sm" href="{{ route('add_inwardgatepass') }}">
                                     <i class="fa fa-plus me-1"></i> Add Inward
                                 </a>
                             </div>
                         </div>
 
-                        <div class="card-body p-3">
+                        <div class="card-body p-3 bg-white">
                             <div class="table-responsive">
-                                <table id="gpTable" class="table table-striped table-bordered display w-100">
-                                    <thead>
+                                <table id="gpTable" class="table table-sm table-striped table-bordered display nowrap w-100">
+                                    <thead class="bg-light">
                                         <tr>
                                             <th>Invoice#</th>
                                             <th>Date</th>
@@ -126,26 +124,26 @@
                                             <th>Bilty#</th>
                                             <th>Items</th>
                                             <th>Note</th>
-                                            <th>Status</th>
-                                            <th>Action</th>
+                                            <th class="text-center">Status</th>
+                                            <th class="text-center">Action</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         @foreach($gatepasses as $gp)
                                         <tr>
-                                            <td class="fw-bold">{{ $gp->invoice_no }}</td>
+                                            <td class="fw-bold text-primary">{{ $gp->invoice_no }}</td>
                                             <td>{{ \Carbon\Carbon::parse($gp->gatepass_date)->format('d-M-Y') }}</td>
                                             <td>
                                                 @if($gp->warehouse_id == 0)
-                                                    <span class="badge bg-info">🏠 Shop Stock</span>
+                                                    <span class="badge bg-info px-2">🏠 Shop Stock</span>
                                                 @else
-                                                    {{ $gp->warehouse->warehouse_name ?? '-' }}
+                                                    <span class="fw-bold text-dark">{{ $gp->warehouse->warehouse_name ?? '-' }}</span>
                                                 @endif
                                             </td>
                                             <td>
-                                                <span class="fw-bold text-primary">{{ $gp->party_name }}</span>
+                                                <span class="fw-bold text-dark">{{ $gp->party_name }}</span>
                                                 <br>
-                                                <small class="text-muted text-uppercase" style="font-size: 10px;">{{ $gp->vendor_type }}</small>
+                                                <small class="text-muted text-uppercase fw-bold" style="font-size: 9px;">{{ $gp->vendor_type }}</small>
                                             </td>
                                             <td>{{ $gp->transport_name ?? '-' }}</td>
                                             <td>{{ $gp->gatepass_no ?? '-' }}</td>
@@ -153,16 +151,16 @@
                                                 @foreach($gp->items as $item)
                                                     <div style="font-size:11px; border-bottom:1px dashed #eee; padding:2px 0;">
                                                         {{ $item->product->name ?? 'Unknown' }}
-                                                        <span class="text-muted">({{ $item->qty }})</span>
+                                                        <span class="text-muted fw-bold">({{ (float)$item->qty }})</span>
                                                     </div>
                                                 @endforeach
                                             </td>
-                                            <td>{{ $gp->remarks ?? '-' }}</td>
+                                            <td><small class="text-muted">{{ Str::limit($gp->remarks, 30) ?: '-' }}</small></td>
                                             <td class="text-center">
                                                 @if($gp->status == 'Posted')
-                                                    <span class="badge bg-success">Posted</span>
+                                                    <span class="badge bg-success rounded-pill px-3">Posted</span>
                                                 @else
-                                                    <span class="badge bg-warning text-dark">Unposted</span>
+                                                    <span class="badge bg-warning text-dark rounded-pill px-3">Unposted</span>
                                                 @endif
                                             </td>
                                             <td class="text-center">
@@ -171,13 +169,13 @@
                                                         {{-- Post --}}
                                                         <form action="{{ route('InwardGatepass.post', $gp->id) }}" method="POST" class="d-inline">
                                                             @csrf
-                                                            <button type="submit" class="btn btn-outline-primary btn-sm rounded-pill px-2" title="Post now">
+                                                            <button type="submit" class="btn btn-primary btn-xs px-2 py-0" title="Post now" style="font-size: 10px;">
                                                                 <i class="fa fa-send"></i> Post
                                                             </button>
                                                         </form>
 
                                                         {{-- Edit --}}
-                                                        <a href="{{ route('InwardGatepass.edit', $gp->id) }}" class="btn btn-outline-warning btn-sm rounded-circle" title="Edit">
+                                                        <a href="{{ route('InwardGatepass.edit', $gp->id) }}" class="btn btn-outline-warning btn-xs px-1 py-0" title="Edit">
                                                             <i class="fa fa-pencil"></i>
                                                         </a>
 
@@ -185,14 +183,14 @@
                                                         <form action="{{ route('InwardGatepass.destroy', $gp->id) }}" method="POST" class="d-inline delete-form">
                                                             @csrf
                                                             @method('DELETE')
-                                                            <button type="button" class="btn btn-outline-danger btn-sm rounded-circle delete-btn" title="Delete">
+                                                            <button type="button" class="btn btn-outline-danger btn-xs px-1 py-0 delete-btn" title="Delete">
                                                                 <i class="fa fa-trash"></i>
                                                             </button>
                                                         </form>
                                                     @endif
 
                                                     {{-- Print (always) --}}
-                                                    <a href="{{ route('InwardGatepass.pdf', $gp->id) }}" target="_blank" class="btn btn-outline-dark btn-sm rounded-circle" title="Print PDF">
+                                                    <a href="{{ route('InwardGatepass.pdf', $gp->id) }}" target="_blank" class="btn btn-outline-dark btn-xs px-1 py-0" title="Print PDF">
                                                         <i class="fa fa-print"></i>
                                                     </a>
                                                 </div>
