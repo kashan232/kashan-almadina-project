@@ -78,6 +78,9 @@
                             <div class="col-md-2 mt-2">
                                 <label class="form-label small fw-bold">Location</label>
                                 <select name="warehouse_id" id="warehouse_id" class="form-select select2" required disabled>
+                                    @if(auth()->user()->canAccessShop())
+                                        <option value="0" @if($voucher->warehouse_id == 0) selected @endif>🏠 Shop</option>
+                                    @endif
                                     @foreach($warehouses as $wh)
                                         <option value="{{ $wh->id }}" @if($voucher->warehouse_id == $wh->id) selected @endif>{{ $wh->warehouse_name }}</option>
                                     @endforeach

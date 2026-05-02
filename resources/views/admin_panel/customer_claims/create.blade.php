@@ -134,7 +134,9 @@
                             <div class="col-md-2 mt-1" id="original_warehouse_div">
                                 <label class="form-label border-danger border-bottom">Deliver From</label>
                                 <select name="original_warehouse_id" class="form-select input-sm">
-                                    <option value="0">Shop</option>
+                                    @if(auth()->user()->canAccessShop())
+                                        <option value="0">Shop</option>
+                                    @endif
                                     @foreach($warehouses as $wh)
                                         <option value="{{ $wh->id }}">{{ $wh->warehouse_name }}</option>
                                     @endforeach
@@ -194,7 +196,9 @@
                             <div class="col-md-2">
                                 <label class="form-label border-danger border-bottom">Deliver From</label>
                                 <select name="replacement_from_warehouse_id" class="form-select input-sm">
-                                    <option value="0">Shop</option>
+                                    @if(auth()->user()->canAccessShop())
+                                        <option value="0">Shop</option>
+                                    @endif
                                     @foreach($warehouses as $wh)
                                         <option value="{{ $wh->id }}">{{ $wh->warehouse_name }}</option>
                                     @endforeach

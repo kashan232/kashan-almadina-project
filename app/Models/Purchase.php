@@ -9,12 +9,13 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Purchase extends Model
 {
-    use HasFactory;
-    use SoftDeletes;
-    // app/Models/Purchase.php
-    protected $table = 'purchases'; // if it's not default
+    use HasFactory, SoftDeletes, \App\Traits\GroupIsolation;
 
     protected $guarded = [];
+
+    protected $casts = [
+        'user_group_ids' => 'array',
+    ];
 
     public function vendor()
     {

@@ -54,6 +54,7 @@ class UserGroupController extends Controller
             }
 
             $userGroup->group_name = $request->group_name;
+            $userGroup->allow_shop = $request->allow_shop ?? 0;
             $userGroup->save();
 
             // Sync user assignments

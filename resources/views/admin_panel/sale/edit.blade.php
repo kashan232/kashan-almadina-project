@@ -79,7 +79,9 @@
                   <td><input type="text" class="form-control form-control-sm item-id-input text-center" value="{{ $item->product_id }}"></td>
                   <td><select name="product_id[]" class="form-control product-select"><option value="{{ $item->product_id }}" selected>{{ $item->product->name ?? '' }}</option></select></td>
                   <td><select class="form-select form-select-sm warehouse" name="warehouse_name[]">
-                      <option value="0" {{ $item->warehouse_id == 0 ? 'selected' : '' }}>🏠 Shop</option>
+                      @if(auth()->user()->canAccessShop())
+                        <option value="0" {{ $item->warehouse_id == 0 ? 'selected' : '' }}>🏠 Shop</option>
+                      @endif
                       @foreach ($warehouses as $wh)<option value="{{ $wh->id }}" {{ $item->warehouse_id == $wh->id ? 'selected' : '' }}>📦 {{ $wh->warehouse_name }}</option>@endforeach
                   </select></td>
                   <td><input type="text" class="form-control form-control-sm stock text-center bg-light" value="{{ $item->stock }}" readonly></td>
@@ -279,7 +281,10 @@
   }
   function addNewRow() {
     const wh = $('#salesTableBody tr:last .warehouse').val() || 0;
-    const html = `<tr><td><input type="text" class="form-control form-control-sm item-id-input text-center"></td><td><select name="product_id[]" class="form-control product-select"></select></td><td><select class="form-select form-select-sm warehouse" name="warehouse_name[]"><option value="0" ${wh==0?'selected':''}>🏠 Shop</option>@foreach($warehouses as $w)<option value="{{$w->id}}" ${wh=={{$w->id}}?'selected':''}>📦 {{$w->warehouse_name}}</option>@endforeach</select></td><td><input type="text" class="form-control form-control-sm stock bg-light" readonly></td><td><input type="text" class="form-control form-control-sm text-end sales-price bg-light" readonly></td><td><input type="number" class="form-control form-control-sm text-center sales-qty"></td><td><input type="text" class="form-control form-control-sm text-end retail-price bg-light" readonly></td><td><input type="number" class="form-control text-end discount-value"><input type="hidden" name="discount-percent[]" class="discount-percent"><input type="hidden" name="discount-amount[]" class="discount-amount"></td><td><input type="text" class="form-control form-control-sm text-end sales-rate bg-light" name="sales-rate[]" readonly></td><td><input type="text" class="form-control form-control-sm text-end sales-amount bg-light" readonly></td><td class="text-center"><button type="button" class="btn btn-xs btn-outline-danger del-row">&times;</button></td></tr>`;
+    const html = `<tr><td><input type="text" class="form-control form-control-sm item-id-input text-center"></td><td><select name="product_id[]" class="form-control product-select"></select></td><td><select class="form-select form-select-sm warehouse" name="warehouse_name[]">
+        @if(auth()->user()->canAccessShop())
+            <option value="0" ${wh==0?'selected':''}>🏠 Shop</option>
+        @endif@foreach($warehouses as $w)<option value="{{$w->id}}" ${wh=={{$w->id}}?'selected':''}>📦 {{$w->warehouse_name}}</option>@endforeach</select></td><td><input type="text" class="form-control form-control-sm stock bg-light" readonly></td><td><input type="text" class="form-control form-control-sm text-end sales-price bg-light" readonly></td><td><input type="number" class="form-control form-control-sm text-center sales-qty"></td><td><input type="text" class="form-control form-control-sm text-end retail-price bg-light" readonly></td><td><input type="number" class="form-control text-end discount-value"><input type="hidden" name="discount-percent[]" class="discount-percent"><input type="hidden" name="discount-amount[]" class="discount-amount"></td><td><input type="text" class="form-control form-control-sm text-end sales-rate bg-light" name="sales-rate[]" readonly></td><td><input type="text" class="form-control form-control-sm text-end sales-amount bg-light" readonly></td><td class="text-center"><button type="button" class="btn btn-xs btn-outline-danger del-row">&times;</button></td></tr>`;
     const $nr = $(html); $('#salesTableBody').append($nr); initProductSelect($nr);
   }
   $(document).on('input', '.sales-qty, .discount-value, #orderDiscountValue', function() { computeRow($(this).closest('tr')); });

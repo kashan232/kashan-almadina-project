@@ -7,10 +7,13 @@ use Illuminate\Database\Eloquent\Model;
 
 class Sale extends Model
 {
-    use HasFactory;
+    use HasFactory, \App\Traits\GroupIsolation;
 
     protected $guarded = [];
 
+    protected $casts = [
+        'user_group_ids' => 'array',
+    ];
 
     // Relation to sale items
     public function items()

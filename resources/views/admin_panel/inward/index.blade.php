@@ -97,15 +97,14 @@
                                         <div class="p-2 border-bottom fw-bold small text-muted">Show/Hide Columns</div>
                                         <label class="column-picker-item"><input type="checkbox" data-column="0" checked> Invoice#</label>
                                         <label class="column-picker-item"><input type="checkbox" data-column="1" checked> Date</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="2" checked> Branch</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="3" checked> Warehouse</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="4" checked> Vendor</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="5" checked> Transport</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="6" checked> Bilty#</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="7" checked> Items</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="8" checked> Note</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="9" checked> Status</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="10" checked> Action</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="2" checked> Warehouse</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="3" checked> Vendor</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="4" checked> Transport</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="5" checked> Bilty#</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="6" checked> Items</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="7" checked> Note</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="8" checked> Status</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="9" checked> Action</label>
                                     </div>
                                 </div>
                                 <a class="btn btn-primary btn-sm px-4 rounded-pill" href="{{ route('add_inwardgatepass') }}">
@@ -121,7 +120,6 @@
                                         <tr>
                                             <th>Invoice#</th>
                                             <th>Date</th>
-                                            <th>Branch</th>
                                             <th>Warehouse</th>
                                             <th>Vendor</th>
                                             <th>Transport</th>
@@ -137,9 +135,18 @@
                                         <tr>
                                             <td class="fw-bold">{{ $gp->invoice_no }}</td>
                                             <td>{{ \Carbon\Carbon::parse($gp->gatepass_date)->format('d-M-Y') }}</td>
-                                            <td>{{ $gp->branch->name ?? '-' }}</td>
-                                            <td>{{ $gp->warehouse->warehouse_name ?? '-' }}</td>
-                                            <td>{{ $gp->vendor->name ?? '-' }}</td>
+                                            <td>
+                                                @if($gp->warehouse_id == 0)
+                                                    <span class="badge bg-info">🏠 Shop Stock</span>
+                                                @else
+                                                    {{ $gp->warehouse->warehouse_name ?? '-' }}
+                                                @endif
+                                            </td>
+                                            <td>
+                                                <span class="fw-bold text-primary">{{ $gp->party_name }}</span>
+                                                <br>
+                                                <small class="text-muted text-uppercase" style="font-size: 10px;">{{ $gp->vendor_type }}</small>
+                                            </td>
                                             <td>{{ $gp->transport_name ?? '-' }}</td>
                                             <td>{{ $gp->gatepass_no ?? '-' }}</td>
                                             <td class="small">

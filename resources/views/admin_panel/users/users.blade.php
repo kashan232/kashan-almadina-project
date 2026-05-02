@@ -102,6 +102,58 @@
     </div>
     </div>
 
+    <style>
+        /* Custom Checkbox Design */
+        .role-selection-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 10px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border: 1px solid #e9ecef;
+        }
+        .custom-role-check {
+            display: flex;
+            align-items: center;
+            padding: 8px 12px;
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            user-select: none;
+        }
+        .custom-role-check:hover {
+            border-color: #0d6efd;
+            background-color: #f0f7ff;
+        }
+        .custom-role-check.active {
+            background-color: #e7f1ff;
+            border-color: #0d6efd;
+        }
+        .custom-role-check input {
+            width: 18px;
+            height: 18px;
+            margin-right: 10px;
+            cursor: pointer;
+        }
+        .custom-role-check label {
+            margin: 0;
+            font-weight: 500;
+            font-size: 13px;
+            color: #333;
+            cursor: pointer;
+        }
+        .role-modal-header-label {
+            font-weight: 600;
+            color: #495057;
+            margin-bottom: 10px;
+            display: block;
+            font-size: 14px;
+        }
+    </style>
+
     <div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
@@ -151,8 +203,8 @@
                                 <label for="title" class="form-label">Email</label>
                                 <input type="text" name="email" class="form-control" id="role-modal-email" readonly />
                             </div>
-                                <label for="title" class="form-label">Roles</label>
-                            <div class="mb-3" id="role-checkbox-container">
+                                <label class="role-modal-header-label">Available Roles</label>
+                            <div id="role-checkbox-container" class="role-selection-grid">
                                 <!-- Checkboxes will be injected via JS here -->
                             </div>
                     </div>
@@ -268,12 +320,22 @@
         // allRoles must be available in JS
         allRoles.forEach(function (role) {
             let isChecked = assignedRoles.includes(role.name) ? 'checked' : '';
+            let activeClass = isChecked ? 'active' : '';
             $('#role-checkbox-container').append(`
-                <div class="form-check d-flex align-items-center mb-1" style="margin-left:140px;">
-                    <input class="form-check-input me-2" type="checkbox" name="roles[]" value="${role.name}" ${isChecked}>
-                    <label class="form-check-label pt-1">${role.name}</label>
+                <div class="custom-role-check ${activeClass}">
+                    <input type="checkbox" name="roles[]" id="role_${role.id}" value="${role.name}" ${isChecked}>
+                    <label for="role_${role.id}">${role.name}</label>
                 </div>
             `);
+        });
+
+        // Toggle active class on click
+        $(document).on('change', '.custom-role-check input', function() {
+            if($(this).is(':checked')) {
+                $(this).closest('.custom-role-check').addClass('active');
+            } else {
+                $(this).closest('.custom-role-check').removeClass('active');
+            }
         });
 
         $("#edit-role-modal").modal("show");

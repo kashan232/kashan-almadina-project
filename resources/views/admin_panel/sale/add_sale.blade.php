@@ -498,7 +498,9 @@
             <div class="d-flex align-items-center gap-2 wh-bulk-container">
                 <label class="form-label text-muted small mb-0 fw-bold">Bulk Warehouse:</label>
                 <select class="form-select form-select-sm" id="globalWarehouse" style="width: 150px; font-size: 0.8rem;">
-                    <option value="0">🏠 Shop Stock</option>
+                    @if(auth()->user()->canAccessShop())
+                        <option value="0">🏠 Shop Stock</option>
+                    @endif
                     @foreach ($warehouses as $wh)
                         <option value="{{ $wh->id }}">📦 {{ $wh->warehouse_name }}</option>
                     @endforeach
@@ -557,7 +559,9 @@
                       </td>
                       <td style="width: 120px;">
                         <select class="form-select form-select-sm warehouse" name="warehouse_name[]">
-                            <option value="0" {{ (!$whId || $whId == 0) ? 'selected' : '' }}>🏠 Shop Stock</option>
+                            @if(auth()->user()->canAccessShop())
+                                <option value="0" {{ (!$whId || $whId == 0) ? 'selected' : '' }}>🏠 Shop Stock</option>
+                            @endif
                           @foreach ($warehouses as $wh)
                             <option value="{{ $wh->id }}" {{ $whId == $wh->id ? 'selected' : '' }}>📦 {{ $wh->warehouse_name }}</option>
                           @endforeach
@@ -977,7 +981,9 @@
       </td>
       <td style="width: 120px;" class="wh-cell">
         <select class="form-select form-select-sm warehouse" name="warehouse_name[]">
-            <option value="0" selected>🏠 Shop Stock</option>
+            @if(auth()->user()->canAccessShop())
+                <option value="0" selected>🏠 Shop Stock</option>
+            @endif
           @foreach ($warehouses as $wh)
             <option value="{{ $wh->id }}">📦 {{ $wh->warehouse_name }}</option>
           @endforeach

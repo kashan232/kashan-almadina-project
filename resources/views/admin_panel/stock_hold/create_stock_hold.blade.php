@@ -86,7 +86,9 @@
                             <div class="col-md-2 mt-2">
                                 <label class="form-label small fw-bold">Location</label>
                                 <select name="warehouse_id" id="warehouse_id" class="form-select select2" required>
-                                    <option value="0">Shop</option>
+                                    @if(auth()->user()->canAccessShop())
+                                        <option value="0">🏠 Shop</option>
+                                    @endif
                                     @foreach($warehouses as $wh)
                                         <option value="{{ $wh->id }}">{{ $wh->warehouse_name }}</option>
                                     @endforeach

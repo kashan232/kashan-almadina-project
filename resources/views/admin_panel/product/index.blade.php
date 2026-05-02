@@ -139,7 +139,9 @@
                                         <label class="column-picker-item"><input type="checkbox" data-column="2" checked> #</label>
                                         <label class="column-picker-item"><input type="checkbox" data-column="3" checked> Product Name</label>
                                         <label class="column-picker-item"><input type="checkbox" data-column="4" checked> Weight</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="5" checked> Stock</label>
+                                        @if(auth()->user()->canAccessShop())
+                                            <label class="column-picker-item"><input type="checkbox" data-column="5" checked> Stock</label>
+                                        @endif
                                         <label class="column-picker-item"><input type="checkbox" data-column="6" checked> Base Price</label>
                                         <label class="column-picker-item"><input type="checkbox" data-column="7" checked> Disc (%)</label>
                                         <label class="column-picker-item"><input type="checkbox" data-column="8" checked> Disc (PKR)</label>
@@ -175,7 +177,9 @@
                                             <th>#</th>
                                             <th>Product Name</th>
                                             <th>Weight</th>
-                                            <th>Stock</th>
+                                            @if(auth()->user()->canAccessShop())
+                                                <th>Stock</th>
+                                            @endif
                                             <th>Base Price (PKR)</th>
                                             <th>Discount (%)</th>
                                             <th>Discount (PKR)</th>
@@ -196,7 +200,9 @@
                                             <td>{{ $index + 1 }}</td>
                                             <td class="fw-bold">{{ $product->name }}</td>
                                             <td>{{ $product->weight }}</td>
-                                            <td>{{ $product->stock }}</td>
+                                            @if(auth()->user()->canAccessShop())
+                                                <td>{{ $product->stock }}</td>
+                                            @endif
                                             <td class="text-end">{{ number_format($product->latestPrice->sale_retail_price ?? 0, 0) }}</td>
                                             <td class="text-center">{{ $product->latestPrice->purchase_discount_percent ?? '0' }}%</td>
                                             <td class="text-end">{{ number_format($product->latestPrice->purchase_discount_amount ?? 0, 0) }}</td>

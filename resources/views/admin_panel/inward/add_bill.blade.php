@@ -72,6 +72,9 @@
                                                 <select name="warehouse_id"
                                                     class="form-control form-control-sm" required>
                                                     <option disabled selected>Select</option>
+                                                    @if(auth()->user()->canAccessShop())
+                                                        <option value="0">🏠 Shop Stock</option>
+                                                    @endif
                                                     @foreach ($Warehouse as $ware)
                                                     <option value="{{ $ware->id }}">
                                                         {{ $ware->warehouse_name }}

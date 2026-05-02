@@ -135,6 +135,14 @@ class PurchaseController extends Controller
             return redirect()->back()->withErrors($validator)->withInput();
         }
 
+        // Security check for Shop Stock
+        if ($request->warehouse_id == 0 && !auth()->user()->canAccessShop()) {
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json(['success' => false, 'message' => 'Unauthorized access to Shop Stock.'], 403);
+            }
+            return redirect()->back()->with('error', 'Unauthorized access to Shop Stock.');
+        }
+
         // Clean product rows: keep only rows with valid product id and qty>0
         $productIds = $request->input('product_id', []);
         $qtys       = $request->input('qty', []);
@@ -453,6 +461,14 @@ class PurchaseController extends Controller
                 ], 422);
             }
             return redirect()->back()->withErrors($validator)->withInput();
+        }
+
+        // Security check for Shop Stock
+        if ($request->warehouse_id == 0 && !auth()->user()->canAccessShop()) {
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json(['success' => false, 'message' => 'Unauthorized access to Shop Stock.'], 403);
+            }
+            return redirect()->back()->with('error', 'Unauthorized access to Shop Stock.');
         }
 
         // Clean product rows

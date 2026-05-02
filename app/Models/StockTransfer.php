@@ -9,7 +9,13 @@ use Illuminate\Support\Facades\DB;
 
 class StockTransfer extends Model
 {
-    use HasFactory;
+    use HasFactory, \App\Traits\GroupIsolation;
+
+    protected $guarded = [];
+
+    protected $casts = [
+        'user_group_ids' => 'array',
+    ];
 
     protected $fillable = [
         'from_warehouse_id',

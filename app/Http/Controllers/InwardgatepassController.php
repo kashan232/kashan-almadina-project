@@ -10,6 +10,7 @@ use App\Models\Product;
 use App\Models\Branch;
 use App\Models\Warehouse;
 use App\Models\Vendor;
+use App\Models\Customer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -46,17 +47,16 @@ class InwardgatepassController extends Controller
     // 2. Show create form
     public function create()
     {
-        $branches   = Branch::orderBy('name')->get();
         $warehouses = Warehouse::orderBy('warehouse_name')->get();
         $vendors    = Vendor::orderBy('name')->get();
-        return view('admin_panel.inward.create', compact('branches', 'warehouses', 'vendors'));
+        $customers  = Customer::orderBy('customer_name')->get();
+        return view('admin_panel.inward.create', compact('warehouses', 'vendors', 'customers'));
     }
 
     // 3. Store gatepass + items + update stock
     // public function store(Request $request)
     // {
     //     $request->validate([
-    //         'branch_id'      => 'required|exists:branches,id',
     //         'warehouse_id'   => 'required|exists:warehouses,id',
     //         'vendor_id'      => 'required|exists:vendors,id',
     //         'gatepass_date'  => 'required|date',
@@ -68,7 +68,7 @@ class InwardgatepassController extends Controller
 
     //     DB::transaction(function () use ($request) {
     //         $gatepass = InwardGatepass::create([
-    //             'branch_id'    => $request->branch_id,
+    //             'branch_id'    => auth()->user()->branch_id ?? 1,
     //             'warehouse_id' => $request->warehouse_id,
     //             'vendor_id'    => $request->vendor_id,
     //             'gatepass_date'=> $request->gatepass_date,
@@ -92,7 +92,7 @@ class InwardgatepassController extends Controller
     //             ]);
 
     //             $stock = Stock::firstOrNew([
-    //                 'branch_id'    => $request->branch_id,
+    //                 'branch_id'    => auth()->user()->branch_id ?? 1,
     //                 'warehouse_id' => $request->warehouse_id,
     //                 'product_id'   => $pid,
     //             ]);
@@ -107,9 +107,9 @@ class InwardgatepassController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'branch_id'      => 'required|exists:branches,id',
-            'warehouse_id'   => 'required|exists:warehouses,id',
-            'vendor_id'      => 'required|exists:vendors,id',
+            'warehouse_id'   => 'required|integer',
+            'vendor_type'    => 'required|string',
+            'vendor_id'      => 'required|integer',
             'gatepass_date'  => 'required|date',
             'product_id'     => 'required|array|min:1',
             'product_id.*'   => 'required|exists:products,id',
@@ -117,14 +117,23 @@ class InwardgatepassController extends Controller
             'qty.*'          => 'required|numeric|min:0.01',
         ]);
 
+        // Security check for Shop Stock
+        if ($request->warehouse_id == 0 && !auth()->user()->canAccessShop()) {
+            if ($request->ajax()) {
+                return response()->json(['success' => false, 'message' => 'Unauthorized access to Shop Stock.'], 403);
+            }
+            return redirect()->back()->with('error', 'Unauthorized access to Shop Stock.');
+        }
+
         $gatepassId = DB::transaction(function () use ($request) {
             $invoiceNo = InwardGatepass::generateInvoiceNo();
             // 1. Create Gatepass
             $gatepass = InwardGatepass::create([
                 'invoice_no'     => $invoiceNo,
-                'branch_id'     => $request->branch_id,
+                'branch_id'     => auth()->user()->branch_id ?? 1,
                 'warehouse_id'  => $request->warehouse_id,
                 'vendor_id'     => $request->vendor_id,
+                'vendor_type'   => $request->vendor_type,
                 'gatepass_date' => $request->gatepass_date,
                 'transport_name' => $request->transport_name,
                 'gatepass_no'      => $request->bilty_no,
@@ -169,15 +178,23 @@ class InwardgatepassController extends Controller
     public function update(Request $request, $id)
     {
         $request->validate([
-            'branch_id'      => 'required|exists:branches,id',
-            'warehouse_id'   => 'required|exists:warehouses,id',
-            'vendor_id'      => 'required|exists:vendors,id',
+            'warehouse_id'   => 'required|integer',
+            'vendor_type'    => 'required|string',
+            'vendor_id'      => 'required|integer',
             'gatepass_date'  => 'required|date',
             'product_id'     => 'required|array|min:1',
             'product_id.*'   => 'required|exists:products,id',
             'qty'            => 'required|array',
             'qty.*'          => 'required|numeric|min:0.01',
         ]);
+
+        // Security check for Shop Stock
+        if ($request->warehouse_id == 0 && !auth()->user()->canAccessShop()) {
+            if ($request->ajax()) {
+                return response()->json(['success' => false, 'message' => 'Unauthorized access to Shop Stock.'], 403);
+            }
+            return redirect()->back()->with('error', 'Unauthorized access to Shop Stock.');
+        }
 
         $gatepassId = DB::transaction(function () use ($request, $id) {
             $gatepass = InwardGatepass::findOrFail($id);
@@ -187,9 +204,10 @@ class InwardgatepassController extends Controller
 
             // Update Header
             $gatepass->update([
-                'branch_id'      => $request->branch_id,
+                'branch_id'      => auth()->user()->branch_id ?? $gatepass->branch_id,
                 'warehouse_id'   => $request->warehouse_id,
                 'vendor_id'      => $request->vendor_id,
+                'vendor_type'    => $request->vendor_type,
                 'gatepass_date'  => $request->gatepass_date,
                 'transport_name' => $request->transport_name,
                 'gatepass_no'    => $request->bilty_no,
@@ -284,11 +302,11 @@ class InwardgatepassController extends Controller
     public function edit($id)
     {
         $gatepass = InwardGatepass::with('items.product.brandRelation')->findOrFail($id);
-        $branches   = Branch::orderBy('name')->get();
         $warehouses = Warehouse::orderBy('warehouse_name')->get();
         $vendors    = Vendor::orderBy('name')->get();
+        $customers  = Customer::orderBy('customer_name')->get();
 
-        return view('admin_panel.inward.edit', compact('gatepass', 'branches', 'warehouses', 'vendors'));
+        return view('admin_panel.inward.edit', compact('gatepass', 'warehouses', 'vendors', 'customers'));
     }
 
     // 7. Delete gatepass

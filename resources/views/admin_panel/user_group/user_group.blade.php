@@ -34,9 +34,10 @@
                                 <thead class="table-light text-center">
                                     <tr>
                                         <th width="80">Id</th>
-                                        <th>Group Name</th>
-                                        <th>Assigned Users</th>
-                                        <th width="120">Action</th>
+                                         <th>Group Name</th>
+                                         <th>Shop Access</th>
+                                         <th>Assigned Users</th>
+                                         <th width="120">Action</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -44,13 +45,21 @@
                                         <tr>
                                             <td class="text-center">{{ $group->id }}</td>
                                             <td class="fw-bold text-primary group-name-text">{{ $group->group_name }}</td>
-                                            <td>
-                                                @foreach($group->users as $u)
-                                                    <span class="badge bg-info text-dark badge-user shadow-sm">{{ $u->email }}</span>
-                                                @endforeach
-                                                <span class="d-none group-user-ids">{{ $group->users->pluck('id') }}</span>
-                                                <span class="d-none group-id-val">{{ $group->id }}</span>
-                                            </td>
+                                             <td>
+                                                @if($group->allow_shop)
+                                                    <span class="badge bg-success rounded-pill px-3">Allowed</span>
+                                                @else
+                                                    <span class="badge bg-danger rounded-pill px-3">Restricted</span>
+                                                @endif
+                                                <span class="d-none group-allow-shop">{{ $group->allow_shop }}</span>
+                                             </td>
+                                             <td>
+                                                 @foreach($group->users as $u)
+                                                     <span class="badge bg-info text-dark badge-user shadow-sm">{{ $u->email }}</span>
+                                                 @endforeach
+                                                 <span class="d-none group-user-ids">{{ $group->users->pluck('id') }}</span>
+                                                 <span class="d-none group-id-val">{{ $group->id }}</span>
+                                             </td>
                                             <td class="text-center">
                                                 <button class="btn btn-sm btn-warning edit-btn px-3 rounded-pill" 
                                                         data-id="{{ $group->id }}">
@@ -87,7 +96,7 @@
                         <input type="text" name="group_name" id="group_name_input" class="form-control" placeholder="Enter group name..." required />
                     </div>
 
-                    <div class="mb-2">
+                    <div class="mb-4">
                         <label class="form-label fw-bold text-secondary">Assign Users</label>
                         <select name="user_ids[]" id="user_ids_select" class="form-control select2" multiple required style="width: 100%;">
                             @foreach ($users as $user)
@@ -95,6 +104,16 @@
                             @endforeach
                         </select>
                         <div class="form-text mt-2 small">Select one or more users to assign to this group.</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" name="allow_shop" value="1" id="allow_shop_input">
+                            <label class="form-check-label fw-bold text-dark" for="allow_shop_input">
+                                <i class="fa fa-shopping-cart text-primary me-1"></i> Allow Access to Shop Stock
+                            </label>
+                        </div>
+                        <div class="form-text small">If enabled, users in this group can see "Shop Stock" in warehouse dropdowns.</div>
                     </div>
                 </div>
                 <div class="modal-footer bg-light border-0">
@@ -140,6 +159,7 @@
             $('#groupForm')[0].reset();
             $('#edit_id_input').val('');
             $('#user_ids_select').val([]).trigger('change');
+            $('#allow_shop_input').prop('checked', false);
             $('#exampleModalLabel').text('Create New User Group');
             $('#exampleModal').modal('show');
         });
@@ -150,9 +170,11 @@
             var id = $row.find('.group-id-val').text();
             var name = $row.find('.group-name-text').text();
             var users = JSON.parse($row.find('.group-user-ids').text());
+            var allowShop = $row.find('.group-allow-shop').text().trim() == '1';
 
             $('#edit_id_input').val(id);
             $('#group_name_input').val(name);
+            $('#allow_shop_input').prop('checked', allowShop);
             
             $('#exampleModalLabel').text('Edit Group: ' + name);
             $('#exampleModal').modal('show');

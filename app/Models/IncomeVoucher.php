@@ -7,7 +7,11 @@ use Illuminate\Database\Eloquent\Model;
 
 class IncomeVoucher extends Model
 {
-    use HasFactory;
+    use HasFactory, \App\Traits\GroupIsolation;
 
     protected $guarded = [];
+
+    protected $casts = [
+        'user_group_ids' => 'array',
+    ];
 }

@@ -8,10 +8,13 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class StockWastage extends Model
 {
-    use HasFactory;
-    use SoftDeletes;
+    use HasFactory, SoftDeletes, \App\Traits\GroupIsolation;
     
     protected $guarded = [];
+
+    protected $casts = [
+        'user_group_ids' => 'array',
+    ];
 
     public function items()
     {

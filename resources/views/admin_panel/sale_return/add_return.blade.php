@@ -128,7 +128,9 @@
                                 @enderror
                                 <select name="warehouse_id" id="warehouse_select" class="form-select form-select-sm select2" required>
                                     <option value="">Select Warehouse/Shop</option>
-                                    <option value="0" {{ isset($returnData) && optional($returnData->items->first())->warehouse_id == 0 ? 'selected' : '' }}>Shop Stock (Default)</option>
+                                    @if(auth()->user()->canAccessShop())
+                                        <option value="0" {{ isset($returnData) && optional($returnData->items->first())->warehouse_id == 0 ? 'selected' : '' }}>Shop Stock (Default)</option>
+                                    @endif
                                     @foreach($warehouses as $w)
                                         <option value="{{ $w->id }}" {{ isset($returnData) && optional($returnData->items->first())->warehouse_id == $w->id ? 'selected' : '' }}>{{ $w->warehouse_name }}</option>
                                     @endforeach

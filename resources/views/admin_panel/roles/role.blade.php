@@ -195,9 +195,9 @@
             let isChecked = assignedPerms.includes(p.name) ? 'checked' : '';
             let html = `
                 <div class="col">
-                    <div class="permission-box shadow-sm" onclick="$(this).find('.permission-checkbox').click()">
-                        <input class="permission-checkbox" type="checkbox" name="permissions[]" value="${p.name}" ${isChecked} id="p_${p.id}" onclick="event.stopPropagation()" style="position:relative !important; margin:0 !important; cursor:pointer;">
-                        <span class="perm-label" style="margin-left:12px; font-weight:700; color:#333; font-size:14px; pointer-events:none;">${p.name}</span>
+                    <div class="permission-box shadow-sm d-flex align-items-center p-2 rounded border" onclick="$(this).find('.permission-checkbox').click()">
+                        <input class="permission-checkbox form-check-input m-0" type="checkbox" name="permissions[]" value="${p.name}" ${isChecked} id="p_${p.id}" onclick="event.stopPropagation()" style="cursor:pointer; width:20px; height:20px; min-width:20px;">
+                        <span class="perm-label ms-3" style="font-weight:600; color:#444; font-size:14px; pointer-events:none;">${p.name}</span>
                     </div>
                 </div>
             `;

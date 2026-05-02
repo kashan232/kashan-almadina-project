@@ -130,6 +130,11 @@ class StockHoldController extends Controller
             'hold_qty'     => 'required|array',
         ]);
 
+        // Security check for Shop Stock
+        if ($request->warehouse_id == 0 && !auth()->user()->canAccessShop()) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized access to Shop Stock.'], 403);
+        }
+
         $status = $request->action === 'post' ? 'Posted' : 'Unposted';
 
         try {
@@ -368,6 +373,11 @@ class StockHoldController extends Controller
             'remarks'     => 'nullable|string',
         ]);
 
+        // Security check for Shop Stock
+        if (($request->warehouse_id == 0 || (is_null($request->warehouse_id) && $hold->warehouse_id == 0)) && !auth()->user()->canAccessShop()) {
+            return back()->withErrors(['error' => 'Unauthorized access to Shop Stock.']);
+        }
+
         DB::beginTransaction();
         try {
             $releaseQty = (float) $data['release_qty'];
@@ -517,7 +527,13 @@ class StockHoldController extends Controller
             'entry_date' => 'required|date',
             'product_id' => 'required|array',
             'release_qty' => 'required|array',
+            'warehouse_id' => 'required|integer',
         ]);
+
+        // Security check for Shop Stock
+        if ($request->warehouse_id == 0 && !auth()->user()->canAccessShop()) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized access to Shop Stock.'], 403);
+        }
 
         $status = $request->action === 'post' ? 'Posted' : 'Unposted';
         $releaseType = $request->claim_id ? 'claim' : 'stock';

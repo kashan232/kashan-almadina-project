@@ -8,8 +8,14 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Productbooking extends Model
 {
-    use HasFactory;
-    
+    use HasFactory, \App\Traits\GroupIsolation;
+
+    protected $guarded = [];
+
+    protected $casts = [
+        'user_group_ids' => 'array',
+    ];
+
     protected $fillable = [
         'invoice_no',
         'manual_invoice',

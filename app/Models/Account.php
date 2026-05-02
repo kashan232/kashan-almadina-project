@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Account extends Model
 {
-    use HasFactory;
+    use HasFactory, \App\Traits\GroupIsolation;
 
     protected $fillable = [
         'head_id',       // foreign key: account head

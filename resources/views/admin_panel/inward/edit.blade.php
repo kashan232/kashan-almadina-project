@@ -121,42 +121,48 @@
                                 <input type="date" name="gatepass_date" class="form-control input-sm" value="{{ isset($gatepass) ? $gatepass->gatepass_date : date('Y-m-d') }}" required>
                             </div>
 
-                            <!-- Branch -->
-                            <div class="col-md-2">
-                                <label class="form-label small fw-bold">Branch</label>
-                                <select name="branch_id" class="form-select select2">
-                                    <option value="" disabled selected>Select Branch</option>
-                                    @foreach ($branches as $item)
-                                        <option value="{{ $item->id }}" {{ (isset($gatepass) && $gatepass->branch_id == $item->id) ? 'selected' : '' }}>
-                                            {{ $item->name }}
-                                        </option>
-                                    @endforeach
-                                </select>
-                            </div>
+
 
                             <!-- Warehouse -->
                             <div class="col-md-2">
                                 <label class="form-label small fw-bold">Warehouse</label>
                                 <select name="warehouse_id" class="form-select select2" required>
-                                    <option value="" disabled selected>Select Warehouse</option>
+                                    @if(auth()->user()->canAccessShop())
+                                        <option value="0" {{ (isset($gatepass) && $gatepass->warehouse_id == 0) ? 'selected' : '' }}>🏠 Shop Stock</option>
+                                    @endif
                                     @foreach ($warehouses as $item)
                                         <option value="{{ $item->id }}" {{ (isset($gatepass) && $gatepass->warehouse_id == $item->id) ? 'selected' : '' }}>
-                                            {{ $item->warehouse_name }}
+                                            📦 {{ $item->warehouse_name }}
                                         </option>
                                     @endforeach
                                 </select>
                             </div>
 
-                            <!-- Vendor -->
+                            <!-- Party Type -->
                             <div class="col-md-2">
-                                <label class="form-label small fw-bold">Vendor</label>
-                                <select name="vendor_id" class="form-select select2" required>
-                                    <option value="" disabled selected>Select Vendor</option>
-                                    @foreach ($vendors as $item)
-                                        <option value="{{ $item->id }}" {{ (isset($gatepass) && $gatepass->vendor_id == $item->id) ? 'selected' : '' }}>
-                                            {{ $item->name }}
+                                <label class="form-label small fw-bold">Type</label>
+                                <select name="vendor_type" id="vendor_type_select" class="form-select select2" required>
+                                    <option value="" disabled {{ !isset($gatepass) ? 'selected' : '' }}>Select Type</option>
+                                    <option value="vendor" {{ (isset($gatepass) && $gatepass->vendor_type == 'vendor') ? 'selected' : '' }}>Vendor</option>
+                                    <option value="customer" {{ (isset($gatepass) && $gatepass->vendor_type == 'customer') ? 'selected' : '' }}>Customer</option>
+                                    <option value="walkin" {{ (isset($gatepass) && $gatepass->vendor_type == 'walkin') ? 'selected' : '' }}>Walkin Customer</option>
+                                </select>
+                            </div>
+
+                            <!-- Vendor (Party) -->
+                            <div class="col-md-2">
+                                <label class="form-label small fw-bold">Party</label>
+                                <select name="vendor_id" id="vendor_id_select" class="form-select select2" required>
+                                    <option value="" disabled selected>Select Party</option>
+                                    @if(isset($gatepass))
+                                        <option value="{{ $gatepass->vendor_id }}" selected>
+                                            @if($gatepass->vendor_type == 'vendor')
+                                                {{ $gatepass->vendor->name ?? 'Unknown' }}
+                                            @else
+                                                {{ \App\Models\Customer::find($gatepass->vendor_id)->customer_name ?? 'Unknown' }}
+                                            @endif
                                         </option>
-                                    @endforeach
+                                    @endif
                                 </select>
                             </div>
 
@@ -427,6 +433,63 @@
             });
         }
 
+        // Party Selection Logic
+        var vendors   = @json($vendors->map(fn($v) => ['id' => $v->id, 'name' => $v->name]));
+        var customers = @json($customers->map(fn($c) => ['id' => $c->id, 'name' => $c->customer_name, 'type' => $c->customer_type]));
+
+        function loadParties(type, selectedId = null) {
+            var list = [];
+            if (type === 'vendor') {
+                list = vendors;
+            } else if (type === 'customer') {
+                list = customers;
+            } else if (type === 'walkin') {
+                list = customers.filter(function(c) {
+                    return (c.type || '').toLowerCase().indexOf('walking') !== -1;
+                });
+            }
+
+            var $drop = $('#vendor_id_select');
+            var html  = '<option value="" disabled>-- Select Party --</option>';
+            list.forEach(function(item) {
+                var selected = (selectedId && String(item.id) === String(selectedId)) ? 'selected' : '';
+                html += '<option value="' + item.id + '" ' + selected + '>' + item.name + '</option>';
+            });
+            $drop.html(html).trigger('change');
+        }
+
+        $('#vendor_type_select').on('change', function() {
+            var type = $(this).val();
+            if (type) loadParties(type);
+        });
+
+        // Initial load for edit mode
+        var initialType = $('#vendor_type_select').val();
+        var initialId = "{{ isset($gatepass) ? $gatepass->vendor_id : '' }}";
+        if(initialType) {
+            loadParties(initialType, initialId);
+        }
+
+        // Chain focus
+        $('input[name="gatepass_date"]').on('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                $('select[name="warehouse_id"]').select2('open');
+            }
+        });
+
+        $('select[name="warehouse_id"]').on('select2:select', function() {
+            setTimeout(() => $('#vendor_type_select').select2('open'), 80);
+        });
+
+        $('#vendor_type_select').on('select2:select', function() {
+            setTimeout(() => $('#vendor_id_select').select2('open'), 80);
+        });
+
+        $('#vendor_id_select').on('select2:select', function() {
+            setTimeout(() => $('input[name="transport_name"]').focus(), 80);
+        });
+
         $('#saveDraftBtn').on('click', ajaxSaveDraft);
         $('#postBtn').on('click', doPost);
 
@@ -623,9 +686,9 @@
         // =============================================
         $('#previewPrintBtn').on('click', function() {
             var date      = $('input[name="gatepass_date"]').val();
-            var branch    = $('select[name="branch_id"] option:selected').text();
             var warehouse = $('select[name="warehouse_id"] option:selected').text();
-            var vendor    = $('select[name="vendor_id"] option:selected').text();
+            var vendorType = $('#vendor_type_select option:selected').text();
+            var vendorName = $('#vendor_id_select option:selected').text() || '-';
             var transport = $('input[name="transport_name"]').val();
             var bilty     = $('input[name="bilty_no"]').val();
             var remarks   = $('input[name="note"]').val();
@@ -653,59 +716,54 @@
             });
 
             var html = `
-                <div style="border:1px solid #eee; padding:20px; max-width:780px; margin:auto;">
-                    {{-- Header --}}
-                    <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #000; padding-bottom:10px; margin-bottom:16px;">
+                <div style="font-family: 'Segoe UI', Arial, sans-serif; color: #000; padding: 20px; border: 1px solid #ccc;">
+                    <!-- Header -->
+                    <div style="text-align: center; margin-bottom: 25px; border-bottom: 3px double #000; padding-bottom: 15px;">
+                        <h1 style="margin: 0; font-weight: 800; text-transform: uppercase; font-size: 28px; letter-spacing: 1px;">AL Madina Traders</h1>
+                        <div style="font-size: 16px; margin-top: 5px; font-weight: 500;">Inward Gatepass Voucher</div>
+                    </div>
+
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px;">
                         <div>
-                            <div style="font-size:22px; font-weight:700;">Al-Madina Traders</div>
-                            <div style="color:#555; font-size:12px;">Inward Gatepass Voucher</div>
+                            <h3 style="margin: 0; font-weight: bold; text-transform: uppercase; border-bottom: 2px solid #000; display: inline-block; padding-bottom: 2px; margin-bottom: 5px;">Inward Gatepass</h3>
+                            <div style="font-size: 15px; margin-top: 8px;"><strong>Party:</strong> ${vendorName} (${vendorType})</div>
+                            <div style="font-size: 15px;"><strong>Warehouse:</strong> ${warehouse}</div>
                         </div>
-                        <div style="text-align:right; font-size:12px;">
-                            <div><strong>Inv No:</strong> ${invNo}</div>
-                            <div><strong>Status:</strong> ${(_savedGatepassId && _savedGatepassId !== '') ? 'SAVED' : 'DRAFT'}</div>
+                        <div style="text-align: right;">
+                            <h4 style="margin: 0; color: #000; font-weight: bold; font-size: 18px;">Inv #${invNo}</h4>
+                            <div style="font-size: 15px; margin-top: 8px;"><strong>Date:</strong> ${date}</div>
+                            <div style="font-size: 15px;"><strong>Transport / Bilty:</strong> ${transport} / ${bilty}</div>
                         </div>
                     </div>
 
-                    {{-- Info Grid --}}
-                    <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px; font-size:12px;">
-                        <div>
-                            <div><span style="font-weight:600;width:120px;display:inline-block;">Date:</span>${date}</div>
-                            <div><span style="font-weight:600;width:120px;display:inline-block;">Warehouse:</span>${warehouse}</div>
-                            <div><span style="font-weight:600;width:120px;display:inline-block;">Vendor:</span>${vendor}</div>
-                        </div>
-                        <div>
-                            <div><span style="font-weight:600;width:120px;display:inline-block;">Branch:</span>${branch}</div>
-                            <div><span style="font-weight:600;width:120px;display:inline-block;">Transport:</span>${transport}</div>
-                            <div><span style="font-weight:600;width:120px;display:inline-block;">Bilty/GP No:</span>${bilty}</div>
-                        </div>
-                    </div>
-
-                    {{-- Table --}}
-                    <table style="width:100%;border-collapse:collapse;margin-bottom:20px;">
+                    <!-- Items Table -->
+                    <table style="width: 100%; border-collapse: collapse; font-size: 14px; margin-bottom: 20px;">
                         <thead>
-                            <tr style="background:#f2f2f2;">
-                                <th style="border:1px solid #ddd;padding:7px;width:40px;">S#</th>
-                                <th style="border:1px solid #ddd;padding:7px;width:80px;">Item ID</th>
-                                <th style="border:1px solid #ddd;padding:7px;">Product</th>
-                                <th style="border:1px solid #ddd;padding:7px;">Brand</th>
-                                <th style="border:1px solid #ddd;padding:7px;width:70px;text-align:center;">Qty</th>
+                            <tr style="background: #f0f0f0; border-top: 2px solid #000; border-bottom: 2px solid #000;">
+                                <th style="padding: 8px; border-right: 1px solid #ccc; width: 40px; text-align: center; font-weight: bold;">#</th>
+                                <th style="padding: 8px; border-right: 1px solid #ccc; width: 80px; text-align: center; font-weight: bold;">Item ID</th>
+                                <th style="padding: 8px; border-right: 1px solid #ccc; text-align: left; font-weight: bold;">Item Description</th>
+                                <th style="padding: 8px; border-right: 1px solid #ccc; text-align: left; font-weight: bold;">Brand</th>
+                                <th style="padding: 8px; width: 100px; text-align: center; font-weight: bold;">Qty</th>
                             </tr>
                         </thead>
-                        <tbody>${rows}</tbody>
+                        <tbody>
+                            ${rows}
+                        </tbody>
                         <tfoot>
-                            <tr style="background:#f9f9f9;font-weight:700;">
-                                <td colspan="4" style="border:1px solid #ddd;padding:7px;text-align:right;">Total Qty:</td>
-                                <td style="border:1px solid #ddd;padding:7px;text-align:center;">${totalQty.toFixed(2)}</td>
-                            </tr>
+                             <tr>
+                                <td colspan="3" style="border-top: 2px solid #000; padding-top: 15px;">
+                                    <strong>Remarks:</strong> ${remarks} <br>
+                                    <small style="color: #555;">Generated by System</small>
+                                </td>
+                                <td style="text-align: right; border-top: 2px solid #000; padding: 10px 5px; font-weight: bold;">Total Qty:</td>
+                                <td style="text-align: center; border-top: 2px solid #000; padding: 10px 5px; font-weight: bold;">${totalQty.toFixed(2)}</td>
+                             </tr>
                         </tfoot>
                     </table>
-
-                    ${remarks ? '<p style="font-size:12px;"><strong>Remarks:</strong> ' + remarks + '</p>' : ''}
-
-                    {{-- Signatures --}}
-                    <div style="display:flex;justify-content:space-between;margin-top:40px;">
-                        <div style="border-top:1px solid #000;width:130px;text-align:center;padding-top:4px;font-size:12px;">Prepared By</div>
-                        <div style="border-top:1px solid #000;width:130px;text-align:center;padding-top:4px;font-size:12px;">Approved By</div>
+                    
+                    <div style="text-align: center; font-size: 12px; margin-top: 30px; border-top: 1px dashed #ccc; padding-top: 10px;">
+                        Thank you for your business!
                     </div>
                 </div>
             `;

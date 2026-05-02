@@ -7,8 +7,12 @@ use Illuminate\Database\Eloquent\Model;
 
 class PaymentVoucher extends Model
 {
-    use HasFactory;
+    use HasFactory, \App\Traits\GroupIsolation;
     protected $guarded = [];
+
+    protected $casts = [
+        'user_group_ids' => 'array',
+    ];
 
     public static function generateInvoiceNo()
     {

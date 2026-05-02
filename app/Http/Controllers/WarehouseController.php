@@ -13,30 +13,12 @@ class WarehouseController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Warehouse::with(['creator']);
         $isAdmin = Auth::user()->roles->pluck('name')->contains('Admin') || Auth::user()->usertype == 'admin';
+        $query = Warehouse::with(['creator']);
         
-        // Check if user is NOT an admin
-        if (!$isAdmin) {
-            $userId = Auth::id();
-            $userGroupIds = Auth::user()->userGroups()->pluck('user_groups.id')->toArray();
-            
-            $query->where(function($q) use ($userId, $userGroupIds) {
-                // created by user
-                $q->where('created_by', $userId);
-                
-                // OR belongs to user's group
-                if (!empty($userGroupIds)) {
-                    foreach ($userGroupIds as $groupId) {
-                        $q->orWhereJsonContains('user_group_ids', (string)$groupId);
-                    }
-                }
-            });
-        } else {
-            // Admin can filter by user
-            if ($request->has('created_by') && $request->created_by != '') {
-                $query->where('created_by', $request->created_by);
-            }
+        // Admin can filter by user
+        if ($isAdmin && $request->has('created_by') && $request->created_by != '') {
+            $query->where('created_by', $request->created_by);
         }
 
         $warehouses = $query->latest()->get();

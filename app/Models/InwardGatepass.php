@@ -7,9 +7,13 @@ use Illuminate\Database\Eloquent\Model;
 
 class InwardGatepass extends Model
 {
-    use HasFactory;
+    use HasFactory, \App\Traits\GroupIsolation;
 
     protected $guarded = [];
+
+    protected $casts = [
+        'user_group_ids' => 'array',
+    ];
 
     public function items()
     {
@@ -32,6 +36,19 @@ class InwardGatepass extends Model
     public function warehouse()
     {
         return $this->belongsTo(Warehouse::class);
+    }
+
+    public function customer()
+    {
+        return $this->belongsTo(Customer::class, 'vendor_id');
+    }
+
+    public function getPartyNameAttribute()
+    {
+        if ($this->vendor_type === 'customer' || $this->vendor_type === 'walkin') {
+            return $this->customer->customer_name ?? 'Unknown';
+        }
+        return $this->vendor->name ?? 'Unknown';
     }
 
     public static function generateInvoiceNo()

@@ -152,6 +152,16 @@ class SaleController extends Controller
                 continue;
             }
 
+            // Security Gate: Shop Stock
+            if ($warehouse_id == 0 && !auth()->user()->canAccessShop()) {
+                return back()->with('error', 'Unauthorized access to Shop Stock.');
+            }
+
+            // Security Gate: Warehouse Isolation
+            if ($warehouse_id != 0 && !\App\Models\Warehouse::where('id', $warehouse_id)->exists()) {
+                return back()->with('error', 'Unauthorized access to Warehouse.');
+            }
+
             SaleItem::create([
                 'sale_id' => $sale->id,
                 'warehouse_id' => $warehouse_id,
@@ -212,6 +222,16 @@ class SaleController extends Controller
                     continue;
                 }
 
+                // Security Gate: Shop Stock
+                if ($warehouse_id == 0 && !auth()->user()->canAccessShop()) {
+                    return back()->with('error', 'Unauthorized access to Shop Stock.');
+                }
+
+                // Security Gate: Warehouse Isolation
+                if ($warehouse_id != 0 && !\App\Models\Warehouse::where('id', $warehouse_id)->exists()) {
+                    return back()->with('error', 'Unauthorized access to Warehouse.');
+                }
+
                 $totalQty += $qty;
 
                 ProductBookingItem::create([
@@ -267,6 +287,16 @@ class SaleController extends Controller
 
                 if (($warehouse_id === null || $warehouse_id === '') || empty($productId) || $saleQty <= 0) {
                     continue;
+                }
+
+                // Security Gate: Shop Stock
+                if ($warehouse_id == 0 && !auth()->user()->canAccessShop()) {
+                    return back()->with('error', 'Unauthorized access to Shop Stock.');
+                }
+
+                // Security Gate: Warehouse Isolation
+                if ($warehouse_id != 0 && !\App\Models\Warehouse::where('id', $warehouse_id)->exists()) {
+                    return back()->with('error', 'Unauthorized access to Warehouse.');
                 }
 
                 $saleQty = (float) $request->input("sales-qty.$i", 0);
@@ -413,6 +443,16 @@ class SaleController extends Controller
 
                 if (($warehouse_id === null || $warehouse_id === '') || empty($productId) || $qty <= 0) {
                     continue;
+                }
+
+                // Security Gate: Shop Stock
+                if ($warehouse_id == 0 && !auth()->user()->canAccessShop()) {
+                    return response()->json(['ok' => false, 'msg' => 'Unauthorized access to Shop Stock.'], 403);
+                }
+
+                // Security Gate: Warehouse Isolation
+                if ($warehouse_id != 0 && !\App\Models\Warehouse::where('id', $warehouse_id)->exists()) {
+                    return response()->json(['ok' => false, 'msg' => 'Unauthorized access to Warehouse.'], 403);
                 }
 
                 $totalQty += $qty;

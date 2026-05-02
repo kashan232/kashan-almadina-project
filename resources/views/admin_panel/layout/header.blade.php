@@ -104,12 +104,14 @@
           <div class="nav-bottom">
               <div class="container">
                   <ul class="nav page-navigation">
+                      @can('Dashboard')
                       <li class="nav-item">
                           <a href="{{ url('/home') }}" class="nav-link"><i
                                   class="menu_icon feather ft-home"></i><span
                                   class="menu-title">Dashboard</span></a>
 
                       </li>
+                      @endcan
 
                       {{-- Management Section --}}
                       {{-- Products Section --}}
@@ -212,16 +214,24 @@
                       @endcanany
 
                       {{-- Claims Section --}}
+                      @canany(['Customer Claim', 'Claim Acceptance', 'Claim Receipt'])
                       <li class="nav-item">
                           <a href="#" class="nav-link"><i class="menu_icon fas fa-shield-alt"></i><span class="menu-title">Claims</span><i class="menu-arrow"></i></a>
                           <div class="submenu">
                               <ul class="submenu-item">
+                                  @can('Customer Claim')
                                   <li><a href="{{ route('customer-claims.index') }}"><i class="fas fa-shield-alt mr-2"></i> Customer Claim</a></li>
+                                  @endcan
+                                  @can('Claim Acceptance')
                                   <li><a href="{{ route('claim-acceptance.index') }}"><i class="fas fa-check-double mr-2"></i> Claim Acceptance</a></li>
+                                  @endcan
+                                  @can('Claim Receipt')
                                   <li><a href="{{ route('claim-item-receipt.index') }}"><i class="fas fa-file-invoice-dollar mr-2"></i> Claim Receipt/Credits</a></li>
+                                  @endcan
                               </ul>
                           </div>
                       </li>
+                      @endcanany
 
                       {{-- User Management Section --}}
                       @canany(['Users', 'Roles', 'Permissions', 'Branches'])
@@ -332,6 +342,7 @@
                       @endcanany
 
                       {{-- Tools Section --}}
+                      @can('Rollback')
                       <li class="nav-item">
                           <a href="#" class="nav-link">
                               <i class="menu_icon fas fa-tools"></i>
@@ -349,8 +360,10 @@
                               </ul>
                           </div>
                       </li>
+                      @endcan
 
                       {{-- Reports Section --}}
+                      @can('Reports')
                       <li class="nav-item">
                           <a href="#" class="nav-link">
                               <i class="menu_icon feather ft-bar-chart"></i>
@@ -380,6 +393,7 @@
                               </ul>
                           </div>
                       </li>
+                      @endcan
 
 
                   </ul>

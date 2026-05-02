@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Warehouse extends Model
 {
-    use HasFactory;
+    use HasFactory, \App\Traits\GroupIsolation;
 
     protected $guarded = [];
 

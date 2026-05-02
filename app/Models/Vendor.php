@@ -14,7 +14,7 @@ class Vendor extends Model
         'user_group_ids' => 'array',
     ];
 
-    use HasFactory;
+    use HasFactory, \App\Traits\GroupIsolation;
     // app/Models/Vendor.php
 
     public function creator()

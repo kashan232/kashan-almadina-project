@@ -57,7 +57,7 @@
             background-color: #cfd8dc;
             border: 1px solid #000;
             padding: 6px 2px;
-            font-size: 11px;
+            font-size: 10px;
             font-weight: bold;
             text-align: center;
         }
@@ -76,9 +76,7 @@
             color: #0d47a1;
         }
 
-        .data-row td {
-            border: 1px solid #999;
-        }
+        .data-row td { border: 1px solid #999; }
         .bold-val { font-weight: bold; }
 
         .total-row td {
@@ -138,23 +136,26 @@
     <table>
         <thead>
             <tr>
-                <th width="15%">PUR No.</th>
-                <th width="15%">Date</th>
-                <th width="30%" class="text-left">Vendor Name</th>
-                <th width="10%">Qty</th>
-                <th width="15%">Price</th>
-                <th width="15%">Amount</th>
+                <th width="10%">PUR No.</th>
+                <th width="10%">Date</th>
+                <th width="20%" class="text-left">Vendor Name</th>
+                <th width="5%">Qty</th>
+                <th width="10%">Purchase Price</th>
+                <th width="15%">Purchase Amount</th>
+                <th width="10%">Retail Price</th>
+                <th width="20%">Retail Amount</th>
             </tr>
         </thead>
         <tbody>
             @php 
                 $grand_qty = 0; 
-                $grand_amount = 0; 
+                $grand_purchase_amt = 0; 
+                $grand_retail_amt = 0;
             @endphp
 
             @if($grouped->isEmpty())
                 <tr>
-                    <td colspan="6" style="text-align: center; padding: 50px;">No Data Found</td>
+                    <td colspan="8" style="text-align: center; padding: 50px;">No Data Found</td>
                 </tr>
             @endif
 
@@ -162,11 +163,12 @@
                 @php
                     $product = $items->first()->product;
                     $item_qty = 0;
-                    $item_amount = 0;
+                    $item_purchase_amt = 0;
+                    $item_retail_amt = 0;
                 @endphp
                 
                 <tr class="item-heading-row">
-                    <td colspan="6" class="text-left" style="border-top: 2px solid #000;">
+                    <td colspan="8" class="text-left" style="border-top: 2px solid #000;">
                         ITEM: {{ $product ? strtoupper($product->name) : 'N/A' }} 
                         <span class="ms-3" style="color: #666;">( {{ $product && $product->sub_category_relation ? strtoupper($product->sub_category_relation->name) : '-' }} )</span>
                     </td>
@@ -175,18 +177,26 @@
                 @foreach($items as $item)
                     @php
                         $qty = $item->qty;
-                        $amount = $item->line_total;
+                        $purchase_p = $item->price;
+                        $purchase_a = $item->line_total;
+
+                        $latestPrice = $item->product->latestPrice;
+                        $retail_p = $latestPrice ? $latestPrice->sale_retail_price : 0;
+                        $retail_a = $retail_p * $qty;
 
                         $item_qty += $qty;
-                        $item_amount += $amount;
+                        $item_purchase_amt += $purchase_a;
+                        $item_retail_amt += $retail_a;
                     @endphp
                     <tr class="data-row">
                         <td class="text-center">{{ $item->purchase->invoice_no }}</td>
                         <td class="text-center">{{ \Carbon\Carbon::parse($item->purchase->created_at)->format('d-m-y') }}</td>
                         <td class="text-left">{{ $item->purchase->vendor ? strtoupper($item->purchase->vendor->name) : 'N/A' }}</td>
                         <td class="text-center">{{ number_format($qty) }}</td>
-                        <td class="text-right">{{ number_format($item->price, 2) }}</td>
-                        <td class="text-right bold-val">{{ number_format($amount, 2) }}</td>
+                        <td class="text-right">{{ number_format($purchase_p, 0) }}</td>
+                        <td class="text-right bold-val">{{ number_format($purchase_a, 0) }}</td>
+                        <td class="text-right">{{ number_format($retail_p, 0) }}</td>
+                        <td class="text-right">{{ number_format($retail_a, 0) }}</td>
                     </tr>
                 @endforeach
 
@@ -194,13 +204,16 @@
                     <td colspan="3" class="text-right">Total:</td>
                     <td class="qty-box">{{ number_format($item_qty) }}</td>
                     <td style="border:none; background:none;"></td>
-                    <td class="val-box">{{ number_format($item_amount, 2) }}</td>
+                    <td class="val-box">{{ number_format($item_purchase_amt, 0) }}</td>
+                    <td style="border:none; background:none;"></td>
+                    <td class="val-box">{{ number_format($item_retail_amt, 0) }}</td>
                 </tr>
-                <tr style="height: 25px;"><td colspan="6" style="border:none;"></td></tr>
+                <tr style="height: 25px;"><td colspan="8" style="border:none;"></td></tr>
 
                 @php
                     $grand_qty += $item_qty;
-                    $grand_amount += $item_amount;
+                    $grand_purchase_amt += $item_purchase_amt;
+                    $grand_retail_amt += $item_retail_amt;
                 @endphp
             @endforeach
 
@@ -208,7 +221,9 @@
                 <td colspan="3" class="text-right">Grand Total:</td>
                 <td class="qty-box" style="background-color: #cfd8dc;">{{ number_format($grand_qty) }}</td>
                 <td style="border:none; background:none;"></td>
-                <td class="val-box" style="background-color: #bbdefb;">{{ number_format($grand_amount, 2) }}</td>
+                <td class="val-box" style="background-color: #bbdefb;">{{ number_format($grand_purchase_amt, 0) }}</td>
+                <td style="border:none; background:none;"></td>
+                <td class="val-box" style="background-color: #fce4ec;">{{ number_format($grand_retail_amt, 0) }}</td>
             </tr>
         </tbody>
     </table>

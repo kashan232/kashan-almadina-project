@@ -369,7 +369,9 @@
             <div class="d-flex align-items-center gap-2 wh-bulk-container">
                 <label class="form-label text-muted small mb-0 fw-bold">Bulk Warehouse:</label>
                 <select class="form-select form-select-sm" id="globalWarehouse" style="width: 150px; font-size: 0.8rem;">
-                    <option value="0">🏠 Shop Stock</option>
+                    @if(auth()->user()->canAccessShop())
+                        <option value="0">🏠 Shop Stock</option>
+                    @endif
                     @foreach ($warehouses as $wh)
                         <option value="{{ $wh->id }}">📦 {{ $wh->warehouse_name }}</option>
                     @endforeach
@@ -409,7 +411,9 @@
                       </td>
                       <td style="width: 120px;" class="wh-cell">
                         <select class="form-select form-select-sm warehouse" name="warehouse_name[]">
-                            <option value="0" {{ $item->warehouse_id == 0 ? 'selected' : '' }}>🏠 Shop Stock</option>
+                            @if(auth()->user()->canAccessShop())
+                                <option value="0" {{ $item->warehouse_id == 0 ? 'selected' : '' }}>🏠 Shop Stock</option>
+                            @endif
                           @foreach ($warehouses as $wh)
                             <option value="{{ $wh->id }}" {{ $item->warehouse_id == $wh->id ? 'selected' : '' }}>📦 {{ $wh->warehouse_name }}</option>
                           @endforeach
@@ -866,7 +870,9 @@
       <td style="width: 70px;"><input type="text" class="form-control form-control-sm item-id-input text-center" placeholder="ID"></td>
       <td><select name="product_id[]" class="form-control form-control-sm product-select" style="width: 100%;"><option value=""></option></select><input type="hidden" name="product_search[]" class="product_name_hidden"></td>
       <td style="width: 120px;" class="wh-cell ${$('#isSaleOrder').is(':checked') ? 'd-none' : ''}"><select class="form-select form-select-sm warehouse" name="warehouse_name[]">
-          <option value="0" ${wh==0?'selected':''}>🏠 Shop Stock</option>
+          @if(auth()->user()->canAccessShop())
+            <option value="0" ${wh==0?'selected':''}>🏠 Shop Stock</option>
+          @endif
           @foreach ($warehouses as $wh)<option value="{{ $wh->id }}" ${wh=={{$wh->id}}?'selected':''}>📦 {{ $wh->warehouse_name }}</option>@endforeach
       </select></td>
       <td style="width: 80px;"><input type="text" class="form-control form-control-sm stock text-center input-readonly" name="stock[]" readonly></td>

@@ -14,7 +14,7 @@ class Customer extends Model
         'user_group_ids' => 'array',
     ];
 
-    use HasFactory;
+    use HasFactory, \App\Traits\GroupIsolation;
 
     public function customerLedger()
     {

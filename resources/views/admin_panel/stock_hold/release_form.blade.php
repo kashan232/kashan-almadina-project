@@ -63,6 +63,9 @@
                     <label class="form-label fw-bold">Warehouse</label>
                     <select name="warehouse_id" class="form-select">
                       <option value="">-- keep current --</option>
+                      @if(auth()->user()->canAccessShop())
+                        <option value="0" @selected($hold->warehouse_id == 0)>🏠 Shop Stock</option>
+                      @endif
                       @foreach($warehouses as $w)
                         <option value="{{ $w->id }}" @selected($w->id == $hold->warehouse_id)>
                           {{ $w->warehouse_name }}

@@ -3,12 +3,17 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class StockHold extends Model
 {
+    use HasFactory, SoftDeletes, \App\Traits\GroupIsolation;
+
     protected $guarded = [];
 
     protected $casts = [
+        'user_group_ids' => 'array',
         'meta' => 'array',
         'entry_date' => 'date',
         'sale_qty' => 'float',

@@ -114,7 +114,9 @@
                                 <label class="form-label small fw-bold">From Location <span class="text-danger">*</span></label>
                                 <select name="from_warehouse_id" id="from_warehouse_id" class="form-select select2" required>
                                     <option value="" disabled selected>Select Location</option>
-                                    <option value="shop">Shop</option>
+                                    @if(auth()->user()->canAccessShop())
+                                        <option value="shop">Shop</option>
+                                    @endif
                                     @foreach ($warehouses as $warehouse)
                                         <option value="{{ $warehouse->id }}">{{ $warehouse->warehouse_name }}</option>
                                     @endforeach
@@ -134,10 +136,12 @@
 
                             {{-- To Shop --}}
                             <div class="col-md-2 d-flex align-items-end pb-1">
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" name="to_shop" value="1" id="toShop">
-                                    <label class="form-check-label fw-bold small" for="toShop">Transfer to Shop</label>
-                                </div>
+                                @if(auth()->user()->canAccessShop())
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" name="to_shop" value="1" id="toShop">
+                                        <label class="form-check-label fw-bold small" for="toShop">Transfer to Shop</label>
+                                    </div>
+                                @endif
                             </div>
 
                             {{-- Remarks --}}

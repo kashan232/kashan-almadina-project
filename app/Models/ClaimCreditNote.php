@@ -6,7 +6,13 @@ use Illuminate\Database\Eloquent\Model;
 
 class ClaimCreditNote extends Model
 {
+    use \App\Traits\GroupIsolation;
+
     protected $guarded = [];
+
+    protected $casts = [
+        'user_group_ids' => 'array',
+    ];
 
     public function items()
     {

@@ -8,8 +8,12 @@ use Illuminate\Database\Eloquent\Model;
 class SaleReturn extends Model
 {
     public $timestamps = false; 
-    use HasFactory;
+    use HasFactory, \App\Traits\GroupIsolation;
     protected $guarded = [];
+
+    protected $casts = [
+        'user_group_ids' => 'array',
+    ];
     // protected $fillable = [
     //     'invoice_no',
     //     'date',

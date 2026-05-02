@@ -7,7 +7,13 @@ use Illuminate\Database\Eloquent\Model;
 
 class Voucher extends Model
 {
-    use HasFactory;
+    use HasFactory, \App\Traits\GroupIsolation;
+
+    protected $guarded = [];
+
+    protected $casts = [
+        'user_group_ids' => 'array',
+    ];
     //     protected $fillable = [
     //     'voucher_type', 'date', 'sales_officer', 'type', 'party',
     //     'sub_head', 'narration', 'amount'

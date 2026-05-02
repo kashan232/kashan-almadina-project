@@ -44,7 +44,7 @@ class PurchaseReportController extends Controller
         $to_date = $request->to_date;
 
         // Build Query
-        $query = PurchaseItem::with(['purchase.vendor', 'product.brandRelation', 'product.sub_category_relation'])
+        $query = PurchaseItem::with(['purchase.vendor', 'product.brandRelation', 'product.sub_category_relation', 'product.latestPrice'])
             ->whereHas('purchase', function($q) use ($from_date, $to_date, $invoice_no, $vendors) {
                 $q->where('status', 'Posted');
                 if (!empty($from_date)) {

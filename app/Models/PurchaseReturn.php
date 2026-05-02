@@ -8,9 +8,13 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class PurchaseReturn extends Model
 {
-    use HasFactory, SoftDeletes;
+    use HasFactory, SoftDeletes, \App\Traits\GroupIsolation;
 
     protected $guarded = [];
+
+    protected $casts = [
+        'user_group_ids' => 'array',
+    ];
 
     public function getStockByProductAndWarehouse($product_id, $warehouse_id)
     {

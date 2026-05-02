@@ -3,11 +3,15 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class StockRelease extends Model
 {
+    use HasFactory, \App\Traits\GroupIsolation;
+
     protected $guarded = [];
     protected $casts = [
+        'user_group_ids' => 'array',
         'meta' => 'array',
         'sale_qty' => 'float',
         'release_qty' => 'float',
