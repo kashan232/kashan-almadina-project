@@ -234,11 +234,13 @@ class PurchaseController extends Controller
                     $price = $request->price[$index] ?? 0;
                     $disc = $request->item_disc[$index] ?? 0;
                     $lineTotal = ($price * $qty) - ($request->item_disc_amount[$index] ?? 0);
+                    $rate = ($qty > 0) ? ($lineTotal / $qty) : $price;
 
                     \App\Models\PurchaseItem::create([
                         'purchase_id'   => $purchase->id,
                         'product_id'    => $productId,
                         'price'         => $price,
+                        'purchase_rate' => $rate,
                         'item_discount' => $disc,
                         'qty'           => $qty,
                         'line_total'    => $lineTotal,
@@ -343,11 +345,13 @@ class PurchaseController extends Controller
                 $price     = $request['purchase_retail_price'][$index]; // ✅ retail
                 $discAmt   = $request['item_disc_amount'][$index] ?? 0;
                 $lineTotal = ($price * $qty) - $discAmt;
+                $rate      = ($qty > 0) ? ($lineTotal / $qty) : $price;
 
                 PurchaseItem::create([
                     'purchase_id'   => $purchase->id,
                     'product_id'    => $productId,
                     'price'         => $price,
+                    'purchase_rate' => $rate,
                     'item_discount' => $discAmt,
                     'qty'           => $qty,
                     'line_total'    => $lineTotal,
@@ -555,11 +559,13 @@ class PurchaseController extends Controller
                     $price = $cleanPrices[$index] ?? 0;
                     $disc = $cleanItemDiscs[$index] ?? 0;
                     $lineTotal = ($price * $qty) - ($cleanDiscAmounts[$index] ?? 0);
+                    $rate = ($qty > 0) ? ($lineTotal / $qty) : $price;
 
                     \App\Models\PurchaseItem::create([
                         'purchase_id'   => $purchase->id,
                         'product_id'    => $productId,
                         'price'         => $price,
+                        'purchase_rate' => $rate,
                         'item_discount' => $disc,
                         'qty'           => $qty,
                         'line_total'    => $lineTotal,

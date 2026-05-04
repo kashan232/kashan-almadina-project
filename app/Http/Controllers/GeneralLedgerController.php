@@ -290,10 +290,10 @@ class GeneralLedgerController extends Controller
                          'ref' => 'PJ',
                          'inv' => $p->invoice_no,
                          'desc' => ($brand ? $brand . ' - ' : '') . ($item->product->name ?? 'Product'),
-                         'price' => ($item->purchase_qty > 0) ? ($item->purchase_price - (($item->discount ?? 0) / $item->purchase_qty)) : 0,
-                         'qty' => $item->purchase_qty,
+                         'price' => $item->purchase_rate ?: (($item->qty > 0) ? ($item->price - (($item->item_discount > 100) ? ($item->item_discount / $item->qty) : ($item->price * $item->item_discount / 100))) : $item->price),
+                         'qty' => $item->qty,
                          'debit' => 0,
-                         'credit' => $item->amount
+                         'credit' => $item->line_total
                      ];
                  }
              }

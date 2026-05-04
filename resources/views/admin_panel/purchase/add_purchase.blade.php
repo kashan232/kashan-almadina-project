@@ -258,7 +258,7 @@
                                                         <th>Retail Price</th> <!-- ✅ New column -->
                                                         <th>Disc</th>
                                                         <th>Qty</th>
-                                                        <th>Amount</th>
+                                                        <th>Rate</th>
                                                         <th>Total</th>
                                                         <th class="text-center">
                                                             Act <kbd style="font-size: 8px; opacity: 0.7;">Ctrl+X</kbd>
@@ -1162,115 +1162,7 @@
         });
     })();
 
-    // --- Core Calculation Engine ---
-    window.num = function(n) {
-        if (n === null || n === undefined) return 0;
-        if (typeof n === 'string') n = n.replace(/,/g, '');
-        const f = parseFloat(n);
-        return isNaN(f) ? 0 : f;
-    };
 
-    window.recalcRow = function($row) {
-        if (!$row || !$row.length) return;
-
-        // Get fresh values
-        const price = window.num($row.find('.price').val());
-        const retail = window.num($row.find('.purchase_retail_price').val());
-        const discPercent = window.num($row.find('.item_disc').val());
-        
-        let qRaw = $row.find('.quantity').val();
-        let qty = (qRaw === '' || isNaN(parseFloat(qRaw))) ? 1 : parseFloat(qRaw);
-
-        // Calculation
-        const discBase = (retail > 0) ? retail : price;
-        const perUnitDisc = discBase * (discPercent / 100);
-        const totalDisc = perUnitDisc * qty;
-
-        const gross = price * qty;
-        const net = gross - totalDisc;
-
-        // Update fields
-        $row.find('.disc_amount').val(totalDisc.toFixed(2));
-        $row.find('.row-amount').val(price.toFixed(2)); // Show single qty amount
-        $row.find('.row-total').val(net.toFixed(2));
-
-        // Always update summary after row change
-        window.recalcSummary();
-    };
-
-    window.recalcSummary = function() {
-        let sub = 0;
-        // Sum all row totals
-        $('#purchaseItems .row-total').each(function() {
-            sub += window.num($(this).val());
-        });
-        
-        $('#subtotal').val(sub.toFixed(2));
-
-        const oDisc = window.num($('#overallDiscount').val());
-        const whtPercent = window.num($('#whtPercent').val());
-        const whtType = $('#whtType').val();
-
-        let whtAmount = 0;
-        if (whtType === 'percent') {
-            const taxable = Math.max(0, sub - oDisc);
-            whtAmount = taxable * (whtPercent / 100);
-        } else {
-            // If PKR mode, whtPercent holds the direct PKR amount
-            whtAmount = whtPercent;
-        }
-
-        $('#whtAmount').val(whtAmount.toFixed(2));
-        // Write calculated amount into whtValue (name=wht) so controller gets PKR amount
-        $('#whtValue').val(whtAmount.toFixed(2));
-
-        const netTotal = sub - oDisc - whtAmount;
-        $('#netAmount').val(netTotal.toFixed(2));
-    };
-
-    // --- Unified Event Delegation ---
-    $(document).ready(function() {
-        // Handle Item inputs
-        $(document).on('input change', '.quantity, .item_disc, .price', function() {
-            const $row = $(this).closest('tr');
-            if ($row.length) window.recalcRow($row);
-        });
-
-        // Handle Summary inputs
-        $(document).on('input change', '#overallDiscount, #whtPercent, #whtType', function() {
-            window.recalcSummary();
-        });
-
-        // (Account Amount disable logic removed from here, handled directly in change events)
-
-        // Auto-select on focus
-        $(document).on('focus', '.quantity, .item_disc, .price', function() {
-            $(this).select();
-        });
-
-        // Manual Add Row Button
-        $(document).on('click', '#addRow', function(e) {
-            e.preventDefault();
-            if (typeof window.appendBlankRow === 'function') window.appendBlankRow(true);
-        });
-
-        // Initial Summary calculation
-        window.recalcSummary();
-    });
-
-
-
-        function initRecalcAllRows() {
-            $('#purchaseItems tr').each(function() {
-                try {
-                    if (typeof window.recalcRow === 'function') window.recalcRow($(this));
-                } catch (err) {
-                    // ignore individual row errors but log for debugging
-                    console && console.error && console.error('recalcRow error', err);
-                }
-            });
-            if (typeof window.recalcSummary === 'function') window.recalcSummary();
-        }
 
         // call it now (inside ready)
         initRecalcAllRows();
@@ -1632,14 +1524,12 @@ $(function() {
         var base    = retail > 0 ? retail : price;
         var discAmt = (base * disc / 100) * qty;
 
-        // Amount = 1 single unit price
-        var unitPrice = price;
-        // Total = Price * Qty - Discount (Net Amount)
         var grossAmount = price * qty;
         var netAmount   = grossAmount - discAmt;
+        var netRate     = (qty > 0) ? (netAmount / qty) : price;
 
         $row.find('.disc_amount').val(discAmt.toFixed(2));
-        $row.find('.row-amount').val(unitPrice.toFixed(2));
+        $row.find('.row-amount').val(netRate.toFixed(2));
         $row.find('.row-total').val(netAmount.toFixed(2));
     }
 
