@@ -51,6 +51,8 @@ class VoucherController extends Controller
             Voucher::create([
                 'voucher_type' => $request->sub_head,
                 'sales_officer' => auth()->user()->name,
+                'entry_date' => $request->entry_date[$index] ?? now()->toDateString(),
+                'entry_time' => $request->entry_time[$index] ?? now()->toTimeString(),
                 'date' => $date,
                 'type' => $request->type[$index],
                 'person' => $request->person[$index],
@@ -299,11 +301,11 @@ class VoucherController extends Controller
                     return response()->json(['success' => false, 'message' => 'Cannot edit a posted voucher.']);
                 }
             } else {
-                // If no ID, create a NEW record now. 
-                // We re-generate ID at save time to strictly avoid skips.
                 $voucher = ReceiptsVoucher::create([
-                    'rvid'   => ReceiptsVoucher::generateInvoiceNo(),
-                    'status' => 'draft'
+                    'rvid'       => ReceiptsVoucher::generateInvoiceNo(),
+                    'entry_date' => $request->entry_date ?? now()->toDateString(),
+                    'entry_time' => $request->entry_time ?? now()->toTimeString(),
+                    'status'     => 'draft'
                 ]);
             }
 
@@ -339,6 +341,7 @@ class VoucherController extends Controller
             $voucher->update([
                 'receipt_date'     => $request->receipt_date,
                 'entry_date'       => $request->entry_date,
+                'entry_time'       => $request->entry_time,
                 'type'             => $request->vendor_type,
                 'party_id'         => $request->vendor_id,
                 'tel'              => $request->tel,
@@ -571,6 +574,7 @@ class VoucherController extends Controller
         $data = [
             'receipt_date'     => $request->receipt_date,
             'entry_date'       => $request->entry_date,
+            'entry_time'       => $request->entry_time,
             'type'             => $request->party_type, // Single from Header
             'party_id'         => $request->party_id,   // Single from Header
             'tel'              => $request->tel,
@@ -787,6 +791,7 @@ class VoucherController extends Controller
                 'pvid'             => $pvid,
                 'receipt_date'     => $request->receipt_date,
                 'entry_date'       => $request->entry_date,
+                'entry_time'       => $request->entry_time,
                 'type'             => $request->vendor_type,
                 'party_id'         => $request->vendor_id,
                 'tel'              => $request->tel,

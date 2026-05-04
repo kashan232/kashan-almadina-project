@@ -60,7 +60,9 @@ class WarehouseStockController extends Controller
 
             $adjustment = \App\Models\StockAdjustment::create([
                 'adj_id'       => \App\Models\StockAdjustment::generateAdjID(),
-                'date'         => now(),
+                'date'         => $request->date ?? now()->toDateString(),
+                'entry_date'   => $request->entry_date ?? now()->toDateString(),
+                'entry_time'   => $request->entry_time ?? now()->toTimeString(),
                 'warehouse_id' => $request->warehouse_id,
                 'remarks'      => $request->remarks,
                 'status'       => $status,
@@ -183,7 +185,9 @@ class WarehouseStockController extends Controller
                 'warehouse_id' => $request->warehouse_id,
                 'remarks'      => $request->remarks,
                 'status'       => $status,
-                'date'         => now(), // Update date to current edit time or keep original? Keeping original date might be better but user might want current.
+                'entry_date'   => $request->entry_date ?? $adjustment->entry_date,
+                'entry_time'   => $request->entry_time ?? $adjustment->entry_time,
+                'date'         => $request->date ?? $adjustment->date,
             ]);
 
             // Sync items: simplest way is to delete and recreate or match IDs.
