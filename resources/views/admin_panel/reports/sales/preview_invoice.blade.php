@@ -169,9 +169,7 @@
                 <th width="8%">Retail Price</th>
                 <th width="10%">Retail Amount</th>
                 <th width="8%">Sales Price</th>
-                <th width="10%">Sales Amount</th>
-                <th width="8%">Add. Disc</th>
-                <th width="11%">Invoice Amount</th>
+                <th width="12%">Sales Amount</th>
             </tr>
         </thead>
         <tbody>
@@ -214,7 +212,7 @@
                             $qty = $item->sales_qty;
                             $retail_p = $item->retail_price ?? 0;
                             $retail_a = $retail_p * $qty;
-                            $sales_p = $item->sales_price;
+                            $sales_p = $item->sales_rate > 0 ? $item->sales_rate : ($item->sales_qty > 0 ? ($item->sales_price - ($item->discount_amount / $item->sales_qty)) : $item->sales_price);
                             $sales_a = $item->amount;
                             $add_disc = $item->discount_amount ?? 0;
                             $invoice_a = $sales_a - $add_disc;
@@ -232,8 +230,6 @@
                             <td class="text-right">{{ number_format($retail_a, 0) }}</td>
                             <td class="text-right">{{ number_format($sales_p, 0) }}</td>
                             <td class="text-right bold-val">{{ number_format($sales_a, 0) }}</td>
-                            <td class="text-right">{{ $add_disc > 0 ? number_format($add_disc, 0) : '' }}</td>
-                            <td class="text-right bold-val">{{ number_format($invoice_a, 0) }}</td>
                         </tr>
                     @endforeach
 
@@ -245,8 +241,6 @@
                         <td class="val-box">{{ number_format($inv_retail_amt, 0) }}</td>
                         <td style="border:none; background:none;"></td>
                         <td class="val-box">{{ number_format($inv_sales_amt, 0) }}</td>
-                        <td style="border:none; background:none;"></td>
-                        <td class="val-box">{{ number_format($inv_invoice_amt, 0) }}</td>
                     </tr>
                     <!-- Separation Gap -->
                     <tr style="height: 25px;"><td colspan="9" style="border:none;"></td></tr>
@@ -268,8 +262,6 @@
                 <td class="grand-val-box">{{ number_format($grand_retail_amt, 0) }}</td>
                 <td style="border:none; background:none;"></td>
                 <td class="grand-val-box">{{ number_format($grand_sales_amt, 0) }}</td>
-                <td style="border:none; background:none;"></td>
-                <td class="grand-val-box">{{ number_format($grand_invoice_amt, 0) }}</td>
             </tr>
         </tbody>
     </table>
