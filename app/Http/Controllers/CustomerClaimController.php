@@ -74,7 +74,7 @@ class CustomerClaimController extends Controller
             
             $claim->entry_date = $request->entry_date ?? date('Y-m-d');
             $claim->entry_time = $request->entry_time ?? date('H:i');
-            $claim->claim_date = $request->entry_date ?? date('Y-m-d');
+            $claim->claim_date = $request->claim_date ?? $claim->entry_date;
             $claim->claim_type = $request->claim_type;
             $claim->party_type = $request->party_type;
             $claim->party_id = $request->party_id;

@@ -561,11 +561,7 @@
                       </td>
                       <td>
                         <select name="product_id[]" class="form-control form-control-sm product-select" style="width: 100%;">
-                          @if($pid)
-                            <option value="{{ $pid }}" selected>{{ $pSearch }}</option>
-                          @else
-                            <option value="" disabled selected>Select Product</option>
-                          @endif
+                          <option value="{{ $pid }}" selected>{{ $pSearch }}</option>
                         </select>
                         <input type="hidden" name="product_search[]" class="product_name_hidden" value="{{ $pSearch }}">
                       </td>
@@ -597,7 +593,62 @@
                       <td style="width: 100px;"><input type="text" class="form-control form-control-sm text-end sales-amount input-readonly" name="sales-amount[]" value="{{ $sAmount }}" readonly></td>
                       <td class="text-center" style="width: 40px;"><button type="button" class="btn btn-xs btn-outline-danger del-row">&times;</button></td>
                     </tr>
-
+                  @endforeach
+                @elseif(isset($booking))
+                  @foreach($booking->items as $index => $item)
+                    @php
+                      $rowId = 'row-' . $index . '-' . time();
+                      $pid = $item->product_id;
+                      $pSearch = $item->product ? $item->product->name : '';
+                      $whId = $item->warehouse_id;
+                      $stock = $item->stock;
+                      $sPrice = $item->sales_price;
+                      $qty = $item->sales_qty;
+                      $rPrice = $item->retail_price;
+                      $dMode = $item->discount_mode ?? 'percent';
+                      $dPct = $item->discount_percent;
+                      $dAmt = $item->discount_amount;
+                      $sAmount = $item->amount;
+                      $sRate = $item->sales_rate;
+                    @endphp
+                    <tr data-row-id="{{ $rowId }}">
+                      <td style="width: 70px;">
+                        <input type="text" class="form-control form-control-sm item-id-input text-center" placeholder="ID" value="{{ $pid }}">
+                      </td>
+                      <td>
+                        <select name="product_id[]" class="form-control form-control-sm product-select" style="width: 100%;">
+                          <option value="{{ $pid }}" selected>{{ $pSearch }}</option>
+                        </select>
+                        <input type="hidden" name="product_search[]" class="product_name_hidden" value="{{ $pSearch }}">
+                      </td>
+                      <td style="width: 120px;">
+                        <select class="form-select form-select-sm warehouse" name="warehouse_name[]">
+                            @if(auth()->user()->canAccessShop())
+                                <option value="0" {{ $whId == 0 ? 'selected' : '' }}>🏠 Shop Stock</option>
+                            @endif
+                          @foreach ($warehouses as $wh)
+                            <option value="{{ $wh->id }}" {{ $whId == $wh->id ? 'selected' : '' }}>📦 {{ $wh->warehouse_name }}</option>
+                          @endforeach
+                        </select>
+                      </td>
+                      <td style="width: 80px;"><input type="text" class="form-control form-control-sm stock text-center input-readonly" name="stock[]" value="{{ $stock }}" readonly></td>
+                      <td style="width: 100px;"><input type="text" class="form-control form-control-sm text-end sales-price input-readonly" name="sales-price[]" value="{{ $sPrice }}" readonly></td>
+                      <td style="width: 70px;"><input type="number" step="any" class="form-control form-control-sm text-center sales-qty" name="sales-qty[]" value="{{ $qty }}"></td>
+                      <td style="width: 100px;"><input type="text" class="form-control form-control-sm text-end retail-price input-readonly" name="retail-price[]" value="{{ $rPrice }}" readonly></td>
+                      <td style="width:165px;">
+                        <div class="input-group input-group-sm">
+                          <input type="number" step="0.01" class="form-control text-end discount-value" placeholder="%" value="{{ $dPct }}" style="max-width: 65px;">
+                          <span class="input-group-text px-1" style="font-size: 0.7rem;">%</span>
+                          <input type="text" class="form-control text-end discount-amount-display input-readonly" value="{{ $dAmt }}" readonly style="background: #f8f9fa;">
+                        </div>
+                        <input type="hidden" class="discount-mode" name="discount_mode[]" value="{{ $dMode }}">
+                        <input type="hidden" class="discount-percent" name="discount-percent[]" value="{{ $dPct }}">
+                        <input type="hidden" class="discount-amount" name="discount-amount[]" value="{{ $dAmt }}">
+                      </td>
+                      <td style="width: 100px;"><input type="text" class="form-control form-control-sm text-end sales-rate input-readonly" name="sales-rate[]" value="{{ $sRate }}" readonly></td>
+                      <td style="width: 100px;"><input type="text" class="form-control form-control-sm text-end sales-amount input-readonly" name="sales-amount[]" value="{{ $sAmount }}" readonly></td>
+                      <td class="text-center" style="width: 40px;"><button type="button" class="btn btn-xs btn-outline-danger del-row">&times;</button></td>
+                    </tr>
                   @endforeach
                 @endif
               </tbody>
@@ -2387,7 +2438,7 @@
         const values = grouped[name];
         const $field = $('[name="'+name+'"]');
         
-        if ($field.length === 0) return;
+        if ($field.length === 0 || name === 'Invoice_no') return;
         
         // Radio buttons
         if ($field.is(':radio')) {
@@ -2476,6 +2527,11 @@
             $row.find('.discount-amount-display').val(val);
             const mode = $row.find('.discount-mode').val();
             $row.find('.discount-value').val(mode === 'amount' ? val : grouped['discount-percent[]'][i]);
+          });
+          
+          // Sales Rate
+          grouped['sales-rate[]']?.forEach(function(val, i) {
+            $('#salesTableBody tr').eq(i).find('.sales-rate').val(val);
           });
           
           // Sales Amount

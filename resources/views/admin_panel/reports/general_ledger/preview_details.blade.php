@@ -61,7 +61,7 @@
                 <th rowspan="2" style="width: 60px;">Date</th>
                 <th rowspan="2" style="width: 80px;">Reference</th>
                 <th rowspan="2">Description</th>
-                <th rowspan="2" style="width: 70px;">Price</th>
+                <th rowspan="2" style="width: 70px;">Rate</th>
                 <th colspan="2">Debit</th>
                 <th colspan="2">Credit</th>
                 <th rowspan="2" style="width: 100px;">Balance</th>

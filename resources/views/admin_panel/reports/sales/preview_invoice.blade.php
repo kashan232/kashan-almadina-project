@@ -168,8 +168,8 @@
                 <th width="5%">Qty</th>
                 <th width="8%">Retail Price</th>
                 <th width="10%">Retail Amount</th>
-                <th width="8%">Sales Price</th>
-                <th width="12%">Sales Amount</th>
+                <th width="8%">Rate</th>
+                <th width="12%">Amount</th>
             </tr>
         </thead>
         <tbody>

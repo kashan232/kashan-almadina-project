@@ -116,6 +116,7 @@ class ClaimCreditNoteController extends Controller
             }
             
             $voucher->date              = $request->date;
+            $voucher->entry_date        = $request->entry_date ?? date('Y-m-d');
             $voucher->entry_time        = $request->entry_time ?? date('H:i');
             $voucher->party_type        = $request->party_type;
             $voucher->party_id          = $request->party_id;

@@ -246,7 +246,7 @@
                                                         </td>
                                                     </tr>
                                                 </tbody>
-                                            </table>table>
+                                            </table>
                                              <table
                                                  class="table table-bordered table-sm text-center align-middle mt-2">
                                                  <thead class="table-light">
