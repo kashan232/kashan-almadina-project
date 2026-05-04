@@ -38,6 +38,7 @@ use App\Http\Controllers\CustomerClaimReleaseController;
 use App\Http\Controllers\ClaimItemReceiptController;
 use App\Http\Controllers\ClaimCreditNoteController;
 use App\Http\Controllers\RollbackController;
+use App\Http\Controllers\GeneralLedgerController;
 
 /*
 |--------------------------------------------------------------------------
@@ -62,6 +63,13 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/customer-claims/post/{id}', [CustomerClaimController::class, 'post'])->name('customer-claims.post');
     Route::get('/customer-claims/edit/{id}', [CustomerClaimController::class, 'edit'])->name('customer-claims.edit');
     Route::get('/customer-claims/search-products', [ProductController::class, 'searchProducts'])->name('customer-claims.search-products');
+    
+    // General Ledger Routes
+    Route::get('/general-ledger', [GeneralLedgerController::class, 'index'])->name('general-ledger.index');
+    Route::get('/general-ledger/get-accounts-by-head/{headId}', [GeneralLedgerController::class, 'getAccountsByHead']);
+    Route::get('/general-ledger/search-unified', [GeneralLedgerController::class, 'searchUnified'])->name('general-ledger.search-unified');
+    Route::get('/general-ledger/lookup-by-code', [GeneralLedgerController::class, 'lookupByCode'])->name('general-ledger.lookup-by-code');
+    Route::get('/general-ledger/preview', [GeneralLedgerController::class, 'preview'])->name('general-ledger.preview');
     
     // Customer Claim Release Routes
     Route::get('/customer-claims-release', [CustomerClaimReleaseController::class, 'index'])->name('customer-claims.release.index');

@@ -136,14 +136,15 @@
     <table>
         <thead>
             <tr>
-                <th width="10%">PUR No.</th>
-                <th width="10%">Date</th>
-                <th width="20%" class="text-left">Vendor Name</th>
+                <th width="8%">PUR No.</th>
+                <th width="8%">Date</th>
+                <th width="18%" class="text-left">Vendor Name</th>
                 <th width="5%">Qty</th>
-                <th width="10%">Purchase Price</th>
-                <th width="15%">Purchase Amount</th>
                 <th width="10%">Retail Price</th>
-                <th width="20%">Retail Amount</th>
+                <th width="12%">Retail Value</th>
+                <th width="10%">Purchase Price</th>
+                <th width="10%">Add. Disc</th>
+                <th width="12%">Net Amount</th>
             </tr>
         </thead>
         <tbody>
@@ -151,11 +152,12 @@
                 $grand_qty = 0; 
                 $grand_purchase_amt = 0; 
                 $grand_retail_amt = 0;
+                $grand_disc_amt = 0;
             @endphp
 
             @if($grouped->isEmpty())
                 <tr>
-                    <td colspan="8" style="text-align: center; padding: 50px;">No Data Found</td>
+                    <td colspan="9" style="text-align: center; padding: 50px;">No Data Found</td>
                 </tr>
             @endif
 
@@ -165,10 +167,11 @@
                     $item_qty = 0;
                     $item_purchase_amt = 0;
                     $item_retail_amt = 0;
+                    $item_disc_amt = 0;
                 @endphp
                 
                 <tr class="item-heading-row">
-                    <td colspan="8" class="text-left" style="border-top: 2px solid #000;">
+                    <td colspan="9" class="text-left" style="border-top: 2px solid #000;">
                         ITEM: {{ $product ? strtoupper($product->name) : 'N/A' }} 
                         <span class="ms-3" style="color: #666;">( {{ $product && $product->sub_category_relation ? strtoupper($product->sub_category_relation->name) : '-' }} )</span>
                     </td>
@@ -179,6 +182,7 @@
                         $qty = $item->qty;
                         $purchase_p = $item->price;
                         $purchase_a = $item->line_total;
+                        $add_disc = $item->item_discount ?? 0;
 
                         $latestPrice = $item->product->latestPrice;
                         $retail_p = $latestPrice ? $latestPrice->sale_retail_price : 0;
@@ -187,16 +191,18 @@
                         $item_qty += $qty;
                         $item_purchase_amt += $purchase_a;
                         $item_retail_amt += $retail_a;
+                        $item_disc_amt += $add_disc;
                     @endphp
                     <tr class="data-row">
                         <td class="text-center">{{ $item->purchase->invoice_no }}</td>
                         <td class="text-center">{{ \Carbon\Carbon::parse($item->purchase->created_at)->format('d-m-y') }}</td>
                         <td class="text-left">{{ $item->purchase->vendor ? strtoupper($item->purchase->vendor->name) : 'N/A' }}</td>
                         <td class="text-center">{{ number_format($qty) }}</td>
-                        <td class="text-right">{{ number_format($purchase_p, 0) }}</td>
-                        <td class="text-right bold-val">{{ number_format($purchase_a, 0) }}</td>
                         <td class="text-right">{{ number_format($retail_p, 0) }}</td>
                         <td class="text-right">{{ number_format($retail_a, 0) }}</td>
+                        <td class="text-right">{{ number_format($purchase_p, 0) }}</td>
+                        <td class="text-right">{{ $add_disc > 0 ? number_format($add_disc, 0) : '' }}</td>
+                        <td class="text-right bold-val">{{ number_format($purchase_a, 0) }}</td>
                     </tr>
                 @endforeach
 
@@ -204,16 +210,18 @@
                     <td colspan="3" class="text-right">Total:</td>
                     <td class="qty-box">{{ number_format($item_qty) }}</td>
                     <td style="border:none; background:none;"></td>
-                    <td class="val-box">{{ number_format($item_purchase_amt, 0) }}</td>
-                    <td style="border:none; background:none;"></td>
                     <td class="val-box">{{ number_format($item_retail_amt, 0) }}</td>
+                    <td style="border:none; background:none;"></td>
+                    <td class="val-box">{{ number_format($item_disc_amt, 0) }}</td>
+                    <td class="val-box">{{ number_format($item_purchase_amt, 0) }}</td>
                 </tr>
-                <tr style="height: 25px;"><td colspan="8" style="border:none;"></td></tr>
+                <tr style="height: 25px;"><td colspan="9" style="border:none;"></td></tr>
 
                 @php
                     $grand_qty += $item_qty;
                     $grand_purchase_amt += $item_purchase_amt;
                     $grand_retail_amt += $item_retail_amt;
+                    $grand_disc_amt += $item_disc_amt;
                 @endphp
             @endforeach
 
@@ -221,9 +229,10 @@
                 <td colspan="3" class="text-right">Grand Total:</td>
                 <td class="qty-box" style="background-color: #cfd8dc;">{{ number_format($grand_qty) }}</td>
                 <td style="border:none; background:none;"></td>
-                <td class="val-box" style="background-color: #bbdefb;">{{ number_format($grand_purchase_amt, 0) }}</td>
-                <td style="border:none; background:none;"></td>
                 <td class="val-box" style="background-color: #fce4ec;">{{ number_format($grand_retail_amt, 0) }}</td>
+                <td style="border:none; background:none;"></td>
+                <td class="val-box" style="background-color: #fce4ec;">{{ number_format($grand_disc_amt, 0) }}</td>
+                <td class="val-box" style="background-color: #bbdefb;">{{ number_format($grand_purchase_amt, 0) }}</td>
             </tr>
         </tbody>
     </table>

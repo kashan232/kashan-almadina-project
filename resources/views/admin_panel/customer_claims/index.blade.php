@@ -142,11 +142,11 @@
                                 </button>
                                 <div class="column-picker-menu shadow" id="columnPickerMenu">
                                     <div class="p-2 border-bottom fw-bold small text-muted">Show/Hide Columns</div>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="1" checked> BTR#</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="1" checked> Claim#</label>
                                     <label class="column-picker-item"><input type="checkbox" data-column="2" checked> Date</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="3" checked> Customer</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="4" checked> Items</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="5" checked> Total Amount</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="3" checked> Party</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="4" checked> Product</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="5" checked> Claim Income</label>
                                     <label class="column-picker-item"><input type="checkbox" data-column="6" checked> Status</label>
                                 </div>
                             </div>
@@ -157,11 +157,11 @@
                                 <table id="claimsTable" class="table table-sm table-striped table-bordered w-100 mb-0">
                                     <thead>
                                         <tr>
-                                            <th>BTR#</th>
+                                            <th>Claim#</th>
                                             <th>Date</th>
-                                            <th>Customer</th>
-                                            <th>Items</th>
-                                            <th class="text-end">Total Amount</th>
+                                            <th>Party</th>
+                                            <th>Product</th>
+                                            <th class="text-end">Claim Income</th>
                                             <th class="text-center">Status</th>
                                             <th class="text-center" style="min-width: 120px;">Action</th>
                                         </tr>
@@ -169,40 +169,43 @@
                                     <tbody>
                                         @foreach ($claims as $claim)
                                         <tr>
-                                            <td class="fw-bold text-primary">{{ $claim->btr_no }}</td>
-                                            <td class="small">{{ \Carbon\Carbon::parse($claim->date)->format('d-M-Y') }}</td>
+                                            <td class="fw-bold text-primary">{{ $claim->claim_no }}</td>
+                                            <td class="small">{{ \Carbon\Carbon::parse($claim->claim_date)->format('d-M-Y') }}</td>
                                             <td>
-                                                <span class="fw-semibold text-dark small">{{ $claim->customer->customer_name ?? 'N/A' }}</span>
+                                                <span class="fw-semibold text-dark small">
+                                                    @if($claim->party_type == 'vendor')
+                                                        {{ $claim->party->name ?? 'N/A' }}
+                                                    @else
+                                                        {{ $claim->party->customer_name ?? 'N/A' }}
+                                                    @endif
+                                                </span>
                                             </td>
-                                            <td class="py-1">
-                                                @foreach($claim->items as $item)
-                                                    <div class="item-detail-row">
-                                                        {{ $item->product->name ?? 'Product' }}
-                                                        <span class="text-primary fw-bold ms-1">({{ (float)$item->qty }})</span>
-                                                    </div>
-                                                @endforeach
+                                            <td>
+                                                <div class="item-detail-row">
+                                                    {{ $claim->product->name ?? 'N/A' }}
+                                                    <span class="text-muted small ms-1">({{ $claim->claim_type }})</span>
+                                                </div>
                                             </td>
-                                            <td class="text-end fw-bold">{{ number_format($claim->total_amount, 0) }}</td>
+                                            <td class="text-end fw-bold">{{ number_format($claim->claim_income, 0) }}</td>
                                             <td class="text-center">
                                                 @if($claim->status === 'Posted')
                                                     <span class="badge bg-success rounded-pill px-3">Posted</span>
                                                 @else
-                                                    <span class="badge bg-warning text-dark rounded-pill px-3">Unposted</span>
+                                                    <span class="badge bg-warning text-dark rounded-pill px-3">Draft</span>
                                                 @endif
                                             </td>
                                             <td class="text-center">
                                                 <div class="d-flex gap-1 justify-content-center">
-                                                    @if($claim->status === 'Unposted')
-                                                        <form action="{{ route('customer-claims.post', $claim->id) }}" method="POST" class="d-inline">
+                                                    <a href="{{ route('customer-claims.edit', $claim->id) }}" class="btn btn-outline-primary btn-xs px-2 py-0" title="View/Edit" style="height: 20px;">
+                                                        <i class="fa {{ $claim->status == 'Posted' ? 'fa-eye' : 'fa-edit' }}"></i>
+                                                    </a>
+                                                    @if($claim->status !== 'Posted')
+                                                        <form action="{{ route('customer-claims.post', $claim->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Post this claim?')">
                                                             @csrf
                                                             <button type="submit" class="btn btn-primary btn-xs px-2 py-0" title="Post now" style="font-size: 10px;">
                                                                 <i class="fa fa-send"></i> Post
                                                             </button>
                                                         </form>
-                                                        
-                                                        <a href="{{ route('customer-claims.edit', $claim->id) }}" class="btn btn-outline-warning btn-xs px-1 py-0" title="Edit" style="height: 20px;">
-                                                            <i class="fa fa-edit text-dark"></i>
-                                                        </a>
                                                     @endif
                                                 </div>
                                             </td>

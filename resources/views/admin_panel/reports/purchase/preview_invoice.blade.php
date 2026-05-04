@@ -135,15 +135,14 @@
     <table>
         <thead>
             <tr>
-                <th width="25%">Item Description</th>
+                <th width="22%">Item Description</th>
                 <th width="10%">Sub-Category</th>
                 <th width="5%">Qty</th>
-                <th width="10%">Purchase Price</th>
-                <th width="12%">Purchase Amount</th>
                 <th width="10%">Retail Price</th>
-                <th width="12%">Retail Amount</th>
-                <th width="8%">Add. Disc</th>
-                <th width="10%">Net Amount</th>
+                <th width="12%">Retail Value</th>
+                <th width="10%">Purchase Price</th>
+                <th width="10%">Add. Disc</th>
+                <th width="12%">Net Amount</th>
             </tr>
         </thead>
         <tbody>
@@ -151,12 +150,13 @@
                 $grand_qty = 0; 
                 $grand_purchase_amt = 0; 
                 $grand_retail_amt = 0;
+                $grand_disc_amt = 0;
                 $grand_net_amt = 0; 
             @endphp
 
             @if($grouped->isEmpty())
                 <tr>
-                    <td colspan="9" style="text-align: center; padding: 50px;">No Data Found</td>
+                    <td colspan="8" style="text-align: center; padding: 50px;">No Data Found</td>
                 </tr>
             @endif
 
@@ -171,6 +171,7 @@
                         $inv_qty = 0;
                         $inv_purchase_amt = 0;
                         $inv_retail_amt = 0;
+                        $inv_disc_amt = 0;
                         $inv_net_amt = 0;
                     @endphp
                     
@@ -180,7 +181,7 @@
                             PUR No: <b style="color: #000;">{{ $invoiceNo }}</b> &nbsp;&nbsp;&nbsp; 
                             Date: <b style="color: #000;">{{ $purchaseDate }}</b>
                         </td>
-                        <td colspan="5" class="text-right">
+                        <td colspan="4" class="text-right">
                             Vendor: <b style="color: #000;">{{ $vendor ? strtoupper($vendor->name) : 'N/A' }}</b>
                         </td>
                     </tr>
@@ -190,7 +191,6 @@
                         @php
                             $qty = $item->qty;
                             $purchase_p = $item->price;
-                            $purchase_a = $purchase_p * $qty;
                             
                             $latestPrice = $item->product->latestPrice;
                             $retail_p = $latestPrice ? $latestPrice->sale_retail_price : 0;
@@ -200,18 +200,17 @@
                             $net_a = $item->line_total;
 
                             $inv_qty += $qty;
-                            $inv_purchase_amt += $purchase_a;
                             $inv_retail_amt += $retail_a;
+                            $inv_disc_amt += $add_disc;
                             $inv_net_amt += $net_a;
                         @endphp
                         <tr class="item-row">
                             <td>{{ $item->product ? $item->product->name : 'N/A' }}</td>
                             <td class="text-center">{{ $item->product && $item->product->sub_category_relation ? $item->product->sub_category_relation->name : '-' }}</td>
                             <td class="text-center">{{ number_format($qty) }}</td>
-                            <td class="text-right">{{ number_format($purchase_p, 0) }}</td>
-                            <td class="text-right">{{ number_format($purchase_a, 0) }}</td>
                             <td class="text-right">{{ number_format($retail_p, 0) }}</td>
                             <td class="text-right">{{ number_format($retail_a, 0) }}</td>
+                            <td class="text-right">{{ number_format($purchase_p, 0) }}</td>
                             <td class="text-right">{{ $add_disc > 0 ? number_format($add_disc, 0) : '' }}</td>
                             <td class="text-right bold-val">{{ number_format($net_a, 0) }}</td>
                         </tr>
@@ -222,18 +221,17 @@
                         <td colspan="2" class="text-right">Total:</td>
                         <td class="qty-box">{{ number_format($inv_qty) }}</td>
                         <td style="border:none; background:none;"></td>
-                        <td class="val-box">{{ number_format($inv_purchase_amt, 0) }}</td>
-                        <td style="border:none; background:none;"></td>
                         <td class="val-box">{{ number_format($inv_retail_amt, 0) }}</td>
                         <td style="border:none; background:none;"></td>
+                        <td class="val-box">{{ number_format($inv_disc_amt, 0) }}</td>
                         <td class="val-box">{{ number_format($inv_net_amt, 0) }}</td>
                     </tr>
-                    <tr style="height: 15px;"><td colspan="9" style="border:none;"></td></tr>
+                    <tr style="height: 15px;"><td colspan="8" style="border:none;"></td></tr>
 
                     @php
                         $grand_qty += $inv_qty;
-                        $grand_purchase_amt += $inv_purchase_amt;
                         $grand_retail_amt += $inv_retail_amt;
+                        $grand_disc_amt += $inv_disc_amt;
                         $grand_net_amt += $inv_net_amt;
                     @endphp
                 @endforeach
@@ -243,10 +241,9 @@
                 <td colspan="2" class="text-right">Grand Total:</td>
                 <td class="qty-box" style="background-color: #cfd8dc;">{{ number_format($grand_qty) }}</td>
                 <td style="border:none; background:none;"></td>
-                <td class="val-box" style="background-color: #e1f5fe;">{{ number_format($grand_purchase_amt, 0) }}</td>
-                <td style="border:none; background:none;"></td>
                 <td class="val-box" style="background-color: #fce4ec;">{{ number_format($grand_retail_amt, 0) }}</td>
                 <td style="border:none; background:none;"></td>
+                <td class="val-box" style="background-color: #fce4ec;">{{ number_format($grand_disc_amt, 0) }}</td>
                 <td class="val-box" style="background-color: #bbdefb;">{{ number_format($grand_net_amt, 0) }}</td>
             </tr>
         </tbody>

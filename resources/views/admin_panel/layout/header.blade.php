@@ -357,6 +357,12 @@
                                           <span>Rollback Posting</span>
                                       </a>
                                   </li>
+                                  <li class="nav-item">
+                                      <a class="nav-link" href="{{ route('general-ledger.index') }}">
+                                          <i class="fas fa-book mr-2"></i>
+                                          <span>General Ledger</span>
+                                      </a>
+                                  </li>
                               </ul>
                           </div>
                       </li>

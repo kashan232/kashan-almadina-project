@@ -136,14 +136,15 @@
     <table>
         <thead>
             <tr>
-                <th width="10%">PUR No.</th>
-                <th width="10%">Date</th>
-                <th width="20%" class="text-left">Item Description</th>
+                <th width="8%">PUR No.</th>
+                <th width="8%">Date</th>
+                <th width="18%" class="text-left">Item Description</th>
                 <th width="5%">Qty</th>
-                <th width="10%">Purchase Price</th>
-                <th width="15%">Purchase Amount</th>
                 <th width="10%">Retail Price</th>
-                <th width="20%">Retail Amount</th>
+                <th width="12%">Retail Value</th>
+                <th width="10%">Purchase Price</th>
+                <th width="10%">Add. Disc</th>
+                <th width="12%">Net Amount</th>
             </tr>
         </thead>
         <tbody>
@@ -151,11 +152,12 @@
                 $grand_qty = 0; 
                 $grand_purchase_amt = 0; 
                 $grand_retail_amt = 0;
+                $grand_disc_amt = 0;
             @endphp
 
             @if($grouped->isEmpty())
                 <tr>
-                    <td colspan="8" style="text-align: center; padding: 50px;">No Data Found</td>
+                    <td colspan="9" style="text-align: center; padding: 50px;">No Data Found</td>
                 </tr>
             @endif
 
@@ -165,10 +167,11 @@
                     $party_qty = 0;
                     $party_purchase_amt = 0;
                     $party_retail_amt = 0;
+                    $party_disc_amt = 0;
                 @endphp
                 
                 <tr class="party-heading-row">
-                    <td colspan="8" class="text-left">
+                    <td colspan="9" class="text-left">
                         VENDOR: {{ $vendor ? strtoupper($vendor->name) : 'N/A' }}
                     </td>
                 </tr>
@@ -178,6 +181,7 @@
                         $qty = $item->qty;
                         $purchase_p = $item->price;
                         $purchase_a = $item->line_total;
+                        $add_disc = $item->item_discount ?? 0;
 
                         $latestPrice = $item->product->latestPrice;
                         $retail_p = $latestPrice ? $latestPrice->sale_retail_price : 0;
@@ -186,16 +190,18 @@
                         $party_qty += $qty;
                         $party_purchase_amt += $purchase_a;
                         $party_retail_amt += $retail_a;
+                        $party_disc_amt += $add_disc;
                     @endphp
                     <tr class="data-row">
                         <td class="text-center">{{ $item->purchase->invoice_no }}</td>
                         <td class="text-center">{{ \Carbon\Carbon::parse($item->purchase->created_at)->format('d-m-y') }}</td>
                         <td class="text-left">{{ $item->product ? $item->product->name : 'N/A' }}</td>
                         <td class="text-center">{{ number_format($qty) }}</td>
-                        <td class="text-right">{{ number_format($purchase_p, 0) }}</td>
-                        <td class="text-right bold-val">{{ number_format($purchase_a, 0) }}</td>
                         <td class="text-right">{{ number_format($retail_p, 0) }}</td>
                         <td class="text-right">{{ number_format($retail_a, 0) }}</td>
+                        <td class="text-right">{{ number_format($purchase_p, 0) }}</td>
+                        <td class="text-right">{{ $add_disc > 0 ? number_format($add_disc, 0) : '' }}</td>
+                        <td class="text-right bold-val">{{ number_format($purchase_a, 0) }}</td>
                     </tr>
                 @endforeach
 
@@ -203,16 +209,18 @@
                     <td colspan="3" class="text-right">Party Total:</td>
                     <td class="qty-box">{{ number_format($party_qty) }}</td>
                     <td style="border:none; background:none;"></td>
-                    <td class="val-box">{{ number_format($party_purchase_amt, 0) }}</td>
-                    <td style="border:none; background:none;"></td>
                     <td class="val-box">{{ number_format($party_retail_amt, 0) }}</td>
+                    <td style="border:none; background:none;"></td>
+                    <td class="val-box">{{ number_format($party_disc_amt, 0) }}</td>
+                    <td class="val-box">{{ number_format($party_purchase_amt, 0) }}</td>
                 </tr>
-                <tr style="height: 25px;"><td colspan="8" style="border:none;"></td></tr>
+                <tr style="height: 25px;"><td colspan="9" style="border:none;"></td></tr>
 
                 @php
                     $grand_qty += $party_qty;
                     $grand_purchase_amt += $party_purchase_amt;
                     $grand_retail_amt += $party_retail_amt;
+                    $grand_disc_amt += $party_disc_amt;
                 @endphp
             @endforeach
 
@@ -220,9 +228,10 @@
                 <td colspan="3" class="text-right">Grand Total:</td>
                 <td class="qty-box" style="background-color: #cfd8dc;">{{ number_format($grand_qty) }}</td>
                 <td style="border:none; background:none;"></td>
-                <td class="val-box" style="background-color: #bbdefb;">{{ number_format($grand_purchase_amt, 0) }}</td>
-                <td style="border:none; background:none;"></td>
                 <td class="val-box" style="background-color: #fce4ec;">{{ number_format($grand_retail_amt, 0) }}</td>
+                <td style="border:none; background:none;"></td>
+                <td class="val-box" style="background-color: #fce4ec;">{{ number_format($grand_disc_amt, 0) }}</td>
+                <td class="val-box" style="background-color: #bbdefb;">{{ number_format($grand_purchase_amt, 0) }}</td>
             </tr>
         </tbody>
     </table>
