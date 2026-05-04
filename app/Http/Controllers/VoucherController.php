@@ -1052,6 +1052,7 @@ class VoucherController extends Controller
 
         $data = [
             'entry_date'       => $request->entry_date,
+            'entry_time'       => $request->entry_time ?? date('H:i'),
             'type'             => $request->vendor_type,
             'party_id'         => $request->vendor_id,
             'remarks'          => $request->remarks,
@@ -1334,8 +1335,8 @@ class VoucherController extends Controller
         $nextIvid = null;
         if (!$id) {
             $last = IncomeVoucher::orderBy('id', 'desc')->first();
-            $num = $last ? (int)str_replace('IVID-', '', $last->ivid) + 1 : 1;
-            $nextIvid = 'IVID-' . str_pad($num, 3, '0', STR_PAD_LEFT);
+            $num = $last ? (int) preg_replace('/[^0-9]/', '', $last->ivid) + 1 : 1;
+            $nextIvid = str_pad($num, 3, '0', STR_PAD_LEFT);
         }
 
         return view('admin_panel.vochers.income_vouchers.income_vouchers', compact('receipt', 'AccountHeads', 'narrationsList', 'nextIvid'));
@@ -1362,8 +1363,8 @@ class VoucherController extends Controller
 
             if (!$id) {
                 $last = IncomeVoucher::orderBy('id', 'desc')->first();
-                $num = $last ? (int)str_replace('IVID-', '', $last->ivid) + 1 : 1;
-                $voucher->ivid = 'IVID-' . str_pad($num, 3, '0', STR_PAD_LEFT);
+                $num = $last ? (int) preg_replace('/[^0-9]/', '', $last->ivid) + 1 : 1;
+                $voucher->ivid = str_pad($num, 3, '0', STR_PAD_LEFT);
                 $voucher->status = 'draft';
             }
 
@@ -1381,8 +1382,9 @@ class VoucherController extends Controller
                 }
             }
 
-            $voucher->entry_date   = $request->entry_date;
-            $voucher->account_head = $request->account_head;
+                $voucher->entry_date   = $request->entry_date;
+                $voucher->entry_time   = $request->entry_time ?? date('H:i');
+                $voucher->account_head = $request->account_head;
             $voucher->account_id   = $request->account_id;
             $voucher->remarks      = $request->remarks;
             $voucher->narration_id = json_encode($narrationIds);
@@ -1668,8 +1670,8 @@ class VoucherController extends Controller
         $nextAvid = null;
         if (!$id) {
             $last = AdjustmentVoucher::orderBy('id', 'desc')->first();
-            $num = $last ? (int)str_replace('AVID-', '', $last->avid) + 1 : 1;
-            $nextAvid = 'AVID-' . str_pad($num, 3, '0', STR_PAD_LEFT);
+            $num = $last ? (int) preg_replace('/[^0-9]/', '', $last->avid) + 1 : 1;
+            $nextAvid = str_pad($num, 3, '0', STR_PAD_LEFT);
         }
 
         return view('admin_panel.vochers.adjustment_vouchers.adjustment_vouchers', compact('receipt', 'AccountHeads', 'narrationsList', 'nextAvid'));
@@ -1713,8 +1715,8 @@ class VoucherController extends Controller
                 $voucher->update($data);
             } else {
                 $last = AdjustmentVoucher::orderBy('id', 'desc')->first();
-                $num = $last ? (int)str_replace('AVID-', '', $last->avid) + 1 : 1;
-                $data['avid'] = 'AVID-' . str_pad($num, 3, '0', STR_PAD_LEFT);
+                $num = $last ? (int) preg_replace('/[^0-9]/', '', $last->avid) + 1 : 1;
+                $data['avid'] = str_pad($num, 3, '0', STR_PAD_LEFT);
                 $data['status'] = 'draft';
                 $voucher = AdjustmentVoucher::create($data);
             }
@@ -1874,8 +1876,8 @@ class VoucherController extends Controller
         $nextJvid = null;
         if (!$id) {
             $last = JournalVoucher::orderBy('id', 'desc')->first();
-            $num = $last ? (int)str_replace('JV-', '', $last->jvid) + 1 : 1;
-            $nextJvid = 'JV-' . str_pad($num, 3, '0', STR_PAD_LEFT);
+            $num = $last ? (int) preg_replace('/[^0-9]/', '', $last->jvid) + 1 : 1;
+            $nextJvid = str_pad($num, 3, '0', STR_PAD_LEFT);
         }
 
         return view('admin_panel.vochers.journal_vouchers.journal_vouchers', compact('receipt', 'AccountHeads', 'narrationsList', 'nextJvid'));
@@ -1938,8 +1940,8 @@ class VoucherController extends Controller
                 $voucher->update($data);
             } else {
                 $last = JournalVoucher::orderBy('id', 'desc')->first();
-                $num = $last ? (int)str_replace('JV-', '', $last->jvid) + 1 : 1;
-                $data['jvid'] = 'JV-' . str_pad($num, 3, '0', STR_PAD_LEFT);
+                $num = $last ? (int) preg_replace('/[^0-9]/', '', $last->jvid) + 1 : 1;
+                $data['jvid'] = str_pad($num, 3, '0', STR_PAD_LEFT);
                 $data['status'] = 'draft';
                 $voucher = JournalVoucher::create($data);
             }

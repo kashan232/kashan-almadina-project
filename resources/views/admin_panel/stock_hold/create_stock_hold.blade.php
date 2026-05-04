@@ -59,8 +59,12 @@
                     <div class="card-body">
                         <div class="row g-2">
                             <div class="col-md-2">
-                                <label class="form-label small fw-bold">Date</label>
+                                <label class="form-label small fw-bold">Entry Date</label>
                                 <input type="date" name="entry_date" class="form-control input-sm" value="{{ date('Y-m-d') }}" required>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label small fw-bold">Entry Time</label>
+                                <input type="time" name="entry_time" class="form-control input-sm" value="{{ date('H:i') }}" required>
                             </div>
                             <div class="col-md-2">
                                 <label class="form-label small fw-bold">Type</label>
@@ -77,13 +81,13 @@
                                     <option value="">Select Party</option>
                                 </select>
                             </div>
-                            <div class="col-md-2">
+                            <div class="col-md-3">
                                 <label class="form-label small fw-bold">Invoice (Optional)</label>
                                 <select id="invoice_id" class="form-select input-sm">
                                     <option value="">Select Invoice</option>
                                 </select>
                             </div>
-                            <div class="col-md-2 mt-2">
+                            <div class="col-md-3 mt-2">
                                 <label class="form-label small fw-bold">Location</label>
                                 <select name="warehouse_id" id="warehouse_id" class="form-select select2" required>
                                     @if(auth()->user()->canAccessShop())
@@ -94,7 +98,7 @@
                                     @endforeach
                                 </select>
                             </div>
-                            <div class="col-md-10 mt-2">
+                            <div class="col-md-9 mt-2">
                                 <label class="form-label small fw-bold">Remarks</label>
                                 <input type="text" name="remarks" class="form-control input-sm" placeholder="Any special notes...">
                             </div>

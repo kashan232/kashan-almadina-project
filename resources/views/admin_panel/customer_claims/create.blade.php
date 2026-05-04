@@ -58,9 +58,17 @@
                     <div class="card-body">
                         <div class="row g-2">
                             <!-- Main Row -->
-                            <div class="col-md-2">
+                            <div class="col-md-1">
                                 <label class="form-label">Claim No</label>
                                 <input type="text" class="form-control input-sm bg-light fw-bold text-primary" value="{{ $claimNo }}" readonly>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label">Entry Date</label>
+                                <input type="date" name="entry_date" class="form-control input-sm" value="{{ date('Y-m-d') }}" required>
+                            </div>
+                            <div class="col-md-1">
+                                <label class="form-label">Entry Time</label>
+                                <input type="time" name="entry_time" class="form-control input-sm" value="{{ date('H:i') }}" required>
                             </div>
                             <div class="col-md-2">
                                 <label class="form-label">Claim Date</label>

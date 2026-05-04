@@ -58,6 +58,8 @@ class StockTransferController extends Controller
                     'from_shop'         => $isFromShop ? 1 : 0,
                     'to_warehouse_id'   => $request->to_warehouse_id,
                     'to_shop'           => $request->has('to_shop') ? 1 : 0,
+                    'entry_date'        => $request->entry_date ?? date('Y-m-d'),
+                    'entry_time'        => $request->entry_time ?? date('H:i'),
                     'remarks'           => $request->remarks,
                     'status'            => 'Unposted',
                     'created_by'        => auth()->id(),
@@ -140,6 +142,8 @@ class StockTransferController extends Controller
                     'from_shop'         => $isFromShop ? 1 : 0,
                     'to_warehouse_id'   => $request->to_warehouse_id,
                     'to_shop'           => $request->has('to_shop') ? 1 : 0,
+                    'entry_date'        => $request->entry_date ?? date('Y-m-d'),
+                    'entry_time'        => $request->entry_time ?? date('H:i'),
                     'remarks'           => $request->remarks,
                 ]);
 

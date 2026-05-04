@@ -73,6 +73,15 @@
                         
                         <!-- Header Selection -->
                         <div class="row g-3 mb-4 p-3 bg-light rounded shadow-sm">
+                            <div class="col-md-2">
+                                <label class="form-label small fw-bold text-muted">Entry Date</label>
+                                <input name="entry_date" value="{{ $returnData->entry_date ?? date('Y-m-d') }}" type="date" class="form-control form-control-sm" required>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label small fw-bold text-muted">Entry Time</label>
+                                <input name="entry_time" value="{{ $returnData->entry_time ?? date('H:i') }}" type="time" class="form-control form-control-sm" required>
+                            </div>
+
                             <div class="col-md-2" id="vendor_type_col">
                                 <label class="form-label small fw-bold text-muted">Party Type</label>
                                 <select name="vendor_type" id="vendor_type_select" class="form-select form-select-sm">
@@ -83,7 +92,7 @@
                                 </select>
                             </div>
 
-                            <div class="col-md-3" id="party_col">
+                            <div class="col-md-2" id="party_col">
                                 <label class="form-label small fw-bold text-muted">Select Party</label>
                                 <select name="party_id" id="party_select" class="form-select form-select-sm select2">
                                     <option value="">Select Party</option>
@@ -93,7 +102,7 @@
                                 </select>
                             </div>
 
-                            <div class="col-md-3 invoice-only" id="invoice_col" style="{{ isset($returnData) && !$returnData->purchase_id ? 'display:none;' : '' }}">
+                            <div class="col-md-2 invoice-only" id="invoice_col" style="{{ isset($returnData) && !$returnData->purchase_id ? 'display:none;' : '' }}">
                                 <label class="form-label small fw-bold text-muted">Select Purchase Invoice</label>
                                 <select id="purchase_invoice_select" class="form-select form-select-sm select2">
                                     <option value="">Select Invoice</option>
@@ -101,11 +110,6 @@
                                         <option value="{{ $returnData->purchase->invoice_no }}" selected>{{ $returnData->purchase->invoice_no }}</option>
                                     @endif
                                 </select>
-                            </div>
-
-                            <div class="col-md-2">
-                                <label class="form-label small fw-bold text-muted">Return Date</label>
-                                <input name="current_date" value="{{ $returnData->current_date ?? date('Y-m-d') }}" type="date" class="form-control form-control-sm" required>
                             </div>
 
                             <div class="col-md-2">
@@ -129,6 +133,8 @@
                                     <i class="fa fa-plus me-1"></i> Add Row
                                 </button>
                             </div>
+
+                            <input type="hidden" name="current_date" id="current_date_hidden" value="{{ $returnData->current_date ?? date('Y-m-d') }}">
                         </div>
 
                         <!-- Items Table -->

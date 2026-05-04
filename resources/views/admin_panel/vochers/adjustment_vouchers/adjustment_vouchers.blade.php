@@ -59,7 +59,13 @@
                 <div class="col-md-2">
                     <div class="card border-0 bg-light p-2 shadow-sm h-100">
                         <label class="form-label text-muted small fw-bold mb-1">Entry Date</label>
-                        <input type="date" name="entry_date" class="form-control form-control-sm" value="{{ $receipt->entry_date ?: date('Y-m-d') }}">
+                        <input type="date" name="entry_date" class="form-control form-control-sm" value="{{ $receipt->entry_date ?: date('Y-m-d') }}" required>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="card border-0 bg-light p-2 shadow-sm h-100">
+                        <label class="form-label text-muted small fw-bold mb-1">Entry Time</label>
+                        <input type="time" name="entry_time" class="form-control form-control-sm" value="{{ $receipt->entry_time ?: date('H:i') }}" required>
                     </div>
                 </div>
                 <!-- Party Selection (Moved from Rows to Header) -->

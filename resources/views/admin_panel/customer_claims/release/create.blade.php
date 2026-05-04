@@ -64,6 +64,14 @@
                                 <input type="text" class="form-control input-sm bg-light fw-bold text-primary" value="{{ $releaseNo }}" readonly>
                             </div>
                             <div class="col-md-2">
+                                <label class="form-label text-muted small fw-bold mb-1">Entry Date</label>
+                                <input type="date" name="entry_date" class="form-control input-sm" value="{{ date('Y-m-d') }}" required>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label text-muted small fw-bold mb-1">Entry Time</label>
+                                <input type="time" name="entry_time" class="form-control input-sm" value="{{ date('H:i') }}" required>
+                            </div>
+                            <div class="col-md-2">
                                 <label class="form-label">Release Date</label>
                                 <input type="date" name="release_date" class="form-control input-sm" value="{{ date('Y-m-d') }}" required>
                             </div>

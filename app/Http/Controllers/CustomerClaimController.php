@@ -72,7 +72,9 @@ class CustomerClaimController extends Controller
                 $claim->claim_no = 'CLM-' . (CustomerClaim::count() + 1);
             }
             
-            $claim->claim_date = $request->claim_date;
+            $claim->entry_date = $request->entry_date ?? date('Y-m-d');
+            $claim->entry_time = $request->entry_time ?? date('H:i');
+            $claim->claim_date = $request->entry_date ?? date('Y-m-d');
             $claim->claim_type = $request->claim_type;
             $claim->party_type = $request->party_type;
             $claim->party_id = $request->party_id;
@@ -165,7 +167,8 @@ class CustomerClaimController extends Controller
         // 3. Handle Claim Hold (Reservation)
         if ($claim->claim_type === 'claim_hold') {
             StockHold::create([
-                'entry_date'   => $claim->claim_date,
+                'entry_date'   => $claim->entry_date,
+                'entry_time'   => $claim->entry_time,
                 'party_type'   => $claim->party_type,
                 'party_id'     => $claim->party_id,
                 'warehouse_id' => $claim->claim_warehouse_id,

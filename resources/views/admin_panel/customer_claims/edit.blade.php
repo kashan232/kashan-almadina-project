@@ -58,9 +58,17 @@
                     <div class="card-body">
                         <div class="row g-2">
                             <!-- Main Row -->
-                            <div class="col-md-2">
+                            <div class="col-md-1">
                                 <label class="form-label">Claim No</label>
                                 <input type="text" class="form-control input-sm bg-light fw-bold text-primary" value="{{ $claim->claim_no }}" readonly>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label">Entry Date</label>
+                                <input type="date" name="entry_date" class="form-control input-sm" value="{{ $claim->entry_date ?? $claim->claim_date }}" required>
+                            </div>
+                            <div class="col-md-1">
+                                <label class="form-label">Entry Time</label>
+                                <input type="time" name="entry_time" class="form-control input-sm" value="{{ $claim->entry_time ?? date('H:i') }}" required>
                             </div>
                             <div class="col-md-2">
                                 <label class="form-label">Claim Date</label>

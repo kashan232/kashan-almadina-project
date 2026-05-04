@@ -33,17 +33,13 @@ class Sale extends Model
 
     public static function generateInvoiceNo()
     {
-        $prefix = 'INVSLE-';
-
         // 1. Get max from Sales
         $lastSale = self::withoutGlobalScopes()
-            ->where('invoice_no', 'like', $prefix . '%')
             ->orderByRaw('LENGTH(invoice_no) DESC, invoice_no DESC')
             ->first();
 
         // 2. Get max from Productbookings
         $lastBooking = \App\Models\Productbooking::withoutGlobalScopes()
-            ->where('invoice_no', 'like', $prefix . '%')
             ->orderByRaw('LENGTH(invoice_no) DESC, invoice_no DESC')
             ->first();
 
@@ -51,17 +47,14 @@ class Sale extends Model
 
         foreach ([$lastSale, $lastBooking] as $last) {
             if ($last && $last->invoice_no) {
-                // get part after prefix and cast to int safely
-                $numPart = substr($last->invoice_no, strlen($prefix));
-                $num = (int) preg_replace('/[^0-9]/', '', $numPart);
+                // Remove any non-numeric characters to get the number part
+                $num = (int) preg_replace('/[^0-9]/', '', $last->invoice_no);
                 if ($num > $maxNum) {
                     $maxNum = $num;
                 }
             }
         }
 
-        $newNumber = str_pad($maxNum + 1, 3, '0', STR_PAD_LEFT);
-
-        return $prefix . $newNumber;
+        return str_pad($maxNum + 1, 3, '0', STR_PAD_LEFT);
     }
 }

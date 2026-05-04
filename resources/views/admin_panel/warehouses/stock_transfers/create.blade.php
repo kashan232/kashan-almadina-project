@@ -109,8 +109,19 @@
                     </div>
                     <div class="card-body">
                         <div class="row g-2">
+                            {{-- Entry Date --}}
+                            <div class="col-md-2">
+                                <label class="form-label small fw-bold text-muted">Entry Date</label>
+                                <input name="entry_date" value="{{ date('Y-m-d') }}" type="date" class="form-control form-control-sm" required>
+                            </div>
+                            {{-- Entry Time --}}
+                            <div class="col-md-2">
+                                <label class="form-label small fw-bold text-muted">Entry Time</label>
+                                <input name="entry_time" value="{{ date('H:i') }}" type="time" class="form-control form-control-sm" required>
+                            </div>
+
                             {{-- From Warehouse --}}
-                            <div class="col-md-3">
+                            <div class="col-md-2">
                                 <label class="form-label small fw-bold">From Location <span class="text-danger">*</span></label>
                                 <select name="from_warehouse_id" id="from_warehouse_id" class="form-select select2" required>
                                     <option value="" disabled selected>Select Location</option>
@@ -124,7 +135,7 @@
                             </div>
 
                             {{-- To Warehouse --}}
-                            <div class="col-md-3">
+                            <div class="col-md-2">
                                 <label class="form-label small fw-bold">To Warehouse <span class="text-danger">*</span></label>
                                 <select name="to_warehouse_id" id="to_warehouse_id" class="form-select select2" required>
                                     <option value="" disabled selected>Select Warehouse</option>
@@ -135,17 +146,17 @@
                             </div>
 
                             {{-- To Shop --}}
-                            <div class="col-md-2 d-flex align-items-end pb-1">
+                            <div class="col-md-1 d-flex align-items-end pb-1">
                                 @if(auth()->user()->canAccessShop())
                                     <div class="form-check">
                                         <input class="form-check-input" type="checkbox" name="to_shop" value="1" id="toShop">
-                                        <label class="form-check-label fw-bold small" for="toShop">Transfer to Shop</label>
+                                        <label class="form-check-label fw-bold small" for="toShop">To Shop</label>
                                     </div>
                                 @endif
                             </div>
 
                             {{-- Remarks --}}
-                            <div class="col-md-4">
+                            <div class="col-md-3">
                                 <label class="form-label small fw-bold">Remarks</label>
                                 <input type="text" name="remarks" class="form-control input-sm" placeholder="Optional note...">
                             </div>

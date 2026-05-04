@@ -43,6 +43,18 @@
       <div class="d-flex gap-3 align-items-start border-bottom py-3">
         <div class="bg-light border rounded-3 p-2 shadow-sm" style="min-width: 300px; max-width: 300px;">
           <h6 class="fw-bold text-primary mb-2 border-bottom pb-1">Invoice & Customer</h6>
+          {{-- Entry Date & Time --}}
+          <div class="row g-1 mb-2">
+            <div class="col-6">
+              <label class="small text-muted mb-0">Entry Date</label>
+              <input type="date" class="form-control form-control-sm" name="entry_date" value="{{ $sale->entry_date ?? date('Y-m-d', strtotime($sale->created_at)) }}">
+            </div>
+            <div class="col-6">
+              <label class="small text-muted mb-0">Entry Time</label>
+              <input type="time" class="form-control form-control-sm" name="entry_time" value="{{ $sale->entry_time ?? date('H:i', strtotime($sale->created_at)) }}">
+            </div>
+          </div>
+
           <div class="row g-1 mb-2">
             <div class="col-6">
               <label class="small text-muted mb-0">Inv#</label>

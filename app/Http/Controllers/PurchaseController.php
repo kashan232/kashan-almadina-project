@@ -53,18 +53,16 @@ class PurchaseController extends Controller
         $lastPurchase = Purchase::orderBy('id', 'DESC')->first();
 
         if ($lastPurchase && !empty($lastPurchase->invoice_no)) {
-
-            // Extract number from format "PUR-006"
-            $lastNumber = intval(str_replace('PUR-', '', $lastPurchase->invoice_no));
-
+            // Extract number
+            $lastNumber = intval(preg_replace('/[^0-9]/', '', $lastPurchase->invoice_no));
             // Increment
             $nextNumber = $lastNumber + 1;
         } else {
             $nextNumber = 1; // First ever invoice
         }
 
-        // Format into PUR-XXX
-        $nextInvoice = 'PUR-' . str_pad($nextNumber, 3, '0', STR_PAD_LEFT);
+        // Format into numeric string
+        $nextInvoice = str_pad($nextNumber, 3, '0', STR_PAD_LEFT);
 
         // Pass this to the view
         return view(
@@ -210,7 +208,9 @@ class PurchaseController extends Controller
                     'vendor_id'        => $request['vendor_id'],
                     'purchasable_type' => $typeMap[$typeKey] ?? null,
                     'purchasable_id'   => $request['vendor_id'],
-                    'current_date'     => $request['current_date'] ?? now(),
+                    'entry_date'       => $request['entry_date'] ?? date('Y-m-d'),
+                    'entry_time'       => $request['entry_time'] ?? date('H:i'),
+                    'current_date'     => $request['entry_date'] ?? date('Y-m-d'),
                     'dc_date'          => $request['dc_date'] ?? null,
                     'dc'               => $request['dc'] ?? null,
                     'bilty_no'         => $request['bilty_no'] ?? null,
@@ -319,7 +319,9 @@ class PurchaseController extends Controller
                 'vendor_id'       => $request['vendor_id'],
                 'purchasable_type' => $typeMap[$typeKey],
                 'purchasable_id'  => $request['vendor_id'],
-                'current_date'    => $request['current_date'] ?? now(),
+                'entry_date'      => $request['entry_date'] ?? date('Y-m-d'),
+                'entry_time'      => $request['entry_time'] ?? date('H:i'),
+                'current_date'    => $request['entry_date'] ?? date('Y-m-d'),
                 'dc_date'         => $request['dc_date'] ?? null,
                 'note'            => $request['remarks'] ?? null,
                 'subtotal'        => $request->subtotal,
@@ -524,7 +526,9 @@ class PurchaseController extends Controller
                     'vendor_id'        => $request['vendor_id'],
                     'purchasable_type' => $typeMap[$typeKey] ?? null,
                     'purchasable_id'   => $request['vendor_id'],
-                    'current_date'     => $request['current_date'] ?? now(),
+                    'entry_date'       => $request['entry_date'] ?? date('Y-m-d'),
+                    'entry_time'       => $request['entry_time'] ?? date('H:i'),
+                    'current_date'     => $request['entry_date'] ?? date('Y-m-d'),
                     'dc_date'          => $request['dc_date'] ?? null,
                     'dc'               => $request['dc'] ?? null,
                     'bilty_no'         => $request['bilty_no'] ?? null,

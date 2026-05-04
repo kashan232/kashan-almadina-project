@@ -145,14 +145,20 @@
                 </div>
                 <div class="col-md-2">
                     <div class="card border-0 bg-light p-2 shadow-sm h-100">
-                        <label class="form-label text-muted small fw-bold mb-1">Receipt Date</label>
-                        <input type="date" name="receipt_date" id="receipt_date" class="form-control form-control-sm" value="{{ $receipt->receipt_date ?? now()->toDateString() }}">
+                        <label class="form-label text-muted small fw-bold mb-1">Entry Date</label>
+                        <input type="date" name="entry_date" id="entry_date" class="form-control form-control-sm" value="{{ $receipt->entry_date ?? now()->toDateString() }}" required>
                     </div>
                 </div>
                 <div class="col-md-2">
                     <div class="card border-0 bg-light p-2 shadow-sm h-100">
-                        <label class="form-label text-muted small fw-bold mb-1">Entry Date</label>
-                        <input type="date" name="entry_date" id="entry_date" class="form-control form-control-sm" value="{{ $receipt->entry_date ?? now()->toDateString() }}">
+                        <label class="form-label text-muted small fw-bold mb-1">Entry Time</label>
+                        <input type="time" name="entry_time" id="entry_time" class="form-control form-control-sm" value="{{ $receipt->entry_time ?? date('H:i') }}" required>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="card border-0 bg-light p-2 shadow-sm h-100">
+                        <label class="form-label text-muted small fw-bold mb-1">Receipt Date</label>
+                        <input type="date" name="receipt_date" id="receipt_date" class="form-control form-control-sm" value="{{ $receipt->receipt_date ?? now()->toDateString() }}">
                     </div>
                 </div>
                 <div class="col-md-3">

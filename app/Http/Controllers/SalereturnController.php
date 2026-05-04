@@ -47,10 +47,9 @@ class SaleReturnController extends Controller
     private function generateReturnNo()
     {
         $lastReturn = SaleReturn::orderBy('id', 'desc')->first();
-        if (!$lastReturn) return 'SR-1';
-        $parts = explode('-', $lastReturn->invoice_no);
-        $num = intval(end($parts)) + 1;
-        return 'SR-' . $num;
+        if (!$lastReturn) return '001';
+        $num = (int) preg_replace('/[^0-9]/', '', $lastReturn->invoice_no) + 1;
+        return str_pad($num, 3, '0', STR_PAD_LEFT);
     }
 
     public function getSaleDetails($invoice)
@@ -146,7 +145,9 @@ class SaleReturnController extends Controller
                     'sale_id'          => $saleId,
                     'party_type'       => $party_type,
                     'customer_id'      => $customer_id,
-                    'current_date'     => $request->current_date,
+                    'entry_date'       => $request->entry_date ?? date('Y-m-d'),
+                    'entry_time'       => $request->entry_time ?? date('H:i'),
+                    'current_date'     => $request->entry_date ?? date('Y-m-d'),
                     'remarks'          => $request->remarks,
                     'sub_total2'       => $request->subtotal, // Use sub_total2 as net matching
                     'discount_amount'  => $request->discount,
@@ -252,7 +253,9 @@ class SaleReturnController extends Controller
                     'sale_id'          => $saleId,
                     'party_type'       => $party_type,
                     'customer_id'      => $customer_id,
-                    'current_date'     => $request->current_date,
+                    'entry_date'   => $request->entry_date ?? date('Y-m-d'),
+                    'entry_time'   => $request->entry_time ?? date('H:i'),
+                    'current_date' => $request->entry_date ?? date('Y-m-d'),
                     'remarks'          => $request->remarks,
                     'sub_total2'       => $request->subtotal,
                     'discount_amount'  => $request->discount,

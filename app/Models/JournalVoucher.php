@@ -34,9 +34,9 @@ class JournalVoucher extends Model
     public static function generateJournalNo()
     {
         $last = self::withoutGlobalScopes()->orderBy('id', 'desc')->first();
-        if (!$last) return 'JV-001';
+        if (!$last) return '001';
         
-        $num = (int)str_replace('JV-', '', $last->jvid);
-        return 'JV-' . str_pad($num + 1, 3, '0', STR_PAD_LEFT);
+        $num = (int) preg_replace('/[^0-9]/', '', $last->jvid);
+        return str_pad($num + 1, 3, '0', STR_PAD_LEFT);
     }
 }

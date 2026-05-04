@@ -124,12 +124,16 @@
                     <div class="card-body">
                         <input type="hidden" name="gwn_id" value="{{ $stock_wastage->gwn_id }}">
                         <div class="row g-3">
-                            <div class="col-md-3">
-                                <label class="form-label small fw-bold">Date</label>
-                                <input type="date" name="date" class="form-control input-sm" value="{{ $stock_wastage->date }}" required>
+                            <div class="col-md-2">
+                                <label class="form-label small fw-bold">Entry Date</label>
+                                <input type="date" name="entry_date" class="form-control input-sm" value="{{ $stock_wastage->entry_date ?? $stock_wastage->date }}" required>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label small fw-bold">Entry Time</label>
+                                <input type="time" name="entry_time" class="form-control input-sm" value="{{ $stock_wastage->entry_time ?? date('H:i') }}" required>
                             </div>
                             
-                            <div class="col-md-3">
+                            <div class="col-md-2">
                                 <label class="form-label small fw-bold">Warehouse</label>
                                 <select name="warehouse_id" class="form-select select2" required>
                                     <option value="0" {{ is_null($stock_wastage->warehouse_id) ? 'selected' : '' }}>🏠 Shop Stock</option>
@@ -155,10 +159,11 @@
                                 </select>
                             </div>
 
-                            <div class="col-md-9">
+                            <div class="col-md-12">
                                 <label class="form-label small fw-bold">Remarks</label>
                                 <input type="text" name="remarks" class="form-control input-sm" value="{{ $stock_wastage->remarks }}">
                             </div>
+                            <input type="hidden" name="date" value="{{ $stock_wastage->date }}">
                         </div>
                     </div>
                 </div>

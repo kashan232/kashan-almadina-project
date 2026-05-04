@@ -59,7 +59,19 @@
             <div class="row g-3 mb-4">
                 <div class="col-md-2">
                     <div class="card border-0 bg-light p-2 shadow-sm h-100">
-                        <label class="form-label text-muted small fw-bold mb-1">Date <span class="text-danger">*</span></label>
+                        <label class="form-label text-muted small fw-bold mb-1">Entry Date <span class="text-danger">*</span></label>
+                        <input type="date" name="entry_date" class="form-control form-control-sm" value="{{ $voucher->entry_date ?? date('Y-m-d') }}" required>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="card border-0 bg-light p-2 shadow-sm h-100">
+                        <label class="form-label text-muted small fw-bold mb-1">Entry Time <span class="text-danger">*</span></label>
+                        <input type="time" name="entry_time" class="form-control form-control-sm" value="{{ $voucher->entry_time ?? date('H:i') }}" required>
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <div class="card border-0 bg-light p-2 shadow-sm h-100">
+                        <label class="form-label text-muted small fw-bold mb-1">Claim Date <span class="text-danger">*</span></label>
                         <input type="date" name="date" class="form-control form-control-sm" value="{{ $voucher->date ?? date('Y-m-d') }}" required>
                     </div>
                 </div>

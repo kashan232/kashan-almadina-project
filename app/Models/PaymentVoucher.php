@@ -16,19 +16,15 @@ class PaymentVoucher extends Model
 
     public static function generateInvoiceNo()
     {
-        $prefix = 'PVID-';
-
         // Fetch last payment voucher
         $lastInvoice = self::withoutGlobalScopes()->orderBy('id', 'desc')->first();
 
         $lastNumber = 0;
         if ($lastInvoice && $lastInvoice->pvid) {
-            $lastNumber = (int)substr($lastInvoice->pvid, strlen($prefix));
+            $lastNumber = (int) preg_replace('/[^0-9]/', '', $lastInvoice->pvid);
         }
 
-        $newNumber = str_pad($lastNumber + 1, 3, '0', STR_PAD_LEFT);
-
-        return $prefix . $newNumber;
+        return str_pad($lastNumber + 1, 3, '0', STR_PAD_LEFT);
     }
 
 

@@ -73,11 +73,17 @@
                         
                         <!-- Header Selection -->
                         <div class="row g-3 mb-4 p-3 bg-light rounded shadow-sm">
+                            <div class="col-md-2">
+                                <label class="form-label small fw-bold text-muted">Entry Date</label>
+                                <input name="entry_date" value="{{ $returnData->entry_date ?? date('Y-m-d') }}" type="date" class="form-control form-control-sm" required>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label small fw-bold text-muted">Entry Time</label>
+                                <input name="entry_time" value="{{ $returnData->entry_time ?? date('H:i') }}" type="time" class="form-control form-control-sm" required>
+                            </div>
+
                             <div class="col-md-2" id="vendor_type_col">
                                 <label class="form-label small fw-bold text-muted">Party Type</label>
-                                @error('vendor_type')
-                                    <div class="alert alert-danger p-1 mb-1 ajax-valid-error" style="font-size: 11px;"><i class="fa fa-exclamation-triangle"></i> {{ $message }}</div>
-                                @enderror
                                 <select name="vendor_type" id="vendor_type_select" class="form-select form-select-sm">
                                     <option value="" disabled selected>Select</option>
                                     <option value="vendor" {{ isset($returnData) && $returnData->party_type == 'vendor' ? 'selected' : '' }}>Vendor</option>
@@ -86,25 +92,18 @@
                                 </select>
                             </div>
 
-                            <div class="col-md-3" id="party_col">
+                            <div class="col-md-2" id="party_col">
                                 <label class="form-label small fw-bold text-muted">Select Party</label>
-                                @error('party_id')
-                                    <div class="alert alert-danger p-1 mb-1 ajax-valid-error" style="font-size: 11px;"><i class="fa fa-exclamation-triangle"></i> {{ $message }}</div>
-                                @enderror
                                 <select name="party_id" id="party_select" class="form-select form-select-sm select2">
                                     <option value="">Select Party</option>
                                     @if(isset($returnData))
-                                        <!-- Party name will be fetched via AJAX, but optionally pre-populate if possible -->
                                         <option value="{{ $returnData->customer_id }}" selected>Selected Party (ID: {{ $returnData->customer_id }})</option>
                                     @endif
                                 </select>
                             </div>
 
-                            <div class="col-md-3 invoice-only" id="invoice_col" style="{{ isset($returnData) && !$returnData->sale_id ? 'display:none;' : '' }}">
+                            <div class="col-md-2 invoice-only" id="invoice_col" style="{{ isset($returnData) && !$returnData->sale_id ? 'display:none;' : '' }}">
                                 <label class="form-label small fw-bold text-muted">Select Sale Invoice</label>
-                                @error('sale_id')
-                                    <div class="alert alert-danger p-1 mb-1 ajax-valid-error" style="font-size: 11px;"><i class="fa fa-exclamation-triangle"></i> {{ $message }}</div>
-                                @enderror
                                 <select id="sale_invoice_select" class="form-select form-select-sm select2">
                                     <option value="">Select Invoice</option>
                                     @if(isset($returnData) && $returnData->sale)
@@ -114,18 +113,7 @@
                             </div>
 
                             <div class="col-md-2">
-                                <label class="form-label small fw-bold text-muted">Return Date</label>
-                                @error('current_date')
-                                    <div class="alert alert-danger p-1 mb-1 ajax-valid-error" style="font-size: 11px;"><i class="fa fa-exclamation-triangle"></i> {{ $message }}</div>
-                                @enderror
-                                <input name="current_date" value="{{ $returnData->current_date ?? date('Y-m-d') }}" type="date" class="form-control form-control-sm" required>
-                            </div>
-
-                            <div class="col-md-2">
                                 <label class="form-label small fw-bold text-muted">Warehouse</label>
-                                @error('warehouse_id')
-                                    <div class="alert alert-danger p-1 mb-1 ajax-valid-error" style="font-size: 11px;"><i class="fa fa-exclamation-triangle"></i> {{ $message }}</div>
-                                @enderror
                                 <select name="warehouse_id" id="warehouse_select" class="form-select form-select-sm select2" required>
                                     <option value="">Select Warehouse/Shop</option>
                                     @if(auth()->user()->canAccessShop())
@@ -148,6 +136,7 @@
                                     <i class="fa fa-plus me-1"></i> Add Row
                                 </button>
                             </div>
+                            <input type="hidden" name="current_date" id="current_date_hidden" value="{{ $returnData->current_date ?? date('Y-m-d') }}">
                         </div>
 
                         <!-- Items Table -->

@@ -95,7 +95,9 @@ class StockWastageController extends Controller
                 } else {
                     $wastage = StockWastage::create([
                         'gwn_id'          => $request->gwn_id,
-                        'date'            => $request->date,
+                        'entry_date'      => $request->entry_date ?? date('Y-m-d'),
+                        'entry_time'      => $request->entry_time ?? date('H:i'),
+                        'date'            => $request->entry_date ?? date('Y-m-d'),
                         'warehouse_id'    => ($warehouseId == 0) ? null : $warehouseId,
                         'account_head_id' => $request->account_head_id,
                         'account_id'      => $request->account_id,
@@ -230,7 +232,9 @@ class StockWastageController extends Controller
                 // 1. Update Header
                 $warehouseId = $request->warehouse_id;
                 $stock_wastage->update([
-                    'date'            => $request->date,
+                    'entry_date'      => $request->entry_date ?? date('Y-m-d'),
+                    'entry_time'      => $request->entry_time ?? date('H:i'),
+                    'date'            => $request->entry_date ?? date('Y-m-d'),
                     'warehouse_id'    => ($warehouseId == 0) ? null : $warehouseId,
                     'account_head_id' => $request->account_head_id,
                     'account_id'      => $request->account_id,

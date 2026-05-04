@@ -47,10 +47,9 @@ class ProductBookingItem extends Model
 
     public static function generateInvoiceNo()
     {
-        // pattern: INVSLE-001
-        // use DB lock to reduce collisions (works when called inside transaction)
+        // patterns: use DB lock to reduce collisions (works when called inside transaction)
         $last = self::orderBy('id', 'desc')->lockForUpdate()->first();
         $next = ($last?->id ?? 0) + 1;
-        return 'INVSLE-' . str_pad($next, 3, '0', STR_PAD_LEFT);
+        return str_pad($next, 3, '0', STR_PAD_LEFT);
     }
 }

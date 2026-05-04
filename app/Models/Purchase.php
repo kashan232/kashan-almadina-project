@@ -46,18 +46,14 @@ class Purchase extends Model
 
     public static function generateInvoiceNo()
     {
-        $prefix = 'PUR-';
-
         // Fetch last invoice
         $lastInvoice = self::withoutGlobalScopes()->orderBy('id', 'desc')->first();
 
         $lastNumber = 0;
         if ($lastInvoice && $lastInvoice->invoice_no) {
-            $lastNumber = (int)substr($lastInvoice->invoice_no, strlen($prefix));
+            $lastNumber = (int) preg_replace('/[^0-9]/', '', $lastInvoice->invoice_no);
         }
 
-        $newNumber = str_pad($lastNumber + 1, 3, '0', STR_PAD_LEFT);
-
-        return $prefix . $newNumber;
+        return str_pad($lastNumber + 1, 3, '0', STR_PAD_LEFT);
     }
 }

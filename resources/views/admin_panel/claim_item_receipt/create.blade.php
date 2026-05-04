@@ -73,10 +73,18 @@
                             <div class="card-body">
                                 <div class="row g-2 mb-3 align-items-end">
                                     <div class="col-md-2">
+                                        <label class="form-label small fw-bold text-muted mb-1">Entry Date</label>
+                                        <input type="date" name="entry_date" class="form-control input-sm" value="{{ $voucher->entry_date ?? date('Y-m-d') }}" required>
+                                    </div>
+                                    <div class="col-md-1">
+                                        <label class="form-label small fw-bold text-muted mb-1">Entry Time</label>
+                                        <input type="time" name="entry_time" class="form-control input-sm" value="{{ $voucher->entry_time ?? date('H:i') }}" required>
+                                    </div>
+                                    <div class="col-md-2">
                                         <label class="form-label small fw-bold text-muted mb-1">Receipt Date</label>
                                         <input type="date" name="date" class="form-control input-sm" value="{{ $voucher->date ?? date('Y-m-d') }}" required>
                                     </div>
-                                    <div class="col-md-2">
+                                    <div class="col-md-1">
                                         <label class="form-label small fw-bold text-muted mb-1">Receipt No</label>
                                         <input type="text" class="form-control input-sm fw-bold text-primary bg-light" value="{{ $voucher->voucher_no ?? $voucherNo }}" readonly>
                                     </div>
@@ -104,7 +112,7 @@
                                             @endforeach
                                         </select>
                                     </div>
-                                    <div class="col-md-4">
+                                    <div class="col-md-2">
                                         <label class="form-label small fw-bold text-muted mb-1">Remarks</label>
                                         <input type="text" name="remarks" class="form-control input-sm" value="{{ $voucher->remarks ?? '' }}" placeholder="Optional notes...">
                                     </div>
@@ -237,10 +245,18 @@
                             <div class="card-body">
                                 <div class="row g-2 mb-3 align-items-end">
                                     <div class="col-md-2">
+                                        <label class="form-label small fw-bold text-muted mb-1">Entry Date</label>
+                                        <input type="date" name="entry_date" class="form-control input-sm" value="{{ date('Y-m-d') }}" required>
+                                    </div>
+                                    <div class="col-md-1">
+                                        <label class="form-label small fw-bold text-muted mb-1">Entry Time</label>
+                                        <input type="time" name="entry_time" class="form-control input-sm" value="{{ date('H:i') }}" required>
+                                    </div>
+                                    <div class="col-md-2">
                                         <label class="form-label small fw-bold text-muted mb-1">Date</label>
                                         <input type="date" name="date" class="form-control input-sm" value="{{ date('Y-m-d') }}" required>
                                     </div>
-                                    <div class="col-md-2">
+                                    <div class="col-md-1">
                                         <label class="form-label small fw-bold text-muted mb-1">Voucher No</label>
                                         <input type="text" class="form-control input-sm fw-bold text-primary bg-light" value="{{ $creditNoteVoucherNo }}" readonly>
                                     </div>
@@ -268,7 +284,7 @@
                                             @endforeach
                                         </select>
                                     </div>
-                                    <div class="col-md-4">
+                                    <div class="col-md-2">
                                         <label class="form-label small fw-bold text-muted mb-1">Remarks</label>
                                         <input type="text" name="remarks" class="form-control input-sm" placeholder="Optional notes...">
                                     </div>

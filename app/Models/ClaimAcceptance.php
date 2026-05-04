@@ -37,7 +37,7 @@ class ClaimAcceptance extends Model
     public static function generateVoucherNo()
     {
         $last = self::withoutGlobalScopes()->orderBy('id', 'desc')->first();
-        $nextId = $last ? $last->id + 1 : 1;
-        return 'ACC-' . str_pad($nextId, 4, '0', STR_PAD_LEFT);
+        $nextId = $last ? (int) preg_replace('/[^0-9]/', '', $last->voucher_no) + 1 : 1;
+        return str_pad($nextId, 4, '0', STR_PAD_LEFT);
     }
 }

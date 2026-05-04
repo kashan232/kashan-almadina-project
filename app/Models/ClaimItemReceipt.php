@@ -47,7 +47,7 @@ class ClaimItemReceipt extends Model
     public static function generateVoucherNo()
     {
         $latest = self::withoutGlobalScopes()->orderBy('id', 'desc')->first();
-        $nextId = $latest ? $latest->id + 1 : 1;
-        return 'CIR-' . str_pad($nextId, 4, '0', STR_PAD_LEFT);
+        $nextId = $latest ? (int) preg_replace('/[^0-9]/', '', $latest->voucher_no) + 1 : 1;
+        return str_pad($nextId, 4, '0', STR_PAD_LEFT);
     }
 }

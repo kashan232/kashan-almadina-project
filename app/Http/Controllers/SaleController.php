@@ -129,6 +129,8 @@ class SaleController extends Controller
             'receipt2' => $request->receipt2 ?? 0,
             'final_balance1' => $request->finalBalance1 ?? 0,
             'final_balance2' => $request->finalBalance2 ?? 0,
+            'entry_date' => $request->entry_date,
+            'entry_time' => $request->entry_time,
         ]);
 
         SaleItem::where('sale_id', $sale->id)->delete();
@@ -212,6 +214,8 @@ class SaleController extends Controller
                     'final_balance1' => $request->finalBalance1 ?? 0,
                     'final_balance2' => $request->finalBalance2 ?? 0,
                     'weight' => $request->weight ?? null,
+                    'entry_date' => $request->entry_date,
+                    'entry_time' => $request->entry_time,
                 ]);
 
             $totalQty = 0;
@@ -279,6 +283,8 @@ class SaleController extends Controller
                 'final_balance1' => $request->finalBalance1 ?? 0,
                 'final_balance2' => $request->finalBalance2 ?? 0,
                 'weight' => $request->weight ?? null,
+                'entry_date' => $request->entry_date,
+                'entry_time' => $request->entry_time,
             ]);
 
             foreach ($request->warehouse_name ?? [] as $i => $warehouse_id) {
@@ -423,6 +429,8 @@ class SaleController extends Controller
             $booking->final_balance1 = $request->finalBalance1 ?? 0;
             $booking->final_balance2 = $request->finalBalance2 ?? 0;
             $booking->weight         = $request->weight;
+            $booking->entry_date     = $request->entry_date;
+            $booking->entry_time     = $request->entry_time;
 
             $productIds = $request->input('product_id', []);
             $warehouseIds = $request->input('warehouse_name', []);
@@ -519,6 +527,8 @@ class SaleController extends Controller
                     'final_balance1' => $booking->final_balance1,
                     'final_balance2' => $booking->final_balance2,
                     'weight' => $booking->weight,
+                    'entry_date' => $booking->entry_date,
+                    'entry_time' => $booking->entry_time,
                 ]);
 
                 // If Sale Order, create a Stock Hold Voucher (Prevent Double)
@@ -717,6 +727,8 @@ class SaleController extends Controller
                 'final_balance1' => $booking->final_balance1,
                 'final_balance2' => $booking->final_balance2,
                 'weight' => $booking->weight,
+                'entry_date' => $booking->entry_date,
+                'entry_time' => $booking->entry_time,
             ]);
 
             // If Sale Order, create a Stock Hold Voucher (Prevent Double)

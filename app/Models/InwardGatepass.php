@@ -53,20 +53,16 @@ class InwardGatepass extends Model
 
     public static function generateInvoiceNo()
     {
-        $prefix = 'IGP-';
-
         // Fetch the last invoice number from the database
         $lastInvoice = self::withoutGlobalScopes()->orderBy('id', 'desc')->first();
 
         // Extract last number from invoice_no
         $lastNumber = 0;
         if ($lastInvoice && $lastInvoice->invoice_no) {
-            $lastNumber = (int)substr($lastInvoice->invoice_no, strlen($prefix));
+            $lastNumber = (int) preg_replace('/[^0-9]/', '', $lastInvoice->invoice_no);
         }
 
         // Increment and pad with leading zeros
-        $newNumber = str_pad($lastNumber + 1, 3, '0', STR_PAD_LEFT);
-
-        return $prefix . $newNumber;
+        return str_pad($lastNumber + 1, 3, '0', STR_PAD_LEFT);
     }
 }

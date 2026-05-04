@@ -173,13 +173,46 @@
                                             @if(isset($purchase))
                                                 @method('PUT')
                                             @endif
+
+                                            <div class="row g-2 mb-3 bg-light p-2 rounded shadow-sm border">
+                                                <div class="col-md-2">
+                                                    <label class="form-label small bold mb-0 text-uppercase">Entry Date</label>
+                                                    <input type="date" name="entry_date" value="{{ old('entry_date', isset($purchase) ? ($purchase->entry_date ?? \Carbon\Carbon::parse($purchase->current_date)->format('Y-m-d')) : date('Y-m-d')) }}" class="form-control form-control-sm border-primary" required>
+                                                </div>
+                                                <div class="col-md-2">
+                                                    <label class="form-label small bold mb-0 text-uppercase">Entry Time</label>
+                                                    <input type="time" name="entry_time" value="{{ old('entry_time', isset($purchase) ? ($purchase->entry_time ?? \Carbon\Carbon::parse($purchase->created_at)->format('H:i')) : date('H:i')) }}" class="form-control form-control-sm border-primary" required>
+                                                </div>
+                                                <div class="col-md-2">
+                                                    <label class="form-label small bold mb-0 text-uppercase">DC Date</label>
+                                                    <input name="dc_date" value="{{ old('dc_date', isset($purchase) ? \Carbon\Carbon::parse($purchase->dc_date)->format('Y-m-d') : date('Y-m-d')) }}" type="date" class="form-control form-control-sm">
+                                                </div>
+                                                <div class="col-md-3">
+                                                    <label class="form-label small bold mb-0 text-uppercase">Type</label>
+                                                    @php $vType = old('vendor_type', isset($purchase) ? strtolower(class_basename($purchase->purchasable_type)) : ''); @endphp
+                                                    <select name="vendor_type" class="form-control form-control-sm" id="vendor_type_select">
+                                                        <option value="" {{ $vType ? '' : 'selected' }} disabled>Select</option>
+                                                        <option value="vendor" {{ $vType == 'vendor' ? 'selected' : '' }}>Vendor</option>
+                                                        <option value="customer" {{ $vType == 'customer' ? 'selected' : '' }}>Customer</option>
+                                                        <option value="walkin" {{ $vType == 'walkin' ? 'selected' : '' }}>Walkin Customer</option>
+                                                    </select>
+                                                </div>
+                                                <div class="col-md-3">
+                                                    <label class="form-label small bold mb-0 text-uppercase">Vendor/Party</label>
+                                                    <select name="vendor_id" id="vendor_id_select" class="form-control form-control-sm select2" style="width:100%;">
+                                                        <option value="" disabled selected>Select Party</option>
+                                                        @if(isset($purchase))
+                                                            <option value="{{ $purchase->purchasable_id }}" selected>
+                                                                {{ $purchase->purchasable->name ?? ($purchase->purchasable->customer_name ?? 'Unknown') }}
+                                                            </option>
+                                                        @endif
+                                                    </select>
+                                                </div>
+                                            </div>
+
                                             <table class="table table-bordered table-sm text-center align-middle">
                                                 <thead class="table-light">
                                                     <tr>
-                                                        <th>Current Date</th>
-                                                        <th>DC Date</th>
-                                                        <th>Type</th>
-                                                        <th>Vendor</th>
                                                         <th>DC #</th>
                                                         <th>Warehouse</th>
                                                         <th>Bilty No</th>
@@ -188,52 +221,8 @@
                                                 </thead>
                                                 <tbody>
                                                     <tr>
-                                                        <td>
-                                                            <input name="current_date" value="{{ old('current_date', isset($purchase) ? \Carbon\Carbon::parse($purchase->current_date)->format('Y-m-d') : date('Y-m-d')) }}"
-                                                                 type="date" class="form-control form-control-sm" required>
-                                                             @error('current_date')
-                                                                 <div class="alert alert-danger p-1 mt-1" style="font-size: 12px;">{{ $message }}</div>
-                                                             @enderror
-                                                         </td>
-                                                        <td><input name="dc_date" value="{{ old('dc_date', isset($purchase) ? \Carbon\Carbon::parse($purchase->dc_date)->format('Y-m-d') : date('Y-m-d')) }}"
-                                                                 type="date" class="form-control form-control-sm">
-                                                             @error('dc_date')
-                                                                 <div class="alert alert-danger p-1 mt-1" style="font-size: 12px;">{{ $message }}</div>
-                                                             @enderror
-                                                         </td>
-                                                        <td>
-                                                            @php
-                                                                $vType = old('vendor_type', isset($purchase) ? strtolower(class_basename($purchase->purchasable_type)) : '');
-                                                            @endphp
-                                                            <select name="vendor_type" class="form-control form-control-sm" id="vendor_type_select">
-                                                                <option value="" {{ $vType ? '' : 'selected' }} disabled>Select</option>
-                                                                <option value="vendor" {{ $vType == 'vendor' ? 'selected' : '' }}>Vendor</option>
-                                                                <option value="customer" {{ $vType == 'customer' ? 'selected' : '' }}>Customer</option>
-                                                                <option value="walkin" {{ $vType == 'walkin' ? 'selected' : '' }}>Walkin Customer</option>
-                                                            </select>
-                                                            @error('vendor_type')
-                                                                <div class="alert alert-danger p-1 mt-1" style="font-size: 12px;">{{ $message }}</div>
-                                                            @enderror
-                                                        </td>
-
-                                                        <td>
-                                                            <select name="vendor_id" id="vendor_id_select" class="form-control form-control-sm" style="width:100%; min-width: 150px;">
-                                                                <option value="" disabled selected>Select Party</option>
-                                                                @if(isset($purchase))
-                                                                    <option value="{{ $purchase->purchasable_id }}" selected>
-                                                                        {{ $purchase->purchasable->name ?? ($purchase->purchasable->customer_name ?? 'Unknown') }}
-                                                                    </option>
-                                                                @endif
-                                                            </select>
-                                                            @error('vendor_id')
-                                                                <div class="alert alert-danger p-1 mt-1" style="font-size: 12px;">{{ $message }}</div>
-                                                            @enderror
-                                                        </td>
                                                         <td><input name="dc" type="text" value="{{ old('dc', $purchase->dc ?? '') }}"
-                                                                class="form-control form-control-sm" style="width:90px;">
-                                                            @error('dc')
-                                                                <div class="alert alert-danger p-1 mt-1" style="font-size: 12px;">{{ $message }}</div>
-                                                            @enderror
+                                                                class="form-control form-control-sm" style="width:100%;">
                                                         </td>
                                                         <td>
                                                             <select name="warehouse_id" class="form-control form-control-sm" required>
@@ -248,25 +237,16 @@
                                                                 </option>
                                                                 @endforeach
                                                             </select>
-                                                            @error('warehouse_id')
-                                                                <div class="alert alert-danger p-1 mt-1" style="font-size: 12px;">{{ $message }}</div>
-                                                            @enderror
                                                         </td>
                                                         <td>
                                                             <input name="bilty_no" type="text" value="{{ old('bilty_no', $purchase->bilty_no ?? '') }}"
-                                                                class="form-control form-control-sm" style="width:90px;">
-                                                            @error('bilty_no')
-                                                                <div class="alert alert-danger p-1 mt-1" style="font-size: 12px;">{{ $message }}</div>
-                                                            @enderror
+                                                                class="form-control form-control-sm" style="width:100%;">
                                                         </td>
                                                         <td><input name="remarks" type="text" value="{{ old('remarks', $purchase->note ?? '') }}" class="form-control form-control-sm">
-                                                            @error('remarks')
-                                                                <div class="alert alert-danger p-1 mt-1" style="font-size: 12px;">{{ $message }}</div>
-                                                            @enderror
                                                         </td>
                                                     </tr>
                                                 </tbody>
-                                            </table>
+                                            </table>table>
                                              <table
                                                  class="table table-bordered table-sm text-center align-middle mt-2">
                                                  <thead class="table-light">

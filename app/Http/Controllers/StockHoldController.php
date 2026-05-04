@@ -159,6 +159,7 @@ class StockHoldController extends Controller
             }
             
             $voucher->date         = $request->entry_date;
+            $voucher->entry_time   = $request->entry_time ?? date('H:i');
             $voucher->party_type   = $request->vendor_type;
             $voucher->party_id     = $request->vendor_id;
             $voucher->warehouse_id = $request->warehouse_id;
@@ -179,6 +180,7 @@ class StockHoldController extends Controller
                 StockHold::create([
                     'stock_hold_voucher_id' => $voucher->id,
                     'entry_date'   => $request->entry_date,
+                    'entry_time'   => $request->entry_time ?? date('H:i'),
                     'sale_id'      => $request->sale_id,
                     'party_type'   => $request->vendor_type,
                     'party_id'     => $request->vendor_id,
@@ -243,6 +245,7 @@ class StockHoldController extends Controller
 
             $voucher->update([
                 'date'         => $request->entry_date,
+                'entry_time'   => $request->entry_time ?? date('H:i'),
                 'remarks'      => $request->remarks,
                 'status'       => $status,
             ]);
@@ -256,6 +259,7 @@ class StockHoldController extends Controller
                 StockHold::create([
                     'stock_hold_voucher_id' => $voucher->id,
                     'entry_date'   => $request->entry_date,
+                    'entry_time'   => $request->entry_time ?? date('H:i'),
                     'sale_id'      => $voucher->sale_id,
                     'party_type'   => $voucher->party_type,
                     'party_id'     => $voucher->party_id,
@@ -334,16 +338,15 @@ class StockHoldController extends Controller
 
     protected function nextReleaseNumber()
     {
-        $prefix = 'REL-';
         $last = StockRelease::withoutGlobalScopes()->where('id', '>', 0)
             ->orderBy('id', 'desc')
             ->first();
 
         $next = 1;
         if ($last && $last->id) {
-            $next = $last->id + 1;
+            $next = (int) preg_replace('/[^0-9]/', '', $last->voucher_no) + 1;
         }
-        return $prefix . str_pad($next, 3, '0', STR_PAD_LEFT);
+        return str_pad($next, 3, '0', STR_PAD_LEFT);
     }
 
     // show a prefilled form to release stock for a given hold
@@ -548,6 +551,7 @@ class StockHoldController extends Controller
             $voucher = \App\Models\StockReleaseVoucher::create([
                 'voucher_no'      => \App\Models\StockReleaseVoucher::generateVoucherNo(),
                 'date'            => $request->entry_date,
+                'entry_time'      => $request->entry_time ?? date('H:i'),
                 'release_type'    => $releaseType,
                 'hold_voucher_id' => $holdVoucherId,
                 'claim_id'        => $claimId,
@@ -663,6 +667,7 @@ class StockHoldController extends Controller
             $voucher = \App\Models\StockReleaseVoucher::findOrFail($id);
             $voucher->update([
                 'date'    => $request->entry_date,
+                'entry_time' => $request->entry_time ?? date('H:i'),
                 'remarks' => $request->remarks,
                 'status'  => $status
             ]);

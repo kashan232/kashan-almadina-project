@@ -372,6 +372,18 @@
             </h6>
           </div>
 
+          {{-- Entry Date & Time --}}
+          <div class="row g-1 mb-2">
+            <div class="col-6">
+              <label class="form-label text-muted small mb-0" style="font-size: 0.7rem;">Entry Date</label>
+              <input type="date" class="form-control form-control-sm py-0" name="entry_date" value="{{ date('Y-m-d') }}" style="font-size: 0.8rem;">
+            </div>
+            <div class="col-6">
+              <label class="form-label text-muted small mb-0" style="font-size: 0.7rem;">Entry Time</label>
+              <input type="time" class="form-control form-control-sm py-0" name="entry_time" value="{{ date('H:i') }}" style="font-size: 0.8rem;">
+            </div>
+          </div>
+
           {{-- Invoice Numbers - Grid Layout --}}
           <div class="row g-1 mb-2">
             <div class="col-6">

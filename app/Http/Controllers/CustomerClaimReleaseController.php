@@ -144,7 +144,9 @@ class CustomerClaimReleaseController extends Controller
                 $release->release_no = 'CLM-REL-' . (CustomerClaimRelease::count() + 1);
             }
 
-            $release->release_date = $request->release_date;
+            $release->entry_date   = $request->entry_date ?? date('Y-m-d');
+            $release->entry_time   = $request->entry_time ?? date('H:i');
+            $release->release_date = $request->entry_date ?? date('Y-m-d');
             $release->claim_id = $request->claim_id;
             $release->party_type = $request->party_type;
             $release->party_id = $request->party_id;
