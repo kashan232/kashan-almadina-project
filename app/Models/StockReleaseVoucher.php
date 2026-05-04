@@ -41,7 +41,7 @@ class StockReleaseVoucher extends Model
 
     public static function generateVoucherNo()
     {
-        $latest = self::orderBy('id', 'desc')->first();
+        $latest = self::withoutGlobalScopes()->orderBy('id', 'desc')->first();
         $nextId = $latest ? $latest->id + 1 : 1;
         return 'SR-' . str_pad($nextId, 4, '0', STR_PAD_LEFT);
     }

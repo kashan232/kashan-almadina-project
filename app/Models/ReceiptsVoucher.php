@@ -18,7 +18,8 @@ class ReceiptsVoucher extends Model
     {
         $prefix = 'RVID-';
 
-        $lastInvoice = self::where('rvid', 'like', $prefix . '%')
+        $lastInvoice = self::withoutGlobalScopes()
+            ->where('rvid', 'like', $prefix . '%')
             ->orderByRaw('LENGTH(rvid) DESC, rvid DESC')
             ->first();
 

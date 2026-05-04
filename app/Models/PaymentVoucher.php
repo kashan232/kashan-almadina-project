@@ -19,7 +19,7 @@ class PaymentVoucher extends Model
         $prefix = 'PVID-';
 
         // Fetch last payment voucher
-        $lastInvoice = self::orderBy('id', 'desc')->first();
+        $lastInvoice = self::withoutGlobalScopes()->orderBy('id', 'desc')->first();
 
         $lastNumber = 0;
         if ($lastInvoice && $lastInvoice->pvid) {

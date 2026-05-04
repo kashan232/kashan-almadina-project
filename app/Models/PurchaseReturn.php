@@ -51,7 +51,7 @@ class PurchaseReturn extends Model
     public static function generateReturnNo()
     {
         $prefix = 'PUR-RET-';
-        $last = self::orderBy('id', 'desc')->first();
+        $last = self::withoutGlobalScopes()->orderBy('id', 'desc')->first();
         $num = $last ? (int)str_replace($prefix, '', $last->invoice_no) + 1 : 1;
         return $prefix . str_pad($num, 3, '0', STR_PAD_LEFT);
     }

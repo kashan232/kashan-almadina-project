@@ -335,7 +335,7 @@ class StockHoldController extends Controller
     protected function nextReleaseNumber()
     {
         $prefix = 'REL-';
-        $last = StockRelease::where('id', '>', 0)
+        $last = StockRelease::withoutGlobalScopes()->where('id', '>', 0)
             ->orderBy('id', 'desc')
             ->first();
 

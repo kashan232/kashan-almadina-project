@@ -56,7 +56,7 @@ class InwardGatepass extends Model
         $prefix = 'IGP-';
 
         // Fetch the last invoice number from the database
-        $lastInvoice = self::orderBy('id', 'desc')->first();
+        $lastInvoice = self::withoutGlobalScopes()->orderBy('id', 'desc')->first();
 
         // Extract last number from invoice_no
         $lastNumber = 0;

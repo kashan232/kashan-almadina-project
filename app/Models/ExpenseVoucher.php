@@ -20,7 +20,7 @@ class ExpenseVoucher extends Model
         $prefix = 'EVID-';
 
         // Fetch last expense voucher
-        $lastInvoice = self::orderBy('id', 'desc')->first();
+        $lastInvoice = self::withoutGlobalScopes()->orderBy('id', 'desc')->first();
 
         $lastNumber = 0;
         if ($lastInvoice && $lastInvoice->evid) {

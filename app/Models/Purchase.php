@@ -49,7 +49,7 @@ class Purchase extends Model
         $prefix = 'PUR-';
 
         // Fetch last invoice
-        $lastInvoice = self::orderBy('id', 'desc')->first();
+        $lastInvoice = self::withoutGlobalScopes()->orderBy('id', 'desc')->first();
 
         $lastNumber = 0;
         if ($lastInvoice && $lastInvoice->invoice_no) {

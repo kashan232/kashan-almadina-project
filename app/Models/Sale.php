@@ -36,12 +36,14 @@ class Sale extends Model
         $prefix = 'INVSLE-';
 
         // 1. Get max from Sales
-        $lastSale = self::where('invoice_no', 'like', $prefix . '%')
+        $lastSale = self::withoutGlobalScopes()
+            ->where('invoice_no', 'like', $prefix . '%')
             ->orderByRaw('LENGTH(invoice_no) DESC, invoice_no DESC')
             ->first();
 
         // 2. Get max from Productbookings
-        $lastBooking = \App\Models\Productbooking::where('invoice_no', 'like', $prefix . '%')
+        $lastBooking = \App\Models\Productbooking::withoutGlobalScopes()
+            ->where('invoice_no', 'like', $prefix . '%')
             ->orderByRaw('LENGTH(invoice_no) DESC, invoice_no DESC')
             ->first();
 

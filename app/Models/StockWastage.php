@@ -48,7 +48,7 @@ class StockWastage extends Model
         // I'll format it like SW-001 or just 1 if user wants simple number input (but screenshot shows label "GWN ID" and input readonly).
         // I'll implement auto-increment logic.
         
-        $latest = self::latest()->first();
+        $latest = self::withoutGlobalScopes()->latest()->first();
         if (!$latest) {
             return 1;
         }
