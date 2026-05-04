@@ -55,6 +55,6 @@ class Sale extends Model
             }
         }
 
-        return str_pad($maxNum + 1, 3, '0', STR_PAD_LEFT);
+        return 'INVSLE-' . str_pad($maxNum + 1, 3, '0', STR_PAD_LEFT);
     }
 }

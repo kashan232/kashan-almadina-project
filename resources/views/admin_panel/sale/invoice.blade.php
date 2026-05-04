@@ -304,7 +304,7 @@
         <tbody>
             @foreach($sale->items as $index => $item)
             @php
-                $rate = $item->sales_rate > 0 ? $item->sales_rate : ($item->sales_qty > 0 ? ($item->retail_price - ($item->discount_amount / $item->sales_qty)) : $item->retail_price);
+                $rate = $item->sales_rate > 0 ? $item->sales_rate : ($item->sales_qty > 0 ? ($item->sales_price - ($item->discount_amount / $item->sales_qty)) : $item->sales_price);
             @endphp
             <tr style="border-bottom: 1px dotted #000; vertical-align: top; font-size: 10px;">
                 <td style="padding: 4px 0;">{{ $index + 1 }}. {{ $item->product->name ?? 'Product' }}</td>

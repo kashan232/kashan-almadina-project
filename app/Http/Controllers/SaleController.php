@@ -473,6 +473,7 @@ class SaleController extends Controller
                     'sales_price' => (float) ($salesPrices[$i] ?? 0),
                     'sales_qty' => $qty,
                     'retail_price' => (float) ($retailPrices[$i] ?? 0),
+                    'sales_rate' => (float) ($salesRates[$i] ?? 0),
                     'discount_percent' => (float) ($discPercents[$i] ?? 0),
                     'discount_amount' => (float) ($discAmounts[$i] ?? 0),
                     'amount' => (float) ($amounts[$i] ?? 0),

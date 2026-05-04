@@ -1682,12 +1682,12 @@
     // Update visible discount amount display
     $row.find('.discount-amount-display').val(discAmt.toFixed(2));
 
-    // Calculate Rate per Unit (Retail Price minus unit discount)
+    // Calculate Rate per Unit (Sales Price minus unit discount)
     let rate = 0;
     if (qty > 0) {
-        rate = rp - (discAmt / qty);
+        rate = sp - (discAmt / qty);
     } else {
-        rate = rp;
+        rate = sp;
     }
     $row.find('.sales-rate').val(rate.toFixed(2));
 
