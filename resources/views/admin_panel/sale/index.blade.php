@@ -16,17 +16,59 @@
         color: #333 !important;
         font-weight: 600;
         vertical-align: middle;
-        padding: 8px 10px !important;
-        font-size: 12px;
+        padding: 2px 10px !important;
+        font-size: 11px;
         text-transform: uppercase;
+        line-height: 1.2;
+    }
+
+    /* Minimize DataTables Sorting Icon Height */
+    table.dataTable thead .sorting:before, 
+    table.dataTable thead .sorting_asc:before, 
+    table.dataTable thead .sorting_desc:before, 
+    table.dataTable thead .sorting:after, 
+    table.dataTable thead .sorting_asc:after, 
+    table.dataTable thead .sorting_desc:after {
+        bottom: 2px !important;
+        content: "" !important;
+    }
+
+    /* Alternative: reposition arrows */
+    table.dataTable thead>tr>th.sorting:before, 
+    table.dataTable thead>tr>th.sorting_asc:before, 
+    table.dataTable thead>tr>th.sorting_desc:before, 
+    table.dataTable thead>tr>td.sorting:before, 
+    table.dataTable thead>tr>td.sorting_asc:before, 
+    table.dataTable thead>tr>td.sorting_desc:before {
+        top: 2px !important;
+    }
+    table.dataTable thead>tr>th.sorting:after, 
+    table.dataTable thead>tr>th.sorting_asc:after, 
+    table.dataTable thead>tr>th.sorting_desc:after, 
+    table.dataTable thead>tr>td.sorting:after, 
+    table.dataTable thead>tr>td.sorting_asc:after, 
+    table.dataTable thead>tr>td.sorting_desc:after {
+        bottom: 2px !important;
     }
     
     #saleListingTable tbody td {
         white-space: nowrap;
         vertical-align: middle;
         padding: 4px 10px !important;
-        font-size: 12px;
+        font-size: 11px;
         color: #333;
+    }
+
+    /* Small Export Buttons */
+    .dt-buttons {
+        margin-bottom: 5px;
+    }
+    .dt-button {
+        padding: 2px 8px !important;
+        font-size: 10px !important;
+        border-radius: 4px !important;
+        background: #f8f9fa !important;
+        border: 1px solid #ddd !important;
     }
 
     /* Column Picker Styles */
@@ -38,51 +80,57 @@
         position: absolute;
         top: 100%;
         right: 0;
-        z-index: 1000;
+        z-index: 10000;
         display: none;
         min-width: 220px;
-        padding: 5px 0;
-        margin: 2px 0 0;
-        font-size: 14px;
+        padding: 8px 0;
+        margin-top: 5px;
+        font-size: 13px;
         text-align: left;
         list-style: none;
         background-color: #fff;
         background-clip: padding-box;
-        border: 1px solid rgba(0,0,0,.15);
-        border-radius: 4px;
-        box-shadow: 0 6px 12px rgba(0,0,0,.175);
-        max-height: 450px;
+        border: 1px solid rgba(0,0,0,.1);
+        border-radius: 8px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        max-height: 400px;
         overflow-y: auto;
     }
     .column-picker-menu.show {
         display: block;
     }
     .column-picker-item {
-        display: block;
-        padding: 5px 15px;
+        display: flex;
+        align-items: center;
+        padding: 6px 16px;
         clear: both;
         font-weight: 400;
-        line-height: 1.42857143;
-        color: #333;
+        line-height: 1.5;
+        color: #444;
         white-space: nowrap;
         cursor: pointer;
+        transition: background 0.2s;
     }
     .column-picker-item:hover {
-        background-color: #f5f5f5;
+        background-color: #f8f9fa;
+        color: #000;
     }
     .column-picker-item input {
-        margin-right: 10px;
+        margin-right: 12px;
         cursor: pointer;
+        width: 16px;
+        height: 16px;
     }
 
     .card {
         border-radius: 8px;
         box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
         border: none;
+        margin-bottom: 0.5rem;
     }
     
     .item-detail-row {
-        font-size: 10.5px;
+        font-size: 10px;
         border-bottom: 1px dashed #eee;
         padding: 1px 0;
         line-height: 1.2;
@@ -91,13 +139,13 @@
 
 <div class="main-content">
     <div class="main-content-inner">
-        <div class="container-fluid pt-3">
+        <div class="container-fluid pt-1">
             
             <!-- Filters Section -->
             <div class="row mb-3">
                 <div class="col-12">
                     <div class="card border-0 shadow-sm">
-                        <div class="card-body p-2">
+                        <div class="card-body p-2" style="overflow: visible;">
                             <form action="{{ route('sale.index') }}" method="GET" class="row g-2 align-items-center">
                                 <div class="col-md-3">
                                     <h6 class="mb-0 fw-bold text-dark ms-2"><i class="fa fa-shopping-cart me-2 text-primary"></i>Sales & Bookings</h6>
@@ -120,6 +168,7 @@
                                     <div class="d-flex gap-1 justify-content-end align-items-center">
                                         <button type="submit" class="btn btn-primary btn-sm rounded-pill px-3 shadow-sm">Filter</button>
                                         <a href="{{ route('sale.index') }}" class="btn btn-outline-secondary btn-sm rounded-pill px-2" title="Reset"><i class="fa fa-refresh"></i></a>
+                                        
                                         <a class="btn btn-primary btn-sm rounded-pill px-4 shadow-sm ms-2" href="{{ route('sale.add') }}">
                                             <i class="fa fa-plus me-1"></i> Add Sale
                                         </a>
@@ -133,7 +182,7 @@
 
             <div class="card shadow-sm border-0">
                 <div class="card-header bg-white d-flex justify-content-between align-items-center py-2 border-bottom">
-                    <span class="fw-bold text-muted small text-uppercase">Sales Ledger</span>
+                    <span class="fw-bold text-muted small text-uppercase"><i class="fa fa-shopping-cart me-1"></i> Sales Ledger</span>
                     <div class="column-picker-dropdown">
                         <button class="btn btn-outline-secondary btn-sm px-3 rounded-pill" type="button" id="columnPickerBtn">
                             <i class="fa fa-columns me-1"></i> Columns
@@ -158,6 +207,7 @@
                         </div>
                     </div>
                 </div>
+
                 <div class="card-body p-0">
                     <div class="table-responsive">
                         <table id="saleListingTable" class="table table-sm table-striped table-bordered w-100 mb-0">

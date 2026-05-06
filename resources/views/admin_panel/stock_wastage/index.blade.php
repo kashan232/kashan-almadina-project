@@ -2,132 +2,138 @@
 
 @section('content')
 <style>
-    .table-responsive {
-        width: 100%;
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
-        margin-bottom: 1rem;
+    /* Ultra-High Density Design System */
+    .main-content-inner { background: #f4f7fa; min-height: 100vh; }
+    
+    /* Table Density */
+    #wastageTable { font-size: 11px !important; border-collapse: separate !important; border-spacing: 0; width: 100% !important; }
+    #wastageTable thead th { 
+        padding: 2px 10px !important; 
+        font-size: 11px !important; 
+        height: 20px !important;
+        line-height: 1.2 !important;
+        background: #fff !important;
+        color: #444 !important;
+        font-weight: 700 !important;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+        border-bottom: 2px solid #ebedef !important;
+        vertical-align: middle !important;
     }
-    #wastageTable thead th {
-        white-space: nowrap;
-        background-color: #f8f9fa;
-        color: #333;
-        font-weight: 600;
-        vertical-align: middle;
-        padding: 6px 10px !important;
-        font-size: 13px;
-    }
-    #wastageTable tbody td {
-        white-space: nowrap;
-        vertical-align: middle;
-        padding: 3px 10px !important;
-        font-size: 12px;
-    }
-    .card {
-        border-radius: 8px;
-        box-shadow: 0 0.125rem 0.25rem rgba(0,0,0,.075);
-    }
-    .card-header {
-        background-color: #fff;
-        border-bottom: 1px solid #edf2f9;
+    
+    /* DataTables Sorting Arrow Fix */
+    table.dataTable thead .sorting:before, table.dataTable thead .sorting:after,
+    table.dataTable thead .sorting_asc:before, table.dataTable thead .sorting_asc:after,
+    table.dataTable thead .sorting_desc:before, table.dataTable thead .sorting_desc:after {
+        bottom: 2px !important;
+        font-size: 0.7rem !important;
+        opacity: 0.3;
     }
 
-    /* Column Picker Styles */
-    .column-picker-dropdown {
-        position: relative;
-        display: inline-block;
+    #wastageTable tbody td { 
+        padding: 4px 10px !important; 
+        vertical-align: middle !important; 
+        border-bottom: 1px solid #f0f2f5 !important;
+        white-space: nowrap;
     }
+    #wastageTable tbody tr:hover { background-color: #f8f9ff !important; }
+
+    /* Compact Buttons */
+    .btn-xs { padding: 1px 5px; font-size: 10px; line-height: 1.2; border-radius: 3px; }
+    .btn-mini { padding: 0px 4px; font-size: 9px; height: 18px; display: inline-flex; align-items: center; justify-content: center; }
+    
+    /* DataTables Export Buttons styling */
+    .dt-buttons { margin-bottom: 0px !important; }
+    .dt-button { 
+        padding: 2px 10px !important; 
+        font-size: 10px !important; 
+        border-radius: 4px !important; 
+        background: #fff !important;
+        border: 1px solid #dee2e6 !important;
+        box-shadow: none !important;
+        transition: all 0.2s;
+    }
+    .dt-button:hover { background: #f8f9fa !important; border-color: #adb5bd !important; }
+
+    /* Filter Bar Compact */
+    .filter-card { margin-bottom: 10px; }
+    .form-control-sm, .form-select-sm { font-size: 11px !important; height: calc(1.5em + 0.5rem + 2px) !important; padding: 0.25rem 0.5rem !important; }
+    
+    /* Column Picker Styles */
+    .column-picker-dropdown { position: relative; display: inline-block; }
     .column-picker-menu {
         position: absolute;
         top: 100%;
         right: 0;
-        z-index: 1000;
+        z-index: 10000;
         display: none;
-        min-width: 200px;
-        padding: 5px 0;
-        margin: 2px 0 0;
-        font-size: 14px;
+        min-width: 220px;
+        padding: 8px 0;
+        margin-top: 5px;
+        font-size: 13px;
         text-align: left;
         list-style: none;
         background-color: #fff;
         background-clip: padding-box;
-        border: 1px solid rgba(0,0,0,.15);
-        border-radius: 4px;
-        box-shadow: 0 6px 12px rgba(0,0,0,.175);
+        border: 1px solid rgba(0,0,0,.1);
+        border-radius: 8px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.1);
         max-height: 400px;
         overflow-y: auto;
     }
-    .column-picker-menu.show {
-        display: block;
-    }
+    .column-picker-menu.show { display: block; }
     .column-picker-item {
-        display: block;
-        padding: 5px 15px;
+        display: flex;
+        align-items: center;
+        padding: 6px 16px;
         clear: both;
         font-weight: 400;
-        line-height: 1.42857143;
-        color: #333;
+        line-height: 1.5;
+        color: #444;
         white-space: nowrap;
         cursor: pointer;
+        transition: background 0.2s;
     }
-    .column-picker-item:hover {
-        background-color: #f5f5f5;
-    }
-    .column-picker-item input {
-        margin-right: 10px;
-        cursor: pointer;
-    }
-    .column-hidden {
-        display: none !important;
-    }
+    .column-picker-item:hover { background-color: #f8f9fa; color: #000; }
+    .column-picker-item input { margin-right: 12px; cursor: pointer; width: 16px; height: 16px; }
+
+    .card { border-radius: 8px; box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075); border: none; margin-bottom: 0.5rem; }
+    .item-detail-row { font-size: 10px; border-bottom: 1px dashed #eee; padding: 1px 0; line-height: 1.2; }
 </style>
 
 <div class="main-content">
     <div class="main-content-inner">
-        <div class="container-fluid pt-4">
-
-            @if(session('success'))
-                <div class="alert alert-success alert-dismissible fade show shadow-sm border-0" role="alert">
-                    <i class="fa fa-check-circle me-1"></i> {{ session('success') }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                </div>
-            @endif
-            @if(session('error'))
-                <div class="alert alert-danger alert-dismissible fade show shadow-sm border-0" role="alert">
-                    <i class="fa fa-times-circle me-1"></i> {{ session('error') }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                </div>
-            @endif
-
-            {{-- Filter Section --}}
+        <div class="container-fluid pt-1">
+            
+            <!-- Filters Section -->
             <div class="row mb-3">
                 <div class="col-12">
                     <div class="card border-0 shadow-sm">
-                        <div class="card-body p-3">
-                            <form action="{{ route('stock-wastage.index') }}" method="GET" class="row g-2 align-items-end">
+                        <div class="card-body p-2" style="overflow: visible;">
+                            <form action="{{ route('stock-wastage.index') }}" method="GET" class="row g-2 align-items-center">
                                 <div class="col-md-3">
-                                    <label class="form-label small fw-bold text-muted">Start Date</label>
-                                    <input type="date" name="start_date" class="form-control form-control-sm" value="{{ request('start_date') }}">
+                                    <h6 class="mb-0 fw-bold text-dark ms-2"><i class="fa fa-recycle me-2 text-primary"></i>Stock Wastage</h6>
                                 </div>
                                 <div class="col-md-3">
-                                    <label class="form-label small fw-bold text-muted">End Date</label>
-                                    <input type="date" name="end_date" class="form-control form-control-sm" value="{{ request('end_date') }}">
+                                    <div class="input-group input-group-sm">
+                                        <span class="input-group-text bg-white border-end-0 small fw-bold text-muted">Range</span>
+                                        <input type="date" name="start_date" class="form-control border-start-0" value="{{ request('start_date') }}">
+                                        <input type="date" name="end_date" class="form-control" value="{{ request('end_date') }}">
+                                    </div>
                                 </div>
                                 <div class="col-md-2">
-                                    <label class="form-label small fw-bold text-muted">Status</label>
-                                    <select name="status" class="form-select form-select-sm">
+                                    <select name="status" class="form-select form-select-sm select2">
                                         <option value="">All Status</option>
                                         <option value="Unposted" {{ request('status') == 'Unposted' ? 'selected' : '' }}>Unposted</option>
-                                        <option value="Posted"   {{ request('status') == 'Posted'   ? 'selected' : '' }}>Posted</option>
+                                        <option value="Posted" {{ request('status') == 'Posted' ? 'selected' : '' }}>Posted</option>
                                     </select>
                                 </div>
-                                <div class="col-md-4">
-                                    <div class="d-flex gap-2">
-                                        <button type="submit" class="btn btn-primary btn-sm px-4 rounded-pill shadow-sm">
-                                            <i class="fa fa-filter me-1"></i> Filter
-                                        </button>
-                                        <a href="{{ route('stock-wastage.index') }}" class="btn btn-outline-secondary btn-sm px-4 rounded-pill">
-                                            <i class="fa fa-refresh me-1"></i> Reset
+                                <div class="col-md-4 text-end">
+                                    <div class="d-flex gap-1 justify-content-end align-items-center">
+                                        <button type="submit" class="btn btn-primary btn-sm rounded-pill px-3 shadow-sm">Filter</button>
+                                        <a href="{{ route('stock-wastage.index') }}" class="btn btn-outline-secondary btn-sm rounded-pill px-2" title="Reset"><i class="fa fa-refresh"></i></a>
+                                        <a class="btn btn-primary btn-sm rounded-pill px-4 shadow-sm ms-2" href="{{ route('stock-wastage.create') }}">
+                                            <i class="fa fa-plus me-1"></i> Add Wastage
                                         </a>
                                     </div>
                                 </div>
@@ -137,131 +143,114 @@
                 </div>
             </div>
 
-            {{-- Main Table --}}
-            <div class="row">
-                <div class="col-12">
-                    <div class="card border-0 shadow-sm">
-                        <div class="card-header bg-white d-flex justify-content-between align-items-center py-3 border-bottom">
-                            <h4 class="card-title mb-0 fw-bold text-dark"><i class="fa fa-recycle me-2 text-primary"></i>Stock Wastage Management</h4>
-                            <div class="d-flex gap-2">
-                                <!-- Column Picker Button -->
-                                <div class="column-picker-dropdown">
-                                    <button class="btn btn-outline-secondary btn-sm px-3 rounded-pill" type="button" id="columnPickerBtn">
-                                        <i class="fa fa-columns me-1"></i> Columns
-                                    </button>
-                                    <div class="column-picker-menu shadow" id="columnPickerMenu">
-                                        <div class="p-2 border-bottom fw-bold small text-muted">Show/Hide Columns</div>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="1" checked> Type</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="2" checked> Inv#</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="3" checked> Date</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="4" checked> Warehouse</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="5" checked> Expense Head</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="6" checked> Expense A/C</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="7" checked> Items</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="8" checked> Remarks</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="9" checked> Amount</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="10" checked> Status</label>
-                                    </div>
-                                </div>
-
-                                <a class="btn btn-primary btn-sm px-4 rounded-pill shadow-sm" href="{{ route('stock-wastage.create') }}">
-                                    <i class="fa fa-plus me-1"></i> Add Wastage
-                                </a>
-                            </div>
-                        </div>
-
-                        <div class="card-body p-3 bg-white">
-                            <div class="table-responsive">
-                                <table id="wastageTable" class="table table-sm table-striped table-bordered display nowrap w-100">
-                                    <thead class="bg-light">
-                                        <tr>
-                                            <th>Type</th>
-                                            <th>Inv#</th>
-                                            <th>Date</th>
-                                            <th>Warehouse</th>
-                                            <th>Expense Head</th>
-                                            <th>Expense A/C</th>
-                                            <th>Items</th>
-                                            <th>Remarks</th>
-                                            <th class="text-end">Amount</th>
-                                            <th class="text-center">Status</th>
-                                            <th class="text-center">Action</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        @foreach($wastages as $wastage)
-                                        <tr>
-                                            <td>WT</td>
-                                            <td class="fw-bold text-primary">{{ $wastage->gwn_id }}</td>
-                                            <td>{{ \Carbon\Carbon::parse($wastage->date)->format('d-M-Y') }}</td>
-                                            <td>
-                                                @if(!$wastage->warehouse_id)
-                                                    <span class="badge bg-info px-2">🏠 Shop Stock</span>
-                                                @else
-                                                    <span class="fw-bold text-dark">{{ $wastage->warehouse->warehouse_name ?? '-' }}</span>
-                                                @endif
-                                            </td>
-                                            <td><small class="fw-bold text-muted">{{ $wastage->accountHead->name ?? '-' }}</small></td>
-                                            <td><span class="badge bg-outline-secondary text-dark border">{{ $wastage->account->title ?? '-' }}</span></td>
-                                            <td class="small">
-                                                @foreach($wastage->items as $item)
-                                                    <div style="font-size:11px; border-bottom:1px dashed #eee; padding:2px 0;">
-                                                        {{ $item->product->name ?? 'Unknown' }}
-                                                        <span class="text-muted fw-bold">({{ (float)$item->qty }})</span>
-                                                    </div>
-                                                @endforeach
-                                            </td>
-                                            <td><small class="text-muted">{{ Str::limit($wastage->remarks, 30) ?: '-' }}</small></td>
-                                            <td class="text-end fw-bold text-danger">{{ number_format($wastage->total_amount, 0) }}</td>
-                                            <td class="text-center">
-                                                @if($wastage->status == 'Posted')
-                                                    <span class="badge bg-success rounded-pill px-3">Posted</span>
-                                                @else
-                                                    <span class="badge bg-warning text-dark rounded-pill px-3">Unposted</span>
-                                                @endif
-                                            </td>
-                                            <td class="text-center">
-                                                <div class="d-flex gap-1 justify-content-center">
-                                                    @if($wastage->status != 'Posted')
-                                                        {{-- Post --}}
-                                                        <form action="{{ route('stock-wastage.post', $wastage->id) }}" method="POST" class="d-inline">
-                                                            @csrf
-                                                            <button type="submit" class="btn btn-primary btn-xs px-2 py-0" title="Post now" style="font-size: 10px;">
-                                                                <i class="fa fa-send"></i> Post
-                                                            </button>
-                                                        </form>
-
-                                                        {{-- Edit --}}
-                                                        <a href="{{ route('stock-wastage.edit', $wastage->id) }}" class="btn btn-outline-warning btn-xs px-1 py-0" title="Edit">
-                                                            <i class="fa fa-pencil"></i>
-                                                        </a>
-
-                                                        {{-- Delete --}}
-                                                        <form action="{{ route('stock-wastage.destroy', $wastage->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Delete this wastage?')">
-                                                            @csrf
-                                                            @method('DELETE')
-                                                            <button type="submit" class="btn btn-outline-danger btn-xs px-1 py-0" title="Delete">
-                                                                <i class="fa fa-trash"></i>
-                                                            </button>
-                                                        </form>
-                                                    @endif
-
-                                                    {{-- Print (always) --}}
-                                                    <a href="{{ route('stock-wastage.print', $wastage->id) }}" target="_blank" class="btn btn-outline-dark btn-xs px-1 py-0" title="Print">
-                                                        <i class="fa fa-print"></i>
-                                                    </a>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                        @endforeach
-                                    </tbody>
-                                </table>
-                            </div>
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center py-2 border-bottom">
+                    <span class="fw-bold text-muted small text-uppercase"><i class="fa fa-recycle me-1"></i> Stock Wastage Ledger</span>
+                    <div class="column-picker-dropdown">
+                        <button class="btn btn-outline-secondary btn-sm px-3 rounded-pill" type="button" id="columnPickerBtn">
+                            <i class="fa fa-columns me-1"></i> Columns
+                        </button>
+                        <div class="column-picker-menu shadow" id="columnPickerMenu">
+                            <div class="p-2 border-bottom fw-bold small text-muted">Show/Hide Columns</div>
+                            <label class="column-picker-item"><input type="checkbox" data-column="1" checked> Type</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="2" checked> Inv#</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="3" checked> Date</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="4" checked> Warehouse</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="5" checked> Expense Head</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="6" checked> Expense A/C</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="7" checked> Items</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="8" checked> Remarks</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="9" checked> Amount</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="10" checked> Status</label>
                         </div>
                     </div>
                 </div>
-            </div>
 
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table id="wastageTable" class="table table-sm table-striped table-bordered w-100 mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Type</th>
+                                    <th>Inv#</th>
+                                    <th>Date</th>
+                                    <th>Warehouse</th>
+                                    <th>Expense Head</th>
+                                    <th>Expense A/C</th>
+                                    <th>Items</th>
+                                    <th>Remarks</th>
+                                    <th class="text-end">Amount</th>
+                                    <th class="text-center">Status</th>
+                                    <th class="text-center" style="min-width: 120px;">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($wastages as $wastage)
+                                <tr>
+                                    <td class="text-muted small">WT</td>
+                                    <td class="fw-bold text-primary">{{ $wastage->gwn_id }}</td>
+                                    <td class="small">{{ \Carbon\Carbon::parse($wastage->date)->format('d-M-Y') }}</td>
+                                    <td>
+                                        @if(!$wastage->warehouse_id)
+                                            <span class="badge bg-info-subtle text-info border border-info px-2 py-0" style="font-size: 9px;">Shop</span>
+                                        @else
+                                            <span class="fw-bold text-dark small">{{ Str::limit($wastage->warehouse->warehouse_name ?? 'N/A', 15) }}</span>
+                                        @endif
+                                    </td>
+                                    <td><small class="fw-bold text-muted">{{ $wastage->accountHead->name ?? '-' }}</small></td>
+                                    <td><span class="badge bg-light text-dark border px-2 py-0" style="font-size: 10px;">{{ $wastage->account->title ?? '-' }}</span></td>
+                                    <td>
+                                        @foreach($wastage->items as $item)
+                                            <div class="item-detail-row">
+                                                {{ $item->product->name ?? 'Unknown' }}
+                                                <span class="text-primary fw-bold ms-1">({{ (float)$item->qty }})</span>
+                                            </div>
+                                        @endforeach
+                                    </td>
+                                    <td><small class="text-muted">{{ Str::limit($wastage->remarks, 20) ?: '-' }}</small></td>
+                                    <td class="text-end fw-bold text-danger">{{ number_format($wastage->total_amount, 0) }}</td>
+                                    <td class="text-center">
+                                        @if($wastage->status == 'Posted')
+                                            <span class="badge bg-success rounded-pill px-3" style="font-size: 9px;">Posted</span>
+                                        @else
+                                            <span class="badge bg-warning text-dark rounded-pill px-3" style="font-size: 9px;">Unposted</span>
+                                        @endif
+                                    </td>
+                                    <td class="text-center">
+                                        <div class="d-flex gap-1 justify-content-center">
+                                            @if($wastage->status != 'Posted')
+                                                <form action="{{ route('stock-wastage.post', $wastage->id) }}" method="POST" class="d-inline">
+                                                    @csrf
+                                                    <button type="submit" class="btn btn-primary btn-mini px-2" title="Post now">
+                                                        <i class="fa fa-send me-1"></i> Post
+                                                    </button>
+                                                </form>
+                                                
+                                                <a href="{{ route('stock-wastage.edit', $wastage->id) }}" class="btn btn-outline-warning btn-mini" title="Edit">
+                                                    <i class="fa fa-pencil text-dark"></i>
+                                                </a>
+
+                                                <form action="{{ route('stock-wastage.destroy', $wastage->id) }}" method="POST" class="d-inline delete-form">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button type="button" class="btn btn-outline-danger btn-mini delete-btn" title="Delete">
+                                                        <i class="fa fa-trash"></i>
+                                                    </button>
+                                                </form>
+                                            @endif
+                                            
+                                            <a href="{{ route('stock-wastage.print', $wastage->id) }}" target="_blank" class="btn btn-outline-dark btn-mini" title="Print">
+                                                <i class="fa fa-print"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
@@ -270,69 +259,77 @@
 @section('scripts')
 <script>
     $(document).ready(function() {
-        // Toggle Column Picker Menu
+        $('.select2').select2({ width: '100%' });
+
+        var dt = $('#wastageTable').DataTable({
+            "order": [[0, 'desc']], 
+            "pageLength": 25,
+            "scrollX": true,
+            "autoWidth": false,
+            "language": {
+                "search": "_INPUT_",
+                "searchPlaceholder": "Search wastages..."
+            },
+            dom: 'Bfrtip',
+            buttons: [
+                'copyHtml5', 'excelHtml5', 'csvHtml5'
+            ]
+        });
+
+        // Column Picker Logic
         $('#columnPickerBtn').on('click', function(e) {
             e.stopPropagation();
             $('#columnPickerMenu').toggleClass('show');
         });
 
-        // Close menu when clicking outside
         $(document).on('click', function(e) {
             if (!$(e.target).closest('.column-picker-dropdown').length) {
                 $('#columnPickerMenu').removeClass('show');
             }
         });
 
-        // Column Persistence with LocalStorage
-        const storageKey = 'stock_wastage_table_columns_v2';
-        
-        // Handle Checkbox Change
-        $('#columnPickerMenu input').on('change', function() {
-            const colIdx = $(this).data('column');
-            const isChecked = $(this).is(':checked');
-            
-            toggleColumn(colIdx, isChecked);
-            saveState();
-        });
+        const storageKey = 'stock_wastage_cols_v2';
+        const savedState = localStorage.getItem(storageKey);
 
-        function saveState() {
+        if (savedState) {
+            const columns = JSON.parse(savedState);
+            $('#columnPickerMenu input').each(function() {
+                const colIdx = parseInt($(this).data('column'));
+                const checked = columns.hasOwnProperty(colIdx) ? columns[colIdx] : true;
+                $(this).prop('checked', checked);
+                dt.column(colIdx - 1).visible(checked);
+            });
+            dt.columns.adjust().draw(false);
+        }
+
+        $('#columnPickerMenu input').on('change', function() {
+            const colIdx = parseInt($(this).data('column'));
+            const isChecked = $(this).is(':checked');
+            dt.column(colIdx - 1).visible(isChecked);
+            
             const state = {};
             $('#columnPickerMenu input').each(function() {
                 state[$(this).data('column')] = $(this).is(':checked');
             });
             localStorage.setItem(storageKey, JSON.stringify(state));
-        }
-
-        var dt = $('#wastageTable').DataTable({
-            destroy: true,
-            scrollX: true,
-            autoWidth: false,
-            pageLength: 25,
-            order: [[0, 'desc']],
-            language: {
-                search: "_INPUT_",
-                searchPlaceholder: "Search wastages..."
-            }
+            dt.columns.adjust().draw(false);
         });
 
-        // Load initial state
-        const savedState = localStorage.getItem(storageKey);
-        if (savedState) {
-            const columns = JSON.parse(savedState);
-            $('#columnPickerMenu input').each(function() {
-                const colIdx = $(this).data('column');
-                if (columns.hasOwnProperty(colIdx)) {
-                    $(this).prop('checked', columns[colIdx]);
-                    dt.column(colIdx - 1).visible(columns[colIdx]);
-                }
+        // Delete confirm
+        $(document).on('click', '.delete-btn', function() {
+            var form = $(this).closest('form');
+            Swal.fire({
+                title: 'Are you sure?',
+                text: 'This wastage record will be deleted!',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Yes, delete it!'
+            }).then(function(result) {
+                if (result.isConfirmed) form.submit();
             });
-            dt.columns.adjust().draw(false);
-        }
-
-        let toggleColumn = function(index, show) {
-            dt.column(index - 1).visible(show);
-            dt.columns.adjust().draw(false);
-        };
+        });
     });
 </script>
 @endsection

@@ -2,117 +2,120 @@
 @section('content')
 
 <style>
-    /* Table Responsive & Scroll Enhancements */
-    .table-responsive {
-        width: 100%;
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
-        margin-bottom: 1rem;
+    /* Ultra-High Density Design System */
+    .main-content-inner { background: #f4f7fa; min-height: 100vh; }
+    
+    /* Table Density */
+    #warehouseTable { font-size: 11px !important; border-collapse: separate !important; border-spacing: 0; width: 100% !important; }
+    #warehouseTable thead th { 
+        padding: 2px 10px !important; 
+        font-size: 11px !important; 
+        height: 20px !important;
+        line-height: 1.2 !important;
+        background: #fff !important;
+        color: #444 !important;
+        font-weight: 700 !important;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+        border-bottom: 2px solid #ebedef !important;
+        vertical-align: middle !important;
     }
     
-    #warehouseTable thead th {
-        white-space: nowrap;
-        background-color: #f8f9fa;
-        color: #333;
-        font-weight: 600;
-        vertical-align: middle;
-        padding: 8px 10px !important;
-        font-size: 13px;
-    }
-    
-    #warehouseTable tbody td {
-        white-space: nowrap;
-        vertical-align: middle;
-        padding: 6px 10px !important;
-        font-size: 12px;
-        color: #333;
+    /* DataTables Sorting Arrow Fix */
+    table.dataTable thead .sorting:before, table.dataTable thead .sorting:after,
+    table.dataTable thead .sorting_asc:before, table.dataTable thead .sorting_asc:after,
+    table.dataTable thead .sorting_desc:before, table.dataTable thead .sorting_desc:after {
+        bottom: 2px !important;
+        font-size: 0.7rem !important;
+        opacity: 0.3;
     }
 
-    /* Column Picker Styles */
-    .column-picker-dropdown {
-        position: relative;
-        display: inline-block;
+    #warehouseTable tbody td { 
+        padding: 4px 10px !important; 
+        vertical-align: middle !important; 
+        border-bottom: 1px solid #f0f2f5 !important;
+        white-space: nowrap;
     }
+    #warehouseTable tbody tr:hover { background-color: #f8f9ff !important; }
+
+    /* Compact Buttons */
+    .btn-xs { padding: 1px 5px; font-size: 10px; line-height: 1.2; border-radius: 3px; }
+    .btn-mini { padding: 0px 4px; font-size: 9px; height: 18px; display: inline-flex; align-items: center; justify-content: center; }
+    
+    /* DataTables Export Buttons styling */
+    .dt-buttons { margin-bottom: 0px !important; }
+    .dt-button { 
+        padding: 2px 10px !important; 
+        font-size: 10px !important; 
+        border-radius: 4px !important; 
+        background: #fff !important;
+        border: 1px solid #dee2e6 !important;
+        box-shadow: none !important;
+        transition: all 0.2s;
+    }
+    .dt-button:hover { background: #f8f9fa !important; border-color: #adb5bd !important; }
+
+    /* Filter Bar Compact */
+    .form-control-sm, .form-select-sm { font-size: 11px !important; height: calc(1.5em + 0.5rem + 2px) !important; padding: 0.25rem 0.5rem !important; }
+    
+    /* Column Picker Styles */
+    .column-picker-dropdown { position: relative; display: inline-block; }
     .column-picker-menu {
         position: absolute;
         top: 100%;
         right: 0;
-        z-index: 1000;
+        z-index: 10000;
         display: none;
-        min-width: 200px;
-        padding: 5px 0;
-        margin: 2px 0 0;
-        font-size: 14px;
+        min-width: 220px;
+        padding: 8px 0;
+        margin-top: 5px;
+        font-size: 13px;
         text-align: left;
         list-style: none;
         background-color: #fff;
         background-clip: padding-box;
-        border: 1px solid rgba(0,0,0,.15);
-        border-radius: 4px;
-        box-shadow: 0 6px 12px rgba(0,0,0,.175);
+        border: 1px solid rgba(0,0,0,.1);
+        border-radius: 8px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.1);
         max-height: 400px;
         overflow-y: auto;
     }
-    .column-picker-menu.show {
-        display: block;
-    }
+    .column-picker-menu.show { display: block; }
     .column-picker-item {
-        display: block;
-        padding: 5px 15px;
+        display: flex;
+        align-items: center;
+        padding: 6px 16px;
         clear: both;
         font-weight: 400;
-        line-height: 1.42857143;
-        color: #333;
+        line-height: 1.5;
+        color: #444;
         white-space: nowrap;
         cursor: pointer;
+        transition: background 0.2s;
     }
-    .column-picker-item:hover {
-        background-color: #f5f5f5;
-    }
-    .column-picker-item input {
-        margin-right: 10px;
-        cursor: pointer;
-    }
-    .column-hidden {
-        display: none !important;
-    }
+    .column-picker-item:hover { background-color: #f8f9fa; color: #000; }
+    .column-picker-item input { margin-right: 12px; cursor: pointer; width: 16px; height: 16px; }
 
-    .card {
-        border-radius: 8px;
-        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
-    }
+    .card { border-radius: 8px; box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075); border: none; margin-bottom: 0.5rem; }
 </style>
 
 <div class="main-content">
     <div class="main-content-inner">
-        <div class="container-fluid pt-3">
-
-            @if (session()->has('success'))
-                <div class="alert alert-success alert-dismissible fade show shadow-sm border-0 py-2 mb-3" role="alert">
-                    <i class="fa fa-check-circle me-1"></i> {{ session('success') }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                </div>
-            @endif
-            @if (session()->has('error'))
-                <div class="alert alert-danger alert-dismissible fade show shadow-sm border-0 py-2 mb-3" role="alert">
-                    <i class="fa fa-times-circle me-1"></i> {{ session('error') }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                </div>
-            @endif
-
-            <!-- Top Actions & Filter -->
+        <div class="container-fluid pt-1">
+            
+            <!-- Actions Section -->
             <div class="row mb-3">
                 <div class="col-12">
                     <div class="card border-0 shadow-sm">
-                        <div class="card-body p-2">
+                        <div class="card-body p-2" style="overflow: visible;">
                             <div class="row g-2 align-items-center">
-                                <div class="col-md-6">
-                                    <h5 class="mb-0 fw-bold text-dark ms-2"><i class="fa fa-building me-2 text-primary"></i>Warehouse Management</h5>
+                                <div class="col-md-3">
+                                    <h6 class="mb-0 fw-bold text-dark ms-2"><i class="fa fa-building me-2 text-primary"></i>Warehouses</h6>
                                 </div>
-                                <div class="col-md-6 text-end">
-                                    <div class="d-flex gap-2 justify-content-end align-items-center">
+                                <div class="col-md-9 text-end">
+                                    <div class="d-flex gap-1 justify-content-end align-items-center">
                                         @if($isAdmin)
-                                        <form action="{{ url('warehouse') }}" method="GET" class="d-flex gap-2 align-items-center me-2">
+                                        <form action="{{ url('warehouse') }}" method="GET" class="d-flex gap-1 align-items-center me-2">
                                             <select name="created_by" class="form-select form-select-sm select2" style="min-width: 150px;">
                                                 <option value="">All Users</option>
                                                 @foreach($users as $user)
@@ -123,7 +126,7 @@
                                             </select>
                                             <button type="submit" class="btn btn-primary btn-sm rounded-pill px-3 shadow-sm">Filter</button>
                                             @if(request('created_by'))
-                                                <a href="{{ url('warehouse') }}" class="btn btn-outline-secondary btn-sm rounded-pill px-3">Reset</a>
+                                                <a href="{{ url('warehouse') }}" class="btn btn-outline-secondary btn-sm rounded-pill px-2" title="Reset"><i class="fa fa-refresh"></i></a>
                                             @endif
                                         </form>
                                         @endif
@@ -139,100 +142,96 @@
                 </div>
             </div>
 
-            <div class="row">
-                <div class="col-12">
-                    <div class="card border-0 shadow-sm">
-                        <div class="card-header bg-white d-flex justify-content-between align-items-center py-2 border-bottom">
-                            <span class="fw-bold text-muted small text-uppercase">Warehouse List</span>
-                            <div class="column-picker-dropdown">
-                                <button class="btn btn-outline-secondary btn-sm px-3 rounded-pill" type="button" id="columnPickerBtn">
-                                    <i class="fa fa-columns me-1"></i> Columns
-                                </button>
-                                <div class="column-picker-menu shadow" id="columnPickerMenu">
-                                    <div class="p-2 border-bottom fw-bold small text-muted">Show/Hide Columns</div>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="1" checked> #</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="2" checked> Name</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="3" checked> Groups</label>
-                                    @if($isAdmin)<label class="column-picker-item"><input type="checkbox" data-column="4" checked> Created By</label>@endif
-                                    <label class="column-picker-item"><input type="checkbox" data-column="5" checked> Location</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="6" checked> Remarks</label>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="card-body p-0">
-                            <div class="table-responsive">
-                                <table id="warehouseTable" class="table table-sm table-striped table-bordered w-100 mb-0">
-                                    <thead>
-                                        <tr>
-                                            <th>#</th>
-                                            <th>Name</th>
-                                            <th>Groups</th>
-                                            @if($isAdmin)
-                                                <th>Created By</th>
-                                            @endif
-                                            <th>Location</th>
-                                            <th>Remarks</th>
-                                            <th class="text-center">Action</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        @php $userGroupsKeyed = $userGroups->keyBy('id'); @endphp
-                                        @foreach($warehouses as $key => $w)
-                                        <tr>
-                                            <td>{{ $key+1 }}</td>
-                                            <td class="fw-bold text-primary">{{ $w->warehouse_name }}</td>
-                                            <td>
-                                                @if(!empty($w->user_group_ids))
-                                                    @foreach($w->user_group_ids as $groupId)
-                                                        <span class="badge bg-light text-dark border-0 shadow-xs px-2 py-1" style="font-size: 10px;">
-                                                            {{ $userGroupsKeyed[$groupId]->group_name ?? 'N/A' }}
-                                                        </span>
-                                                    @endforeach
-                                                @else
-                                                    <span class="text-muted small">No Group</span>
-                                                @endif
-                                            </td>
-                                            @if($isAdmin)
-                                                <td><small>{{ $w->creator->name ?? 'System' }}</small></td>
-                                            @endif
-                                            <td>{{ $w->location }}</td>
-                                            <td><small>{{ Str::limit($w->remarks, 30) }}</small></td>
-                                            <td class="text-center">
-                                                <div class="d-flex gap-1 justify-content-center">
-                                                    <button class="btn btn-outline-primary btn-xs px-1 py-0 edit-warehouse-btn"
-                                                        data-id="{{ $w->id }}"
-                                                        data-name="{{ $w->warehouse_name }}"
-                                                        data-location="{{ $w->location }}"
-                                                        data-remarks="{{ $w->remarks }}"
-                                                        data-user_group_ids="{{ json_encode($w->user_group_ids ?? []) }}"
-                                                        data-bs-toggle="modal"
-                                                        data-bs-target="#warehouseModal"
-                                                        style="height: 20px;">
-                                                        <i class="fa fa-edit"></i>
-                                                    </button>
-
-                                                    <a href="{{ url('warehouse/delete/'.$w->id) }}"
-                                                        class="btn btn-outline-danger btn-xs px-1 py-0"
-                                                        onclick="return confirm('Delete?')"
-                                                        style="height: 20px;">
-                                                        <i class="fa fa-trash"></i>
-                                                    </a>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                        @endforeach
-                                    </tbody>
-                                </table>
-                            </div>
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center py-2 border-bottom">
+                    <span class="fw-bold text-muted small text-uppercase"><i class="fa fa-list me-1"></i> Warehouse List</span>
+                    <div class="column-picker-dropdown">
+                        <button class="btn btn-outline-secondary btn-sm px-3 rounded-pill" type="button" id="columnPickerBtn">
+                            <i class="fa fa-columns me-1"></i> Columns
+                        </button>
+                        <div class="column-picker-menu shadow" id="columnPickerMenu">
+                            <div class="p-2 border-bottom fw-bold small text-muted">Show/Hide Columns</div>
+                            <label class="column-picker-item"><input type="checkbox" data-column="1" checked> #</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="2" checked> Name</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="3" checked> Groups</label>
+                            @if($isAdmin)<label class="column-picker-item"><input type="checkbox" data-column="4" checked> Created By</label>@endif
+                            <label class="column-picker-item"><input type="checkbox" data-column="5" checked> Location</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="6" checked> Remarks</label>
                         </div>
                     </div>
                 </div>
-            </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table id="warehouseTable" class="table table-sm table-striped table-bordered w-100 mb-0">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Name</th>
+                                    <th>Groups</th>
+                                    @if($isAdmin)
+                                        <th>Created By</th>
+                                    @endif
+                                    <th>Location</th>
+                                    <th>Remarks</th>
+                                    <th class="text-center">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @php $userGroupsKeyed = $userGroups->keyBy('id'); @endphp
+                                @foreach($warehouses as $key => $w)
+                                <tr>
+                                    <td class="text-muted">{{ $key+1 }}</td>
+                                    <td class="fw-bold text-primary">{{ $w->warehouse_name }}</td>
+                                    <td>
+                                        @if(!empty($w->user_group_ids))
+                                            @foreach($w->user_group_ids as $groupId)
+                                                <span class="badge bg-light text-dark border px-2 py-0" style="font-size: 9px;">
+                                                    {{ $userGroupsKeyed[$groupId]->group_name ?? 'N/A' }}
+                                                </span>
+                                            @endforeach
+                                        @else
+                                            <span class="text-muted small">No Group</span>
+                                        @endif
+                                    </td>
+                                    @if($isAdmin)
+                                        <td class="small text-muted">{{ $w->creator->name ?? 'System' }}</td>
+                                    @endif
+                                    <td class="small">{{ $w->location }}</td>
+                                    <td class="small text-muted">{{ Str::limit($w->remarks, 30) }}</td>
+                                    <td class="text-center">
+                                        <div class="d-flex gap-1 justify-content-center">
+                                            <button class="btn btn-outline-primary btn-mini edit-warehouse-btn"
+                                                data-id="{{ $w->id }}"
+                                                data-name="{{ $w->warehouse_name }}"
+                                                data-location="{{ $w->location }}"
+                                                data-remarks="{{ $w->remarks }}"
+                                                data-user_group_ids="{{ json_encode($w->user_group_ids ?? []) }}"
+                                                data-bs-toggle="modal"
+                                                data-bs-target="#warehouseModal"
+                                                title="Edit">
+                                                <i class="fa fa-pencil text-dark"></i>
+                                            </button>
 
+                                            <a href="{{ url('warehouse/delete/'.$w->id) }}"
+                                                class="btn btn-outline-danger btn-mini"
+                                                onclick="return confirm('Delete?')"
+                                                title="Delete">
+                                                <i class="fa fa-trash"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
 
+{{-- Modal remains same but with small styling --}}
 <div class="modal fade" id="warehouseModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
         <form action="{{ url('warehouse/store') }}" method="POST">
@@ -285,7 +284,7 @@
                 </div>
                 <div class="modal-footer py-1">
                     <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
-                    <button type="submit" class="btn btn-primary btn-sm px-4">Save Warehouse</button>
+                    <button type="submit" class="btn btn-primary btn-sm px-4 shadow-sm">Save Warehouse</button>
                 </div>
             </div>
         </form>
@@ -297,7 +296,7 @@
 @section('scripts')
 <script>
 $(document).ready(function() {
-    // Toggle Column Picker Menu
+    // Column Picker Logic
     $('#columnPickerBtn').on('click', function(e) {
         e.stopPropagation();
         $('#columnPickerMenu').toggleClass('show');
@@ -309,19 +308,21 @@ $(document).ready(function() {
         }
     });
 
-    const storageKey = 'warehouse_table_cols_v1';
+    const storageKey = 'warehouse_table_cols_v2';
 
-    // Initialize DataTable
     var dt = $('#warehouseTable').DataTable({
-        destroy: true,
-        scrollX: true,
-        autoWidth: false,
-        pageLength: 25,
-        order: [[0, 'asc']],
-        language: {
-            search: "_INPUT_",
-            searchPlaceholder: "Search warehouses..."
-        }
+        "order": [[0, 'asc']], 
+        "pageLength": 25,
+        "scrollX": true,
+        "autoWidth": false,
+        "language": {
+            "search": "_INPUT_",
+            "searchPlaceholder": "Search warehouses..."
+        },
+        dom: 'Bfrtip',
+        buttons: [
+            'copyHtml5', 'excelHtml5', 'csvHtml5'
+        ]
     });
 
     // Apply saved column visibility
@@ -337,22 +338,20 @@ $(document).ready(function() {
         dt.columns.adjust().draw(false);
     }
 
-    // Handle Checkbox Change
     $('#columnPickerMenu input').on('change', function() {
         const colIdx = parseInt($(this).data('column'));
         const isChecked = $(this).is(':checked');
-        
         dt.column(colIdx - 1).visible(isChecked);
-        dt.columns.adjust().draw(false);
         
         const state = {};
         $('#columnPickerMenu input').each(function() {
             state[$(this).data('column')] = $(this).is(':checked');
         });
         localStorage.setItem(storageKey, JSON.stringify(state));
+        dt.columns.adjust().draw(false);
     });
 
-    // Initialize Select2 specifically for the modal
+    // Modal select2 fix
     $('#warehouseModal').on('shown.bs.modal', function() {
         $('.select2-groups-warehouse').select2({
             dropdownParent: $('#warehouseModal'),
@@ -361,27 +360,26 @@ $(document).ready(function() {
         });
     });
     
-    // For non-modal select2
     $('.select2:not(.modal select)').select2({ width: '100%' });
 });
 
-    function clearWarehouse() {
-        $('#warehouse_id').val('');
-        $('#warehouse_name').val('');
-        $('#location').val('');
-        $('#remarks').val('');
-        $('#warehouse_user_groups').val([]).trigger('change');
-    }
+function clearWarehouse() {
+    $('#warehouse_id').val('');
+    $('#warehouse_name').val('');
+    $('#location').val('');
+    $('#remarks').val('');
+    $('#warehouse_user_groups').val([]).trigger('change');
+}
 
-    $(document).on('click', '.edit-warehouse-btn', function() {
-        const btn = $(this);
-        $('#warehouse_id').val(btn.data('id'));
-        $('#warehouse_name').val(btn.data('name'));
-        $('#location').val(btn.data('location'));
-        $('#remarks').val(btn.data('remarks'));
-        
-        const groups = btn.data('user_group_ids') ?? [];
-        $('#warehouse_user_groups').val(groups).trigger('change');
-    });
+$(document).on('click', '.edit-warehouse-btn', function() {
+    const btn = $(this);
+    $('#warehouse_id').val(btn.data('id'));
+    $('#warehouse_name').val(btn.data('name'));
+    $('#location').val(btn.data('location'));
+    $('#remarks').val(btn.data('remarks'));
+    
+    const groups = btn.data('user_group_ids') ?? [];
+    $('#warehouse_user_groups').val(groups).trigger('change');
+});
 </script>
 @endsection
