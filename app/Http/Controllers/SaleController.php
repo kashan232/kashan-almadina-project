@@ -9,6 +9,7 @@ use App\Models\Account;
 use App\Models\AccountHead;
 use App\Models\Customer;
 use App\Models\CustomerLedger;
+use App\Models\VendorLedger;
 use App\Models\Vendor;
 use App\Models\Warehouse;
 use App\Models\Productbooking;
