@@ -2,99 +2,127 @@
 
 @section('content')
 <style>
-    /* Table Responsive & Scroll Enhancements */
-    .table-responsive {
-        width: 100%;
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
-        margin-bottom: 1rem;
-    }
+    /* Ultra-High Density Design System */
+    .main-content-inner { background: #f4f7fa; min-height: 100vh; }
     
-    #adjustmentTable thead th {
-        white-space: nowrap;
-        background-color: #f8f9fa !important;
-        color: #333 !important;
-        font-weight: 600;
-        vertical-align: middle;
-        padding: 8px 10px !important;
-        font-size: 12px;
+    /* Table Density */
+    #adjustmentTable { font-size: 11px !important; border-collapse: separate !important; border-spacing: 0; width: 100% !important; }
+    #adjustmentTable thead th { 
+        padding: 2px 10px !important; 
+        font-size: 11px !important; 
+        height: 20px !important;
+        line-height: 1.2 !important;
+        background: #fff !important;
+        color: #444 !important;
+        font-weight: 700 !important;
         text-transform: uppercase;
+        letter-spacing: 0.3px;
+        border-bottom: 2px solid #ebedef !important;
+        vertical-align: middle !important;
     }
     
-    #adjustmentTable tbody td {
-        white-space: nowrap;
-        vertical-align: middle;
-        padding: 4px 10px !important;
-        font-size: 12px;
-        color: #333;
+    /* DataTables Sorting Arrow Fix */
+    table.dataTable thead .sorting:before, table.dataTable thead .sorting:after,
+    table.dataTable thead .sorting_asc:before, table.dataTable thead .sorting_asc:after,
+    table.dataTable thead .sorting_desc:before, table.dataTable thead .sorting_desc:after {
+        bottom: 2px !important;
+        font-size: 0.7rem !important;
+        opacity: 0.3;
     }
 
-    /* Column Picker Styles */
-    .column-picker-dropdown {
-        position: relative;
-        display: inline-block;
+    #adjustmentTable tbody td { 
+        padding: 4px 10px !important; 
+        vertical-align: middle !important; 
+        border-bottom: 1px solid #f0f2f5 !important;
+        white-space: nowrap;
     }
+    #adjustmentTable tbody tr:hover { background-color: #f8f9ff !important; }
+
+    /* Compact Buttons */
+    .btn-xs { padding: 1px 5px; font-size: 10px; line-height: 1.2; border-radius: 3px; }
+    .btn-mini { padding: 0px 4px; font-size: 9px; height: 18px; display: inline-flex; align-items: center; justify-content: center; }
+    
+    /* DataTables Export Buttons styling */
+    .dt-buttons { margin-bottom: 0px !important; }
+    .dt-button { 
+        padding: 2px 10px !important; 
+        font-size: 10px !important; 
+        border-radius: 4px !important; 
+        background: #fff !important;
+        border: 1px solid #dee2e6 !important;
+        box-shadow: none !important;
+        transition: all 0.2s;
+    }
+    .dt-button:hover { background: #f8f9fa !important; border-color: #adb5bd !important; }
+
+    /* Filter Bar Compact */
+    .form-control-sm, .form-select-sm { font-size: 11px !important; height: calc(1.5em + 0.5rem + 2px) !important; padding: 0.25rem 0.5rem !important; }
+    
+    /* Column Picker Styles */
+    .column-picker-dropdown { position: relative; display: inline-block; }
     .column-picker-menu {
         position: absolute;
         top: 100%;
         right: 0;
-        z-index: 1000;
+        z-index: 10000;
         display: none;
-        min-width: 200px;
-        padding: 5px 0;
-        margin: 2px 0 0;
-        font-size: 14px;
+        min-width: 220px;
+        padding: 8px 0;
+        margin-top: 5px;
+        font-size: 13px;
         text-align: left;
         list-style: none;
         background-color: #fff;
         background-clip: padding-box;
-        border: 1px solid rgba(0,0,0,.15);
-        border-radius: 4px;
-        box-shadow: 0 6px 12px rgba(0,0,0,.175);
+        border: 1px solid rgba(0,0,0,.1);
+        border-radius: 8px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.1);
         max-height: 400px;
         overflow-y: auto;
     }
-    .column-picker-menu.show {
-        display: block;
-    }
+    .column-picker-menu.show { display: block; }
     .column-picker-item {
-        display: block;
-        padding: 5px 15px;
+        display: flex;
+        align-items: center;
+        padding: 6px 16px;
         clear: both;
         font-weight: 400;
-        line-height: 1.42857143;
-        color: #333;
+        line-height: 1.5;
+        color: #444;
         white-space: nowrap;
         cursor: pointer;
+        transition: background 0.2s;
     }
-    .column-picker-item:hover {
-        background-color: #f5f5f5;
-    }
-    .column-picker-item input {
-        margin-right: 10px;
-        cursor: pointer;
-    }
+    .column-picker-item:hover { background-color: #f8f9fa; color: #000; }
+    .column-picker-item input { margin-right: 12px; cursor: pointer; width: 16px; height: 16px; }
 
-    /* Card styling */
-    .card {
-        border-radius: 8px;
-        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
-        border: none;
+    .card { border-radius: 8px; box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075); border: none; margin-bottom: 0.5rem; }
+    
+    /* Account Badge Styling */
+    .side-badge { 
+        font-size: 9px; 
+        font-weight: 700; 
+        padding: 0px 5px; 
+        border-radius: 3px; 
+        text-transform: uppercase;
+        margin-right: 5px;
     }
+    .side-1 { background: #f0f9ff; color: #0369a1; border: 1px solid #bae6fd; }
+    .side-2 { background: #fdf2f8; color: #9d174d; border: 1px solid #fbcfe8; }
 </style>
 
 <div class="main-content">
     <div class="main-content-inner">
-        <div class="container-fluid pt-3">
+        <div class="container-fluid pt-1">
             
             <!-- Filters Section -->
             <div class="row mb-3">
                 <div class="col-12">
                     <div class="card border-0 shadow-sm">
-                        <div class="card-body p-2">
+                        <div class="card-body p-2" style="overflow: visible;">
                             <form action="{{ route('all-adjustment-vochers') }}" method="GET" class="row g-2 align-items-center">
                                 <div class="col-md-3">
-                                    <h6 class="mb-0 fw-bold text-dark ms-2"><i class="fa fa-adjust me-2 text-primary"></i>Adjustment Vouchers</h6>
+                                    <h6 class="mb-0 fw-bold text-dark ms-2"><i class="fa fa-adjust me-2 text-primary"></i>Adjustments</h6>
                                 </div>
                                 <div class="col-md-3">
                                     <div class="input-group input-group-sm">
@@ -125,105 +153,107 @@
                 </div>
             </div>
 
-            <div class="row">
-                <div class="col-12">
-                    <div class="card border-0 shadow-sm">
-                        <div class="card-header bg-white d-flex justify-content-between align-items-center py-2 border-bottom">
-                            <span class="fw-bold text-muted small text-uppercase">Adjustments Registry</span>
-                            <div class="column-picker-dropdown">
-                                <button class="btn btn-outline-secondary btn-sm px-3 rounded-pill" type="button" id="columnPickerBtn">
-                                    <i class="fa fa-columns me-1"></i> Columns
-                                </button>
-                                <div class="column-picker-menu shadow" id="columnPickerMenu">
-                                    <div class="p-2 border-bottom fw-bold small text-muted">Show/Hide Columns</div>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="1" checked> ID</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="2" checked> Type</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="3" checked> Inv#</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="4" checked> Entry Date</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="5" checked> Source Party</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="6" checked> Destination Accounts</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="7" checked> Remarks</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="8" checked> Total Amount</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="9" checked> Status</label>
-                                </div>
-                            </div>
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center py-2 border-bottom">
+                    <span class="fw-bold text-muted small text-uppercase"><i class="fa fa-list me-1"></i> Adjustments Registry</span>
+                    <div class="column-picker-dropdown">
+                        <button class="btn btn-outline-secondary btn-sm px-3 rounded-pill" type="button" id="columnPickerBtn">
+                            <i class="fa fa-columns me-1"></i> Columns
+                        </button>
+                        <div class="column-picker-menu shadow" id="columnPickerMenu">
+                            <div class="p-2 border-bottom fw-bold small text-muted">Show/Hide Columns</div>
+                            <label class="column-picker-item"><input type="checkbox" data-column="1" checked> ID</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="2" checked> Type</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="3" checked> Inv#</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="4" checked> Entry Date</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="5" checked> Source Party</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="6" checked> Destination Accounts</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="7" checked> Remarks</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="8" checked> Total Amount</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="9" checked> Status</label>
                         </div>
+                    </div>
+                </div>
 
-                        <div class="card-body p-0">
-                            <div class="table-responsive">
-                                <table id="adjustmentTable" class="table table-sm table-striped table-bordered w-100 mb-0">
-                                    <thead>
-                                        <tr>
-                                            <th>ID</th>
-                                            <th>Type</th>
-                                            <th>Inv#</th>
-                                            <th>Entry Date</th>
-                                            <th>Source Party (Side 1)</th>
-                                            <th>Destination Accounts (Side 2)</th>
-                                            <th>Remarks</th>
-                                            <th class="text-end">Total Amount</th>
-                                            <th class="text-center">Status</th>
-                                            <th class="text-center" style="min-width: 120px;">Action</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        @foreach($vouchers as $item)
-                                        <tr>
-                                            <td class="text-center text-muted small">{{ $item->id }}</td>
-                                            <td class="text-center small">AV</td>
-                                            <td class="fw-bold text-success">{{ (int) preg_replace('/[^0-9]/', '', substr($item->avid, strlen('AVID-'))) }}</td>
-                                            <td class="small">{{ $item->entry_date ? \Carbon\Carbon::parse($item->entry_date)->format('d-M-Y') : '-' }}</td>
-                                            <td>
-                                                <div class="small fw-bold text-muted text-uppercase" style="font-size: 0.65rem;">{{ $item->type_label }}</div>
-                                                <div class="fw-bold text-dark small">{{ Str::limit($item->party_name, 20) }}</div>
-                                            </td>
-                                            <td>
-                                                <div style="font-size: 0.75rem; line-height: 1.1;">
-                                                    {!! $item->accounts_detail !!}
-                                                </div>
-                                            </td>
-                                            <td class="small text-muted">{{ Str::limit($item->remarks, 20) }}</td>
-                                            <td class="text-end fw-bold">{{ number_format((float)$item->total_amount, 0) }}</td>
-                                            <td class="text-center">
-                                                @if($item->status === 'posted')
-                                                    <span class="badge bg-success rounded-pill px-3">Posted</span>
-                                                @else
-                                                    <span class="badge bg-warning text-dark rounded-pill px-3">Unposted</span>
-                                                @endif
-                                            </td>
-                                            <td class="text-center">
-                                                <div class="d-flex gap-1 justify-content-center">
-                                                    @if($item->status === 'draft' || $item->status === 'Unposted' || $item->status === 'unposted')
-                                                        <form action="{{ route('adjustment.vochers.post', $item->id) }}" method="POST" class="d-inline">
-                                                            @csrf
-                                                            <button type="submit" class="btn btn-primary btn-xs px-2 py-0" title="Post now" style="font-size: 10px;">
-                                                                <i class="fa fa-send"></i> Post
-                                                            </button>
-                                                        </form>
-                                                        
-                                                        <a href="{{ route('adjustment-vochers', $item->id) }}" class="btn btn-outline-warning btn-xs px-1 py-0" title="Edit" style="height: 20px;">
-                                                            <i class="fa fa-edit text-dark"></i>
-                                                        </a>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table id="adjustmentTable" class="table table-sm table-striped table-bordered w-100 mb-0">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Type</th>
+                                    <th>Inv#</th>
+                                    <th>Entry Date</th>
+                                    <th>Source Party (Side 1)</th>
+                                    <th>Destination Accounts (Side 2)</th>
+                                    <th>Remarks</th>
+                                    <th class="text-end">Total Amount</th>
+                                    <th class="text-center">Status</th>
+                                    <th class="text-center" style="min-width: 140px;">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($vouchers as $item)
+                                <tr>
+                                    <td class="text-muted small">{{ $item->id }}</td>
+                                    <td class="small">AV</td>
+                                    <td class="fw-bold text-success">{{ (int) preg_replace('/[^0-9]/', '', substr($item->avid, strlen('AVID-'))) }}</td>
+                                    <td class="small">{{ $item->entry_date ? \Carbon\Carbon::parse($item->entry_date)->format('d-M-Y') : '-' }}</td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <span class="side-badge side-1">Side 1</span>
+                                            <span class="fw-bold text-dark small">{{ Str::limit($item->party_name, 25) }}</span>
+                                        </div>
+                                        <div class="text-muted" style="font-size: 9.5px; margin-left: 35px;">{{ $item->type_label }}</div>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-start">
+                                            <span class="side-badge side-2 mt-1">Side 2</span>
+                                            <div style="font-size: 10.5px; line-height: 1.2;">
+                                                {!! $item->accounts_detail !!}
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="small text-muted">{{ Str::limit($item->remarks, 15) }}</td>
+                                    <td class="text-end fw-bold text-dark">{{ number_format((float)$item->total_amount, 0) }}</td>
+                                    <td class="text-center">
+                                        @if($item->status === 'posted')
+                                            <span class="badge bg-success rounded-pill px-3" style="font-size: 9px;">Posted</span>
+                                        @else
+                                            <span class="badge bg-warning text-dark rounded-pill px-3" style="font-size: 9px;">Unposted</span>
+                                        @endif
+                                    </td>
+                                    <td class="text-center">
+                                        <div class="d-flex gap-1 justify-content-center">
+                                            @if($item->status === 'draft' || $item->status === 'Unposted' || $item->status === 'unposted')
+                                                <form action="{{ route('adjustment.vochers.post', $item->id) }}" method="POST" class="d-inline">
+                                                    @csrf
+                                                    <button type="submit" class="btn btn-primary btn-mini px-2" title="Post now">
+                                                        <i class="fa fa-send me-1"></i> Post
+                                                    </button>
+                                                </form>
+                                                
+                                                <a href="{{ route('adjustment-vochers', $item->id) }}" class="btn btn-outline-warning btn-mini" title="Edit">
+                                                    <i class="fa fa-pencil text-dark"></i>
+                                                </a>
 
-                                                        <form action="{{ route('adjustment.vochers.cancel', $item->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Delete this unposted voucher?')">
-                                                            @csrf @method('DELETE')
-                                                            <button type="submit" class="btn btn-outline-danger btn-xs px-1 py-0" title="Delete" style="height: 20px;">
-                                                                <i class="fa fa-trash"></i>
-                                                            </button>
-                                                        </form>
-                                                    @endif
-                                                    
-                                                    <a href="{{ route('adjustmentVoucher.print', $item->id) }}" target="_blank" class="btn btn-outline-dark btn-xs px-1 py-0" title="Print" style="height: 20px;">
-                                                        <i class="fa fa-print"></i>
-                                                    </a>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                        @endforeach
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
+                                                <form action="{{ route('adjustment.vochers.cancel', $item->id) }}" method="POST" class="d-inline delete-form">
+                                                    @csrf @method('DELETE')
+                                                    <button type="button" class="btn btn-outline-danger btn-mini delete-btn" title="Delete">
+                                                        <i class="fa fa-trash"></i>
+                                                    </button>
+                                                </form>
+                                            @endif
+                                            
+                                            <a href="{{ route('adjustmentVoucher.print', $item->id) }}" target="_blank" class="btn btn-outline-dark btn-mini" title="Print">
+                                                <i class="fa fa-print"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
@@ -234,43 +264,79 @@
 
 @section('scripts')
 <script>
-$(document).ready(function() {
-    $('.select2').select2({ width: '100%' });
+    $(document).ready(function() {
+        $('.select2').select2({ width: '100%' });
 
-    $('#columnPickerBtn').on('click', function(e) { e.stopPropagation(); $('#columnPickerMenu').toggleClass('show'); });
-    $(document).on('click', function(e) { if (!$(e.target).closest('.column-picker-dropdown').length) $('#columnPickerMenu').removeClass('show'); });
+        // Column Picker Logic
+        $('#columnPickerBtn').on('click', function(e) {
+            e.stopPropagation();
+            $('#columnPickerMenu').toggleClass('show');
+        });
 
-    const storageKey = 'adjustment_voucher_table_columns_v3';
+        $(document).on('click', function(e) {
+            if (!$(e.target).closest('.column-picker-dropdown').length) {
+                $('#columnPickerMenu').removeClass('show');
+            }
+        });
 
-    var dt = $('#adjustmentTable').DataTable({
-        scrollX: true, autoWidth: false, pageLength: 25, order: [[0, 'desc']],
-        language: { search: "_INPUT_", searchPlaceholder: "Search adjustments..." }
-    });
+        const storageKey = 'adjustment_voucher_cols_v2';
+        
+        var dt = $('#adjustmentTable').DataTable({
+            "destroy": true, 
+            "scrollX": true,
+            "autoWidth": false,
+            "pageLength": 25,
+            "order": [[0, 'desc']],
+            "language": {
+                "search": "_INPUT_",
+                "searchPlaceholder": "Search adjustments..."
+            },
+            dom: 'Bfrtip',
+            buttons: [
+                'copyHtml5', 'excelHtml5', 'csvHtml5'
+            ]
+        });
 
-    // Apply saved column visibility
-    const savedState = localStorage.getItem(storageKey);
-    if (savedState) {
-        const columns = JSON.parse(savedState);
-        $('#columnPickerMenu input').each(function() {
+        // Apply saved column visibility
+        const savedState = localStorage.getItem(storageKey);
+        if (savedState) {
+            const columns = JSON.parse(savedState);
+            $('#columnPickerMenu input').each(function() {
+                const colIdx = parseInt($(this).data('column'));
+                const checked = columns.hasOwnProperty(colIdx) ? columns[colIdx] : true;
+                $(this).prop('checked', checked);
+                dt.column(colIdx - 1).visible(checked);
+            });
+            dt.columns.adjust().draw(false);
+        }
+
+        // Handle Checkbox Change
+        $('#columnPickerMenu input').on('change', function() {
             const colIdx = parseInt($(this).data('column'));
-            const checked = columns.hasOwnProperty(colIdx) ? columns[colIdx] : true;
-            $(this).prop('checked', checked);
-            dt.column(colIdx - 1).visible(checked);
+            const isChecked = $(this).is(':checked');
+            
+            dt.column(colIdx - 1).visible(isChecked);
+            dt.columns.adjust().draw(false);
+            
+            const state = {};
+            $('#columnPickerMenu input').each(function() {
+                state[$(this).data('column')] = $(this).is(':checked');
+            });
+            localStorage.setItem(storageKey, JSON.stringify(state));
         });
-        dt.columns.adjust().draw(false);
-    }
 
-    $('#columnPickerMenu input').on('change', function() {
-        const colIdx = parseInt($(this).data('column'));
-        dt.column(colIdx - 1).visible($(this).is(':checked'));
-        dt.columns.adjust().draw();
-
-        const state = {};
-        $('#columnPickerMenu input').each(function() {
-            state[$(this).data('column')] = $(this).is(':checked');
+        // Confirmation handlers
+        $(document).on('click', '.delete-btn', function() {
+            var form = $(this).closest('form');
+            Swal.fire({
+                title: 'Delete Voucher?',
+                text: 'This unposted record will be removed permanently.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                confirmButtonText: 'Yes, delete!'
+            }).then((result) => { if (result.isConfirmed) form.submit(); });
         });
-        localStorage.setItem(storageKey, JSON.stringify(state));
     });
-});
 </script>
 @endsection

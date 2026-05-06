@@ -3,209 +3,243 @@
 @section('content')
 <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 <style>
-    .select2-container--default .select2-selection--single {
-        height: 31px !important; padding: 2px 5px !important; font-size: 0.85rem !important; border: 1px solid #dee2e6 !important;
+    /* Ultra-High Density Form Design */
+    .main-content-inner { background: #f4f7fa; min-height: 100vh; }
+    .form-card { border-radius: 8px; border: none; box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075); margin-bottom: 1rem; }
+    
+    /* Input Styling */
+    .form-control-sm, .form-select-sm { 
+        font-size: 11px !important; 
+        height: 28px !important; 
+        padding: 0.2rem 0.5rem !important; 
+        border-radius: 4px !important;
+        border: 1px solid #dee2e6 !important;
     }
-    .select2-container--default .select2-selection--single .select2-selection__rendered { line-height: 25px !important; }
-    .select2-container--default .select2-selection--single .select2-selection__arrow { height: 30px !important; }
+    .form-label { font-size: 10px !important; font-weight: 700 !important; color: #64748b !important; text-transform: uppercase; margin-bottom: 2px !important; }
+    
+    /* Select2 High Density Overrides */
+    .select2-container--default .select2-selection--single {
+        height: 28px !important; font-size: 11px !important; border-radius: 4px !important; border: 1px solid #dee2e6 !important;
+    }
+    .select2-container--default .select2-selection--single .select2-selection__rendered { line-height: 26px !important; padding-left: 8px !important; }
+    .select2-container--default .select2-selection--single .select2-selection__arrow { height: 26px !important; }
 
-    .main-container { font-size: .85rem; max-width: 1400px; }
-    .form-control, .form-select, .btn { font-size: .85rem; padding: .4rem .6rem; }
-    .table thead th { background: #f8f9fa !important; text-align: center; font-size: 0.75rem; padding: 8px !important; white-space: nowrap; }
-    .table td { vertical-align: middle; padding: 4px !important; }
-
+    /* Table Density */
+    #voucherTable { font-size: 11px !important; }
+    #voucherTable thead th { 
+        padding: 2px 8px !important; 
+        font-size: 10.5px !important; 
+        height: 24px !important;
+        background: #f8fafc !important;
+        color: #475569 !important;
+        font-weight: 700 !important;
+        text-transform: uppercase;
+        border-bottom: 2px solid #e2e8f0 !important;
+    }
+    #voucherTable tbody td { padding: 4px 6px !important; vertical-align: middle !important; border-bottom: 1px solid #f1f5f9 !important; }
+    
+    /* Watermark & Locked State */
     .posted-watermark {
         position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-30deg);
-        font-size: 8rem; color: rgba(220, 53, 69, 0.1); font-weight: 900; text-transform: uppercase;
-        pointer-events: none; z-index: 1000; display: none; border: 10px solid rgba(220, 53, 69, 0.1); padding: 20px 50px; border-radius: 20px;
+        font-size: 6rem; color: rgba(220, 53, 69, 0.05); font-weight: 900; text-transform: uppercase;
+        pointer-events: none; z-index: 1000; border: 8px solid rgba(220, 53, 69, 0.05); padding: 10px 40px; border-radius: 15px;
+    }
+    .form-locked { pointer-events: none !important; }
+    .form-locked input, .form-locked select, .form-locked textarea, .form-locked button:not(#editBtn):not(#previewPrintBtn):not(#newBtn):not(#listBtn) {
+        background-color: #f8fafc !important; opacity: 0.7 !important;
     }
 
-    .form-locked input, .form-locked select, .form-locked textarea, .form-locked #btnAddRow, .form-locked .removeRow, .form-locked .select2-container,
-    .form-locked .btn:not(#editBtn):not(#previewPrintBtn):not(#newBtn):not(#listBtn) {
-        pointer-events: none !important; opacity: 0.8 !important; background-color: #f8f9fa !important;
-    }
-
-    .ajax-valid-error { color: #dc3545; font-size: 0.75rem; font-weight: 700; margin-bottom: 2px; display: block; }
+    .btn-mini { padding: 0px 4px; font-size: 9px; height: 18px; display: inline-flex; align-items: center; justify-content: center; }
+    .ajax-valid-error { color: #dc3545; font-size: 9px; font-weight: 700; margin-top: 1px; display: block; }
+    
+    .header-info-box { background: #fff; border-left: 3px solid #10b981; padding: 4px 10px; border-radius: 4px; }
 </style>
 
-<div class="container-fluid py-4">
-    <div class="main-container bg-white border shadow-sm mx-auto p-4 rounded-3 position-relative" style="max-width: 98%;">
-        
-        <div id="alertBox" class="alert d-none mb-3" role="alert"></div>
+<div class="main-content">
+    <div class="main-content-inner">
+        <div class="container-fluid pt-1">
+            
+            <div id="alertBox" class="alert d-none py-2 mb-2" role="alert" style="font-size: 12px;"></div>
 
-        <div class="d-flex justify-content-between align-items-center mb-4 bg-light p-3 rounded shadow-sm border">
-            <div class="d-flex align-items-center gap-3">
-                <h5 class="page-title mb-0 fw-bold text-success"><i class="fa fa-line-chart me-2"></i>Income Voucher</h5>
-                <span id="statusBadge" class="badge {{ $receipt->status == 'posted' ? 'bg-success' : 'bg-warning text-dark' }} px-3 py-2 rounded-pill shadow-sm">
-                    <i class="fa {{ $receipt->status == 'posted' ? 'fa-check-circle' : 'fa-pencil' }} me-1"></i> 
-                    {{ strtoupper($receipt->status ?: 'DRAFT') }}
-                </span>
-                <span class="badge bg-primary px-3 py-2 rounded-pill shadow-sm">
-                    <i class="fa fa-tag me-1"></i> <span id="ividBadgeText">{{ $receipt->ivid ?: $nextIvid }}</span>
-                </span>
-            </div>
-            <div class="d-flex align-items-center gap-2">
-                <a href="{{ route('all-income-vochers') }}" id="listBtn" class="btn btn-sm btn-outline-secondary rounded-pill px-3 shadow-sm">
-                    <i class="fa fa-list me-1"></i> View All
-                </a>
-            </div>
-        </div>
-
-        <form id="incomeForm" autocomplete="off" class="{{ ($receipt->id && $receipt->status == 'posted') ? 'form-locked' : '' }}">
-            @csrf
-            <input type="hidden" name="id" id="receipt_id" value="{{ $receipt->id }}">
-
-            <div class="row g-3 mb-4">
-                <div class="col-md-2">
-                    <div class="card border-0 bg-light p-2 shadow-sm h-100">
-                        <label class="form-label text-muted small fw-bold mb-1">Entry Date</label>
-                        <input type="date" name="entry_date" class="form-control form-control-sm" value="{{ $receipt->entry_date ?: date('Y-m-d') }}">
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <div class="card border-0 bg-light p-2 shadow-sm h-100">
-                        <label class="form-label text-muted small fw-bold mb-1">Account Head <span class="text-danger">*</span></label>
-                        <select name="account_head" id="account_head" class="form-select form-select-sm">
-                            <option value="">Select Head...</option>
-                            @foreach($AccountHeads as $head)
-                                <option value="{{ $head->id }}" {{ $receipt->account_head == $head->id ? 'selected' : '' }}>{{ $head->name }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                </div>
-                <div class="col-md-7">
-                    <div class="card border-0 bg-light p-2 shadow-sm h-100">
-                        <div class="row g-1">
-                            <div class="col-3 text-center">
-                                <label class="form-label text-muted small fw-bold mb-1">Code <span class="text-danger">*</span></label>
-                                <input type="text" id="account_code_input" class="form-control form-control-sm border-danger fw-bold text-danger text-center" placeholder="Code">
+            <!-- Page Header Card -->
+            <div class="card form-card mb-2">
+                <div class="card-body p-2">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="header-info-box">
+                                <h6 class="mb-0 fw-bold text-dark"><i class="fa fa-line-chart me-2 text-success"></i>Income Voucher</h6>
                             </div>
-                            <div class="col-9">
-                                <label class="form-label text-muted small fw-bold mb-1">Account (Deposit To) <span class="text-danger">*</span></label>
-                                <select name="account_id" id="account_id" class="form-select form-select-sm" data-selected="{{ $receipt->account_id }}">
+                            <span id="statusBadge" class="badge {{ $receipt->status == 'posted' ? 'bg-success' : 'bg-warning text-dark' }} rounded-pill px-3 py-1" style="font-size: 10px;">
+                                {{ strtoupper($receipt->status ?: 'DRAFT') }}
+                            </span>
+                            <span class="badge bg-light text-primary border rounded-pill px-3 py-1" style="font-size: 10px;">
+                                <i class="fa fa-hashtag me-1"></i> <span id="ividBadgeText">{{ $receipt->ivid ?: $nextIvid }}</span>
+                            </span>
+                        </div>
+                        <div class="d-flex gap-1">
+                            <a href="{{ route('all-income-vochers') }}" id="listBtn" class="btn btn-outline-secondary btn-sm rounded-pill px-3" style="font-size: 11px;">
+                                <i class="fa fa-list me-1"></i> View Registry
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <form id="incomeForm" autocomplete="off" class="{{ ($receipt->id && $receipt->status == 'posted') ? 'form-locked' : '' }}">
+                @csrf
+                <input type="hidden" name="id" id="receipt_id" value="{{ $receipt->id }}">
+
+                <!-- Voucher Header Fields -->
+                <div class="card form-card mb-2">
+                    <div class="card-body p-2">
+                        <div class="row g-2">
+                            <div class="col-md-2">
+                                <label class="form-label">Entry Date</label>
+                                <input type="date" name="entry_date" class="form-control form-control-sm" value="{{ $receipt->entry_date ?: date('Y-m-d') }}" required>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Main Account Head <span class="text-danger">*</span></label>
+                                <select name="account_head" id="account_head" class="form-select form-select-sm select2">
+                                    <option value="">Select Head...</option>
+                                    @foreach($AccountHeads as $head)
+                                        <option value="{{ $head->id }}" {{ $receipt->account_head == $head->id ? 'selected' : '' }}>{{ $head->name }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="col-md-1">
+                                <label class="form-label">Code</label>
+                                <input type="text" id="account_code_input" class="form-control form-control-sm text-center fw-bold text-success" placeholder="Code" value="">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Account (Deposit To) <span class="text-danger">*</span></label>
+                                <select name="account_id" id="account_id" class="form-select form-select-sm select2" data-selected="{{ $receipt->account_id }}">
                                     <option value="">Select Account...</option>
                                 </select>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
 
-            <div class="card border shadow-sm mb-4">
-                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
-                    <h6 class="mb-0 fw-bold text-dark"><i class="fa fa-list-ul me-2"></i>Income Details</h6>
-                    <button type="button" class="btn btn-sm btn-primary rounded-pill px-3" id="btnAddRow" {{ $receipt->status == 'posted' ? 'disabled' : '' }}>
-                        <i class="fa fa-plus me-1"></i> Add Row
-                    </button>
-                </div>
-                <div class="card-body p-0">
-                    <div class="table-responsive">
-                        <table class="table table-hover table-bordered mb-0" id="voucherTable">
-                            <thead>
-                                <tr>
-                                    <th width="20%">Narration</th>
-                                    <th width="15%">Party Type</th>
-                                    <th width="10%">Code / ID</th>
-                                    <th width="25%">Party Name</th>
-                                    <th width="10%">Ref#</th>
-                                    <th width="15%">Amount</th>
-                                    <th width="5%">Act</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @php
-                                    $narrs = json_decode($receipt->narration_id, true) ?? [''];
-                                    $types = json_decode($receipt->party_type, true) ?? [''];
-                                    $pIds = json_decode($receipt->party_id, true) ?? [''];
-                                    $refs = json_decode($receipt->reference_no, true) ?? [''];
-                                    $amounts = json_decode($receipt->amount, true) ?? [''];
-                                @endphp
-                                @foreach($narrs as $idx => $nId)
-                                <tr>
-                                    <td>
-                                        <select name="narration_id[]" class="form-select narrationSelect">
-                                            <option value="">Narration...</option>
-                                            @foreach($narrationsList as $lid => $lname)
-                                                <option value="{{ $lid }}" {{ ($nId == $lid) ? 'selected' : '' }}>{{ $lname }}</option>
-                                            @endforeach
-                                        </select>
-                                    </td>
-                                    <td>
-                                        <select name="party_type[]" class="form-select form-select-sm rowPartyType">
-                                            <option value="">Select Type...</option>
-                                            @foreach($AccountHeads as $head)
-                                                <option value="{{ $head->id }}" {{ ($types[$idx] ?? '') == $head->id ? 'selected' : '' }}>{{ $head->name }}</option>
-                                            @endforeach
-                                            <option value="vendor" {{ ($types[$idx] ?? '') == 'vendor' ? 'selected' : '' }}>Vendor</option>
-                                            <option value="customer" {{ ($types[$idx] ?? '') == 'customer' ? 'selected' : '' }}>Customer</option>
-                                            <option value="walkin" {{ ($types[$idx] ?? '') == 'walkin' ? 'selected' : '' }}>Walkin Customer</option>
-                                        </select>
-                                    </td>
-                                    <td><input type="text" name="row_party_code[]" class="form-control form-control-sm text-center rowPartyCode" placeholder="Code/ID" value=""></td>
-                                    <td>
-                                        <select name="party_id[]" class="form-select form-select-sm rowPartySelect" data-selected="{{ $pIds[$idx] ?? '' }}">
-                                            <option value="">Select Party...</option>
-                                        </select>
-                                    </td>
-                                    <td><input type="text" name="reference_no[]" class="form-control form-control-sm" value="{{ $refs[$idx] ?? '' }}"></td>
-                                    <td><input type="number" step="0.01" name="amount[]" class="form-control form-control-sm text-end row-amount" value="{{ $amounts[$idx] ?? '' }}"></td>
-                                    <td class="text-center"><button type="button" class="btn text-danger btn-xs removeRow"><i class="fa fa-trash"></i></button></td>
-                                </tr>
-                                @endforeach
-                            </tbody>
-                            <tfoot class="table-light">
-                                <tr class="fw-bold">
-                                    <td colspan="5" class="text-end py-3">GRAND TOTAL:</td>
-                                    <td class="text-end py-3 bg-primary bg-opacity-10">
-                                        <input type="text" name="total_amount" id="totalAmount" class="form-control form-control-sm text-end border-0 bg-transparent fw-bold text-primary fs-6" readonly value="{{ $receipt->total_amount }}">
-                                    </td>
-                                    <td></td>
-                                </tr>
-                            </tfoot>
-                        </table>
+                <!-- Voucher Rows Table -->
+                <div class="card form-card mb-2">
+                    <div class="card-header bg-white py-1 d-flex justify-content-between align-items-center border-bottom">
+                        <span class="fw-bold text-muted small text-uppercase"><i class="fa fa-list-ul me-1"></i> Income Details</span>
+                        <button type="button" class="btn btn-primary btn-xs px-3 rounded-pill" id="btnAddRow" {{ $receipt->status == 'posted' ? 'disabled' : '' }}>
+                            <i class="fa fa-plus me-1"></i> Add Line
+                        </button>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-sm table-hover table-bordered mb-0" id="voucherTable">
+                                <thead>
+                                    <tr>
+                                        <th width="20%">Narration / Description</th>
+                                        <th width="15%">Party Type</th>
+                                        <th width="10%" class="text-center">Code/ID</th>
+                                        <th width="25%">Source Party Name</th>
+                                        <th width="12%">Reference#</th>
+                                        <th width="13%" class="text-end">Amount</th>
+                                        <th width="5%" class="text-center">Act</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @php
+                                        $narrs = json_decode($receipt->narration_id, true) ?? [''];
+                                        $types = json_decode($receipt->party_type, true) ?? [''];
+                                        $pIds = json_decode($receipt->party_id, true) ?? [''];
+                                        $refs = json_decode($receipt->reference_no, true) ?? [''];
+                                        $amounts = json_decode($receipt->amount, true) ?? [''];
+                                    @endphp
+                                    @foreach($narrs as $idx => $nId)
+                                    <tr>
+                                        <td>
+                                            <select name="narration_id[]" class="form-select form-select-sm narrationSelect">
+                                                <option value="">Narration...</option>
+                                                @foreach($narrationsList as $lid => $lname)
+                                                    <option value="{{ $lid }}" {{ ($nId == $lid) ? 'selected' : '' }}>{{ $lname }}</option>
+                                                @endforeach
+                                            </select>
+                                        </td>
+                                        <td>
+                                            <select name="party_type[]" class="form-select form-select-sm rowPartyType select2">
+                                                <option value="">Select Type...</option>
+                                                @foreach($AccountHeads as $head)
+                                                    <option value="{{ $head->id }}" {{ ($types[$idx] ?? '') == $head->id ? 'selected' : '' }}>{{ $head->name }}</option>
+                                                @endforeach
+                                                <option value="vendor" {{ ($types[$idx] ?? '') == 'vendor' ? 'selected' : '' }}>Vendor</option>
+                                                <option value="customer" {{ ($types[$idx] ?? '') == 'customer' ? 'selected' : '' }}>Customer</option>
+                                                <option value="walkin" {{ ($types[$idx] ?? '') == 'walkin' ? 'selected' : '' }}>Walkin Customer</option>
+                                            </select>
+                                        </td>
+                                        <td><input type="text" name="row_party_code[]" class="form-control form-control-sm text-center fw-bold text-danger rowPartyCode" placeholder="Code"></td>
+                                        <td>
+                                            <select name="party_id[]" class="form-select form-select-sm rowPartySelect select2" data-selected="{{ $pIds[$idx] ?? '' }}">
+                                                <option value="">Select Party...</option>
+                                            </select>
+                                        </td>
+                                        <td><input type="text" name="reference_no[]" class="form-control form-control-sm" value="{{ $refs[$idx] ?? '' }}" placeholder="Ref#"></td>
+                                        <td><input type="number" step="0.01" name="amount[]" class="form-control form-control-sm text-end fw-bold row-amount" value="{{ $amounts[$idx] ?? '' }}" placeholder="0.00"></td>
+                                        <td class="text-center"><button type="button" class="btn text-danger btn-xs removeRow p-0"><i class="fa fa-trash-o fs-6"></i></button></td>
+                                    </tr>
+                                    @endforeach
+                                </tbody>
+                                <tfoot class="bg-light">
+                                    <tr class="fw-bold">
+                                        <td colspan="5" class="text-end py-2 text-muted small">TOTAL INCOME AMOUNT</td>
+                                        <td class="text-end py-1">
+                                            <input type="text" name="total_amount" id="totalAmount" class="form-control form-control-sm text-end border-0 bg-transparent fw-bold text-primary fs-6 py-0" readonly value="{{ $receipt->total_amount }}">
+                                        </td>
+                                        <td></td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <div class="row g-3 mb-4">
-                <div class="col-md-12">
-                    <div class="card border-0 bg-light p-2 shadow-sm">
-                        <label class="form-label text-muted small fw-bold mb-1">Remarks</label>
-                        <input type="text" name="remarks" class="form-control form-control-sm" placeholder="General remarks..." value="{{ $receipt->remarks }}">
+                <!-- Footer Remarks & Actions -->
+                <div class="row g-2 align-items-end mb-4">
+                    <div class="col-md-7">
+                        <div class="card form-card mb-0">
+                            <div class="card-body p-2">
+                                <label class="form-label">General Remarks / Note</label>
+                                <input type="text" name="remarks" class="form-control form-control-sm" placeholder="Type additional voucher notes here..." value="{{ $receipt->remarks }}">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-5">
+                        <div class="d-flex gap-1 justify-content-end mb-1">
+                            @if($receipt->status != 'posted')
+                                <button type="button" id="saveDraftBtn" class="btn btn-warning btn-sm fw-bold rounded-pill px-4 shadow-sm" style="font-size: 11px;">
+                                    <i class="fa fa-save me-1"></i> Save Draft
+                                </button>
+                                <button type="button" id="postBtn" class="btn btn-primary btn-sm fw-bold rounded-pill px-4 shadow-sm" style="font-size: 11px;">
+                                    <i class="fa fa-send me-1"></i> Post Voucher
+                                </button>
+                            @endif
+                            
+                            <button type="button" id="editBtn" class="btn btn-warning btn-sm fw-bold rounded-pill px-4 shadow-sm" style="{{ ($receipt->id && $receipt->status != 'posted') ? 'display:block' : 'display:none' }}; font-size: 11px;">
+                                <i class="fa fa-pencil me-1"></i> Unlock Edit
+                            </button>
+
+                            <a href="{{ $receipt->id ? route('incomeVoucher.print', $receipt->id) : 'javascript:void(0)' }}" id="previewPrintBtn" target="_blank" class="btn btn-outline-dark btn-sm rounded-pill px-3 shadow-sm {{ !$receipt->id ? 'disabled' : '' }}" style="font-size: 11px;">
+                                <i class="fa fa-print"></i> Print
+                            </a>
+                            <a href="{{ route('income-vochers') }}" class="btn btn-info btn-sm text-dark fw-bold rounded-pill px-3 shadow-sm" style="font-size: 11px;">
+                                <i class="fa fa-plus"></i> New
+                            </a>
+                            <button type="button" id="deleteBtn" class="btn btn-danger btn-sm fw-bold rounded-pill px-3 shadow-sm" style="{{ !$receipt->id ? 'display:none' : '' }}; font-size: 11px;">
+                                <i class="fa fa-trash"></i>
+                            </button>
+                        </div>
                     </div>
                 </div>
-            </div>
+            </form>
 
-            <div class="d-flex gap-2 justify-content-end mt-4 pt-4 border-top">
-                @if($receipt->status != 'posted')
-                <button type="button" id="saveDraftBtn" class="btn btn-sm btn-warning text-dark fw-bold rounded-pill px-4 shadow-sm">
-                    <i class="fa fa-save me-1"></i> Save Draft <kbd class="ms-1 small opacity-75">Ctrl+S</kbd>
-                </button>
-                <button type="button" id="postBtn" class="btn btn-sm btn-primary text-dark fw-bold rounded-pill px-4 shadow-sm">
-                    <i class="fa fa-send me-1"></i> Save Post <kbd class="ms-1 small opacity-75">Ctrl+&#8629;</kbd>
-                </button>
-                @endif
-                <button type="button" id="editBtn" class="btn btn-sm btn-warning text-dark fw-bold rounded-pill px-4 shadow-sm" style="{{ ($receipt->id && $receipt->status != 'posted') ? 'display:block' : 'display:none' }}">
-                    <i class="fa fa-pencil me-1"></i> Edit <kbd class="ms-1 small opacity-75">Ctrl+E</kbd>
-                </button>
-                @if($receipt->status == 'posted')
-                <button type="button" id="unpostBtn" class="btn btn-sm btn-outline-danger rounded-pill px-4 shadow-sm">
-                    <i class="fa fa-undo me-1"></i> Unpost
-                </button>
-                @endif
-                <a href="{{ $receipt->id ? route('incomeVoucher.print', $receipt->id) : 'javascript:void(0)' }}" id="previewPrintBtn" target="_blank" class="btn btn-sm btn-outline-dark rounded-pill px-4 shadow-sm {{ !$receipt->id ? 'disabled' : '' }}">
-                    <i class="fa fa-print me-1"></i> Print Preview <kbd class="ms-1 small opacity-75">Ctrl+P</kbd>
-                </a>
-                <a href="{{ route('income-vochers') }}" class="btn btn-sm btn-info text-dark fw-bold rounded-pill px-4 shadow-sm">
-                    <i class="fa fa-plus me-1"></i> New <kbd class="ms-1 small opacity-75">Ctrl+M</kbd>
-                </a>
-                <button type="button" id="deleteBtn" class="btn btn-sm btn-danger text-dark fw-bold rounded-pill px-4 shadow-sm" style="{{ !$receipt->id ? 'display:none' : '' }}">
-                    <i class="fa fa-trash me-1"></i> Delete
-                </button>
-            </div>
-        </form>
-
-        <div class="posted-watermark" id="postedWatermark" style="{{ $receipt->status == 'posted' ? 'display: block;' : '' }}">Posted</div>
+            @if($receipt->status == 'posted')
+                <div class="posted-watermark" id="postedWatermark">Posted</div>
+            @endif
+        </div>
     </div>
 </div>
 
@@ -216,6 +250,7 @@
 <script>
 $(document).ready(function() {
     function initSelectors($container = $('body')) {
+        $container.find('.select2').select2({ width: '100%' });
         $container.find('.narrationSelect').select2({ placeholder: "Narration...", tags: true, width: '100%' });
         $container.find('.rowPartySelect').select2({ placeholder: "Select Party...", allowClear: true, width: '100%' });
         $('#account_id').select2({ placeholder: "Select Account...", allowClear: true, width: '100%' });
@@ -281,9 +316,7 @@ $(document).ready(function() {
         }
     });
 
-    $('.rowPartyType').each(function() {
-        if ($(this).val()) $(this).trigger('change');
-    });
+    $('.rowPartyType').each(function() { if ($(this).val()) $(this).trigger('change'); });
 
     $(document).on('change', '.rowPartySelect', function() {
         let code = $(this).find('option:selected').attr('data-code');
@@ -307,19 +340,19 @@ $(document).ready(function() {
     function calc() {
         let t = 0;
         $('.row-amount').each(function() { t += parseFloat($(this).val()) || 0; });
-        $('#totalAmount').val(t.toFixed(2));
+        $('#totalAmount').val(t.toLocaleString('en-US', {minimumFractionDigits: 2}));
     }
     $(document).on('input', '.row-amount', calc);
 
     $('#btnAddRow').click(function() {
         let row = `<tr>
-            <td><select name="narration_id[]" class="form-select narrationSelect"><option value="">Narration...</option>@foreach($narrationsList as $lid => $lname)<option value="{{ $lid }}">{{ $lname }}</option>@endforeach</select></td>
-            <td><select name="party_type[]" class="form-select form-select-sm rowPartyType"><option value="">Select Type...</option>@foreach($AccountHeads as $head)<option value="{{ $head->id }}">{{ $head->name }}</option>@endforeach<option value="vendor">Vendor</option><option value="customer">Customer</option><option value="walkin">Walkin</option></select></td>
-            <td><input type="text" name="row_party_code[]" class="form-control form-control-sm text-center rowPartyCode" placeholder="Code/ID"></td>
-            <td><select name="party_id[]" class="form-select form-select-sm rowPartySelect"><option value="">Select Party...</option></select></td>
-            <td><input type="text" name="reference_no[]" class="form-control form-control-sm"></td>
-            <td><input type="number" step="0.01" name="amount[]" class="form-control form-control-sm text-end row-amount"></td>
-            <td class="text-center"><button type="button" class="btn text-danger btn-xs removeRow"><i class="fa fa-trash"></i></button></td>
+            <td><select name="narration_id[]" class="form-select form-select-sm narrationSelect"><option value="">Narration...</option>@foreach($narrationsList as $lid => $lname)<option value="{{ $lid }}">{{ $lname }}</option>@endforeach</select></td>
+            <td><select name="party_type[]" class="form-select form-select-sm rowPartyType select2"><option value="">Select Type...</option>@foreach($AccountHeads as $head)<option value="{{ $head->id }}">{{ $head->name }}</option>@endforeach<option value="vendor">Vendor</option><option value="customer">Customer</option><option value="walkin">Walkin</option></select></td>
+            <td><input type="text" name="row_party_code[]" class="form-control form-control-sm text-center fw-bold text-danger rowPartyCode" placeholder="Code"></td>
+            <td><select name="party_id[]" class="form-select form-select-sm rowPartySelect select2"><option value="">Select Party...</option></select></td>
+            <td><input type="text" name="reference_no[]" class="form-control form-control-sm" placeholder="Ref#"></td>
+            <td><input type="number" step="0.01" name="amount[]" class="form-control form-control-sm text-end fw-bold row-amount" placeholder="0.00"></td>
+            <td class="text-center"><button type="button" class="btn text-danger btn-xs removeRow p-0"><i class="fa fa-trash-o fs-6"></i></button></td>
         </tr>`;
         $('#voucherTable tbody').append(row);
         initSelectors($('#voucherTable tbody tr').last());
@@ -361,37 +394,38 @@ $(document).ready(function() {
     $('#editBtn').click(function() { $('#incomeForm').removeClass('form-locked'); $(this).hide(); });
 
     $('#postBtn').click(function() {
-        $('#saveDraftBtn').click();
-        setTimeout(() => {
-            let id = $('#receipt_id').val();
-            if(id) {
-                let f = $('<form>', {action: '{{ route("income.vochers.post", ":id") }}'.replace(':id', id), method: 'POST'});
-                f.append($('<input>', {type: 'hidden', name: '_token', value: '{{ csrf_token() }}'}));
-                $('body').append(f); f.submit();
+        Swal.fire({
+            title: 'Post Voucher?', text: 'Once posted, accounting entries will be finalized.', icon: 'question', showCancelButton: true
+        }).then((res) => {
+            if(res.isConfirmed) {
+                $('#saveDraftBtn').click();
+                setTimeout(() => {
+                    let id = $('#receipt_id').val();
+                    if(id) {
+                        let f = $('<form>', {action: '{{ route("income.vochers.post", ":id") }}'.replace(':id', id), method: 'POST'});
+                        f.append($('<input>', {type: 'hidden', name: '_token', value: '{{ csrf_token() }}'}));
+                        $('body').append(f); f.submit();
+                    }
+                }, 1000);
             }
-        }, 1000);
+        });
     });
 
     $(window).on('keydown', function(e) {
-        if ((e.ctrlKey || e.metaKey) && (e.which == 83 || e.keyCode == 83)) { 
-            e.preventDefault(); 
-            if (!$('#saveDraftBtn').is(':disabled') && $('#saveDraftBtn').is(':visible')) {
-                $('#saveDraftBtn').click(); 
+        if ((e.ctrlKey || e.metaKey) && (e.which == 83 || e.keyCode == 83)) { e.preventDefault(); $('#saveDraftBtn').click(); return false; }
+        if ((e.ctrlKey || e.metaKey) && (e.which == 13 || e.keyCode == 13)) { e.preventDefault(); $('#postBtn').click(); }
+    });
+
+    $('#deleteBtn').click(function() {
+        Swal.fire({ title: 'Delete permanently?', icon: 'warning', showCancelButton: true, confirmButtonColor: '#d33' }).then((res) => {
+            if(res.isConfirmed) {
+                let id = $('#receipt_id').val();
+                let f = $('<form>', {action: '{{ route("income.vochers.cancel", ":id") }}'.replace(':id', id), method: 'POST'});
+                f.append($('<input>', {type: 'hidden', name: '_token', value: '{{ csrf_token() }}'}));
+                f.append($('<input>', {type: 'hidden', name: '_method', value: 'DELETE'}));
+                $('body').append(f); f.submit();
             }
-            return false;
-        }
-        if ((e.ctrlKey || e.metaKey) && (e.which == 13 || e.keyCode == 13)) { 
-            e.preventDefault(); 
-            $('#postBtn').click(); 
-        }
-        if ((e.ctrlKey || e.metaKey) && (e.which == 69 || e.keyCode == 69)) { 
-            e.preventDefault(); 
-            $('#editBtn').click(); 
-        }
-        if (e.altKey && (e.which == 65 || e.keyCode == 65)) { 
-            e.preventDefault(); 
-            $('#btnAddRow').click(); 
-        }
+        });
     });
 });
 </script>
