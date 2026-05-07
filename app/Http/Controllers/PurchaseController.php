@@ -16,6 +16,7 @@ use App\Models\Warehouse;
 use App\Models\PurchaseItem;
 use App\Models\VendorLedger;
 use App\Models\Voucher;
+use App\Models\JournalVoucher;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -741,82 +742,116 @@ class PurchaseController extends Controller
             }
         }
 
-        // 2. Ledger Update
+        // 2. Ledger Update (Vendor/Party)
         $amount = $purchase->net_amount;
         $type = strtolower(class_basename($purchase->purchasable_type));
         $party_id = $purchase->purchasable_id;
 
         if ($type === 'vendor') {
-            $ledger = VendorLedger::where('vendor_id', $party_id)->latest('id')->first();
-            if ($ledger) {
-                $ledger->previous_balance = $ledger->closing_balance;
-                $ledger->closing_balance  = $ledger->closing_balance + $amount;
-                $ledger->save();
-            } else {
-                VendorLedger::create([
-                    'vendor_id'        => $party_id,
-                    'admin_or_user_id' => auth()->id(),
-                    'date'             => $purchase->current_date,
-                    'description'      => 'Purchase ID: ' . $purchase->id,
-                    'previous_balance' => 0,
-                    'closing_balance'  => $amount,
-                    'opening_balance'  => $amount,
-                ]);
-            }
+            $latestLedger = VendorLedger::where('vendor_id', $party_id)->latest('id')->first();
+            $prevBalance = $latestLedger ? $latestLedger->closing_balance : 0;
+            
+            VendorLedger::create([
+                'vendor_id'        => $party_id,
+                'admin_or_user_id' => auth()->id(),
+                'date'             => $purchase->current_date,
+                'description'      => 'Purchase ID: ' . $purchase->invoice_no,
+                'opening_balance'  => $prevBalance,
+                'previous_balance' => $prevBalance,
+                'debit'            => 0,
+                'credit'           => $amount,
+                'closing_balance'  => $prevBalance + $amount, // Credit increases liability/balance
+            ]);
         } elseif ($type === 'customer' || $type === 'walkin') {
-            $ledger = CustomerLedger::where('customer_id', $party_id)->latest('id')->first();
-            if ($ledger) {
-                $ledger->previous_balance = $ledger->closing_balance;
-                $ledger->closing_balance  = $ledger->closing_balance + $amount;
-                $ledger->save();
-            } else {
-                CustomerLedger::create([
-                    'customer_id'      => $party_id,
-                    'admin_or_user_id' => auth()->id(),
-                    'previous_balance' => 0,
-                    'closing_balance'  => $amount,
-                    'opening_balance'  => $amount,
-                ]);
-            }
+            $latestLedger = CustomerLedger::where('customer_id', $party_id)->latest('id')->first();
+            $prevBalance = $latestLedger ? $latestLedger->closing_balance : 0;
+
+            CustomerLedger::create([
+                'customer_id'      => $party_id,
+                'admin_or_user_id' => auth()->id(),
+                'date'             => $purchase->current_date,
+                'description'      => 'Purchase ID: ' . $purchase->invoice_no,
+                'previous_balance' => $prevBalance,
+                'closing_balance'  => $prevBalance + $amount,
+                'opening_balance'  => $prevBalance,
+            ]);
         }
 
-        // 3. Account Allocations impact
+        // 3. Account Allocations impact -> CREDIT (as per USER request)
         foreach ($purchase->accountAllocations as $allocation) {
             $account = Account::find($allocation->account_id);
             if ($account) {
-                $account->opening_balance = ($account->opening_balance ?? 0) + $allocation->amount;
+                // Update Account Balance
+                $account->opening_balance = ($account->opening_balance ?? 0) - $allocation->amount; // Credit decreases asset/increases liability? 
+                // Wait, if it's an expense account, credit decreases it. 
+                // But the user said "credit hoga".
                 $account->save();
+
+                // Create a Journal Voucher entry to show in reports
+                $jvid = 'PJ-ALLOC-' . $purchase->id;
+                JournalVoucher::create([
+                    'jvid' => $jvid,
+                    'entry_date' => $purchase->current_date,
+                    'status' => 'posted',
+                    'total_debit' => 0,
+                    'total_credit' => $allocation->amount,
+                    'party_type' => $account->head_id, // Using account head as type for account rows
+                    'party_id' => json_encode([$account->id]),
+                    'debit' => json_encode([0]),
+                    'credit' => json_encode([$allocation->amount]),
+                    'remarks' => 'Allocation from Purchase: ' . $purchase->invoice_no,
+                ]);
             }
         }
 
-        // 4. Vouchers
+        // 4. Discount Voucher -> Credit
         if ($purchase->discount > 0) {
             Voucher::create([
                 'voucher_type'  => 'Discount voucher',
-                'date'          => now(),
+                'date'          => $purchase->current_date,
                 'sales_officer' => auth()->user()->name,
                 'type'          => 'Credit',
                 'person'        => $purchase->purchasable_id,
                 'sub_head'      => 'Purchase Discount',
-                'narration'     => 'Discount applied on Purchase ID: ' . $purchase->id,
-                'amount'        => $purchase->discount
+                'narration'     => 'Discount applied on Purchase ID: ' . $purchase->invoice_no,
+                'amount'        => $purchase->discount,
+                'status'        => 'posted'
             ]);
         }
 
+        // 5. WHT Voucher -> DEBIT (as per USER request)
         if ($purchase->wht > 0) {
             Voucher::create([
                 'voucher_type'  => 'Wht voucher',
-                'date'          => now(),
+                'date'          => $purchase->current_date,
                 'sales_officer' => auth()->user()->name,
-                'type'          => 'Credit',
+                'type'          => 'Debit', // Changed from Credit
                 'person'        => $purchase->purchasable_id,
                 'sub_head'      => 'WHT',
-                'narration'     => 'WHT applied on Purchase ID: ' . $purchase->id,
-                'amount'        => $purchase->wht
+                'narration'     => 'WHT applied on Purchase ID: ' . $purchase->invoice_no,
+                'amount'        => $purchase->wht,
+                'status'        => 'posted'
             ]);
+            
+            // If it impacts Vendor Ledger as Debit
+            if ($type === 'vendor') {
+                $latestLedger = VendorLedger::where('vendor_id', $party_id)->latest('id')->first();
+                $prevBalance = $latestLedger ? $latestLedger->closing_balance : 0;
+                VendorLedger::create([
+                    'vendor_id'        => $party_id,
+                    'admin_or_user_id' => auth()->id(),
+                    'date'             => $purchase->current_date,
+                    'description'      => 'WHT on Purchase: ' . $purchase->invoice_no,
+                    'opening_balance'  => $prevBalance,
+                    'previous_balance' => $prevBalance,
+                    'debit'            => $purchase->wht,
+                    'credit'           => 0,
+                    'closing_balance'  => $prevBalance - $purchase->wht, // Debit decreases liability
+                ]);
+            }
         }
 
-        // 5. Inward Update if exists
+        // 6. Inward Update if exists
         if ($purchase->inward_id) {
             InwardGatepass::where('id', $purchase->inward_id)->update(['status' => 'linked']);
         }

@@ -336,57 +336,87 @@ class PurchaseReturnController extends Controller
                     }
                 }
 
-                // 2. Ledger Impact
+                // 2. Ledger Impact (Standardized with history)
                 $amount = $ret->net_amount;
                 $pType = class_basename($ret->purchasable_type);
                 $pId = $ret->purchasable_id;
 
                 if ($pType === 'Vendor') {
-                    $ledger = VendorLedger::where('vendor_id', $pId)->latest('id')->first();
-                    if ($ledger) {
-                        $ledger->previous_balance = $ledger->closing_balance;
-                        $ledger->closing_balance  = $ledger->closing_balance - $amount;
-                        $ledger->save();
-                    } else {
-                        VendorLedger::create([
-                            'vendor_id'        => $pId,
-                            'admin_or_user_id' => auth()->id(),
-                            'date'             => $ret->current_date,
-                            'description'      => 'Purchase Return Posted: ' . $ret->invoice_no,
-                            'previous_balance' => 0,
-                            'closing_balance'  => -$amount,
-                            'opening_balance'  => -$amount,
-                        ]);
-                    }
+                    $latestLedger = VendorLedger::where('vendor_id', $pId)->latest('id')->first();
+                    $prevBalance = $latestLedger ? $latestLedger->closing_balance : 0;
+                    
+                    VendorLedger::create([
+                        'vendor_id'        => $pId,
+                        'admin_or_user_id' => auth()->id(),
+                        'date'             => $ret->current_date,
+                        'description'      => 'Purchase Return ID: ' . $ret->invoice_no,
+                        'opening_balance'  => $prevBalance,
+                        'previous_balance' => $prevBalance,
+                        'debit'            => $amount,
+                        'credit'           => 0,
+                        'closing_balance'  => $prevBalance - $amount, // Debit decreases liability/balance
+                    ]);
                 } elseif ($pType === 'Customer') {
-                    $ledger = CustomerLedger::where('customer_id', $pId)->latest('id')->first();
-                    if ($ledger) {
-                        $ledger->previous_balance = $ledger->closing_balance;
-                        $ledger->closing_balance  = $ledger->closing_balance - $amount;
-                        $ledger->save();
-                    } else {
-                        CustomerLedger::create([
-                            'customer_id'      => $pId,
-                            'admin_or_user_id' => auth()->id(),
-                            'previous_balance' => 0,
-                            'closing_balance'  => -$amount,
-                            'opening_balance'  => -$amount,
-                        ]);
-                    }
+                    $latestLedger = CustomerLedger::where('customer_id', $pId)->latest('id')->first();
+                    $prevBalance = $latestLedger ? $latestLedger->closing_balance : 0;
+
+                    CustomerLedger::create([
+                        'customer_id'      => $pId,
+                        'admin_or_user_id' => auth()->id(),
+                        'date'             => $ret->current_date,
+                        'description'      => 'Purchase Return ID: ' . $ret->invoice_no,
+                        'previous_balance' => $prevBalance,
+                        'opening_balance'  => $prevBalance,
+                        'closing_balance'  => $prevBalance - $amount,
+                    ]);
                 }
 
                 // 3. Vouchers
+                // Discount Voucher -> DEBIT (Reversing purchase credit if any, or just recording impact)
                 if ($ret->discount > 0) {
                     Voucher::create([
                         'voucher_type'  => 'Purchase Return Discount',
-                        'date'          => now(),
+                        'date'          => $ret->current_date,
                         'sales_officer' => auth()->user()->name,
                         'type'          => 'Debit',
                         'person'        => $ret->purchasable_id,
                         'sub_head'      => 'Purchase Return Discount',
-                        'narration'     => 'Discount on Purchase Return Posted: ' . $ret->invoice_no,
+                        'narration'     => 'Discount on Purchase Return ID: ' . $ret->invoice_no,
                         'amount'        => $ret->discount,
+                        'status'        => 'posted'
                     ]);
+                }
+
+                // WHT Voucher -> CREDIT (as per USER request - Reversing purchase debit)
+                if ($ret->wht > 0) {
+                    Voucher::create([
+                        'voucher_type'  => 'Purchase Return WHT',
+                        'date'          => $ret->current_date,
+                        'sales_officer' => auth()->user()->name,
+                        'type'          => 'Credit', // Reversing the Debit from purchase
+                        'person'        => $ret->purchasable_id,
+                        'sub_head'      => 'Purchase Return WHT',
+                        'narration'     => 'WHT on Purchase Return ID: ' . $ret->invoice_no,
+                        'amount'        => $ret->wht,
+                        'status'        => 'posted'
+                    ]);
+
+                    // Impact on Vendor Ledger for WHT (Credit)
+                    if ($pType === 'Vendor') {
+                        $latestLedger = VendorLedger::where('vendor_id', $pId)->latest('id')->first();
+                        $prevBalance = $latestLedger ? $latestLedger->closing_balance : 0;
+                        VendorLedger::create([
+                            'vendor_id'        => $pId,
+                            'admin_or_user_id' => auth()->id(),
+                            'date'             => $ret->current_date,
+                            'description'      => 'WHT Credit on Return: ' . $ret->invoice_no,
+                            'opening_balance'  => $prevBalance,
+                            'previous_balance' => $prevBalance,
+                            'debit'            => 0,
+                            'credit'           => $ret->wht,
+                            'closing_balance'  => $prevBalance + $ret->wht, // Credit increases liability
+                        ]);
+                    }
                 }
 
                 $ret->status = 'Posted';

@@ -50,6 +50,13 @@ class VendorController extends Controller
     }
 
 
+    public function create()
+    {
+        $userGroups = UserGroup::all();
+        $isAdmin = Auth::user()->roles->pluck('name')->contains('Admin') || Auth::user()->usertype == 'admin';
+        return view('admin_panel.vendors.create', compact('userGroups', 'isAdmin'));
+    }
+
     public function store(Request $request)
     {
         $request->validate([
@@ -62,42 +69,58 @@ class VendorController extends Controller
 
         $userId = Auth::id();
 
-        if ($request->id) {
-            // Update vendor
-            $vendor = Vendor::findOrFail($request->id);
-            $vendor->update([
-                'name' => $request->name,
-                'phone' => $request->phone,
-                'address' => $request->address,
-                'opening_balance' => intval($request->opening_balance ?? 0),
-                'user_group_ids' => $request->user_group_ids,
-            ]);
+        // New vendor
+        $vendor = Vendor::create([
+            'name' => $request->name,
+            'phone' => $request->phone,
+            'address' => $request->address,
+            'opening_balance' => intval($request->opening_balance ?? 0),
+            'user_group_ids' => $request->user_group_ids,
+            'created_by' => $userId,
+        ]);
 
-            // Yahan agar edit ke waqt ledger bhi update karna hai to extra logic dalna hoga
-        } else {
-            // New vendor
-            $vendor = Vendor::create([
-                'name' => $request->name,
-                'phone' => $request->phone,
-                'address' => $request->address,
-                'opening_balance' => intval($request->opening_balance ?? 0),
-                'user_group_ids' => $request->user_group_ids,
-                'created_by' => $userId,
-            ]);
+        $opening = intval($request->opening_balance ?? 0);
+        VendorLedger::create([
+            'vendor_id'        => $vendor->id,
+            'admin_or_user_id' => $userId,
+            'date'             => now(),
+            'description'      => 'Opening Balance',
+            'opening_balance'  => $opening,
+            'previous_balance' => 0,
+            'closing_balance'  => $opening,
+        ]);
 
-            $opening = intval($request->opening_balance ?? 0);
-            VendorLedger::create([
-                'vendor_id'        => $vendor->id,
-                'admin_or_user_id' => $userId,
-                'date'             => now(),
-                'description'      => 'Opening Balance',
-                'opening_balance'  => $opening,
-                'previous_balance' => 0,
-                'closing_balance'  => $opening,
-            ]);
-        }
+        return redirect('/vendor')->with('success', 'Vendor saved successfully');
+    }
 
-        return back()->with('success', 'Vendor saved successfully');
+    public function edit($id)
+    {
+        $vendor = Vendor::findOrFail($id);
+        $userGroups = UserGroup::all();
+        $isAdmin = Auth::user()->roles->pluck('name')->contains('Admin') || Auth::user()->usertype == 'admin';
+        return view('admin_panel.vendors.edit', compact('vendor', 'userGroups', 'isAdmin'));
+    }
+
+    public function update(Request $request, $id)
+    {
+        $request->validate([
+            'name' => 'required|string',
+            'phone' => 'nullable|string',
+            'address' => 'nullable|string',
+            'opening_balance' => 'nullable|numeric',
+            'user_group_ids' => 'nullable|array',
+        ]);
+
+        $vendor = Vendor::findOrFail($id);
+        $vendor->update([
+            'name' => $request->name,
+            'phone' => $request->phone,
+            'address' => $request->address,
+            'opening_balance' => intval($request->opening_balance ?? 0),
+            'user_group_ids' => $request->user_group_ids,
+        ]);
+
+        return redirect('/vendor')->with('success', 'Vendor updated successfully');
     }
 
 

@@ -20,6 +20,19 @@ use Carbon\Carbon;
 
 class GeneralLedgerController extends Controller
 {
+    private function getDateColumn($table, $fallback = 'DATE(created_at)')
+    {
+        static $cache = [];
+        if (!isset($cache[$table])) {
+            if (\Illuminate\Support\Facades\Schema::hasColumn($table, 'entry_date')) {
+                $cache[$table] = "COALESCE(entry_date, $fallback)";
+            } else {
+                $cache[$table] = $fallback;
+            }
+        }
+        return $cache[$table];
+    }
+
     public function index()
     {
         $heads = AccountHead::orderBy('name')->get();
@@ -186,8 +199,9 @@ class GeneralLedgerController extends Controller
         $class = ($type == 'customer') ? 'App\Models\Customer' : 'App\Models\Vendor';
 
         // 1. Sales (SJ) - Aggregate
+        $salesDateCol = $this->getDateColumn('sales');
         $sales = Sale::where('customer_id', $id)->where('partyType', $type)
-            ->whereBetween(DB::raw('COALESCE(entry_date, DATE(created_at))'), [$start, $end])
+            ->whereBetween(DB::raw($salesDateCol), [$start, $end])
             ->get();
         foreach ($sales as $sale) {
             $transactions[] = [
@@ -202,11 +216,12 @@ class GeneralLedgerController extends Controller
         }
 
         // 2. Purchase Returns (PRJ) - Aggregate
+        $prDateCol = $this->getDateColumn('purchase_returns', 'current_date');
         $pReturns = PurchaseReturn::where(function($q) use ($id, $type, $class) {
                 $q->where('vendor_id', $id)->orWhere(function($q2) use ($id, $class) {
                     $q2->where('purchasable_id', $id)->where('purchasable_type', $class);
                 });
-            })->whereBetween(DB::raw('COALESCE(entry_date, DATE(created_at))'), [$start, $end])
+            })->whereBetween(DB::raw($prDateCol), [$start, $end])
             ->get();
         foreach ($pReturns as $pr) {
             $transactions[] = [
@@ -221,8 +236,9 @@ class GeneralLedgerController extends Controller
         }
 
         // 3. Payments (PV)
+        $pvDateCol = $this->getDateColumn('payment_vouchers', 'receipt_date');
         $payments = PaymentVoucher::where('party_id', $id)->where('type', $type)
-            ->whereBetween(DB::raw('COALESCE(entry_date, DATE(created_at))'), [$start, $end])->get();
+            ->whereBetween(DB::raw($pvDateCol), [$start, $end])->get();
         foreach ($payments as $pv) {
             $transactions[] = [
                 'date' => $pv->entry_date ?: $pv->created_at,
@@ -234,8 +250,9 @@ class GeneralLedgerController extends Controller
         }
 
         // 3.1 Expenses (EV)
+        $evDateCol = $this->getDateColumn('expense_vouchers');
         $expenses = DB::table('expense_vouchers')->where('party_id', $id)->where('type', $type)
-            ->whereBetween(DB::raw('COALESCE(entry_date, DATE(created_at))'), [$start, $end])->get();
+            ->whereBetween(DB::raw($evDateCol), [$start, $end])->get();
         foreach ($expenses as $ev) {
             $transactions[] = [
                 'date' => $ev->entry_date ?: $ev->created_at,
@@ -247,8 +264,9 @@ class GeneralLedgerController extends Controller
         }
 
         // 4. JV
+        $jvDateCol = $this->getDateColumn('journal_vouchers');
         $jvs = JournalVoucher::where('party_id', $id)->where('party_type', $type)
-            ->whereBetween(DB::raw('COALESCE(entry_date, DATE(created_at))'), [$start, $end])->get();
+            ->whereBetween(DB::raw($jvDateCol), [$start, $end])->get();
         foreach ($jvs as $jv) {
             $transactions[] = [
                 'date' => $jv->entry_date ?: $jv->created_at,
@@ -260,11 +278,12 @@ class GeneralLedgerController extends Controller
         }
 
         // 5. Purchases (PJ) - Aggregate
+        $pjDateCol = $this->getDateColumn('purchases', 'current_date');
         $purchases = Purchase::where(function($q) use ($id, $type, $class) {
                 $q->where('vendor_id', $id)->orWhere(function($q2) use ($id, $class) {
                     $q2->where('purchasable_id', $id)->where('purchasable_type', $class);
                 });
-            })->whereBetween(DB::raw('COALESCE(entry_date, DATE(created_at))'), [$start, $end])
+            })->whereBetween(DB::raw($pjDateCol), [$start, $end])
             ->get();
         foreach ($purchases as $p) {
             $transactions[] = [
@@ -279,8 +298,9 @@ class GeneralLedgerController extends Controller
         }
 
         // 6. Sale Returns (SRJ) - Aggregate
+        $srDateCol = $this->getDateColumn('sale_returns', 'current_date');
         $sReturns = SaleReturn::where('customer_id', $id)->where('party_type', $type)
-            ->whereBetween(DB::raw('COALESCE(entry_date, current_date)'), [$start, $end])
+            ->whereBetween(DB::raw($srDateCol), [$start, $end])
             ->get();
         foreach ($sReturns as $sr) {
             $transactions[] = [
@@ -295,8 +315,9 @@ class GeneralLedgerController extends Controller
         }
 
         // 7. Receipts (RV)
+        $rvDateCol = $this->getDateColumn('receipts_vouchers', 'receipt_date');
         $receipts = ReceiptsVoucher::where('party_id', $id)->where('type', $type)
-            ->whereBetween(DB::raw('COALESCE(entry_date, DATE(created_at))'), [$start, $end])->get();
+            ->whereBetween(DB::raw($rvDateCol), [$start, $end])->get();
         foreach ($receipts as $rv) {
             $transactions[] = [
                 'date' => $rv->entry_date ?: $rv->created_at,
@@ -308,8 +329,9 @@ class GeneralLedgerController extends Controller
         }
 
         // 7.1 Incomes (IV)
+        $ivDateCol = $this->getDateColumn('income_vouchers');
         $incomes = DB::table('income_vouchers')->where('party_id', $id)->where('party_type', $type)
-            ->whereBetween(DB::raw('COALESCE(entry_date, DATE(created_at))'), [$start, $end])->get();
+            ->whereBetween(DB::raw($ivDateCol), [$start, $end])->get();
         foreach ($incomes as $iv) {
             $transactions[] = [
                 'date' => $iv->entry_date ?: $iv->created_at,
@@ -336,9 +358,11 @@ class GeneralLedgerController extends Controller
             $balance = (float)($account->opening_balance ?? 0);
             
             // Receipts (Debit)
-            $voucherDebits = (float)ReceiptsVoucher::where('row_account_id', $id)->where(DB::raw('COALESCE(entry_date, DATE(created_at))'), '<', $date)->sum('amount');
+            $rvDateCol = $this->getDateColumn('receipts_vouchers', 'receipt_date');
+            $voucherDebits = (float)ReceiptsVoucher::where('row_account_id', $id)->where(DB::raw($rvDateCol), '<', $date)->sum('amount');
             // Payments (Credit)
-            $voucherCredits = (float)PaymentVoucher::where('row_account_id', $id)->where(DB::raw('COALESCE(entry_date, DATE(created_at))'), '<', $date)->sum('amount');
+            $pvDateCol = $this->getDateColumn('payment_vouchers', 'receipt_date');
+            $voucherCredits = (float)PaymentVoucher::where('row_account_id', $id)->where(DB::raw($pvDateCol), '<', $date)->sum('amount');
             
             $balance += ($voucherDebits - $voucherCredits);
             return $balance;
@@ -350,50 +374,60 @@ class GeneralLedgerController extends Controller
         $class = ($type == 'customer') ? 'App\Models\Customer' : 'App\Models\Vendor';
 
         // 1. Sales (Debit)
+        $salesDateCol = $this->getDateColumn('sales');
         $sales = (float)Sale::where('customer_id', $id)->where('partyType', $type)
-            ->where(DB::raw('COALESCE(entry_date, DATE(created_at))'), '<', $date)->sum('total_balance');
+            ->where(DB::raw($salesDateCol), '<', $date)->sum('total_balance');
         
         // 2. Purchase Returns (Debit)
+        $prDateCol = $this->getDateColumn('purchase_returns', 'current_date');
         $pReturns = (float)PurchaseReturn::where(function($q) use ($id, $type, $class) {
                 $q->where('vendor_id', $id)->orWhere(function($q2) use ($id, $class) {
                     $q2->where('purchasable_id', $id)->where('purchasable_type', $class);
                 });
-            })->where(DB::raw('COALESCE(entry_date, DATE(created_at))'), '<', $date)->sum('net_amount');
+            })->where(DB::raw($prDateCol), '<', $date)->sum('net_amount');
 
         // 3. Payments (Debit)
+        $pvDateCol = $this->getDateColumn('payment_vouchers', 'receipt_date');
         $payments = (float)PaymentVoucher::where('party_id', $id)->where('type', $type)
-            ->where(DB::raw('COALESCE(entry_date, DATE(created_at))'), '<', $date)->sum('amount');
+            ->where(DB::raw($pvDateCol), '<', $date)->sum('amount');
 
         // 3.1 Expenses (Debit)
+        $evDateCol = $this->getDateColumn('expense_vouchers');
         $expenses = (float)DB::table('expense_vouchers')->where('party_id', $id)->where('type', $type)
-            ->where(DB::raw('COALESCE(entry_date, DATE(created_at))'), '<', $date)->sum('amount');
+            ->where(DB::raw($evDateCol), '<', $date)->sum('amount');
 
         // 4. JV Debits
+        $jvDateCol = $this->getDateColumn('journal_vouchers');
         $jvDebits = (float)JournalVoucher::where('party_id', $id)->where('party_type', $type)
-            ->where(DB::raw('COALESCE(entry_date, DATE(created_at))'), '<', $date)->sum('debit');
+            ->where(DB::raw($jvDateCol), '<', $date)->sum('debit');
 
         // 5. Purchases (Credit)
+        $pjDateCol = $this->getDateColumn('purchases', 'current_date');
         $purchases = (float)Purchase::where(function($q) use ($id, $type, $class) {
                 $q->where('vendor_id', $id)->orWhere(function($q2) use ($id, $class) {
                     $q2->where('purchasable_id', $id)->where('purchasable_type', $class);
                 });
-            })->where(DB::raw('COALESCE(entry_date, DATE(created_at))'), '<', $date)->sum('net_amount');
+            })->where(DB::raw($pjDateCol), '<', $date)->sum('net_amount');
 
         // 6. Sale Returns (Credit)
+        $srDateCol = $this->getDateColumn('sale_returns', 'current_date');
         $sReturns = (float)SaleReturn::where('customer_id', $id)->where('party_type', $type)
-            ->where(DB::raw('COALESCE(entry_date, current_date)'), '<', $date)->sum('total_balance');
+            ->where(DB::raw($srDateCol), '<', $date)->sum('total_balance');
 
         // 7. Receipts (Credit)
+        $rvDateCol = $this->getDateColumn('receipts_vouchers', 'receipt_date');
         $receipts = (float)ReceiptsVoucher::where('party_id', $id)->where('type', $type)
-            ->where(DB::raw('COALESCE(entry_date, DATE(created_at))'), '<', $date)->sum('amount');
+            ->where(DB::raw($rvDateCol), '<', $date)->sum('amount');
         
         // 7.1 Income (Credit)
+        $ivDateCol = $this->getDateColumn('income_vouchers');
         $incomes = (float)DB::table('income_vouchers')->where('party_id', $id)->where('party_type', $type)
-            ->where(DB::raw('COALESCE(entry_date, DATE(created_at))'), '<', $date)->sum('amount');
+            ->where(DB::raw($ivDateCol), '<', $date)->sum('amount');
 
         // 8. JV Credits
+        $jvDateCol = $this->getDateColumn('journal_vouchers');
         $jvCredits = (float)JournalVoucher::where('party_id', $id)->where('party_type', $type)
-            ->where(DB::raw('COALESCE(entry_date, DATE(created_at))'), '<', $date)->sum('credit');
+            ->where(DB::raw($jvDateCol), '<', $date)->sum('credit');
 
         $balance += ($sales + $pReturns + $payments + $expenses + $jvDebits) - ($purchases + $sReturns + $receipts + $incomes + $jvCredits);
         
@@ -406,8 +440,9 @@ class GeneralLedgerController extends Controller
 
         if ($type == 'account') {
             // Receipts
+            $rvDateCol = $this->getDateColumn('receipts_vouchers', 'receipt_date');
             $rvs = ReceiptsVoucher::where('row_account_id', $id)
-                ->whereBetween(DB::raw('COALESCE(entry_date, DATE(created_at))'), [$start, $end])->get();
+                ->whereBetween(DB::raw($rvDateCol), [$start, $end])->get();
             foreach($rvs as $rv) {
                 $transactions[] = [
                     'date' => $rv->entry_date ?: $rv->created_at,
@@ -418,8 +453,9 @@ class GeneralLedgerController extends Controller
                 ];
             }
             // Payments
+            $pvDateCol = $this->getDateColumn('payment_vouchers', 'receipt_date');
             $pvs = PaymentVoucher::where('row_account_id', $id)
-                ->whereBetween(DB::raw('COALESCE(entry_date, DATE(created_at))'), [$start, $end])->get();
+                ->whereBetween(DB::raw($pvDateCol), [$start, $end])->get();
             foreach($pvs as $pv) {
                 $transactions[] = [
                     'date' => $pv->entry_date ?: $pv->created_at,
@@ -437,8 +473,9 @@ class GeneralLedgerController extends Controller
         $class = ($type == 'customer') ? 'App\Models\Customer' : 'App\Models\Vendor';
 
         // 1. Sales (SJ) - Debit
+        $salesDateCol = $this->getDateColumn('sales');
         $sales = Sale::where('customer_id', $id)->where('partyType', $type)
-            ->whereBetween(DB::raw('COALESCE(entry_date, DATE(created_at))'), [$start, $end])
+            ->whereBetween(DB::raw($salesDateCol), [$start, $end])
             ->with('items.product.brandRelation')->get();
         foreach ($sales as $sale) {
             foreach ($sale->items as $item) {
@@ -464,11 +501,12 @@ class GeneralLedgerController extends Controller
         }
 
         // 2. Purchase Returns (PRJ) - Debit
+        $prDateCol = $this->getDateColumn('purchase_returns', 'current_date');
         $pReturns = PurchaseReturn::where(function($q) use ($id, $type, $class) {
                 $q->where('vendor_id', $id)->orWhere(function($q2) use ($id, $class) {
                     $q2->where('purchasable_id', $id)->where('purchasable_type', $class);
                 });
-            })->whereBetween(DB::raw('COALESCE(entry_date, DATE(created_at))'), [$start, $end])
+            })->whereBetween(DB::raw($prDateCol), [$start, $end])
             ->with('items.product.brandRelation')->get();
         foreach ($pReturns as $pr) {
             foreach ($pr->items as $item) {
@@ -487,8 +525,9 @@ class GeneralLedgerController extends Controller
         }
 
         // 3. Payments (PV) - Debit
+        $pvDateCol = $this->getDateColumn('payment_vouchers', 'receipt_date');
         $payments = PaymentVoucher::where('party_id', $id)->where('type', $type)
-            ->whereBetween(DB::raw('COALESCE(entry_date, DATE(created_at))'), [$start, $end])->get();
+            ->whereBetween(DB::raw($pvDateCol), [$start, $end])->get();
         foreach ($payments as $pv) {
             $transactions[] = [
                 'date' => $pv->entry_date ?: $pv->created_at,
@@ -500,8 +539,9 @@ class GeneralLedgerController extends Controller
         }
 
         // 3.1 Expenses (EV) - Debit
+        $evDateCol = $this->getDateColumn('expense_vouchers');
         $expenses = DB::table('expense_vouchers')->where('party_id', $id)->where('type', $type)
-            ->whereBetween(DB::raw('COALESCE(entry_date, DATE(created_at))'), [$start, $end])->get();
+            ->whereBetween(DB::raw($evDateCol), [$start, $end])->get();
         foreach ($expenses as $ev) {
             $transactions[] = [
                 'date' => $ev->entry_date ?: $ev->created_at,
@@ -513,8 +553,9 @@ class GeneralLedgerController extends Controller
         }
 
         // 4. JV (JV) - Debit/Credit
+        $jvDateCol = $this->getDateColumn('journal_vouchers');
         $jvs = JournalVoucher::where('party_id', $id)->where('party_type', $type)
-            ->whereBetween(DB::raw('COALESCE(entry_date, DATE(created_at))'), [$start, $end])->get();
+            ->whereBetween(DB::raw($jvDateCol), [$start, $end])->get();
         foreach ($jvs as $jv) {
             $transactions[] = [
                 'date' => $jv->entry_date ?: $jv->created_at,
@@ -526,11 +567,12 @@ class GeneralLedgerController extends Controller
         }
 
         // 5. Purchases (PJ) - Credit
+        $pjDateCol = $this->getDateColumn('purchases', 'current_date');
         $purchases = Purchase::where(function($q) use ($id, $type, $class) {
                 $q->where('vendor_id', $id)->orWhere(function($q2) use ($id, $class) {
                     $q2->where('purchasable_id', $id)->where('purchasable_type', $class);
                 });
-            })->whereBetween(DB::raw('COALESCE(entry_date, DATE(created_at))'), [$start, $end])
+            })->whereBetween(DB::raw($pjDateCol), [$start, $end])
             ->with('items.product.brandRelation')->get();
         foreach ($purchases as $p) {
             foreach ($p->items as $item) {
@@ -556,8 +598,9 @@ class GeneralLedgerController extends Controller
         }
 
         // 6. Sale Returns (SRJ) - Credit
+        $srDateCol = $this->getDateColumn('sale_returns', 'current_date');
         $sReturns = SaleReturn::where('customer_id', $id)->where('party_type', $type)
-            ->whereBetween(DB::raw('COALESCE(entry_date, current_date)'), [$start, $end])
+            ->whereBetween(DB::raw($srDateCol), [$start, $end])
             ->with('items.product.brandRelation')->get();
         foreach ($sReturns as $sr) {
             foreach ($sr->items as $item) {
@@ -576,8 +619,9 @@ class GeneralLedgerController extends Controller
         }
 
         // 7. Receipts (RV) - Credit
+        $rvDateCol = $this->getDateColumn('receipts_vouchers', 'receipt_date');
         $receipts = ReceiptsVoucher::where('party_id', $id)->where('type', $type)
-            ->whereBetween(DB::raw('COALESCE(entry_date, DATE(created_at))'), [$start, $end])->get();
+            ->whereBetween(DB::raw($rvDateCol), [$start, $end])->get();
         foreach ($receipts as $rv) {
             $transactions[] = [
                 'date' => $rv->entry_date ?: $rv->created_at,
@@ -589,8 +633,9 @@ class GeneralLedgerController extends Controller
         }
 
         // 7.1 Incomes (IV) - Credit
+        $ivDateCol = $this->getDateColumn('income_vouchers');
         $incomes = DB::table('income_vouchers')->where('party_id', $id)->where('party_type', $type)
-            ->whereBetween(DB::raw('COALESCE(entry_date, DATE(created_at))'), [$start, $end])->get();
+            ->whereBetween(DB::raw($ivDateCol), [$start, $end])->get();
         foreach ($incomes as $iv) {
             $transactions[] = [
                 'date' => $iv->entry_date ?: $iv->created_at,

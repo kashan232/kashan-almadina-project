@@ -133,9 +133,9 @@
                                             <a href="{{ route('vendor.payments.index') }}" class="btn btn-outline-warning btn-sm rounded-pill px-3 text-dark">Payments</a>
                                         </div>
 
-                                        <button class="btn btn-primary btn-sm rounded-pill px-4 shadow-sm" data-bs-toggle="modal" data-bs-target="#addVendorModal" onclick="clearAddVendor()">
+                                        <a href="{{ route('vendor.create') }}" class="btn btn-primary btn-sm rounded-pill px-4 shadow-sm">
                                             <i class="fa fa-plus me-1"></i> Add Vendor
-                                        </button>
+                                        </a>
                                     </div>
                                 </div>
                             </div>
@@ -210,18 +210,9 @@
                                             <td><small>{{ Str::limit($v->address, 30) }}</small></td>
                                             <td class="text-center">
                                                 <div class="d-flex gap-1 justify-content-center">
-                                                    <button class="btn btn-outline-primary btn-xs px-1 py-0 edit-vendor-btn"
-                                                        data-id="{{ $v->id }}"
-                                                        data-name="{{ $v->name }}"
-                                                        data-phone="{{ $v->phone }}"
-                                                        data-address="{{ $v->address }}"
-                                                        data-opening_balance="{{ $v->opening_balance ?? 0 }}"
-                                                        data-user_group_ids="{{ json_encode($v->user_group_ids ?? []) }}"
-                                                        data-bs-toggle="modal"
-                                                        data-bs-target="#editVendorModal"
-                                                        style="height: 20px;">
+                                                    <a href="{{ route('vendor.edit', $v->id) }}" class="btn btn-outline-primary btn-xs px-1 py-0" style="height: 20px;">
                                                         <i class="fa fa-edit"></i>
-                                                    </button>
+                                                    </a>
 
                                                     <a href="{{ url('vendor/delete/'.$v->id) }}"
                                                         class="btn btn-outline-danger btn-xs px-1 py-0"
@@ -245,122 +236,6 @@
     </div>
 </div>
 
-<!-- ADD Vendor Modal -->
-<div class="modal fade" id="addVendorModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
-        <form id="vendorAddForm" action="{{ url('vendor/store') }}" method="POST">@csrf
-            <div class="modal-content border-0 shadow">
-                <div class="modal-header bg-primary text-white py-2">
-                    <h5 class="modal-title fs-6">Add New Vendor</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body p-3">
-                    <div class="mb-2">
-                        <label class="form-label small fw-bold">Vendor Name</label>
-                        <input class="form-control form-control-sm" name="name" id="add_vname" placeholder="Name" required>
-                    </div>
-                    <div class="mb-2">
-                        <label class="form-label small fw-bold">Phone Number</label>
-                        <input class="form-control form-control-sm" name="phone" id="add_vphone" placeholder="Phone">
-                    </div>
-                    <div class="mb-2">
-                        <label class="form-label small fw-bold">Opening Balance</label>
-                        <input class="form-control form-control-sm" name="opening_balance" id="add_vopening" placeholder="0.00" type="number" step="0.01">
-                    </div>
-                    <div class="mb-2">
-                        <label class="form-label small fw-bold">Address</label>
-                        <textarea class="form-control form-control-sm" name="address" id="add_vaddress" placeholder="Address" rows="2"></textarea>
-                    </div>
-                    <div class="mb-2">
-                        <label class="form-label small fw-bold">Assigned User Groups</label>
-                        @if($isAdmin)
-                            <select name="user_group_ids[]" class="form-control select2-groups" multiple style="width: 100%;" data-placeholder="Select Groups">
-                                @foreach(\App\Models\UserGroup::all() as $group)
-                                    <option value="{{ $group->id }}">{{ $group->group_name }}</option>
-                                @endforeach
-                            </select>
-                        @else
-                            <div class="form-control bg-light form-control-sm" style="height: auto; min-height: 38px;">
-                                @php $myGroups = Auth::user()->userGroups; @endphp
-                                @if($myGroups->count() > 0)
-                                    @foreach($myGroups as $group)
-                                        <span class="badge bg-info text-dark px-2">{{ $group->group_name }}</span>
-                                        <input type="hidden" name="user_group_ids[]" value="{{ $group->id }}">
-                                    @endforeach
-                                @else
-                                    <span class="text-muted small">No Groups Assigned</span>
-                                @endif
-                            </div>
-                        @endif
-                    </div>
-                </div>
-                <div class="modal-footer py-1">
-                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary btn-sm px-4">Save Vendor</button>
-                </div>
-            </div>
-        </form>
-    </div>
-</div>
-
-<!-- EDIT Vendor Modal -->
-<div class="modal fade" id="editVendorModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
-        <form id="vendorEditForm" action="{{ url('vendor/store') }}" method="POST">@csrf
-            <input type="hidden" name="id" id="edit_vendor_id">
-            <div class="modal-content border-0 shadow">
-                <div class="modal-header bg-warning py-2">
-                    <h5 class="modal-title fs-6">Edit Vendor</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body p-3">
-                    <div class="mb-2">
-                        <label class="form-label small fw-bold">Vendor Name</label>
-                        <input class="form-control form-control-sm" name="name" id="edit_vname" placeholder="Name" required>
-                    </div>
-                    <div class="mb-2">
-                        <label class="form-label small fw-bold">Phone Number</label>
-                        <input class="form-control form-control-sm" name="phone" id="edit_vphone" placeholder="Phone">
-                    </div>
-                    <div class="mb-2">
-                        <label class="form-label small fw-bold">Opening Balance</label>
-                        <input class="form-control form-control-sm" name="opening_balance" id="edit_vopening" placeholder="0.00" type="number" step="0.01">
-                    </div>
-                    <div class="mb-2">
-                        <label class="form-label small fw-bold">Address</label>
-                        <textarea class="form-control form-control-sm" name="address" id="edit_vaddress" placeholder="Address" rows="2"></textarea>
-                    </div>
-                    <div class="mb-2">
-                        <label class="form-label small fw-bold">Assigned User Groups</label>
-                        @if($isAdmin)
-                            <select name="user_group_ids[]" id="edit_vgroups" class="form-control select2-groups" multiple style="width: 100%;" data-placeholder="Select Groups">
-                                @foreach(\App\Models\UserGroup::all() as $group)
-                                    <option value="{{ $group->id }}">{{ $group->group_name }}</option>
-                                @endforeach
-                            </select>
-                        @else
-                            <div class="form-control bg-light form-control-sm" style="height: auto; min-height: 38px;">
-                                @php $myGroups = Auth::user()->userGroups; @endphp
-                                @if($myGroups->count() > 0)
-                                    @foreach($myGroups as $group)
-                                        <span class="badge bg-info text-dark px-2">{{ $group->group_name }}</span>
-                                        <input type="hidden" name="user_group_ids[]" value="{{ $group->id }}">
-                                    @endforeach
-                                @else
-                                    <span class="text-muted small">No Groups Assigned</span>
-                                @endif
-                            </div>
-                        @endif
-                    </div>
-                </div>
-                <div class="modal-footer py-1">
-                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary btn-sm px-4">Update Vendor</button>
-                </div>
-            </div>
-        </form>
-    </div>
-</div>
 
 @endsection
 
@@ -422,53 +297,8 @@ $(document).ready(function() {
         localStorage.setItem(storageKey, JSON.stringify(state));
     });
     
-    // Handle Select2 for Modals
-    $('.select2-groups').each(function() {
-        var modal = $(this).closest('.modal');
-        $(this).select2({
-            dropdownParent: modal,
-            width: '100%',
-            placeholder: $(this).data('placeholder')
-        });
-    });
-
-    // Filter Select2
-    $('.select2:not(.modal select)').select2({ width: '100%' });
+    // Handle Select2
+    $('.select2').select2({ width: '100%' });
 });
-
-    // --- ADD modal helpers ---
-    function clearAddVendor() {
-        $('#add_vname').val('');
-        $('#add_vphone').val('');
-        $('#add_vopening').val('');
-        $('#add_vaddress').val('');
-        $('.select2-groups').val([]).trigger('change');
-    }
-
-    // --- EDIT: use click handler ---
-    $(document).on('click', '.edit-vendor-btn', function(e) {
-        e.preventDefault();
-        const btn = $(this);
-
-        const id = btn.data('id') ?? '';
-        const name = btn.data('name') ?? '';
-        const phone = btn.data('phone') ?? '';
-        const address = btn.data('address') ?? '';
-        const opening = btn.data('opening_balance') ?? '';
-
-        $('#edit_vendor_id').val(id);
-        $('#edit_vname').val(name);
-        $('#edit_vphone').val(phone);
-        $('#edit_vaddress').val(address);
-        $('#edit_vopening').val(opening);
-
-        const groups = btn.data('user_group_ids') ?? [];
-        $('#edit_vgroups').val(groups).trigger('change');
-    });
-
-    // prevent double submit
-    $('#vendorAddForm, #vendorEditForm').on('submit', function() {
-        $(this).find('button[type="submit"]').attr('disabled', true);
-    });
 </script>
 @endsection

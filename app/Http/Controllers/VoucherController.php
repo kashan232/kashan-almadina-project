@@ -20,6 +20,19 @@ use Illuminate\Support\Facades\Validator;
 
 class VoucherController extends Controller
 {
+    private function getDateColumn($table, $fallback = 'DATE(created_at)')
+    {
+        static $cache = [];
+        if (!isset($cache[$table])) {
+            if (\Illuminate\Support\Facades\Schema::hasColumn($table, 'entry_date')) {
+                $cache[$table] = "COALESCE(entry_date, $fallback)";
+            } else {
+                $cache[$table] = $fallback;
+            }
+        }
+        return $cache[$table];
+    }
+
     public function index($type)
     {
 
@@ -128,11 +141,12 @@ class VoucherController extends Controller
     {
         $query = \App\Models\ReceiptsVoucher::query();
 
+        $dateCol = $this->getDateColumn('receipts_vouchers', 'receipt_date');
         if ($request->filled('start_date')) {
-            $query->whereDate('receipt_date', '>=', $request->start_date);
+            $query->whereDate(DB::raw($dateCol), '>=', $request->start_date);
         }
         if ($request->filled('end_date')) {
-            $query->whereDate('receipt_date', '<=', $request->end_date);
+            $query->whereDate(DB::raw($dateCol), '<=', $request->end_date);
         }
         if ($request->filled('status')) {
             // Mapping for draft/posted
@@ -1207,12 +1221,14 @@ class VoucherController extends Controller
     {
         $query = \App\Models\ExpenseVoucher::query();
 
+        $dateCol = $this->getDateColumn('expense_vouchers');
         if ($request->filled('start_date')) {
-            $query->whereDate('entry_date', '>=', $request->start_date);
+            $query->whereDate(DB::raw($dateCol), '>=', $request->start_date);
         }
         if ($request->filled('end_date')) {
-            $query->whereDate('entry_date', '<=', $request->end_date);
+            $query->whereDate(DB::raw($dateCol), '<=', $request->end_date);
         }
+
         if ($request->filled('status')) {
             $query->where('status', $request->status);
         }
@@ -1546,8 +1562,9 @@ class VoucherController extends Controller
     {
         $query = IncomeVoucher::query();
 
-        if ($request->filled('start_date')) $query->whereDate('entry_date', '>=', $request->start_date);
-        if ($request->filled('end_date')) $query->whereDate('entry_date', '<=', $request->end_date);
+        $dateCol = $this->getDateColumn('income_vouchers');
+        if ($request->filled('start_date')) $query->whereDate(DB::raw($dateCol), '>=', $request->start_date);
+        if ($request->filled('end_date')) $query->whereDate(DB::raw($dateCol), '<=', $request->end_date);
         if ($request->filled('status')) $query->where('status', $request->status);
 
         $incomes = $query->orderBy('id', 'DESC')->get();
@@ -1819,8 +1836,9 @@ class VoucherController extends Controller
     public function all_adjustment_vochers(Request $request)
     {
         $query = AdjustmentVoucher::query();
-        if ($request->filled('start_date')) $query->whereDate('entry_date', '>=', $request->start_date);
-        if ($request->filled('end_date')) $query->whereDate('entry_date', '<=', $request->end_date);
+        $dateCol = $this->getDateColumn('adjustment_vouchers');
+        if ($request->filled('start_date')) $query->whereDate(DB::raw($dateCol), '>=', $request->start_date);
+        if ($request->filled('end_date')) $query->whereDate(DB::raw($dateCol), '<=', $request->end_date);
         if ($request->filled('status')) $query->where('status', $request->status);
 
         $vouchers = $query->orderBy('id', 'DESC')->get();
@@ -2030,8 +2048,9 @@ class VoucherController extends Controller
     public function all_journal_vochers(Request $request)
     {
         $query = JournalVoucher::query();
-        if ($request->filled('start_date')) $query->whereDate('entry_date', '>=', $request->start_date);
-        if ($request->filled('end_date')) $query->whereDate('entry_date', '<=', $request->end_date);
+        $dateCol = $this->getDateColumn('journal_vouchers');
+        if ($request->filled('start_date')) $query->whereDate(DB::raw($dateCol), '>=', $request->start_date);
+        if ($request->filled('end_date')) $query->whereDate(DB::raw($dateCol), '<=', $request->end_date);
         if ($request->filled('status')) $query->where('status', $request->status);
 
         $vouchers = $query->orderBy('id', 'DESC')->get();

@@ -270,7 +270,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/outstanding-losses', [CustomerController::class, 'outstandingLosses'])->name('outstanding.losses');
     // Vendor Routes
     Route::get('/vendor', [VendorController::class, 'index']);
+    Route::get('/vendor/create', [VendorController::class, 'create'])->name('vendor.create');
     Route::post('/vendor/store', [VendorController::class, 'store']);
+    Route::get('/vendor/edit/{id}', [VendorController::class, 'edit'])->name('vendor.edit');
+    Route::post('/vendor/update/{id}', [VendorController::class, 'update'])->name('vendor.update');
     Route::get('/vendor/delete/{id}', [VendorController::class, 'delete']);
     Route::get('vendor/ledger', [VendorController::class, 'allLedgers'])->name('vendor.ledger');
     Route::get('vendor/payments', [VendorController::class, 'payments_index'])->name('vendor.payments.index');
