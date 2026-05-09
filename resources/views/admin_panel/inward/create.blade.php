@@ -1,3 +1,5 @@
+@extends('admin_panel.layout.app')
+
 @section('content')
 <style>
     .select2-container .select2-selection--single {
@@ -56,8 +58,6 @@
     }
 </style>
 
-@extends('admin_panel.layout.app')
-@section('content')
 <div class="main-content">
     <div class="main-content-inner">
         <div class="container-fluid pt-3">
@@ -116,22 +116,20 @@
                     <div class="card-body">
                         <div class="row g-2">
                              <!-- Date -->
-                             <div class="col-md-2">
+                            <div class="col-md-2">
                                 <label class="form-label small fw-bold">Date</label>
-                                <input type="date" name="gatepass_date" class="form-control input-sm" value="{{ isset($gatepass) ? $gatepass->gatepass_date : date('Y-m-d') }}" required>
+                                <input type="date" name="gatepass_date" class="form-control input-sm" value="{{ old('gatepass_date', isset($gatepass) ? $gatepass->gatepass_date : date('Y-m-d')) }}" required>
                             </div>
-
-
 
                             <!-- Warehouse -->
                             <div class="col-md-2">
                                 <label class="form-label small fw-bold">Warehouse</label>
-                                <select name="warehouse_id" class="form-select select2" required>
+                                <select name="warehouse_id" class="form-select" required>
                                     @if(auth()->user()->canAccessShop())
-                                        <option value="0" {{ (isset($gatepass) && $gatepass->warehouse_id == 0) ? 'selected' : '' }}>🏠 Shop Stock</option>
+                                        <option value="0" {{ old('warehouse_id', isset($gatepass) ? $gatepass->warehouse_id : '') == '0' ? 'selected' : '' }}>🏠 Shop Stock</option>
                                     @endif
                                     @foreach ($warehouses as $item)
-                                        <option value="{{ $item->id }}" {{ (isset($gatepass) && $gatepass->warehouse_id == $item->id) ? 'selected' : '' }}>
+                                        <option value="{{ $item->id }}" {{ old('warehouse_id', isset($gatepass) ? $gatepass->warehouse_id : '') == $item->id ? 'selected' : '' }}>
                                             📦 {{ $item->warehouse_name }}
                                         </option>
                                     @endforeach
@@ -141,18 +139,18 @@
                             <!-- Party Type -->
                             <div class="col-md-2">
                                 <label class="form-label small fw-bold">Type</label>
-                                <select name="vendor_type" id="vendor_type_select" class="form-select select2" required>
-                                    <option value="" disabled {{ !isset($gatepass) ? 'selected' : '' }}>Select Type</option>
-                                    <option value="vendor" {{ (isset($gatepass) && $gatepass->vendor_type == 'vendor') ? 'selected' : '' }}>Vendor</option>
-                                    <option value="customer" {{ (isset($gatepass) && $gatepass->vendor_type == 'customer') ? 'selected' : '' }}>Customer</option>
-                                    <option value="walkin" {{ (isset($gatepass) && $gatepass->vendor_type == 'walkin') ? 'selected' : '' }}>Walkin Customer</option>
+                                <select name="vendor_type" id="vendor_type_select" class="form-select" required>
+                                    <option value="" disabled>Select Type</option>
+                                    <option value="vendor" {{ old('vendor_type', isset($gatepass) ? $gatepass->vendor_type : 'vendor') == 'vendor' ? 'selected' : '' }}>Vendor</option>
+                                    <option value="customer" {{ old('vendor_type', isset($gatepass) ? $gatepass->vendor_type : '') == 'customer' ? 'selected' : '' }}>Customer</option>
+                                    <option value="walkin" {{ old('vendor_type', isset($gatepass) ? $gatepass->vendor_type : '') == 'walkin' ? 'selected' : '' }}>Walkin Customer</option>
                                 </select>
                             </div>
 
                             <!-- Vendor (Party) -->
                             <div class="col-md-2">
                                 <label class="form-label small fw-bold">Party</label>
-                                <select name="vendor_id" id="vendor_id_select" class="form-select select2" required>
+                                <select name="vendor_id" id="vendor_id_select" class="form-select" required>
                                     <option value="" disabled selected>Select Party</option>
                                     @if(isset($gatepass))
                                         <option value="{{ $gatepass->vendor_id }}" selected>
@@ -169,19 +167,19 @@
                             <!-- Transport -->
                             <div class="col-md-2">
                                 <label class="form-label small fw-bold">Transport</label>
-                                <input type="text" name="transport_name" class="form-control input-sm" value="{{ isset($gatepass) ? $gatepass->transport_name : '' }}">
+                                <input type="text" name="transport_name" class="form-control input-sm" value="{{ old('transport_name', isset($gatepass) ? $gatepass->transport_name : '') }}">
                             </div>
 
                             <!-- Bilty -->
                             <div class="col-md-2">
                                 <label class="form-label small fw-bold">Bilty/GP No</label>
-                                <input type="text" name="bilty_no" class="form-control input-sm" value="{{ isset($gatepass) ? $gatepass->gatepass_no : '' }}">
+                                <input type="text" name="bilty_no" class="form-control input-sm" value="{{ old('bilty_no', isset($gatepass) ? $gatepass->gatepass_no : '') }}">
                             </div>
 
                             <!-- Remarks/Note -->
                             <div class="col-md-12">
                                 <label class="form-label small fw-bold">Note / Remarks</label>
-                                <input type="text" name="note" class="form-control input-sm" value="{{ isset($gatepass) ? $gatepass->remarks : '' }}">
+                                <input type="text" name="note" class="form-control input-sm" value="{{ old('note', isset($gatepass) ? $gatepass->remarks : '') }}">
                             </div>
                         </div>
                     </div>
@@ -311,12 +309,6 @@
 @section('scripts')
 <script>
     $(document).ready(function() {
-        // Initialize static Select2
-        $('.select2').each(function() {
-            if (!$(this).hasClass('select2-hidden-accessible')) {
-                $(this).select2({ width: '100%' });
-            }
-        });
 
         var _savedGatepassId = "{{ isset($gatepass) ? $gatepass->id : '' }}";
         if(_savedGatepassId) {
@@ -471,36 +463,38 @@
             $drop.html(html).trigger('change');
         }
 
-        $('#vendor_type_select').on('change', function() {
+        $(document).on('change', '#vendor_type_select', function() {
             var type = $(this).val();
             if (type) loadParties(type);
         });
 
-        // Initial load for edit mode
-        var initialType = $('#vendor_type_select').val();
-        var initialId = "{{ isset($gatepass) ? $gatepass->vendor_id : '' }}";
-        if(initialType) {
-            loadParties(initialType, initialId);
-        }
+        // Initial load with small delay to ensure Select2 is ready
+        setTimeout(function() {
+            var initialType = $('#vendor_type_select').val();
+            var initialId = "{{ old('vendor_id', isset($gatepass) ? $gatepass->vendor_id : '') }}";
+            if(initialType) {
+                loadParties(initialType, initialId);
+            }
+        }, 100);
 
         // Chain focus
         $('input[name="gatepass_date"]').on('keydown', function(e) {
             if (e.key === 'Enter') {
                 e.preventDefault();
-                $('select[name="warehouse_id"]').select2('open');
+                $('select[name="warehouse_id"]').focus();
             }
         });
 
-        $('select[name="warehouse_id"]').on('select2:select', function() {
-            setTimeout(() => $('#vendor_type_select').select2('open'), 80);
+        $('select[name="warehouse_id"]').on('change', function() {
+            $('#vendor_type_select').focus();
         });
 
-        $('#vendor_type_select').on('select2:select', function() {
-            setTimeout(() => $('#vendor_id_select').select2('open'), 80);
+        $('#vendor_type_select').on('change', function() {
+            $('#vendor_id_select').focus();
         });
 
-        $('#vendor_id_select').on('select2:select', function() {
-            setTimeout(() => $('input[name="transport_name"]').focus(), 80);
+        $('#vendor_id_select').on('change', function() {
+            $('input[name="transport_name"]').focus();
         });
 
         // Row Management
