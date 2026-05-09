@@ -15,6 +15,8 @@ use App\Models\Warehouse;
 use App\Models\Productbooking;
 use App\Models\ProductBookingItem;
 use App\Models\WarehouseStock;
+use App\Models\Voucher;
+use App\Models\ReceiptsVoucher;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -613,60 +615,7 @@ class SaleController extends Controller
                 }
 
                 // --- Ledger & Accounts Update ---
-                $partyId = $sale->customer_id;
-                $pType = strtolower($sale->partyType);
-                $netAmount = (float)$sale->total_balance;
-                $receiptAmount = (float)($sale->receipt1 + $sale->receipt2);
-
-                if ($pType === 'vendor') {
-                    $ledger = VendorLedger::where('vendor_id', $partyId)->latest('id')->first();
-                    if ($ledger) {
-                        $ledger->previous_balance = $ledger->closing_balance;
-                        $ledger->closing_balance += ($netAmount - $receiptAmount);
-                        $ledger->save();
-                    } else {
-                        VendorLedger::create([
-                            'vendor_id' => $partyId,
-                            'admin_or_user_id' => auth()->id(),
-                            'date' => now(),
-                            'description' => 'Sale ID: ' . $sale->invoice_no,
-                            'previous_balance' => 0,
-                            'closing_balance' => ($netAmount - $receiptAmount),
-                            'opening_balance' => ($netAmount - $receiptAmount),
-                        ]);
-                    }
-                } elseif ($pType === 'customer' || $pType === 'walkin' || $pType === 'walking') {
-                    $ledger = CustomerLedger::where('customer_id', $partyId)->latest('id')->first();
-                    if ($ledger) {
-                        $ledger->previous_balance = $ledger->closing_balance;
-                        $ledger->closing_balance += ($netAmount - $receiptAmount);
-                        $ledger->save();
-                    } else {
-                        CustomerLedger::create([
-                            'customer_id' => $partyId,
-                            'admin_or_user_id' => auth()->id(),
-                            'previous_balance' => 0,
-                            'closing_balance' => ($netAmount - $receiptAmount),
-                            'opening_balance' => ($netAmount - $receiptAmount),
-                        ]);
-                    }
-                }
-
-                // Account Updates for Receipts
-                $receiptAccounts = json_decode($sale->receipt_accounts, true);
-                $receiptAmounts = json_decode($sale->receipt_amounts_json, true);
-                if (is_array($receiptAccounts)) {
-                    foreach ($receiptAccounts as $idx => $accId) {
-                        $accAmt = (float)($receiptAmounts[$idx] ?? 0);
-                        if ($accAmt > 0) {
-                            $acc = Account::find($accId);
-                            if ($acc) {
-                                $acc->opening_balance = ($acc->opening_balance ?? 0) + $accAmt;
-                                $acc->save();
-                            }
-                        }
-                    }
-                }
+                $this->performPosting($sale);
 
                 // FIX: Delete the booking (draft) after it has been converted to a Sale
                 $booking->items()->delete();
@@ -803,60 +752,7 @@ class SaleController extends Controller
             }
 
             // --- Ledger & Accounts Update ---
-            $partyId = $sale->customer_id;
-            $pType = strtolower($sale->partyType);
-            $netAmount = (float)$sale->total_balance;
-            $receiptAmount = (float)($sale->receipt1 + $sale->receipt2);
-
-            if ($pType === 'vendor') {
-                $ledger = VendorLedger::where('vendor_id', $partyId)->latest('id')->first();
-                if ($ledger) {
-                    $ledger->previous_balance = $ledger->closing_balance;
-                    $ledger->closing_balance += ($netAmount - $receiptAmount);
-                    $ledger->save();
-                } else {
-                    VendorLedger::create([
-                        'vendor_id' => $partyId,
-                        'admin_or_user_id' => auth()->id(),
-                        'date' => now(),
-                        'description' => 'Sale ID: ' . $sale->invoice_no,
-                        'previous_balance' => 0,
-                        'closing_balance' => ($netAmount - $receiptAmount),
-                        'opening_balance' => ($netAmount - $receiptAmount),
-                    ]);
-                }
-            } elseif ($pType === 'customer' || $pType === 'walkin' || $pType === 'walking') {
-                $ledger = CustomerLedger::where('customer_id', $partyId)->latest('id')->first();
-                if ($ledger) {
-                    $ledger->previous_balance = $ledger->closing_balance;
-                    $ledger->closing_balance += ($netAmount - $receiptAmount);
-                    $ledger->save();
-                } else {
-                    CustomerLedger::create([
-                        'customer_id' => $partyId,
-                        'admin_or_user_id' => auth()->id(),
-                        'previous_balance' => 0,
-                        'closing_balance' => ($netAmount - $receiptAmount),
-                        'opening_balance' => ($netAmount - $receiptAmount),
-                    ]);
-                }
-            }
-
-            // Account Updates for Receipts
-            $receiptAccounts = json_decode($sale->receipt_accounts, true);
-            $receiptAmounts = json_decode($sale->receipt_amounts_json, true);
-            if (is_array($receiptAccounts)) {
-                foreach ($receiptAccounts as $idx => $accId) {
-                    $accAmt = (float)($receiptAmounts[$idx] ?? 0);
-                    if ($accAmt > 0) {
-                        $acc = Account::find($accId);
-                        if ($acc) {
-                            $acc->opening_balance = ($acc->opening_balance ?? 0) + $accAmt;
-                            $acc->save();
-                        }
-                    }
-                }
-            }
+            $this->performPosting($sale);
 
             $booking->items()->delete();
             $booking->delete();
@@ -1198,5 +1094,115 @@ class SaleController extends Controller
             });
 
         return response()->json($items);
+    }
+
+    private function performPosting(Sale $sale)
+    {
+        $partyId = $sale->customer_id;
+        $pType = strtolower($sale->partyType ?? 'customer');
+
+        // sub_total2 is Total Sale Amount after row discounts but before order discount
+        $saleAmount = (float)($sale->sub_total2 ?? 0);
+        $orderDiscount = (float)($sale->discount_amount ?? 0);
+        $receiptAmount = (float)($sale->receipt1 + $sale->receipt2);
+
+        $date = $sale->entry_date ?? now()->format('Y-m-d');
+        $invoiceNo = $sale->invoice_no;
+
+        // 1. Identify Ledger Model
+        $ledgerModel = null;
+        $partyCol = '';
+        if ($pType === 'vendor') {
+            $ledgerModel = \App\Models\VendorLedger::class;
+            $partyCol = 'vendor_id';
+        } else {
+            $ledgerModel = \App\Models\CustomerLedger::class;
+            $partyCol = 'customer_id';
+        }
+
+        // 2. CONSOLIDATED UPDATE (MODIFIES LATEST ROW)
+        // The user requires updating the existing ledger row instead of creating a new one.
+        $ledger = $ledgerModel::where($partyCol, $partyId)->latest('id')->first();
+        
+        $totalDebit = $saleAmount;
+        $totalCredit = $orderDiscount + $receiptAmount;
+        $impact = $totalDebit - $totalCredit;
+
+        if ($ledger) {
+            // Update the existing latest row
+            $ledger->previous_balance = $ledger->closing_balance;
+            $ledger->date = $date;
+            $ledger->description = 'Sale: ' . $invoiceNo . ($orderDiscount > 0 ? ' (Incl. Discount)' : '') . ($receiptAmount > 0 ? ' (Incl. Receipt)' : '');
+            $ledger->debit = $totalDebit;
+            $ledger->credit = $totalCredit;
+            $ledger->closing_balance += $impact;
+            $ledger->save();
+        } else {
+            // Create a new one only if no ledger exists at all for this customer
+            $ledgerModel::create([
+                $partyCol => $partyId,
+                'admin_or_user_id' => auth()->id(),
+                'date' => $date,
+                'description' => 'Sale: ' . $invoiceNo,
+                'opening_balance' => 0,
+                'previous_balance' => 0,
+                'debit' => $totalDebit,
+                'credit' => $totalCredit,
+                'closing_balance' => $totalDebit - $totalCredit,
+            ]);
+        }
+
+        // 3. Create Vouchers for documentation (Voucher table only)
+        if ($orderDiscount > 0) {
+            Voucher::create([
+                'voucher_type'  => 'Discount voucher',
+                'date'          => $date,
+                'sales_officer' => auth()->user()->name,
+                'type'          => 'Credit',
+                'person'        => $partyId,
+                'sub_head'      => 'Sale Discount',
+                'narration'     => 'Discount on Sale: ' . $invoiceNo,
+                'amount'        => $orderDiscount,
+                'status'        => 'posted'
+            ]);
+        }
+
+        if ($receiptAmount > 0) {
+            $receiptHeads = json_decode($sale->receipt_heads, true);
+            $receiptAccounts = json_decode($sale->receipt_accounts, true);
+            $receiptNarrations = json_decode($sale->receipt_narrations, true);
+            $receiptAmounts = json_decode($sale->receipt_amounts_json, true);
+
+            ReceiptsVoucher::create([
+                'rvid' => ReceiptsVoucher::generateInvoiceNo(),
+                'receipt_date' => $date,
+                'entry_date' => $date,
+                'entry_time' => $sale->entry_time ?? now()->format('H:i'),
+                'type' => $pType,
+                'party_id' => $partyId,
+                'tel' => $sale->tel,
+                'remarks' => 'Auto-generated from Sale: ' . $invoiceNo,
+                'narration_id' => json_encode($receiptNarrations),
+                'row_account_head' => json_encode($receiptHeads),
+                'row_account_id' => json_encode($receiptAccounts),
+                'amount' => json_encode($receiptAmounts),
+                'total_amount' => $receiptAmount,
+                'status' => 'posted',
+            ]);
+
+            // Update Account Balances
+            if (is_array($receiptAccounts)) {
+                foreach ($receiptAccounts as $idx => $accId) {
+                    $accAmt = (float)($receiptAmounts[$idx] ?? 0);
+                    if ($accAmt > 0) {
+                        $acc = Account::find($accId);
+                        if ($acc) {
+                            $acc->opening_balance = ($acc->opening_balance ?? 0) + $accAmt;
+                            $acc->save();
+                        }
+                    }
+                }
+            }
+        }
     }
 }
