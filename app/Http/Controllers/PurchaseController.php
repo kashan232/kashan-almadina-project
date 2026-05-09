@@ -733,18 +733,16 @@ class PurchaseController extends Controller
                 // UPDATE WAREHOUSE STOCK
                 $stock = \App\Models\WarehouseStock::firstOrNew([
                     'warehouse_id' => $purchase->warehouse_id,
-                    'product_id'   => $productId
+                    'product_id'   => $productId,
                 ]);
                 $stock->quantity = ($stock->quantity ?? 0) + $qty;
-                $stock->status = 'Posted';
-                $stock->remarks = 'Purchase ID: ' . $purchase->invoice_no;
                 $stock->save();
             }
         }
 
-        // 2. Ledger Update (Vendor/Party)
-        $amount = $purchase->net_amount;
-        $type = strtolower(class_basename($purchase->purchasable_type));
+        // 2. Ledger Impact (Standardized with history)
+        $amount   = $purchase->net_amount;
+        $type     = strtolower(class_basename($purchase->purchasable_type));
         $party_id = $purchase->purchasable_id;
 
         if ($type === 'vendor') {
@@ -760,9 +758,9 @@ class PurchaseController extends Controller
                 'previous_balance' => $prevBalance,
                 'debit'            => 0,
                 'credit'           => $amount,
-                'closing_balance'  => $prevBalance + $amount, // Credit increases liability/balance
+                'closing_balance'  => $prevBalance + $amount, // Credit increases liability
             ]);
-        } elseif ($type === 'customer' || $type === 'walkin') {
+        } elseif ($type === 'customer') {
             $latestLedger = CustomerLedger::where('customer_id', $party_id)->latest('id')->first();
             $prevBalance = $latestLedger ? $latestLedger->closing_balance : 0;
 
@@ -772,19 +770,17 @@ class PurchaseController extends Controller
                 'date'             => $purchase->current_date,
                 'description'      => 'Purchase ID: ' . $purchase->invoice_no,
                 'previous_balance' => $prevBalance,
-                'closing_balance'  => $prevBalance + $amount,
                 'opening_balance'  => $prevBalance,
+                'closing_balance'  => $prevBalance + $amount,
             ]);
         }
 
-        // 3. Account Allocations impact -> CREDIT (as per USER request)
+        // 3. Account Allocation
         foreach ($purchase->accountAllocations as $allocation) {
-            $account = Account::find($allocation->account_id);
+            $account = $allocation->account;
             if ($account) {
                 // Update Account Balance
-                $account->opening_balance = ($account->opening_balance ?? 0) - $allocation->amount; // Credit decreases asset/increases liability? 
-                // Wait, if it's an expense account, credit decreases it. 
-                // But the user said "credit hoga".
+                $account->opening_balance = ($account->opening_balance ?? 0) - $allocation->amount; 
                 $account->save();
 
                 // Create a Journal Voucher entry to show in reports
@@ -795,7 +791,7 @@ class PurchaseController extends Controller
                     'status' => 'posted',
                     'total_debit' => 0,
                     'total_credit' => $allocation->amount,
-                    'party_type' => $account->head_id, // Using account head as type for account rows
+                    'party_type' => $account->head_id, 
                     'party_id' => json_encode([$account->id]),
                     'debit' => json_encode([0]),
                     'credit' => json_encode([$allocation->amount]),
