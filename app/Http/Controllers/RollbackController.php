@@ -126,10 +126,34 @@ class RollbackController extends Controller
         }
     }
 
+    private function findRecord($model, $field, $input)
+    {
+        // 1. Try Exact match
+        $record = $model::where($field, $input)->first();
+        if ($record) return $record;
+
+        // 2. Try numeric match (handling prefixes like INVSLE- or leading zeros like 001)
+        $inputNum = (int)preg_replace('/[^0-9]/', '', $input);
+        if ($inputNum > 0) {
+            // Search by LIKE to narrow down candidates efficiently
+            $candidates = $model::where($field, 'LIKE', '%' . $inputNum . '%')->get();
+            foreach ($candidates as $candidate) {
+                $dbNum = (int)preg_replace('/[^0-9]/', '', $candidate->$field);
+                if ($dbNum === $inputNum) {
+                    return $candidate;
+                }
+            }
+        }
+
+        return null;
+    }
+
     private function rollbackSale($invoiceNo)
     {
-        $sale = Sale::with('items')->where('invoice_no', $invoiceNo)->first();
+        $sale = $this->findRecord(Sale::class, 'invoice_no', $invoiceNo);
         if (!$sale) throw new \Exception("Sale $invoiceNo not found.");
+
+        $sale->load('items');
 
         foreach ($sale->items as $item) {
             $this->adjustStock($item->product_id, $item->warehouse_id, $item->sales_qty, 'add');
@@ -142,13 +166,16 @@ class RollbackController extends Controller
 
         $sale->items()->delete();
         $sale->delete();
-        return back()->with('success', "Sale $invoiceNo rolled back to Draft.");
+        return back()->with('success', "Sale #$invoiceNo rolled back to Draft.");
     }
 
     private function rollbackPurchase($invoiceNo)
     {
-        $purchase = Purchase::with(['items', 'accountAllocations'])->where('invoice_no', $invoiceNo)->first();
+        $purchase = $this->findRecord(Purchase::class, 'invoice_no', $invoiceNo);
         if (!$purchase) throw new \Exception("Purchase $invoiceNo not found.");
+        
+        $purchase->load(['items', 'accountAllocations']);
+        
         if ($purchase->status !== 'Posted') throw new \Exception("Purchase $invoiceNo is not Posted.");
 
         foreach ($purchase->items as $item) {
@@ -164,13 +191,15 @@ class RollbackController extends Controller
         $purchase->update(['status' => 'Unposted']);
         if ($purchase->inward_id) InwardGatepass::where('id', $purchase->inward_id)->update(['status' => 'pending']);
 
-        return back()->with('success', "Purchase $invoiceNo set to Unposted.");
+        return back()->with('success', "Purchase #$invoiceNo set to Unposted.");
     }
 
     private function rollbackPurchaseReturn($invoiceNo)
     {
-        $ret = PurchaseReturn::with('items')->where('invoice_no', $invoiceNo)->first();
+        $ret = $this->findRecord(PurchaseReturn::class, 'invoice_no', $invoiceNo);
         if (!$ret) throw new \Exception("Purchase Return $invoiceNo not found.");
+        
+        $ret->load('items');
         if ($ret->status !== 'Posted') throw new \Exception("Return $invoiceNo is not Posted.");
 
         foreach ($ret->items as $item) {
@@ -179,13 +208,15 @@ class RollbackController extends Controller
 
         $this->adjustLedger($ret->party_type, $ret->party_id, $ret->total_balance, 'add');
         $ret->update(['status' => 'Unposted']);
-        return back()->with('success', "Purchase Return $invoiceNo set to Unposted.");
+        return back()->with('success', "Purchase Return #$invoiceNo set to Unposted.");
     }
 
     private function rollbackSaleReturn($invoiceNo)
     {
-        $ret = SaleReturn::with('items')->where('invoice_no', $invoiceNo)->first();
+        $ret = $this->findRecord(SaleReturn::class, 'invoice_no', $invoiceNo);
         if (!$ret) throw new \Exception("Sale Return $invoiceNo not found.");
+        
+        $ret->load('items');
         if ($ret->status !== 'Posted') throw new \Exception("Return $invoiceNo is not Posted.");
 
         foreach ($ret->items as $item) {
@@ -194,20 +225,20 @@ class RollbackController extends Controller
 
         $this->adjustLedger($ret->party_type, $ret->customer_id, $ret->total_balance, 'add');
         $ret->update(['status' => 'Unposted']);
-        return back()->with('success', "Sale Return $invoiceNo set to Unposted.");
+        return back()->with('success', "Sale Return #$invoiceNo set to Unposted.");
     }
 
     private function rollbackInward($invoiceNo)
     {
-        $inward = InwardGatepass::where('invoice_no', $invoiceNo)->first();
+        $inward = $this->findRecord(InwardGatepass::class, 'invoice_no', $invoiceNo);
         if (!$inward) throw new \Exception("Inward $invoiceNo not found.");
         $inward->update(['status' => 'pending']);
-        return back()->with('success', "Inward $invoiceNo set to Pending.");
+        return back()->with('success', "Inward #$invoiceNo set to Pending.");
     }
 
     private function rollbackStockHold($invoiceNo)
     {
-        $hold = StockHold::where('invoice_no', $invoiceNo)->first();
+        $hold = $this->findRecord(StockHold::class, 'invoice_no', $invoiceNo);
         if (!$hold) throw new \Exception("Stock Hold $invoiceNo not found.");
         if ($hold->status !== 'Posted') throw new \Exception("Hold $invoiceNo is not Posted.");
 
@@ -218,12 +249,12 @@ class RollbackController extends Controller
         }
 
         $hold->update(['status' => 'Unposted']);
-        return back()->with('success', "Stock Hold $invoiceNo set to Unposted.");
+        return back()->with('success', "Stock Hold #$invoiceNo set to Unposted.");
     }
 
     private function rollbackStockRelease($invoiceNo)
     {
-        $rel = StockRelease::where('invoice_no', $invoiceNo)->first();
+        $rel = $this->findRecord(StockRelease::class, 'invoice_no', $invoiceNo);
         if (!$rel) throw new \Exception("Stock Release $invoiceNo not found.");
         if ($rel->status !== 'Posted') throw new \Exception("Release $invoiceNo is not Posted.");
 
@@ -234,13 +265,16 @@ class RollbackController extends Controller
         }
 
         $rel->update(['status' => 'Unposted']);
-        return back()->with('success', "Stock Release $invoiceNo set to Unposted.");
+        return back()->with('success', "Stock Release #$invoiceNo set to Unposted.");
     }
 
     private function rollbackStockTransfer($invoiceNo)
     {
-        $trans = StockTransfer::where('transfer_no', $invoiceNo)->first();
+        // FIX: StockTransfer uses 'id' if 'transfer_no' is not present
+        $trans = $this->findRecord(StockTransfer::class, 'id', $invoiceNo);
         if (!$trans) throw new \Exception("Stock Transfer $invoiceNo not found.");
+        
+        $trans->load('items');
         if ($trans->status !== 'Posted') throw new \Exception("Transfer $invoiceNo is not Posted.");
 
         foreach ($trans->items as $item) {
@@ -249,13 +283,15 @@ class RollbackController extends Controller
         }
 
         $trans->update(['status' => 'Unposted']);
-        return back()->with('success', "Stock Transfer $invoiceNo set to Unposted.");
+        return back()->with('success', "Stock Transfer #$invoiceNo set to Unposted.");
     }
 
     private function rollbackStockWastage($invoiceNo)
     {
-        $wastage = StockWastage::with('details')->where('invoice_no', $invoiceNo)->first();
+        $wastage = $this->findRecord(StockWastage::class, 'invoice_no', $invoiceNo);
         if (!$wastage) throw new \Exception("Stock Wastage $invoiceNo not found.");
+        
+        $wastage->load('details');
         if ($wastage->status !== 'Posted') throw new \Exception("Wastage $invoiceNo is not Posted.");
 
         foreach ($wastage->details as $item) {
@@ -263,44 +299,44 @@ class RollbackController extends Controller
         }
 
         $wastage->update(['status' => 'Unposted']);
-        return back()->with('success', "Stock Wastage $invoiceNo set to Unposted.");
+        return back()->with('success', "Stock Wastage #$invoiceNo set to Unposted.");
     }
 
     private function rollbackWarehouseStock($invoiceNo)
     {
-        $ws = WarehouseStock::where('id', $invoiceNo)->first(); // Assuming ID for manual stock
+        $ws = WarehouseStock::find($invoiceNo);
         if (!$ws) throw new \Exception("Warehouse Stock record $invoiceNo not found.");
         $ws->update(['status' => 'Unposted']);
-        return back()->with('success', "Warehouse Stock record $invoiceNo set to Unposted.");
+        return back()->with('success', "Warehouse Stock record #$invoiceNo set to Unposted.");
     }
 
     private function rollbackCustomerClaim($invoiceNo)
     {
-        $claim = CustomerClaim::where('invoice_no', $invoiceNo)->first();
+        $claim = $this->findRecord(CustomerClaim::class, 'invoice_no', $invoiceNo);
         if (!$claim) throw new \Exception("Claim $invoiceNo not found.");
         $claim->update(['status' => 'Unposted']);
-        return back()->with('success', "Customer Claim $invoiceNo set to Unposted.");
+        return back()->with('success', "Customer Claim #$invoiceNo set to Unposted.");
     }
 
     private function rollbackClaimAcceptance($invoiceNo)
     {
-        $acc = ClaimAcceptance::where('invoice_no', $invoiceNo)->first();
+        $acc = $this->findRecord(ClaimAcceptance::class, 'invoice_no', $invoiceNo);
         if (!$acc) throw new \Exception("Acceptance $invoiceNo not found.");
         $acc->update(['status' => 'Unposted']);
-        return back()->with('success', "Claim Acceptance $invoiceNo set to Unposted.");
+        return back()->with('success', "Claim Acceptance #$invoiceNo set to Unposted.");
     }
 
     private function rollbackClaimReceipt($invoiceNo)
     {
-        $rec = ClaimItemReceipt::where('invoice_no', $invoiceNo)->first();
+        $rec = $this->findRecord(ClaimItemReceipt::class, 'invoice_no', $invoiceNo);
         if (!$rec) throw new \Exception("Receipt $invoiceNo not found.");
         $rec->update(['status' => 'Unposted']);
-        return back()->with('success', "Claim Receipt $invoiceNo set to Unposted.");
+        return back()->with('success', "Claim Receipt #$invoiceNo set to Unposted.");
     }
 
     private function rollbackVoucher($model, $field, $invoiceNo, $name)
     {
-        $v = $model::where($field, $invoiceNo)->first();
+        $v = $this->findRecord($model, $field, $invoiceNo);
         if (!$v) throw new \Exception("$name $invoiceNo not found.");
         if ($v->status !== 'posted') throw new \Exception("$name $invoiceNo is not posted.");
 
@@ -320,7 +356,7 @@ class RollbackController extends Controller
         }
 
         $v->update(['status' => 'draft']);
-        return back()->with('success', "$name $invoiceNo set to Draft.");
+        return back()->with('success', "$name #$invoiceNo set to Draft.");
     }
 
     // Helper: Adjust Stock
