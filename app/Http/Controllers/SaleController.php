@@ -25,11 +25,14 @@ class SaleController extends Controller
     /* -------- Lists & screens -------- */
     public function index(Request $request)
     {
-        // Fetch Posted Sales with items
-        $salesQuery = Sale::with(['customer', 'vendor', 'items.product', 'items.warehouse'])->latest();
+        // Fetch all users for the filter
+        $users = \App\Models\User::orderBy('name')->get();
+
+        // Fetch Posted Sales with items and user
+        $salesQuery = Sale::with(['customer', 'vendor', 'items.product', 'items.warehouse', 'user'])->latest();
         
-        // Fetch Unposted Bookings with items
-        $bookingsQuery = Productbooking::with(['customer', 'vendor', 'items.product', 'items.warehouse'])->latest();
+        // Fetch Unposted Bookings with items and user
+        $bookingsQuery = Productbooking::with(['customer', 'vendor', 'items.product', 'items.warehouse', 'user'])->latest();
 
         // Filters
         if ($request->filled('start_date')) {
@@ -44,6 +47,10 @@ class SaleController extends Controller
             $isOrder = $request->sale_type === 'order' ? 1 : 0;
             $salesQuery->where('is_sale_order', $isOrder);
             $bookingsQuery->where('is_sale_order', $isOrder);
+        }
+        if ($request->filled('created_by')) {
+            $salesQuery->where('created_by', $request->created_by);
+            $bookingsQuery->where('created_by', $request->created_by);
         }
 
         $salesRows = $salesQuery->get()->map(function($s) {
@@ -64,7 +71,10 @@ class SaleController extends Controller
             $combined = $combined->where('entry_status', $request->status);
         }
 
-        return view('admin_panel.sale.index', ['sales' => $combined]);
+        return view('admin_panel.sale.index', [
+            'sales' => $combined,
+            'users' => $users
+        ]);
     }
 
     public function add_sale()

@@ -30,17 +30,22 @@ class Sale extends Model
         return $this->belongsTo(Vendor::class, 'customer_id');
     }
 
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
 
     public static function generateInvoiceNo()
     {
         // 1. Get max from Sales
         $lastSale = self::withoutGlobalScopes()
-            ->orderByRaw('LENGTH(invoice_no) DESC, invoice_no DESC')
+            ->orderBy('id', 'desc')
             ->first();
-
+        
         // 2. Get max from Productbookings
         $lastBooking = \App\Models\Productbooking::withoutGlobalScopes()
-            ->orderByRaw('LENGTH(invoice_no) DESC, invoice_no DESC')
+            ->orderBy('id', 'desc')
             ->first();
 
         $maxNum = 0;

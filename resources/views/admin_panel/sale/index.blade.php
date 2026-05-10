@@ -147,8 +147,8 @@
                     <div class="card border-0 shadow-sm">
                         <div class="card-body p-2" style="overflow: visible;">
                             <form action="{{ route('sale.index') }}" method="GET" class="row g-2 align-items-center">
-                                <div class="col-md-3">
-                                    <h6 class="mb-0 fw-bold text-dark ms-2"><i class="fa fa-shopping-cart me-2 text-primary"></i>Sales & Bookings</h6>
+                                <div class="col-md-2">
+                                    <h6 class="mb-0 fw-bold text-dark ms-2 small"><i class="fa fa-shopping-cart me-2 text-primary"></i>Sales & Bookings</h6>
                                 </div>
                                 <div class="col-md-3">
                                     <div class="input-group input-group-sm">
@@ -158,18 +158,32 @@
                                     </div>
                                 </div>
                                 <div class="col-md-2">
-                                    <select name="status" class="form-select form-select-sm select2">
-                                        <option value="">All Status</option>
-                                        <option value="Unposted" {{ request('status') == 'Unposted' ? 'selected' : '' }}>Unposted</option>
-                                        <option value="Posted" {{ request('status') == 'Posted' ? 'selected' : '' }}>Posted</option>
-                                    </select>
+                                    <div class="input-group input-group-sm">
+                                        <span class="input-group-text bg-white border-end-0 small fw-bold text-muted">Status</span>
+                                        <select name="status" class="form-select form-select-sm select2 border-start-0">
+                                            <option value="">All</option>
+                                            <option value="Unposted" {{ request('status') == 'Unposted' ? 'selected' : '' }}>Unposted</option>
+                                            <option value="Posted" {{ request('status') == 'Posted' ? 'selected' : '' }}>Posted</option>
+                                        </select>
+                                    </div>
                                 </div>
-                                <div class="col-md-4 text-end">
+                                <div class="col-md-2">
+                                    <div class="input-group input-group-sm">
+                                        <span class="input-group-text bg-white border-end-0 small fw-bold text-muted">User</span>
+                                        <select name="created_by" class="form-select form-select-sm select2 border-start-0">
+                                            <option value="">All</option>
+                                            @foreach($users as $user)
+                                                <option value="{{ $user->id }}" {{ request('created_by') == $user->id ? 'selected' : '' }}>{{ $user->name }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-3 text-end">
                                     <div class="d-flex gap-1 justify-content-end align-items-center">
                                         <button type="submit" class="btn btn-primary btn-sm rounded-pill px-3 shadow-sm">Filter</button>
                                         <a href="{{ route('sale.index') }}" class="btn btn-outline-secondary btn-sm rounded-pill px-2" title="Reset"><i class="fa fa-refresh"></i></a>
                                         
-                                        <a class="btn btn-primary btn-sm rounded-pill px-4 shadow-sm ms-2" href="{{ route('sale.add') }}">
+                                        <a class="btn btn-primary btn-sm rounded-pill px-2 shadow-sm ms-1" href="{{ route('sale.add') }}" style="font-size: 10px;">
                                             <i class="fa fa-plus me-1"></i> Add Sale
                                         </a>
                                     </div>
@@ -202,8 +216,9 @@
                             <label class="column-picker-item"><input type="checkbox" data-column="11" checked> Disc</label>
                             <label class="column-picker-item"><input type="checkbox" data-column="12" checked> Receipts</label>
                             <label class="column-picker-item"><input type="checkbox" data-column="13" checked> Payable Balance</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="14" checked> Date</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="15" checked> Status</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="14" checked> Created By</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="15" checked> Date</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="16" checked> Status</label>
                         </div>
                     </div>
                 </div>
@@ -226,6 +241,7 @@
                                     <th class="text-end">Disc</th>
                                     <th class="text-end text-success">Receipts</th>
                                     <th class="text-end text-primary">Payable Balance</th>
+                                    <th>Created By</th>
                                     <th>Date</th>
                                     <th class="text-center">Status</th>
                                     <th class="text-center" style="min-width: 120px;">Action</th>
@@ -236,7 +252,7 @@
                                 <tr>
                                     <td class="text-muted">{{ $key+1 }}</td>
                                     <td class="text-muted small">SJ</td>
-                                    <td class="fw-bold text-primary">{{ (int) preg_replace('/[^0-9]/', '', substr($sale->invoice_no, strlen('INVSLE-'))) }}</td>
+                                    <td class="fw-bold text-primary">{{ (int) preg_replace('/[^0-9]/', '', $sale->invoice_no) }}</td>
                                     <td>{{ $sale->manual_invoice ?? '-' }}</td>
                                     <td>
                                         @if($sale->is_sale_order)
@@ -286,6 +302,15 @@
                                     <td class="text-end text-danger">{{ number_format($sale->discount_amount ?? 0, 0) }}</td>
                                     <td class="text-end text-success">{{ number_format(($sale->receipt1 ?? 0) + ($sale->receipt2 ?? 0), 0) }}</td>
                                     <td class="text-end fw-bold text-primary">{{ number_format($sale->total_balance, 0) }}</td>
+                                    
+                                    <td>
+                                        @if($sale->user)
+                                            <span class="text-dark small">{{ $sale->user->name }}</span>
+                                            <br><span class="text-muted" style="font-size: 9px;">({{ $sale->user->roles->first()->name ?? 'User' }})</span>
+                                        @else
+                                            <span class="text-muted small">System</span>
+                                        @endif
+                                    </td>
                                     
                                     <td class="small">{{ \Carbon\Carbon::parse($sale->created_at)->format('d-M-Y') }}</td>
                                     <td class="text-center">

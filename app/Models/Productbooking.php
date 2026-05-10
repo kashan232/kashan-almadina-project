@@ -60,4 +60,9 @@ class Productbooking extends Model
     {
         return $this->belongsTo(Vendor::class, 'customer_id');
     }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
 }

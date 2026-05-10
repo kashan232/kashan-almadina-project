@@ -153,15 +153,23 @@ class RollbackController extends Controller
         $sale = $this->findRecord(Sale::class, 'invoice_no', $invoiceNo);
         if (!$sale) throw new \Exception("Sale $invoiceNo not found.");
 
+        $this->validateRollbackDate($sale);
+
         $sale->load('items');
 
         foreach ($sale->items as $item) {
             $this->adjustStock($item->product_id, $item->warehouse_id, $item->sales_qty, 'add');
         }
 
-        $booking = Productbooking::create($sale->toArray());
+        $bookingData = $sale->toArray();
+        unset($bookingData['id']); // Remove ID to prevent collision if using create()
+        
+        $booking = Productbooking::create($bookingData);
         foreach ($sale->items as $item) {
-            ProductBookingItem::create(array_merge($item->toArray(), ['booking_id' => $booking->id]));
+            $itemData = $item->toArray();
+            unset($itemData['id']);
+            $itemData['booking_id'] = $booking->id;
+            ProductBookingItem::create($itemData);
         }
 
         $sale->items()->delete();
@@ -173,6 +181,8 @@ class RollbackController extends Controller
     {
         $purchase = $this->findRecord(Purchase::class, 'invoice_no', $invoiceNo);
         if (!$purchase) throw new \Exception("Purchase $invoiceNo not found.");
+        
+        $this->validateRollbackDate($purchase);
         
         $purchase->load(['items', 'accountAllocations']);
         
@@ -199,6 +209,8 @@ class RollbackController extends Controller
         $ret = $this->findRecord(PurchaseReturn::class, 'invoice_no', $invoiceNo);
         if (!$ret) throw new \Exception("Purchase Return $invoiceNo not found.");
         
+        $this->validateRollbackDate($ret);
+        
         $ret->load('items');
         if ($ret->status !== 'Posted') throw new \Exception("Return $invoiceNo is not Posted.");
 
@@ -216,6 +228,8 @@ class RollbackController extends Controller
         $ret = $this->findRecord(SaleReturn::class, 'invoice_no', $invoiceNo);
         if (!$ret) throw new \Exception("Sale Return $invoiceNo not found.");
         
+        $this->validateRollbackDate($ret);
+        
         $ret->load('items');
         if ($ret->status !== 'Posted') throw new \Exception("Return $invoiceNo is not Posted.");
 
@@ -232,6 +246,9 @@ class RollbackController extends Controller
     {
         $inward = $this->findRecord(InwardGatepass::class, 'invoice_no', $invoiceNo);
         if (!$inward) throw new \Exception("Inward $invoiceNo not found.");
+        
+        $this->validateRollbackDate($inward);
+        
         $inward->update(['status' => 'pending']);
         return back()->with('success', "Inward #$invoiceNo set to Pending.");
     }
@@ -240,6 +257,9 @@ class RollbackController extends Controller
     {
         $hold = $this->findRecord(StockHold::class, 'invoice_no', $invoiceNo);
         if (!$hold) throw new \Exception("Stock Hold $invoiceNo not found.");
+        
+        $this->validateRollbackDate($hold);
+        
         if ($hold->status !== 'Posted') throw new \Exception("Hold $invoiceNo is not Posted.");
 
         foreach (json_decode($hold->product_id) as $idx => $pid) {
@@ -256,6 +276,9 @@ class RollbackController extends Controller
     {
         $rel = $this->findRecord(StockRelease::class, 'invoice_no', $invoiceNo);
         if (!$rel) throw new \Exception("Stock Release $invoiceNo not found.");
+        
+        $this->validateRollbackDate($rel);
+        
         if ($rel->status !== 'Posted') throw new \Exception("Release $invoiceNo is not Posted.");
 
         foreach (json_decode($rel->product_id) as $idx => $pid) {
@@ -274,6 +297,8 @@ class RollbackController extends Controller
         $trans = $this->findRecord(StockTransfer::class, 'id', $invoiceNo);
         if (!$trans) throw new \Exception("Stock Transfer $invoiceNo not found.");
         
+        $this->validateRollbackDate($trans);
+        
         $trans->load('items');
         if ($trans->status !== 'Posted') throw new \Exception("Transfer $invoiceNo is not Posted.");
 
@@ -290,6 +315,8 @@ class RollbackController extends Controller
     {
         $wastage = $this->findRecord(StockWastage::class, 'invoice_no', $invoiceNo);
         if (!$wastage) throw new \Exception("Stock Wastage $invoiceNo not found.");
+        
+        $this->validateRollbackDate($wastage);
         
         $wastage->load('details');
         if ($wastage->status !== 'Posted') throw new \Exception("Wastage $invoiceNo is not Posted.");
@@ -338,6 +365,9 @@ class RollbackController extends Controller
     {
         $v = $this->findRecord($model, $field, $invoiceNo);
         if (!$v) throw new \Exception("$name $invoiceNo not found.");
+        
+        $this->validateRollbackDate($v);
+        
         if ($v->status !== 'posted') throw new \Exception("$name $invoiceNo is not posted.");
 
         $amount = (float)$v->total_amount;
@@ -410,6 +440,35 @@ class RollbackController extends Controller
         if ($acc) {
             $acc->opening_balance = $action === 'add' ? (($acc->opening_balance ?? 0) + $amount) : (($acc->opening_balance ?? 0) - $amount);
             $acc->save();
+        }
+    }
+
+    private function validateRollbackDate($record)
+    {
+        if (auth()->user()->hasRole('Admin')) {
+            return;
+        }
+
+        $today = date('Y-m-d');
+        
+        // Try to find the date field
+        $date = null;
+        if (isset($record->entry_date)) {
+            $date = $record->entry_date;
+        } elseif (isset($record->date)) {
+            $date = $record->date;
+        } elseif (isset($record->current_date)) {
+            $date = $record->current_date;
+        } elseif (isset($record->created_at)) {
+            // Ensure we handle carbon objects
+            $date = is_object($record->created_at) ? $record->created_at->format('Y-m-d') : $record->created_at;
+        }
+
+        if ($date) {
+            $formattedDate = date('Y-m-d', strtotime($date));
+            if ($formattedDate !== $today) {
+                throw new \Exception("Access Denied: Standard users can only rollback transactions from today ($today). This record is from $formattedDate. Please contact an Admin for historical rollbacks.");
+            }
         }
     }
 }
