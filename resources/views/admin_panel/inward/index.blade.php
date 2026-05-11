@@ -158,13 +158,27 @@
                                     </div>
                                 </div>
                                 <div class="col-md-2">
-                                    <select name="status" class="form-select form-select-sm select2">
-                                        <option value="">All Status</option>
-                                        <option value="Unposted" {{ request('status') == 'Unposted' ? 'selected' : '' }}>Unposted</option>
-                                        <option value="Posted" {{ request('status') == 'Posted' ? 'selected' : '' }}>Posted</option>
-                                    </select>
+                                    <div class="input-group input-group-sm">
+                                        <span class="input-group-text bg-white border-end-0 small fw-bold text-muted">Cashier</span>
+                                        <select name="user_id" class="form-select form-select-sm select2 border-start-0">
+                                            <option value="">All</option>
+                                            @foreach($users as $user)
+                                                <option value="{{ $user->id }}" {{ request('user_id') == $user->id ? 'selected' : '' }}>{{ $user->name }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
                                 </div>
-                                <div class="col-md-4 text-end">
+                                <div class="col-md-2">
+                                    <div class="input-group input-group-sm">
+                                        <span class="input-group-text bg-white border-end-0 small fw-bold text-muted">Status</span>
+                                        <select name="status" class="form-select form-select-sm select2 border-start-0">
+                                            <option value="">All</option>
+                                            <option value="Unposted" {{ request('status') == 'Unposted' ? 'selected' : '' }}>Unposted</option>
+                                            <option value="Posted" {{ request('status') == 'Posted' ? 'selected' : '' }}>Posted</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-2 text-end">
                                     <div class="d-flex gap-1 justify-content-end align-items-center">
                                         <button type="submit" class="btn btn-primary btn-sm rounded-pill px-3 shadow-sm">Filter</button>
                                         <a href="{{ route('InwardGatepass.home') }}" class="btn btn-outline-secondary btn-sm rounded-pill px-2" title="Reset"><i class="fa fa-refresh"></i></a>
@@ -196,8 +210,9 @@
                             <label class="column-picker-item"><input type="checkbox" data-column="5" checked> Vendor</label>
                             <label class="column-picker-item"><input type="checkbox" data-column="6" checked> Transport</label>
                             <label class="column-picker-item"><input type="checkbox" data-column="7" checked> Bilty#</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="8" checked> Items</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="9" checked> Status</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="8" checked> Created By</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="9" checked> Items</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="10" checked> Status</label>
                         </div>
                     </div>
                 </div>
@@ -214,6 +229,7 @@
                                     <th>Vendor</th>
                                     <th>Transport</th>
                                     <th>Bilty#</th>
+                                    <th>Created By</th>
                                     <th>Items</th>
                                     <th class="text-center">Status</th>
                                     <th class="text-center" style="min-width: 100px;">Action</th>
@@ -238,6 +254,7 @@
                                     </td>
                                     <td class="small">{{ $gp->transport_name ?? '-' }}</td>
                                     <td class="small">{{ $gp->gatepass_no ?? '-' }}</td>
+                                    <td class="small text-muted">{{ $gp->user->name ?? 'N/A' }}</td>
                                     <td class="py-1">
                                         @foreach($gp->items as $item)
                                             <div class="item-detail-row">

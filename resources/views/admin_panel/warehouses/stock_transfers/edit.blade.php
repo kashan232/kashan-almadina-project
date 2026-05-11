@@ -322,7 +322,6 @@ $(document).ready(function() {
         $.get("{{ route('warehouse.stock.quantity') }}", { warehouse_id: warehouseId, product_id: productId })
             .done(function(res) { 
                 $row.find('.stock').val(res.quantity); 
-                $row.find('.quantity').attr('max', res.quantity);
             })
             .fail(function() { $row.find('.stock').val(0); });
     }

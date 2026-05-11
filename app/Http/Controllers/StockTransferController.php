@@ -197,22 +197,27 @@ class StockTransferController extends Controller
                         // Deduct from shop (Product's direct stock)
                         $sourceProduct = Product::lockForUpdate()->find($item->product_id);
 
-                        if (!$sourceProduct || $sourceProduct->stock < $item->quantity) {
-                            throw new \Exception("Not enough stock in Shop for product ID: {$item->product_id}");
+                        if ($sourceProduct) {
+                            $sourceProduct->stock -= $item->quantity;
+                            $sourceProduct->save();
                         }
-                        $sourceProduct->stock -= $item->quantity;
-                        $sourceProduct->save();
                     } else {
                         // Deduct from source warehouse
                         $sourceStock = WarehouseStock::where('warehouse_id', $transfer->from_warehouse_id)
                             ->where('product_id', $item->product_id)
                             ->lockForUpdate()->first();
 
-                        if (!$sourceStock || $sourceStock->quantity < $item->quantity) {
-                            throw new \Exception("Not enough stock in warehouse for product ID: {$item->product_id}");
+                        if ($sourceStock) {
+                            $sourceStock->quantity -= $item->quantity;
+                            $sourceStock->save();
+                        } else {
+                            // Even if record doesn't exist, we create it with negative quantity if needed
+                            WarehouseStock::create([
+                                'warehouse_id' => $transfer->from_warehouse_id,
+                                'product_id'   => $item->product_id,
+                                'quantity'     => -($item->quantity),
+                            ]);
                         }
-                        $sourceStock->quantity -= $item->quantity;
-                        $sourceStock->save();
                     }
 
                     // Add to destination warehouse

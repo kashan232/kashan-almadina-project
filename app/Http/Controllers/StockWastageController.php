@@ -12,12 +12,13 @@ use App\Models\ExpenseVoucher; // Assuming we use this for accounting
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
+use App\Models\User;
 
 class StockWastageController extends Controller
 {
     public function index(Request $request)
     {
-        $query = StockWastage::with(['warehouse', 'account', 'accountHead', 'items.product'])->latest();
+        $query = StockWastage::with(['warehouse', 'account', 'accountHead', 'items.product', 'user'])->latest();
 
         if ($request->filled('start_date')) {
             $query->whereDate('date', '>=', $request->start_date);
@@ -29,8 +30,13 @@ class StockWastageController extends Controller
             $query->where('status', $request->status);
         }
 
+        if ($request->filled('user_id')) {
+            $query->where('created_by', $request->user_id);
+        }
+
         $wastages = $query->get();
-        return view('admin_panel.stock_wastage.index', compact('wastages'));
+        $users = User::orderBy('name')->get();
+        return view('admin_panel.stock_wastage.index', compact('wastages', 'users'));
     }
 
     public function create()
@@ -105,6 +111,7 @@ class StockWastageController extends Controller
                         'remarks'         => $request->remarks,
                         'total_amount'    => $request->grand_total ?? 0,
                         'status'          => $status,
+                        'created_by'      => auth()->id(),
                     ]);
                 }
 

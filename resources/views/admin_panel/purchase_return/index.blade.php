@@ -122,13 +122,27 @@
                                     </div>
                                 </div>
                                 <div class="col-md-2">
-                                    <select name="status" class="form-select form-select-sm select2">
-                                        <option value="">All Status</option>
-                                        <option value="Unposted" {{ request('status') == 'Unposted' ? 'selected' : '' }}>Unposted</option>
-                                        <option value="Posted" {{ request('status') == 'Posted' ? 'selected' : '' }}>Posted</option>
-                                    </select>
+                                    <div class="input-group input-group-sm">
+                                        <span class="input-group-text bg-white border-end-0 small fw-bold text-muted">Cashier</span>
+                                        <select name="user_id" class="form-select form-select-sm select2 border-start-0">
+                                            <option value="">All</option>
+                                            @foreach($users as $user)
+                                                <option value="{{ $user->id }}" {{ request('user_id') == $user->id ? 'selected' : '' }}>{{ $user->name }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
                                 </div>
-                                <div class="col-md-4 text-end">
+                                <div class="col-md-2">
+                                    <div class="input-group input-group-sm">
+                                        <span class="input-group-text bg-white border-end-0 small fw-bold text-muted">Status</span>
+                                        <select name="status" class="form-select form-select-sm select2 border-start-0">
+                                            <option value="">All</option>
+                                            <option value="Unposted" {{ request('status') == 'Unposted' ? 'selected' : '' }}>Unposted</option>
+                                            <option value="Posted" {{ request('status') == 'Posted' ? 'selected' : '' }}>Posted</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-2 text-end">
                                     <div class="d-flex gap-1 justify-content-end align-items-center">
                                         <button type="submit" class="btn btn-primary btn-sm rounded-pill px-3 shadow-sm">Filter</button>
                                         <a href="{{ route('purchase.return.home') }}" class="btn btn-outline-secondary btn-sm rounded-pill px-2" title="Reset"><i class="fa fa-refresh"></i></a>
@@ -159,9 +173,10 @@
                             <label class="column-picker-item"><input type="checkbox" data-column="5" checked> Supplier</label>
                             <label class="column-picker-item"><input type="checkbox" data-column="6" checked> Items</label>
                             <label class="column-picker-item"><input type="checkbox" data-column="7" checked> Qty</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="8" checked> Date</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="9" checked> Net Amount</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="10" checked> Status</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="8" checked> Created By</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="9" checked> Date</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="10" checked> Net Amount</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="11" checked> Status</label>
                         </div>
                     </div>
                 </div>
@@ -178,6 +193,7 @@
                                     <th>Supplier</th>
                                     <th>Items</th>
                                     <th class="text-center">Qty</th>
+                                    <th>Created By</th>
                                     <th>Date</th>
                                     <th class="text-end">Net Amount</th>
                                     <th class="text-center">Status</th>
@@ -189,7 +205,7 @@
                                 <tr>
                                     <td class="text-muted">{{ $ret->id }}</td>
                                     <td class="text-muted small">PRJ</td>
-                                    <td class="fw-bold text-primary">{{ (int) preg_replace('/[^0-9]/', '', substr($ret->invoice_no, strlen('PUR-RET-'))) }}</td>
+                                    <td class="fw-bold text-primary">{{ preg_replace('/[^0-9]/', '', $ret->invoice_no) }}</td>
                                     <td><span class="badge bg-light text-dark border px-2">{{ $ret->purchase->invoice_no ?? 'N/A' }}</span></td>
                                     <td class="fw-bold text-dark">{{ $ret->purchasable->name ?? ($ret->purchasable->customer_name ?? 'N/A') }}</td>
                                     <td>
@@ -206,6 +222,7 @@
                                             </div>
                                         @endforeach
                                     </td>
+                                    <td class="small text-muted">{{ $ret->user->name ?? 'N/A' }}</td>
                                     <td class="small">{{ \Carbon\Carbon::parse($ret->current_date)->format('d-M-Y') }}</td>
                                     <td class="text-end fw-bold text-danger">{{ number_format($ret->net_amount, 0) }}</td>
                                     <td class="text-center">
@@ -287,7 +304,7 @@
             }
         });
 
-        const storageKey = 'purchase_return_cols_v2';
+        const storageKey = 'purchase_return_cols_v4';
         const savedState = localStorage.getItem(storageKey);
 
         if (savedState) {

@@ -21,13 +21,14 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
+use App\Models\User;
 
 
 class PurchaseController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Purchase::with(['vendor', 'warehouse', 'purchasable', 'items.product']);
+        $query = Purchase::with(['vendor', 'warehouse', 'purchasable', 'items.product', 'user']);
 
         if ($request->filled('start_date')) {
             $query->whereDate('current_date', '>=', $request->start_date);
@@ -40,8 +41,13 @@ class PurchaseController extends Controller
             $query->where('status', $request->status);
         }
 
+        if ($request->filled('user_id')) {
+            $query->where('created_by', $request->user_id);
+        }
+
         $Purchase = $query->latest()->get();
-        return view("admin_panel.purchase.index", compact('Purchase'));
+        $users = User::orderBy('name')->get();
+        return view("admin_panel.purchase.index", compact('Purchase', 'users'));
     }
     public function add_purchase()
     {
@@ -51,19 +57,7 @@ class PurchaseController extends Controller
         $customers = Customer::all();
 
         // ---------- GET LAST INVOICE ----------
-        $lastPurchase = Purchase::orderBy('id', 'DESC')->first();
-
-        if ($lastPurchase && !empty($lastPurchase->invoice_no)) {
-            // Extract number
-            $lastNumber = intval(preg_replace('/[^0-9]/', '', $lastPurchase->invoice_no));
-            // Increment
-            $nextNumber = $lastNumber + 1;
-        } else {
-            $nextNumber = 1; // First ever invoice
-        }
-
-        // Format into numeric string
-        $nextInvoice = str_pad($nextNumber, 3, '0', STR_PAD_LEFT);
+        $nextInvoice = Purchase::generateInvoiceNo();
 
         // Pass this to the view
         return view(
@@ -223,6 +217,7 @@ class PurchaseController extends Controller
                     'wht_type'         => $request->wht_type,
                     'net_amount'       => $request->net_amount,
                     'branch_id'        => auth()->user()->branch_id ?? 1,
+                    'created_by'       => auth()->id(),
                 ]);
 
                 $subtotal = 0;
@@ -335,6 +330,7 @@ class PurchaseController extends Controller
                 'net_amount'      => $request->net_amount,
                 'branch_id'       => auth()->user()->branch_id ?? 1,
                 'inward_id'       => $request->inward_id, // link inward
+                'created_by'      => auth()->id(),
             ]);
 
             $subtotal = 0;

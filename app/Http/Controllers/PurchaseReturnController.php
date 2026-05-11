@@ -13,12 +13,13 @@ use App\Models\Voucher;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use App\Models\User;
 
 class PurchaseReturnController extends Controller
 {
     public function index(Request $request)
     {
-        $query = PurchaseReturn::with(['purchasable', 'items.product']);
+        $query = PurchaseReturn::with(['purchasable', 'items.product', 'user']);
 
         if ($request->filled('start_date')) {
             $query->whereDate('current_date', '>=', $request->start_date);
@@ -30,8 +31,13 @@ class PurchaseReturnController extends Controller
             $query->where('status', $request->status);
         }
 
+        if ($request->filled('user_id')) {
+            $query->where('created_by', $request->user_id);
+        }
+
         $PurchaseReturns = $query->latest()->get();
-        return view('admin_panel.purchase_return.index', compact('PurchaseReturns'));
+        $users = User::orderBy('name')->get();
+        return view('admin_panel.purchase_return.index', compact('PurchaseReturns', 'users'));
     }
 
     public function create()
@@ -147,6 +153,7 @@ class PurchaseReturnController extends Controller
                     'wht'              => $request->wht,
                     'net_amount'       => $request->net_amount,
                     'status'           => 'Unposted',
+                    'created_by'       => auth()->id(),
                 ]);
 
                 foreach ($request->product_id as $index => $productId) {

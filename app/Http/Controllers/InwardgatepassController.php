@@ -11,6 +11,7 @@ use App\Models\Branch;
 use App\Models\Warehouse;
 use App\Models\Vendor;
 use App\Models\Customer;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -25,7 +26,7 @@ class InwardgatepassController extends Controller
     // 1. List all inward gatepasses
     public function index(Request $request)
     {
-        $query = InwardGatepass::with('items.product', 'branch', 'warehouse', 'vendor')->latest();
+        $query = InwardGatepass::with('items.product', 'branch', 'warehouse', 'vendor', 'user')->latest();
 
         if ($request->filled('start_date')) {
             $query->whereDate('gatepass_date', '>=', $request->start_date);
@@ -39,9 +40,13 @@ class InwardgatepassController extends Controller
         if ($request->filled('vendor')) {
             $query->whereHas('vendor', fn($q) => $q->where('name', 'like', '%'.$request->vendor.'%'));
         }
+        if ($request->filled('user_id')) {
+            $query->where('created_by', $request->user_id);
+        }
 
         $gatepasses = $query->get();
-        return view('admin_panel.inward.index', compact('gatepasses'));
+        $users = User::orderBy('name')->get();
+        return view('admin_panel.inward.index', compact('gatepasses', 'users'));
     }
 
     // 2. Show create form

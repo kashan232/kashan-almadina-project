@@ -165,13 +165,27 @@
                                     </div>
                                 </div>
                                 <div class="col-md-2">
-                                    <select name="status" class="form-select form-select-sm select2">
-                                        <option value="">All Status</option>
-                                        <option value="Unposted" {{ request('status') == 'Unposted' ? 'selected' : '' }}>Unposted</option>
-                                        <option value="Posted" {{ request('status') == 'Posted' ? 'selected' : '' }}>Posted</option>
-                                    </select>
+                                    <div class="input-group input-group-sm">
+                                        <span class="input-group-text bg-white border-end-0 small fw-bold text-muted">Cashier</span>
+                                        <select name="user_id" class="form-select form-select-sm select2 border-start-0">
+                                            <option value="">All</option>
+                                            @foreach($users as $user)
+                                                <option value="{{ $user->id }}" {{ request('user_id') == $user->id ? 'selected' : '' }}>{{ $user->name }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
                                 </div>
-                                <div class="col-md-4 text-end">
+                                <div class="col-md-2">
+                                    <div class="input-group input-group-sm">
+                                        <span class="input-group-text bg-white border-end-0 small fw-bold text-muted">Status</span>
+                                        <select name="status" class="form-select form-select-sm select2 border-start-0">
+                                            <option value="">All</option>
+                                            <option value="Unposted" {{ request('status') == 'Unposted' ? 'selected' : '' }}>Unposted</option>
+                                            <option value="Posted" {{ request('status') == 'Posted' ? 'selected' : '' }}>Posted</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-2 text-end">
                                     <div class="d-flex gap-1 justify-content-end align-items-center">
                                         <button type="submit" class="btn btn-primary btn-sm rounded-pill px-3 shadow-sm">Filter</button>
                                         <a href="{{ route('Purchase.home') }}" class="btn btn-outline-secondary btn-sm rounded-pill px-2" title="Reset"><i class="fa fa-refresh"></i></a>
@@ -208,8 +222,9 @@
                             <label class="column-picker-item"><input type="checkbox" data-column="10" checked> Disc</label>
                             <label class="column-picker-item"><input type="checkbox" data-column="11" checked> WHT</label>
                             <label class="column-picker-item"><input type="checkbox" data-column="12" checked> Net</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="13" checked> Date</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="14" checked> Status</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="13" checked> Created By</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="14" checked> Date</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="15" checked> Status</label>
                         </div>
                     </div>
                 </div>
@@ -231,6 +246,7 @@
                                     <th class="text-end">Disc</th>
                                     <th class="text-end">WHT</th>
                                     <th class="text-end text-success">Net</th>
+                                    <th>Created By</th>
                                     <th>Date</th>
                                     <th class="text-center">Status</th>
                                     <th class="text-center" style="min-width: 100px;">Action</th>
@@ -241,7 +257,7 @@
                                 <tr>
                                     <td class="text-muted">{{ $key+1 }}</td>
                                     <td class="text-muted small">PJ</td>
-                                    <td class="fw-bold text-primary">{{ (int) preg_replace('/[^0-9]/', '', substr($purchase->invoice_no, strlen('PUR-'))) }}</td>
+                                    <td class="fw-bold text-primary">{{ preg_replace('/[^0-9]/', '', $purchase->invoice_no) }}</td>
                                     <td class="text-center">
                                         @if($purchase->inward_id)
                                             <span class="badge bg-info-subtle text-info border border-info px-2 py-0" style="font-size: 9px;">Inward ({{ $purchase->inward_id }})</span>
@@ -289,7 +305,7 @@
                                     <td class="text-end text-danger">{{ number_format($purchase->discount, 0) }}</td>
                                     <td class="text-end">{{ number_format($purchase->wht, 0) }}</td>
                                     <td class="text-end fw-bold text-success">{{ number_format($purchase->net_amount, 0) }}</td>
-                                    
+                                    <td class="small text-muted">{{ $purchase->user->name ?? 'N/A' }}</td>
                                     <td class="small">{{ \Carbon\Carbon::parse($purchase->current_date)->format('d-M-Y') }}</td>
                                     <td class="text-center">
                                         @if($purchase->status === 'Posted')
@@ -356,7 +372,7 @@
             }
         });
 
-        const storageKey = 'purchase_table_cols_v3';
+        const storageKey = 'purchase_table_cols_v4';
         
         // Initialize DataTable
         var dt = $('#purchaseTable').DataTable({

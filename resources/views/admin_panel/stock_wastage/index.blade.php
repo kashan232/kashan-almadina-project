@@ -122,13 +122,27 @@
                                     </div>
                                 </div>
                                 <div class="col-md-2">
-                                    <select name="status" class="form-select form-select-sm select2">
-                                        <option value="">All Status</option>
-                                        <option value="Unposted" {{ request('status') == 'Unposted' ? 'selected' : '' }}>Unposted</option>
-                                        <option value="Posted" {{ request('status') == 'Posted' ? 'selected' : '' }}>Posted</option>
-                                    </select>
+                                    <div class="input-group input-group-sm">
+                                        <span class="input-group-text bg-white border-end-0 small fw-bold text-muted">Cashier</span>
+                                        <select name="user_id" class="form-select form-select-sm select2 border-start-0">
+                                            <option value="">All</option>
+                                            @foreach($users as $user)
+                                                <option value="{{ $user->id }}" {{ request('user_id') == $user->id ? 'selected' : '' }}>{{ $user->name }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
                                 </div>
-                                <div class="col-md-4 text-end">
+                                <div class="col-md-2">
+                                    <div class="input-group input-group-sm">
+                                        <span class="input-group-text bg-white border-end-0 small fw-bold text-muted">Status</span>
+                                        <select name="status" class="form-select form-select-sm select2 border-start-0">
+                                            <option value="">All</option>
+                                            <option value="Unposted" {{ request('status') == 'Unposted' ? 'selected' : '' }}>Unposted</option>
+                                            <option value="Posted" {{ request('status') == 'Posted' ? 'selected' : '' }}>Posted</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-2 text-end">
                                     <div class="d-flex gap-1 justify-content-end align-items-center">
                                         <button type="submit" class="btn btn-primary btn-sm rounded-pill px-3 shadow-sm">Filter</button>
                                         <a href="{{ route('stock-wastage.index') }}" class="btn btn-outline-secondary btn-sm rounded-pill px-2" title="Reset"><i class="fa fa-refresh"></i></a>
@@ -160,8 +174,9 @@
                             <label class="column-picker-item"><input type="checkbox" data-column="6" checked> Expense A/C</label>
                             <label class="column-picker-item"><input type="checkbox" data-column="7" checked> Items</label>
                             <label class="column-picker-item"><input type="checkbox" data-column="8" checked> Remarks</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="9" checked> Amount</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="10" checked> Status</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="9" checked> Created By</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="10" checked> Amount</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="11" checked> Status</label>
                         </div>
                     </div>
                 </div>
@@ -179,6 +194,7 @@
                                     <th>Expense A/C</th>
                                     <th>Items</th>
                                     <th>Remarks</th>
+                                    <th>Created By</th>
                                     <th class="text-end">Amount</th>
                                     <th class="text-center">Status</th>
                                     <th class="text-center" style="min-width: 120px;">Action</th>
@@ -208,6 +224,7 @@
                                         @endforeach
                                     </td>
                                     <td><small class="text-muted">{{ Str::limit($wastage->remarks, 20) ?: '-' }}</small></td>
+                                    <td class="small text-muted">{{ $wastage->user->name ?? 'N/A' }}</td>
                                     <td class="text-end fw-bold text-danger">{{ number_format($wastage->total_amount, 0) }}</td>
                                     <td class="text-center">
                                         @if($wastage->status == 'Posted')
@@ -288,7 +305,7 @@
             }
         });
 
-        const storageKey = 'stock_wastage_cols_v2';
+        const storageKey = 'stock_wastage_cols_v3';
         const savedState = localStorage.getItem(storageKey);
 
         if (savedState) {

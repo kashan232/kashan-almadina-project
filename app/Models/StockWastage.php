@@ -35,6 +35,11 @@ class StockWastage extends Model
     {
         return $this->belongsTo(AccountHead::class);
     }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
     
     public static function generateGWN()
     {

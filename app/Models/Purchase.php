@@ -43,6 +43,11 @@ class Purchase extends Model
         return $this->hasMany(PurchaseAccountAllocaations::class, 'purchase_id');
     }
 
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
 
     public static function generateInvoiceNo()
     {
