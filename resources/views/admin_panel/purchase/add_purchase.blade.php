@@ -63,14 +63,6 @@
     .form-locked input, .form-locked select, .form-locked textarea { pointer-events: none; opacity: 0.8; }
     .form-locked .remove-row, .form-locked .removeAccountRow, .form-locked #addRow, .form-locked #addAccountRow, .form-locked #saveDraftBtn { display: none !important; }
     
-    .loading-indicator {
-        background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-loader"><line x1="12" y1="2" x2="12" y2="6"></line><line x1="12" y1="18" x2="12" y2="22"></line><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line><line x1="2" y1="12" x2="6" y2="12"></line><line x1="18" y1="12" x2="22" y2="12"></line><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line></svg>');
-        background-repeat: no-repeat;
-        background-position: right 5px center;
-        background-size: 16px;
-        animation: spin 1s linear infinite;
-    }
-    @keyframes spin { 100% { transform:rotate(360deg); } }
 </style>
 <div class="main-content bg-white">
     <div class="main-content-inner">
@@ -116,444 +108,510 @@
             <body>
                 <div class="body-wrapper">
                     <div class="bodywrapper__inner">
-                        <div class="d-flex justify-content-between align-items-center mb-3 bg-light p-2 rounded shadow-sm">
-
-                            {{-- LEFT: Post button --}}
-                            <div class="d-flex align-items-center" style="min-width:80px;">
-                                @if(isset($purchase) && $purchase->status != 'Posted')
-                                    <form id="topPostForm" action="{{ route('purchase.post', $purchase->id) }}" method="POST" class="d-inline">
-                                        @csrf
-                                        <button type="submit" class="btn btn-sm btn-primary rounded-pill px-4 shadow-sm">
-                                            <i class="bi bi-send-fill me-1"></i> Post
-                                        </button>
-                                    </form>
-                                @else
-                                    {{-- placeholder so layout doesn't shift on create page --}}
-                                    <span></span>
-                                @endif
-                            </div>
-
-                            {{-- CENTER: Title + Draft badge + Invoice --}}
-                            <div class="d-flex align-items-center gap-2 justify-content-center flex-grow-1">
-                                <h6 class="page-title mb-0 fw-bold">{{ isset($purchase) ? 'Edit Purchase' : 'Create Purchase' }}</h6>
-                                <span class="badge bg-primary px-3 py-2 rounded-pill shadow-sm" style="font-size:12px;">
-                                    <i class="bi bi-receipt me-1"></i> {{ $nextInvoice }}
-                                </span>
-                            </div>
-
-                            {{-- RIGHT: List button --}}
-                            <div class="d-flex align-items-center justify-content-end" style="min-width:80px;">
-                                <a href="{{ route('Purchase.home') }}" id="listBtn" class="btn btn-sm btn-outline-secondary rounded-pill px-3">
-                                    <i class="bi bi-list me-1"></i> List
-                                    <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+L</kbd>
-                                </a>
-                            </div>
-
-                        </div>
 
                         <div class="row gy-3 ">
                             <div class="col-lg-12 col-md-12 mb-30 m-auto">
-                                <div class="card position-relative {{ isset($purchase) && $purchase->status == 'Posted' ? 'posted-bg' : '' }}">
-                                    @if(isset($purchase) && $purchase->status == 'Posted')
-                                        <div class="posted-watermark">Posted</div>
-                                    @endif
-                                    <div class="card-body  ml-2">
 
-                                        @if (session('success'))
-                                        <div class="alert alert-success alert-dismissible fade show"
-                                            role="alert">
-                                            <strong>Success!</strong> {{ session('success') }}
-                                            <button type="button" class="btn-close" data-bs-dismiss="alert"
-                                                aria-label="Close"></button>
-                                        </div>
-                                        @endif
+<style>
+  .main-container {
+    font-size: .85rem;
+    max-width: 1400px;
+  }
 
-                                        <form id="purchaseForm" class="{{ isset($purchase) ? 'form-locked' : '' }}" action="{{ isset($purchase) ? route('purchase.update', $purchase->id) : route('store.Purchase') }}" method="POST">
-                                            @csrf
-                                            @if(isset($purchase))
-                                                @method('PUT')
-                                            @endif
+  .header-text {
+    font-size: 1.1rem;
+  }
 
-                                            <div class="row g-2 mb-3 bg-light p-2 rounded shadow-sm border">
-                                                <div class="col-md-2">
-                                                    <label class="form-label small bold mb-0 text-uppercase">Entry Date</label>
-                                                    <input type="date" name="entry_date" value="{{ old('entry_date', isset($purchase) ? ($purchase->entry_date ?? \Carbon\Carbon::parse($purchase->current_date)->format('Y-m-d')) : date('Y-m-d')) }}" class="form-control form-control-sm border-primary" required>
-                                                </div>
-                                                <div class="col-md-2">
-                                                    <label class="form-label small bold mb-0 text-uppercase">Entry Time</label>
-                                                    <input type="time" name="entry_time" value="{{ old('entry_time', isset($purchase) ? ($purchase->entry_time ?? \Carbon\Carbon::parse($purchase->created_at)->format('H:i')) : date('H:i')) }}" class="form-control form-control-sm border-primary" required>
-                                                </div>
-                                                <div class="col-md-2">
-                                                    <label class="form-label small bold mb-0 text-uppercase">DC Date</label>
-                                                    <input name="dc_date" value="{{ old('dc_date', isset($purchase) ? \Carbon\Carbon::parse($purchase->dc_date)->format('Y-m-d') : date('Y-m-d')) }}" type="date" class="form-control form-control-sm">
-                                                </div>
-                                                <div class="col-md-3">
-                                                    <label class="form-label small bold mb-0 text-uppercase">Type</label>
-                                                    @php $vType = old('vendor_type', isset($purchase) ? strtolower(class_basename($purchase->purchasable_type)) : ''); @endphp
-                                                    <select name="vendor_type" class="form-control form-control-sm" id="vendor_type_select">
-                                                        <option value="" {{ $vType ? '' : 'selected' }} disabled>Select</option>
-                                                        <option value="vendor" {{ $vType == 'vendor' ? 'selected' : '' }}>Vendor</option>
-                                                        <option value="customer" {{ $vType == 'customer' ? 'selected' : '' }}>Customer</option>
-                                                        <option value="walkin" {{ $vType == 'walkin' ? 'selected' : '' }}>Walkin Customer</option>
-                                                    </select>
-                                                </div>
-                                                <div class="col-md-3">
-                                                    <label class="form-label small bold mb-0 text-uppercase">Vendor/Party</label>
-                                                    <select name="vendor_id" id="vendor_id_select" class="form-control form-control-sm select2" style="width:100%;">
-                                                        <option value="" disabled selected>Select Party</option>
-                                                        @if(isset($purchase))
-                                                            <option value="{{ $purchase->purchasable_id }}" selected>
-                                                                {{ $purchase->purchasable->name ?? ($purchase->purchasable->customer_name ?? 'Unknown') }}
-                                                            </option>
-                                                        @endif
-                                                    </select>
-                                                </div>
-                                            </div>
+  .form-control,
+  .form-select,
+  .btn {
+    font-size: .8rem;
+    padding: .25rem .5rem;
+    height: auto;
+  }
 
-                                            <table class="table table-bordered table-sm text-center align-middle">
-                                                <thead class="table-light">
-                                                    <tr>
-                                                        <th>DC #</th>
-                                                        <th>Warehouse</th>
-                                                        <th>Bilty No</th>
-                                                        <th>Remarks</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    <tr>
-                                                        <td><input name="dc" type="text" value="{{ old('dc', $purchase->dc ?? '') }}"
-                                                                class="form-control form-control-sm" style="width:100%;">
-                                                        </td>
-                                                        <td>
-                                                            <select name="warehouse_id" class="form-control form-control-sm" required>
-                                                                @if(auth()->user()->canAccessShop())
-                                                                    <option value="0" {{ (string)old('warehouse_id', $purchase->warehouse_id ?? '') === '0' ? 'selected' : '' }}>
-                                                                        🏠 Shop Stock
-                                                                    </option>
-                                                                @endif
-                                                                @foreach ($Warehouse as $ware)
-                                                                <option value="{{ $ware->id }}" {{ (string)old('warehouse_id', $purchase->warehouse_id ?? '') === (string)$ware->id ? 'selected' : '' }}>
-                                                                    📦 {{ $ware->warehouse_name }}
-                                                                </option>
-                                                                @endforeach
-                                                            </select>
-                                                        </td>
-                                                        <td>
-                                                            <input name="bilty_no" type="text" value="{{ old('bilty_no', $purchase->bilty_no ?? '') }}"
-                                                                class="form-control form-control-sm" style="width:100%;">
-                                                        </td>
-                                                        <td><input name="remarks" type="text" value="{{ old('remarks', $purchase->note ?? '') }}" class="form-control form-control-sm">
-                                                        </td>
-                                                    </tr>
-                                                </tbody>
-                                            </table>
-                                             <table
-                                                 class="table table-bordered table-sm text-center align-middle mt-2">
-                                                 <thead class="table-light">
-                                                     <tr>
-                                                         <th>Item ID</th>
-                                                        <th>Product</th>
-                                                        <th>Brand</th>
-                                                        <th>Price</th>
-                                                        <th>Retail Price</th> <!-- ✅ New column -->
-                                                        <th>Disc</th>
-                                                        <th>Qty</th>
-                                                        <th>Rate</th>
-                                                        <th>Total</th>
-                                                        <th class="text-center">
-                                                            Act <kbd style="font-size: 8px; opacity: 0.7;">Ctrl+X</kbd>
-                                                        </th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody id="purchaseItems">
-                                                    @if(isset($purchase) && $purchase->items->count() > 0 && !old('product_id'))
-                                                        @foreach($purchase->items as $index => $item)
-                                                            @php
-                                                                $product = $item->product;
-                                                                $retail = $product?->latestPrice?->purchase_retail_price ?? 0;
-                                                                $net = $product?->latestPrice?->purchase_net_amount ?? 0;
-                                                                $gross = ($item->price ?? 0) * ($item->qty ?? 0);
-                                                                $disc_amt = $gross * (($item->item_discount ?? 0) / 100);
-                                                            @endphp
-                                                            <tr>
-                                                                <td style="width: 100px;">
-                                                                    <input type="text" class="form-control form-control-sm item-id-input" placeholder="ID" value="{{ $item->product_id }}">
-                                                                </td>
-                                                                <td style="width: 250px;">
-                                                                    <select name="product_id[]" class="form-control form-control-sm product-select" style="width: 100%;">
-                                                                        <option value="{{ $item->product_id }}" selected>{{ $product?->name ?? 'Unknown' }}</option>
-                                                                    </select>
-                                                                    <input type="hidden" name="product_name[]" class="product_name_hidden" value="{{ $product?->name }}">
-                                                                </td>
-                                                                <td class="uom border">
-                                                                    <input type="text" name="brand[]" class="form-control form-control-sm brand-name" readonly value="{{ $product?->brandRelation?->name ?? '' }}">
-                                                                </td>
-                                                                <td>
-                                                                    <input type="number" step="0.01" name="price[]" class="form-control form-control-sm price" value="{{ $item->price }}">
-                                                                </td>
-                                                                <td>
-                                                                    <input type="text" name="retail_price_show[]" class="form-control form-control-sm retail_price_show" readonly value="{{ $retail }}">
-                                                                </td>
-                                                                <td>
-                                                                    <div class="input-group">
-                                                                        <input type="number" step="0.01" min="0" name="item_disc[]" class="form-control form-control-sm item_disc" placeholder="%" value="{{ $item->item_discount }}">
-                                                                        <input type="text" name="item_disc_amount[]" class="form-control form-control-sm disc_amount" readonly placeholder="Disc Amt" value="{{ number_format($disc_amt, 2, '.', '') }}">
-                                                                    </div>
-                                                                    <input type="hidden" name="purchase_retail_price[]" class="purchase_retail_price" value="{{ $retail }}">
-                                                                    <input type="hidden" name="purchase_net_amount[]" class="purchase_net_amount" value="{{ $net }}">
-                                                                </td>
-                                                                <td>
-                                                                    <input type="number" name="qty[]" class="form-control form-control-sm quantity" value="{{ $item->qty }}" min="1">
-                                                                </td>
-                                                                <td>
-                                                                    <input type="text" name="amount[]" class="form-control form-control-sm row-amount" readonly value="{{ number_format($gross, 2, '.', '') }}">
-                                                                </td>
-                                                                <td>
-                                                                    <input type="text" name="total[]" class="form-control form-control-sm row-total" readonly value="{{ number_format($item->line_total, 2, '.', '') }}">
-                                                                </td>
-                                                                <td>
-                                                                    <button type="button" class="btn btn-sm btn-danger remove-row">X</button>
-                                                                </td>
-                                                            </tr>
-                                                        @endforeach
-                                                    @elseif(!old('product_id'))
-                                                        {{-- Default blank row for new purchase --}}
-                                                        <tr>
-                                                            <td style="width:100px;">
-                                                                <input type="text" class="form-control form-control-sm item-id-input" placeholder="ID">
-                                                            </td>
-                                                            <td style="width: 250px;">
-                                                                <select name="product_id[]" class="form-control form-control-sm product-select" style="width: 100%;">
-                                                                    <option value="" disabled selected>Select Product</option>
-                                                                </select>
-                                                                <input type="hidden" name="product_name[]" class="product_name_hidden">
-                                                            </td>
-                                                            <td class="uom border">
-                                                                <input type="text" name="brand[]" class="form-control form-control-sm brand-name" readonly>
-                                                            </td>
-                                                            <td><input type="number" step="0.01" name="price[]" class="form-control form-control-sm price"></td>
-                                                            <td>
-                                                                <input type="text" name="retail_price_show[]" class="form-control form-control-sm retail_price_show" readonly>
-                                                            </td>
-                                                            <td>
-                                                                <div class="input-group">
-                                                                    <input type="number" step="0.01" min="0" name="item_disc[]" class="form-control form-control-sm item_disc" placeholder="%">
-                                                                    <input type="text" name="item_disc_amount[]" class="form-control form-control-sm disc_amount" readonly placeholder="Disc Amt">
-                                                                </div>
-                                                                <input type="hidden" name="purchase_retail_price[]" class="purchase_retail_price">
-                                                                <input type="hidden" name="purchase_net_amount[]" class="purchase_net_amount">
-                                                            </td>
-                                                            <td>
-                                                                <input type="number" name="qty[]" class="form-control form-control-sm quantity" value="" min="1">
-                                                            </td>
-                                                            <td>
-                                                                <input type="text" name="amount[]" class="form-control form-control-sm row-amount" readonly>
-                                                            </td>
-                                                            <td>
-                                                                <input type="text" name="total[]" class="form-control form-control-sm row-total" readonly>
-                                                            </td>
-                                                            <td><button type="button" class="btn btn-sm btn-danger remove-row">X</button></td>
-                                                        </tr>
-                                                    @endif
-                                                </tbody>
-                                            </table>
-                                            <div class="row mt-2">
-                                                <!-- Accounts Allocation -->
-                                                <div class="col-md-6">
-                                                    <div class="card h-100">
+  .input-readonly {
+    background: #f9fbff !important;
+  }
 
-                                                        <div class="card-header p-2 bg-light fw-bold d-flex justify-content-between align-items-center">
-                                                            <span>Accounts Allocation</span>
-                                                            <button type="button" id="addAccountRow" class="btn btn-sm btn-primary">
-                                                                + Add
-                                                            </button>
-                                                        </div>
+  .section-title {
+    font-weight: 700;
+    color: #6c757d;
+    letter-spacing: .3px;
+  }
 
-                                                        <div class="card-body p-2">
-                                                            <table class="table table-bordered table-sm text-center align-middle" id="accountsTable">
-                                                                <thead class="table-light">
-                                                                    <tr>
-                                                                        <th>Account Head</th>
-                                                                        <th>Account</th>
-                                                                        <th>Amount</th>
-                                                                        <th>X</th>
-                                                                    </tr>
-                                                                </thead>
-                                                                    <tbody id="accountsTableBody">
-                                                                        @if(isset($purchase) && $purchase->accountAllocations->count() > 0 && !old('account_head_id'))
-                                                                            @foreach($purchase->accountAllocations as $index => $acc)
-                                                                                <tr>
-                                                                                    <td>
-                                                                                        <select name="account_head_id[]" class="form-control form-control-sm accountHead">
-                                                                                            <option value="" disabled>Select Head</option>
-                                                                                            @foreach ($AccountHeads as $head)
-                                                                                                <option value="{{ $head->id }}" {{ $head->id == $acc->account_head_id ? 'selected' : '' }}>{{ $head->name }}</option>
-                                                                                            @endforeach
-                                                                                        </select>
-                                                                                    </td>
-                                                                                    <td>
-                                                                                        <select name="account_id[]" class="form-control form-control-sm accountSub">
-                                                                                            <option value="{{ $acc->account_id }}" selected>{{ $acc->account->title ?? 'Unknown Account' }}</option>
-                                                                                        </select>
-                                                                                    </td>
-                                                                                    <td>
-                                                                                        <input type="number" step="0.01" name="account_amount[]" class="form-control form-control-sm accountAmount" value="{{ $acc->amount }}">
-                                                                                    </td>
-                                                                                    <td>
-                                                                                        <button type="button" class="btn btn-sm btn-danger removeAccountRow">X</button>
-                                                                                    </td>
-                                                                                </tr>
-                                                                            @endforeach
-                                                                        @elseif(!old('account_head_id'))
-                                                                            {{-- Default blank row --}}
-                                                                            <tr>
-                                                                                <td>
-                                                                                    <select name="account_head_id[]" class="form-control form-control-sm accountHead">
-                                                                                        <option value="" disabled selected>Select Head</option>
-                                                                                        @foreach ($AccountHeads as $head)
-                                                                                            <option value="{{ $head->id }}">{{ $head->name }}</option>
-                                                                                        @endforeach
-                                                                                    </select>
-                                                                                </td>
-                                                                                <td>
-                                                                                    <select name="account_id[]" class="form-control form-control-sm accountSub">
-                                                                                        <option value="" disabled selected>Select Account</option>
-                                                                                    </select>
-                                                                                </td>
-                                                                                <td>
-                                                                                    <input type="number" step="0.01" name="account_amount[]" class="form-control form-control-sm accountAmount" value="0" disabled>
-                                                                                </td>
-                                                                                <td>
-                                                                                    <button type="button" class="btn btn-sm btn-danger removeAccountRow">X</button>
-                                                                                </td>
-                                                                            </tr>
-                                                                        @endif
-                                                                    </tbody>
-                                                            </table>
+  .form-locked input,
+  .form-locked select,
+  .form-locked textarea,
+  .form-locked label,
+  .form-locked .btn-group .btn,
+  .form-locked .select2-container,
+  .form-locked .remove-row,
+  .form-locked .removeAccountRow,
+  .form-locked #addRow,
+  .form-locked #addAccountRow {
+    pointer-events: none !important;
+    opacity: 0.65 !important;
+    cursor: not-allowed !important;
+  }
+  
+  .form-locked input:not([type="hidden"]), 
+  .form-locked select, 
+  .form-locked textarea,
+  .form-locked .select2-selection {
+    background-color: #e9ecef !important;
+  }
 
-                                                            <div class="mt-2 text-end">
-                                                                <label class="fw-bold">Accounts Total:</label>
-                                                                <input type="text" id="accountsTotal" class="form-control form-control-sm d-inline-block w-auto fw-bold" value="0" readonly>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </div>
+  .posted-watermark {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) rotate(-30deg);
+    font-size: 8rem;
+    color: rgba(220, 53, 69, 0.1);
+    font-weight: 900;
+    text-transform: uppercase;
+    pointer-events: none;
+    z-index: 1000;
+    display: none;
+    border: 10px solid rgba(220, 53, 69, 0.1);
+    padding: 20px 50px;
+    border-radius: 20px;
+  }
+  .posted-watermark.show { display: block; }
 
-                                                <!-- Totals -->
-                                                <div class="col-md-6">
-                                                    <div class="card h-100">
-                                                        <div class="card-header p-2 bg-light fw-bold">Totals</div>
-                                                        <div class="card-body p-2">
-                                                            <table class="table table-bordered table-sm text-center align-middle mb-0">
-                                                                <tr>
-                                                                    <th>Subtotal</th>
-                                                                    <td><input type="text" id="subtotal" name="subtotal" class="form-control form-control-sm" value="{{ old('subtotal', $purchase->subtotal ?? 0) }}" readonly></td>
-                                                                </tr>
-                                                                <tr>
-                                                                    <th>Discount</th>
-                                                                    <td><input type="number" step="0.01" id="overallDiscount" name="discount" class="form-control form-control-sm" value="{{ old('discount', $purchase->discount ?? 0) }}" readonly>
-                                                                    </td>
-                                                                </tr>
-                                                                <tr>
-                                                                    <th>WHT</th>
-                                                                    <td>
-                                                                        <div class="input-group">
-                                                                            <input type="number" step="0.01" id="whtPercent" name="wht_percent" class="form-control form-control-sm" placeholder="%" value="{{ old('wht_percent', $purchase->wht_percent ?? '') }}">
-                                                                            <input type="hidden" id="whtValue" name="wht" value="{{ old('wht', $purchase->wht ?? 0) }}">
-                                                                            <select id="whtType" name="wht_type" class="form-select form-select-sm" style="max-width:90px;">
-                                                                                @php $wType = old('wht_type', $purchase->wht_type ?? 'percent'); @endphp
-                                                                                <option value="percent" {{ $wType == 'percent' ? 'selected' : '' }}>%</option>
-                                                                                <option value="amount" {{ $wType == 'amount' ? 'selected' : '' }}>PKR</option>
-                                                                            </select>
-                                                                        </div>
-                                                                    </td>
-                                                                </tr>
+  .table {
+    --bs-table-padding-y: .35rem;
+    --bs-table-padding-x: .5rem;
+    font-size: .85rem;
+  }
 
-                                                                <tr>
-                                                                    <th>WHT Amount</th>
-                                                                    <td>
-                                                                        <input type="text" id="whtAmount" name="wht_amount" class="form-control form-control-sm" value="{{ old('wht_amount', 0) }}" readonly>
-                                                                    </td>
-                                                                </tr>
+  .table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: #f8f9fa !important;
+    text-align: center;
+    font-size: 0.75rem;
+    padding: 4px !important;
+  }
+  
+  .table-sm td {
+    padding: 2px !important;
+    vertical-align: middle;
+  }
 
+  .table-sm .form-control, 
+  .table-sm .form-select {
+    padding: 2px 4px !important;
+    font-size: 0.8rem !important;
+    height: 26px !important;
+    min-height: 26px !important;
+  }
 
-                                                                <tr>
-                                                                    <th>Net</th>
-                                                                    <td><input type="text" id="netAmount" name="net_amount" class="form-control form-control-sm fw-bold" value="{{ old('net_amount', $purchase->net_amount ?? 0) }}" readonly></td>
-                                                                </tr>
-                                                            </table>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            {{-- BOTTOM BUTTONS --}}
-                                            <div class="d-flex gap-2 mt-3 justify-content-end">
+  /* Compact Select2 */
+  .select2-container--default .select2-selection--single {
+    height: 26px !important;
+    font-size: 0.8rem !important;
+    border-color: #dee2e6 !important;
+  }
+  .select2-container--default .select2-selection--single .select2-selection__rendered {
+    line-height: 24px !important;
+    padding-left: 6px !important;
+  }
+  .select2-container--default .select2-selection--single .select2-selection__arrow {
+    height: 24px !important;
+  }
 
-                                                {{-- Save Draft --}}
-                                                <button type="button" id="saveDraftBtn"
-                                                    class="btn btn-sm btn-warning rounded-pill px-4 shadow-sm">
-                                                    <i class="fa fa-floppy-o me-1"></i> Save Draft
-                                                    <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+S</kbd>
-                                                </button>
+  .table-responsive {
+    max-height: 400px;
+    overflow: auto;
+    border: 1px solid #eee;
+    border-radius: .5rem;
+  }
 
-                                                {{-- Print Preview --}}
-                                                @if(isset($purchase))
-                                                    <a href="{{ route('purchase.invoice', $purchase->id) }}" target="_blank"
-                                                        class="btn btn-sm btn-outline-dark rounded-pill px-4">
-                                                        <i class="fa fa-print me-1"></i> Print
-                                                        <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+P</kbd>
-                                                    </a>
-                                                @else
-                                                    <button type="button" id="previewPrintBtn"
-                                                        class="btn btn-sm btn-outline-dark rounded-pill px-4">
-                                                        <i class="fa fa-print me-1"></i> Print Preview
-                                                        <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+P</kbd>
-                                                    </button>
-                                                @endif
+  .totals-card {
+    background: #fcfcfe;
+    border: 1px solid #eee;
+    border-radius: .5rem;
+  }
 
-                                                {{-- Post --}}
-                                                @if(isset($purchase) && $purchase->status != 'Posted')
-                                                    <button type="button" id="postBtn" data-action="post"
-                                                        class="btn btn-sm btn-primary rounded-pill px-4 shadow-sm">
-                                                        <i class="fa fa-send me-1"></i> Post
-                                                        <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+&#8629;</kbd>
-                                                    </button>
-                                                @elseif(!isset($purchase))
-                                                    <button type="button" id="postBtn" data-action="post"
-                                                        class="btn btn-sm btn-primary rounded-pill px-4 shadow-sm">
-                                                        <i class="fa fa-send me-1"></i> Save &amp; Post
-                                                        <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+&#8629;</kbd>
-                                                    </button>
-                                                @endif
+  .totals-card .row+.row {
+    border-top: 1px dashed #e5e7eb;
+  }
 
-                                                {{-- Edit Invoice --}}
-                                                <button type="button" id="editInvoiceBtn" 
-                                                    class="btn btn-sm btn-warning rounded-pill px-4 shadow-sm" 
-                                                    style="display: {{ isset($purchase) && $purchase->status != 'Posted' ? 'inline-block' : 'none' }};">
-                                                    <i class="fa fa-pencil me-1"></i> Edit 
-                                                    <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+E</kbd>
-                                                </button>
+  .loading-indicator {
+    background-color: #fff9c4 !important;
+    border-color: #fdd835 !important;
+    transition: background-color 0.3s ease;
+  }
 
-                                                {{-- New Invoice --}}
-                                                <a href="{{ url('add/Purchase') }}" id="newInvoiceBtn" 
-                                                    class="btn btn-sm btn-info rounded-pill px-4 shadow-sm text-white" 
-                                                    style="display: {{ isset($purchase) ? 'inline-block' : 'none' }};">
-                                                    <i class="fa fa-plus me-1"></i> New 
-                                                    <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+M</kbd>
-                                                </a>
+  .btn-xs {
+    padding: 1px 4px;
+    font-size: 0.7rem;
+    line-height: 1.2;
+  }
+</style>
 
-                                                {{-- Cancel --}}
-                                                <a href="{{ route('Purchase.home') }}" id="cancelBtn" 
-                                                    class="btn btn-sm btn-danger rounded-pill px-4 shadow-sm text-white">
-                                                    <i class="fa fa-times me-1"></i> Cancel 
-                                                    <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Esc</kbd>
-                                                </a>
+<div class="container-fluid py-2 main-content bg-white">
+  <div class="main-container bg-white border shadow-sm mx-auto p-2 rounded-3" style="max-width: 98%;">
 
-                                            </div>
+    <div id="alertBox" class="alert d-none mb-2" role="alert"></div>
 
-                                        </form>
-                                    </div>
-                                </div>
+    {{-- TOP BAR --}}
+    <div class="d-flex justify-content-between align-items-center mb-2 bg-light p-1 rounded shadow-sm px-3">
+      <div class="d-flex align-items-center gap-2">
+          <span id="statusBadge" class="badge {{ isset($purchase) && $purchase->status == 'Posted' ? 'bg-success' : 'bg-warning text-dark' }} px-2 py-1 rounded shadow-sm" style="font-size:11px;">
+              <i class="fa {{ isset($purchase) && $purchase->status == 'Posted' ? 'fa-check' : 'fa-pencil' }} me-1"></i> {{ isset($purchase) ? ucfirst($purchase->status) : 'New Purchase' }}
+          </span>
+      </div>
+
+      <div class="d-flex align-items-center gap-2">
+          @if(isset($purchase) && $purchase->status != 'Posted')
+              <form action="{{ route('purchase.post', $purchase->id) }}" method="POST" class="d-inline">
+                  @csrf
+                  <button type="submit" class="btn btn-sm btn-primary py-0 px-3 rounded-pill shadow-sm">
+                      <i class="fa fa-send me-1"></i> Post
+                  </button>
+              </form>
+          @endif
+          <a href="{{ route('Purchase.home') }}" id="listBtn" class="btn btn-sm btn-outline-secondary py-0 px-3 rounded-pill">
+              <i class="fa fa-list me-1"></i> List <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+L</kbd>
+          </a>
+      </div>
+    </div>
+
+    <form id="purchaseForm" class="{{ isset($purchase) && $purchase->status == 'Posted' ? 'form-locked' : '' }}" autocomplete="off" action="{{ isset($purchase) ? route('purchase.update', $purchase->id) : route('store.Purchase') }}" method="POST">
+      @csrf
+      @if(isset($purchase))
+          @method('PUT')
+      @endif
+
+      <div class="posted-watermark {{ isset($purchase) && $purchase->status == 'Posted' ? 'show' : '' }}" id="postedWatermark">Posted</div>
+
+      <div class="d-flex gap-2 align-items-start border-bottom py-2">
+        {{-- LEFT: Header & Vendor --}}
+        <div class="bg-light border rounded-3 p-2 shadow-sm" style="min-width: 280px; max-width: 280px; font-size: 0.8rem;">
+          <div class="d-flex align-items-center justify-content-between mb-2 pb-1 border-bottom">
+            <h6 class="mb-0 fw-bold text-primary">
+              <i class="fa fa-info-circle me-1"></i>Purchase Details
+            </h6>
+          </div>
+
+          {{-- Entry Date & Time --}}
+          <div class="row g-1 mb-2">
+            <div class="col-6">
+              <label class="form-label text-muted small mb-0" style="font-size: 0.7rem;">Entry Date</label>
+              <input type="date" class="form-control form-control-sm py-0" name="entry_date" value="{{ old('entry_date', isset($purchase) ? ($purchase->entry_date ?? \Carbon\Carbon::parse($purchase->current_date)->format('Y-m-d')) : date('Y-m-d')) }}" required>
+            </div>
+            <div class="col-6">
+              <label class="form-label text-muted small mb-0" style="font-size: 0.7rem;">Entry Time</label>
+              <input type="time" class="form-control form-control-sm py-0" name="entry_time" value="{{ old('entry_time', isset($purchase) ? ($purchase->entry_time ?? \Carbon\Carbon::parse($purchase->created_at)->format('H:i')) : date('H:i')) }}" required>
+            </div>
+          </div>
+
+          {{-- Invoice Number --}}
+          <div class="mb-2">
+            <label class="form-label text-muted small mb-0" style="font-size: 0.7rem;">Inv Number</label>
+            <input type="text" class="form-control form-control-sm py-0 fw-bold text-primary bg-white" value="{{ $nextInvoice }}" readonly>
+          </div>
+
+          {{-- DC Date & Bilty --}}
+          <div class="row g-1 mb-2">
+            <div class="col-6">
+              <label class="form-label text-muted small mb-0" style="font-size: 0.7rem;">DC Date</label>
+              <input type="date" class="form-control form-control-sm py-0" name="dc_date" value="{{ old('dc_date', isset($purchase) ? \Carbon\Carbon::parse($purchase->dc_date)->format('Y-m-d') : date('Y-m-d')) }}">
+            </div>
+            <div class="col-6">
+              <label class="form-label text-muted small mb-0" style="font-size: 0.7rem;">Bilty No</label>
+              <input type="text" class="form-control form-control-sm py-0" name="bilty_no" value="{{ old('bilty_no', $purchase->bilty_no ?? '') }}" placeholder="Bilty #">
+            </div>
+          </div>
+
+          {{-- DC# & Warehouse --}}
+          <div class="row g-1 mb-2">
+            <div class="col-4">
+              <label class="form-label text-muted small mb-0" style="font-size: 0.7rem;">DC No.</label>
+              <input type="text" class="form-control form-control-sm py-0 fw-bold text-primary" name="dc" value="{{ old('dc', $purchase->dc ?? '') }}" placeholder="DC #">
+            </div>
+            <div class="col-8">
+              <label class="form-label text-muted small mb-0" style="font-size: 0.7rem;">Warehouse</label>
+              <select name="warehouse_id" class="form-select form-select-sm py-0" required>
+                  @if(auth()->user()->canAccessShop())
+                      <option value="0" {{ (string)old('warehouse_id', $purchase->warehouse_id ?? '') === '0' ? 'selected' : '' }}>🏠 Shop</option>
+                  @endif
+                  @foreach ($Warehouse as $ware)
+                  <option value="{{ $ware->id }}" {{ (string)old('warehouse_id', $purchase->warehouse_id ?? '') === (string)$ware->id ? 'selected' : '' }}>📦 {{ $ware->warehouse_name }}</option>
+                  @endforeach
+              </select>
+            </div>
+          </div>
+
+          {{-- Party Type Toggle --}}
+          <div class="mb-2">
+            <label class="form-label text-muted small mb-0" style="font-size: 0.7rem;">Party Type</label>
+            @php $vType = old('vendor_type', isset($purchase) ? strtolower(class_basename($purchase->purchasable_type)) : 'vendor'); @endphp
+            <div class="btn-group w-100" role="group">
+              <input type="radio" class="btn-check vendor-type-radio" name="vendor_type" id="typeVendor" value="vendor" {{ $vType == 'vendor' ? 'checked' : '' }}>
+              <label class="btn btn-outline-primary btn-sm py-0" for="typeVendor" style="font-size: 0.75rem;">Vendor</label>
+
+              <input type="radio" class="btn-check vendor-type-radio" name="vendor_type" id="typeCustomer" value="customer" {{ $vType == 'customer' ? 'checked' : '' }}>
+              <label class="btn btn-outline-primary btn-sm py-0" for="typeCustomer" style="font-size: 0.75rem;">Customer</label>
+
+              <input type="radio" class="btn-check vendor-type-radio" name="vendor_type" id="typeWalkin" value="walkin" {{ $vType == 'walkin' ? 'checked' : '' }}>
+              <label class="btn btn-outline-primary btn-sm py-0" for="typeWalkin" style="font-size: 0.75rem;">Walk-in</label>
+            </div>
+          </div>
+
+          {{-- Select Party --}}
+          <div class="mb-2">
+            <label class="form-label text-muted small mb-0" style="font-size: 0.7rem;">Select Party</label>
+            <select name="vendor_id" id="vendor_id_select" class="form-select form-select-sm py-0 select2" required>
+                <option value="" disabled selected>Select Party</option>
+                @if(isset($purchase))
+                    <option value="{{ $purchase->purchasable_id }}" selected>
+                        {{ $purchase->purchasable->name ?? ($purchase->purchasable->customer_name ?? 'Unknown') }}
+                    </option>
+                @endif
+            </select>
+          </div>
+
+          {{-- Remarks --}}
+          <div class="mb-1">
+            <label class="form-label text-muted small mb-0" style="font-size: 0.7rem;">Remarks</label>
+            <textarea class="form-control form-control-sm py-1" name="remarks" rows="2" placeholder="Purchase notes..." style="font-size: 0.75rem;">{{ old('remarks', $purchase->note ?? '') }}</textarea>
+          </div>
+        </div>
+
+        {{-- RIGHT: Items --}}
+        <div class="flex-grow-1">
+          <div class="d-flex justify-content-between align-items-center mb-2 px-2">
+            <div class="section-title mb-0">Items</div>
+            <button type="button" class="btn btn-sm btn-primary rounded-pill px-3" id="addRow">
+                <i class="fa fa-plus me-1"></i> Add Row
+            </button>
+          </div>
+
+          <div class="table-responsive">
+            <table class="table table-bordered table-sm mb-0">
+              <thead class="table-light">
+                <tr>
+                  <th style="width:80px;">Item ID</th>
+                  <th>Product</th>
+                  <th style="width:120px;">Brand</th>
+                  <th style="width:100px;" class="text-end">Price</th>
+                  <th style="width:100px;" class="text-end">Retail Price</th>
+                  <th style="width:180px;">Disc</th>
+                  <th style="width:80px;" class="text-center">Qty</th>
+                  <th style="width:100px;" class="text-end">Rate</th>
+                  <th style="width:110px;" class="text-end">Total</th>
+                  <th style="width:40px;" class="text-center">—</th>
+                </tr>
+              </thead>
+              <tbody id="purchaseItems">
+                  {{-- Rows will be populated by JS or Blade if editing --}}
+                  @if(isset($purchase) && $purchase->items->count() > 0 && !old('product_id'))
+                      @foreach($purchase->items as $index => $item)
+                          @php
+                              $product = $item->product;
+                              $retail = $product?->latestPrice?->purchase_retail_price ?? 0;
+                              $net = $product?->latestPrice?->purchase_net_amount ?? 0;
+                              $gross = ($item->price ?? 0) * ($item->qty ?? 0);
+                              $disc_amt = $gross * (($item->item_discount ?? 0) / 100);
+                          @endphp
+                          <tr>
+                              <td>
+                                  <input type="text" class="form-control form-control-sm item-id-input text-center" placeholder="ID" value="{{ $item->product_id }}">
+                              </td>
+                              <td>
+                                  <select name="product_id[]" class="form-control form-control-sm product-select" style="width: 100%;">
+                                      <option value="{{ $item->product_id }}" selected>{{ $product?->name ?? 'Unknown' }}</option>
+                                  </select>
+                                  <input type="hidden" name="product_name[]" class="product_name_hidden" value="{{ $product?->name }}">
+                              </td>
+                              <td>
+                                  <input type="text" name="brand[]" class="form-control form-control-sm brand-name input-readonly" readonly value="{{ $product?->brandRelation?->name ?? '' }}">
+                              </td>
+                              <td>
+                                  <input type="number" step="0.01" name="price[]" class="form-control form-control-sm price text-end" value="{{ $item->price }}">
+                              </td>
+                              <td>
+                                  <input type="number" step="0.01" name="retail_price_show[]" class="form-control form-control-sm retail_price_show text-end" value="{{ $retail }}">
+                              </td>
+                              <td>
+                                  <div class="input-group input-group-sm">
+                                      <input type="number" step="0.01" min="0" name="item_disc[]" class="form-control form-control-sm item_disc text-end" placeholder="%" value="{{ $item->item_discount }}">
+                                      <span class="input-group-text px-1" style="font-size: 0.7rem;">%</span>
+                                      <input type="text" name="item_disc_amount[]" class="form-control form-control-sm disc_amount text-end input-readonly" readonly value="{{ number_format($disc_amt, 2, '.', '') }}">
+                                  </div>
+                                  <input type="hidden" name="purchase_retail_price[]" class="purchase_retail_price" value="{{ $retail }}">
+                                  <input type="hidden" name="purchase_net_amount[]" class="purchase_net_amount" value="{{ $net }}">
+                              </td>
+                              <td>
+                                  <input type="number" name="qty[]" class="form-control form-control-sm quantity text-center" value="{{ $item->qty }}" min="1">
+                              </td>
+                              <td>
+                                  <input type="text" name="amount[]" class="form-control form-control-sm row-amount text-end input-readonly" readonly value="{{ number_format($item->price, 2, '.', '') }}">
+                              </td>
+                              <td>
+                                  <input type="text" name="total[]" class="form-control form-control-sm row-total text-end fw-bold input-readonly" readonly value="{{ number_format($item->line_total, 2, '.', '') }}">
+                              </td>
+                              <td class="text-center">
+                                  <button type="button" class="btn btn-xs btn-outline-danger remove-row">&times;</button>
+                              </td>
+                          </tr>
+                      @endforeach
+                  @endif
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      {{-- Accounts Allocation & Totals --}}
+      <div class="row g-3 mt-1">
+        {{-- Accounts Allocation --}}
+        <div class="col-lg-7">
+          <div class="bg-light border rounded-3 p-2 shadow-sm h-100">
+            <div class="d-flex align-items-center justify-content-between mb-2 pb-1 border-bottom">
+              <h6 class="mb-0 fw-bold text-success">
+                <i class="fa fa-share-alt me-2"></i>Accounts Allocation
+              </h6>
+              <button type="button" class="btn btn-success btn-sm rounded-pill px-3" id="addAccountRow">
+                <i class="fa fa-plus me-1"></i>Add Account
+              </button>
+            </div>
+            
+            <div class="table-responsive" style="max-height: 250px;">
+              <table class="table table-bordered table-sm mb-0" id="accountsTable">
+                <thead class="table-light">
+                  <tr>
+                    <th>Account Head</th>
+                    <th>Sub Account</th>
+                    <th style="width:120px;">Amount</th>
+                    <th style="width:40px;" class="text-center">—</th>
+                  </tr>
+                </thead>
+                <tbody id="accountsTableBody">
+                    @if(isset($purchase) && $purchase->accountAllocations->count() > 0 && !old('account_head_id'))
+                        @foreach($purchase->accountAllocations as $index => $acc)
+                            <tr>
+                                <td>
+                                    <select name="account_head_id[]" class="form-select form-select-sm accountHead">
+                                        <option value="" disabled>Select Head</option>
+                                        @foreach ($AccountHeads as $head)
+                                            <option value="{{ $head->id }}" {{ $head->id == $acc->account_head_id ? 'selected' : '' }}>{{ $head->name }}</option>
+                                        @endforeach
+                                    </select>
+                                </td>
+                                <td>
+                                    <select name="account_id[]" class="form-select form-select-sm accountSub">
+                                        <option value="{{ $acc->account_id }}" selected>{{ $acc->account->title ?? 'Unknown Account' }}</option>
+                                    </select>
+                                </td>
+                                <td>
+                                    <input type="number" step="0.01" name="account_amount[]" class="form-control form-control-sm accountAmount text-end" value="{{ $acc->amount }}">
+                                </td>
+                                <td class="text-center">
+                                    <button type="button" class="btn btn-xs btn-outline-danger removeAccountRow">&times;</button>
+                                </td>
+                            </tr>
+                        @endforeach
+                    @endif
+                </tbody>
+              </table>
+            </div>
+            
+            <div class="d-flex justify-content-between align-items-center mt-2 p-2 bg-success bg-opacity-10 rounded-3">
+              <span class="text-success fw-bold">Allocation Total:</span>
+              <input type="text" id="accountsTotal" class="form-control form-control-sm text-end fw-bold text-success border-0 bg-transparent py-0" value="0.00" readonly style="width: 150px; font-size: 1.1rem;">
+            </div>
+          </div>
+        </div>
+
+        {{-- Totals --}}
+        <div class="col-lg-5">
+          <div class="bg-light border rounded-3 p-2 shadow-sm h-100">
+            <div class="d-flex align-items-center justify-content-between mb-2 pb-1 border-bottom">
+              <h6 class="mb-0 fw-bold text-info">
+                <i class="fa fa-calculator me-2"></i>Purchase Totals
+              </h6>
+            </div>
+
+            <div class="totals-card p-2">
+              <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                <span class="text-muted small">Sub-Total</span>
+                <input type="text" id="subtotal" name="subtotal" class="form-control form-control-sm text-end fw-bold input-readonly border-0 bg-transparent" value="{{ old('subtotal', $purchase->subtotal ?? 0) }}" readonly style="width:150px">
+              </div>
+
+              <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                <span class="text-muted small">Total Discount</span>
+                <input type="number" step="0.01" id="overallDiscount" name="discount" class="form-control form-control-sm text-end input-readonly border-0 bg-transparent" value="{{ old('discount', $purchase->discount ?? 0) }}" readonly style="width:150px">
+              </div>
+
+              <div class="py-2 border-bottom">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                  <span class="text-muted small">WHT Account</span>
+                  <select name="wht_account_id" id="wht_account_id" class="form-select form-select-sm" style="width:230px;">
+                    <option value="">Select Income Account</option>
+                    @foreach($incomeAccounts as $acc)
+                        <option value="{{ $acc->id }}" {{ (old('wht_account_id', $purchase->wht_account_id ?? '') == $acc->id) ? 'selected' : '' }}>
+                            {{ $acc->title }}
+                        </option>
+                    @endforeach
+                  </select>
+                </div>
+                <div class="d-flex justify-content-between align-items-center">
+                  <span class="text-muted small">WHT (Tax)</span>
+                  <div class="d-flex align-items-center gap-1">
+                    <input type="number" step="0.01" id="whtPercent" name="wht_percent" class="form-control form-control-sm text-end" placeholder="Val" value="{{ old('wht_percent', $purchase->wht_percent ?? '') }}" style="width:60px">
+                    <select id="whtType" name="wht_type" class="form-select form-select-sm" style="width:65px;">
+                        @php $wType = old('wht_type', $purchase->wht_type ?? 'percent'); @endphp
+                        <option value="percent" {{ $wType == 'percent' ? 'selected' : '' }}>%</option>
+                        <option value="amount" {{ $wType == 'amount' ? 'selected' : '' }}>PKR</option>
+                    </select>
+                    <input type="text" id="whtAmount" name="wht_amount" class="form-control form-control-sm text-end input-readonly border-0 bg-transparent fw-bold" value="{{ old('wht_amount', 0) }}" readonly style="width:100px">
+                  </div>
+                </div>
+                <input type="hidden" id="whtValue" name="wht" value="{{ old('wht', $purchase->wht ?? 0) }}">
+              </div>
+
+              <div class="d-flex justify-content-between align-items-center py-3">
+                <span class="fw-bold text-dark">Net Amount</span>
+                <input type="text" id="netAmount" name="net_amount" class="form-control form-control-lg text-end fw-bold text-primary border-0 bg-transparent" value="{{ old('net_amount', $purchase->net_amount ?? 0) }}" readonly style="width:180px; font-size: 1.5rem;">
+              </div>
+            </div>
+
+            {{-- BOTTOM BUTTONS --}}
+            <div class="d-flex gap-2 mt-3 justify-content-end">
+                <button type="button" id="saveDraftBtn" class="btn btn-sm btn-warning rounded-pill px-4 shadow-sm">
+                    <i class="fa fa-floppy-o me-1"></i> Save Draft <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+S</kbd>
+                </button>
+
+                @if(isset($purchase))
+                    <a href="{{ route('purchase.invoice', $purchase->id) }}" target="_blank" class="btn btn-sm btn-outline-dark rounded-pill px-4">
+                        <i class="fa fa-print me-1"></i> Print <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+P</kbd>
+                    </a>
+                @else
+                    <button type="button" id="previewPrintBtn" class="btn btn-sm btn-outline-dark rounded-pill px-4">
+                        <i class="fa fa-print me-1"></i> Preview <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+P</kbd>
+                    </button>
+                @endif
+
+                <button type="button" id="postBtn" class="btn btn-sm btn-primary rounded-pill px-4 shadow-sm">
+                    <i class="fa fa-send me-1"></i> {{ isset($purchase) ? 'Update & Post' : 'Save & Post' }} <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+&#8629;</kbd>
+                </button>
+
+                <a href="{{ route('Purchase.home') }}" class="btn btn-sm btn-danger rounded-pill px-4 shadow-sm text-white">
+                    <i class="fa fa-times me-1"></i> Cancel <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Esc</kbd>
+                </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
                             </div>
                         </div>
 
@@ -609,45 +667,44 @@
 
             const newRowHtml = `
                 <tr>
-                    <td style="width:100px;">
-                       <input type="text" class="form-control form-control-sm item-id-input" placeholder="ID">
-                    </td>
-                    <td style="width: 250px;">
-                      <select name="product_id[]" class="form-control form-control-sm product-select" style="width: 100%;">
-                        <option value="" disabled selected>Select Product</option>
-                      </select>
-                      <input type="hidden" name="product_name[]" class="product_name_hidden">
-                    </td>
-                    <td class="uom border">
-                        <input type="text" name="brand[]" class="form-control form-control-sm brand-name" readonly>
+                    <td>
+                        <input type="text" class="form-control form-control-sm item-id-input text-center" placeholder="ID">
                     </td>
                     <td>
-                        <input type="number" step="0.01" name="price[]" class="form-control form-control-sm price">
+                        <select name="product_id[]" class="form-control form-control-sm product-select" style="width: 100%;">
+                            <option value="" disabled selected>Select Product</option>
+                        </select>
+                        <input type="hidden" name="product_name[]" class="product_name_hidden">
                     </td>
                     <td>
-                        <input type="text" name="retail_price_show[]" class="form-control form-control-sm retail_price_show" readonly>
+                        <input type="text" name="brand[]" class="form-control form-control-sm brand-name input-readonly" readonly>
                     </td>
                     <td>
-                      <div class="input-group">
-                        <input type="number" step="0.01" min="0" name="item_disc[]" class="form-control form-control-sm item_disc" placeholder="%" value="">
-                        <input type="text" name="item_disc_amount[]" class="form-control form-control-sm disc_amount" readonly placeholder="Disc Amt">
-                      </div>
-                      <input type="hidden" name="purchase_retail_price[]" class="purchase_retail_price">
-                      <input type="hidden" name="purchase_net_amount[]" class="purchase_net_amount">
+                        <input type="number" step="0.01" name="price[]" class="form-control form-control-sm price text-end">
                     </td>
                     <td>
-                        <input type="number" name="qty[]" class="form-control form-control-sm quantity" value="1" min="1">
+                        <input type="text" name="retail_price_show[]" class="form-control form-control-sm retail_price_show text-end input-readonly" readonly>
                     </td>
                     <td>
-                        <input type="text" name="amount[]" class="form-control form-control-sm row-amount" readonly>
+                        <div class="input-group input-group-sm">
+                            <input type="number" step="0.01" min="0" name="item_disc[]" class="form-control form-control-sm item_disc text-end" placeholder="%">
+                            <span class="input-group-text px-1" style="font-size: 0.7rem;">%</span>
+                            <input type="text" name="item_disc_amount[]" class="form-control form-control-sm disc_amount text-end input-readonly" readonly placeholder="Amt">
+                        </div>
+                        <input type="hidden" name="purchase_retail_price[]" class="purchase_retail_price">
+                        <input type="hidden" name="purchase_net_amount[]" class="purchase_net_amount">
                     </td>
                     <td>
-                        <input type="text" name="total[]" class="form-control form-control-sm row-total" readonly>
+                        <input type="number" name="qty[]" class="form-control form-control-sm quantity text-center" value="1" min="1">
                     </td>
                     <td>
-                        <button type="button" class="btn btn-sm btn-danger remove-row" title="Delete Row (Ctrl+X)">
-                            X <span style="font-size: 8px; opacity: 0.8; margin-left: 1px;">Ctrl+X</span>
-                        </button>
+                        <input type="text" name="amount[]" class="form-control form-control-sm row-amount text-end input-readonly" readonly>
+                    </td>
+                    <td>
+                        <input type="text" name="total[]" class="form-control form-control-sm row-total text-end fw-bold input-readonly" readonly>
+                    </td>
+                    <td class="text-center">
+                        <button type="button" class="btn btn-xs btn-outline-danger remove-row" title="Delete (Ctrl+X)">&times;</button>
                     </td>
                 </tr>`;
             
@@ -735,12 +792,12 @@
                     return;
                 }
                 
-                $input.addClass('loading-indicator');
+                
                 $.getJSON("{{ route('search-products') }}", { 
                     q: id,
                     warehouse_id: $('select[name="warehouse_id"]').val() 
                 }, function(data) {
-                    $input.removeClass('loading-indicator');
+
                     
                     // Precise matching prioritize: Exact ID -> Exact Name (Case Insensitive) -> First Result if only 1
                     let product = data.find(p => String(p.id) === String(id)) 
@@ -773,7 +830,7 @@
                         $input.val('');
                     }
                 }).fail(function() {
-                    $input.removeClass('loading-indicator');
+
                     showToast('❌ Server error!', 'error');
                 });
             });
@@ -841,8 +898,6 @@
     </script>
 
 {{-- Item Row Autocomplete + Add/Remove --}}
-<!-- Make sure jQuery and Bootstrap Typeahead are included -->
-
 <script>
     (function() {
         // restore old arrays from server (Blade -> JS)
@@ -917,15 +972,13 @@
 
         // helper: create a product row HTML (same structure as appendBlankRow)
         window.makeRowHtml = function(data, index = null) {
-            // Error handling helper
             const getError = (field) => {
                 if (index !== null && errors[field + '.' + index]) {
-                     return `<div class="alert alert-danger p-1 mt-1" style="font-size: 12px; margin-bottom:0;">${errors[field + '.' + index][0]}</div>`;
+                     return `<div class="alert alert-danger p-1 mt-1" style="font-size: 10px; margin-bottom:0;">${errors[field + '.' + index][0]}</div>`;
                 }
                 return '';
             };
 
-            // Pre-select option if data exists
             let optionHtml = '<option value="" disabled selected>Select Product</option>';
             if(data.product_id) {
                 const pName = data.product_name || 'Product ' + data.product_id;
@@ -933,53 +986,52 @@
             }
 
             return `
-      <tr>
-        <td style="width: 100px;">
-          <input type="text" class="form-control form-control-sm item-id-input" placeholder="ID" value="${data.product_id || ''}">
-        </td>
-        <td style="width: 250px;">
-          <select name="product_id[]" class="form-control form-control-sm product-select" style="width: 100%;">
-            ${optionHtml}
-          </select>
-          <input type="hidden" name="product_name[]" class="product_name_hidden" value="${(data.product_name || '')}">
-          ${getError('product_id')}
-        </td>
-        <td class="uom border">
-          <input type="text" name="brand[]" class="form-control form-control-sm brand-name" readonly value="${data.brand || ''}">
-        </td>
-        <td>
-          <input type="number" step="0.01" name="price[]" class="form-control form-control-sm price" value="${data.price || ''}">
-          ${getError('price')}
-        </td>
-        <td>
-          <input type="text" name="retail_price_show[]" class="form-control form-control-sm retail_price_show" readonly value="${data.retail_show || ''}">
-        </td>
-        <td>
-          <div class="input-group">
-            <input type="number" step="0.01" min="0" name="item_disc[]" class="form-control form-control-sm item_disc" placeholder="%" value="${data.item_disc || ''}">
-            <input type="text" name="item_disc_amount[]" class="form-control form-control-sm disc_amount" readonly placeholder="Disc Amt" value="${data.disc_amount || ''}">
-          </div>
-          ${getError('item_disc')}
-          <input type="hidden" name="purchase_retail_price[]" class="purchase_retail_price" value="${data.purchase_retail || ''}">
-          <input type="hidden" name="purchase_net_amount[]" class="purchase_net_amount" value="${data.purchase_net || ''}">
-        </td>
-        <td>
-          <input type="number" name="qty[]" class="form-control form-control-sm quantity" value="${data.qty || 1}" min="1">
-          ${getError('qty')}
-        </td>
-        <td>
-          <input type="text" name="amount[]" class="form-control form-control-sm row-amount" readonly value="${data.row_amount || ''}">
-        </td>
-        <td>
-          <input type="text" name="total[]" class="form-control form-control-sm row-total" readonly value="${data.row_total || ''}">
-        </td>
-        <td>
-          <button type="button" class="btn btn-sm btn-danger remove-row" title="Delete Row (Ctrl+X)">
-            X <span style="font-size: 8px; opacity: 0.8; margin-left: 2px;">Ctrl+X</span>
-          </button>
-        </td>
-      </tr>
-    `;
+                <tr>
+                    <td>
+                        <input type="text" class="form-control form-control-sm item-id-input text-center" placeholder="ID" value="${data.product_id || ''}">
+                    </td>
+                    <td>
+                        <select name="product_id[]" class="form-control form-control-sm product-select" style="width: 100%;">
+                            ${optionHtml}
+                        </select>
+                        <input type="hidden" name="product_name[]" class="product_name_hidden" value="${(data.product_name || '')}">
+                        ${getError('product_id')}
+                    </td>
+                    <td>
+                        <input type="text" name="brand[]" class="form-control form-control-sm brand-name input-readonly" readonly value="${data.brand || ''}">
+                    </td>
+                    <td>
+                        <input type="number" step="0.01" name="price[]" class="form-control form-control-sm price text-end" value="${data.price || ''}">
+                        ${getError('price')}
+                    </td>
+                    <td>
+                        <input type="number" step="0.01" name="retail_price_show[]" class="form-control form-control-sm retail_price_show text-end" value="${data.retail_show || ''}">
+                    </td>
+                    <td>
+                        <div class="input-group input-group-sm">
+                            <input type="number" step="0.01" min="0" name="item_disc[]" class="form-control form-control-sm item_disc text-end" placeholder="%" value="${data.item_disc || ''}">
+                            <span class="input-group-text px-1" style="font-size: 0.7rem;">%</span>
+                            <input type="text" name="item_disc_amount[]" class="form-control form-control-sm disc_amount text-end input-readonly" readonly placeholder="Amt" value="${data.disc_amount || ''}">
+                        </div>
+                        ${getError('item_disc')}
+                        <input type="hidden" name="purchase_retail_price[]" class="purchase_retail_price" value="${data.purchase_retail || ''}">
+                        <input type="hidden" name="purchase_net_amount[]" class="purchase_net_amount" value="${data.purchase_net || ''}">
+                    </td>
+                    <td>
+                        <input type="number" name="qty[]" class="form-control form-control-sm quantity text-center" value="${data.qty || 1}" min="1">
+                        ${getError('qty')}
+                    </td>
+                    <td>
+                        <input type="text" name="amount[]" class="form-control form-control-sm row-amount text-end input-readonly" readonly value="${data.row_amount || ''}">
+                    </td>
+                    <td>
+                        <input type="text" name="total[]" class="form-control form-control-sm row-total text-end fw-bold input-readonly" readonly value="${data.row_total || ''}">
+                    </td>
+                    <td class="text-center">
+                        <button type="button" class="btn btn-xs btn-outline-danger remove-row" title="Delete">&times;</button>
+                    </td>
+                </tr>
+            `;
         }
 
         function restoreProducts() {
@@ -1007,13 +1059,15 @@
                 }
             } 
 
-            // ONLY empty and restore if we have 'old' data from a failed submission
-            // Otherwise, we keep what's already in the table (either Blade rows or blank row)
             if (!isOldData) {
-                // Just ensure initial rows are initialized (though domestic ready also does this)
-                $('#purchaseItems tr').each(function() {
-                    if(typeof window.initProductSelect === 'function') window.initProductSelect($(this));
-                });
+                const $container = $('#purchaseItems');
+                if ($container.find('tr').length === 0) {
+                    if(typeof window.appendBlankRow === 'function') window.appendBlankRow(true);
+                } else {
+                    $container.find('tr').each(function() {
+                        if(typeof window.initProductSelect === 'function') window.initProductSelect($(this));
+                    });
+                }
                 return;
             }
 
@@ -1029,7 +1083,6 @@
                 }
             });
 
-            // Recalculate everything
             setTimeout(() => {
                 $container.find('tr').each(function() {
                     if (typeof window.recalcRow === 'function') window.recalcRow($(this));
@@ -1054,14 +1107,8 @@
                 }
             } 
 
-            if (!isOldData) {
-                // If not old data, just trigger internal logic if needed
-                // But generally Blade rows are already there.
-                // We might need to trigger account loading but Blade already puts the selected option there.
-                return;
-            }
+            if (!isOldData) return;
 
-            // clear table body
             $('#accountsTableBody').empty();
 
             accountsToRestore.forEach((data, i) => {
@@ -1080,40 +1127,37 @@
                 const headsOptions = accountHeadsList.map(h => `<option value="${h.id}" ${h.id == head ? 'selected' : ''}>${h.name}</option>`).join('');
 
                 const row = `
-        <tr>
-          <td>
-            <select name="account_head_id[]" class="form-control form-control-sm accountHead">
-              <option value="" disabled>Select Head</option>
-              ${headsOptions}
-            </select>
-            ${getError('account_head_id')}
-          </td>
-          <td>
-            <select name="account_id[]" class="form-control form-control-sm accountSub">
-              <option value="${acc}" selected>${accName}</option>
-            </select>
-            ${getError('account_id')}
-          </td>
-          <td>
-            <input type="number" step="0.01" name="account_amount[]" class="form-control form-control-sm accountAmount" value="${amt}" disabled>
-            ${getError('account_amount')}
-          </td>
-          <td>
-            <button type="button" class="btn btn-sm btn-danger removeAccountRow">X</button>
-          </td>
-        </tr>
-      `;
+                    <tr>
+                        <td>
+                            <select name="account_head_id[]" class="form-control form-control-sm accountHead">
+                                <option value="" disabled>Select Head</option>
+                                ${headsOptions}
+                            </select>
+                            ${getError('account_head_id')}
+                        </td>
+                        <td>
+                            <select name="account_id[]" class="form-control form-control-sm accountSub">
+                                <option value="${acc}" selected>${accName}</option>
+                            </select>
+                            ${getError('account_id')}
+                        </td>
+                        <td>
+                            <input type="number" step="0.01" name="account_amount[]" class="form-control form-control-sm accountAmount" value="${amt}" disabled>
+                            ${getError('account_amount')}
+                        </td>
+                        <td>
+                            <button type="button" class="btn btn-sm btn-danger removeAccountRow">X</button>
+                        </td>
+                    </tr>
+                `;
                 $('#accountsTable tbody').append(row);
                 
-                // Trigger change to load accounts if head is selected
                 if(head) {
                      const $lastRow = $('#accountsTable tbody tr:last');
-                     // Manually call the load logic effectively to ensure value is preserved
                      const headId = head;
                      const $accountSelect = $lastRow.find('.accountSub');
                      const $amountInput = $lastRow.find('.accountAmount');
                      
-                     // Enable inputs
                      $accountSelect.prop('disabled', false).prop('required', true);
                      $amountInput.prop('disabled', false).prop('required', true).attr('min', '0.01');
 
@@ -1131,27 +1175,16 @@
                                 });
                             }
                             $accountSelect.html(html);
-                            if (!currentAcc) {
-                                $accountSelect.prepend('<option value="" disabled selected>Select Account</option>');
-                                $accountSelect.val('');
-                            }
-                            
-                            // Re-evaluate enablement after loading saved account
                             $accountSelect.trigger('change');
-                            if (typeof recalcAccountsTotal === 'function') recalcAccountsTotal();
-                        },
-                        error: function() {
                             if (typeof recalcAccountsTotal === 'function') recalcAccountsTotal();
                         }
                     });
                 }
-            });  // <-- FIX: was missing closing ); for forEach callback
+            });
 
-            // trigger recalc of allocations
             if (typeof recalcAccountsTotal === 'function') recalcAccountsTotal();
         }
 
-        // Run restore on DOM ready
         $(function() {
             try {
                 restoreProducts();
@@ -1160,136 +1193,81 @@
                 console.error('restore error', e);
             }
         });
-    })();
 
 
-
-        // call it now (inside ready)
-        initRecalcAllRows();
-
-
-        // keyboard Enter on suggestion list
-        $(document).on('keydown', '.searchResults .search-result-item', function(e) {
-            if (e.key === 'Enter') {
-                $(this).trigger('click');
+    $(function() {
+        $('#purchaseItems tr').each(function() {
+            if (typeof window.initProductSelect === 'function') window.initProductSelect($(this));
+        });
+        
+        setTimeout(() => {
+            const $itemRows = $('#purchaseItems tr');
+            if ($itemRows.length === 0) {
+                if (typeof window.appendBlankRow === 'function') window.appendBlankRow();
+            } else {
+                $itemRows.each(function() {
+                    if (typeof window.recalcRow === 'function') window.recalcRow($(this));
+                });
             }
-        });
-
-
-
-
-
-
-
-
-        // Initial entry setup
-        $(function() {
-            // Initialize Select2 on any rows that were rendered by Blade
-            $('#purchaseItems tr').each(function() {
-                if (typeof window.initProductSelect === 'function') window.initProductSelect($(this));
-            });
             
-            // If table is still empty after restoration scripts, add a blank row
-            setTimeout(() => {
-                const $itemRows = $('#purchaseItems tr');
-                if ($itemRows.length === 0) {
-                    if (typeof window.appendBlankRow === 'function') {
-                        window.appendBlankRow();
-                    }
-                } else {
-                    $itemRows.each(function() {
-                        if (typeof window.recalcRow === 'function') window.recalcRow($(this));
-                    });
-                }
-                
-                // Recalculate summary and accounts
-                if (typeof window.recalcAccountsTotal === 'function') window.recalcAccountsTotal();
-                if (typeof window.recalcSummary === 'function') window.recalcSummary();
-            }, 300);
-        });
+            if (typeof window.recalcAccountsTotal === 'function') window.recalcAccountsTotal();
+            if (typeof window.recalcSummary === 'function') window.recalcSummary();
+        }, 300);
+    });
 
     $('#purchaseForm').on('submit', function(e) {
-        // remove any item rows that do not have a product selected
         $('#purchaseItems tr').each(function() {
-            // if product id blank, remove row
             const pid = $(this).find('.product-select').val() || '';
-            if (!pid.toString().trim()) {
-                $(this).remove();
-            }
+            if (!pid.toString().trim()) $(this).remove();
         });
 
-        // Safe guard: if all rows were removed (because empty), add one back
         if ($('#purchaseItems tr').length === 0) {
-            if (typeof window.appendBlankRow === 'function') {
-                window.appendBlankRow(); 
-            } else {
-                 // Fallback if function is somehow not reachable (though it should be)
-                 const fallbackRow = `<tr><td><input type="hidden" name="product_id[]" class="product_id"><input type="hidden" name="product_name[]" class="product_name_hidden"><input type="text" class="form-control form-control-sm productSearch" placeholder="Search product..."><div class="searchResults"></div></td><td class="uom border"><input type="text" name="brand[]" class="form-control form-control-sm" readonly></td><td><input type="number" step="0.01" name="price[]" class="form-control form-control-sm price"></td><td><input type="text" name="retail_price_show[]" class="form-control form-control-sm retail_price_show" readonly></td><td><div class="input-group"><input type="number" step="0.01" min="0" name="item_disc[]" class="form-control form-control-sm item_disc" placeholder="%"><input type="text" name="item_disc_amount[]" class="form-control form-control-sm disc_amount" readonly placeholder="Disc Amt"></div><input type="hidden" name="purchase_retail_price[]" class="purchase_retail_price"><input type="hidden" name="purchase_net_amount[]" class="purchase_net_amount"></td><td><input type="number" name="qty[]" class="form-control form-control-sm quantity" value="1" min="1"></td><td><input type="text" name="amount[]" class="form-control form-control-sm row-amount" readonly></td><td><input type="text" name="total[]" class="form-control form-control-sm row-total" readonly></td><td><button type="button" class="btn btn-sm btn-danger remove-row">X</button></td></tr>`;
-                 $('#purchaseItems').append(fallbackRow);
-            }
+            if (typeof window.appendBlankRow === 'function') window.appendBlankRow(); 
         }
 
-        // after removal, check if we still have at least one valid row
-        if ($('#purchaseItems .product-select').filter(function() {
-                return $(this).val();
-            }).length === 0) {
+        if ($('#purchaseItems .product-select').filter(function() { return $(this).val(); }).length === 0) {
             e.preventDefault();
             showToast('⚠️ Please add at least one valid item before saving.', 'error');
             return false;
         }
 
-        // optionally, still re-run client recalc to ensure totals are accurate
         recalcSummary();
-        return true; // allow submit
-    });
-
-    // --- BLOCK ENTER KEY (prevents accidental form submit on qty, price etc) ---
-    $(document).on('keydown', function(e) {
-        if (e.key === 'Enter') {
-            var $t = $(e.target);
-            // Only allow Enter in textarea
-            if (!$t.is('textarea')) {
-                e.preventDefault();
-                return false;
-            }
-        }
-
-        // --- CTRL+S = Submit form ---
-        if (e.ctrlKey && e.key === 's') {
-            e.preventDefault();
-            $('#purchaseForm').submit();
-        }
+        return true;
     });
 
 
-
-    // Initialize on DOM Ready
     $(document).ready(function() {
-        // Init Select2 on type and party dropdowns
         if ($.fn.select2) {
-            $('#vendor_type_select').select2({ placeholder: 'Select Type', width: '100%', allowClear: true });
             $('#vendor_id_select').select2({ placeholder: 'Select Party', width: '100%', allowClear: true });
         }
-
-        // Focus first row Item ID on load
+        $('.vendor-type-radio').on('change', function() {
+            if(window.loadParties) window.loadParties($(this).val());
+        });
+        $('#addRow').on('click', function() {
+            window.appendBlankRow(true);
+        });
         setTimeout(function() {
             $('#purchaseItems tr:first .item-id-input').focus();
         }, 500);
+
+        // Ensure at least one account row exists
+        if ($('#accountsTableBody tr').length === 0) {
+            if (typeof window.appendAccountRow === 'function') window.appendAccountRow();
+        }
     });
 
     
     // --- Print Preview Functions ---
     window.showPreviewModal = function() {
-        console.log('showPreviewModal called');
         try {
             // Gather Basic Info
-            const date = $('input[name="current_date"]').val();
-            const vendorType = $('#vendor_type_select option:selected').text();
-            const vendorName = $('select[name="vendor_id"] option:selected').text() || '-';
+            const date = $('input[name="entry_date"]').val() || '-';
+            const vendorType = $('.vendor-type-radio:checked').next('label').text() || 'N/A';
+            const vendorName = $('#vendor_id_select option:selected').text() || '-';
             const dc = $('input[name="dc"]').val() || '-';
             const warehouse = $('select[name="warehouse_id"] option:selected').text() || '-';
             const bilty = $('input[name="bilty_no"]').val() || '-';
-            const remarks = $('input[name="remarks"]').val() || '-';
+            const remarks = $('textarea[name="remarks"]').val() || '-';
             const invoiceNo = "{{ $nextInvoice ?? 'PUR-XXX' }}"; 
 
             // Gather Items
@@ -1320,7 +1298,6 @@
             const net = $('#netAmount').val();
             const wht = $('#whtAmount').val();
 
-            // Build Template
             // Build Template
             const html = `
                 <div style="font-family: 'Segoe UI', Arial, sans-serif; color: #000; padding: 20px; border: 1px solid #ccc;">
@@ -1395,15 +1372,12 @@
             // Inject
             $('#printArea').html(html);
 
-            // Show Modal - Attempt both Bootstrap 5 and jQuery fallback
             // Show Modal
             const $modal = $('#printPreviewModal');
             if ($modal.length) {
-                // Try jQuery first as it seems to be loaded
                 if (typeof $modal.modal === 'function') {
                     $modal.modal('show');
                 } else {
-                    // Fallback to vanilla JS / Bootstrap 5
                     const myModal = new bootstrap.Modal(document.getElementById('printPreviewModal'));
                     myModal.show();
                 }
@@ -1430,14 +1404,19 @@
         window.location.reload(); 
     };
     // --- Navigation Guard (Prevent leaving incomplete form) ---
+    let isInitializing = true;
     let isFormDirty = false;
     let isFormSaved = false; // set true once AJAX draft save succeeds
 
     // Detect changes in any input/select/textarea within the form
     $(document).on('change input', '#purchaseForm :input', function() {
+        if (isInitializing) return;
         isFormDirty = true;
         isFormSaved = false; // re-dirty if user edits after saving
     });
+
+    // Mark initialization complete after a short delay
+    setTimeout(() => { isInitializing = false; }, 1500);
 
     // If the form is submitted (traditional), clear dirty flag
     $('#purchaseForm').on('submit', function() {
@@ -1559,7 +1538,7 @@ $(function() {
             whtAmt = whtVal;
         }
 
-        $('#whtValue').val(whtVal);
+        $('#whtValue').val(whtAmt.toFixed(2));
         $('#whtAmount').val(whtAmt.toFixed(2));
         var netTotal = subTotalNetItems - totalDiscount - whtAmt;
         $('#netAmount').val(netTotal.toFixed(2));
@@ -1596,7 +1575,7 @@ $(document).ready(function() {
     var vendors   = @json($Vendor->map(fn($v) => ['id' => $v->id, 'name' => $v->name]));
     var customers = @json($customers->map(fn($c) => ['id' => $c->id, 'name' => $c->customer_name, 'type' => $c->customer_type]));
 
-    function loadParties(type, selectedId = null) {
+    window.loadParties = function(type, selectedId = null) {
         var list = [];
         if (type === 'vendor') {
             list = vendors;
@@ -1604,30 +1583,34 @@ $(document).ready(function() {
             list = customers;
         } else if (type === 'walkin') {
             list = customers.filter(function(c) {
-                return (c.type || '').toLowerCase().indexOf('walking') !== -1;
+                var ctype = (c.type || '').toLowerCase();
+                return ctype.indexOf('walking') !== -1 || ctype.indexOf('walkin') !== -1;
             });
         }
 
         var $drop = $('#vendor_id_select');
-        var html  = '<option value="" disabled>-- Select --</option>';
+        var html  = '<option value="" disabled selected>-- Select --</option>';
         list.forEach(function(item) {
             var selected = (selectedId && String(item.id) === String(selectedId)) ? 'selected' : '';
             html += '<option value="' + item.id + '" ' + selected + '>' + item.name + '</option>';
         });
         $drop.html(html);
-    }
+        if ($.fn.select2 && $drop.hasClass('select2-hidden-accessible')) {
+             $drop.trigger('change');
+        }
+    };
 
     // When Type changes -> fill Vendor dropdown
-    $('#vendor_type_select').on('change', function() {
+    $('.vendor-type-radio').on('change', function() {
         var type = $(this).val();
-        if (type) loadParties(type);
+        if (type) window.loadParties(type);
     });
 
     // Initial load for edit mode
-    var initialType = $('#vendor_type_select').val();
+    var initialType = $('.vendor-type-radio:checked').val();
     var initialId = "{{ isset($purchase) ? $purchase->purchasable_id : '' }}";
     if(initialType) {
-        loadParties(initialType, initialId);
+        window.loadParties(initialType, initialId);
     }
 
 });
@@ -1677,6 +1660,18 @@ $(document).ready(function() {
             }
         });
         if (typeof window.recalcSummary === 'function') window.recalcSummary();
+        
+        // Check WHT Account if WHT is entered
+        var whtVal = parseFloat($('#whtValue').val()) || 0;
+        var whtAcc = $('#wht_account_id').val();
+        if (whtVal > 0 && !whtAcc) {
+            showToast('⚠️ Please select a WHT Account (Income) for the Withholding Tax.', 'error');
+            $('#wht_account_id').addClass('border-danger shadow-sm').focus();
+            $('#saveDraftBtn').prop('disabled', false).html('<i class="fa fa-floppy-o me-1"></i> Save Draft <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+S</kbd>');
+            return;
+        } else {
+            $('#wht_account_id').removeClass('border-danger shadow-sm');
+        }
 
         var $form  = $('#purchaseForm');
         $('#saveDraftBtn').prop('disabled', true).html('<i class="fa fa-spinner fa-spin me-1"></i> Saving...');
@@ -1965,7 +1960,7 @@ $(document).ready(function() {
     });
 
     // 2. Add Account Row
-    $('#addAccountRow').on('click', function() {
+    window.appendAccountRow = function() {
         var newRow = `<tr>
             <td>
                 <select name="account_head_id[]" class="form-control form-control-sm accountHead">
@@ -1988,6 +1983,10 @@ $(document).ready(function() {
             </td>
         </tr>`;
         $('#accountsTable tbody').append(newRow);
+    };
+
+    $('#addAccountRow').on('click', function() {
+        window.appendAccountRow();
     });
 
     // 3. Remove Account Row
@@ -2052,6 +2051,54 @@ $(document).ready(function() {
             e.preventDefault();
             const listUrl = $('#listBtn').attr('href');
             if(listUrl) window.location.href = listUrl;
+        }
+    });
+
+    // Sync Retail Price Display -> Hidden Field
+    $(document).on('input', '.retail_price_show', function() {
+        $(this).closest('tr').find('.purchase_retail_price').val($(this).val());
+    });
+
+    // Full Grid Navigation (Arrows Up/Down/Left/Right)
+    $(document).on('keydown', '#purchaseItems input, #accountsTable input', function(e) {
+        if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].indexOf(e.key) === -1) return;
+        
+        var $this = $(this);
+        var $row = $this.closest('tr');
+        var $inputs = $row.find('input:visible:not([readonly])'); 
+        var currentIndex = $inputs.index($this);
+
+        if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+            e.preventDefault(); // Stop page scroll
+            var classList = $this.attr('class').split(' ');
+            var ignore = ['form-control', 'form-control-sm', 'text-end', 'text-center', 'input-readonly', 'fw-bold', 'loading-indicator'];
+            var specificClass = classList.find(c => ignore.indexOf(c) === -1);
+            
+            if (specificClass) {
+                var $targetRow = (e.key === 'ArrowDown') ? $row.next('tr') : $row.prev('tr');
+                var $target = $targetRow.find('.' + specificClass);
+                if ($target.length) {
+                    $target.focus().select();
+                }
+            }
+        } else if (e.key === 'ArrowRight') {
+            // Only jump if at the end of input
+            if (this.selectionStart === this.value.length) {
+                var $next = $inputs.eq(currentIndex + 1);
+                if ($next.length) {
+                    e.preventDefault();
+                    $next.focus().select();
+                }
+            }
+        } else if (e.key === 'ArrowLeft') {
+            // Only jump if at the start of input
+            if (this.selectionStart === 0) {
+                var $prev = $inputs.eq(currentIndex - 1);
+                if ($prev.length && currentIndex > 0) {
+                    e.preventDefault();
+                    $prev.focus().select();
+                }
+            }
         }
     });
 

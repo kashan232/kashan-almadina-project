@@ -211,20 +211,19 @@
                         <div class="column-picker-menu shadow" id="columnPickerMenu">
                             <div class="p-2 border-bottom fw-bold small text-muted">Show/Hide Columns</div>
                             <label class="column-picker-item"><input type="checkbox" data-column="1" checked> #</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="2" checked> Type</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="2" checked> Date</label>
                             <label class="column-picker-item"><input type="checkbox" data-column="3" checked> Inv#</label>
                             <label class="column-picker-item"><input type="checkbox" data-column="4" checked> Source</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="5" checked> Party Type</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="6" checked> Supplier</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="7" checked> Items</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="5" checked> Supplier</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="6" checked> Items</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="7" checked> Total Qty</label>
                             <label class="column-picker-item"><input type="checkbox" data-column="8" checked> Warehouse</label>
                             <label class="column-picker-item"><input type="checkbox" data-column="9" checked> Subtotal</label>
                             <label class="column-picker-item"><input type="checkbox" data-column="10" checked> Disc</label>
                             <label class="column-picker-item"><input type="checkbox" data-column="11" checked> WHT</label>
                             <label class="column-picker-item"><input type="checkbox" data-column="12" checked> Net</label>
                             <label class="column-picker-item"><input type="checkbox" data-column="13" checked> Created By</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="14" checked> Date</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="15" checked> Status</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="14" checked> Status</label>
                         </div>
                     </div>
                 </div>
@@ -235,19 +234,18 @@
                             <thead>
                                 <tr>
                                     <th>#</th>
-                                    <th>Type</th>
+                                    <th>Date</th>
                                     <th>Inv#</th>
                                     <th>Source</th>
-                                    <th>Party Type</th>
                                     <th>Supplier</th>
                                     <th>Items</th>
+                                    <th class="text-center">Total Qty</th>
                                     <th>Warehouse</th>
                                     <th class="text-end">Subtotal</th>
                                     <th class="text-end">Disc</th>
                                     <th class="text-end">WHT</th>
                                     <th class="text-end text-success">Net</th>
                                     <th>Created By</th>
-                                    <th>Date</th>
                                     <th class="text-center">Status</th>
                                     <th class="text-center" style="min-width: 100px;">Action</th>
                                 </tr>
@@ -256,29 +254,15 @@
                                 @foreach ($Purchase as $key => $purchase)
                                 <tr>
                                     <td class="text-muted">{{ $key+1 }}</td>
-                                    <td class="text-muted small">PJ</td>
+                                    <td class="fw-bold text-dark" data-order="{{ $purchase->current_date }}_{{ $purchase->id }}">
+                                        {{ \Carbon\Carbon::parse($purchase->current_date)->format('d-M-Y') }}
+                                    </td>
                                     <td class="fw-bold text-primary">{{ preg_replace('/[^0-9]/', '', $purchase->invoice_no) }}</td>
                                     <td class="text-center">
                                         @if($purchase->inward_id)
                                             <span class="badge bg-info-subtle text-info border border-info px-2 py-0" style="font-size: 9px;">Inward ({{ $purchase->inward_id }})</span>
                                         @else
                                             <span class="badge bg-success-subtle text-success border border-success px-2 py-0" style="font-size: 9px;">Direct</span>
-                                        @endif
-                                    </td>
-                                    <td class="text-center">
-                                        @php
-                                            $pType = $purchase->purchasable_type;
-                                        @endphp
-                                        @if($pType)
-                                            @if(str_contains($pType, 'Vendor'))
-                                                <span class="badge bg-info-subtle text-info border border-info px-1 py-0" style="font-size: 10px;">Vendor</span>
-                                            @elseif(str_contains($pType, 'Customer'))
-                                                <span class="badge bg-primary-subtle text-primary border border-primary px-1 py-0" style="font-size: 10px;">Customer</span>
-                                            @else
-                                                <span class="badge bg-secondary-subtle text-secondary border border-secondary px-1 py-0" style="font-size: 10px;">{{ class_basename($pType) }}</span>
-                                            @endif
-                                        @else
-                                            <span class="badge bg-secondary-subtle text-secondary border border-secondary px-1 py-0" style="font-size: 10px;">N/A</span>
                                         @endif
                                     </td>
                                     <td>
@@ -293,6 +277,9 @@
                                             </div>
                                         @endforeach
                                     </td>
+                                    <td class="text-center fw-bold text-info">
+                                        {{ (float)$purchase->items->sum('qty') }}
+                                    </td>
                                     <td class="small text-muted">
                                         @if($purchase->warehouse_id == 0 || !$purchase->warehouse)
                                             Shop
@@ -306,7 +293,6 @@
                                     <td class="text-end">{{ number_format($purchase->wht, 0) }}</td>
                                     <td class="text-end fw-bold text-success">{{ number_format($purchase->net_amount, 0) }}</td>
                                     <td class="small text-muted">{{ $purchase->user->name ?? 'N/A' }}</td>
-                                    <td class="small">{{ \Carbon\Carbon::parse($purchase->current_date)->format('d-M-Y') }}</td>
                                     <td class="text-center">
                                         @if($purchase->status === 'Posted')
                                             <span class="badge bg-success rounded-pill px-3">Posted</span>
@@ -376,7 +362,7 @@
         
         // Initialize DataTable
         var dt = $('#purchaseTable').DataTable({
-            "order": [[0, 'desc']], // Default sort by ID
+            "order": [[1, 'desc']], // Default sort by Date DESC
             "pageLength": 25,
             "scrollX": true,
             "autoWidth": false,

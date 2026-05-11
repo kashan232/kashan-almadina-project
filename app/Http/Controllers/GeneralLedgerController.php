@@ -265,16 +265,26 @@ class GeneralLedgerController extends Controller
 
         // 4. JV
         $jvDateCol = $this->getDateColumn('journal_vouchers');
-        $jvs = JournalVoucher::where('party_id', $id)->where('party_type', $type)
+        $jvs = JournalVoucher::whereJsonContains('party_id', (string)$id)
+            ->where('party_type', $type)
             ->whereBetween(DB::raw($jvDateCol), [$start, $end])->get();
         foreach ($jvs as $jv) {
-            $transactions[] = [
-                'date' => $jv->entry_date ?: $jv->created_at,
-                'ref' => 'JV',
-                'inv' => $jv->jvid,
-                'desc' => $jv->remarks ?? 'Journal Voucher',
-                'qty' => 0, 'debit' => (float)$jv->debit, 'credit' => (float)$jv->credit
-            ];
+            $pIds = json_decode($jv->party_id, true) ?? [];
+            $debits = json_decode($jv->debit, true) ?? [];
+            $credits = json_decode($jv->credit, true) ?? [];
+            foreach($pIds as $idx => $pid) {
+                if ($pid == $id) {
+                    $transactions[] = [
+                        'date' => $jv->entry_date ?: $jv->created_at,
+                        'ref' => 'JV',
+                        'inv' => $jv->jvid,
+                        'desc' => $jv->remarks ?? 'Journal Voucher',
+                        'qty' => 0, 
+                        'debit' => (float)($debits[$idx] ?? 0), 
+                        'credit' => (float)($credits[$idx] ?? 0)
+                    ];
+                }
+            }
         }
 
         // 5. Purchases (PJ) - Aggregate
@@ -355,12 +365,39 @@ class GeneralLedgerController extends Controller
         
         if ($type == 'account') {
             $account = Account::find($id);
+            if (!$account) return 0;
             $balance = (float)($account->opening_balance ?? 0);
             
-            // Note: Accounts use JSON row_account_id, making direct DB sum difficult.
-            // For now, we will focus on correcting the Party Ledger as requested.
-            // Future fix: use account_ledgers table or complex JSON queries.
-            return $balance;
+            // For accounts, opening_balance in table is the CURRENT balance.
+            // To get balance at START date, we subtract all transactions from START date to NOW.
+            
+            // RVs (Debit increases balance)
+            $rvDateCol = $this->getDateColumn('receipts_vouchers', 'receipt_date');
+            $rvSum = (float)ReceiptsVoucher::where('row_account_id', $id)
+                ->where(DB::raw($rvDateCol), '>=', $date)->sum('total_amount');
+            
+            // PVs (Credit decreases balance)
+            $pvDateCol = $this->getDateColumn('payment_vouchers', 'receipt_date');
+            $pvSum = (float)PaymentVoucher::where('row_account_id', $id)
+                ->where(DB::raw($pvDateCol), '>=', $date)->sum('total_amount');
+                
+            // JVs
+            $jvDateCol = $this->getDateColumn('journal_vouchers');
+            $jvs = JournalVoucher::whereJsonContains('party_id', (string)$id)
+                ->where(DB::raw($jvDateCol), '>=', $date)->get();
+            $jvImpact = 0;
+            foreach($jvs as $jv) {
+                $pIds = json_decode($jv->party_id, true) ?? [];
+                $debits = json_decode($jv->debit, true) ?? [];
+                $credits = json_decode($jv->credit, true) ?? [];
+                foreach($pIds as $idx => $pid) {
+                    if($pid == $id) {
+                        $jvImpact += (float)($debits[$idx] ?? 0) - (float)($credits[$idx] ?? 0);
+                    }
+                }
+            }
+            
+            return $balance - ($rvSum - $pvSum + $jvImpact);
         }
 
         // For Party (Customer/Vendor)
@@ -399,8 +436,17 @@ class GeneralLedgerController extends Controller
 
         // 4. JV Debits
         $jvDateCol = $this->getDateColumn('journal_vouchers');
-        $jvDebits = (float)JournalVoucher::where('party_id', $id)->where('party_type', $type)
-            ->where(DB::raw($jvDateCol), '<', $date)->sum('debit');
+        $jvs = JournalVoucher::whereJsonContains('party_id', (string)$id)
+            ->where('party_type', $type)
+            ->where(DB::raw($jvDateCol), '<', $date)->get();
+        $jvDebits = 0;
+        foreach($jvs as $jv) {
+            $pIds = json_decode($jv->party_id, true) ?? [];
+            $debits = json_decode($jv->debit, true) ?? [];
+            foreach($pIds as $idx => $pid) {
+                if($pid == $id) $jvDebits += (float)($debits[$idx] ?? 0);
+            }
+        }
 
         // 5. Purchases (Credit)
         $pjDateCol = $this->getDateColumn('purchases', 'current_date');
@@ -431,8 +477,17 @@ class GeneralLedgerController extends Controller
 
         // 8. JV Credits
         $jvDateCol = $this->getDateColumn('journal_vouchers');
-        $jvCredits = (float)JournalVoucher::where('party_id', $id)->where('party_type', $type)
-            ->where(DB::raw($jvDateCol), '<', $date)->sum('credit');
+        $jvs = JournalVoucher::whereJsonContains('party_id', (string)$id)
+            ->where('party_type', $type)
+            ->where(DB::raw($jvDateCol), '<', $date)->get();
+        $jvCredits = 0;
+        foreach($jvs as $jv) {
+            $pIds = json_decode($jv->party_id, true) ?? [];
+            $credits = json_decode($jv->credit, true) ?? [];
+            foreach($pIds as $idx => $pid) {
+                if($pid == $id) $jvCredits += (float)($credits[$idx] ?? 0);
+            }
+        }
 
         $balance += ($sales + $pReturns + $payments + $expenses + $vDebits + $jvDebits) - ($purchases + $sReturns + $receipts + $incomes + $vCredits + $jvCredits);
         
@@ -450,6 +505,7 @@ class GeneralLedgerController extends Controller
                 ->whereBetween(DB::raw($rvDateCol), [$start, $end])->get();
             foreach($rvs as $rv) {
                 $transactions[] = [
+                    'id' => $rv->id,
                     'date' => $rv->entry_date ?: $rv->created_at,
                     'ref' => 'RV',
                     'inv' => $rv->rvid,
@@ -463,6 +519,7 @@ class GeneralLedgerController extends Controller
                 ->whereBetween(DB::raw($pvDateCol), [$start, $end])->get();
             foreach($pvs as $pv) {
                 $transactions[] = [
+                    'id' => $pv->id,
                     'date' => $pv->entry_date ?: $pv->created_at,
                     'ref' => 'PV',
                     'inv' => $pv->pvid,
@@ -470,8 +527,39 @@ class GeneralLedgerController extends Controller
                     'price' => 0, 'qty' => 0, 'debit' => 0, 'credit' => (float)$pv->amount
                 ];
             }
-            // Sort by Date
-            usort($transactions, function ($a, $b) { return strtotime($a['date']) - strtotime($b['date']); });
+            // JVs
+            $jvDateCol = $this->getDateColumn('journal_vouchers');
+            $jvs = JournalVoucher::whereJsonContains('party_id', (string)$id)
+                ->whereBetween(DB::raw($jvDateCol), [$start, $end])->get();
+            foreach($jvs as $jv) {
+                $pIds = json_decode($jv->party_id, true) ?? [];
+                $debits = json_decode($jv->debit, true) ?? [];
+                $credits = json_decode($jv->credit, true) ?? [];
+                foreach($pIds as $idx => $pid) {
+                    if ($pid == $id) {
+                        $transactions[] = [
+                            'id' => $jv->id,
+                            'date' => $jv->entry_date ?: $jv->created_at,
+                            'ref' => 'JV',
+                            'inv' => $jv->jvid,
+                            'desc' => $jv->remarks ?? 'Journal Voucher',
+                            'price' => 0, 'qty' => 0, 
+                            'debit' => (float)($debits[$idx] ?? 0), 
+                            'credit' => (float)($credits[$idx] ?? 0)
+                        ];
+                    }
+                }
+            }
+
+            // Sort by Date, then ID for chronological order
+            usort($transactions, function ($a, $b) { 
+                $dateA = strtotime($a['date']);
+                $dateB = strtotime($b['date']);
+                if ($dateA == $dateB) {
+                    return ($a['id'] ?? 0) - ($b['id'] ?? 0);
+                }
+                return $dateA - $dateB;
+            });
             return $transactions;
         }
 
@@ -493,6 +581,7 @@ class GeneralLedgerController extends Controller
                 $finalPrice = $rate ?: (($qty > 0) ? ($price - ($disc / $qty)) : $price);
 
                 $transactions[] = [
+                    'id' => $item->id,
                     'date' => $sale->entry_date ?: $sale->created_at,
                     'ref' => 'SJ',
                     'inv' => $sale->invoice_no,
@@ -517,6 +606,7 @@ class GeneralLedgerController extends Controller
             foreach ($pr->items as $item) {
                 $brand = $item->product->brandRelation->name ?? '';
                 $transactions[] = [
+                    'id' => $item->id,
                     'date' => $pr->entry_date ?: $pr->created_at,
                     'ref' => 'PRJ',
                     'inv' => $pr->invoice_no,
@@ -549,6 +639,7 @@ class GeneralLedgerController extends Controller
             ->whereBetween(DB::raw($evDateCol), [$start, $end])->get();
         foreach ($expenses as $ev) {
             $transactions[] = [
+                'id' => $ev->id,
                 'date' => $ev->entry_date ?: $ev->created_at,
                 'ref' => 'EV',
                 'inv' => $ev->evid,
@@ -562,6 +653,7 @@ class GeneralLedgerController extends Controller
             ->whereBetween(DB::raw("COALESCE(date, DATE(created_at))"), [$start, $end])->get();
         foreach ($vouchers as $v) {
             $transactions[] = [
+                'id' => $v->id,
                 'date' => $v->date ?: $v->created_at,
                 'ref' => 'VO',
                 'inv' => $v->voucher_type,
@@ -574,16 +666,26 @@ class GeneralLedgerController extends Controller
 
         // 4. JV (JV) - Debit/Credit
         $jvDateCol = $this->getDateColumn('journal_vouchers');
-        $jvs = JournalVoucher::where('party_id', $id)->where('party_type', $type)
+        $jvs = JournalVoucher::whereJsonContains('party_id', (string)$id)
+            ->where('party_type', $type)
             ->whereBetween(DB::raw($jvDateCol), [$start, $end])->get();
         foreach ($jvs as $jv) {
-            $transactions[] = [
-                'date' => $jv->entry_date ?: $jv->created_at,
-                'ref' => 'JV',
-                'inv' => $jv->jvid,
-                'desc' => $jv->remarks ?? 'Journal Voucher',
-                'price' => 0, 'qty' => 0, 'debit' => (float)$jv->debit, 'credit' => (float)$jv->credit
-            ];
+            $pIds = json_decode($jv->party_id, true) ?? [];
+            $debits = json_decode($jv->debit, true) ?? [];
+            $credits = json_decode($jv->credit, true) ?? [];
+            foreach($pIds as $idx => $pid) {
+                if ($pid == $id) {
+                    $transactions[] = [
+                        'date' => $jv->entry_date ?: $jv->created_at,
+                        'ref' => 'JV',
+                        'inv' => $jv->jvid,
+                        'desc' => $jv->remarks ?? 'Journal Voucher',
+                        'price' => 0, 'qty' => 0, 
+                        'debit' => (float)($debits[$idx] ?? 0), 
+                        'credit' => (float)($credits[$idx] ?? 0)
+                    ];
+                }
+            }
         }
 
         // 5. Purchases (PJ) - Credit
@@ -605,6 +707,7 @@ class GeneralLedgerController extends Controller
                 $finalPrice = $rate ?: (($qty > 0) ? ($price - (($disc > 100) ? ($disc / $qty) : ($price * $disc / 100))) : $price);
 
                 $transactions[] = [
+                    'id' => $item->id,
                     'date' => $p->entry_date ?: $p->created_at,
                     'ref' => 'PJ',
                     'inv' => $p->invoice_no,
@@ -626,6 +729,7 @@ class GeneralLedgerController extends Controller
             foreach ($sr->items as $item) {
                 $brand = $item->product->brandRelation->name ?? '';
                 $transactions[] = [
+                    'id' => $item->id,
                     'date' => $sr->entry_date ?: $sr->current_date,
                     'ref' => 'SRJ',
                     'inv' => $sr->invoice_no,
@@ -644,6 +748,7 @@ class GeneralLedgerController extends Controller
             ->whereBetween(DB::raw($rvDateCol), [$start, $end])->get();
         foreach ($receipts as $rv) {
             $transactions[] = [
+                'id' => $rv->id,
                 'date' => $rv->entry_date ?: $rv->created_at,
                 'ref' => 'RV',
                 'inv' => $rv->rvid,
@@ -658,6 +763,7 @@ class GeneralLedgerController extends Controller
             ->whereBetween(DB::raw($ivDateCol), [$start, $end])->get();
         foreach ($incomes as $iv) {
             $transactions[] = [
+                'id' => $iv->id,
                 'date' => $iv->entry_date ?: $iv->created_at,
                 'ref' => 'IV',
                 'inv' => $iv->ivid,
@@ -666,9 +772,14 @@ class GeneralLedgerController extends Controller
             ];
         }
 
-        // Sort by Date
+        // Sort by Date, then ID for chronological order
         usort($transactions, function ($a, $b) {
-            return strtotime($a['date']) - strtotime($b['date']);
+            $dateA = strtotime($a['date']);
+            $dateB = strtotime($b['date']);
+            if ($dateA == $dateB) {
+                return ($a['id'] ?? 0) - ($b['id'] ?? 0);
+            }
+            return $dateA - $dateB;
         });
 
         return $transactions;
