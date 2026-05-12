@@ -205,6 +205,7 @@ class GeneralLedgerController extends Controller
             ->get();
         foreach ($sales as $sale) {
             $transactions[] = [
+                'id' => $sale->id,
                 'date' => $sale->entry_date ?: $sale->created_at,
                 'ref' => 'SJ',
                 'inv' => $sale->invoice_no,
@@ -225,6 +226,7 @@ class GeneralLedgerController extends Controller
             ->get();
         foreach ($pReturns as $pr) {
             $transactions[] = [
+                'id' => $pr->id,
                 'date' => $pr->entry_date ?: $pr->created_at,
                 'ref' => 'PRJ',
                 'inv' => $pr->invoice_no,
@@ -241,6 +243,7 @@ class GeneralLedgerController extends Controller
             ->whereBetween(DB::raw($pvDateCol), [$start, $end])->get();
         foreach ($payments as $pv) {
             $transactions[] = [
+                'id' => $pv->id,
                 'date' => $pv->entry_date ?: $pv->created_at,
                 'ref' => 'PV',
                 'inv' => $pv->pvid,
@@ -265,8 +268,11 @@ class GeneralLedgerController extends Controller
 
         // 4. JV
         $jvDateCol = $this->getDateColumn('journal_vouchers');
-        $jvs = JournalVoucher::whereJsonContains('party_id', (string)$id)
-            ->where('party_type', $type)
+        $jvs = JournalVoucher::where(function($q) use ($id) {
+                $q->whereJsonContains('party_id', (string)$id)
+                  ->orWhereJsonContains('party_id', (int)$id);
+            })
+            ->whereJsonContains('party_type', $type)
             ->whereBetween(DB::raw($jvDateCol), [$start, $end])->get();
         foreach ($jvs as $jv) {
             $pIds = json_decode($jv->party_id, true) ?? [];
@@ -274,14 +280,25 @@ class GeneralLedgerController extends Controller
             $credits = json_decode($jv->credit, true) ?? [];
             foreach($pIds as $idx => $pid) {
                 if ($pid == $id) {
+                    $ref = 'JV';
+                    $inv = $jv->jvid;
+                    
+                    // Cleanup for Purchase-related JVs (e.g. PJ-ALLOC-50 -> PJ 50)
+                    if (str_starts_with($inv, 'PJ-')) {
+                        $ref = 'PJ';
+                        $inv = preg_replace('/^PJ-[A-Z]+-/', '', $inv);
+                    }
+
                     $transactions[] = [
+                        'id' => $jv->id,
                         'date' => $jv->entry_date ?: $jv->created_at,
-                        'ref' => 'JV',
-                        'inv' => $jv->jvid,
+                        'ref' => $ref,
+                        'inv' => $inv,
                         'desc' => $jv->remarks ?? 'Journal Voucher',
                         'qty' => 0, 
                         'debit' => (float)($debits[$idx] ?? 0), 
-                        'credit' => (float)($credits[$idx] ?? 0)
+                        'credit' => (float)($credits[$idx] ?? 0),
+                        'priority' => 2 // Posting impacts come second
                     ];
                 }
             }
@@ -297,13 +314,15 @@ class GeneralLedgerController extends Controller
             ->get();
         foreach ($purchases as $p) {
             $transactions[] = [
+                'id' => $p->id,
                 'date' => $p->entry_date ?: $p->created_at,
                 'ref' => 'PJ',
                 'inv' => $p->invoice_no,
                 'desc' => 'Purchase',
                 'qty' => (float)DB::table('purchase_items')->where('purchase_id', $p->id)->sum('qty'),
                 'debit' => 0,
-                'credit' => (float)$p->net_amount
+                'credit' => (float)$p->net_amount,
+                'priority' => 1 // Items come first
             ];
         }
 
@@ -314,6 +333,7 @@ class GeneralLedgerController extends Controller
             ->get();
         foreach ($sReturns as $sr) {
             $transactions[] = [
+                'id' => $sr->id,
                 'date' => $sr->entry_date ?: $sr->current_date,
                 'ref' => 'SRJ',
                 'inv' => $sr->invoice_no,
@@ -330,6 +350,7 @@ class GeneralLedgerController extends Controller
             ->whereBetween(DB::raw($rvDateCol), [$start, $end])->get();
         foreach ($receipts as $rv) {
             $transactions[] = [
+                'id' => $rv->id,
                 'date' => $rv->entry_date ?: $rv->created_at,
                 'ref' => 'RV',
                 'inv' => $rv->rvid,
@@ -383,7 +404,10 @@ class GeneralLedgerController extends Controller
                 
             // JVs
             $jvDateCol = $this->getDateColumn('journal_vouchers');
-            $jvs = JournalVoucher::whereJsonContains('party_id', (string)$id)
+            $jvs = JournalVoucher::where(function($q) use ($id) {
+                    $q->whereJsonContains('party_id', (string)$id)
+                      ->orWhereJsonContains('party_id', (int)$id);
+                })
                 ->where(DB::raw($jvDateCol), '>=', $date)->get();
             $jvImpact = 0;
             foreach($jvs as $jv) {
@@ -436,8 +460,11 @@ class GeneralLedgerController extends Controller
 
         // 4. JV Debits
         $jvDateCol = $this->getDateColumn('journal_vouchers');
-        $jvs = JournalVoucher::whereJsonContains('party_id', (string)$id)
-            ->where('party_type', $type)
+        $jvs = JournalVoucher::where(function($q) use ($id) {
+                $q->whereJsonContains('party_id', (string)$id)
+                  ->orWhereJsonContains('party_id', (int)$id);
+            })
+            ->whereJsonContains('party_type', $type)
             ->where(DB::raw($jvDateCol), '<', $date)->get();
         $jvDebits = 0;
         foreach($jvs as $jv) {
@@ -477,8 +504,11 @@ class GeneralLedgerController extends Controller
 
         // 8. JV Credits
         $jvDateCol = $this->getDateColumn('journal_vouchers');
-        $jvs = JournalVoucher::whereJsonContains('party_id', (string)$id)
-            ->where('party_type', $type)
+        $jvs = JournalVoucher::where(function($q) use ($id) {
+                $q->whereJsonContains('party_id', (string)$id)
+                  ->orWhereJsonContains('party_id', (int)$id);
+            })
+            ->whereJsonContains('party_type', $type)
             ->where(DB::raw($jvDateCol), '<', $date)->get();
         $jvCredits = 0;
         foreach($jvs as $jv) {
@@ -529,7 +559,10 @@ class GeneralLedgerController extends Controller
             }
             // JVs
             $jvDateCol = $this->getDateColumn('journal_vouchers');
-            $jvs = JournalVoucher::whereJsonContains('party_id', (string)$id)
+            $jvs = JournalVoucher::where(function($q) use ($id) {
+                    $q->whereJsonContains('party_id', (string)$id)
+                      ->orWhereJsonContains('party_id', (int)$id);
+                })
                 ->whereBetween(DB::raw($jvDateCol), [$start, $end])->get();
             foreach($jvs as $jv) {
                 $pIds = json_decode($jv->party_id, true) ?? [];
@@ -625,6 +658,7 @@ class GeneralLedgerController extends Controller
             ->whereBetween(DB::raw($pvDateCol), [$start, $end])->get();
         foreach ($payments as $pv) {
             $transactions[] = [
+                'id' => $pv->id,
                 'date' => $pv->entry_date ?: $pv->created_at,
                 'ref' => 'PV',
                 'inv' => $pv->pvid,
@@ -666,8 +700,11 @@ class GeneralLedgerController extends Controller
 
         // 4. JV (JV) - Debit/Credit
         $jvDateCol = $this->getDateColumn('journal_vouchers');
-        $jvs = JournalVoucher::whereJsonContains('party_id', (string)$id)
-            ->where('party_type', $type)
+        $jvs = JournalVoucher::where(function($q) use ($id) {
+                $q->whereJsonContains('party_id', (string)$id)
+                  ->orWhereJsonContains('party_id', (int)$id);
+            })
+            ->whereJsonContains('party_type', $type)
             ->whereBetween(DB::raw($jvDateCol), [$start, $end])->get();
         foreach ($jvs as $jv) {
             $pIds = json_decode($jv->party_id, true) ?? [];
@@ -675,14 +712,25 @@ class GeneralLedgerController extends Controller
             $credits = json_decode($jv->credit, true) ?? [];
             foreach($pIds as $idx => $pid) {
                 if ($pid == $id) {
+                    $ref = 'JV';
+                    $inv = $jv->jvid;
+                    
+                    // Cleanup for Purchase-related JVs (e.g. PJ-ALLOC-50 -> PJ 50)
+                    if (str_starts_with($inv, 'PJ-')) {
+                        $ref = 'PJ';
+                        $inv = preg_replace('/^PJ-[A-Z]+-/', '', $inv);
+                    }
+
                     $transactions[] = [
+                        'id' => $jv->id,
                         'date' => $jv->entry_date ?: $jv->created_at,
-                        'ref' => 'JV',
-                        'inv' => $jv->jvid,
+                        'ref' => $ref,
+                        'inv' => $inv,
                         'desc' => $jv->remarks ?? 'Journal Voucher',
                         'price' => 0, 'qty' => 0, 
                         'debit' => (float)($debits[$idx] ?? 0), 
-                        'credit' => (float)($credits[$idx] ?? 0)
+                        'credit' => (float)($credits[$idx] ?? 0),
+                        'priority' => 2 // Posting impacts come second
                     ];
                 }
             }
@@ -715,7 +763,8 @@ class GeneralLedgerController extends Controller
                     'price' => $finalPrice,
                     'qty' => $qty,
                     'debit' => 0,
-                    'credit' => (float)$item->line_total
+                    'credit' => (float)$item->line_total,
+                    'priority' => 1 // Items come first
                 ];
             }
         }
@@ -772,14 +821,34 @@ class GeneralLedgerController extends Controller
             ];
         }
 
-        // Sort by Date, then ID for chronological order
+        // Sort by Date, then logical grouping (Invoice No), then Priority (PJ before JV)
         usort($transactions, function ($a, $b) {
             $dateA = strtotime($a['date']);
             $dateB = strtotime($b['date']);
-            if ($dateA == $dateB) {
-                return ($a['id'] ?? 0) - ($b['id'] ?? 0);
+            if ($dateA != $dateB) {
+                return $dateA - $dateB;
             }
-            return $dateA - $dateB;
+
+            // Same date: Extract numeric invoice number for grouping
+            $invA = preg_replace('/[^0-9]/', '', $a['inv'] ?? '');
+            $invB = preg_replace('/[^0-9]/', '', $b['inv'] ?? '');
+
+            if ($invA !== '' && $invB !== '') {
+                $diff = (int)$invA - (int)$invB;
+                if ($diff !== 0) {
+                    return $diff;
+                }
+            }
+
+            // Same invoice group: Sort by Priority (PJ items before JV impacts)
+            $prioA = $a['priority'] ?? 5;
+            $prioB = $b['priority'] ?? 5;
+            if ($prioA !== $prioB) {
+                return $prioA - $prioB;
+            }
+
+            // Fallback to record ID
+            return ($a['id'] ?? 0) - ($b['id'] ?? 0);
         });
 
         return $transactions;

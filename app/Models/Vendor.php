@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Vendor extends Model
 {
-    protected $fillable = ['name', 'email', 'phone', 'address', 'debit', 'credit', 'user_group_ids', 'created_by'];
+    protected $fillable = ['name', 'email', 'phone', 'address', 'opening_balance', 'debit', 'credit', 'user_group_ids', 'created_by'];
 
     protected $casts = [
         'user_group_ids' => 'array',

@@ -116,9 +116,29 @@ class VendorController extends Controller
             'name' => $request->name,
             'phone' => $request->phone,
             'address' => $request->address,
-            'opening_balance' => intval($request->opening_balance ?? 0),
+            'opening_balance' => floatval($request->opening_balance ?? 0),
             'user_group_ids' => $request->user_group_ids,
         ]);
+
+        // Sync ledger
+        $opening = floatval($request->opening_balance ?? 0);
+        $firstLedger = VendorLedger::where('vendor_id', $vendor->id)->orderBy('id', 'asc')->first();
+        if ($firstLedger) {
+            $firstLedger->update([
+                'opening_balance' => $opening,
+                'closing_balance' => $opening + ($firstLedger->credit ?? 0) - ($firstLedger->debit ?? 0)
+            ]);
+        } else if ($opening > 0) {
+            VendorLedger::create([
+                'vendor_id'        => $vendor->id,
+                'admin_or_user_id' => Auth::id(),
+                'date'             => now(),
+                'description'      => 'Opening Balance',
+                'opening_balance'  => $opening,
+                'previous_balance' => 0,
+                'closing_balance'  => $opening,
+            ]);
+        }
 
         return redirect('/vendor')->with('success', 'Vendor updated successfully');
     }

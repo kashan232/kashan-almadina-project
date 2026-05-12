@@ -59,12 +59,12 @@ class PurchaseController extends Controller
         // ---------- GET LAST INVOICE ----------
         $nextInvoice = Purchase::generateInvoiceNo();
 
-        $incomeAccounts = Account::where('head_id', 2)->get();
+        $expenseAccounts = Account::where('head_id', 1)->get();
 
         // Pass this to the view
         return view(
             'admin_panel.purchase.add_purchase',
-            compact('Vendor', "Warehouse", 'AccountHeads', 'customers', 'nextInvoice', 'incomeAccounts')
+            compact('Vendor', "Warehouse", 'AccountHeads', 'customers', 'nextInvoice', 'expenseAccounts')
         );
     }
 
@@ -399,7 +399,7 @@ class PurchaseController extends Controller
         $Warehouse = Warehouse::all();
         $AccountHeads = AccountHead::all();
         
-        $incomeAccounts = Account::where('head_id', 2)->get();
+        $expenseAccounts = Account::where('head_id', 1)->get();
         
         // Use existing invoice number
         $nextInvoice = $purchase->invoice_no;
@@ -411,7 +411,7 @@ class PurchaseController extends Controller
             'Warehouse', 
             'AccountHeads',
             'nextInvoice',
-            'incomeAccounts'
+            'expenseAccounts'
         ));
     }
 
@@ -660,7 +660,7 @@ class PurchaseController extends Controller
 
     public function Invoice($id)
     {
-        $purchase   = Purchase::with(['vendor', 'warehouse', 'items.product'])->findOrFail($id);
+        $purchase   = Purchase::with(['vendor', 'warehouse', 'items.product', 'accountAllocations.account', 'whtAccount'])->findOrFail($id);
         return view('admin_panel.purchase.Invoice', compact('purchase'));
     }
 
@@ -764,136 +764,87 @@ class PurchaseController extends Controller
         }
 
         if ($ledgerModel) {
-            // A. Post Gross Purchase (Credit increases balance)
-            $ledger = $ledgerModel::where($partyCol, $party_id)->latest('id')->first();
-            $prev = $ledger ? $ledger->closing_balance : 0;
-            $ledgerModel::create([
-                $partyCol => $party_id,
-                'admin_or_user_id' => auth()->id(),
-                'date' => $purchase->current_date,
-                'description' => 'Purchase (Gross): ' . $purchase->invoice_no,
-                'opening_balance' => 0,
-                'previous_balance' => $prev,
-                'debit' => 0,
-                'credit' => $grossAmount,
-                'closing_balance' => $prev + $grossAmount,
-            ]);
+            // Find existing ledger record (ONLY ONE PER PARTY)
+            $ledger = $ledgerModel::where($partyCol, $party_id)->first();
+            
+            // The user requires the NET AMOUNT to be the impact on the ledger.
+            // Net Amount = Subtotal - Discount/Allocations + WHT
+            $impact = (float)($purchase->net_amount ?? 0);
 
-            // B. Post Discount (Debit decreases balance)
-            if ($purchase->discount > 0) {
-                // Find or use Account ID 4 (Purchase Income) for the Credit side
-                $discountAccId = 4; 
-                
-                $ledger = $ledgerModel::where($partyCol, $party_id)->latest('id')->first();
-                $prev = $ledger ? $ledger->closing_balance : 0;
+            if ($ledger) {
+                $ledger->update([
+                    'previous_balance' => $ledger->closing_balance,
+                    'closing_balance'  => $ledger->closing_balance + $impact,
+                    'date'             => $purchase->current_date,
+                    'description'      => 'Purchase: ' . $purchase->invoice_no . ' (Consolidated Update)',
+                ]);
+            } else {
                 $ledgerModel::create([
                     $partyCol => $party_id,
                     'admin_or_user_id' => auth()->id(),
                     'date' => $purchase->current_date,
-                    'description' => 'Discount: ' . $purchase->invoice_no,
+                    'description' => 'Purchase: ' . $purchase->invoice_no,
                     'opening_balance' => 0,
-                    'previous_balance' => $prev,
-                    'debit' => $purchase->discount,
-                    'credit' => 0,
-                    'closing_balance' => $prev - $purchase->discount,
+                    'previous_balance' => 0,
+                    'debit' => 0,
+                    'credit' => $impact,
+                    'closing_balance' => $impact,
                 ]);
+            }
+
+            // --- Secondary Impacts (JV & Account Balances) ---
+            
+            // Determine Party Type for JV (vendor, customer, or walkin)
+            $partyType = strtolower(class_basename($purchase->purchasable_type));
+            
+            // B. Post Discount Impact (Order-level Discount) removed as requested
+            
+            // C. Post WHT Account Impact (Tax)
+            // The user requires WHT to be on the CREDIT side for both Vendor and WHT Account.
+            if ($purchase->wht > 0 && $purchase->wht_account_id) {
+                $whtAccount = Account::find($purchase->wht_account_id);
+                $purchaseExpAccId = 6; // Pur-expnse
                 
-                // Documentation via Journal Voucher (Vendor Debit, Account Credit)
-                JournalVoucher::create([
-                    'jvid' => 'PJ-DISC-' . $purchase->id,
-                    'entry_date' => $purchase->current_date,
-                    'status' => 'posted',
-                    'total_debit' => $purchase->discount,
-                    'total_credit' => $purchase->discount,
-                    'party_type' => json_encode(['vendor', '2']), 
-                    'party_id' => json_encode([$purchase->purchasable_id, $discountAccId]),
-                    'debit' => json_encode([$purchase->discount, 0]),
-                    'credit' => json_encode([0, $purchase->discount]),
-                    'remarks' => 'Purchase Discount: ' . $purchase->invoice_no,
-                ]);
+                if ($whtAccount) {
+                    $whtAccount->opening_balance = ($whtAccount->opening_balance ?? 0) + $purchase->wht;
+                    $whtAccount->save();
 
-                // Update the Discount Account balance (Credit increases income)
-                $discAcc = Account::find($discountAccId);
-                if ($discAcc) {
-                    $discAcc->opening_balance = ($discAcc->opening_balance ?? 0) + $purchase->discount;
-                    $discAcc->save();
+                    JournalVoucher::create([
+                        'jvid' => 'PJ-WHT-' . $purchase->id,
+                        'entry_date' => $purchase->current_date,
+                        'status' => 'posted',
+                        'total_debit' => $purchase->wht * 2,
+                        'total_credit' => $purchase->wht * 2,
+                        'party_type' => json_encode([$partyType, (string)$whtAccount->head_id, '6']),
+                        'party_id' => json_encode([$purchase->purchasable_id, $whtAccount->id, $purchaseExpAccId]),
+                        'debit' => json_encode([0, 0, $purchase->wht * 2]), // Debit Purchase Expense
+                        'credit' => json_encode([$purchase->wht, $purchase->wht, 0]), // Credit Vendor & WHT Account
+                        'remarks' => 'WHT (Tax): ' . $purchase->invoice_no,
+                    ]);
                 }
             }
 
-            // C. Post WHT (Debit decreases balance)
-            if ($purchase->wht > 0) {
-                $ledger = $ledgerModel::where($partyCol, $party_id)->latest('id')->first();
-                $prev = $ledger ? $ledger->closing_balance : 0;
-                $ledgerModel::create([
-                    $partyCol => $party_id,
-                    'admin_or_user_id' => auth()->id(),
-                    'date' => $purchase->current_date,
-                    'description' => 'WHT Deduction: ' . $purchase->invoice_no,
-                    'opening_balance' => 0,
-                    'previous_balance' => $prev,
-                    'debit' => $purchase->wht,
-                    'credit' => 0,
-                    'closing_balance' => $prev - $purchase->wht,
-                ]);
-
-                // --- WHT Account Impact (CREDIT selected Income Account) ---
-                if ($purchase->wht_account_id) {
-                    $whtAccount = Account::find($purchase->wht_account_id);
-                    if ($whtAccount) {
-                        $whtAccount->opening_balance = ($whtAccount->opening_balance ?? 0) + $purchase->wht;
-                        $whtAccount->save();
-
-                        // Documentation via Journal Voucher (Vendor Debit, Account Credit)
-                        JournalVoucher::create([
-                            'jvid' => 'PJ-WHT-' . $purchase->id,
-                            'entry_date' => $purchase->current_date,
-                            'status' => 'posted',
-                            'total_debit' => $purchase->wht,
-                            'total_credit' => $purchase->wht,
-                            'party_type' => json_encode(['vendor', (string)$whtAccount->head_id]),
-                            'party_id' => json_encode([$purchase->purchasable_id, $whtAccount->id]),
-                            'debit' => json_encode([$purchase->wht, 0]),
-                            'credit' => json_encode([0, $purchase->wht]),
-                            'remarks' => 'WHT Deduction: ' . $purchase->invoice_no,
-                        ]);
-                    }
-                }
-            }
-
-            // D. Post Account Allocations (Debit decreases balance - e.g. Payment/Advance)
+            // D. Post Account Allocations Impact (Total Discount)
             foreach ($purchase->accountAllocations as $allocation) {
                 $account = $allocation->account;
+                $purchaseExpAccId = 6; // Pur-expnse
+                
                 if ($account) {
-                    $ledger = $ledgerModel::where($partyCol, $party_id)->latest('id')->first();
-                    $prev = $ledger ? $ledger->closing_balance : 0;
-                    $ledgerModel::create([
-                        $partyCol => $party_id,
-                        'admin_or_user_id' => auth()->id(),
-                        'date' => $purchase->current_date,
-                        'description' => 'Allocation: ' . ($account->title ?? 'Account'),
-                        'opening_balance' => 0,
-                        'previous_balance' => $prev,
-                        'debit' => $allocation->amount,
-                        'credit' => 0,
-                        'closing_balance' => $prev - $allocation->amount,
-                    ]);
-
-                    // Update the Account balance itself
-                    $account->opening_balance = ($account->opening_balance ?? 0) - $allocation->amount; 
+                    // Update account balance (Debit increases expense)
+                    $account->opening_balance = ($account->opening_balance ?? 0) + $allocation->amount; 
                     $account->save();
-
-                    // Documentation via Journal Voucher (Vendor Debit, Account Credit)
+                    
                     JournalVoucher::create([
                         'jvid' => 'PJ-ALLOC-' . $purchase->id,
                         'entry_date' => $purchase->current_date,
                         'status' => 'posted',
-                        'total_debit' => $allocation->amount,
-                        'total_credit' => $allocation->amount,
-                        'party_type' => json_encode(['vendor', (string)$account->head_id]), 
-                        'party_id' => json_encode([$purchase->purchasable_id, $account->id]),
-                        'debit' => json_encode([$allocation->amount, 0]),
-                        'credit' => json_encode([0, $allocation->amount]),
-                        'remarks' => 'Allocation from Purchase: ' . $purchase->invoice_no . ' (' . ($account->title ?? 'Account') . ')',
+                        'total_debit' => $allocation->amount * 2,
+                        'total_credit' => $allocation->amount * 2,
+                        'party_type' => json_encode([$partyType, (string)$account->head_id, '6']), 
+                        'party_id' => json_encode([$purchase->purchasable_id, $account->id, $purchaseExpAccId]),
+                        'debit' => json_encode([$allocation->amount, $allocation->amount, 0]), // Debit Vendor & Account
+                        'credit' => json_encode([0, 0, $allocation->amount * 2]), // Credit Purchase Expense
+                        'remarks' => 'Total Discount - ' . ($account->title ?? 'Allocation') . ': ' . $purchase->invoice_no,
                     ]);
                 }
             }

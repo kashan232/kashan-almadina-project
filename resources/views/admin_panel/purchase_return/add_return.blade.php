@@ -851,7 +851,7 @@ $(document).ready(function() {
         }
 
         $('#whtAmount').val(whtAmt.toFixed(2));
-        let net = subtotal - discount - whtAmt;
+        let net = subtotal - discount + whtAmt;
 
         $('#subtotal').val(subtotal.toFixed(2));
         $('#overallDiscount').val(discount.toFixed(2));

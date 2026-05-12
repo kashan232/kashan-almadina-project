@@ -553,8 +553,8 @@
                 <div class="d-flex justify-content-between align-items-center mb-2">
                   <span class="text-muted small">WHT Account</span>
                   <select name="wht_account_id" id="wht_account_id" class="form-select form-select-sm" style="width:230px;">
-                    <option value="">Select Income Account</option>
-                    @foreach($incomeAccounts as $acc)
+                    <option value="">Select Expense Account</option>
+                    @foreach($expenseAccounts as $acc)
                         <option value="{{ $acc->id }}" {{ (old('wht_account_id', $purchase->wht_account_id ?? '') == $acc->id) ? 'selected' : '' }}>
                             {{ $acc->title }}
                         </option>
@@ -1540,7 +1540,7 @@ $(function() {
 
         $('#whtValue').val(whtAmt.toFixed(2));
         $('#whtAmount').val(whtAmt.toFixed(2));
-        var netTotal = subTotalNetItems - totalDiscount - whtAmt;
+        var netTotal = subTotalNetItems - totalDiscount + whtAmt;
         $('#netAmount').val(netTotal.toFixed(2));
     }
 

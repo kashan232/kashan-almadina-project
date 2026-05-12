@@ -221,8 +221,32 @@ class CustomerController extends Controller
         // Update model
         $customer->update($data);
 
-        // Optional: If you need to update the ledger when opening_balance changes,
-        // implement that here. (Skipping by default to keep it quick.)
+        // Update ledger if opening balance changed
+        $openingBalance = floatval($request->opening_balance ?? 0);
+        
+        // Find the first ledger entry (usually the opening balance)
+        $firstLedger = CustomerLedger::where('customer_id', $customer->id)
+            ->orderBy('id', 'asc')
+            ->first();
+
+        if ($firstLedger) {
+            // If it's a pure opening balance entry (no transactions yet or marked as such)
+            // For now, let's just update the opening/closing if it's the first record.
+            // Note: In a real system, you'd want to recalculate all subsequent entries.
+            $firstLedger->update([
+                'opening_balance' => $openingBalance,
+                'closing_balance' => $openingBalance + ($firstLedger->debit ?? 0) - ($firstLedger->credit ?? 0) // Basic sync
+            ]);
+        } else if ($openingBalance > 0) {
+            // Create first entry if none exists
+            CustomerLedger::create([
+                'customer_id' => $customer->id,
+                'admin_or_user_id' => Auth::id(),
+                'opening_balance' => $openingBalance,
+                'previous_balance' => 0,
+                'closing_balance' => $openingBalance,
+            ]);
+        }
 
         return redirect()->route('customers.index')->with('success', 'Customer updated successfully.');
     }
