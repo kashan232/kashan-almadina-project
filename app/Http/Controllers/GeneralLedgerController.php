@@ -280,10 +280,16 @@ class GeneralLedgerController extends Controller
             $credits = json_decode($jv->credit, true) ?? [];
             foreach($pIds as $idx => $pid) {
                 if ($pid == $id) {
+                    // For Summary Mode, we skip JVs linked to Purchases because the 'PJ' line shows the Net Amount.
+                    // Showing both would double-count the discount/tax impact.
+                    if (str_starts_with($jv->jvid, 'PJ-')) {
+                        continue;
+                    }
+
                     $ref = 'JV';
                     $inv = $jv->jvid;
                     
-                    // Cleanup for Purchase-related JVs (e.g. PJ-ALLOC-50 -> PJ 50)
+                    // Cleanup for Purchase-related JVs (if they somehow pass)
                     if (str_starts_with($inv, 'PJ-')) {
                         $ref = 'PJ';
                         $inv = preg_replace('/^PJ-[A-Z]+-/', '', $inv);
