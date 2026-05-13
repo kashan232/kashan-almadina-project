@@ -318,25 +318,30 @@
 <!-- Add Head Modal -->
 <div class="modal fade" id="addHeadModal" tabindex="-1">
     <div class="modal-dialog modal-sm">
-        <form action="{{ route('coa.head.store') }}" method="POST" class="modal-content border-0 shadow">
+        <form action="{{ route('coa.head.store') }}" method="POST" id="headForm" class="modal-content border-0 shadow">
             @csrf
+            <input type="hidden" name="head_id" id="edit_head_id">
             <div class="modal-header bg-secondary text-white py-2">
-                <h6 class="modal-title fw-bold"><i class="fa fa-folder-plus me-2"></i>Add Head</h6>
+                <h6 class="modal-title fw-bold" id="headModalTitle"><i class="fa fa-folder-plus me-2"></i>Add Head</h6>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <div class="modal-body p-3">
                 <div class="mb-2">
                     <label class="form-label small fw-bold">Head Code</label>
-                    <input type="text" class="form-control form-control-sm bg-light" value="{{ $nextHeadId ?? '' }}" readonly>
+                    <input type="text" id="head_code_display" class="form-control form-control-sm bg-light" value="{{ $nextHeadId ?? '' }}" readonly>
                 </div>
                 <div class="mb-2">
                     <label class="form-label small fw-bold">Head Name</label>
-                    <input type="text" name="name" class="form-control form-control-sm" placeholder="e.g. Assets" required>
+                    <input type="text" name="name" id="head_name" class="form-control form-control-sm" placeholder="e.g. Assets" required>
+                </div>
+                <div class="form-check form-switch mt-2">
+                    <input class="form-check-input" name="status" type="checkbox" value="on" id="headStatus" checked>
+                    <label class="form-check-label small fw-bold" for="headStatus">Active Status</label>
                 </div>
             </div>
             <div class="modal-footer py-1">
                 <button type="button" class="btn btn-light btn-sm px-3" data-bs-dismiss="modal">Cancel</button>
-                <button type="submit" class="btn btn-secondary btn-sm px-4 shadow-sm">Create Head</button>
+                <button type="submit" class="btn btn-secondary btn-sm px-4 shadow-sm" id="headSubmitBtn">Create Head</button>
             </div>
         </form>
     </div>
@@ -359,6 +364,7 @@
                                 <th>Head Name</th>
                                 <th style="width: 20%;" class="text-center">Status</th>
                                 <th style="width: 20%;" class="text-center">Created At</th>
+                                <th style="width: 10%;" class="text-center">Action</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -374,6 +380,15 @@
                                     @endif
                                 </td>
                                 <td class="text-center small text-muted">{{ $head->created_at ? $head->created_at->format('d-M-Y') : '-' }}</td>
+                                <td class="text-center">
+                                    <button class="btn btn-warning btn-xs edit-head-btn"
+                                        data-id="{{ $head->id }}"
+                                        data-name="{{ $head->name }}"
+                                        data-status="{{ $head->status }}"
+                                        style="padding: 1px 5px; font-size: 10px;">
+                                        <i class="fa fa-edit"></i>
+                                    </button>
+                                </td>
                             </tr>
                             @endforeach
                         </tbody>
@@ -484,6 +499,22 @@
             modal.find('#accGroups').val(groups).trigger('change');
         });
 
+        // Edit Head functionality
+        $(document).on('click', '.edit-head-btn', function() {
+            const btn = $(this);
+            const headModal = $('#addHeadModal');
+            $('#listHeadsModal').modal('hide');
+            
+            headModal.find('#headModalTitle').html('<i class="fa fa-edit me-2"></i>Edit Head');
+            headModal.find('#edit_head_id').val(btn.data('id'));
+            headModal.find('#head_code_display').val(btn.data('id'));
+            headModal.find('#head_name').val(btn.data('name'));
+            headModal.find('#headStatus').prop('checked', btn.data('status') == 1);
+            headModal.find('#headSubmitBtn').text('Update Head');
+            
+            headModal.modal('show');
+        });
+
         // Clear modal on hide
         $('#addAccountModal').on('hidden.bs.modal', function() {
             const modal = $(this);
@@ -494,6 +525,17 @@
             modal.find('input[name="opening_balance"]').val('0.00');
             modal.find('#accStatus').prop('checked', true);
             modal.find('#accGroups').val([]).trigger('change');
+        });
+
+        // Clear Head modal on hide
+        $('#addHeadModal').on('hidden.bs.modal', function() {
+            const modal = $(this);
+            modal.find('#headModalTitle').html('<i class="fa fa-folder-plus me-2"></i>Add Head');
+            modal.find('#edit_head_id').val('');
+            modal.find('#head_code_display').val('{{ $nextHeadId ?? "" }}');
+            modal.find('#head_name').val('');
+            modal.find('#headStatus').prop('checked', true);
+            modal.find('#headSubmitBtn').text('Create Head');
         });
     });
 </script>

@@ -84,9 +84,24 @@ class AccountsHeadController extends Controller
 
     public function storeHead(Request $request)
     {
-        $request->validate(['name' => 'required|string|max:100']);
-        AccountHead::create(['name' => $request->name]);
-        return redirect()->back()->with('success', 'Head added successfully.');
+        $request->validate([
+            'name' => 'required|string|max:100',
+            'head_id' => 'nullable|exists:account_heads,id',
+            'status' => 'nullable|in:on',
+        ]);
+
+        $status = $request->status === 'on' ? 1 : 0;
+
+        AccountHead::updateOrCreate(
+            ['id' => $request->head_id],
+            [
+                'name' => $request->name,
+                'status' => $status,
+            ]
+        );
+
+        $message = $request->head_id ? 'Head updated successfully.' : 'Head added successfully.';
+        return redirect()->back()->with('success', $message);
     }
 
 
