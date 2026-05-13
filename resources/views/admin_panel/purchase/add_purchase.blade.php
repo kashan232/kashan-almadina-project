@@ -552,14 +552,22 @@
               <div class="py-2 border-bottom">
                 <div class="d-flex justify-content-between align-items-center mb-2">
                   <span class="text-muted small">WHT Account</span>
-                  <select name="wht_account_id" id="wht_account_id" class="form-select form-select-sm" style="width:230px;">
-                    <option value="">Select Expense Account</option>
-                    @foreach($expenseAccounts as $acc)
-                        <option value="{{ $acc->id }}" {{ (old('wht_account_id', $purchase->wht_account_id ?? '') == $acc->id) ? 'selected' : '' }}>
-                            {{ $acc->title }}
-                        </option>
-                    @endforeach
-                  </select>
+                  <div class="d-flex gap-1" style="width:230px;">
+                    <select id="wht_head_id" class="form-select form-select-sm" style="width:100px;">
+                      <option value="">Head</option>
+                      @foreach($AccountHeads as $head)
+                          <option value="{{ $head->id }}" {{ (isset($purchase) && $purchase->whtAccount && $purchase->whtAccount->head_id == $head->id) ? 'selected' : '' }}>
+                              {{ $head->name }}
+                          </option>
+                      @endforeach
+                    </select>
+                    <select name="wht_account_id" id="wht_account_id" class="form-select form-select-sm" style="flex-grow:1;">
+                      <option value="">Select Account</option>
+                      @if(isset($purchase) && $purchase->whtAccount)
+                          <option value="{{ $purchase->wht_account_id }}" selected>{{ $purchase->whtAccount->title }}</option>
+                      @endif
+                    </select>
+                  </div>
                 </div>
                 <div class="d-flex justify-content-between align-items-center">
                   <span class="text-muted small">WHT (Tax)</span>
@@ -1665,7 +1673,7 @@ $(document).ready(function() {
         var whtVal = parseFloat($('#whtValue').val()) || 0;
         var whtAcc = $('#wht_account_id').val();
         if (whtVal > 0 && !whtAcc) {
-            showToast('⚠️ Please select a WHT Account (Income) for the Withholding Tax.', 'error');
+            showToast('⚠️ Please select a WHT Account for the Withholding Tax.', 'error');
             $('#wht_account_id').addClass('border-danger shadow-sm').focus();
             $('#saveDraftBtn').prop('disabled', false).html('<i class="fa fa-floppy-o me-1"></i> Save Draft <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+S</kbd>');
             return;
@@ -1921,6 +1929,35 @@ $(document).ready(function() {
                 // When head changes, disable amount until new account is selected
                 var $amt = $row.find('.accountAmount');
                 $amt.prop('disabled', true).attr('disabled', 'disabled');
+            },
+            error: function(err) {
+                console.error('AJAX Error:', err.statusText);
+            }
+        });
+    });
+
+    $(document).on('change', '#wht_head_id', function() {
+        var headId = $(this).val();
+        var $accSelect = $('#wht_account_id');
+
+        if (!headId) {
+            $accSelect.html('<option value="">Select Account</option>');
+            return;
+        }
+
+        $.ajax({
+            url: "{{ url('/get-accounts-by-head') }}/" + headId,
+            type: "GET",
+            success: function(res) {
+                var html = '<option value="">Select Account</option>';
+                if (res && res.length) {
+                    res.forEach(function(acc) {
+                        html += '<option value="' + acc.id + '">' + acc.title + '</option>';
+                    });
+                } else {
+                    html = '<option value="">No Accounts Found</option>';
+                }
+                $accSelect.html(html);
             },
             error: function(err) {
                 console.error('AJAX Error:', err.statusText);
