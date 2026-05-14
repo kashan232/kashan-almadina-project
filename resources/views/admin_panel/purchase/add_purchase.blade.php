@@ -350,7 +350,19 @@
           {{-- Party Type Toggle --}}
           <div class="mb-2">
             <label class="form-label text-muted small mb-0" style="font-size: 0.7rem;">Party Type</label>
-            @php $vType = old('vendor_type', isset($purchase) ? strtolower(class_basename($purchase->purchasable_type)) : 'vendor'); @endphp
+            @php 
+              $vType = old('vendor_type');
+              if (!$vType && isset($purchase)) {
+                  $baseType = strtolower(class_basename($purchase->purchasable_type));
+                  if ($baseType == 'customer' && $purchase->purchasable) {
+                      $ctype = strtolower($purchase->purchasable->customer_type ?? '');
+                      $vType = (strpos($ctype, 'walk') !== false) ? 'walkin' : 'customer';
+                  } else {
+                      $vType = $baseType;
+                  }
+              }
+              $vType = $vType ?: 'vendor';
+            @endphp
             <div class="btn-group w-100" role="group">
               <input type="radio" class="btn-check vendor-type-radio" name="vendor_type" id="typeVendor" value="vendor" {{ $vType == 'vendor' ? 'checked' : '' }}>
               <label class="btn btn-outline-primary btn-sm py-0" for="typeVendor" style="font-size: 0.75rem;">Vendor</label>
@@ -1249,7 +1261,7 @@
             $('#vendor_id_select').select2({ placeholder: 'Select Party', width: '100%', allowClear: true });
         }
         $('.vendor-type-radio').on('change', function() {
-            if(window.loadParties) window.loadParties($(this).val());
+            // Handled in the footer script to ensure loadParties is defined
         });
         $('#addRow').on('click', function() {
             window.appendBlankRow(true);
@@ -1588,8 +1600,13 @@ $(document).ready(function() {
         if (type === 'vendor') {
             list = vendors;
         } else if (type === 'customer') {
-            list = customers;
+            // Filter out walk-in customers for the standard customer list
+            list = customers.filter(function(c) {
+                var ctype = (c.type || '').toLowerCase();
+                return ctype.indexOf('walking') === -1 && ctype.indexOf('walkin') === -1;
+            });
         } else if (type === 'walkin') {
+            // Filter only walk-in customers
             list = customers.filter(function(c) {
                 var ctype = (c.type || '').toLowerCase();
                 return ctype.indexOf('walking') !== -1 || ctype.indexOf('walkin') !== -1;
@@ -1597,13 +1614,13 @@ $(document).ready(function() {
         }
 
         var $drop = $('#vendor_id_select');
-        var html  = '<option value="" disabled selected>-- Select --</option>';
+        var html  = '<option value="" disabled ' + (!selectedId ? 'selected' : '') + '>-- Select Party --</option>';
         list.forEach(function(item) {
             var selected = (selectedId && String(item.id) === String(selectedId)) ? 'selected' : '';
             html += '<option value="' + item.id + '" ' + selected + '>' + item.name + '</option>';
         });
         $drop.html(html);
-        if ($.fn.select2 && $drop.hasClass('select2-hidden-accessible')) {
+        if ($.fn.select2) {
              $drop.trigger('change');
         }
     };
@@ -1614,9 +1631,9 @@ $(document).ready(function() {
         if (type) window.loadParties(type);
     });
 
-    // Initial load for edit mode
+    // Initial load for edit mode or old input
     var initialType = $('.vendor-type-radio:checked').val();
-    var initialId = "{{ isset($purchase) ? $purchase->purchasable_id : '' }}";
+    var initialId = "{{ old('vendor_id', isset($purchase) ? $purchase->purchasable_id : '') }}";
     if(initialType) {
         window.loadParties(initialType, initialId);
     }

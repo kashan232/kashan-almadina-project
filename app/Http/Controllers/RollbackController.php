@@ -157,12 +157,36 @@ class RollbackController extends Controller
 
         $sale->load('items');
 
+        // 1. Reverse Stock Impact
         foreach ($sale->items as $item) {
             $this->adjustStock($item->product_id, $item->warehouse_id, $item->sales_qty, 'add');
         }
 
+        // 2. Reverse Ledger Impact
+        $saleAmount = (float)($sale->sub_total2 ?? 0);
+        $orderDiscount = (float)($sale->discount_amount ?? 0);
+        $receiptAmount = (float)($sale->receipt1 + $sale->receipt2);
+        $impact = $saleAmount - ($orderDiscount + $receiptAmount);
+        
+        $this->adjustLedger($sale->partyType, $sale->customer_id, $impact, 'subtract');
+
+        // 3. Delete Auto-generated Vouchers and reverse Account impacts
+        $rv = ReceiptsVoucher::where('remarks', 'LIKE', 'Auto-generated from Sale: ' . $sale->invoice_no)->first();
+        if ($rv) {
+            $rowAccs = json_decode($rv->row_account_id, true);
+            $rowAmts = json_decode($rv->amount, true);
+            if (is_array($rowAccs)) {
+                foreach ($rowAccs as $idx => $accId) {
+                    $rowAmt = (float)($rowAmts[$idx] ?? 0);
+                    $this->adjustAccount($accId, $rowAmt, 'subtract');
+                }
+            }
+            $rv->delete();
+        }
+
+        // 4. Convert back to Booking (Draft)
         $bookingData = $sale->toArray();
-        unset($bookingData['id']); // Remove ID to prevent collision if using create()
+        unset($bookingData['id']); 
         
         $booking = Productbooking::create($bookingData);
         foreach ($sale->items as $item) {
@@ -172,8 +196,10 @@ class RollbackController extends Controller
             ProductBookingItem::create($itemData);
         }
 
+        // 5. Delete Sale
         $sale->items()->delete();
         $sale->delete();
+        
         return back()->with('success', "Sale #$invoiceNo rolled back to Draft.");
     }
 
@@ -188,18 +214,35 @@ class RollbackController extends Controller
         
         if ($purchase->status !== 'Posted') throw new \Exception("Purchase $invoiceNo is not Posted.");
 
+        // 1. Reverse Stock Impact
         foreach ($purchase->items as $item) {
             $this->adjustStock($item->product_id, $purchase->warehouse_id, $item->qty, 'subtract');
         }
 
+        // 2. Reverse Ledger Impact (Consolidated)
         $this->adjustLedger($purchase->purchasable_type, $purchase->purchasable_id, $purchase->net_amount, 'subtract');
         
+        // 3. Reverse WHT Account Impact
+        if ($purchase->wht > 0 && $purchase->wht_account_id) {
+            $this->adjustAccount($purchase->wht_account_id, $purchase->wht, 'subtract');
+        }
+
+        // 4. Reverse Allocation Account Impacts
         foreach ($purchase->accountAllocations as $allocation) {
             $this->adjustAccount($allocation->account_id, $allocation->amount, 'subtract');
         }
 
+        // 5. Delete Related Journal Vouchers
+        JournalVoucher::where('jvid', 'PJ-WHT-' . $purchase->id)->delete();
+        JournalVoucher::where('jvid', 'PJ-ALLOC-' . $purchase->id)->delete();
+
+        // 6. Update Purchase Status
         $purchase->update(['status' => 'Unposted']);
-        if ($purchase->inward_id) InwardGatepass::where('id', $purchase->inward_id)->update(['status' => 'pending']);
+        
+        // 7. Reset Inward Gatepass Status
+        if ($purchase->inward_id) {
+            InwardGatepass::where('id', $purchase->inward_id)->update(['status' => 'pending']);
+        }
 
         return back()->with('success', "Purchase #$invoiceNo set to Unposted.");
     }
@@ -423,6 +466,13 @@ class RollbackController extends Controller
             }
         } elseif (in_array($type, ['customer', 'walkin', 'walking'])) {
             $ledger = CustomerLedger::where('customer_id', $id)->latest('id')->first();
+            if ($ledger) {
+                $ledger->previous_balance = $ledger->closing_balance;
+                $ledger->closing_balance = $action === 'add' ? ($ledger->closing_balance + $amount) : ($ledger->closing_balance - $amount);
+                $ledger->save();
+            }
+        } elseif ($type === 'subcustomer') {
+            $ledger = \App\Models\SubCustomerLedger::where('sub_customer_id', $id)->latest('id')->first();
             if ($ledger) {
                 $ledger->previous_balance = $ledger->closing_balance;
                 $ledger->closing_balance = $action === 'add' ? ($ledger->closing_balance + $amount) : ($ledger->closing_balance - $amount);

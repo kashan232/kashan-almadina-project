@@ -222,7 +222,8 @@ class GeneralLedgerController extends Controller
                 $q->where('vendor_id', $id)->orWhere(function($q2) use ($id, $class) {
                     $q2->where('purchasable_id', $id)->where('purchasable_type', $class);
                 });
-            })->whereBetween(DB::raw($prDateCol), [$start, $end])
+            })->where('status', 'Posted')
+            ->whereBetween(DB::raw($prDateCol), [$start, $end])
             ->get();
         foreach ($pReturns as $pr) {
             $transactions[] = [
@@ -232,8 +233,8 @@ class GeneralLedgerController extends Controller
                 'inv' => $pr->invoice_no,
                 'desc' => 'Purchase Return',
                 'qty' => (float)DB::table('purchase_return_items')->where('purchase_return_id', $pr->id)->sum('qty'),
-                'debit' => (float)$pr->net_amount,
-                'credit' => 0
+                'debit' => (float)($pr->subtotal + $pr->wht),
+                'credit' => (float)$pr->discount
             ];
         }
 
@@ -316,7 +317,8 @@ class GeneralLedgerController extends Controller
                 $q->where('vendor_id', $id)->orWhere(function($q2) use ($id, $class) {
                     $q2->where('purchasable_id', $id)->where('purchasable_type', $class);
                 });
-            })->whereBetween(DB::raw($pjDateCol), [$start, $end])
+            })->where('status', 'Posted')
+            ->whereBetween(DB::raw($pjDateCol), [$start, $end])
             ->get();
         foreach ($purchases as $p) {
             $transactions[] = [
@@ -448,7 +450,8 @@ class GeneralLedgerController extends Controller
                 $q->where('vendor_id', $id)->orWhere(function($q2) use ($id, $class) {
                     $q2->where('purchasable_id', $id)->where('purchasable_type', $class);
                 });
-            })->where(DB::raw($prDateCol), '<', $date)->sum('net_amount');
+            })->where('status', 'Posted')
+            ->where(DB::raw($prDateCol), '<', $date)->sum('net_amount');
 
         // 3. Payments (Debit)
         $pvDateCol = $this->getDateColumn('payment_vouchers', 'receipt_date');
@@ -487,7 +490,8 @@ class GeneralLedgerController extends Controller
                 $q->where('vendor_id', $id)->orWhere(function($q2) use ($id, $class) {
                     $q2->where('purchasable_id', $id)->where('purchasable_type', $class);
                 });
-            })->where(DB::raw($pjDateCol), '<', $date)->sum('net_amount');
+            })->where('status', 'Posted')
+            ->where(DB::raw($pjDateCol), '<', $date)->sum('net_amount');
 
         // 6. Sale Returns (Credit)
         $srDateCol = $this->getDateColumn('sale_returns', 'current_date');
@@ -628,7 +632,8 @@ class GeneralLedgerController extends Controller
                     'price' => $finalPrice,
                     'qty' => $qty,
                     'debit' => (float)$item->amount,
-                    'credit' => 0
+                    'credit' => 0,
+                    'priority' => 10 // SJ first
                 ];
             }
         }
@@ -639,7 +644,8 @@ class GeneralLedgerController extends Controller
                 $q->where('vendor_id', $id)->orWhere(function($q2) use ($id, $class) {
                     $q2->where('purchasable_id', $id)->where('purchasable_type', $class);
                 });
-            })->whereBetween(DB::raw($prDateCol), [$start, $end])
+            })->where('status', 'Posted')
+            ->whereBetween(DB::raw($prDateCol), [$start, $end])
             ->with('items.product.brandRelation')->get();
         foreach ($pReturns as $pr) {
             foreach ($pr->items as $item) {
@@ -653,7 +659,32 @@ class GeneralLedgerController extends Controller
                     'price' => (float)($item->purchase_rate ?: $item->price),
                     'qty' => (float)$item->qty,
                     'debit' => (float)$item->line_total,
-                    'credit' => 0
+                    'credit' => 0,
+                    'priority' => 40 // PRJ after PJ
+                ];
+            }
+            // WHT (Tax) row - Debit
+            if ($pr->wht > 0) {
+                $transactions[] = [
+                    'id' => $pr->id,
+                    'date' => $pr->entry_date ?: $pr->created_at,
+                    'ref' => 'PRJ',
+                    'inv' => $pr->invoice_no,
+                    'desc' => 'WHT (Tax): ' . $pr->invoice_no,
+                    'price' => 0, 'qty' => 0, 'debit' => (float)$pr->wht, 'credit' => 0,
+                    'priority' => 41
+                ];
+            }
+            // Discount row - Credit
+            if ($pr->discount > 0) {
+                $transactions[] = [
+                    'id' => $pr->id,
+                    'date' => $pr->entry_date ?: $pr->created_at,
+                    'ref' => 'PRJ',
+                    'inv' => $pr->invoice_no,
+                    'desc' => 'Total Discount: ' . $pr->invoice_no,
+                    'price' => 0, 'qty' => 0, 'debit' => 0, 'credit' => (float)$pr->discount,
+                    'priority' => 42
                 ];
             }
         }
@@ -669,7 +700,8 @@ class GeneralLedgerController extends Controller
                 'ref' => 'PV',
                 'inv' => $pv->pvid,
                 'desc' => $pv->remarks ?? 'Payment Voucher',
-                'price' => 0, 'qty' => 0, 'debit' => (float)$pv->amount, 'credit' => 0
+                'price' => 0, 'qty' => 0, 'debit' => (float)$pv->amount, 'credit' => 0,
+                'priority' => 50
             ];
         }
 
@@ -684,7 +716,8 @@ class GeneralLedgerController extends Controller
                 'ref' => 'EV',
                 'inv' => $ev->evid,
                 'desc' => $ev->remarks ?? 'Expense Voucher',
-                'price' => 0, 'qty' => 0, 'debit' => (float)$ev->amount, 'credit' => 0
+                'price' => 0, 'qty' => 0, 'debit' => (float)$ev->amount, 'credit' => 0,
+                'priority' => 51
             ];
         }
 
@@ -700,7 +733,8 @@ class GeneralLedgerController extends Controller
                 'desc' => $v->narration ?? $v->voucher_type,
                 'price' => 0, 'qty' => 0,
                 'debit' => ($v->type == 'Debit') ? (float)$v->amount : 0,
-                'credit' => ($v->type == 'Credit') ? (float)$v->amount : 0
+                'credit' => ($v->type == 'Credit') ? (float)$v->amount : 0,
+                'priority' => 52
             ];
         }
 
@@ -727,6 +761,10 @@ class GeneralLedgerController extends Controller
                         $inv = preg_replace('/^PJ-[A-Z]+-/', '', $inv);
                     }
 
+                    $priority = 60; // General JV
+                    if (str_contains($jv->jvid, 'WHT')) $priority = 31;
+                    if (str_contains($jv->jvid, 'ALLOC')) $priority = 32;
+
                     $transactions[] = [
                         'id' => $jv->id,
                         'date' => $jv->entry_date ?: $jv->created_at,
@@ -736,7 +774,7 @@ class GeneralLedgerController extends Controller
                         'price' => 0, 'qty' => 0, 
                         'debit' => (float)($debits[$idx] ?? 0), 
                         'credit' => (float)($credits[$idx] ?? 0),
-                        'priority' => 2 // Posting impacts come second
+                        'priority' => $priority
                     ];
                 }
             }
@@ -748,7 +786,8 @@ class GeneralLedgerController extends Controller
                 $q->where('vendor_id', $id)->orWhere(function($q2) use ($id, $class) {
                     $q2->where('purchasable_id', $id)->where('purchasable_type', $class);
                 });
-            })->whereBetween(DB::raw($pjDateCol), [$start, $end])
+            })->where('status', 'Posted')
+            ->whereBetween(DB::raw($pjDateCol), [$start, $end])
             ->with('items.product.brandRelation')->get();
         foreach ($purchases as $p) {
             foreach ($p->items as $item) {
@@ -770,7 +809,7 @@ class GeneralLedgerController extends Controller
                     'qty' => $qty,
                     'debit' => 0,
                     'credit' => (float)$item->line_total,
-                    'priority' => 1 // Items come first
+                    'priority' => 30 // PJ after SJ/SRJ
                 ];
             }
         }
@@ -792,7 +831,8 @@ class GeneralLedgerController extends Controller
                     'price' => (float)($item->sales_rate ?: $item->sales_price),
                     'qty' => (float)$item->sales_qty,
                     'debit' => 0,
-                    'credit' => (float)$item->amount
+                    'credit' => (float)$item->amount,
+                    'priority' => 20 // SRJ after SJ
                 ];
             }
         }
@@ -808,7 +848,8 @@ class GeneralLedgerController extends Controller
                 'ref' => 'RV',
                 'inv' => $rv->rvid,
                 'desc' => $rv->remarks ?? 'Receipt Voucher',
-                'price' => 0, 'qty' => 0, 'debit' => 0, 'credit' => (float)$rv->amount
+                'price' => 0, 'qty' => 0, 'debit' => 0, 'credit' => (float)$rv->amount,
+                'priority' => 60
             ];
         }
 
@@ -823,11 +864,12 @@ class GeneralLedgerController extends Controller
                 'ref' => 'IV',
                 'inv' => $iv->ivid,
                 'desc' => $iv->remarks ?? 'Income Voucher',
-                'price' => 0, 'qty' => 0, 'debit' => 0, 'credit' => (float)$iv->amount
+                'price' => 0, 'qty' => 0, 'debit' => 0, 'credit' => (float)$iv->amount,
+                'priority' => 61
             ];
         }
 
-        // Sort by Date, then logical grouping (Invoice No), then Priority (PJ before JV)
+        // Sort by Date, then Module (PJ vs PRJ), then Invoice No, then Internal Priority
         usort($transactions, function ($a, $b) {
             $dateA = strtotime($a['date']);
             $dateB = strtotime($b['date']);
@@ -835,7 +877,18 @@ class GeneralLedgerController extends Controller
                 return $dateA - $dateB;
             }
 
-            // Same date: Extract numeric invoice number for grouping
+            // Same date: Compare Module Priority (PJ vs PRJ vs PV etc)
+            $prioA = (int)($a['priority'] ?? 60);
+            $prioB = (int)($b['priority'] ?? 60);
+            
+            $modA = (int)floor($prioA / 10);
+            $modB = (int)floor($prioB / 10);
+
+            if ($modA !== $modB) {
+                return $modA - $modB;
+            }
+
+            // Same module: Extract numeric invoice number for grouping
             $invA = preg_replace('/[^0-9]/', '', $a['inv'] ?? '');
             $invB = preg_replace('/[^0-9]/', '', $b['inv'] ?? '');
 
@@ -846,9 +899,7 @@ class GeneralLedgerController extends Controller
                 }
             }
 
-            // Same invoice group: Sort by Priority (PJ items before JV impacts)
-            $prioA = $a['priority'] ?? 5;
-            $prioB = $b['priority'] ?? 5;
+            // Same invoice group: Sort by exact Internal Priority (Items -> WHT -> Discount)
             if ($prioA !== $prioB) {
                 return $prioA - $prioB;
             }
