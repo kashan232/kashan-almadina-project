@@ -212,7 +212,9 @@ class GeneralLedgerController extends Controller
                 'desc' => 'Sales',
                 'qty' => (float)$sale->quantity,
                 'debit' => (float)$sale->total_balance,
-                'credit' => 0
+                'credit' => 0,
+                'priority' => 10,
+                'sort_inv' => preg_replace('/[^0-9]/', '', $sale->invoice_no)
             ];
         }
 
@@ -249,7 +251,7 @@ class GeneralLedgerController extends Controller
                 'ref' => 'PV',
                 'inv' => $pv->pvid,
                 'desc' => $pv->remarks ?? 'Payment Voucher',
-                'qty' => 0, 'debit' => (float)$pv->amount, 'credit' => 0
+                'qty' => 0, 'debit' => (float)$pv->total_amount, 'credit' => 0
             ];
         }
 
@@ -264,6 +266,24 @@ class GeneralLedgerController extends Controller
                 'inv' => $ev->evid,
                 'desc' => $ev->remarks ?? 'Expense Voucher',
                 'qty' => 0, 'debit' => (float)$ev->amount, 'credit' => 0
+            ];
+        }
+
+        // 3.2 Generic Vouchers (VO)
+        $vouchers = DB::table('vouchers')->where('person', $id)
+            ->whereBetween(DB::raw("COALESCE(date, DATE(created_at))"), [$start, $end])->get();
+        foreach ($vouchers as $v) {
+            $transactions[] = [
+                'id' => $v->id,
+                'date' => $v->date ?: $v->created_at,
+                'ref' => 'VO',
+                'inv' => $v->voucher_type,
+                'desc' => $v->narration ?? $v->voucher_type,
+                'qty' => 0,
+                'debit' => ($v->type == 'Debit') ? (float)$v->amount : 0,
+                'credit' => ($v->type == 'Credit') ? (float)$v->amount : 0,
+                'priority' => str_contains($v->narration ?? '', 'Discount on Sale:') ? 12 : 52,
+                'sort_inv' => str_contains($v->narration ?? '', 'Discount on Sale:') ? preg_replace('/[^0-9]/', '', $v->narration) : preg_replace('/[^0-9]/', '', $v->voucher_type ?? '')
             ];
         }
 
@@ -357,14 +377,44 @@ class GeneralLedgerController extends Controller
         $receipts = ReceiptsVoucher::where('party_id', $id)->where('type', $type)
             ->whereBetween(DB::raw($rvDateCol), [$start, $end])->get();
         foreach ($receipts as $rv) {
-            $transactions[] = [
-                'id' => $rv->id,
-                'date' => $rv->entry_date ?: $rv->created_at,
-                'ref' => 'RV',
-                'inv' => $rv->rvid,
-                'desc' => $rv->remarks ?? 'Receipt Voucher',
-                'qty' => 0, 'debit' => 0, 'credit' => (float)$rv->amount
-            ];
+            $accIds = json_decode($rv->row_account_id, true) ?? [];
+            $amounts = json_decode($rv->amount, true) ?? [];
+            $narrIds = json_decode($rv->narration_id, true) ?? [];
+
+            foreach ($accIds as $idx => $aid) {
+                $rowAmount = (float)($amounts[$idx] ?? 0);
+                if ($rowAmount <= 0) continue;
+
+                $accName = DB::table('accounts')->where('id', $aid)->value('title');
+                $narrText = '';
+                if (isset($narrIds[$idx])) {
+                    if (is_numeric($narrIds[$idx])) {
+                        $narrText = DB::table('narrations')->where('id', $narrIds[$idx])->value('narration');
+                    } else {
+                        $narrText = $narrIds[$idx];
+                    }
+                }
+                
+                $desc = ($accName ? "$accName " : "") . ($narrText ? " ($narrText)" : ($rv->remarks ?? ''));
+
+                $ref = 'RV';
+                $inv = $rv->rvid;
+                if (str_contains($rv->remarks ?? '', 'Auto-generated from Sale:')) {
+                    $ref = 'SJ';
+                    $inv = trim(str_replace('Auto-generated from Sale:', '', $rv->remarks));
+                }
+
+                $transactions[] = [
+                    'id' => $rv->id . '_' . $idx,
+                    'date' => $rv->entry_date ?: $rv->created_at,
+                    'ref' => $ref,
+                    'inv' => $inv,
+                    'desc' => $desc,
+                    'qty' => 0, 'debit' => 0, 'credit' => $rowAmount,
+                    'priority' => str_contains($rv->remarks ?? '', 'Auto-generated from Sale:') ? 11 : 60,
+                    'sort_inv' => str_contains($rv->remarks ?? '', 'Auto-generated from Sale:') ? preg_replace('/[^0-9]/', '', $rv->remarks) : preg_replace('/[^0-9]/', '', $rv->rvid ?? '')
+                ];
+            }
         }
 
         // 7.1 Incomes (IV)
@@ -382,7 +432,30 @@ class GeneralLedgerController extends Controller
         }
 
         usort($transactions, function ($a, $b) {
-            return strtotime($a['date']) - strtotime($b['date']);
+            $dateA = strtotime($a['date']);
+            $dateB = strtotime($b['date']);
+            if ($dateA != $dateB) {
+                return $dateA - $dateB;
+            }
+
+            $invA = (int)($a['sort_inv'] ?? 0);
+            $invB = (int)($b['sort_inv'] ?? 0);
+            if ($invA !== $invB && $invA !== 0 && $invB !== 0) {
+                return $invA - $invB;
+            }
+
+            $prioA = (int)($a['priority'] ?? 60);
+            $prioB = (int)($b['priority'] ?? 60);
+            if ($prioA !== $prioB) {
+                return $prioA - $prioB;
+            }
+
+            $idA = $a['id'] ?? 0;
+            $idB = $b['id'] ?? 0;
+            if (is_numeric($idA) && is_numeric($idB)) {
+                return $idA - $idB;
+            }
+            return strcmp((string)$idA, (string)$idB);
         });
 
         return $transactions;
@@ -402,13 +475,39 @@ class GeneralLedgerController extends Controller
             
             // RVs (Debit increases balance)
             $rvDateCol = $this->getDateColumn('receipts_vouchers', 'receipt_date');
-            $rvSum = (float)ReceiptsVoucher::where('row_account_id', $id)
-                ->where(DB::raw($rvDateCol), '>=', $date)->sum('total_amount');
+            $rvs = ReceiptsVoucher::where(function($q) use ($id) {
+                    $q->whereJsonContains('row_account_id', (string)$id)
+                      ->orWhereJsonContains('row_account_id', (int)$id);
+                })
+                ->where(DB::raw($rvDateCol), '>=', $date)->get();
+            $rvSum = 0;
+            foreach ($rvs as $rv) {
+                $accIds = json_decode($rv->row_account_id, true) ?? [];
+                $amounts = json_decode($rv->amount, true) ?? [];
+                foreach ($accIds as $idx => $aid) {
+                    if ($aid == $id) {
+                        $rvSum += (float)($amounts[$idx] ?? 0);
+                    }
+                }
+            }
             
             // PVs (Credit decreases balance)
             $pvDateCol = $this->getDateColumn('payment_vouchers', 'receipt_date');
-            $pvSum = (float)PaymentVoucher::where('row_account_id', $id)
-                ->where(DB::raw($pvDateCol), '>=', $date)->sum('total_amount');
+            $pvs = PaymentVoucher::where(function($q) use ($id) {
+                    $q->whereJsonContains('row_account_id', (string)$id)
+                      ->orWhereJsonContains('row_account_id', (int)$id);
+                })
+                ->where(DB::raw($pvDateCol), '>=', $date)->get();
+            $pvSum = 0;
+            foreach ($pvs as $pv) {
+                $accIds = json_decode($pv->row_account_id, true) ?? [];
+                $amounts = json_decode($pv->amount, true) ?? [];
+                foreach ($accIds as $idx => $aid) {
+                    if ($aid == $id) {
+                        $pvSum += (float)($amounts[$idx] ?? 0);
+                    }
+                }
+            }
                 
             // JVs
             $jvDateCol = $this->getDateColumn('journal_vouchers');
@@ -456,7 +555,7 @@ class GeneralLedgerController extends Controller
         // 3. Payments (Debit)
         $pvDateCol = $this->getDateColumn('payment_vouchers', 'receipt_date');
         $payments = (float)PaymentVoucher::where('party_id', $id)->where('type', $type)
-            ->where(DB::raw($pvDateCol), '<', $date)->sum('amount');
+            ->where(DB::raw($pvDateCol), '<', $date)->sum('total_amount');
 
         // 3.1 Expenses (Debit)
         $evDateCol = $this->getDateColumn('expense_vouchers');
@@ -501,7 +600,7 @@ class GeneralLedgerController extends Controller
         // 7. Receipts (Credit)
         $rvDateCol = $this->getDateColumn('receipts_vouchers', 'receipt_date');
         $receipts = (float)ReceiptsVoucher::where('party_id', $id)->where('type', $type)
-            ->where(DB::raw($rvDateCol), '<', $date)->sum('amount');
+            ->where(DB::raw($rvDateCol), '<', $date)->sum('total_amount');
         
         // 7.1 Income (Credit)
         $ivDateCol = $this->getDateColumn('income_vouchers');
@@ -541,30 +640,91 @@ class GeneralLedgerController extends Controller
         if ($type == 'account') {
             // Receipts
             $rvDateCol = $this->getDateColumn('receipts_vouchers', 'receipt_date');
-            $rvs = ReceiptsVoucher::where('row_account_id', $id)
+            $rvs = ReceiptsVoucher::where(function($q) use ($id) {
+                    $q->whereJsonContains('row_account_id', (string)$id)
+                      ->orWhereJsonContains('row_account_id', (int)$id);
+                })
                 ->whereBetween(DB::raw($rvDateCol), [$start, $end])->get();
+            
             foreach($rvs as $rv) {
+                $accIds = json_decode($rv->row_account_id, true) ?? [];
+                $amounts = json_decode($rv->amount, true) ?? [];
+                $narrIds = json_decode($rv->narration_id, true) ?? [];
+                $rowAmount = 0;
+                $rowNarr = '';
+                foreach ($accIds as $idx => $aid) {
+                    if ($aid == $id) {
+                        $rowAmount = (float)($amounts[$idx] ?? 0);
+                        if (isset($narrIds[$idx])) {
+                            if (is_numeric($narrIds[$idx])) {
+                                $rowNarr = DB::table('narrations')->where('id', $narrIds[$idx])->value('narration');
+                            } else {
+                                $rowNarr = $narrIds[$idx];
+                            }
+                        }
+                        break;
+                    }
+                }
+                
+                // Get party name
+                $partyName = '';
+                if ($rv->type == 'customer') {
+                    $partyName = DB::table('customers')->where('id', $rv->party_id)->value('customer_name');
+                } elseif ($rv->type == 'vendor') {
+                    $partyName = DB::table('vendors')->where('id', $rv->party_id)->value('name');
+                }
+
                 $transactions[] = [
                     'id' => $rv->id,
                     'date' => $rv->entry_date ?: $rv->created_at,
                     'ref' => 'RV',
                     'inv' => $rv->rvid,
-                    'desc' => $rv->remarks ?? 'Receipt',
-                    'price' => 0, 'qty' => 0, 'debit' => (float)$rv->amount, 'credit' => 0
+                    'desc' => ($partyName ? "$partyName : " : "") . ($rowNarr ?: ($rv->remarks ?? 'Receipt')),
+                    'price' => 0, 'qty' => 0, 'debit' => $rowAmount, 'credit' => 0
                 ];
             }
             // Payments
             $pvDateCol = $this->getDateColumn('payment_vouchers', 'receipt_date');
-            $pvs = PaymentVoucher::where('row_account_id', $id)
+            $pvs = PaymentVoucher::where(function($q) use ($id) {
+                    $q->whereJsonContains('row_account_id', (string)$id)
+                      ->orWhereJsonContains('row_account_id', (int)$id);
+                })
                 ->whereBetween(DB::raw($pvDateCol), [$start, $end])->get();
             foreach($pvs as $pv) {
+                $accIds = json_decode($pv->row_account_id, true) ?? [];
+                $amounts = json_decode($pv->amount, true) ?? [];
+                $narrIds = json_decode($pv->narration_id, true) ?? [];
+                $rowAmount = 0;
+                $rowNarr = '';
+                foreach ($accIds as $idx => $aid) {
+                    if ($aid == $id) {
+                        $rowAmount = (float)($amounts[$idx] ?? 0);
+                        if (isset($narrIds[$idx])) {
+                            if (is_numeric($narrIds[$idx])) {
+                                $rowNarr = DB::table('narrations')->where('id', $narrIds[$idx])->value('narration');
+                            } else {
+                                $rowNarr = $narrIds[$idx];
+                            }
+                        }
+                        break;
+                    }
+                }
+
+                // Get party name
+                $partyName = '';
+                if ($pv->type == 'customer') {
+                    $partyName = DB::table('customers')->where('id', $pv->party_id)->value('customer_name');
+                } elseif ($pv->type == 'vendor') {
+                    $partyName = DB::table('vendors')->where('id', $pv->party_id)->value('name');
+                }
+
                 $transactions[] = [
                     'id' => $pv->id,
                     'date' => $pv->entry_date ?: $pv->created_at,
                     'ref' => 'PV',
                     'inv' => $pv->pvid,
-                    'desc' => $pv->remarks ?? 'Payment',
-                    'price' => 0, 'qty' => 0, 'debit' => 0, 'credit' => (float)$pv->amount
+                    'desc' => ($partyName ? "$partyName : " : "") . ($rowNarr ?: ($pv->remarks ?? 'Payment')),
+                    'price' => 0, 'qty' => 0, 'debit' => 0, 'credit' => $rowAmount
                 ];
             }
             // JVs
@@ -599,7 +759,12 @@ class GeneralLedgerController extends Controller
                 $dateA = strtotime($a['date']);
                 $dateB = strtotime($b['date']);
                 if ($dateA == $dateB) {
-                    return ($a['id'] ?? 0) - ($b['id'] ?? 0);
+                    $idA = $a['id'] ?? 0;
+            $idB = $b['id'] ?? 0;
+            if (is_numeric($idA) && is_numeric($idB)) {
+                return $idA - $idB;
+            }
+            return strcmp((string)$idA, (string)$idB);
                 }
                 return $dateA - $dateB;
             });
@@ -633,7 +798,8 @@ class GeneralLedgerController extends Controller
                     'qty' => $qty,
                     'debit' => (float)$item->amount,
                     'credit' => 0,
-                    'priority' => 10 // SJ first
+                    'priority' => 10, // SJ first
+                    'sort_inv' => preg_replace('/[^0-9]/', '', $sale->invoice_no)
                 ];
             }
         }
@@ -700,7 +866,7 @@ class GeneralLedgerController extends Controller
                 'ref' => 'PV',
                 'inv' => $pv->pvid,
                 'desc' => $pv->remarks ?? 'Payment Voucher',
-                'price' => 0, 'qty' => 0, 'debit' => (float)$pv->amount, 'credit' => 0,
+                'price' => 0, 'qty' => 0, 'debit' => (float)$pv->total_amount, 'credit' => 0,
                 'priority' => 50
             ];
         }
@@ -725,16 +891,24 @@ class GeneralLedgerController extends Controller
         $vouchers = DB::table('vouchers')->where('person', $id)
             ->whereBetween(DB::raw("COALESCE(date, DATE(created_at))"), [$start, $end])->get();
         foreach ($vouchers as $v) {
+            $ref = 'VO';
+            $inv = $v->voucher_type;
+            if (str_contains($v->narration ?? '', 'Discount on Sale:')) {
+                $ref = 'SJ';
+                $inv = trim(str_replace('Discount on Sale:', '', $v->narration));
+            }
+
             $transactions[] = [
                 'id' => $v->id,
                 'date' => $v->date ?: $v->created_at,
-                'ref' => 'VO',
-                'inv' => $v->voucher_type,
+                'ref' => $ref,
+                'inv' => $inv,
                 'desc' => $v->narration ?? $v->voucher_type,
                 'price' => 0, 'qty' => 0,
                 'debit' => ($v->type == 'Debit') ? (float)$v->amount : 0,
                 'credit' => ($v->type == 'Credit') ? (float)$v->amount : 0,
-                'priority' => 52
+                'priority' => str_contains($v->narration ?? '', 'Discount on Sale:') ? 12 : 52,
+                'sort_inv' => str_contains($v->narration ?? '', 'Discount on Sale:') ? preg_replace('/[^0-9]/', '', $v->narration) : preg_replace('/[^0-9]/', '', $v->voucher_type ?? '')
             ];
         }
 
@@ -842,15 +1016,44 @@ class GeneralLedgerController extends Controller
         $receipts = ReceiptsVoucher::where('party_id', $id)->where('type', $type)
             ->whereBetween(DB::raw($rvDateCol), [$start, $end])->get();
         foreach ($receipts as $rv) {
-            $transactions[] = [
-                'id' => $rv->id,
-                'date' => $rv->entry_date ?: $rv->created_at,
-                'ref' => 'RV',
-                'inv' => $rv->rvid,
-                'desc' => $rv->remarks ?? 'Receipt Voucher',
-                'price' => 0, 'qty' => 0, 'debit' => 0, 'credit' => (float)$rv->amount,
-                'priority' => 60
-            ];
+            $accIds = json_decode($rv->row_account_id, true) ?? [];
+            $amounts = json_decode($rv->amount, true) ?? [];
+            $narrIds = json_decode($rv->narration_id, true) ?? [];
+
+            foreach ($accIds as $idx => $aid) {
+                $rowAmount = (float)($amounts[$idx] ?? 0);
+                if ($rowAmount <= 0) continue;
+
+                $accName = DB::table('accounts')->where('id', $aid)->value('title');
+                $narrText = '';
+                if (isset($narrIds[$idx])) {
+                    if (is_numeric($narrIds[$idx])) {
+                        $narrText = DB::table('narrations')->where('id', $narrIds[$idx])->value('narration');
+                    } else {
+                        $narrText = $narrIds[$idx];
+                    }
+                }
+                
+                $desc = ($accName ? "$accName " : "") . ($narrText ? " ($narrText)" : ($rv->remarks ?? ''));
+
+                $ref = 'RV';
+                $inv = $rv->rvid;
+                if (str_contains($rv->remarks ?? '', 'Auto-generated from Sale:')) {
+                    $ref = 'SJ';
+                    $inv = trim(str_replace('Auto-generated from Sale:', '', $rv->remarks));
+                }
+
+                $transactions[] = [
+                    'id' => $rv->id . '_' . $idx, // Unique ID for items
+                    'date' => $rv->entry_date ?: $rv->created_at,
+                    'ref' => $ref,
+                    'inv' => $inv,
+                    'desc' => $desc,
+                    'price' => 0, 'qty' => 0, 'debit' => 0, 'credit' => $rowAmount,
+                    'priority' => str_contains($rv->remarks ?? '', 'Auto-generated from Sale:') ? 11 : 60,
+                    'sort_inv' => str_contains($rv->remarks ?? '', 'Auto-generated from Sale:') ? preg_replace('/[^0-9]/', '', $rv->remarks) : preg_replace('/[^0-9]/', '', $rv->rvid ?? '')
+                ];
+            }
         }
 
         // 7.1 Incomes (IV) - Credit
@@ -869,7 +1072,7 @@ class GeneralLedgerController extends Controller
             ];
         }
 
-        // Sort by Date, then Module (PJ vs PRJ), then Invoice No, then Internal Priority
+        // Sort by Date, then Sale/Invoice Number, then Internal Priority (SJ=10, RV=11, VO=12)
         usort($transactions, function ($a, $b) {
             $dateA = strtotime($a['date']);
             $dateB = strtotime($b['date']);
@@ -877,35 +1080,29 @@ class GeneralLedgerController extends Controller
                 return $dateA - $dateB;
             }
 
-            // Same date: Compare Module Priority (PJ vs PRJ vs PV etc)
+            // Same date: Compare Sale/Invoice Number for grouping
+            $invA = (int)($a['sort_inv'] ?? 0);
+            $invB = (int)($b['sort_inv'] ?? 0);
+
+            if ($invA !== $invB && $invA !== 0 && $invB !== 0) {
+                return $invA - $invB;
+            }
+
+            // Same group or generic entry: Compare Internal Priority
             $prioA = (int)($a['priority'] ?? 60);
             $prioB = (int)($b['priority'] ?? 60);
-            
-            $modA = (int)floor($prioA / 10);
-            $modB = (int)floor($prioB / 10);
 
-            if ($modA !== $modB) {
-                return $modA - $modB;
-            }
-
-            // Same module: Extract numeric invoice number for grouping
-            $invA = preg_replace('/[^0-9]/', '', $a['inv'] ?? '');
-            $invB = preg_replace('/[^0-9]/', '', $b['inv'] ?? '');
-
-            if ($invA !== '' && $invB !== '') {
-                $diff = (int)$invA - (int)$invB;
-                if ($diff !== 0) {
-                    return $diff;
-                }
-            }
-
-            // Same invoice group: Sort by exact Internal Priority (Items -> WHT -> Discount)
             if ($prioA !== $prioB) {
                 return $prioA - $prioB;
             }
 
             // Fallback to record ID
-            return ($a['id'] ?? 0) - ($b['id'] ?? 0);
+            $idA = $a['id'] ?? 0;
+            $idB = $b['id'] ?? 0;
+            if (is_numeric($idA) && is_numeric($idB)) {
+                return $idA - $idB;
+            }
+            return strcmp((string)$idA, (string)$idB);
         });
 
         return $transactions;
