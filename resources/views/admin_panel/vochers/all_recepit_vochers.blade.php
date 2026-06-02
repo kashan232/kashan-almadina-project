@@ -193,7 +193,7 @@
                                 <tr>
                                     <td class="text-muted small">{{ $item->id }}</td>
                                     <td class="small">RV</td>
-                                    <td class="fw-bold text-primary">{{ (int) preg_replace('/[^0-9]/', '', substr($item->rvid, strlen('RVID-'))) }}</td>
+                                    <td class="fw-bold text-primary">{{ $item->rvid }}</td>
                                     <td class="small">{{ $item->receipt_date ? \Carbon\Carbon::parse($item->receipt_date)->format('d-M-Y') : '-' }}</td>
                                     <td class="small">{{ $item->entry_date ? \Carbon\Carbon::parse($item->entry_date)->format('d-M-Y') : '-' }}</td>
                                     <td>
@@ -228,13 +228,6 @@
                                                     @csrf @method('DELETE')
                                                     <button type="button" class="btn btn-outline-danger btn-mini delete-btn" title="Delete">
                                                         <i class="fa fa-trash"></i>
-                                                    </button>
-                                                </form>
-                                            @else
-                                                <form action="{{ route('recepit.vochers.unpost', $item->id) }}" method="POST" class="d-inline unpost-form">
-                                                    @csrf
-                                                    <button type="button" class="btn btn-outline-danger btn-mini px-2 unpost-btn" title="Unpost">
-                                                        <i class="fa fa-undo me-1"></i> Unpost
                                                     </button>
                                                 </form>
                                             @endif

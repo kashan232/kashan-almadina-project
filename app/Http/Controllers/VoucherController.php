@@ -398,8 +398,7 @@ class VoucherController extends Controller
             if ($voucher->type === 'vendor') {
                 $ledger = VendorLedger::where('vendor_id', $voucher->party_id)->latest()->first();
                 if ($ledger) {
-                    $ledger->previous_balance = (float)$ledger->closing_balance;
-                    $ledger->closing_balance  = (float)$ledger->closing_balance - $amount;
+                    $ledger->closing_balance = (float)$ledger->closing_balance - $amount;
                     $ledger->save();
                 } else {
                     VendorLedger::create([
@@ -417,17 +416,25 @@ class VoucherController extends Controller
             } elseif ($voucher->type === 'customer' || $voucher->type === 'walkin') {
                 $ledger = CustomerLedger::where('customer_id', $voucher->party_id)->latest()->first();
                 if ($ledger) {
-                    $ledger->previous_balance = (float)$ledger->closing_balance;
-                    $ledger->closing_balance  = (float)$ledger->closing_balance - $amount;
+                    $ledger->closing_balance = (float)$ledger->closing_balance - $amount;
                     $ledger->save();
                 } else {
                     CustomerLedger::create([
                         'customer_id'      => $voucher->party_id,
                         'admin_or_user_id' => auth()->id(),
+                        'date'             => $voucher->entry_date ?? now(),
+                        'description'      => "Receipt Voucher #$rvid",
+                        'debit'            => 0,
+                        'credit'           => $amount,
                         'previous_balance' => 0,
-                        'opening_balance'  => 0,
                         'closing_balance'  => -$amount,
                     ]);
+                }
+                // Also update customer's own opening_balance (used by General Ledger)
+                $cust = \App\Models\Customer::find($voucher->party_id);
+                if ($cust) {
+                    $cust->opening_balance = (float)($cust->opening_balance ?? 0) - $amount;
+                    $cust->save();
                 }
             } else {
                 $account = Account::find($voucher->party_id);
@@ -480,16 +487,21 @@ class VoucherController extends Controller
             if ($voucher->type === 'vendor') {
                 $ledger = VendorLedger::where('vendor_id', $voucher->party_id)->latest()->first();
                 if ($ledger) {
-                    $ledger->previous_balance = (float)$ledger->closing_balance;
-                    $ledger->closing_balance  = (float)$ledger->closing_balance + $amount;
+                    $ledger->closing_balance = (float)$ledger->closing_balance + $amount;
                     $ledger->save();
                 }
             } elseif ($voucher->type === 'customer' || $voucher->type === 'walkin') {
+                // Reverse: add amount back to latest ledger (same as vendor)
                 $ledger = CustomerLedger::where('customer_id', $voucher->party_id)->latest()->first();
                 if ($ledger) {
-                    $ledger->previous_balance = (float)$ledger->closing_balance;
-                    $ledger->closing_balance  = (float)$ledger->closing_balance + $amount;
+                    $ledger->closing_balance = (float)$ledger->closing_balance + $amount;
                     $ledger->save();
+                }
+                // Reverse customer's own opening_balance
+                $cust = \App\Models\Customer::find($voucher->party_id);
+                if ($cust) {
+                    $cust->opening_balance = (float)($cust->opening_balance ?? 0) + $amount;
+                    $cust->save();
                 }
             } else {
                 $account = Account::find($voucher->party_id);
@@ -2056,20 +2068,39 @@ class VoucherController extends Controller
         $vouchers = $query->orderBy('id', 'DESC')->get();
 
         foreach ($vouchers as $v) {
-            // Rows Summary
-            $pTypes = json_decode($v->party_type, true) ?? [];
-            $pIds = json_decode($v->party_id, true) ?? [];
-            $debits = json_decode($v->debit, true) ?? [];
-            $credits = json_decode($v->credit, true) ?? [];
+            // Safe JSON decode — json_decode can return int/string/null, must use is_array()
+            $decoded = json_decode($v->party_type, true);
+            $pTypes = is_array($decoded) ? $decoded : [];
+
+            $decoded = json_decode($v->party_id, true);
+            $pIds = is_array($decoded) ? $decoded : [];
+
+            $decoded = json_decode($v->debit, true);
+            $debits = is_array($decoded) ? $decoded : [];
+
+            $decoded = json_decode($v->credit, true);
+            $credits = is_array($decoded) ? $decoded : [];
+
             $summary = [];
+
+            // Set type_label and party_name from first row for blade display
+            $v->type_label = '-';
+            $v->party_name = '-';
+
             foreach ($pTypes as $idx => $type) {
                 $pid = $pIds[$idx] ?? null;
                 if (!$pid) continue;
-                
+
                 $pName = '-';
-                if ($type === 'vendor') $pName = DB::table('vendors')->where('id', $pid)->value('name');
-                elseif ($type === 'customer' || $type === 'walkin') $pName = DB::table('customers')->where('id', $pid)->value('customer_name');
-                else $pName = DB::table('accounts')->where('id', $pid)->value('title');
+                if ($type === 'vendor') $pName = DB::table('vendors')->where('id', $pid)->value('name') ?? '-';
+                elseif ($type === 'customer' || $type === 'walkin') $pName = DB::table('customers')->where('id', $pid)->value('customer_name') ?? '-';
+                else $pName = DB::table('accounts')->where('id', $pid)->value('title') ?? '-';
+
+                // Set first row as header display
+                if ($idx === 0) {
+                    $v->type_label = ucfirst($type);
+                    $v->party_name = $pName;
+                }
 
                 $dr = (float)($debits[$idx] ?? 0);
                 $cr = (float)($credits[$idx] ?? 0);

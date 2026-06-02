@@ -1132,7 +1132,7 @@ class SaleController extends Controller
 
         // 2. CONSOLIDATED UPDATE (MODIFIES LATEST ROW)
         // The user requires updating the existing ledger row instead of creating a new one.
-        $ledger = $ledgerModel::where($partyCol, $partyId)->first();
+        $ledger = $ledgerModel::where($partyCol, $partyId)->latest('id')->first();
         
         $totalDebit = $saleAmount;
         $totalCredit = $orderDiscount + $receiptAmount;

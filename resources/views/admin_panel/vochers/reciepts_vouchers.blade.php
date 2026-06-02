@@ -358,6 +358,12 @@ $(document).ready(function() {
         calculateTotals();
     });
 
+    // Direct amount typing — also update total
+    $(document).on('input', '.amount', function() {
+        calculateTotals();
+    });
+
+
     $('#btnAddRow').click(function() {
         let newRow = `<tr>
             <td><select name="narration_id[]" class="form-select form-select-sm narrationSelect"><option value="">Narration...</option>@foreach($narrations as $id => $name)<option value="{{ $id }}">{{ $name }}</option>@endforeach</select></td>

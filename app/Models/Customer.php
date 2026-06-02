@@ -18,7 +18,7 @@ class Customer extends Model
 
     public function customerLedger()
     {
-        return $this->hasOne(CustomerLedger::class, 'customer_id');
+        return $this->hasOne(CustomerLedger::class, 'customer_id')->latestOfMany();
     }
 
     public function sales()

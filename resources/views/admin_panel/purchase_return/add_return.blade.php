@@ -203,9 +203,9 @@
                                                 <th class="text-secondary">Subtotal</th>
                                                 <td><input type="text" id="subtotal" name="subtotal" class="form-control form-control-sm text-end bg-white" readonly value="{{ $returnData->subtotal ?? 0 }}"></td>
                                             </tr>
-                                            <tr>
+                                            <tr style="display:none;">
                                                 <th class="text-secondary">Total Discount</th>
-                                                <td><input type="text" id="overallDiscount" name="discount" class="form-control form-control-sm text-end bg-white" readonly value="{{ $returnData->discount ?? 0 }}"></td>
+                                                <td><input type="hidden" id="overallDiscount" name="discount" value="0"></td>
                                             </tr>
                                             <tr>
                                                 <th class="text-secondary">WHT</th>
@@ -772,7 +772,9 @@ $(document).ready(function() {
     });
 
     function appendInvoiceRow(item) {
-        let discAmt = item.qty > 0 ? (item.item_discount / item.qty).toFixed(2) : 0;
+        let discBase = item.retail_price > 0 ? item.retail_price : item.price;
+        let perUnitDisc = (discBase * item.discount_percent) / 100;
+        let discAmt = perUnitDisc.toFixed(2);
         let html = `
         <tr>
             <td>
@@ -819,9 +821,10 @@ $(document).ready(function() {
         let totalDisc = perUnitDisc * qty;
         let grossAmount = price * qty;
         let netAmount = grossAmount - totalDisc;
+        let discountedUnitPrice = price - perUnitDisc;
 
-        // Amount = 1 single unit price
-        $row.find('.row-amount').val(price.toFixed(2));
+        // Amount = 1 qty price after discount
+        $row.find('.row-amount').val(discountedUnitPrice.toFixed(2));
         // Total = Price * Qty - Discount
         $row.find('.row-total').val(netAmount.toFixed(2));
         $row.find('.disc_amount').val(perUnitDisc.toFixed(2));
@@ -829,15 +832,10 @@ $(document).ready(function() {
 
     function recalcSummary() {
         let subtotal = 0;
-        let discount = 0;
 
         $('#purchaseItems tr').each(function() {
-            let qty = parseFloat($(this).find('.quantity').val()) || 0;
-            let price = parseFloat($(this).find('.price').val()) || 0;
-            let discAmt = parseFloat($(this).find('.disc_amount').val()) || 0;
-            
-            subtotal += (price * qty);
-            discount += (discAmt * qty);
+            let rowTotal = parseFloat($(this).find('.row-total').val()) || 0;
+            subtotal += rowTotal;
         });
 
         let whtVal = parseFloat($('#whtPercent').val()) || 0;
@@ -845,16 +843,16 @@ $(document).ready(function() {
         let whtAmt = 0;
 
         if (whtType === 'percent') {
-            whtAmt = Math.max(0, subtotal - discount) * whtVal / 100;
+            whtAmt = Math.max(0, subtotal) * whtVal / 100;
         } else {
             whtAmt = whtVal;
         }
 
         $('#whtAmount').val(whtAmt.toFixed(2));
-        let net = subtotal - discount + whtAmt;
+        let net = subtotal + whtAmt;
 
         $('#subtotal').val(subtotal.toFixed(2));
-        $('#overallDiscount').val(discount.toFixed(2));
+        $('#overallDiscount').val(0);
         $('#netAmount').val(net.toFixed(2));
     }
 
@@ -945,11 +943,7 @@ window.showPreviewModal = function() {
                             <td style="text-align: right; border-top: 2px solid #000; padding: 10px 5px; font-weight: bold;">Subtotal:</td>
                             <td style="text-align: right; border-top: 2px solid #000; padding: 10px 5px; font-weight: bold;">${subtotal}</td>
                          </tr>
-                         <tr>
-                            <td colspan="3" style="border: none;"></td>
-                            <td style="text-align: right; padding: 5px;">Discount:</td>
-                            <td style="text-align: right; padding: 5px;">${discount}</td>
-                         </tr>
+
                            <tr>
                             <td colspan="3" style="border: none;"></td>
                             <td style="text-align: right; padding: 5px;">WHT:</td>

@@ -188,8 +188,8 @@ class GeneralLedgerController extends Controller
         }
     }
 
-    private function fetchSummaryTransactions($type, $id, $start, $end)
-    {
+    private function fetchSummaryTransactions($type, $id, $start, $end) {
+        $typeArray = ($type === 'customer') ? ['customer', 'walking', 'walkin'] : [$type];
         $transactions = [];
 
         if ($type == 'account') {
@@ -200,11 +200,12 @@ class GeneralLedgerController extends Controller
 
         // 1. Sales (SJ) - Aggregate
         $salesDateCol = $this->getDateColumn('sales');
-        $sales = Sale::where('customer_id', $id)->where('partyType', $type)
+        $sales = Sale::where('customer_id', $id)->whereIn('partyType', $typeArray)
             ->whereBetween(DB::raw($salesDateCol), [$start, $end])
             ->get();
         foreach ($sales as $sale) {
             $transactions[] = [
+                'created_at' => $sale->created_at,
                 'id' => $sale->id,
                 'date' => $sale->entry_date ?: $sale->created_at,
                 'ref' => 'SJ',
@@ -229,6 +230,7 @@ class GeneralLedgerController extends Controller
             ->get();
         foreach ($pReturns as $pr) {
             $transactions[] = [
+                'created_at' => $pr->created_at,
                 'id' => $pr->id,
                 'date' => $pr->entry_date ?: $pr->created_at,
                 'ref' => 'PRJ',
@@ -242,10 +244,11 @@ class GeneralLedgerController extends Controller
 
         // 3. Payments (PV)
         $pvDateCol = $this->getDateColumn('payment_vouchers', 'receipt_date');
-        $payments = PaymentVoucher::where('party_id', $id)->where('type', $type)
+        $payments = PaymentVoucher::where('party_id', $id)->whereIn('type', $typeArray)
             ->whereBetween(DB::raw($pvDateCol), [$start, $end])->get();
         foreach ($payments as $pv) {
             $transactions[] = [
+                'created_at' => $pv->created_at,
                 'id' => $pv->id,
                 'date' => $pv->entry_date ?: $pv->created_at,
                 'ref' => 'PV',
@@ -257,10 +260,11 @@ class GeneralLedgerController extends Controller
 
         // 3.1 Expenses (EV)
         $evDateCol = $this->getDateColumn('expense_vouchers');
-        $expenses = DB::table('expense_vouchers')->where('party_id', $id)->where('type', $type)
+        $expenses = DB::table('expense_vouchers')->where('party_id', $id)->whereIn('type', $typeArray)
             ->whereBetween(DB::raw($evDateCol), [$start, $end])->get();
         foreach ($expenses as $ev) {
             $transactions[] = [
+                'created_at' => $ev->created_at,
                 'date' => $ev->entry_date ?: $ev->created_at,
                 'ref' => 'EV',
                 'inv' => $ev->evid,
@@ -273,11 +277,23 @@ class GeneralLedgerController extends Controller
         $vouchers = DB::table('vouchers')->where('person', $id)
             ->whereBetween(DB::raw("COALESCE(date, DATE(created_at))"), [$start, $end])->get();
         foreach ($vouchers as $v) {
+            if (str_contains($v->narration ?? '', 'Discount on Sale Return Posted:')) {
+                continue;
+            }
+
+            $ref = 'VO';
+            $inv = $v->voucher_type;
+            if (str_contains($v->narration ?? '', 'Discount on Sale:')) {
+                $ref = 'SJ';
+                $inv = trim(str_replace('Discount on Sale:', '', $v->narration));
+            }
+
             $transactions[] = [
+                'created_at' => $v->created_at,
                 'id' => $v->id,
                 'date' => $v->date ?: $v->created_at,
-                'ref' => 'VO',
-                'inv' => $v->voucher_type,
+                'ref' => $ref,
+                'inv' => $inv,
                 'desc' => $v->narration ?? $v->voucher_type,
                 'qty' => 0,
                 'debit' => ($v->type == 'Debit') ? (float)$v->amount : 0,
@@ -317,6 +333,7 @@ class GeneralLedgerController extends Controller
                     }
 
                     $transactions[] = [
+                        'created_at' => $jv->created_at,
                         'id' => $jv->id,
                         'date' => $jv->entry_date ?: $jv->created_at,
                         'ref' => $ref,
@@ -342,6 +359,7 @@ class GeneralLedgerController extends Controller
             ->get();
         foreach ($purchases as $p) {
             $transactions[] = [
+                'created_at' => $p->created_at,
                 'id' => $p->id,
                 'date' => $p->entry_date ?: $p->created_at,
                 'ref' => 'PJ',
@@ -356,25 +374,49 @@ class GeneralLedgerController extends Controller
 
         // 6. Sale Returns (SRJ) - Aggregate
         $srDateCol = $this->getDateColumn('sale_returns', 'current_date');
-        $sReturns = SaleReturn::where('customer_id', $id)->where('party_type', $type)
+        $sReturns = SaleReturn::with('sale')->where('customer_id', $id)->whereIn('party_type', $typeArray)
             ->whereBetween(DB::raw($srDateCol), [$start, $end])
             ->get();
         foreach ($sReturns as $sr) {
+            $desc = 'Sale Return';
+            if ($sr->sale) {
+                $desc .= ' (Against Inv: ' . $sr->sale->invoice_no . ')';
+            }
             $transactions[] = [
+                'created_at' => $sr->created_at,
                 'id' => $sr->id,
                 'date' => $sr->entry_date ?: $sr->current_date,
                 'ref' => 'SRJ',
                 'inv' => $sr->invoice_no,
-                'desc' => 'Sale Return',
+                'desc' => $desc,
                 'qty' => (float)$sr->quantity,
                 'debit' => 0,
-                'credit' => (float)$sr->total_balance
+                'credit' => (float)$sr->sub_total2,
+                'priority' => 20
             ];
+            if ((float)$sr->discount_amount > 0) {
+                $descDisc = 'Sale Return Discount';
+                if ($sr->sale) {
+                    $descDisc .= ' (Against Inv: ' . $sr->sale->invoice_no . ')';
+                }
+                $transactions[] = [
+                    'created_at' => $sr->created_at,
+                    'id' => $sr->id . '_disc',
+                    'date' => $sr->entry_date ?: $sr->current_date,
+                    'ref' => 'SRJ',
+                    'inv' => $sr->invoice_no,
+                    'desc' => $descDisc,
+                    'qty' => 0,
+                    'debit' => (float)$sr->discount_amount,
+                    'credit' => 0,
+                    'priority' => 21
+                ];
+            }
         }
 
         // 7. Receipts (RV)
         $rvDateCol = $this->getDateColumn('receipts_vouchers', 'receipt_date');
-        $receipts = ReceiptsVoucher::where('party_id', $id)->where('type', $type)
+        $receipts = ReceiptsVoucher::where('party_id', $id)->whereIn('type', $typeArray)
             ->whereBetween(DB::raw($rvDateCol), [$start, $end])->get();
         foreach ($receipts as $rv) {
             $accIds = json_decode($rv->row_account_id, true) ?? [];
@@ -405,6 +447,7 @@ class GeneralLedgerController extends Controller
                 }
 
                 $transactions[] = [
+                    'created_at' => $rv->created_at,
                     'id' => $rv->id . '_' . $idx,
                     'date' => $rv->entry_date ?: $rv->created_at,
                     'ref' => $ref,
@@ -419,10 +462,11 @@ class GeneralLedgerController extends Controller
 
         // 7.1 Incomes (IV)
         $ivDateCol = $this->getDateColumn('income_vouchers');
-        $incomes = DB::table('income_vouchers')->where('party_id', $id)->where('party_type', $type)
+        $incomes = DB::table('income_vouchers')->where('party_id', $id)->whereIn('party_type', $typeArray)
             ->whereBetween(DB::raw($ivDateCol), [$start, $end])->get();
         foreach ($incomes as $iv) {
             $transactions[] = [
+                'created_at' => $iv->created_at,
                 'date' => $iv->entry_date ?: $iv->created_at,
                 'ref' => 'IV',
                 'inv' => $iv->ivid,
@@ -432,16 +476,18 @@ class GeneralLedgerController extends Controller
         }
 
         usort($transactions, function ($a, $b) {
-            $dateA = strtotime($a['date']);
-            $dateB = strtotime($b['date']);
-            if ($dateA != $dateB) {
-                return $dateA - $dateB;
+            $timeA = isset($a['created_at']) ? strtotime($a['created_at']) : 0;
+            $timeB = isset($b['created_at']) ? strtotime($b['created_at']) : 0;
+            
+            if ($timeA != $timeB && $timeA !== 0 && $timeB !== 0) {
+                return $timeA - $timeB;
             }
 
-            $invA = (int)($a['sort_inv'] ?? 0);
-            $invB = (int)($b['sort_inv'] ?? 0);
-            if ($invA !== $invB && $invA !== 0 && $invB !== 0) {
-                return $invA - $invB;
+            // Fallback if exactly same time
+            $dateA = strtotime(substr($a['date'], 0, 10));
+            $dateB = strtotime(substr($b['date'], 0, 10));
+            if ($dateA != $dateB) {
+                return $dateA - $dateB;
             }
 
             $prioA = (int)($a['priority'] ?? 60);
@@ -463,6 +509,7 @@ class GeneralLedgerController extends Controller
 
     private function calculateOpeningBalance($type, $id, $date)
     {
+        $typeArray = ($type === 'customer') ? ['customer', 'walking', 'walkin'] : [$type];
         $balance = 0;
         
         if ($type == 'account') {
@@ -540,7 +587,7 @@ class GeneralLedgerController extends Controller
 
         // 1. Sales (Debit) - Use sub_total2 (Gross net of line discounts)
         $salesDateCol = $this->getDateColumn('sales');
-        $sales = (float)Sale::where('customer_id', $id)->where('partyType', $type)
+        $sales = (float)Sale::where('customer_id', $id)->whereIn('partyType', $typeArray)
             ->where(DB::raw($salesDateCol), '<', $date)->sum('sub_total2');
         
         // 2. Purchase Returns (Debit)
@@ -554,12 +601,12 @@ class GeneralLedgerController extends Controller
 
         // 3. Payments (Debit)
         $pvDateCol = $this->getDateColumn('payment_vouchers', 'receipt_date');
-        $payments = (float)PaymentVoucher::where('party_id', $id)->where('type', $type)
+        $payments = (float)PaymentVoucher::where('party_id', $id)->whereIn('type', $typeArray)
             ->where(DB::raw($pvDateCol), '<', $date)->sum('total_amount');
 
         // 3.1 Expenses (Debit)
         $evDateCol = $this->getDateColumn('expense_vouchers');
-        $expenses = (float)DB::table('expense_vouchers')->where('party_id', $id)->where('type', $type)
+        $expenses = (float)DB::table('expense_vouchers')->where('party_id', $id)->whereIn('type', $typeArray)
             ->where(DB::raw($evDateCol), '<', $date)->sum('amount');
 
         // 3.2 Generic Vouchers (Debit)
@@ -594,17 +641,17 @@ class GeneralLedgerController extends Controller
 
         // 6. Sale Returns (Credit)
         $srDateCol = $this->getDateColumn('sale_returns', 'current_date');
-        $sReturns = (float)SaleReturn::where('customer_id', $id)->where('party_type', $type)
+        $sReturns = (float)SaleReturn::where('customer_id', $id)->whereIn('party_type', $typeArray)
             ->where(DB::raw($srDateCol), '<', $date)->sum('total_balance');
 
         // 7. Receipts (Credit)
         $rvDateCol = $this->getDateColumn('receipts_vouchers', 'receipt_date');
-        $receipts = (float)ReceiptsVoucher::where('party_id', $id)->where('type', $type)
+        $receipts = (float)ReceiptsVoucher::where('party_id', $id)->whereIn('type', $typeArray)
             ->where(DB::raw($rvDateCol), '<', $date)->sum('total_amount');
         
         // 7.1 Income (Credit)
         $ivDateCol = $this->getDateColumn('income_vouchers');
-        $incomes = (float)DB::table('income_vouchers')->where('party_id', $id)->where('party_type', $type)
+        $incomes = (float)DB::table('income_vouchers')->where('party_id', $id)->whereIn('party_type', $typeArray)
             ->where(DB::raw($ivDateCol), '<', $date)->sum('amount');
 
         // 7.2 Generic Vouchers (Credit)
@@ -633,8 +680,8 @@ class GeneralLedgerController extends Controller
         return $balance;
     }
 
-    private function fetchTransactions($type, $id, $start, $end)
-    {
+    private function fetchTransactions($type, $id, $start, $end) {
+        $typeArray = ($type === 'customer') ? ['customer', 'walking', 'walkin'] : [$type];
         $transactions = [];
 
         if ($type == 'account') {
@@ -775,7 +822,7 @@ class GeneralLedgerController extends Controller
 
         // 1. Sales (SJ) - Debit
         $salesDateCol = $this->getDateColumn('sales');
-        $sales = Sale::where('customer_id', $id)->where('partyType', $type)
+        $sales = Sale::where('customer_id', $id)->whereIn('partyType', $typeArray)
             ->whereBetween(DB::raw($salesDateCol), [$start, $end])
             ->with('items.product.brandRelation')->get();
         foreach ($sales as $sale) {
@@ -857,7 +904,7 @@ class GeneralLedgerController extends Controller
 
         // 3. Payments (PV) - Debit
         $pvDateCol = $this->getDateColumn('payment_vouchers', 'receipt_date');
-        $payments = PaymentVoucher::where('party_id', $id)->where('type', $type)
+        $payments = PaymentVoucher::where('party_id', $id)->whereIn('type', $typeArray)
             ->whereBetween(DB::raw($pvDateCol), [$start, $end])->get();
         foreach ($payments as $pv) {
             $transactions[] = [
@@ -873,7 +920,7 @@ class GeneralLedgerController extends Controller
 
         // 3.1 Expenses (EV) - Debit
         $evDateCol = $this->getDateColumn('expense_vouchers');
-        $expenses = DB::table('expense_vouchers')->where('party_id', $id)->where('type', $type)
+        $expenses = DB::table('expense_vouchers')->where('party_id', $id)->whereIn('type', $typeArray)
             ->whereBetween(DB::raw($evDateCol), [$start, $end])->get();
         foreach ($expenses as $ev) {
             $transactions[] = [
@@ -891,6 +938,10 @@ class GeneralLedgerController extends Controller
         $vouchers = DB::table('vouchers')->where('person', $id)
             ->whereBetween(DB::raw("COALESCE(date, DATE(created_at))"), [$start, $end])->get();
         foreach ($vouchers as $v) {
+            if (str_contains($v->narration ?? '', 'Discount on Sale Return Posted:')) {
+                continue;
+            }
+
             $ref = 'VO';
             $inv = $v->voucher_type;
             if (str_contains($v->narration ?? '', 'Discount on Sale:')) {
@@ -988,32 +1039,60 @@ class GeneralLedgerController extends Controller
             }
         }
 
-        // 6. Sale Returns (SRJ) - Credit
+        // 6. Sale Returns (SRJ) - Details
         $srDateCol = $this->getDateColumn('sale_returns', 'current_date');
-        $sReturns = SaleReturn::where('customer_id', $id)->where('party_type', $type)
+        $sReturns = SaleReturn::with(['items.product.brandRelation', 'sale'])->where('customer_id', $id)->whereIn('party_type', $typeArray)
             ->whereBetween(DB::raw($srDateCol), [$start, $end])
-            ->with('items.product.brandRelation')->get();
+            ->get();
         foreach ($sReturns as $sr) {
+            $originalInv = $sr->sale ? $sr->sale->invoice_no : '';
             foreach ($sr->items as $item) {
                 $brand = $item->product->brandRelation->name ?? '';
+                $desc = ($brand ? $brand . ' - ' : '') . ($item->product->name ?? 'Product');
+                if ($originalInv) {
+                    $desc .= ' (Against Inv: ' . $originalInv . ')';
+                }
+                $qty = (float)$item->sales_qty;
+                $price = (float)$item->sales_price;
+                $disc = (float)$item->discount_amount;
+                $finalPrice = ($qty > 0) ? ($price - ($disc / $qty)) : $price;
+
                 $transactions[] = [
                     'id' => $item->id,
                     'date' => $sr->entry_date ?: $sr->current_date,
                     'ref' => 'SRJ',
                     'inv' => $sr->invoice_no,
-                    'desc' => 'Sale Return: ' . ($brand ? $brand . ' - ' : '') . ($item->product->name ?? 'Product'),
-                    'price' => (float)($item->sales_rate ?: $item->sales_price),
-                    'qty' => (float)$item->sales_qty,
+                    'desc' => $desc,
+                    'price' => $finalPrice,
+                    'qty' => $qty,
                     'debit' => 0,
                     'credit' => (float)$item->amount,
                     'priority' => 20 // SRJ after SJ
+                ];
+            }
+            if ((float)$sr->discount_amount > 0) {
+                $descDisc = 'Discount';
+                if ($originalInv) {
+                    $descDisc .= ' (Against Inv: ' . $originalInv . ')';
+                }
+                $transactions[] = [
+                    'id' => $sr->id . '_disc',
+                    'date' => $sr->entry_date ?: $sr->current_date,
+                    'ref' => 'SRJ',
+                    'inv' => $sr->invoice_no,
+                    'desc' => $descDisc,
+                    'price' => 0,
+                    'qty' => 0,
+                    'debit' => (float)$sr->discount_amount,
+                    'credit' => 0,
+                    'priority' => 21
                 ];
             }
         }
 
         // 7. Receipts (RV) - Credit
         $rvDateCol = $this->getDateColumn('receipts_vouchers', 'receipt_date');
-        $receipts = ReceiptsVoucher::where('party_id', $id)->where('type', $type)
+        $receipts = ReceiptsVoucher::where('party_id', $id)->whereIn('type', $typeArray)
             ->whereBetween(DB::raw($rvDateCol), [$start, $end])->get();
         foreach ($receipts as $rv) {
             $accIds = json_decode($rv->row_account_id, true) ?? [];
@@ -1058,7 +1137,7 @@ class GeneralLedgerController extends Controller
 
         // 7.1 Incomes (IV) - Credit
         $ivDateCol = $this->getDateColumn('income_vouchers');
-        $incomes = DB::table('income_vouchers')->where('party_id', $id)->where('party_type', $type)
+        $incomes = DB::table('income_vouchers')->where('party_id', $id)->whereIn('party_type', $typeArray)
             ->whereBetween(DB::raw($ivDateCol), [$start, $end])->get();
         foreach ($incomes as $iv) {
             $transactions[] = [

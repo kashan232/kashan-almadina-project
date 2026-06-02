@@ -847,9 +847,10 @@ $(document).ready(function() {
         let totalDisc = discAmt * qty;
         let grossAmount = price * qty;
         let netAmount = grossAmount - totalDisc;
+        let rate = price - discAmt;
 
         // Amount = 1 single unit price
-        $row.find('.row-amount').val(price.toFixed(2));
+        $row.find('.row-amount').val(rate.toFixed(2));
         // Total = Price * Qty - Discount
         $row.find('.row-total').val(netAmount.toFixed(2));
     }

@@ -349,6 +349,22 @@
             <span>TOTAL PAYABLE:</span>
             <span>Rs.{{ number_format($sale->total_balance, 2) }}</span>
         </div>
+
+        @php
+            $receipt = $sale->receipt1 + $sale->receipt2;
+            $final_balance = $sale->total_balance - $receipt;
+        @endphp
+
+        @if($receipt > 0)
+        <div class="total-row">
+            <span>Amount Received:</span>
+            <span>-Rs.{{ number_format($receipt, 2) }}</span>
+        </div>
+        <div class="total-row grand">
+            <span>BALANCE DUE:</span>
+            <span>Rs.{{ number_format($final_balance, 2) }}</span>
+        </div>
+        @endif
     </div>
 
 
