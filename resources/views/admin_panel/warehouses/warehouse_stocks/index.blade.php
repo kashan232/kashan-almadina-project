@@ -175,8 +175,9 @@
                                 <div class="p-2 border-bottom fw-bold small text-muted">Show/Hide Columns</div>
                                 <label class="column-picker-item"><input type="checkbox" data-column="1" checked> ID</label>
                                 <label class="column-picker-item"><input type="checkbox" data-column="2" checked> Product Name</label>
-                                <label class="column-picker-item"><input type="checkbox" data-column="3" checked> Shop Stock</label>
-                                @php $colCounter = 4; @endphp
+                                <label class="column-picker-item"><input type="checkbox" data-column="3" checked> Brand</label>
+                                <label class="column-picker-item"><input type="checkbox" data-column="4" checked> Shop Stock</label>
+                                @php $colCounter = 5; @endphp
                                 @foreach($warehouses as $wh)
                                     <label class="column-picker-item"><input type="checkbox" data-column="{{ $colCounter++ }}" checked> {{ $wh->warehouse_name }}</label>
                                 @endforeach
@@ -192,6 +193,7 @@
                                     <tr>
                                         <th style="width: 50px;">ID</th>
                                         <th>Product Name</th>
+                                        <th>Brand</th>
                                         <th class="text-center shop-col">Shop Stock</th>
                                         @foreach($warehouses as $wh)
                                             <th class="text-center wh-col text-primary" style="border-left: 1px solid #e2e8f0;">{{ $wh->warehouse_name }}</th>
@@ -210,6 +212,7 @@
                                         <tr>
                                             <td class="text-muted small">#{{ $product->id }}</td>
                                             <td class="fw-bold text-dark">{{ $product->name }}</td>
+                                            <td class="text-muted">{{ $product->brandRelation->name ?? '-' }}</td>
                                             
                                             {{-- Shop Stock Column --}}
                                             <td class="text-center shop-col">
@@ -378,7 +381,15 @@
                 order: [[1, 'asc']],
                 scrollX: true,
                 autoWidth: false,
-                language: { searchPlaceholder: "Search products..." }
+                language: { searchPlaceholder: "Search products..." },
+                dom: 'Bfrtip',
+                buttons: [
+                    'copyHtml5',
+                    'excelHtml5',
+                    'csvHtml5',
+                    'pdfHtml5',
+                    'print'
+                ]
             });
 
             // Apply saved column visibility

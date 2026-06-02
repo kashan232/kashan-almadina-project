@@ -368,7 +368,7 @@ class VoucherController extends Controller
                 'kg'               => json_encode($request->input('kg', [])),
                 'rate'               => json_encode($request->input('rate', [])),
                 'amount'           => json_encode($request->input('amount', [])),
-                'total_amount'     => $request->total_amount,
+                'total_amount'     => (float) str_replace(',', '', $request->total_amount),
             ]);
 
             return response()->json([
@@ -465,7 +465,7 @@ class VoucherController extends Controller
             $voucher->save();
 
             DB::commit();
-            return back()->with('success', 'Voucher posted successfully!');
+            return redirect()->route('all-recepit-vochers')->with('success', 'Voucher posted successfully!');
         } catch (\Exception $e) {
             DB::rollBack();
             return back()->with('error', $e->getMessage());

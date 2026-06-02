@@ -103,6 +103,20 @@
     <div class="main-content-inner">
         <div class="container-fluid pt-1">
             
+            @if(session('success'))
+                <div class="alert alert-success alert-dismissible fade show my-2" role="alert">
+                    <i class="fa fa-check-circle me-1"></i> {{ session('success') }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            @endif
+
+            @if(session('error'))
+                <div class="alert alert-danger alert-dismissible fade show my-2" role="alert">
+                    <i class="fa fa-exclamation-circle me-1"></i> {{ session('error') }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            @endif
+
             <!-- Filters Section -->
             <div class="row mb-3">
                 <div class="col-12">

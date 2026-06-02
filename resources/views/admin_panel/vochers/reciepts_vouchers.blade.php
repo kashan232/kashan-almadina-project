@@ -44,9 +44,22 @@
         font-size: 6rem; color: rgba(220, 53, 69, 0.05); font-weight: 900; text-transform: uppercase;
         pointer-events: none; z-index: 1000; border: 8px solid rgba(220, 53, 69, 0.05); padding: 10px 40px; border-radius: 15px;
     }
-    .form-locked { pointer-events: none !important; }
-    .form-locked input, .form-locked select, .form-locked textarea, .form-locked button:not(#editBtn):not(#previewPrintBtn):not(#newBtn):not(#listBtn) {
-        background-color: #f8fafc !important; opacity: 0.7 !important;
+    .form-locked {
+        background-color: #f8f9fa !important;
+        position: relative;
+    }
+    .form-locked input, 
+    .form-locked .select2-container--default .select2-selection--single,
+    .form-locked .select2-container, 
+    .form-locked select, 
+    .form-locked textarea { 
+        pointer-events: none !important; 
+        opacity: 0.85 !important; 
+        background-color: #f1f3f5 !important;
+        cursor: not-allowed !important;
+    }
+    .form-locked .removeRow, .form-locked #btnAddRow, .form-locked #saveDraftBtn { 
+        display: none !important; 
     }
 
     .btn-mini { padding: 0px 4px; font-size: 9px; height: 18px; display: inline-flex; align-items: center; justify-content: center; }
@@ -222,34 +235,42 @@
                         </div>
                     </div>
                     <div class="col-md-5">
-                        <div class="d-flex gap-1 justify-content-end mb-1">
+                        <div class="d-flex gap-2 justify-content-end mb-1">
                             @if($receipt->status == 'draft')
-                                <button type="button" id="saveDraftBtn" class="btn btn-warning btn-sm fw-bold rounded-pill px-4 shadow-sm" style="font-size: 11px;">
-                                    <i class="fa fa-save me-1"></i> Save Draft
+                                <button type="button" id="saveDraftBtn" class="btn btn-sm btn-warning rounded-pill px-4 shadow-sm">
+                                    <i class="fa fa-floppy-o me-1"></i> Save Draft
+                                    <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+S</kbd>
                                 </button>
-                                <button type="button" id="postBtn" class="btn btn-primary btn-sm fw-bold rounded-pill px-4 shadow-sm" style="font-size: 11px;">
-                                    <i class="fa fa-send me-1"></i> Post Voucher
+                                <button type="button" id="postBtn" class="btn btn-sm btn-primary rounded-pill px-4 shadow-sm">
+                                    <i class="fa fa-send me-1"></i> Save & Post
+                                    <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+&#8629;</kbd>
                                 </button>
                             @endif
                             
                             @if($receipt->status == 'posted')
-                                <button type="button" id="unpostBtn" class="btn btn-outline-danger btn-sm rounded-pill px-4 shadow-sm" style="font-size: 11px;">
+                                <button type="button" id="unpostBtn" class="btn btn-sm btn-outline-danger rounded-pill px-4 shadow-sm">
                                     <i class="fa fa-undo me-1"></i> Unpost
                                 </button>
                             @endif
 
-                            <button type="button" id="editBtn" class="btn btn-warning btn-sm fw-bold rounded-pill px-4 shadow-sm" style="{{ ($receipt->id && $receipt->status != 'posted') ? 'display:block' : 'display:none' }}; font-size: 11px;">
-                                <i class="fa fa-pencil me-1"></i> Unlock Edit
+                            <button type="button" id="editBtn" class="btn btn-sm btn-warning rounded-pill px-4 shadow-sm" style="{{ ($receipt->id && $receipt->status != 'posted') ? 'display:block' : 'display:none' }};">
+                                <i class="fa fa-pencil me-1"></i> Edit
+                                <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+E</kbd>
                             </button>
 
-                            <a href="{{ $receipt->id ? route('receiptVoucher.print', $receipt->id) : 'javascript:void(0)' }}" id="previewPrintBtn" target="_blank" class="btn btn-outline-dark btn-sm rounded-pill px-3 shadow-sm {{ !$receipt->id ? 'disabled' : '' }}" style="font-size: 11px;">
-                                <i class="fa fa-print"></i> Print
+                            <a href="{{ $receipt->id ? route('receiptVoucher.print', $receipt->id) : 'javascript:void(0)' }}" id="previewPrintBtn" target="_blank" class="btn btn-sm btn-outline-dark rounded-pill px-4 shadow-sm {{ !$receipt->id ? 'disabled' : '' }}">
+                                <i class="fa fa-print me-1"></i> Print Preview
+                                <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+P</kbd>
                             </a>
-                            <a href="{{ route('recepit-vochers') }}" class="btn btn-info btn-sm text-dark fw-bold rounded-pill px-3 shadow-sm" style="font-size: 11px;">
-                                <i class="fa fa-plus"></i> New
+                            
+                            <a href="{{ route('recepit-vochers') }}" id="newInvoiceBtn" class="btn btn-sm btn-info rounded-pill px-4 shadow-sm text-white">
+                                <i class="fa fa-plus me-1"></i> New
+                                <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+M</kbd>
                             </a>
-                            <button type="button" id="cancelBtn" onclick="handleCancel()" class="btn btn-danger btn-sm fw-bold rounded-pill px-3 shadow-sm" style="font-size: 11px;">
-                                <i class="fa fa-trash"></i>
+                            
+                            <button type="button" id="cancelBtn" onclick="handleCancel()" class="btn btn-sm btn-danger rounded-pill px-4 shadow-sm text-white">
+                                <i class="fa fa-times me-1"></i> Cancel
+                                <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Esc</kbd>
                             </button>
                         </div>
                     </div>
@@ -352,14 +373,35 @@ $(document).ready(function() {
     $(document).on('input', '.kg, .rate, .discountValue', function() {
         let $tr = $(this).closest('tr');
         let kg = parseFloat($tr.find('.kg').val()) || 0, rate = parseFloat($tr.find('.rate').val()) || 0, disc = parseFloat($tr.find('.discountValue').val()) || 0;
-        let amount = (kg > 0) ? (kg * rate) : rate;
-        amount = Math.max(0, amount - disc);
-        $tr.find('.amount').val(amount.toFixed(2));
+        let $amount = $tr.find('.amount');
+        
+        if (kg > 0 || rate > 0) {
+            let gross = (kg > 0) ? (kg * rate) : rate;
+            $amount.val(Math.max(0, gross - disc).toFixed(2));
+            $amount.data('gross', gross);
+        } else {
+            let gross = parseFloat($amount.data('gross'));
+            if (isNaN(gross)) {
+                gross = (parseFloat($amount.val()) || 0) + disc;
+                $amount.data('gross', gross);
+            }
+            $amount.val(Math.max(0, gross - disc).toFixed(2));
+        }
+        
         calculateTotals();
     });
 
-    // Direct amount typing — also update total
     $(document).on('input', '.amount', function() {
+        let $tr = $(this).closest('tr');
+        let amount = parseFloat($(this).val()) || 0;
+        let disc = parseFloat($tr.find('.discountValue').val()) || 0;
+        let kg = parseFloat($tr.find('.kg').val()) || 0;
+        let rate = parseFloat($tr.find('.rate').val()) || 0;
+        
+        if (kg === 0 && rate === 0) {
+            $tr.find('.amount').data('gross', amount + disc);
+        }
+        
         calculateTotals();
     });
 
@@ -405,22 +447,48 @@ $(document).ready(function() {
     $('#editBtn').click(function() { $('#receiptForm').removeClass('form-locked'); $(this).hide(); });
 
     $('#postBtn').click(function() {
-        Swal.fire({ title: 'Post Voucher?', icon: 'question', showCancelButton: true }).then((res) => {
-            if(res.isConfirmed) {
-                saveDraft(true).done(res => {
-                    if(res.success) {
-                        let postId = $('#receipt_id').val() || res.id;
-                        let form = $('<form>', {action: '{{ route("recepit.vochers.post", ":id") }}'.replace(':id', postId), method: 'POST'}).append($('<input>', {type: 'hidden', name: '_token', value: '{{ csrf_token() }}'}));
-                        $('body').append(form); form.submit();
-                    }
-                });
+        let btn = $(this);
+        btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin me-1"></i> Posting...');
+        
+        saveDraft(true).done(res => {
+            if(res.success) {
+                let postId = $('#receipt_id').val() || res.id;
+                let form = $('<form>', {action: '{{ route("recepit.vochers.post", ":id") }}'.replace(':id', postId), method: 'POST'}).append($('<input>', {type: 'hidden', name: '_token', value: '{{ csrf_token() }}'}));
+                $('body').append(form); form.submit();
+            } else {
+                btn.prop('disabled', false).html('<i class="fa fa-send me-1"></i> Save & Post <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+&#8629;</kbd>');
             }
+        }).fail(() => {
+            btn.prop('disabled', false).html('<i class="fa fa-send me-1"></i> Save & Post <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+&#8629;</kbd>');
         });
     });
 
     $(document).on('keydown', function(e) {
         if (e.ctrlKey && e.key === 's') { e.preventDefault(); $('#saveDraftBtn').click(); }
         if (e.ctrlKey && e.key === 'Enter') { e.preventDefault(); $('#postBtn').click(); }
+        if (e.ctrlKey && (e.key === 'p' || e.key === 'P')) {
+            e.preventDefault();
+            if ($('#previewPrintBtn').length > 0 && !$('#previewPrintBtn').hasClass('disabled')) {
+                window.open($('#previewPrintBtn').attr('href'), '_blank');
+            }
+        }
+        if (e.ctrlKey && (e.key === 'e' || e.key === 'E')) {
+            e.preventDefault();
+            if ($('#editBtn').is(':visible')) { $('#editBtn').click(); }
+        }
+        if (e.ctrlKey && (e.key === 'm' || e.key === 'M')) {
+            e.preventDefault();
+            if ($('#newInvoiceBtn').length > 0) {
+                window.location.href = $('#newInvoiceBtn').attr('href');
+            }
+        }
+        if (e.key === 'Escape') {
+            if ($('.modal.show').length) {
+                $('.modal.show').modal('hide');
+            } else {
+                handleCancel();
+            }
+        }
     });
 
     calculateTotals();
