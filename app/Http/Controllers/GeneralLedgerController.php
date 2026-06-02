@@ -245,7 +245,7 @@ class GeneralLedgerController extends Controller
         // 3. Payments (PV)
         $pvDateCol = $this->getDateColumn('payment_vouchers', 'receipt_date');
         $payments = PaymentVoucher::where('party_id', $id)->whereIn('type', $typeArray)
-            ->whereBetween(DB::raw($pvDateCol), [$start, $end])->get();
+            ->whereIn('status', ['posted', 'Posted'])->whereBetween(DB::raw($pvDateCol), [$start, $end])->get();
         foreach ($payments as $pv) {
             $transactions[] = [
                 'created_at' => $pv->created_at,
@@ -261,7 +261,7 @@ class GeneralLedgerController extends Controller
         // 3.1 Expenses (EV)
         $evDateCol = $this->getDateColumn('expense_vouchers');
         $expenses = DB::table('expense_vouchers')->where('party_id', $id)->whereIn('type', $typeArray)
-            ->whereBetween(DB::raw($evDateCol), [$start, $end])->get();
+            ->whereIn('status', ['posted', 'Posted'])->whereBetween(DB::raw($evDateCol), [$start, $end])->get();
         foreach ($expenses as $ev) {
             $transactions[] = [
                 'created_at' => $ev->created_at,
@@ -275,7 +275,7 @@ class GeneralLedgerController extends Controller
 
         // 3.2 Generic Vouchers (VO)
         $vouchers = DB::table('vouchers')->where('person', $id)
-            ->whereBetween(DB::raw("COALESCE(date, DATE(created_at))"), [$start, $end])->get();
+            ->whereIn('status', ['posted', 'Posted'])->whereBetween(DB::raw("COALESCE(date, DATE(created_at))"), [$start, $end])->get();
         foreach ($vouchers as $v) {
             if (str_contains($v->narration ?? '', 'Discount on Sale Return Posted:')) {
                 continue;
@@ -310,7 +310,7 @@ class GeneralLedgerController extends Controller
                   ->orWhereJsonContains('party_id', (int)$id);
             })
             ->whereJsonContains('party_type', $type)
-            ->whereBetween(DB::raw($jvDateCol), [$start, $end])->get();
+            ->whereIn('status', ['posted', 'Posted'])->whereBetween(DB::raw($jvDateCol), [$start, $end])->get();
         foreach ($jvs as $jv) {
             $pIds = json_decode($jv->party_id, true) ?? [];
             $debits = json_decode($jv->debit, true) ?? [];
@@ -375,7 +375,7 @@ class GeneralLedgerController extends Controller
         // 6. Sale Returns (SRJ) - Aggregate
         $srDateCol = $this->getDateColumn('sale_returns', 'current_date');
         $sReturns = SaleReturn::with('sale')->where('customer_id', $id)->whereIn('party_type', $typeArray)
-            ->whereBetween(DB::raw($srDateCol), [$start, $end])
+            ->whereIn('status', ['posted', 'Posted'])->whereBetween(DB::raw($srDateCol), [$start, $end])
             ->get();
         foreach ($sReturns as $sr) {
             $desc = 'Sale Return';
@@ -417,15 +417,17 @@ class GeneralLedgerController extends Controller
         // 7. Receipts (RV)
         $rvDateCol = $this->getDateColumn('receipts_vouchers', 'receipt_date');
         $receipts = ReceiptsVoucher::where('party_id', $id)->whereIn('type', $typeArray)
-            ->whereBetween(DB::raw($rvDateCol), [$start, $end])->get();
+            ->whereIn('status', ['posted', 'Posted'])->whereBetween(DB::raw($rvDateCol), [$start, $end])->get();
         foreach ($receipts as $rv) {
             $accIds = json_decode($rv->row_account_id, true) ?? [];
             $amounts = json_decode($rv->amount, true) ?? [];
             $narrIds = json_decode($rv->narration_id, true) ?? [];
+            $discounts = json_decode($rv->discount_value, true) ?? [];
 
             foreach ($accIds as $idx => $aid) {
                 $rowAmount = (float)($amounts[$idx] ?? 0);
-                if ($rowAmount <= 0) continue;
+                $rowDiscount = (float)($discounts[$idx] ?? 0);
+                if ($rowAmount <= 0 && $rowDiscount <= 0) continue;
 
                 $accName = DB::table('accounts')->where('id', $aid)->value('title');
                 $narrText = '';
@@ -437,7 +439,7 @@ class GeneralLedgerController extends Controller
                     }
                 }
                 
-                $desc = ($accName ? "$accName " : "") . ($narrText ? " ($narrText)" : ($rv->remarks ?? ''));
+                $desc = $narrText ?: ($rv->remarks ?? 'Receipt Voucher');
 
                 $ref = 'RV';
                 $inv = $rv->rvid;
@@ -446,24 +448,40 @@ class GeneralLedgerController extends Controller
                     $inv = trim(str_replace('Auto-generated from Sale:', '', $rv->remarks));
                 }
 
-                $transactions[] = [
-                    'created_at' => $rv->created_at,
-                    'id' => $rv->id . '_' . $idx,
-                    'date' => $rv->entry_date ?: $rv->created_at,
-                    'ref' => $ref,
-                    'inv' => $inv,
-                    'desc' => $desc,
-                    'qty' => 0, 'debit' => 0, 'credit' => $rowAmount,
-                    'priority' => str_contains($rv->remarks ?? '', 'Auto-generated from Sale:') ? 11 : 60,
-                    'sort_inv' => str_contains($rv->remarks ?? '', 'Auto-generated from Sale:') ? preg_replace('/[^0-9]/', '', $rv->remarks) : preg_replace('/[^0-9]/', '', $rv->rvid ?? '')
-                ];
+                if ($rowAmount > 0) {
+                    $transactions[] = [
+                        'created_at' => $rv->created_at,
+                        'id' => $rv->id . '_' . $idx,
+                        'date' => $rv->entry_date ?: $rv->created_at,
+                        'ref' => $ref,
+                        'inv' => $inv,
+                        'desc' => $desc,
+                        'qty' => 0, 'debit' => 0, 'credit' => $rowAmount,
+                        'priority' => str_contains($rv->remarks ?? '', 'Auto-generated from Sale:') ? 11 : 60,
+                        'sort_inv' => str_contains($rv->remarks ?? '', 'Auto-generated from Sale:') ? preg_replace('/[^0-9]/', '', $rv->remarks) : preg_replace('/[^0-9]/', '', $rv->rvid ?? '')
+                    ];
+                }
+                
+                if ($rowDiscount > 0) {
+                    $transactions[] = [
+                        'created_at' => $rv->created_at,
+                        'id' => $rv->id . '_disc_' . $idx,
+                        'date' => $rv->entry_date ?: $rv->created_at,
+                        'ref' => $ref,
+                        'inv' => $inv,
+                        'desc' => "Discount: " . $desc,
+                        'qty' => 0, 'debit' => 0, 'credit' => $rowDiscount,
+                        'priority' => str_contains($rv->remarks ?? '', 'Auto-generated from Sale:') ? 12 : 61,
+                        'sort_inv' => str_contains($rv->remarks ?? '', 'Auto-generated from Sale:') ? preg_replace('/[^0-9]/', '', $rv->remarks) : preg_replace('/[^0-9]/', '', $rv->rvid ?? '')
+                    ];
+                }
             }
         }
 
         // 7.1 Incomes (IV)
         $ivDateCol = $this->getDateColumn('income_vouchers');
         $incomes = DB::table('income_vouchers')->where('party_id', $id)->whereIn('party_type', $typeArray)
-            ->whereBetween(DB::raw($ivDateCol), [$start, $end])->get();
+            ->whereIn('status', ['posted', 'Posted'])->whereBetween(DB::raw($ivDateCol), [$start, $end])->get();
         foreach ($incomes as $iv) {
             $transactions[] = [
                 'created_at' => $iv->created_at,
@@ -646,8 +664,18 @@ class GeneralLedgerController extends Controller
 
         // 7. Receipts (Credit)
         $rvDateCol = $this->getDateColumn('receipts_vouchers', 'receipt_date');
-        $receipts = (float)ReceiptsVoucher::where('party_id', $id)->whereIn('type', $typeArray)
-            ->where(DB::raw($rvDateCol), '<', $date)->sum('total_amount');
+        $rvsList = ReceiptsVoucher::where('party_id', $id)->whereIn('type', $typeArray)
+            ->where(DB::raw($rvDateCol), '<', $date)->get();
+        $receipts = 0;
+        foreach ($rvsList as $rv) {
+            $receipts += (float)$rv->total_amount;
+            $dArr = json_decode($rv->discount_value, true);
+            if (is_array($dArr)) {
+                foreach ($dArr as $d) {
+                    $receipts += (float)$d;
+                }
+            }
+        }
         
         // 7.1 Income (Credit)
         $ivDateCol = $this->getDateColumn('income_vouchers');
@@ -691,7 +719,7 @@ class GeneralLedgerController extends Controller
                     $q->whereJsonContains('row_account_id', (string)$id)
                       ->orWhereJsonContains('row_account_id', (int)$id);
                 })
-                ->whereBetween(DB::raw($rvDateCol), [$start, $end])->get();
+                ->whereIn('status', ['posted', 'Posted'])->whereBetween(DB::raw($rvDateCol), [$start, $end])->get();
             
             foreach($rvs as $rv) {
                 $accIds = json_decode($rv->row_account_id, true) ?? [];
@@ -726,7 +754,7 @@ class GeneralLedgerController extends Controller
                     'date' => $rv->entry_date ?: $rv->created_at,
                     'ref' => 'RV',
                     'inv' => $rv->rvid,
-                    'desc' => ($partyName ? "$partyName : " : "") . ($rowNarr ?: ($rv->remarks ?? 'Receipt')),
+                    'desc' => $rowNarr ?: ($rv->remarks ?? 'Receipt'),
                     'price' => 0, 'qty' => 0, 'debit' => $rowAmount, 'credit' => 0
                 ];
             }
@@ -736,7 +764,7 @@ class GeneralLedgerController extends Controller
                     $q->whereJsonContains('row_account_id', (string)$id)
                       ->orWhereJsonContains('row_account_id', (int)$id);
                 })
-                ->whereBetween(DB::raw($pvDateCol), [$start, $end])->get();
+                ->whereIn('status', ['posted', 'Posted'])->whereBetween(DB::raw($pvDateCol), [$start, $end])->get();
             foreach($pvs as $pv) {
                 $accIds = json_decode($pv->row_account_id, true) ?? [];
                 $amounts = json_decode($pv->amount, true) ?? [];
@@ -770,7 +798,7 @@ class GeneralLedgerController extends Controller
                     'date' => $pv->entry_date ?: $pv->created_at,
                     'ref' => 'PV',
                     'inv' => $pv->pvid,
-                    'desc' => ($partyName ? "$partyName : " : "") . ($rowNarr ?: ($pv->remarks ?? 'Payment')),
+                    'desc' => $rowNarr ?: ($pv->remarks ?? 'Payment'),
                     'price' => 0, 'qty' => 0, 'debit' => 0, 'credit' => $rowAmount
                 ];
             }
@@ -780,7 +808,7 @@ class GeneralLedgerController extends Controller
                     $q->whereJsonContains('party_id', (string)$id)
                       ->orWhereJsonContains('party_id', (int)$id);
                 })
-                ->whereBetween(DB::raw($jvDateCol), [$start, $end])->get();
+                ->whereIn('status', ['posted', 'Posted'])->whereBetween(DB::raw($jvDateCol), [$start, $end])->get();
             foreach($jvs as $jv) {
                 $pIds = json_decode($jv->party_id, true) ?? [];
                 $debits = json_decode($jv->debit, true) ?? [];
@@ -905,7 +933,7 @@ class GeneralLedgerController extends Controller
         // 3. Payments (PV) - Debit
         $pvDateCol = $this->getDateColumn('payment_vouchers', 'receipt_date');
         $payments = PaymentVoucher::where('party_id', $id)->whereIn('type', $typeArray)
-            ->whereBetween(DB::raw($pvDateCol), [$start, $end])->get();
+            ->whereIn('status', ['posted', 'Posted'])->whereBetween(DB::raw($pvDateCol), [$start, $end])->get();
         foreach ($payments as $pv) {
             $transactions[] = [
                 'id' => $pv->id,
@@ -921,7 +949,7 @@ class GeneralLedgerController extends Controller
         // 3.1 Expenses (EV) - Debit
         $evDateCol = $this->getDateColumn('expense_vouchers');
         $expenses = DB::table('expense_vouchers')->where('party_id', $id)->whereIn('type', $typeArray)
-            ->whereBetween(DB::raw($evDateCol), [$start, $end])->get();
+            ->whereIn('status', ['posted', 'Posted'])->whereBetween(DB::raw($evDateCol), [$start, $end])->get();
         foreach ($expenses as $ev) {
             $transactions[] = [
                 'id' => $ev->id,
@@ -936,7 +964,7 @@ class GeneralLedgerController extends Controller
 
         // 3.2 Generic Vouchers (Debit/Credit)
         $vouchers = DB::table('vouchers')->where('person', $id)
-            ->whereBetween(DB::raw("COALESCE(date, DATE(created_at))"), [$start, $end])->get();
+            ->whereIn('status', ['posted', 'Posted'])->whereBetween(DB::raw("COALESCE(date, DATE(created_at))"), [$start, $end])->get();
         foreach ($vouchers as $v) {
             if (str_contains($v->narration ?? '', 'Discount on Sale Return Posted:')) {
                 continue;
@@ -970,7 +998,7 @@ class GeneralLedgerController extends Controller
                   ->orWhereJsonContains('party_id', (int)$id);
             })
             ->whereJsonContains('party_type', $type)
-            ->whereBetween(DB::raw($jvDateCol), [$start, $end])->get();
+            ->whereIn('status', ['posted', 'Posted'])->whereBetween(DB::raw($jvDateCol), [$start, $end])->get();
         foreach ($jvs as $jv) {
             $pIds = json_decode($jv->party_id, true) ?? [];
             $debits = json_decode($jv->debit, true) ?? [];
@@ -1042,7 +1070,7 @@ class GeneralLedgerController extends Controller
         // 6. Sale Returns (SRJ) - Details
         $srDateCol = $this->getDateColumn('sale_returns', 'current_date');
         $sReturns = SaleReturn::with(['items.product.brandRelation', 'sale'])->where('customer_id', $id)->whereIn('party_type', $typeArray)
-            ->whereBetween(DB::raw($srDateCol), [$start, $end])
+            ->whereIn('status', ['posted', 'Posted'])->whereBetween(DB::raw($srDateCol), [$start, $end])
             ->get();
         foreach ($sReturns as $sr) {
             $originalInv = $sr->sale ? $sr->sale->invoice_no : '';
@@ -1093,15 +1121,17 @@ class GeneralLedgerController extends Controller
         // 7. Receipts (RV) - Credit
         $rvDateCol = $this->getDateColumn('receipts_vouchers', 'receipt_date');
         $receipts = ReceiptsVoucher::where('party_id', $id)->whereIn('type', $typeArray)
-            ->whereBetween(DB::raw($rvDateCol), [$start, $end])->get();
+            ->whereIn('status', ['posted', 'Posted'])->whereBetween(DB::raw($rvDateCol), [$start, $end])->get();
         foreach ($receipts as $rv) {
             $accIds = json_decode($rv->row_account_id, true) ?? [];
             $amounts = json_decode($rv->amount, true) ?? [];
             $narrIds = json_decode($rv->narration_id, true) ?? [];
+            $discounts = json_decode($rv->discount_value, true) ?? [];
 
             foreach ($accIds as $idx => $aid) {
                 $rowAmount = (float)($amounts[$idx] ?? 0);
-                if ($rowAmount <= 0) continue;
+                $rowDiscount = (float)($discounts[$idx] ?? 0);
+                if ($rowAmount <= 0 && $rowDiscount <= 0) continue;
 
                 $accName = DB::table('accounts')->where('id', $aid)->value('title');
                 $narrText = '';
@@ -1113,7 +1143,7 @@ class GeneralLedgerController extends Controller
                     }
                 }
                 
-                $desc = ($accName ? "$accName " : "") . ($narrText ? " ($narrText)" : ($rv->remarks ?? ''));
+                $desc = $narrText ?: ($rv->remarks ?? 'Receipt Voucher');
 
                 $ref = 'RV';
                 $inv = $rv->rvid;
@@ -1122,23 +1152,38 @@ class GeneralLedgerController extends Controller
                     $inv = trim(str_replace('Auto-generated from Sale:', '', $rv->remarks));
                 }
 
-                $transactions[] = [
-                    'id' => $rv->id . '_' . $idx, // Unique ID for items
-                    'date' => $rv->entry_date ?: $rv->created_at,
-                    'ref' => $ref,
-                    'inv' => $inv,
-                    'desc' => $desc,
-                    'price' => 0, 'qty' => 0, 'debit' => 0, 'credit' => $rowAmount,
-                    'priority' => str_contains($rv->remarks ?? '', 'Auto-generated from Sale:') ? 11 : 60,
-                    'sort_inv' => str_contains($rv->remarks ?? '', 'Auto-generated from Sale:') ? preg_replace('/[^0-9]/', '', $rv->remarks) : preg_replace('/[^0-9]/', '', $rv->rvid ?? '')
-                ];
+                if ($rowAmount > 0) {
+                    $transactions[] = [
+                        'id' => $rv->id . '_' . $idx, // Unique ID for items
+                        'date' => $rv->entry_date ?: $rv->created_at,
+                        'ref' => $ref,
+                        'inv' => $inv,
+                        'desc' => $desc,
+                        'price' => 0, 'qty' => 0, 'debit' => 0, 'credit' => $rowAmount,
+                        'priority' => str_contains($rv->remarks ?? '', 'Auto-generated from Sale:') ? 11 : 60,
+                        'sort_inv' => str_contains($rv->remarks ?? '', 'Auto-generated from Sale:') ? preg_replace('/[^0-9]/', '', $rv->remarks) : preg_replace('/[^0-9]/', '', $rv->rvid ?? '')
+                    ];
+                }
+
+                if ($rowDiscount > 0) {
+                    $transactions[] = [
+                        'id' => $rv->id . '_disc_' . $idx,
+                        'date' => $rv->entry_date ?: $rv->created_at,
+                        'ref' => $ref,
+                        'inv' => $inv,
+                        'desc' => "Discount: " . $desc,
+                        'price' => 0, 'qty' => 0, 'debit' => 0, 'credit' => $rowDiscount,
+                        'priority' => str_contains($rv->remarks ?? '', 'Auto-generated from Sale:') ? 12 : 61,
+                        'sort_inv' => str_contains($rv->remarks ?? '', 'Auto-generated from Sale:') ? preg_replace('/[^0-9]/', '', $rv->remarks) : preg_replace('/[^0-9]/', '', $rv->rvid ?? '')
+                    ];
+                }
             }
         }
 
         // 7.1 Incomes (IV) - Credit
         $ivDateCol = $this->getDateColumn('income_vouchers');
         $incomes = DB::table('income_vouchers')->where('party_id', $id)->whereIn('party_type', $typeArray)
-            ->whereBetween(DB::raw($ivDateCol), [$start, $end])->get();
+            ->whereIn('status', ['posted', 'Posted'])->whereBetween(DB::raw($ivDateCol), [$start, $end])->get();
         foreach ($incomes as $iv) {
             $transactions[] = [
                 'id' => $iv->id,

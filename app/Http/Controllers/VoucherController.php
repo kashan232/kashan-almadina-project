@@ -395,29 +395,55 @@ class VoucherController extends Controller
             $amount = (float)$voucher->total_amount;
             $rvid = $voucher->rvid;
 
+            $discountList = json_decode($voucher->discount_value, true);
+            $totalDiscount = 0;
+            if (is_array($discountList)) {
+                foreach ($discountList as $disc) {
+                    $totalDiscount += (float)$disc;
+                }
+            }
+            $totalCreditAmount = $amount + $totalDiscount;
+
             if ($voucher->type === 'vendor') {
                 $ledger = VendorLedger::where('vendor_id', $voucher->party_id)->latest()->first();
                 if ($ledger) {
-                    $ledger->closing_balance = (float)$ledger->closing_balance - $amount;
-                    $ledger->save();
+                    VendorLedger::create([
+                        'vendor_id'        => $voucher->party_id,
+                        'admin_or_user_id' => auth()->id(),
+                        'date'             => $voucher->entry_date ?? now(),
+                        'description'      => "Receipt Voucher #$rvid",
+                        'opening_balance'  => 0,
+                        'debit'            => 0,
+                        'credit'           => $totalCreditAmount,
+                        'previous_balance' => $ledger->closing_balance,
+                        'closing_balance'  => (float)$ledger->closing_balance - $totalCreditAmount,
+                    ]);
                 } else {
                     VendorLedger::create([
                         'vendor_id'        => $voucher->party_id,
                         'admin_or_user_id' => auth()->id(),
-                        'date'             => now(),
+                        'date'             => $voucher->entry_date ?? now(),
                         'description'      => "Receipt Voucher #$rvid",
                         'opening_balance'  => 0,
                         'debit'            => 0,
-                        'credit'           => $amount,
+                        'credit'           => $totalCreditAmount,
                         'previous_balance' => 0,
-                        'closing_balance'  => -$amount,
+                        'closing_balance'  => -$totalCreditAmount,
                     ]);
                 }
             } elseif ($voucher->type === 'customer' || $voucher->type === 'walkin') {
                 $ledger = CustomerLedger::where('customer_id', $voucher->party_id)->latest()->first();
                 if ($ledger) {
-                    $ledger->closing_balance = (float)$ledger->closing_balance - $amount;
-                    $ledger->save();
+                    CustomerLedger::create([
+                        'customer_id'      => $voucher->party_id,
+                        'admin_or_user_id' => auth()->id(),
+                        'date'             => $voucher->entry_date ?? now(),
+                        'description'      => "Receipt Voucher #$rvid",
+                        'debit'            => 0,
+                        'credit'           => $totalCreditAmount,
+                        'previous_balance' => $ledger->closing_balance,
+                        'closing_balance'  => (float)$ledger->closing_balance - $totalCreditAmount,
+                    ]);
                 } else {
                     CustomerLedger::create([
                         'customer_id'      => $voucher->party_id,
@@ -425,21 +451,15 @@ class VoucherController extends Controller
                         'date'             => $voucher->entry_date ?? now(),
                         'description'      => "Receipt Voucher #$rvid",
                         'debit'            => 0,
-                        'credit'           => $amount,
+                        'credit'           => $totalCreditAmount,
                         'previous_balance' => 0,
-                        'closing_balance'  => -$amount,
+                        'closing_balance'  => -$totalCreditAmount,
                     ]);
-                }
-                // Also update customer's own opening_balance (used by General Ledger)
-                $cust = \App\Models\Customer::find($voucher->party_id);
-                if ($cust) {
-                    $cust->opening_balance = (float)($cust->opening_balance ?? 0) - $amount;
-                    $cust->save();
                 }
             } else {
                 $account = Account::find($voucher->party_id);
                 if ($account) {
-                    $account->opening_balance = (float)($account->opening_balance ?? 0) - $amount;
+                    $account->opening_balance = (float)($account->opening_balance ?? 0) - $totalCreditAmount;
                     $account->save();
                 }
             }
@@ -1169,7 +1189,7 @@ class VoucherController extends Controller
             $voucher->status = 'posted';
             $voucher->save();
             DB::commit();
-            return back()->with('success', 'Expense Voucher posted successfully!');
+            return redirect()->route('all-expense-vochers')->with('success', 'Expense Voucher posted successfully!');
         } catch (\Exception $e) {
             DB::rollBack();
             return back()->with('error', $e->getMessage());
@@ -2042,7 +2062,7 @@ class VoucherController extends Controller
             $voucher->status = 'posted';
             $voucher->save();
             DB::commit();
-            return back()->with('success', 'Journal Voucher posted successfully!');
+            return redirect()->route('all-journal-vochers')->with('success', 'Journal Voucher posted successfully!');
         } catch (\Exception $e) {
             DB::rollBack();
             return back()->with('error', $e->getMessage());

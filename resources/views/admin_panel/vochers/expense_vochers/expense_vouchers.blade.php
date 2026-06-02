@@ -44,9 +44,12 @@
         font-size: 6rem; color: rgba(220, 53, 69, 0.05); font-weight: 900; text-transform: uppercase;
         pointer-events: none; z-index: 1000; border: 8px solid rgba(220, 53, 69, 0.05); padding: 10px 40px; border-radius: 15px;
     }
-    .form-locked { pointer-events: none !important; }
-    .form-locked input, .form-locked select, .form-locked textarea, .form-locked button:not(#editBtn):not(#previewPrintBtn):not(#newBtn):not(#listBtn) {
+    .form-locked input, .form-locked select, .form-locked textarea {
+        pointer-events: none !important;
         background-color: #f8fafc !important; opacity: 0.7 !important;
+    }
+    .form-locked .removeRow, .form-locked #btnAddRow {
+        pointer-events: none !important; opacity: 0.5 !important;
     }
 
     .btn-mini { padding: 0px 4px; font-size: 9px; height: 18px; display: inline-flex; align-items: center; justify-content: center; }
@@ -209,9 +212,11 @@
                             @if($receipt->status != 'posted')
                                 <button type="button" id="saveDraftBtn" class="btn btn-warning btn-sm fw-bold rounded-pill px-4 shadow-sm" style="font-size: 11px;">
                                     <i class="fa fa-save me-1"></i> Save Draft
+                                    <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+S</kbd>
                                 </button>
                                 <button type="button" id="postBtn" class="btn btn-primary btn-sm fw-bold rounded-pill px-4 shadow-sm" style="font-size: 11px;">
                                     <i class="fa fa-send me-1"></i> Post Voucher
+                                    <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+&#8629;</kbd>
                                 </button>
                             @endif
                             
@@ -335,6 +340,14 @@ $(document).ready(function() {
     }
     $(document).on('input', '.row-amount', calculateTotals);
 
+    $(document).on('keydown', '.row-amount', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            $('#btnAddRow').click();
+            $('#voucherTable tbody tr').last().find('.narrationSelect').focus();
+        }
+    });
+
     $('#btnAddRow').click(function() {
         let newRow = `<tr>
             <td><select name="narration_id[]" class="form-select form-select-sm narrationSelect"><option value="">Narration...</option>@foreach($narrationsList as $lid => $lname)<option value="{{ $lid }}">{{ $lname }}</option>@endforeach</select></td>
@@ -357,29 +370,49 @@ $(document).ready(function() {
 
     $('#saveDraftBtn').click(function() {
         $('.ajax-valid-error').remove();
-        $.post('{{ route("Expense.vochers.ajax-save") }}', $('#expenseForm').serialize(), function(res) {
+        
+        let formData = $('#expenseForm').serializeArray();
+        formData.forEach(item => {
+            if (item.name === 'total_amount' || item.name === 'amount[]') {
+                item.value = item.value.replace(/,/g, '');
+            }
+        });
+        
+        $.post('{{ route("Expense.vochers.ajax-save") }}', $.param(formData), function(res) {
             if(res.success) {
                 $('#receipt_id').val(res.id); $('#evidBadgeText').text(res.evid);
                 showAlert('Draft saved successfully!', 'success');
                 $('#expenseForm').addClass('form-locked'); $('#editBtn').show();
                 $('#previewPrintBtn').attr('href', '{{ route("ExpenseVoucher.print", ":id") }}'.replace(':id', res.id)).removeClass('disabled');
             }
+        }).fail(function(xhr) {
+            if (xhr.status === 422) {
+                let errs = xhr.responseJSON.errors;
+                for (let field in errs) {
+                    let $el = $('[name="' + field + '"], [name="' + field + '[]"]').first();
+                    if ($el.length) {
+                        $el.after('<span class="ajax-valid-error text-danger" style="font-size:9px;">' + errs[field][0] + '</span>');
+                    }
+                }
+                showAlert('Please fill required fields (Party, Amount).', 'danger');
+            } else {
+                showAlert('An error occurred while saving.', 'danger');
+            }
         });
     });
 
     $('#postBtn').click(function() {
-        Swal.fire({ title: 'Post Voucher?', icon: 'question', showCancelButton: true }).then((res) => {
-            if(res.isConfirmed) {
-                $('#saveDraftBtn').click();
-                setTimeout(() => {
-                    let id = $('#receipt_id').val();
-                    if(id) {
-                        let form = $('<form>', {action: '{{ route("Expense.vochers.post", ":id") }}'.replace(':id', id), method: 'POST'}).append($('<input>', {type: 'hidden', name: '_token', value: '{{ csrf_token() }}'}));
-                        $('body').append(form); form.submit();
-                    }
-                }, 1000);
+        $('#saveDraftBtn').click();
+        let checkSave = setInterval(() => {
+            let id = $('#receipt_id').val();
+            let hasErrors = $('.ajax-valid-error').length > 0;
+            if (hasErrors) { clearInterval(checkSave); return; }
+            if(id) {
+                clearInterval(checkSave);
+                let form = $('<form>', {action: '{{ route("Expense.vochers.post", ":id") }}'.replace(':id', id), method: 'POST'}).append($('<input>', {type: 'hidden', name: '_token', value: '{{ csrf_token() }}'}));
+                $('body').append(form); form.submit();
             }
-        });
+        }, 300);
     });
 
     $('#unpostBtn').click(function() {

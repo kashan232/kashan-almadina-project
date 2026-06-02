@@ -185,7 +185,7 @@
                                 <tr>
                                     <td class="text-muted small">{{ $item->id }}</td>
                                     <td class="small">EV</td>
-                                    <td class="fw-bold text-danger">{{ (int) preg_replace('/[^0-9]/', '', substr($item->evid, strlen('EVID-'))) }}</td>
+                                    <td class="fw-bold text-danger">{{ $item->evid }}</td>
                                     <td class="small">{{ $item->entry_date ? \Carbon\Carbon::parse($item->entry_date)->format('d-M-Y') : '-' }}</td>
                                     <td>
                                         <span class="badge bg-light text-danger border px-2 py-0" style="font-size: 9px;">{{ $item->type_label ?? '-' }}</span>

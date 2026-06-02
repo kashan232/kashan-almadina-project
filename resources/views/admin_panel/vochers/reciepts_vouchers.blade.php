@@ -348,7 +348,10 @@ $(document).ready(function() {
                 if(selected) { let code = $subSelect.find('option:selected').data('code'); $row.find('.rowAccountCode').val(code || ''); }
             });
         }
-    }).each(function() { if ($(this).val()) $(this).trigger('change'); });
+    });
+
+    // Trigger on page load
+    $('.rowAccountHead').each(function() { if ($(this).val()) $(this).trigger('change'); });
 
     $(document).on('change', '.rowAccountSub', function() { let code = $(this).find('option:selected').data('code'); $(this).closest('tr').find('.rowAccountCode').val(code || ''); });
 
@@ -403,6 +406,14 @@ $(document).ready(function() {
         }
         
         calculateTotals();
+    });
+
+    $(document).on('keydown', '.amount', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            $('#btnAddRow').click();
+            $('#voucherTable tbody tr').last().find('.narrationSelect').focus();
+        }
     });
 
 

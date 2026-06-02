@@ -819,7 +819,7 @@ class PurchaseController extends Controller
                         'party_id' => json_encode([$purchase->purchasable_id, $whtAccount->id, $purchaseExpAccId]),
                         'debit' => json_encode([0, 0, $purchase->wht * 2]), // Debit Purchase Expense
                         'credit' => json_encode([$purchase->wht, $purchase->wht, 0]), // Credit Vendor & WHT Account
-                        'remarks' => 'WHT (Tax): ' . $purchase->invoice_no,
+                        'remarks' => $whtAccount->title ?? 'WHT (Tax)',
                     ]);
                 }
             }
@@ -844,7 +844,7 @@ class PurchaseController extends Controller
                         'party_id' => json_encode([$purchase->purchasable_id, $account->id, $purchaseExpAccId]),
                         'debit' => json_encode([$allocation->amount, $allocation->amount, 0]), // Debit Vendor & Account
                         'credit' => json_encode([0, 0, $allocation->amount * 2]), // Credit Purchase Expense
-                        'remarks' => 'Total Discount - ' . ($account->title ?? 'Allocation') . ': ' . $purchase->invoice_no,
+                        'remarks' => $account->title ?? 'Allocation',
                     ]);
                 }
             }

@@ -193,6 +193,7 @@
                                     <th>Party</th>
                                     <th>Reference No</th>
                                     <th>Remarks</th>
+                                    <th class="text-end">Disc.</th>
                                     <th class="text-end">Total Amount</th>
                                     <th class="text-center">Status</th>
                                     <th class="text-center" style="min-width: 140px;">Action</th>
@@ -203,6 +204,12 @@
                                 @php
                                     $refs = json_decode($item->reference_no, true);
                                     $reference = is_array($refs) ? implode(', ', array_filter($refs)) : $item->reference_no;
+                                    
+                                    $discs = json_decode($item->discount_value, true);
+                                    $total_disc = 0;
+                                    if(is_array($discs)) {
+                                        foreach($discs as $d) { $total_disc += (float)$d; }
+                                    }
                                 @endphp
                                 <tr>
                                     <td class="text-muted small">{{ $item->id }}</td>
@@ -216,6 +223,7 @@
                                     <td class="fw-bold text-dark small">{{ Str::limit($item->party_name ?? '-', 25) }}</td>
                                     <td class="small text-muted">{{ Str::limit($reference, 15) }}</td>
                                     <td class="small text-muted">{{ Str::limit($item->remarks, 15) }}</td>
+                                    <td class="text-end fw-bold text-danger">{{ number_format($total_disc, 0) }}</td>
                                     <td class="text-end fw-bold text-dark">{{ number_format((float)$item->total_amount, 0) }}</td>
                                     <td class="text-center">
                                         @if($item->status === 'posted')
