@@ -174,7 +174,7 @@
                                         @foreach ($SaleReturns as $ret)
                                         <tr>
                                             <td class="text-muted small">SRJ</td>
-                                            <td class="fw-bold text-primary">{{ (int) preg_replace('/[^0-9]/', '', substr($ret->invoice_no, strlen('SR-'))) }}</td>
+                                            <td class="fw-bold text-primary">{{ $ret->invoice_no }}</td>
                                             <td>{{ $ret->sale->invoice_no ?? 'N/A' }}</td>
                                             <td class="fw-semibold text-dark small">{{ $ret->party_name }}</td>
                                             <td class="py-1">
@@ -260,7 +260,7 @@
             scrollX: true,
             autoWidth: false,
             pageLength: 25,
-            order: [[1, 'desc']],
+            order: [], // Let backend sorting take precedence
             language: {
                 search: "_INPUT_",
                 searchPlaceholder: "Search returns..."

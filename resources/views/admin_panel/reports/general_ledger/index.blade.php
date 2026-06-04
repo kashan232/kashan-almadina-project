@@ -244,8 +244,28 @@ $(document).ready(function() {
 function generateReport(reportType) {
     var acId = $('#ac_id').val();
     if (!acId) {
-        alert('Please select an account/party first.');
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'Please select an account/party first.',
+            confirmButtonColor: '#d33',
+        });
         return;
+    }
+
+    var startDate = $('#start_date').val();
+    var endDate = $('#end_date').val();
+
+    if (startDate && endDate) {
+        if (new Date(endDate) < new Date(startDate)) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Invalid Date Range',
+                text: 'Ending date must be greater than or equal to Start date',
+                confirmButtonColor: '#d33',
+            });
+            return;
+        }
     }
     
     $('#report_mode').val(reportType);

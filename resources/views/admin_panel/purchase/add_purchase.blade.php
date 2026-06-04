@@ -622,6 +622,13 @@
                     <i class="fa fa-send me-1"></i> {{ isset($purchase) ? 'Update & Post' : 'Save & Post' }} <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+&#8629;</kbd>
                 </button>
 
+                <a href="{{ route('add_purchase') }}" id="newInvoiceBtn" 
+                    class="btn btn-sm btn-info rounded-pill px-4 shadow-sm text-white" 
+                    style="{{ isset($purchase) ? '' : 'display: none;' }}">
+                    <i class="fa fa-plus me-1"></i> New 
+                    <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+M</kbd>
+                </a>
+
                 <a href="{{ route('Purchase.home') }}" class="btn btn-sm btn-danger rounded-pill px-4 shadow-sm text-white">
                     <i class="fa fa-times me-1"></i> Cancel <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Esc</kbd>
                 </a>
@@ -2105,6 +2112,12 @@ $(document).ready(function() {
             e.preventDefault();
             const listUrl = $('#listBtn').attr('href');
             if(listUrl) window.location.href = listUrl;
+        }
+        // Ctrl + M -> New
+        if (e.ctrlKey && (e.key === 'm' || e.key === 'M')) {
+            e.preventDefault();
+            const newUrl = $('#newInvoiceBtn').attr('href');
+            if(newUrl) window.location.href = newUrl;
         }
     });
 
