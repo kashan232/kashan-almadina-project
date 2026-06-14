@@ -806,19 +806,20 @@ class PurchaseController extends Controller
                 $purchaseExpAccId = 6; // Pur-expnse
                 
                 if ($whtAccount) {
+                    // Update WHT account balance (Debit increases Asset)
                     $whtAccount->opening_balance = ($whtAccount->opening_balance ?? 0) + $purchase->wht;
                     $whtAccount->save();
 
                     JournalVoucher::create([
-                        'jvid' => 'PJ-WHT-' . $purchase->id,
+                        'jvid' => 'PJ-WHT-' . $purchase->invoice_no,
                         'entry_date' => $purchase->current_date,
                         'status' => 'posted',
-                        'total_debit' => $purchase->wht * 2,
-                        'total_credit' => $purchase->wht * 2,
-                        'party_type' => json_encode([$partyType, (string)$whtAccount->head_id, '6']),
-                        'party_id' => json_encode([$purchase->purchasable_id, $whtAccount->id, $purchaseExpAccId]),
-                        'debit' => json_encode([0, 0, $purchase->wht * 2]), // Debit Purchase Expense
-                        'credit' => json_encode([$purchase->wht, $purchase->wht, 0]), // Credit Vendor & WHT Account
+                        'total_debit' => $purchase->wht,
+                        'total_credit' => $purchase->wht,
+                        'party_type' => json_encode([$partyType, (string)$whtAccount->head_id]),
+                        'party_id' => json_encode([$purchase->purchasable_id, $whtAccount->id]),
+                        'debit' => json_encode([0, $purchase->wht]), // Debit WHT Account
+                        'credit' => json_encode([$purchase->wht, 0]), // Credit Vendor
                         'remarks' => $whtAccount->title ?? 'WHT (Tax)',
                     ]);
                 }
@@ -830,20 +831,20 @@ class PurchaseController extends Controller
                 $purchaseExpAccId = 6; // Pur-expnse
                 
                 if ($account) {
-                    // Update account balance (Debit increases expense)
-                    $account->opening_balance = ($account->opening_balance ?? 0) + $allocation->amount; 
+                    // Update account balance (Credit decreases asset/increases liability)
+                    $account->opening_balance = ($account->opening_balance ?? 0) - $allocation->amount; 
                     $account->save();
                     
                     JournalVoucher::create([
-                        'jvid' => 'PJ-ALLOC-' . $purchase->id,
+                        'jvid' => 'PJ-ALLOC-' . $purchase->invoice_no,
                         'entry_date' => $purchase->current_date,
                         'status' => 'posted',
-                        'total_debit' => $allocation->amount * 2,
-                        'total_credit' => $allocation->amount * 2,
-                        'party_type' => json_encode([$partyType, (string)$account->head_id, '6']), 
-                        'party_id' => json_encode([$purchase->purchasable_id, $account->id, $purchaseExpAccId]),
-                        'debit' => json_encode([$allocation->amount, $allocation->amount, 0]), // Debit Vendor & Account
-                        'credit' => json_encode([0, 0, $allocation->amount * 2]), // Credit Purchase Expense
+                        'total_debit' => $allocation->amount,
+                        'total_credit' => $allocation->amount,
+                        'party_type' => json_encode([$partyType, (string)$account->head_id]), 
+                        'party_id' => json_encode([$purchase->purchasable_id, $account->id]),
+                        'debit' => json_encode([$allocation->amount, 0]), // Debit Vendor
+                        'credit' => json_encode([0, $allocation->amount]), // Credit Account
                         'remarks' => $account->title ?? 'Allocation',
                     ]);
                 }

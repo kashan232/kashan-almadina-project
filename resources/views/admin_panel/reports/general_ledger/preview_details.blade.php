@@ -107,9 +107,9 @@
                     <td class="text-center">{{ $trx['ref'] }} {{ $trx['inv'] }}</td>
                     <td>{{ $trx['desc'] }}</td>
                     <td class="text-right">{{ $trx['price'] > 0 ? number_format($trx['price'], 0) : '' }}</td>
-                    <td class="text-center">{{ $trx['debit'] > 0 ? $trx['qty'] : '' }}</td>
+                    <td class="text-center">{{ ($trx['debit'] > 0 && $trx['qty'] > 0) ? $trx['qty'] : '' }}</td>
                     <td class="text-right">{{ $trx['debit'] > 0 ? number_format($trx['debit'], 0) : '-' }}</td>
-                    <td class="text-center">{{ $trx['credit'] > 0 ? $trx['qty'] : '' }}</td>
+                    <td class="text-center">{{ ($trx['credit'] > 0 && $trx['qty'] > 0) ? $trx['qty'] : '' }}</td>
                     <td class="text-right">{{ $trx['credit'] > 0 ? number_format($trx['credit'], 0) : '-' }}</td>
                     <td class="text-right fw-bold">
                         {{ $runningBalance >= 0 ? 'DR.' : 'CR.' }} {{ number_format(abs($runningBalance), 0) }}
@@ -123,7 +123,7 @@
                     @if($type == 'customer') {{ $account_info->customer_name }} @else {{ $account_info->title ?? $account_info->name }} @endif Total. >>>
                 </td>
                 <td></td>
-                <td class="text-center">{{ $totalQty }}</td>
+                <td class="text-center">{{ $totalQty > 0 ? $totalQty : '' }}</td>
                 <td class="text-right">{{ number_format($totalDebitAmount, 0) }}</td>
                 <td class="text-center">-</td>
                 <td class="text-right">{{ number_format($totalCreditAmount, 0) }}</td>

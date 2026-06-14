@@ -323,13 +323,28 @@ class GeneralLedgerController extends Controller
                         continue;
                     }
 
-                    $ref = 'JV';
-                    $inv = $jv->jvid;
+                    $desc = $jv->remarks ?? 'Journal Voucher';
                     
                     // Cleanup for Purchase-related JVs (if they somehow pass)
                     if (str_starts_with($inv, 'PJ-')) {
-                        $ref = 'PJ';
-                        $inv = preg_replace('/^PJ-[A-Z]+-/', '', $inv);
+                        $inv_num = preg_replace('/^PJ-[A-Z]+-/', '', $inv);
+                        $ref = 'PJ-' . $inv_num;
+                        $inv = '';
+
+                        $pTypes = json_decode($jv->party_type, true) ?? [];
+                        $oppType = $pTypes[0] ?? null;
+                        $oppId = $pIds[0] ?? null;
+
+                        if ($oppType && $oppId) {
+                            $oppType = strtolower($oppType);
+                            if ($oppType === 'vendor') {
+                                $partyName = \Illuminate\Support\Facades\DB::table('vendors')->where('id', $oppId)->value('name');
+                                $desc = 'Vendor: ' . ($partyName ?: 'Unknown');
+                            } elseif (in_array($oppType, ['customer', 'walkin', 'walking', 'subcustomer'])) {
+                                $partyName = \Illuminate\Support\Facades\DB::table('customers')->where('id', $oppId)->value('customer_name');
+                                $desc = ucfirst($oppType) . ': ' . ($partyName ?: 'Unknown');
+                            }
+                        }
                     }
 
                     $transactions[] = [
@@ -338,7 +353,7 @@ class GeneralLedgerController extends Controller
                         'date' => $jv->entry_date ?: $jv->created_at,
                         'ref' => $ref,
                         'inv' => $inv,
-                        'desc' => $jv->remarks ?? 'Journal Voucher',
+                        'desc' => $desc,
                         'qty' => 0, 
                         'debit' => (float)($debits[$idx] ?? 0), 
                         'credit' => (float)($credits[$idx] ?? 0),
@@ -815,12 +830,37 @@ class GeneralLedgerController extends Controller
                 $credits = json_decode($jv->credit, true) ?? [];
                 foreach($pIds as $idx => $pid) {
                     if ($pid == $id) {
+                        $ref = 'JV';
+                        $inv = $jv->jvid;
+                        $desc = $jv->remarks ?? 'Journal Voucher';
+                        
+                        if (str_starts_with($inv, 'PJ-')) {
+                            $inv_num = preg_replace('/^PJ-[A-Z]+-/', '', $inv);
+                            $ref = 'PJ-' . $inv_num;
+                            $inv = '';
+
+                            $pTypes = json_decode($jv->party_type, true) ?? [];
+                            $oppType = $pTypes[0] ?? null;
+                            $oppId = $pIds[0] ?? null;
+
+                            if ($oppType && $oppId) {
+                                $oppType = strtolower($oppType);
+                                if ($oppType === 'vendor') {
+                                    $partyName = \Illuminate\Support\Facades\DB::table('vendors')->where('id', $oppId)->value('name');
+                                    $desc = 'Vendor: ' . ($partyName ?: 'Unknown');
+                                } elseif (in_array($oppType, ['customer', 'walkin', 'walking', 'subcustomer'])) {
+                                    $partyName = \Illuminate\Support\Facades\DB::table('customers')->where('id', $oppId)->value('customer_name');
+                                    $desc = ucfirst($oppType) . ': ' . ($partyName ?: 'Unknown');
+                                }
+                            }
+                        }
+
                         $transactions[] = [
                             'id' => $jv->id,
                             'date' => $jv->entry_date ?: $jv->created_at,
-                            'ref' => 'JV',
-                            'inv' => $jv->jvid,
-                            'desc' => $jv->remarks ?? 'Journal Voucher',
+                            'ref' => $ref,
+                            'inv' => $inv,
+                            'desc' => $desc,
                             'price' => 0, 'qty' => 0, 
                             'debit' => (float)($debits[$idx] ?? 0), 
                             'credit' => (float)($credits[$idx] ?? 0)
