@@ -764,13 +764,18 @@ class GeneralLedgerController extends Controller
                     $partyName = DB::table('vendors')->where('id', $rv->party_id)->value('name');
                 }
 
+                $baseDesc = $rowNarr ?: ($rv->remarks ?? 'Receipt');
+                $desc = $partyName ? $baseDesc . ' : ' . $partyName : $baseDesc;
+
                 $transactions[] = [
+                    'created_at' => $rv->created_at,
                     'id' => $rv->id,
                     'date' => $rv->entry_date ?: $rv->created_at,
                     'ref' => 'RV',
                     'inv' => $rv->rvid,
-                    'desc' => $rowNarr ?: ($rv->remarks ?? 'Receipt'),
-                    'price' => 0, 'qty' => 0, 'debit' => $rowAmount, 'credit' => 0
+                    'desc' => $desc,
+                    'price' => 0, 'qty' => 0, 'debit' => $rowAmount, 'credit' => 0,
+                    'priority' => 60
                 ];
             }
             // Payments
@@ -808,13 +813,18 @@ class GeneralLedgerController extends Controller
                     $partyName = DB::table('vendors')->where('id', $pv->party_id)->value('name');
                 }
 
+                $baseDesc = $rowNarr ?: ($pv->remarks ?? 'Payment');
+                $desc = $partyName ? $baseDesc . ' : ' . $partyName : $baseDesc;
+
                 $transactions[] = [
+                    'created_at' => $pv->created_at,
                     'id' => $pv->id,
                     'date' => $pv->entry_date ?: $pv->created_at,
                     'ref' => 'PV',
                     'inv' => $pv->pvid,
-                    'desc' => $rowNarr ?: ($pv->remarks ?? 'Payment'),
-                    'price' => 0, 'qty' => 0, 'debit' => 0, 'credit' => $rowAmount
+                    'desc' => $desc,
+                    'price' => 0, 'qty' => 0, 'debit' => 0, 'credit' => $rowAmount,
+                    'priority' => 60
                 ];
             }
             // JVs
@@ -856,6 +866,7 @@ class GeneralLedgerController extends Controller
                         }
 
                         $transactions[] = [
+                            'created_at' => $jv->created_at,
                             'id' => $jv->id,
                             'date' => $jv->entry_date ?: $jv->created_at,
                             'ref' => $ref,
@@ -863,25 +874,39 @@ class GeneralLedgerController extends Controller
                             'desc' => $desc,
                             'price' => 0, 'qty' => 0, 
                             'debit' => (float)($debits[$idx] ?? 0), 
-                            'credit' => (float)($credits[$idx] ?? 0)
+                            'credit' => (float)($credits[$idx] ?? 0),
+                            'priority' => str_starts_with($jv->jvid, 'PJ-') ? 2 : 50
                         ];
                     }
                 }
             }
 
-            // Sort by Date, then ID for chronological order
+            // Sort by Date, Priority, then created_at for chronological order
             usort($transactions, function ($a, $b) { 
-                $dateA = strtotime($a['date']);
-                $dateB = strtotime($b['date']);
-                if ($dateA == $dateB) {
-                    $idA = $a['id'] ?? 0;
-            $idB = $b['id'] ?? 0;
-            if (is_numeric($idA) && is_numeric($idB)) {
-                return $idA - $idB;
-            }
-            return strcmp((string)$idA, (string)$idB);
+                $dateA = strtotime(substr($a['date'], 0, 10));
+                $dateB = strtotime(substr($b['date'], 0, 10));
+                if ($dateA != $dateB) {
+                    return $dateA - $dateB;
                 }
-                return $dateA - $dateB;
+
+                $prioA = (int)($a['priority'] ?? 60);
+                $prioB = (int)($b['priority'] ?? 60);
+                if ($prioA !== $prioB) {
+                    return $prioA - $prioB;
+                }
+
+                $timeA = isset($a['created_at']) ? strtotime($a['created_at']) : 0;
+                $timeB = isset($b['created_at']) ? strtotime($b['created_at']) : 0;
+                if ($timeA != $timeB && $timeA !== 0 && $timeB !== 0) {
+                    return $timeA - $timeB;
+                }
+
+                $idA = $a['id'] ?? 0;
+                $idB = $b['id'] ?? 0;
+                if (is_numeric($idA) && is_numeric($idB)) {
+                    return $idA - $idB;
+                }
+                return strcmp((string)$idA, (string)$idB);
             });
             return $transactions;
         }
