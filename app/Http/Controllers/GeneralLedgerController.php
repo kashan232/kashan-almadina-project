@@ -767,12 +767,20 @@ class GeneralLedgerController extends Controller
                 $baseDesc = $rowNarr ?: ($rv->remarks ?? 'Receipt');
                 $desc = $partyName ? $baseDesc . ' : ' . $partyName : $baseDesc;
 
+                $ref = 'RV';
+                $inv = $rv->rvid;
+
+                if (str_starts_with($rv->remarks ?? '', 'Auto-generated from Sale:')) {
+                    $ref = 'SJ';
+                    $inv = trim(str_replace('Auto-generated from Sale:', '', $rv->remarks));
+                }
+
                 $transactions[] = [
                     'created_at' => $rv->created_at,
                     'id' => $rv->id,
                     'date' => $rv->entry_date ?: $rv->created_at,
-                    'ref' => 'RV',
-                    'inv' => $rv->rvid,
+                    'ref' => $ref,
+                    'inv' => $inv,
                     'desc' => $desc,
                     'price' => 0, 'qty' => 0, 'debit' => $rowAmount, 'credit' => 0,
                     'priority' => 60
