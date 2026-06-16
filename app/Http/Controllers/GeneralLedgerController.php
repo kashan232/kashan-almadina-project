@@ -540,7 +540,7 @@ class GeneralLedgerController extends Controller
         return $transactions;
     }
 
-    private function calculateOpeningBalance($type, $id, $date)
+    public function calculateOpeningBalance($type, $id, $date)
     {
         $typeArray = ($type === 'customer') ? ['customer', 'walking', 'walkin'] : [$type];
         $balance = 0;
@@ -964,14 +964,19 @@ class GeneralLedgerController extends Controller
         foreach ($pReturns as $pr) {
             foreach ($pr->items as $item) {
                 $brand = $item->product->brandRelation->name ?? '';
+                $qty = (float)$item->qty;
+                $price = (float)($item->purchase_rate ?: $item->price);
+                $totalDisc = (float)$item->item_discount;
+                $netPrice = ($qty > 0) ? ($price - ($totalDisc / $qty)) : $price;
+
                 $transactions[] = [
                     'id' => $item->id,
                     'date' => $pr->entry_date ?: $pr->created_at,
                     'ref' => 'PRJ',
                     'inv' => $pr->invoice_no,
                     'desc' => 'Purchase Return: ' . ($brand ? $brand . ' - ' : '') . ($item->product->name ?? 'Product'),
-                    'price' => (float)($item->purchase_rate ?: $item->price),
-                    'qty' => (float)$item->qty,
+                    'price' => $netPrice,
+                    'qty' => $qty,
                     'debit' => (float)$item->line_total,
                     'credit' => 0,
                     'priority' => 40 // PRJ after PJ

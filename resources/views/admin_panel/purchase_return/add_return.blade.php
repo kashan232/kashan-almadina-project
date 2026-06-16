@@ -116,6 +116,7 @@
                                 <label class="form-label small fw-bold text-muted">Warehouse</label>
                                 <select name="warehouse_id" id="warehouse_select" class="form-select form-select-sm select2" required>
                                     <option value="">Select Warehouse</option>
+                                    <option value="0" {{ isset($returnData) && $returnData->warehouse_id === 0 ? 'selected' : '' }}>Shop</option>
                                     @foreach($warehouses as $w)
                                         <option value="{{ $w->id }}" {{ isset($returnData) && $returnData->warehouse_id == $w->id ? 'selected' : '' }}>{{ $w->warehouse_name }}</option>
                                     @endforeach

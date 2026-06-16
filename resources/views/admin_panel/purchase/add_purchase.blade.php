@@ -1881,17 +1881,7 @@ $(document).ready(function() {
     }, true);
 
     // Removed redundant definition from ready block
-    // Ctrl+X shortcut to remove the current row
-    $(document).on('keydown', 'input, select', function(e) {
-        if (e.ctrlKey && (e.key === 'x' || e.key === 'X')) {
-            const $row = $(this).closest('tr');
-            if ($row.length && $row.find('.remove-row').length) {
-                e.preventDefault();
-                $row.find('.remove-row').trigger('click');
-            }
-        }
-    });
-
+    // Ctrl+X shortcut to remove the current row (REMOVED because it conflicts with Cut text)
     $(document).on('click', '.remove-row', function() {
         if ($('#purchaseItems tr').length > 1) {
             $(this).closest('tr').remove();

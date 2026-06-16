@@ -323,23 +323,27 @@ class PurchaseReturnController extends Controller
 
                 foreach ($ret->items as $item) {
                     // 1. Stock Impact
-                    $product = Product::find($item->product_id);
-                    if ($product) {
-                        $product->stock = ($product->stock ?? 0) - $item->qty;
-                        $product->save();
-                    }
-
-                    $stock = \App\Models\WarehouseStock::where('product_id', $item->product_id)
-                        ->where('warehouse_id', $ret->warehouse_id)
-                        ->first();
-                    if ($stock) {
-                        $stock->decrement('quantity', $item->qty);
+                    if ($ret->warehouse_id == 0) {
+                        // Shop Stock
+                        $product = Product::find($item->product_id);
+                        if ($product) {
+                            $product->stock = ($product->stock ?? 0) - $item->qty;
+                            $product->save();
+                        }
                     } else {
-                        \App\Models\WarehouseStock::create([
-                            'warehouse_id' => $ret->warehouse_id,
-                            'product_id'   => $item->product_id,
-                            'quantity'     => -$item->qty,
-                        ]);
+                        // Warehouse Stock
+                        $stock = \App\Models\WarehouseStock::where('product_id', $item->product_id)
+                            ->where('warehouse_id', $ret->warehouse_id)
+                            ->first();
+                        if ($stock) {
+                            $stock->decrement('quantity', $item->qty);
+                        } else {
+                            \App\Models\WarehouseStock::create([
+                                'warehouse_id' => $ret->warehouse_id,
+                                'product_id'   => $item->product_id,
+                                'quantity'     => -$item->qty,
+                            ]);
+                        }
                     }
                 }
 

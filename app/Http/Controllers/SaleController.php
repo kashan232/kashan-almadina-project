@@ -942,11 +942,14 @@ class SaleController extends Controller
                 return response()->json(['error' => 'Vendor not found'], 404);
             }
 
+            $latestLedger = \App\Models\VendorLedger::where('vendor_id', $id)->latest()->first();
+            $previous_balance = $latestLedger ? $latestLedger->closing_balance : 0;
+
             return response()->json([
                 'address' => $v->address,
                 'mobile' => $v->phone, // assuming 'phone' field for vendors
                 'remarks' => '', // No remarks for vendors
-                'previous_balance' => 0, // Vendors may not have balance logic
+                'previous_balance' => $previous_balance, 
             ]);
         }
 
@@ -956,10 +959,7 @@ class SaleController extends Controller
             return response()->json(['error' => 'Customer not found'], 404);
         }
 
-        // Retrieve the latest ledger entry for the customer
-        $latestLedger = CustomerLedger::where('customer_id', $id)->latest()->first();
-
-        // If a ledger entry exists, use its closing_balance; otherwise, set it to 0
+        $latestLedger = \App\Models\CustomerLedger::where('customer_id', $id)->latest()->first();
         $previous_balance = $latestLedger ? $latestLedger->closing_balance : 0;
 
         return response()->json([
@@ -968,7 +968,7 @@ class SaleController extends Controller
             'address' => $c->address,
             'mobile' => $c->mobile,
             'remarks' => $c->remarks ?? '',
-            'previous_balance' => $previous_balance, // Use the latest closing_balance
+            'previous_balance' => $previous_balance,
         ]);
     }
 
