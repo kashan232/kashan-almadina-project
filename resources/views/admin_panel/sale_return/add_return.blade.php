@@ -607,8 +607,7 @@ $(document).ready(function() {
         let targetTypeClass = type; // 'vendor', 'customer', 'walkin'/'walking'
 
         let filtered = allSales.filter(p => {
-            if (!p.partyType) return false;
-            let pType = p.partyType.toLowerCase();
+            let pType = (p.partyType || 'customer').toLowerCase();
             return (pType === targetTypeClass || (targetTypeClass === 'walkin' && pType === 'walking')) && p.customer_id == partyId;
         });
 
