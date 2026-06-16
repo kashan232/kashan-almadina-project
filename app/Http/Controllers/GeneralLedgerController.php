@@ -749,21 +749,6 @@ class GeneralLedgerController extends Controller
                 $accIds = json_decode($rv->row_account_id, true) ?? [];
                 $amounts = json_decode($rv->amount, true) ?? [];
                 $narrIds = json_decode($rv->narration_id, true) ?? [];
-                $rowAmount = 0;
-                $rowNarr = '';
-                foreach ($accIds as $idx => $aid) {
-                    if ($aid == $id) {
-                        $rowAmount = (float)($amounts[$idx] ?? 0);
-                        if (isset($narrIds[$idx])) {
-                            if (is_numeric($narrIds[$idx])) {
-                                $rowNarr = DB::table('narrations')->where('id', $narrIds[$idx])->value('narration');
-                            } else {
-                                $rowNarr = $narrIds[$idx];
-                            }
-                        }
-                        break;
-                    }
-                }
                 
                 // Get party name
                 $partyName = '';
@@ -773,9 +758,6 @@ class GeneralLedgerController extends Controller
                     $partyName = DB::table('vendors')->where('id', $rv->party_id)->value('name');
                 }
 
-                $baseDesc = $rowNarr ?: ($rv->remarks ?? 'Receipt');
-                $desc = $partyName ? $baseDesc . ' : ' . $partyName : $baseDesc;
-
                 $ref = 'RV';
                 $inv = $rv->rvid;
 
@@ -784,16 +766,33 @@ class GeneralLedgerController extends Controller
                     $inv = trim(str_replace('Auto-generated from Sale:', '', $rv->remarks));
                 }
 
-                $transactions[] = [
-                    'created_at' => $rv->created_at,
-                    'id' => $rv->id,
-                    'date' => $rv->entry_date ?: $rv->created_at,
-                    'ref' => $ref,
-                    'inv' => $inv,
-                    'desc' => $desc,
-                    'price' => 0, 'qty' => 0, 'debit' => $rowAmount, 'credit' => 0,
-                    'priority' => 60
-                ];
+                foreach ($accIds as $idx => $aid) {
+                    if ($aid == $id) {
+                        $rowAmount = (float)($amounts[$idx] ?? 0);
+                        $rowNarr = '';
+                        if (isset($narrIds[$idx])) {
+                            if (is_numeric($narrIds[$idx])) {
+                                $rowNarr = DB::table('narrations')->where('id', $narrIds[$idx])->value('narration');
+                            } else {
+                                $rowNarr = $narrIds[$idx];
+                            }
+                        }
+
+                        $baseDesc = $rowNarr ?: ($rv->remarks ?? 'Receipt');
+                        $desc = $partyName ? $baseDesc . ' : ' . $partyName : $baseDesc;
+
+                        $transactions[] = [
+                            'created_at' => $rv->created_at,
+                            'id' => $rv->id . '_' . $idx,
+                            'date' => $rv->entry_date ?: $rv->created_at,
+                            'ref' => $ref,
+                            'inv' => $inv,
+                            'desc' => $desc,
+                            'price' => 0, 'qty' => 0, 'debit' => $rowAmount, 'credit' => 0,
+                            'priority' => 60
+                        ];
+                    }
+                }
             }
             // Payments
             $pvDateCol = $this->getDateColumn('payment_vouchers', 'receipt_date');
@@ -806,22 +805,7 @@ class GeneralLedgerController extends Controller
                 $accIds = json_decode($pv->row_account_id, true) ?? [];
                 $amounts = json_decode($pv->amount, true) ?? [];
                 $narrIds = json_decode($pv->narration_id, true) ?? [];
-                $rowAmount = 0;
-                $rowNarr = '';
-                foreach ($accIds as $idx => $aid) {
-                    if ($aid == $id) {
-                        $rowAmount = (float)($amounts[$idx] ?? 0);
-                        if (isset($narrIds[$idx])) {
-                            if (is_numeric($narrIds[$idx])) {
-                                $rowNarr = DB::table('narrations')->where('id', $narrIds[$idx])->value('narration');
-                            } else {
-                                $rowNarr = $narrIds[$idx];
-                            }
-                        }
-                        break;
-                    }
-                }
-
+                
                 // Get party name
                 $partyName = '';
                 if ($pv->type == 'customer') {
@@ -830,19 +814,33 @@ class GeneralLedgerController extends Controller
                     $partyName = DB::table('vendors')->where('id', $pv->party_id)->value('name');
                 }
 
-                $baseDesc = $rowNarr ?: ($pv->remarks ?? 'Payment');
-                $desc = $partyName ? $baseDesc . ' : ' . $partyName : $baseDesc;
+                foreach ($accIds as $idx => $aid) {
+                    if ($aid == $id) {
+                        $rowAmount = (float)($amounts[$idx] ?? 0);
+                        $rowNarr = '';
+                        if (isset($narrIds[$idx])) {
+                            if (is_numeric($narrIds[$idx])) {
+                                $rowNarr = DB::table('narrations')->where('id', $narrIds[$idx])->value('narration');
+                            } else {
+                                $rowNarr = $narrIds[$idx];
+                            }
+                        }
 
-                $transactions[] = [
-                    'created_at' => $pv->created_at,
-                    'id' => $pv->id,
-                    'date' => $pv->entry_date ?: $pv->created_at,
-                    'ref' => 'PV',
-                    'inv' => $pv->pvid,
-                    'desc' => $desc,
-                    'price' => 0, 'qty' => 0, 'debit' => 0, 'credit' => $rowAmount,
-                    'priority' => 60
-                ];
+                        $baseDesc = $rowNarr ?: ($pv->remarks ?? 'Payment');
+                        $desc = $partyName ? $baseDesc . ' : ' . $partyName : $baseDesc;
+
+                        $transactions[] = [
+                            'created_at' => $pv->created_at,
+                            'id' => $pv->id . '_' . $idx,
+                            'date' => $pv->entry_date ?: $pv->created_at,
+                            'ref' => 'PV',
+                            'inv' => $pv->pvid,
+                            'desc' => $desc,
+                            'price' => 0, 'qty' => 0, 'debit' => 0, 'credit' => $rowAmount,
+                            'priority' => 60
+                        ];
+                    }
+                }
             }
             // JVs
             $jvDateCol = $this->getDateColumn('journal_vouchers');
@@ -946,6 +944,7 @@ class GeneralLedgerController extends Controller
                 $finalPrice = $rate ?: (($qty > 0) ? ($price - ($disc / $qty)) : $price);
 
                 $transactions[] = [
+                    'created_at' => $sale->created_at,
                     'id' => $item->id,
                     'date' => $sale->entry_date ?: $sale->created_at,
                     'ref' => 'SJ',
@@ -979,6 +978,7 @@ class GeneralLedgerController extends Controller
                 $netPrice = ($qty > 0) ? ($price - ($totalDisc / $qty)) : $price;
 
                 $transactions[] = [
+                    'created_at' => $pr->created_at,
                     'id' => $item->id,
                     'date' => $pr->entry_date ?: $pr->created_at,
                     'ref' => 'PRJ',
@@ -994,6 +994,7 @@ class GeneralLedgerController extends Controller
             // WHT (Tax) row - Debit
             if ($pr->wht > 0) {
                 $transactions[] = [
+                    'created_at' => $pr->created_at,
                     'id' => $pr->id,
                     'date' => $pr->entry_date ?: $pr->created_at,
                     'ref' => 'PRJ',
@@ -1006,6 +1007,7 @@ class GeneralLedgerController extends Controller
             // Discount row - Credit
             if ($pr->discount > 0) {
                 $transactions[] = [
+                    'created_at' => $pr->created_at,
                     'id' => $pr->id,
                     'date' => $pr->entry_date ?: $pr->created_at,
                     'ref' => 'PRJ',
@@ -1023,6 +1025,7 @@ class GeneralLedgerController extends Controller
             ->whereIn('status', ['posted', 'Posted'])->whereBetween(DB::raw($pvDateCol), [$start, $end])->get();
         foreach ($payments as $pv) {
             $transactions[] = [
+                'created_at' => $pv->created_at,
                 'id' => $pv->id,
                 'date' => $pv->entry_date ?: $pv->created_at,
                 'ref' => 'PV',
@@ -1039,6 +1042,7 @@ class GeneralLedgerController extends Controller
             ->whereIn('status', ['posted', 'Posted'])->whereBetween(DB::raw($evDateCol), [$start, $end])->get();
         foreach ($expenses as $ev) {
             $transactions[] = [
+                'created_at' => $ev->created_at,
                 'id' => $ev->id,
                 'date' => $ev->entry_date ?: $ev->created_at,
                 'ref' => 'EV',
@@ -1064,18 +1068,19 @@ class GeneralLedgerController extends Controller
                 $inv = trim(str_replace('Discount on Sale:', '', $v->narration));
             }
 
-            $transactions[] = [
-                'id' => $v->id,
-                'date' => $v->date ?: $v->created_at,
-                'ref' => $ref,
-                'inv' => $inv,
-                'desc' => $v->narration ?? $v->voucher_type,
-                'price' => 0, 'qty' => 0,
-                'debit' => ($v->type == 'Debit') ? (float)$v->amount : 0,
-                'credit' => ($v->type == 'Credit') ? (float)$v->amount : 0,
-                'priority' => str_contains($v->narration ?? '', 'Discount on Sale:') ? 12 : 52,
-                'sort_inv' => str_contains($v->narration ?? '', 'Discount on Sale:') ? preg_replace('/[^0-9]/', '', $v->narration) : preg_replace('/[^0-9]/', '', $v->voucher_type ?? '')
-            ];
+                $transactions[] = [
+                    'created_at' => $v->created_at,
+                    'id' => $v->id,
+                    'date' => $v->date ?: $v->created_at,
+                    'ref' => $ref,
+                    'inv' => $inv,
+                    'desc' => $v->narration ?? $v->voucher_type,
+                    'price' => 0, 'qty' => 0,
+                    'debit' => ($v->type == 'Debit') ? (float)$v->amount : 0,
+                    'credit' => ($v->type == 'Credit') ? (float)$v->amount : 0,
+                    'priority' => str_contains($v->narration ?? '', 'Discount on Sale:') ? 12 : 52,
+                    'sort_inv' => str_contains($v->narration ?? '', 'Discount on Sale:') ? preg_replace('/[^0-9]/', '', $v->narration) : preg_replace('/[^0-9]/', '', $v->voucher_type ?? '')
+                ];
         }
 
         // 4. JV (JV) - Debit/Credit
@@ -1106,6 +1111,7 @@ class GeneralLedgerController extends Controller
                     if (str_contains($jv->jvid, 'ALLOC')) $priority = 32;
 
                     $transactions[] = [
+                        'created_at' => $jv->created_at,
                         'id' => $jv->id,
                         'date' => $jv->entry_date ?: $jv->created_at,
                         'ref' => $ref,
@@ -1140,6 +1146,7 @@ class GeneralLedgerController extends Controller
                 $finalPrice = $rate ?: (($qty > 0) ? ($price - (($disc > 100) ? ($disc / $qty) : ($price * $disc / 100))) : $price);
 
                 $transactions[] = [
+                    'created_at' => $p->created_at,
                     'id' => $item->id,
                     'date' => $p->entry_date ?: $p->created_at,
                     'ref' => 'PJ',
@@ -1173,6 +1180,7 @@ class GeneralLedgerController extends Controller
                 $finalPrice = ($qty > 0) ? ($price - ($disc / $qty)) : $price;
 
                 $transactions[] = [
+                    'created_at' => $sr->created_at,
                     'id' => $item->id,
                     'date' => $sr->entry_date ?: $sr->current_date,
                     'ref' => 'SRJ',
@@ -1191,6 +1199,7 @@ class GeneralLedgerController extends Controller
                     $descDisc .= ' (' . $sr->invoice_no . ')';
                 }
                 $transactions[] = [
+                    'created_at' => $sr->created_at,
                     'id' => $sr->id . '_disc',
                     'date' => $sr->entry_date ?: $sr->current_date,
                     'ref' => 'SRJ',
@@ -1241,6 +1250,7 @@ class GeneralLedgerController extends Controller
 
                 if ($rowAmount > 0) {
                     $transactions[] = [
+                        'created_at' => $rv->created_at,
                         'id' => $rv->id . '_' . $idx, // Unique ID for items
                         'date' => $rv->entry_date ?: $rv->created_at,
                         'ref' => $ref,
@@ -1254,6 +1264,7 @@ class GeneralLedgerController extends Controller
 
                 if ($rowDiscount > 0) {
                     $transactions[] = [
+                        'created_at' => $rv->created_at,
                         'id' => $rv->id . '_disc_' . $idx,
                         'date' => $rv->entry_date ?: $rv->created_at,
                         'ref' => $ref,
@@ -1273,6 +1284,7 @@ class GeneralLedgerController extends Controller
             ->whereIn('status', ['posted', 'Posted'])->whereBetween(DB::raw($ivDateCol), [$start, $end])->get();
         foreach ($incomes as $iv) {
             $transactions[] = [
+                'created_at' => $iv->created_at,
                 'id' => $iv->id,
                 'date' => $iv->entry_date ?: $iv->created_at,
                 'ref' => 'IV',
@@ -1283,31 +1295,30 @@ class GeneralLedgerController extends Controller
             ];
         }
 
-        // Sort by Date, then Sale/Invoice Number, then Internal Priority (SJ=10, RV=11, VO=12)
+        // Strictly chronologically (Time Wise)
         usort($transactions, function ($a, $b) {
-            $dateA = strtotime($a['date']);
-            $dateB = strtotime($b['date']);
+            $timeA = isset($a['created_at']) && $a['created_at'] ? strtotime($a['created_at']) : 0;
+            $timeB = isset($b['created_at']) && $b['created_at'] ? strtotime($b['created_at']) : 0;
+            
+            // If both have explicit timestamps and they differ, sort by timestamp
+            if ($timeA !== 0 && $timeB !== 0 && $timeA !== $timeB) {
+                return $timeA - $timeB;
+            }
+
+            // Fallback: Date
+            $dateA = strtotime(substr($a['date'] ?? '', 0, 10));
+            $dateB = strtotime(substr($b['date'] ?? '', 0, 10));
             if ($dateA != $dateB) {
                 return $dateA - $dateB;
             }
 
-            // Same date: Compare Sale/Invoice Number for grouping
-            $invA = (int)($a['sort_inv'] ?? 0);
-            $invB = (int)($b['sort_inv'] ?? 0);
-
-            if ($invA !== $invB && $invA !== 0 && $invB !== 0) {
-                return $invA - $invB;
-            }
-
-            // Same group or generic entry: Compare Internal Priority
+            // Same exact time and date: Compare Priority as last resort
             $prioA = (int)($a['priority'] ?? 60);
             $prioB = (int)($b['priority'] ?? 60);
-
             if ($prioA !== $prioB) {
                 return $prioA - $prioB;
             }
 
-            // Fallback to record ID
             $idA = $a['id'] ?? 0;
             $idB = $b['id'] ?? 0;
             if (is_numeric($idA) && is_numeric($idB)) {

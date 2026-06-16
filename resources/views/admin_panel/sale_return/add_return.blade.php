@@ -617,7 +617,11 @@ $(document).ready(function() {
             html += '<option value="" disabled>No invoices found</option>';
         } else {
             filtered.forEach(p => {
-                html += `<option value="${p.invoice_no}">${p.invoice_no}</option>`;
+                let displayInv = p.invoice_no;
+                if (!displayInv.startsWith('SJ-') && !displayInv.startsWith('RET-')) {
+                    displayInv = 'SJ-' + displayInv;
+                }
+                html += `<option value="${p.invoice_no}">${displayInv}</option>`;
             });
         }
         $('#sale_invoice_select').html(html).trigger('change.select2');

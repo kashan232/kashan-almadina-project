@@ -20,7 +20,7 @@ class Voucher extends Model
     // ];
     protected $fillable = [
         'voucher_type', 'date', 'sales_officer', 'type', 'person',
-        'sub_head', 'narration', 'amount'
+        'sub_head', 'narration', 'amount', 'status'
     ];
     public function mainCustomer()
     {
