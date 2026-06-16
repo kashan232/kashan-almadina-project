@@ -629,21 +629,24 @@ class GeneralLedgerController extends Controller
                 $q->where('vendor_id', $id)->orWhere(function($q2) use ($id, $class) {
                     $q2->where('purchasable_id', $id)->where('purchasable_type', $class);
                 });
-            })->where('status', 'Posted')
+            })->whereIn('status', ['posted', 'Posted'])
             ->where(DB::raw($prDateCol), '<', $date)->sum('net_amount');
 
         // 3. Payments (Debit)
         $pvDateCol = $this->getDateColumn('payment_vouchers', 'receipt_date');
         $payments = (float)PaymentVoucher::where('party_id', $id)->whereIn('type', $typeArray)
+            ->whereIn('status', ['posted', 'Posted'])
             ->where(DB::raw($pvDateCol), '<', $date)->sum('total_amount');
 
         // 3.1 Expenses (Debit)
         $evDateCol = $this->getDateColumn('expense_vouchers');
         $expenses = (float)DB::table('expense_vouchers')->where('party_id', $id)->whereIn('type', $typeArray)
+            ->whereIn('status', ['posted', 'Posted'])
             ->where(DB::raw($evDateCol), '<', $date)->sum('amount');
 
         // 3.2 Generic Vouchers (Debit)
         $vDebits = (float)DB::table('vouchers')->where('person', $id)->where('type', 'Debit')
+            ->whereIn('status', ['posted', 'Posted'])
             ->where(DB::raw("COALESCE(date, DATE(created_at))"), '<', $date)->sum('amount');
 
         // 4. JV Debits
@@ -653,6 +656,7 @@ class GeneralLedgerController extends Controller
                   ->orWhereJsonContains('party_id', (int)$id);
             })
             ->whereJsonContains('party_type', $type)
+            ->whereIn('status', ['posted', 'Posted'])
             ->where(DB::raw($jvDateCol), '<', $date)->get();
         $jvDebits = 0;
         foreach($jvs as $jv) {
@@ -669,17 +673,19 @@ class GeneralLedgerController extends Controller
                 $q->where('vendor_id', $id)->orWhere(function($q2) use ($id, $class) {
                     $q2->where('purchasable_id', $id)->where('purchasable_type', $class);
                 });
-            })->where('status', 'Posted')
+            })->whereIn('status', ['posted', 'Posted'])
             ->where(DB::raw($pjDateCol), '<', $date)->sum('net_amount');
 
         // 6. Sale Returns (Credit)
         $srDateCol = $this->getDateColumn('sale_returns', 'current_date');
         $sReturns = (float)SaleReturn::where('customer_id', $id)->whereIn('party_type', $typeArray)
+            ->whereIn('status', ['posted', 'Posted'])
             ->where(DB::raw($srDateCol), '<', $date)->sum('total_balance');
 
         // 7. Receipts (Credit)
         $rvDateCol = $this->getDateColumn('receipts_vouchers', 'receipt_date');
         $rvsList = ReceiptsVoucher::where('party_id', $id)->whereIn('type', $typeArray)
+            ->whereIn('status', ['posted', 'Posted'])
             ->where(DB::raw($rvDateCol), '<', $date)->get();
         $receipts = 0;
         foreach ($rvsList as $rv) {
@@ -695,10 +701,12 @@ class GeneralLedgerController extends Controller
         // 7.1 Income (Credit)
         $ivDateCol = $this->getDateColumn('income_vouchers');
         $incomes = (float)DB::table('income_vouchers')->where('party_id', $id)->whereIn('party_type', $typeArray)
+            ->whereIn('status', ['posted', 'Posted'])
             ->where(DB::raw($ivDateCol), '<', $date)->sum('amount');
 
         // 7.2 Generic Vouchers (Credit)
         $vCredits = (float)DB::table('vouchers')->where('person', $id)->where('type', 'Credit')
+            ->whereIn('status', ['posted', 'Posted'])
             ->where(DB::raw("COALESCE(date, DATE(created_at))"), '<', $date)->sum('amount');
 
         // 8. JV Credits
@@ -708,6 +716,7 @@ class GeneralLedgerController extends Controller
                   ->orWhereJsonContains('party_id', (int)$id);
             })
             ->whereJsonContains('party_type', $type)
+            ->whereIn('status', ['posted', 'Posted'])
             ->where(DB::raw($jvDateCol), '<', $date)->get();
         $jvCredits = 0;
         foreach($jvs as $jv) {
@@ -723,7 +732,7 @@ class GeneralLedgerController extends Controller
         return $balance;
     }
 
-    private function fetchTransactions($type, $id, $start, $end) {
+    public function fetchTransactions($type, $id, $start, $end) {
         $typeArray = ($type === 'customer') ? ['customer', 'walking', 'walkin'] : [$type];
         $transactions = [];
 

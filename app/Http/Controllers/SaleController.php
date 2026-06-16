@@ -943,7 +943,17 @@ class SaleController extends Controller
             }
 
             $glController = new \App\Http\Controllers\GeneralLedgerController();
-            $previous_balance = $glController->calculateOpeningBalance('vendor', $id, '2099-12-31');
+            $openingBalance = $glController->calculateOpeningBalance('vendor', $id, '1970-01-01');
+            $transactions = $glController->fetchTransactions('vendor', $id, '1970-01-01', '2099-12-31');
+            $previous_balance = $openingBalance;
+            foreach ($transactions as $trx) {
+                $previous_balance += ($trx['debit'] - $trx['credit']);
+            }
+            
+            // Revert sign for Vendors (GL displays Credits as positive for Vendor)
+            // Wait, GL Preview displays: $runningBalance >= 0 ? 'DR.' : 'CR.'
+            // So if $previous_balance is -420485, it's CR. 420485.
+            // The Sale Add screen just displays the numeric value, so we leave it as is.
 
             return response()->json([
                 'address' => $v->address,
@@ -960,7 +970,12 @@ class SaleController extends Controller
         }
 
         $glController = new \App\Http\Controllers\GeneralLedgerController();
-        $previous_balance = $glController->calculateOpeningBalance($type, $id, '2099-12-31');
+        $openingBalance = $glController->calculateOpeningBalance($type, $id, '1970-01-01');
+        $transactions = $glController->fetchTransactions($type, $id, '1970-01-01', '2099-12-31');
+        $previous_balance = $openingBalance;
+        foreach ($transactions as $trx) {
+            $previous_balance += ($trx['debit'] - $trx['credit']);
+        }
 
         return response()->json([
             'filer_type' => $c->filer_type,
