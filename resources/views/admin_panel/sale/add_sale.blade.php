@@ -2594,5 +2594,50 @@
     }
   });
 
+  // Full Grid Navigation (Arrows Up/Down/Left/Right)
+  $(document).on('keydown', '#salesTableBody input, #rvWrapper input', function(e) {
+      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].indexOf(e.key) === -1) return;
+      
+      var $this = $(this);
+      var $row = $this.closest('tr');
+      // For rvWrapper it might be a div with class rv-row, let's just use closest('tr, .rv-row')
+      if ($row.length === 0) $row = $this.closest('.rv-row');
+      var $inputs = $row.find('input:visible:not([readonly])'); 
+      var currentIndex = $inputs.index($this);
+
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+          e.preventDefault(); // Stop page scroll
+          var classList = $this.attr('class').split(' ');
+          var ignore = ['form-control', 'form-control-sm', 'text-end', 'text-center', 'input-readonly', 'fw-bold', 'loading-indicator'];
+          var specificClass = classList.find(c => ignore.indexOf(c) === -1);
+          
+          if (specificClass) {
+              var $targetRow = (e.key === 'ArrowDown') ? $row.next('tr, .rv-row') : $row.prev('tr, .rv-row');
+              var $target = $targetRow.find('.' + specificClass);
+              if ($target.length) {
+                  $target.focus().select();
+              }
+          }
+      } else if (e.key === 'ArrowRight') {
+          // Only jump if at the end of input
+          if (this.selectionStart === this.value.length) {
+              var $next = $inputs.eq(currentIndex + 1);
+              if ($next.length) {
+                  e.preventDefault();
+                  $next.focus().select();
+              }
+          }
+      } else if (e.key === 'ArrowLeft') {
+          // Only jump if at the start of input
+          if (this.selectionStart === 0) {
+              var $prev = $inputs.eq(currentIndex - 1);
+              if ($prev.length && currentIndex > 0) {
+                  e.preventDefault();
+                  $prev.focus().select();
+              }
+          }
+      }
+  });
+
 </script>
 @endsection
