@@ -171,8 +171,8 @@ class RollbackController extends Controller
         $this->adjustLedger($sale->partyType, $sale->customer_id, $impact, 'subtract');
 
         // 3. Delete Auto-generated Vouchers and reverse Account impacts
-        $rv = ReceiptsVoucher::where('remarks', 'LIKE', 'Auto-generated from Sale: ' . $sale->invoice_no)->first();
-        if ($rv) {
+        $rvs = ReceiptsVoucher::where('remarks', 'LIKE', '%Auto-generated from Sale: ' . $sale->invoice_no . '%')->get();
+        foreach ($rvs as $rv) {
             $rowAccs = json_decode($rv->row_account_id, true);
             $rowAmts = json_decode($rv->amount, true);
             if (is_array($rowAccs)) {
@@ -184,9 +184,18 @@ class RollbackController extends Controller
             $rv->delete();
         }
 
+        $discountVouchers = Voucher::where('narration', 'LIKE', '%Discount on Sale: ' . $sale->invoice_no . '%')->get();
+        foreach ($discountVouchers as $dv) {
+            $dv->delete();
+        }
+
         // 4. Convert back to Booking (Draft)
         $bookingData = $sale->toArray();
         unset($bookingData['id']); 
+        if (isset($bookingData['partyType'])) {
+            $bookingData['party_type'] = $bookingData['partyType'];
+            unset($bookingData['partyType']);
+        }
         
         $booking = Productbooking::create($bookingData);
         foreach ($sale->items as $item) {

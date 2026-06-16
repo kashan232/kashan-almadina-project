@@ -616,11 +616,7 @@ $(document).ready(function() {
             html += '<option value="" disabled>No invoices found</option>';
         } else {
             filtered.forEach(p => {
-                let displayInv = p.invoice_no;
-                if (!displayInv.startsWith('SJ-') && !displayInv.startsWith('RET-')) {
-                    displayInv = 'SJ-' + displayInv;
-                }
-                html += `<option value="${p.invoice_no}">${displayInv}</option>`;
+                html += `<option value="${p.invoice_no}">${p.invoice_no}</option>`;
             });
         }
         $('#sale_invoice_select').html(html).trigger('change.select2');
@@ -644,8 +640,8 @@ $(document).ready(function() {
                     results: data.map(item => ({
                         id: item.id,
                         text: item.name,
-                        price: item.sale_net_amount,
-                        retail: item.sale_retail_price,
+                        price: item.sale_price,
+                        retail: item.retail_price,
                         purchase_price: item.purchase_net_amount
                     }))
                 }),
@@ -695,8 +691,8 @@ $(document).ready(function() {
                             data: {
                                 id: product.id,
                                 text: product.name,
-                                price: product.sale_net_amount,
-                                retail: product.sale_retail_price,
+                                price: product.sale_price,
+                                retail: product.retail_price,
                                 purchase_price: product.purchase_net_amount
                             }
                         }
