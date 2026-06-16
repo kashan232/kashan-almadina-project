@@ -942,8 +942,8 @@ class SaleController extends Controller
                 return response()->json(['error' => 'Vendor not found'], 404);
             }
 
-            $latestLedger = \App\Models\VendorLedger::where('vendor_id', $id)->latest()->first();
-            $previous_balance = $latestLedger ? $latestLedger->closing_balance : 0;
+            $glController = new \App\Http\Controllers\GeneralLedgerController();
+            $previous_balance = $glController->calculateOpeningBalance('vendor', $id, '2099-12-31');
 
             return response()->json([
                 'address' => $v->address,
@@ -959,8 +959,8 @@ class SaleController extends Controller
             return response()->json(['error' => 'Customer not found'], 404);
         }
 
-        $latestLedger = \App\Models\CustomerLedger::where('customer_id', $id)->latest()->first();
-        $previous_balance = $latestLedger ? $latestLedger->closing_balance : 0;
+        $glController = new \App\Http\Controllers\GeneralLedgerController();
+        $previous_balance = $glController->calculateOpeningBalance($type, $id, '2099-12-31');
 
         return response()->json([
             'filer_type' => $c->filer_type,
