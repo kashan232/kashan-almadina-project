@@ -212,18 +212,19 @@
                             <div class="p-2 border-bottom fw-bold small text-muted">Show/Hide Columns</div>
                             <label class="column-picker-item"><input type="checkbox" data-column="1" checked> #</label>
                             <label class="column-picker-item"><input type="checkbox" data-column="2" checked> Date</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="3" checked> Inv#</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="4" checked> Source</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="5" checked> Supplier</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="6" checked> Items</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="7" checked> Total Qty</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="8" checked> Warehouse</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="9" checked> Subtotal</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="10" checked> Disc</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="11" checked> WHT</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="12" checked> Net</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="13" checked> Created By</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="14" checked> Status</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="3" checked> Type</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="4" checked> Inv#</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="5" checked> Source</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="6" checked> Supplier</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="7" checked> Items</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="8" checked> Total Qty</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="9" checked> Warehouse</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="10" checked> Subtotal</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="11" checked> Disc</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="12" checked> WHT</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="13" checked> Net</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="14" checked> Created By</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="15" checked> Status</label>
                         </div>
                     </div>
                 </div>
@@ -235,6 +236,7 @@
                                 <tr>
                                     <th>#</th>
                                     <th>Date</th>
+                                    <th>Type</th>
                                     <th>Inv#</th>
                                     <th>Source</th>
                                     <th>Supplier</th>
@@ -257,6 +259,7 @@
                                     <td class="fw-bold text-dark" data-order="{{ $purchase->current_date }}_{{ $purchase->id }}">
                                         {{ \Carbon\Carbon::parse($purchase->current_date)->format('d-M-Y') }}
                                     </td>
+                                    <td class="text-center small fw-bold">PJ</td>
                                     <td class="fw-bold text-primary">{{ preg_replace('/[^0-9]/', '', $purchase->invoice_no) }}</td>
                                     <td class="text-center">
                                         @if($purchase->inward_id)
@@ -310,20 +313,20 @@
                                                      </button>
                                                  </form>
                                                  
-                                                 <a href="{{ route('purchase.edit', $purchase->id) }}" class="btn btn-outline-warning btn-xs px-1 py-0" title="Edit" style="height: 20px;">
-                                                    <i class="fa fa-edit text-dark"></i>
+                                                 <a href="{{ route('purchase.edit', $purchase->id) }}" class="btn btn-warning btn-mini" title="Edit">
+                                                    <i class="fa fa-pencil"></i>
                                                  </a>
 
                                                  <form action="{{ route('purchase.destroy', $purchase->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Delete this unposted purchase?')">
                                                      @csrf
                                                      @method('DELETE')
-                                                     <button type="submit" class="btn btn-outline-danger btn-xs px-1 py-0" title="Delete" style="height: 20px;">
+                                                     <button type="submit" class="btn btn-danger btn-mini" title="Delete">
                                                          <i class="fa fa-trash"></i>
                                                      </button>
                                                  </form>
                                              @endif
                                              
-                                             <a href="{{ route('purchase.invoice', $purchase->id) }}" class="btn btn-outline-dark btn-xs px-1 py-0" title="Print Invoice" style="height: 20px;">
+                                             <a href="{{ route('purchase.invoice', $purchase->id) }}" class="btn btn-dark btn-mini" title="Print Invoice">
                                                  <i class="fa fa-print"></i>
                                              </a>
                                          </div>

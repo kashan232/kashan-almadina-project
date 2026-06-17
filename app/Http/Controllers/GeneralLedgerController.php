@@ -692,9 +692,13 @@ class GeneralLedgerController extends Controller
         // 2. Purchase Returns (Debit)
         $prDateCol = $this->getDateColumn('purchase_returns', 'current_date');
         $pReturns = (float)PurchaseReturn::where(function($q) use ($id, $type, $class) {
-                $q->where('vendor_id', $id)->orWhere(function($q2) use ($id, $class) {
-                    $q2->where('purchasable_id', $id)->where('purchasable_type', $class);
-                });
+                if ($type == 'vendor') {
+                    $q->where('vendor_id', $id)->orWhere(function($q2) use ($id, $class) {
+                        $q2->where('purchasable_id', $id)->where('purchasable_type', $class);
+                    });
+                } else {
+                    $q->where('purchasable_id', $id)->where('purchasable_type', $class);
+                }
             })->whereIn('status', ['posted', 'Posted'])
             ->where(DB::raw($prDateCol), '<', $date)->sum('net_amount');
 
@@ -744,9 +748,13 @@ class GeneralLedgerController extends Controller
         // 5. Purchases (Credit)
         $pjDateCol = $this->getDateColumn('purchases', 'current_date');
         $purchases = (float)Purchase::where(function($q) use ($id, $type, $class) {
-                $q->where('vendor_id', $id)->orWhere(function($q2) use ($id, $class) {
-                    $q2->where('purchasable_id', $id)->where('purchasable_type', $class);
-                });
+                if ($type == 'vendor') {
+                    $q->where('vendor_id', $id)->orWhere(function($q2) use ($id, $class) {
+                        $q2->where('purchasable_id', $id)->where('purchasable_type', $class);
+                    });
+                } else {
+                    $q->where('purchasable_id', $id)->where('purchasable_type', $class);
+                }
             })->whereIn('status', ['posted', 'Posted'])
             ->where(DB::raw($pjDateCol), '<', $date)->sum('net_amount');
 
@@ -1087,9 +1095,13 @@ class GeneralLedgerController extends Controller
         // 2. Purchase Returns (PRJ) - Debit
         $prDateCol = $this->getDateColumn('purchase_returns', 'current_date');
         $pReturns = PurchaseReturn::where(function($q) use ($id, $type, $class) {
-                $q->where('vendor_id', $id)->orWhere(function($q2) use ($id, $class) {
-                    $q2->where('purchasable_id', $id)->where('purchasable_type', $class);
-                });
+                if ($type == 'vendor') {
+                    $q->where('vendor_id', $id)->orWhere(function($q2) use ($id, $class) {
+                        $q2->where('purchasable_id', $id)->where('purchasable_type', $class);
+                    });
+                } else {
+                    $q->where('purchasable_id', $id)->where('purchasable_type', $class);
+                }
             })->where('status', 'Posted')
             ->whereBetween(DB::raw($prDateCol), [$start, $end])
             ->with('items.product.brandRelation')->get();
@@ -1367,9 +1379,13 @@ class GeneralLedgerController extends Controller
         // 5. Purchases (PJ) - Credit
         $pjDateCol = $this->getDateColumn('purchases', 'current_date');
         $purchases = Purchase::where(function($q) use ($id, $type, $class) {
-                $q->where('vendor_id', $id)->orWhere(function($q2) use ($id, $class) {
-                    $q2->where('purchasable_id', $id)->where('purchasable_type', $class);
-                });
+                if ($type == 'vendor') {
+                    $q->where('vendor_id', $id)->orWhere(function($q2) use ($id, $class) {
+                        $q2->where('purchasable_id', $id)->where('purchasable_type', $class);
+                    });
+                } else {
+                    $q->where('purchasable_id', $id)->where('purchasable_type', $class);
+                }
             })->where('status', 'Posted')
             ->whereBetween(DB::raw($pjDateCol), [$start, $end])
             ->with('items.product.brandRelation')->get();
