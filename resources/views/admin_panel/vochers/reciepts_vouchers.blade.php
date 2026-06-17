@@ -375,36 +375,18 @@ $(document).ready(function() {
 
     $(document).on('input', '.kg, .rate, .discountValue', function() {
         let $tr = $(this).closest('tr');
-        let kg = parseFloat($tr.find('.kg').val()) || 0, rate = parseFloat($tr.find('.rate').val()) || 0, disc = parseFloat($tr.find('.discountValue').val()) || 0;
+        let kg = parseFloat($tr.find('.kg').val()) || 0, rate = parseFloat($tr.find('.rate').val()) || 0;
         let $amount = $tr.find('.amount');
         
         if (kg > 0 || rate > 0) {
             let gross = (kg > 0) ? (kg * rate) : rate;
-            $amount.val(Math.max(0, gross - disc).toFixed(2));
-            $amount.data('gross', gross);
-        } else {
-            let gross = parseFloat($amount.data('gross'));
-            if (isNaN(gross)) {
-                gross = (parseFloat($amount.val()) || 0) + disc;
-                $amount.data('gross', gross);
-            }
-            $amount.val(Math.max(0, gross - disc).toFixed(2));
+            $amount.val(Math.max(0, gross).toFixed(2));
         }
         
         calculateTotals();
     });
 
     $(document).on('input', '.amount', function() {
-        let $tr = $(this).closest('tr');
-        let amount = parseFloat($(this).val()) || 0;
-        let disc = parseFloat($tr.find('.discountValue').val()) || 0;
-        let kg = parseFloat($tr.find('.kg').val()) || 0;
-        let rate = parseFloat($tr.find('.rate').val()) || 0;
-        
-        if (kg === 0 && rate === 0) {
-            $tr.find('.amount').data('gross', amount + disc);
-        }
-        
         calculateTotals();
     });
 

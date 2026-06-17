@@ -984,6 +984,13 @@ class VoucherController extends Controller
             $uTypes = array_unique($typeLabels);
             $voucher->type_label = count($uTypes) > 1 ? 'Multiple Heads' : ($uTypes[0] ?? '-');
             $voucher->party_name = count($partyNames) > 1 ? count($partyNames) . ' Parties' : ($partyNames[0] ?? '-');
+
+            $discountRaw = json_decode($voucher->discount_value, true);
+            if (is_array($discountRaw)) {
+                $voucher->total_discount = array_sum(array_map('floatval', $discountRaw));
+            } else {
+                $voucher->total_discount = (float)$voucher->discount_value;
+            }
         }
 
         return view('admin_panel.vochers.payment_vochers.all_payment_vochers', compact('payments'));
@@ -1602,12 +1609,27 @@ class VoucherController extends Controller
         $incomes = $query->orderBy('id', 'DESC')->get();
 
         foreach ($incomes as $v) {
-            $accountHead = DB::table('account_heads')->where('id', $v->account_head)->first();
-            $account = DB::table('accounts')->where('id', $v->account_id)->first();
+            $pNames = [];
+            $typesRaw = json_decode($v->party_type, true);
+            if (!is_array($typesRaw)) $typesRaw = [$v->party_type];
+            $pIdsRaw = json_decode($v->party_id, true);
+            if (!is_array($pIdsRaw)) $pIdsRaw = [$v->party_id];
             
-            $v->type_label = $accountHead->name ?? 'Account';
-            $v->party_name = $account->title ?? '-';
-            $v->party_code = $account->account_code ?? '-';
+            foreach ($pIdsRaw as $idx => $pId) {
+                if (empty($pId)) continue;
+                $pType = $typesRaw[$idx] ?? '';
+                if ($pType === 'vendor') $pNames[] = DB::table('vendors')->where('id', $pId)->value('name');
+                elseif (in_array($pType, ['customer', 'walkin', 'walking'])) $pNames[] = DB::table('customers')->where('id', $pId)->value('customer_name');
+                else $pNames[] = DB::table('accounts')->where('id', $pId)->value('title');
+            }
+            
+            $v->party_name = count($pNames) > 1 ? count(array_unique($pNames)) . ' Parties' : ($pNames[0] ?? '-');
+            
+            $accountHead = DB::table('account_heads')->where('id', $v->account_head)->first();
+            $v->type_label = count(array_unique($typesRaw)) > 1 ? 'Multiple Types' : ucfirst($typesRaw[0] ?? 'Account');
+            
+            $discountRaw = json_decode($v->discount_value, true);
+            $v->total_discount = is_array($discountRaw) ? array_sum(array_map('floatval', $discountRaw)) : (float)$v->discount_value;
             $v->total_amount = $v->total_amount ?: 0;
         }
 

@@ -238,12 +238,12 @@ class RollbackController extends Controller
 
         // 4. Reverse Allocation Account Impacts
         foreach ($purchase->accountAllocations as $allocation) {
-            $this->adjustAccount($allocation->account_id, $allocation->amount, 'subtract');
+            $this->adjustAccount($allocation->account_id, $allocation->amount, 'add'); // Post subtracted, so rollback adds
         }
 
         // 5. Delete Related Journal Vouchers
-        JournalVoucher::where('jvid', 'PJ-WHT-' . $purchase->id)->delete();
-        JournalVoucher::where('jvid', 'PJ-ALLOC-' . $purchase->id)->delete();
+        JournalVoucher::where('jvid', 'PJ-WHT-' . $purchase->invoice_no)->delete();
+        JournalVoucher::where('jvid', 'PJ-ALLOC-' . $purchase->invoice_no)->delete();
 
         // 6. Update Purchase Status
         $purchase->update(['status' => 'Unposted']);

@@ -44,8 +44,22 @@
         font-size: 6rem; color: rgba(220, 53, 69, 0.05); font-weight: 900; text-transform: uppercase;
         pointer-events: none; z-index: 1000; border: 8px solid rgba(220, 53, 69, 0.05); padding: 10px 40px; border-radius: 15px;
     }
-    .form-locked input, .form-locked select, .form-locked textarea, .form-locked button:not(#editBtn):not(#previewPrintBtn):not(#newBtn):not(#listBtn) {
-        background-color: #f8fafc !important; opacity: 0.7 !important; pointer-events: none !important;
+    .form-locked {
+        background-color: #f8f9fa !important;
+        position: relative;
+    }
+    .form-locked input, 
+    .form-locked .select2-container--default .select2-selection--single,
+    .form-locked .select2-container, 
+    .form-locked select, 
+    .form-locked textarea { 
+        pointer-events: none !important; 
+        opacity: 0.85 !important; 
+        background-color: #f1f3f5 !important;
+        cursor: not-allowed !important;
+    }
+    .form-locked .removeRow, .form-locked #btnAddRow, .form-locked #saveDraftBtn { 
+        display: none !important; 
     }
 
     .btn-mini { padding: 0px 4px; font-size: 9px; height: 18px; display: inline-flex; align-items: center; justify-content: center; }
@@ -209,26 +223,40 @@
                     <div class="col-md-5">
                         <div class="d-flex gap-1 justify-content-end mb-1">
                             @if($receipt->status != 'posted')
-                                <button type="button" id="saveDraftBtn" class="btn btn-warning btn-sm fw-bold px-4 shadow-sm" style="font-size: 11px;">
-                                    <i class="fa fa-save me-1"></i> Save Draft <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+S</kbd>
+                                <button type="button" id="saveDraftBtn" class="btn btn-sm btn-warning rounded-pill px-4 shadow-sm">
+                                    <i class="fa fa-floppy-o me-1"></i> Save Draft
+                                    <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+S</kbd>
                                 </button>
-                                <button type="button" id="postBtn" class="btn btn-primary btn-sm fw-bold px-4 shadow-sm text-white" style="font-size: 11px;">
-                                    <i class="fa fa-send me-1"></i> Post Voucher <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+↵</kbd>
+                                <button type="button" id="postBtn" class="btn btn-sm btn-primary rounded-pill px-4 shadow-sm">
+                                    <i class="fa fa-send me-1"></i> Save & Post
+                                    <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+&#8629;</kbd>
                                 </button>
                             @endif
                             
-                            <button type="button" id="editBtn" class="btn btn-warning btn-sm fw-bold px-4 shadow-sm" style="{{ ($receipt->id && $receipt->status != 'posted') ? 'display:block' : 'display:none' }}; font-size: 11px;">
-                                <i class="fa fa-pencil me-1"></i> Unlock Edit <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+E</kbd>
+                            @if($receipt->status == 'posted')
+                                <button type="button" id="unpostBtn" class="btn btn-sm btn-outline-danger rounded-pill px-4 shadow-sm">
+                                    <i class="fa fa-undo me-1"></i> Unpost
+                                </button>
+                            @endif
+
+                            <button type="button" id="editBtn" class="btn btn-sm btn-warning rounded-pill px-4 shadow-sm" style="{{ ($receipt->id && $receipt->status != 'posted') ? 'display:block' : 'display:none' }};">
+                                <i class="fa fa-pencil me-1"></i> Edit
+                                <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+E</kbd>
                             </button>
 
-                            <a href="{{ $receipt->id ? route('incomeVoucher.print', $receipt->id) : 'javascript:void(0)' }}" id="previewPrintBtn" target="_blank" class="btn btn-primary btn-sm px-3 shadow-sm text-white {{ !$receipt->id ? 'disabled' : '' }}" style="font-size: 11px;">
-                                <i class="fa fa-print"></i> Print <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+P</kbd>
+                            <a href="{{ $receipt->id ? route('incomeVoucher.print', $receipt->id) : 'javascript:void(0)' }}" id="previewPrintBtn" target="_blank" class="btn btn-sm btn-outline-dark rounded-pill px-4 shadow-sm {{ !$receipt->id ? 'disabled' : '' }}">
+                                <i class="fa fa-print me-1"></i> Print Preview
+                                <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+P</kbd>
                             </a>
-                            <a href="{{ route('income-vochers') }}" class="btn btn-primary btn-sm fw-bold px-3 shadow-sm text-white" style="font-size: 11px;">
-                                <i class="fa fa-plus"></i> New <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+M</kbd>
+                            
+                            <a href="{{ route('income-vochers') }}" id="newInvoiceBtn" class="btn btn-sm btn-info rounded-pill px-4 shadow-sm text-white">
+                                <i class="fa fa-plus me-1"></i> New
+                                <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+M</kbd>
                             </a>
-                            <button type="button" id="deleteBtn" class="btn btn-danger btn-sm fw-bold px-3 shadow-sm text-white" style="{{ !$receipt->id ? 'display:none' : '' }}; font-size: 11px;">
-                                <i class="fa fa-trash"></i>
+                            
+                            <button type="button" id="cancelBtn" onclick="handleCancel()" class="btn btn-sm btn-danger rounded-pill px-4 shadow-sm text-white">
+                                <i class="fa fa-times me-1"></i> Cancel
+                                <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Esc</kbd>
                             </button>
                         </div>
                     </div>
@@ -444,22 +472,27 @@ $(document).ready(function() {
             if ($('.modal.show').length) {
                 $('.modal.show').modal('hide');
             } else {
-               window.location.href = $('#listBtn').attr('href');
+               handleCancel();
             }
         }
     });
 
-    $('#deleteBtn').click(function() {
-        Swal.fire({ title: 'Delete permanently?', icon: 'warning', showCancelButton: true, confirmButtonColor: '#d33' }).then((res) => {
-            if(res.isConfirmed) {
-                let id = $('#receipt_id').val();
-                let f = $('<form>', {action: '{{ route("income.vochers.cancel", ":id") }}'.replace(':id', id), method: 'POST'});
-                f.append($('<input>', {type: 'hidden', name: '_token', value: '{{ csrf_token() }}'}));
-                f.append($('<input>', {type: 'hidden', name: '_method', value: 'DELETE'}));
-                $('body').append(f); f.submit();
-            }
-        });
-    });
+    function handleCancel() {
+        let id = $('#receipt_id').val();
+        if (!id) { window.location.href = "{{ route('all-income-vochers') }}"; }
+        else {
+            Swal.fire({ title: 'Delete this draft?', icon: 'warning', showCancelButton: true }).then((res) => {
+                if(res.isConfirmed) {
+                    let form = $('<form>', {action: '{{ route("income.vochers.cancel", ":id") }}'.replace(':id', id), method: 'POST'})
+                        .append($('<input>', {type: 'hidden', name: '_token', value: '{{ csrf_token() }}'}))
+                        .append($('<input>', {type: 'hidden', name: '_method', value: 'DELETE'}));
+                    $('body').append(form); form.submit();
+                }
+            });
+        }
+    }
+
+
 });
 </script>
 @endsection

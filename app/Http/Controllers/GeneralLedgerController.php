@@ -258,18 +258,19 @@ class GeneralLedgerController extends Controller
             ];
         }
 
-        // 3.1 Expenses (EV)
+        // 3.1 Expenses (EV) - Credit
         $evDateCol = $this->getDateColumn('expense_vouchers');
-        $expenses = DB::table('expense_vouchers')->where('party_id', $id)->whereIn('type', $typeArray)
+        $expenses = \App\Models\ExpenseVoucher::where('party_id', $id)->whereIn('type', $typeArray)
             ->whereIn('status', ['posted', 'Posted'])->whereBetween(DB::raw($evDateCol), [$start, $end])->get();
         foreach ($expenses as $ev) {
             $transactions[] = [
                 'created_at' => $ev->created_at,
+                'id' => $ev->id,
                 'date' => $ev->entry_date ?: $ev->created_at,
                 'ref' => 'EV',
                 'inv' => $ev->evid,
                 'desc' => $ev->remarks ?? 'Expense Voucher',
-                'qty' => 0, 'debit' => (float)$ev->amount, 'credit' => 0
+                'qty' => 0, 'debit' => 0, 'credit' => (float)$ev->total_amount
             ];
         }
 
@@ -453,8 +454,10 @@ class GeneralLedgerController extends Controller
                         $narrText = $narrIds[$idx];
                     }
                 }
-                
-                $desc = $narrText ?: ($rv->remarks ?? 'Receipt Voucher');
+                $descParts = [];
+                if ($narrText) $descParts[] = $narrText;
+                if (!empty($rv->remarks)) $descParts[] = $rv->remarks;
+                $desc = !empty($descParts) ? implode(' ; ', $descParts) : 'Receipt Voucher';
 
                 $ref = 'RV';
                 $inv = $rv->rvid;
@@ -495,7 +498,7 @@ class GeneralLedgerController extends Controller
 
         // 7.1 Incomes (IV)
         $ivDateCol = $this->getDateColumn('income_vouchers');
-        $incomes = DB::table('income_vouchers')->where(function($q) use ($id) {
+        $incomes = \App\Models\IncomeVoucher::where(function($q) use ($id) {
                 $q->whereJsonContains('party_id', (string)$id)
                   ->orWhereJsonContains('party_id', (int)$id);
             })
@@ -520,7 +523,10 @@ class GeneralLedgerController extends Controller
                             $narrText = $narrIds[$idx];
                         }
                     }
-                    $desc = $narrText ?: ($iv->remarks ?? 'Income Voucher');
+                    $descParts = [];
+                    if ($narrText) $descParts[] = $narrText;
+                    if (!empty($iv->remarks)) $descParts[] = $iv->remarks;
+                    $desc = !empty($descParts) ? implode(' ; ', $descParts) : 'Income Voucher';
 
                     $transactions[] = [
                         'created_at' => $iv->created_at,
@@ -539,32 +545,31 @@ class GeneralLedgerController extends Controller
         }
 
         usort($transactions, function ($a, $b) {
-            $timeA = isset($a['created_at']) ? strtotime($a['created_at']) : 0;
-            $timeB = isset($b['created_at']) ? strtotime($b['created_at']) : 0;
+            $timeA = (string)($a['created_at'] ?? '');
+            $timeB = (string)($b['created_at'] ?? '');
             
-            if ($timeA != $timeB && $timeA !== 0 && $timeB !== 0) {
-                return $timeA - $timeB;
+            if ($timeA !== '' && $timeB !== '' && $timeA !== $timeB) {
+                return $timeA <=> $timeB;
             }
 
-            // Fallback if exactly same time
-            $dateA = strtotime(substr($a['date'], 0, 10));
-            $dateB = strtotime(substr($b['date'], 0, 10));
-            if ($dateA != $dateB) {
-                return $dateA - $dateB;
+            // Fallback to Date if created_at is missing entirely
+            $dateA = (string)($a['date'] ?? '');
+            $dateB = (string)($b['date'] ?? '');
+            if ($dateA !== $dateB) {
+                return $dateA <=> $dateB;
             }
 
+            // Fallback to priority (for vouchers created at the exact same identical second)
             $prioA = (int)($a['priority'] ?? 60);
             $prioB = (int)($b['priority'] ?? 60);
             if ($prioA !== $prioB) {
-                return $prioA - $prioB;
+                return $prioA <=> $prioB;
             }
 
-            $idA = $a['id'] ?? 0;
-            $idB = $b['id'] ?? 0;
-            if (is_numeric($idA) && is_numeric($idB)) {
-                return $idA - $idB;
-            }
-            return strcmp((string)$idA, (string)$idB);
+            // Final fallback to ID
+            $idA = (string)($a['id'] ?? '');
+            $idB = (string)($b['id'] ?? '');
+            return $idA <=> $idB;
         });
 
         return $transactions;
@@ -668,11 +673,8 @@ class GeneralLedgerController extends Controller
             ->whereIn('status', ['posted', 'Posted'])
             ->where(DB::raw($pvDateCol), '<', $date)->sum('total_amount');
 
-        // 3.1 Expenses (Debit)
-        $evDateCol = $this->getDateColumn('expense_vouchers');
-        $expenses = (float)DB::table('expense_vouchers')->where('party_id', $id)->whereIn('type', $typeArray)
-            ->whereIn('status', ['posted', 'Posted'])
-            ->where(DB::raw($evDateCol), '<', $date)->sum('amount');
+        // 3.1 Expenses (was Debit, now moved to Credit calculation below)
+        // Kept empty here to maintain numbering
 
         // 3.2 Generic Vouchers (Debit)
         $vDebits = (float)DB::table('vouchers')->where('person', $id)->where('type', 'Debit')
@@ -730,7 +732,7 @@ class GeneralLedgerController extends Controller
         
         // 7.1 Income (Debit)
         $ivDateCol = $this->getDateColumn('income_vouchers');
-        $ivList = DB::table('income_vouchers')->where(function($q) use ($id) {
+        $ivList = \App\Models\IncomeVoucher::where(function($q) use ($id) {
                 $q->whereJsonContains('party_id', (string)$id)
                   ->orWhereJsonContains('party_id', (int)$id);
             })
@@ -775,7 +777,13 @@ class GeneralLedgerController extends Controller
             }
         }
 
-        $balance += ($sales + $pReturns + $payments + $expenses + $vDebits + $jvDebits + $incomes) - ($purchases + $sReturns + $receipts + $vCredits + $jvCredits);
+        // 9. Expenses (Credit)
+        $evDateCol = $this->getDateColumn('expense_vouchers');
+        $expenses = (float)\App\Models\ExpenseVoucher::where('party_id', $id)->whereIn('type', $typeArray)
+            ->whereIn('status', ['posted', 'Posted'])
+            ->where(DB::raw($evDateCol), '<', $date)->sum('total_amount');
+
+        $balance += ($sales + $pReturns + $payments + $vDebits + $jvDebits + $incomes) - ($purchases + $sReturns + $receipts + $vCredits + $jvCredits + $expenses);
         
         return $balance;
     }
@@ -826,7 +834,11 @@ class GeneralLedgerController extends Controller
                             }
                         }
 
-                        $baseDesc = $rowNarr ?: ($rv->remarks ?? 'Receipt');
+                        $descParts = [];
+                        if ($rowNarr) $descParts[] = $rowNarr;
+                        if (!empty($rv->remarks)) $descParts[] = $rv->remarks;
+                        $baseDesc = !empty($descParts) ? implode(' ; ', $descParts) : 'Receipt';
+                        
                         $desc = $partyName ? $baseDesc . ' : ' . $partyName : $baseDesc;
 
                         $transactions[] = [
@@ -874,7 +886,11 @@ class GeneralLedgerController extends Controller
                             }
                         }
 
-                        $baseDesc = $rowNarr ?: ($pv->remarks ?? 'Payment');
+                        $descParts = [];
+                        if ($rowNarr) $descParts[] = $rowNarr;
+                        if (!empty($pv->remarks)) $descParts[] = $pv->remarks;
+                        $baseDesc = !empty($descParts) ? implode(' ; ', $descParts) : 'Payment';
+                        
                         $desc = $partyName ? $baseDesc . ' : ' . $partyName : $baseDesc;
 
                         $transactions[] = [
@@ -1084,9 +1100,9 @@ class GeneralLedgerController extends Controller
             ];
         }
 
-        // 3.1 Expenses (EV) - Debit
+        // 3.1 Expenses (EV) - Credit
         $evDateCol = $this->getDateColumn('expense_vouchers');
-        $expenses = DB::table('expense_vouchers')->where('party_id', $id)->whereIn('type', $typeArray)
+        $expenses = \App\Models\ExpenseVoucher::where('party_id', $id)->whereIn('type', $typeArray)
             ->whereIn('status', ['posted', 'Posted'])->whereBetween(DB::raw($evDateCol), [$start, $end])->get();
         foreach ($expenses as $ev) {
             $transactions[] = [
@@ -1096,7 +1112,7 @@ class GeneralLedgerController extends Controller
                 'ref' => 'EV',
                 'inv' => $ev->evid,
                 'desc' => $ev->remarks ?? 'Expense Voucher',
-                'price' => 0, 'qty' => 0, 'debit' => (float)$ev->amount, 'credit' => 0,
+                'price' => 0, 'qty' => 0, 'debit' => 0, 'credit' => (float)$ev->total_amount,
                 'priority' => 51
             ];
         }
@@ -1287,7 +1303,10 @@ class GeneralLedgerController extends Controller
                     }
                 }
                 
-                $desc = $narrText ?: ($rv->remarks ?? 'Receipt Voucher');
+                $descParts = [];
+                if ($narrText) $descParts[] = $narrText;
+                if (!empty($rv->remarks)) $descParts[] = $rv->remarks;
+                $desc = !empty($descParts) ? implode(' ; ', $descParts) : 'Receipt Voucher';
 
                 $ref = 'RV';
                 $inv = $rv->rvid;
@@ -1326,21 +1345,52 @@ class GeneralLedgerController extends Controller
             }
         }
 
-        // 7.1 Incomes (IV) - Credit
+        // 7.1 Incomes (IV) - Debit
         $ivDateCol = $this->getDateColumn('income_vouchers');
-        $incomes = DB::table('income_vouchers')->where('party_id', $id)->whereIn('party_type', $typeArray)
+        $incomes = \App\Models\IncomeVoucher::where(function($q) use ($id) {
+                $q->whereJsonContains('party_id', (string)$id)
+                  ->orWhereJsonContains('party_id', (int)$id);
+            })
             ->whereIn('status', ['posted', 'Posted'])->whereBetween(DB::raw($ivDateCol), [$start, $end])->get();
+            
         foreach ($incomes as $iv) {
-            $transactions[] = [
-                'created_at' => $iv->created_at,
-                'id' => $iv->id,
-                'date' => $iv->entry_date ?: $iv->created_at,
-                'ref' => 'IV',
-                'inv' => $iv->ivid,
-                'desc' => $iv->remarks ?? 'Income Voucher',
-                'price' => 0, 'qty' => 0, 'debit' => 0, 'credit' => (float)$iv->amount,
-                'priority' => 61
-            ];
+            $types = json_decode($iv->party_type, true) ?? [];
+            $pIds = json_decode($iv->party_id, true) ?? [];
+            $amounts = json_decode($iv->amount, true) ?? [];
+            $narrIds = json_decode($iv->narration_id, true) ?? [];
+
+            foreach ($pIds as $idx => $pid) {
+                if ($pid == $id && in_array($types[$idx] ?? '', $typeArray)) {
+                    $rowAmount = (float)($amounts[$idx] ?? 0);
+                    if ($rowAmount <= 0) continue;
+
+                    $narrText = '';
+                    if (isset($narrIds[$idx])) {
+                        if (is_numeric($narrIds[$idx])) {
+                            $narrText = DB::table('narrations')->where('id', $narrIds[$idx])->value('narration');
+                        } else {
+                            $narrText = $narrIds[$idx];
+                        }
+                    }
+                    $descParts = [];
+                    if ($narrText) $descParts[] = $narrText;
+                    if (!empty($iv->remarks)) $descParts[] = $iv->remarks;
+                    $desc = !empty($descParts) ? implode(' ; ', $descParts) : 'Income Voucher';
+
+                    $transactions[] = [
+                        'created_at' => $iv->created_at,
+                        'id' => $iv->id . '_' . $idx,
+                        'date' => $iv->entry_date ?: $iv->created_at,
+                        'ref' => 'IV',
+                        'inv' => $iv->ivid,
+                        'desc' => $desc,
+                        'price' => 0, 'qty' => 0, 
+                        'debit' => $rowAmount,
+                        'credit' => 0,
+                        'priority' => 61
+                    ];
+                }
+            }
         }
 
         // Strictly chronologically (Time Wise)

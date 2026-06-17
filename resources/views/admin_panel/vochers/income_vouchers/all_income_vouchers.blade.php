@@ -139,12 +139,15 @@
                                     <label class="column-picker-item"><input type="checkbox" data-column="1" checked> ID</label>
                                     <label class="column-picker-item"><input type="checkbox" data-column="2" checked> Type</label>
                                     <label class="column-picker-item"><input type="checkbox" data-column="3" checked> Inv#</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="4" checked> Entry Date</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="5" checked> Type Label</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="6" checked> Party</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="7" checked> Remarks</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="8" checked> Total Amount</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="9" checked> Status</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="4" checked> Date</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="5" checked> Entry Date</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="6" checked> Party Type</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="7" checked> Party</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="8" checked> Ref#</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="9" checked> Remarks</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="10" checked> Discount</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="11" checked> Total Amount</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="12" checked> Status</label>
                                 </div>
                             </div>
                         </div>
@@ -157,10 +160,13 @@
                                             <th>ID</th>
                                             <th>Type</th>
                                             <th>Inv#</th>
+                                            <th>Date</th>
                                             <th>Entry Date</th>
                                             <th>Party Type</th>
                                             <th>Party</th>
+                                            <th>Ref#</th>
                                             <th>Remarks</th>
+                                            <th class="text-end">Disc.</th>
                                             <th class="text-end">Total Amount</th>
                                             <th class="text-center">Status</th>
                                             <th class="text-center" style="min-width: 120px;">Action</th>
@@ -168,16 +174,23 @@
                                     </thead>
                                     <tbody>
                                         @foreach($incomes as $item)
+                                        @php
+                                            $refs = json_decode($item->reference_no, true);
+                                            $reference = is_array($refs) ? implode(', ', array_filter($refs)) : $item->reference_no;
+                                        @endphp
                                         <tr>
                                             <td class="text-center text-muted small">{{ $item->id }}</td>
                                             <td class="text-center small">IV</td>
                                             <td class="fw-bold text-success">{{ $item->ivid ?? '-' }}</td>
+                                            <td class="small">{{ $item->receipt_date ? \Carbon\Carbon::parse($item->receipt_date)->format('d-M-Y') : '-' }}</td>
                                             <td class="small">{{ $item->entry_date ? \Carbon\Carbon::parse($item->entry_date)->format('d-M-Y') : '-' }}</td>
                                             <td class="text-center">
                                                 <span class="badge bg-light text-success border-0 rounded-pill px-2" style="font-size: 9px;">{{ $item->type_label ?? '-' }}</span>
                                             </td>
-                                            <td class="fw-semibold text-dark small">{{ $item->party_name ?? '-' }}</td>
-                                            <td class="small text-muted">{{ Str::limit($item->remarks, 30) }}</td>
+                                            <td class="fw-semibold text-dark small">{{ Str::limit($item->party_name ?? '-', 25) }}</td>
+                                            <td class="small text-muted">{{ Str::limit($reference, 15) }}</td>
+                                            <td class="small text-muted">{{ Str::limit($item->remarks, 15) }}</td>
+                                            <td class="text-end fw-bold text-danger">{{ number_format((float)$item->total_discount, 0) }}</td>
                                             <td class="text-end fw-bold">{{ number_format((float)$item->total_amount, 0) }}</td>
                                             <td class="text-center">
                                                 @if($item->status === 'posted')

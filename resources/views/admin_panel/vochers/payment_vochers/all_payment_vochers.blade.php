@@ -159,8 +159,9 @@
                             <label class="column-picker-item"><input type="checkbox" data-column="7" checked> Party</label>
                             <label class="column-picker-item"><input type="checkbox" data-column="8" checked> Ref#</label>
                             <label class="column-picker-item"><input type="checkbox" data-column="9" checked> Remarks</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="10" checked> Total Amount</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="11" checked> Status</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="10" checked> Discount</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="11" checked> Total Amount</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="12" checked> Status</label>
                         </div>
                     </div>
                 </div>
@@ -179,6 +180,7 @@
                                     <th>Party</th>
                                     <th>Ref#</th>
                                     <th>Remarks</th>
+                                    <th class="text-end">Disc.</th>
                                     <th class="text-end">Total Amount</th>
                                     <th class="text-center">Status</th>
                                     <th class="text-center" style="min-width: 140px;">Action</th>
@@ -202,6 +204,7 @@
                                     <td class="fw-bold text-dark small">{{ Str::limit($item->party_name ?? '-', 25) }}</td>
                                     <td class="small text-muted">{{ Str::limit($reference, 15) }}</td>
                                     <td class="small text-muted">{{ Str::limit($item->remarks, 15) }}</td>
+                                    <td class="text-end fw-bold text-danger">{{ number_format((float)$item->total_discount, 0) }}</td>
                                     <td class="text-end fw-bold text-dark">{{ number_format((float)$item->total_amount, 0) }}</td>
                                     <td class="text-center">
                                         @if($item->status === 'posted')
