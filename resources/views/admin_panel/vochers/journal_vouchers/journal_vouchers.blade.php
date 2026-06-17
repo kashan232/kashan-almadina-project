@@ -77,7 +77,7 @@
                             </span>
                         </div>
                         <div class="d-flex gap-1">
-                            <a href="{{ route('all-journal-vochers') }}" id="listBtn" class="btn btn-outline-secondary btn-sm rounded-pill px-3" style="font-size: 11px;">
+                            <a href="{{ route('all-journal-vochers') }}" id="listBtn" class="btn btn-secondary btn-sm rounded-pill px-3" style="font-size: 11px;">
                                 <i class="fa fa-list me-1"></i> View Registry
                             </a>
                         </div>
@@ -199,26 +199,26 @@
                     <div class="col-md-5">
                         <div class="d-flex gap-1 justify-content-end mb-1">
                             @if($receipt->status != 'posted')
-                                <button type="button" id="saveDraftBtn" class="btn btn-warning btn-sm fw-bold rounded-pill px-4 shadow-sm" style="font-size: 11px;">
-                                    <i class="fa fa-save me-1"></i> Save Draft
+                                <button type="button" id="saveDraftBtn" class="btn btn-warning btn-sm fw-bold rounded-pill px-3 shadow-sm" style="font-size: 11px;">
+                                    <i class="fa fa-save me-1"></i> Save Draft <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+S</kbd>
                                 </button>
-                                <button type="button" id="postBtn" class="btn btn-primary btn-sm fw-bold rounded-pill px-4 shadow-sm" style="font-size: 11px;">
-                                    <i class="fa fa-send me-1"></i> Post Voucher
+                                <button type="button" id="postBtn" class="btn btn-primary btn-sm fw-bold rounded-pill px-3 shadow-sm" style="font-size: 11px;">
+                                    <i class="fa fa-send me-1"></i> Post <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+Enter</kbd>
                                 </button>
                             @endif
                             
-                            <button type="button" id="editBtn" class="btn btn-warning btn-sm fw-bold rounded-pill px-4 shadow-sm" style="{{ ($receipt->id && $receipt->status != 'posted') ? 'display:block' : 'display:none' }}; font-size: 11px;">
-                                <i class="fa fa-pencil me-1"></i> Unlock Edit
+                            <button type="button" id="editBtn" class="btn btn-secondary btn-sm fw-bold rounded-pill px-3 shadow-sm" style="{{ ($receipt->id && $receipt->status != 'posted') ? 'display:block' : 'display:none' }}; font-size: 11px;">
+                                <i class="fa fa-pencil me-1"></i> Edit <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+E</kbd>
                             </button>
 
-                            <a href="{{ $receipt->id ? route('journalVoucher.print', $receipt->id) : 'javascript:void(0)' }}" id="previewPrintBtn" target="_blank" class="btn btn-outline-dark btn-sm rounded-pill px-3 shadow-sm {{ !$receipt->id ? 'disabled' : '' }}" style="font-size: 11px;">
-                                <i class="fa fa-print"></i> Print
+                            <a href="{{ $receipt->id ? route('journalVoucher.print', $receipt->id) : 'javascript:void(0)' }}" id="previewPrintBtn" target="_blank" class="btn btn-dark btn-sm rounded-pill px-3 shadow-sm {{ !$receipt->id ? 'disabled' : '' }}" style="font-size: 11px;">
+                                <i class="fa fa-print"></i> Print <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+P</kbd>
                             </a>
-                            <a href="{{ route('journal-vochers') }}" class="btn btn-info btn-sm text-dark fw-bold rounded-pill px-3 shadow-sm" style="font-size: 11px;">
-                                <i class="fa fa-plus"></i> New
+                            <a href="{{ route('journal-vochers') }}" id="newBtn" class="btn btn-info btn-sm text-dark fw-bold rounded-pill px-3 shadow-sm" style="font-size: 11px;">
+                                <i class="fa fa-plus"></i> New <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+M</kbd>
                             </a>
                             <button type="button" id="deleteBtn" class="btn btn-danger btn-sm fw-bold rounded-pill px-3 shadow-sm" style="{{ !$receipt->id ? 'display:none' : '' }}; font-size: 11px;">
-                                <i class="fa fa-trash"></i>
+                                <i class="fa fa-times"></i> Cancel <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Esc</kbd>
                             </button>
                         </div>
                     </div>
@@ -366,8 +366,32 @@ $(document).ready(function() {
     });
 
     $(window).on('keydown', function(e) {
-        if ((e.ctrlKey || e.metaKey) && e.which == 83) { e.preventDefault(); $('#saveDraftBtn').click(); }
-        if ((e.ctrlKey || e.metaKey) && e.which == 13) { e.preventDefault(); $('#postBtn').click(); }
+        if ((e.ctrlKey || e.metaKey) && e.which == 83) { // Ctrl+S (Save)
+            e.preventDefault(); 
+            if($('#saveDraftBtn').is(':visible')) $('#saveDraftBtn').click(); 
+        }
+        if ((e.ctrlKey || e.metaKey) && e.which == 13) { // Ctrl+Enter (Post)
+            e.preventDefault(); 
+            if($('#postBtn').is(':visible')) $('#postBtn').click(); 
+        }
+        if ((e.ctrlKey || e.metaKey) && e.which == 69) { // Ctrl+E (Edit)
+            e.preventDefault(); 
+            if($('#editBtn').is(':visible')) $('#editBtn').click(); 
+        }
+        if ((e.ctrlKey || e.metaKey) && e.which == 80) { // Ctrl+P (Print)
+            e.preventDefault(); 
+            if(!$('#previewPrintBtn').hasClass('disabled')) {
+                window.open($('#previewPrintBtn').attr('href'), '_blank');
+            }
+        }
+        if ((e.ctrlKey || e.metaKey) && e.which == 77) { // Ctrl+M (New)
+            e.preventDefault(); 
+            window.location.href = $('#newBtn').attr('href');
+        }
+        if (e.which == 27) { // Esc (Cancel)
+            e.preventDefault();
+            if($('#deleteBtn').is(':visible')) $('#deleteBtn').click();
+        }
     });
 
     calc();

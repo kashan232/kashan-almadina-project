@@ -77,7 +77,7 @@
                             </span>
                         </div>
                         <div class="d-flex gap-1">
-                            <a href="{{ route('all-adjustment-vochers') }}" id="listBtn" class="btn btn-outline-secondary btn-sm rounded-pill px-3" style="font-size: 11px;">
+                            <a href="{{ route('all-adjustment-vochers') }}" id="listBtn" class="btn btn-secondary btn-sm rounded-pill px-3" style="font-size: 11px;">
                                 <i class="fa fa-list me-1"></i> View Registry
                             </a>
                         </div>
@@ -118,7 +118,7 @@
                                 <input type="text" id="party_code_input" class="form-control form-control-sm text-center fw-bold text-primary" placeholder="Code" value="">
                             </div>
                             <div class="col-md-5">
-                                <label class="form-label">Source Party Name <span class="text-danger">*</span></label>
+                                <label class="form-label">Source Party Name (Debit) <span class="text-danger">*</span></label>
                                 <select name="party_id" id="party_id_header" class="form-select form-select-sm select2" data-selected="{{ $receipt->party_id }}">
                                     <option value="">Select Party...</option>
                                 </select>
@@ -141,9 +141,9 @@
                                 <thead>
                                     <tr>
                                         <th width="18%">Narration / Description</th>
-                                        <th width="15%">Account Head</th>
+                                        <th width="15%">Account Head / Party Type</th>
                                         <th width="8%" class="text-center">Code</th>
-                                        <th width="28%">Destination Account</th>
+                                        <th width="28%">Destination Account (Credit)</th>
                                         <th width="12%">Reference#</th>
                                         <th width="14%" class="text-end">Amount</th>
                                         <th width="5%" class="text-center">Act</th>
@@ -173,6 +173,9 @@
                                                 @foreach($AccountHeads as $head)
                                                     <option value="{{ $head->id }}" {{ ($accHeads[$idx] ?? '') == $head->id ? 'selected' : '' }}>{{ $head->name }}</option>
                                                 @endforeach
+                                                <option value="vendor" {{ ($accHeads[$idx] ?? '') == 'vendor' ? 'selected' : '' }}>Vendor</option>
+                                                <option value="customer" {{ ($accHeads[$idx] ?? '') == 'customer' ? 'selected' : '' }}>Customer</option>
+                                                <option value="walkin" {{ ($accHeads[$idx] ?? '') == 'walkin' ? 'selected' : '' }}>Walkin</option>
                                             </select>
                                         </td>
                                         <td><input type="text" name="row_account_code[]" class="form-control form-control-sm text-center fw-bold text-danger rowAccountCode" placeholder="Code"></td>
@@ -215,26 +218,29 @@
                         <div class="d-flex gap-1 justify-content-end mb-1">
                             @if($receipt->status != 'posted')
                                 <button type="button" id="saveDraftBtn" class="btn btn-warning btn-sm fw-bold rounded-pill px-4 shadow-sm" style="font-size: 11px;">
-                                    <i class="fa fa-save me-1"></i> Save Draft
+                                    <i class="fa fa-save me-1"></i> Save Draft [Ctrl+S]
                                 </button>
                                 <button type="button" id="postBtn" class="btn btn-primary btn-sm fw-bold rounded-pill px-4 shadow-sm" style="font-size: 11px;">
-                                    <i class="fa fa-send me-1"></i> Post Voucher
+                                    <i class="fa fa-send me-1"></i> Post Voucher [Ctrl+Enter]
                                 </button>
                             @endif
                             
                             <button type="button" id="editBtn" class="btn btn-warning btn-sm fw-bold rounded-pill px-4 shadow-sm" style="{{ ($receipt->id && $receipt->status != 'posted') ? 'display:block' : 'display:none' }}; font-size: 11px;">
-                                <i class="fa fa-pencil me-1"></i> Unlock Edit
+                                <i class="fa fa-pencil me-1"></i> Unlock Edit [Ctrl+E]
                             </button>
 
-                            <a href="{{ $receipt->id ? route('adjustmentVoucher.print', $receipt->id) : 'javascript:void(0)' }}" id="previewPrintBtn" target="_blank" class="btn btn-outline-dark btn-sm rounded-pill px-3 shadow-sm {{ !$receipt->id ? 'disabled' : '' }}" style="font-size: 11px;">
-                                <i class="fa fa-print"></i> Print
+                            <a href="{{ $receipt->id ? route('adjustmentVoucher.print', $receipt->id) : 'javascript:void(0)' }}" id="previewPrintBtn" target="_blank" class="btn btn-dark btn-sm rounded-pill px-3 shadow-sm {{ !$receipt->id ? 'disabled' : '' }}" style="font-size: 11px;">
+                                <i class="fa fa-print"></i> Print [Ctrl+P]
                             </a>
-                            <a href="{{ route('adjustment-vochers') }}" class="btn btn-info btn-sm text-dark fw-bold rounded-pill px-3 shadow-sm" style="font-size: 11px;">
-                                <i class="fa fa-plus"></i> New
+                            <a href="{{ route('adjustment-vochers') }}" id="newBtn" class="btn btn-info btn-sm text-dark fw-bold rounded-pill px-3 shadow-sm" style="font-size: 11px;">
+                                <i class="fa fa-plus"></i> New [Ctrl+M]
                             </a>
                             <button type="button" id="deleteBtn" class="btn btn-danger btn-sm fw-bold rounded-pill px-3 shadow-sm" style="{{ !$receipt->id ? 'display:none' : '' }}; font-size: 11px;">
                                 <i class="fa fa-trash"></i>
                             </button>
+                            <a href="{{ route('all-adjustment-vochers') }}" id="cancelBtn" class="btn btn-secondary btn-sm fw-bold rounded-pill px-3 shadow-sm" style="font-size: 11px;">
+                                <i class="fa fa-times"></i> Cancel [Esc]
+                            </a>
                         </div>
                     </div>
                 </div>
@@ -302,20 +308,21 @@ $(document).ready(function() {
 
     // 🏦 Row Account Logic
     $(document).on('change', '.rowAccountHead', function() {
-        let id = $(this).val();
+        let typeId = $(this).val();
         let $row = $(this).closest('tr');
-        let $select = $row.find('.rowAccountSelect');
-        let selected = $select.data('selected');
+        let $sub = $row.find('.rowAccountSelect');
+        let selected = $sub.data('selected');
         $row.find('.rowAccountCode').val('');
-        $select.html('<option value="">Loading...</option>');
-        if(id) {
-            $.get('{{ url("get-accounts-by-head") }}/' + id, function(res) {
-                $select.html('<option value="">Select Account...</option>');
-                res.forEach(a => $select.append(`<option value="${a.id}" data-code="${a.account_code}" ${a.id == selected ? 'selected' : ''}>${a.title}</option>`));
-                if(selected) {
-                    let code = $select.find('option:selected').attr('data-code');
-                    $row.find('.rowAccountCode').val(code || selected);
-                }
+        $sub.html('<option value="">Loading...</option>');
+        if(typeId) {
+            let url = (['vendor','customer','walkin'].includes(typeId)) ? '{{ route("party.list") }}?type=' + typeId : '{{ url("get-accounts-by-head") }}/' + typeId;
+            $.get(url, function(res) {
+                $sub.html('<option value="">Select Account...</option>');
+                res.forEach(i => {
+                    let code = i.account_code || i.id || '';
+                    $sub.append(`<option value="${i.id}" data-code="${code}" ${i.id == selected ? 'selected' : ''}>${i.text || i.title}</option>`);
+                });
+                if(selected) { let code = $sub.find('option:selected').attr('data-code'); $row.find('.rowAccountCode').val(code || ''); }
             });
         }
     });
@@ -351,7 +358,7 @@ $(document).ready(function() {
     $('#btnAddRow').click(function() {
         let row = `<tr>
             <td><select name="narration_id[]" class="form-select form-select-sm narrationSelect"><option value="">Narration...</option>@foreach($narrationsList as $lid => $lname)<option value="{{ $lid }}">{{ $lname }}</option>@endforeach</select></td>
-            <td><select name="account_head[]" class="form-select form-select-sm rowAccountHead select2"><option value="">Select Head...</option>@foreach($AccountHeads as $head)<option value="{{ $head->id }}">{{ $head->name }}</option>@endforeach</select></td>
+            <td><select name="account_head[]" class="form-select form-select-sm rowAccountHead select2"><option value="">Select Head...</option>@foreach($AccountHeads as $head)<option value="{{ $head->id }}">{{ $head->name }}</option>@endforeach<option value="vendor">Vendor</option><option value="customer">Customer</option><option value="walkin">Walkin</option></select></td>
             <td><input type="text" name="row_account_code[]" class="form-control form-control-sm text-center fw-bold text-danger rowAccountCode" placeholder="Code"></td>
             <td><select name="account_id[]" class="form-select form-select-sm rowAccountSelect select2"><option value="">Select Account...</option></select></td>
             <td><input type="text" name="reference_no[]" class="form-control form-control-sm" placeholder="Ref#"></td>
@@ -416,8 +423,12 @@ $(document).ready(function() {
     });
 
     $(window).on('keydown', function(e) {
-        if ((e.ctrlKey || e.metaKey) && (e.which == 83 || e.keyCode == 83)) { e.preventDefault(); $('#saveDraftBtn').click(); return false; }
-        if ((e.ctrlKey || e.metaKey) && (e.which == 13 || e.keyCode == 13)) { e.preventDefault(); $('#postBtn').click(); }
+        if ((e.ctrlKey || e.metaKey) && (e.which == 83 || e.keyCode == 83)) { e.preventDefault(); $('#saveDraftBtn').click(); return false; } // Ctrl + S
+        if ((e.ctrlKey || e.metaKey) && (e.which == 13 || e.keyCode == 13)) { e.preventDefault(); $('#postBtn').click(); return false; } // Ctrl + Enter
+        if ((e.ctrlKey || e.metaKey) && (e.which == 69 || e.keyCode == 69)) { e.preventDefault(); $('#editBtn').click(); return false; } // Ctrl + E
+        if ((e.ctrlKey || e.metaKey) && (e.which == 80 || e.keyCode == 80)) { e.preventDefault(); if(!$('#previewPrintBtn').hasClass('disabled')) { window.open($('#previewPrintBtn').attr('href'), '_blank'); } return false; } // Ctrl + P
+        if ((e.ctrlKey || e.metaKey) && (e.which == 77 || e.keyCode == 77)) { e.preventDefault(); window.location.href = $('#newBtn').attr('href'); return false; } // Ctrl + M
+        if (e.which == 27 || e.keyCode == 27) { e.preventDefault(); window.location.href = $('#cancelBtn').attr('href'); return false; } // Esc
     });
 
     $('#deleteBtn').click(function() {

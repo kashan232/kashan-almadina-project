@@ -169,7 +169,7 @@
                                         <tr>
                                             <td class="text-center text-muted small">{{ $item->id }}</td>
                                             <td class="text-center small">JV</td>
-                                            <td class="fw-bold text-primary">{{ (int) preg_replace('/[^0-9]/', '', substr($item->jvid, strlen('JV-'))) }}</td>
+                                            <td class="fw-bold text-primary">{{ $item->jvid }}</td>
                                             <td class="small">{{ $item->entry_date ? \Carbon\Carbon::parse($item->entry_date)->format('d-M-Y') : '-' }}</td>
                                             <td>
                                                 <div class="small fw-bold text-muted text-uppercase" style="font-size: 0.65rem;">{{ $item->type_label }}</div>
@@ -200,17 +200,17 @@
                                                                 <i class="fa fa-send"></i> Post
                                                             </button>
                                                         </form>
-                                                        <a href="{{ route('journal-vochers', $item->id) }}" class="btn btn-outline-warning btn-xs px-1 py-0" title="Edit" style="height: 20px;">
-                                                            <i class="fa fa-edit text-dark"></i>
+                                                        <a href="{{ route('journal-vochers', $item->id) }}" class="btn btn-warning btn-mini" title="Edit">
+                                                            <i class="fa fa-pencil"></i>
                                                         </a>
-                                                        <form action="{{ route('journal.vochers.cancel', $item->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Delete this voucher?')">
+                                                        <form action="{{ route('journal.vochers.cancel', $item->id) }}" method="POST" class="d-inline delete-form">
                                                             @csrf @method('DELETE')
-                                                            <button type="submit" class="btn btn-outline-danger btn-xs px-1 py-0" title="Delete" style="height: 20px;">
+                                                            <button type="button" class="btn btn-danger btn-mini delete-btn" title="Delete">
                                                                 <i class="fa fa-trash"></i>
                                                             </button>
                                                         </form>
                                                     @endif
-                                                    <a href="{{ route('journalVoucher.print', $item->id) }}" target="_blank" class="btn btn-outline-dark btn-xs px-1 py-0" title="Print" style="height: 20px;">
+                                                    <a href="{{ route('journalVoucher.print', $item->id) }}" target="_blank" class="btn btn-dark btn-mini" title="Print">
                                                         <i class="fa fa-print"></i>
                                                     </a>
                                                 </div>

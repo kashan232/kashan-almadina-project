@@ -184,8 +184,8 @@
                                     <th>Type</th>
                                     <th>Inv#</th>
                                     <th>Entry Date</th>
-                                    <th>Source Party (Side 1)</th>
-                                    <th>Destination Accounts (Side 2)</th>
+                                    <th>Source Party (Debit)</th>
+                                    <th>Destination Accounts (Credit)</th>
                                     <th>Remarks</th>
                                     <th class="text-end">Total Amount</th>
                                     <th class="text-center">Status</th>
@@ -197,18 +197,18 @@
                                 <tr>
                                     <td class="text-muted small">{{ $item->id }}</td>
                                     <td class="small">AV</td>
-                                    <td class="fw-bold text-success">{{ (int) preg_replace('/[^0-9]/', '', substr($item->avid, strlen('AVID-'))) }}</td>
+                                    <td class="fw-bold text-success">{{ $item->avid }}</td>
                                     <td class="small">{{ $item->entry_date ? \Carbon\Carbon::parse($item->entry_date)->format('d-M-Y') : '-' }}</td>
                                     <td>
                                         <div class="d-flex align-items-center">
-                                            <span class="side-badge side-1">Side 1</span>
+                                            <span class="side-badge side-1">Debit</span>
                                             <span class="fw-bold text-dark small">{{ Str::limit($item->party_name, 25) }}</span>
                                         </div>
                                         <div class="text-muted" style="font-size: 9.5px; margin-left: 35px;">{{ $item->type_label }}</div>
                                     </td>
                                     <td>
                                         <div class="d-flex align-items-start">
-                                            <span class="side-badge side-2 mt-1">Side 2</span>
+                                            <span class="side-badge side-2 mt-1">Credit</span>
                                             <div style="font-size: 10.5px; line-height: 1.2;">
                                                 {!! $item->accounts_detail !!}
                                             </div>
@@ -233,19 +233,19 @@
                                                     </button>
                                                 </form>
                                                 
-                                                <a href="{{ route('adjustment-vochers', $item->id) }}" class="btn btn-outline-warning btn-mini" title="Edit">
-                                                    <i class="fa fa-pencil text-dark"></i>
+                                                <a href="{{ route('adjustment-vochers', $item->id) }}" class="btn btn-warning btn-mini" title="Edit">
+                                                    <i class="fa fa-pencil"></i>
                                                 </a>
 
                                                 <form action="{{ route('adjustment.vochers.cancel', $item->id) }}" method="POST" class="d-inline delete-form">
                                                     @csrf @method('DELETE')
-                                                    <button type="button" class="btn btn-outline-danger btn-mini delete-btn" title="Delete">
+                                                    <button type="button" class="btn btn-danger btn-mini delete-btn" title="Delete">
                                                         <i class="fa fa-trash"></i>
                                                     </button>
                                                 </form>
                                             @endif
                                             
-                                            <a href="{{ route('adjustmentVoucher.print', $item->id) }}" target="_blank" class="btn btn-outline-dark btn-mini" title="Print">
+                                            <a href="{{ route('adjustmentVoucher.print', $item->id) }}" target="_blank" class="btn btn-dark btn-mini" title="Print">
                                                 <i class="fa fa-print"></i>
                                             </a>
                                         </div>

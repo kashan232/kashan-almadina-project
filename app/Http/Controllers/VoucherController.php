@@ -1767,6 +1767,9 @@ class VoucherController extends Controller
 
         try {
             $data = $request->only(['entry_date', 'party_type', 'party_id', 'remarks', 'total_amount']);
+            if (isset($data['total_amount'])) {
+                $data['total_amount'] = str_replace(',', '', $data['total_amount']);
+            }
             
             // Handle Narrations (Select2 Tags)
             $narrationIds = [];
@@ -1813,7 +1816,7 @@ class VoucherController extends Controller
             $totalAmount = (float)$voucher->total_amount;
             $avid = $voucher->avid;
 
-            // 1. Update Header Party (Source) -> CREDIT (Decrease balance)
+            // 1. Update Header Party (Source) -> DEBIT (Increase balance)
             $pType = $voucher->party_type;
             $pId = $voucher->party_id;
 
@@ -1825,10 +1828,10 @@ class VoucherController extends Controller
                     'admin_or_user_id' => auth()->id(),
                     'date'             => now(),
                     'description'      => "Adjustment Voucher #$avid",
-                    'debit'            => 0,
-                    'credit'           => $totalAmount,
+                    'debit'            => $totalAmount,
+                    'credit'           => 0,
                     'previous_balance' => $prev,
-                    'closing_balance'  => $prev - $totalAmount,
+                    'closing_balance'  => $prev + $totalAmount,
                 ]);
             } elseif ($pType === 'customer' || $pType === 'walkin') {
                 $ledger = \App\Models\CustomerLedger::where('customer_id', $pId)->latest()->first();
@@ -1838,21 +1841,22 @@ class VoucherController extends Controller
                     'admin_or_user_id' => auth()->id(),
                     'date'             => now(),
                     'description'      => "Adjustment Voucher #$avid",
-                    'debit'            => 0,
-                    'credit'           => $totalAmount,
+                    'debit'            => $totalAmount,
+                    'credit'           => 0,
                     'previous_balance' => $prev,
-                    'closing_balance'  => $prev - $totalAmount,
+                    'closing_balance'  => $prev + $totalAmount,
                 ]);
             } else {
                 // Head/Account based Source
                 $headerAcc = \App\Models\Account::find($pId);
                 if ($headerAcc) {
-                    $headerAcc->opening_balance -= $totalAmount;
+                    $headerAcc->opening_balance += $totalAmount;
                     $headerAcc->save();
                 }
             }
 
-            // 2. Update Row Accounts (Destinations) -> DEBIT (Increase)
+            // 2. Update Row Accounts (Destinations) -> CREDIT (Decrease)
+            $accHeads = json_decode($voucher->account_head, true) ?? [];
             $accIds = json_decode($voucher->account_id, true) ?? [];
             $amounts = json_decode($voucher->amount, true) ?? [];
 
@@ -1860,10 +1864,40 @@ class VoucherController extends Controller
                 $rowAmount = (float)($amounts[$idx] ?? 0);
                 if ($rowAmount <= 0) continue;
 
-                $rowAcc = \App\Models\Account::find($accId);
-                if ($rowAcc) {
-                    $rowAcc->opening_balance += $rowAmount;
-                    $rowAcc->save();
+                $rType = $accHeads[$idx] ?? '';
+
+                if ($rType === 'vendor') {
+                    $ledger = \App\Models\VendorLedger::where('vendor_id', $accId)->latest()->first();
+                    $prev = $ledger ? $ledger->closing_balance : 0;
+                    \App\Models\VendorLedger::create([
+                        'vendor_id'        => $accId,
+                        'admin_or_user_id' => auth()->id(),
+                        'date'             => now(),
+                        'description'      => "Adjustment Voucher #$avid",
+                        'debit'            => 0,
+                        'credit'           => $rowAmount,
+                        'previous_balance' => $prev,
+                        'closing_balance'  => $prev - $rowAmount,
+                    ]);
+                } elseif ($rType === 'customer' || $rType === 'walkin') {
+                    $ledger = \App\Models\CustomerLedger::where('customer_id', $accId)->latest()->first();
+                    $prev = $ledger ? $ledger->closing_balance : 0;
+                    \App\Models\CustomerLedger::create([
+                        'customer_id'      => $accId,
+                        'admin_or_user_id' => auth()->id(),
+                        'date'             => now(),
+                        'description'      => "Adjustment Voucher #$avid",
+                        'debit'            => 0,
+                        'credit'           => $rowAmount,
+                        'previous_balance' => $prev,
+                        'closing_balance'  => $prev - $rowAmount,
+                    ]);
+                } else {
+                    $rowAcc = \App\Models\Account::find($accId);
+                    if ($rowAcc) {
+                        $rowAcc->opening_balance -= $rowAmount;
+                        $rowAcc->save();
+                    }
                 }
             }
 
@@ -1927,10 +1961,20 @@ class VoucherController extends Controller
             $accountsList = [];
             foreach ($rowAccIds as $idx => $aid) {
                 if (!$aid) continue;
-                $acc = DB::table('accounts')->where('id', $aid)->first();
-                if ($acc) {
-                    $headName = DB::table('account_heads')->where('id', $rowAccHeads[$idx] ?? null)->value('name');
-                    $accountsList[] = ($headName ? "[$headName] " : "") . $acc->title . ($acc->account_code ? " (#{$acc->account_code})" : "");
+                $headOrType = $rowAccHeads[$idx] ?? null;
+                
+                if ($headOrType === 'vendor') {
+                    $acc = DB::table('vendors')->where('id', $aid)->first();
+                    if ($acc) $accountsList[] = "[Vendor] " . $acc->name;
+                } elseif ($headOrType === 'customer' || $headOrType === 'walkin') {
+                    $acc = DB::table('customers')->where('id', $aid)->first();
+                    if ($acc) $accountsList[] = "[" . ucfirst($headOrType) . "] " . $acc->customer_name;
+                } else {
+                    $acc = DB::table('accounts')->where('id', $aid)->first();
+                    if ($acc) {
+                        $headName = DB::table('account_heads')->where('id', $headOrType)->value('name');
+                        $accountsList[] = ($headName ? "[$headName] " : "") . $acc->title . ($acc->account_code ? " (#{$acc->account_code})" : "");
+                    }
                 }
             }
             $v->accounts_detail = implode('<br>', $accountsList);
