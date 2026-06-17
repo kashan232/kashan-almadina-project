@@ -42,6 +42,8 @@ class Productbooking extends Model
         'final_balance2',
         'weight',
         'is_sale_order',
+        'entry_date',
+        'entry_time',
     ];
 
     // Relation to sale items
