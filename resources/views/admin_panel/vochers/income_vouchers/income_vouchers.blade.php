@@ -44,9 +44,8 @@
         font-size: 6rem; color: rgba(220, 53, 69, 0.05); font-weight: 900; text-transform: uppercase;
         pointer-events: none; z-index: 1000; border: 8px solid rgba(220, 53, 69, 0.05); padding: 10px 40px; border-radius: 15px;
     }
-    .form-locked { pointer-events: none !important; }
     .form-locked input, .form-locked select, .form-locked textarea, .form-locked button:not(#editBtn):not(#previewPrintBtn):not(#newBtn):not(#listBtn) {
-        background-color: #f8fafc !important; opacity: 0.7 !important;
+        background-color: #f8fafc !important; opacity: 0.7 !important; pointer-events: none !important;
     }
 
     .btn-mini { padding: 0px 4px; font-size: 9px; height: 18px; display: inline-flex; align-items: center; justify-content: center; }
@@ -77,8 +76,8 @@
                             </span>
                         </div>
                         <div class="d-flex gap-1">
-                            <a href="{{ route('all-income-vochers') }}" id="listBtn" class="btn btn-outline-secondary btn-sm rounded-pill px-3" style="font-size: 11px;">
-                                <i class="fa fa-list me-1"></i> View Registry
+                            <a href="{{ route('all-income-vochers') }}" id="listBtn" class="btn btn-primary btn-sm px-3 text-white" style="font-size: 11px;">
+                                <i class="fa fa-list me-1"></i> View Registry <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+L</kbd>
                             </a>
                         </div>
                     </div>
@@ -210,25 +209,25 @@
                     <div class="col-md-5">
                         <div class="d-flex gap-1 justify-content-end mb-1">
                             @if($receipt->status != 'posted')
-                                <button type="button" id="saveDraftBtn" class="btn btn-warning btn-sm fw-bold rounded-pill px-4 shadow-sm" style="font-size: 11px;">
-                                    <i class="fa fa-save me-1"></i> Save Draft
+                                <button type="button" id="saveDraftBtn" class="btn btn-warning btn-sm fw-bold px-4 shadow-sm" style="font-size: 11px;">
+                                    <i class="fa fa-save me-1"></i> Save Draft <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+S</kbd>
                                 </button>
-                                <button type="button" id="postBtn" class="btn btn-primary btn-sm fw-bold rounded-pill px-4 shadow-sm" style="font-size: 11px;">
-                                    <i class="fa fa-send me-1"></i> Post Voucher
+                                <button type="button" id="postBtn" class="btn btn-primary btn-sm fw-bold px-4 shadow-sm text-white" style="font-size: 11px;">
+                                    <i class="fa fa-send me-1"></i> Post Voucher <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+↵</kbd>
                                 </button>
                             @endif
                             
-                            <button type="button" id="editBtn" class="btn btn-warning btn-sm fw-bold rounded-pill px-4 shadow-sm" style="{{ ($receipt->id && $receipt->status != 'posted') ? 'display:block' : 'display:none' }}; font-size: 11px;">
-                                <i class="fa fa-pencil me-1"></i> Unlock Edit
+                            <button type="button" id="editBtn" class="btn btn-warning btn-sm fw-bold px-4 shadow-sm" style="{{ ($receipt->id && $receipt->status != 'posted') ? 'display:block' : 'display:none' }}; font-size: 11px;">
+                                <i class="fa fa-pencil me-1"></i> Unlock Edit <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+E</kbd>
                             </button>
 
-                            <a href="{{ $receipt->id ? route('incomeVoucher.print', $receipt->id) : 'javascript:void(0)' }}" id="previewPrintBtn" target="_blank" class="btn btn-outline-dark btn-sm rounded-pill px-3 shadow-sm {{ !$receipt->id ? 'disabled' : '' }}" style="font-size: 11px;">
-                                <i class="fa fa-print"></i> Print
+                            <a href="{{ $receipt->id ? route('incomeVoucher.print', $receipt->id) : 'javascript:void(0)' }}" id="previewPrintBtn" target="_blank" class="btn btn-primary btn-sm px-3 shadow-sm text-white {{ !$receipt->id ? 'disabled' : '' }}" style="font-size: 11px;">
+                                <i class="fa fa-print"></i> Print <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+P</kbd>
                             </a>
-                            <a href="{{ route('income-vochers') }}" class="btn btn-info btn-sm text-dark fw-bold rounded-pill px-3 shadow-sm" style="font-size: 11px;">
-                                <i class="fa fa-plus"></i> New
+                            <a href="{{ route('income-vochers') }}" class="btn btn-primary btn-sm fw-bold px-3 shadow-sm text-white" style="font-size: 11px;">
+                                <i class="fa fa-plus"></i> New <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+M</kbd>
                             </a>
-                            <button type="button" id="deleteBtn" class="btn btn-danger btn-sm fw-bold rounded-pill px-3 shadow-sm" style="{{ !$receipt->id ? 'display:none' : '' }}; font-size: 11px;">
+                            <button type="button" id="deleteBtn" class="btn btn-danger btn-sm fw-bold px-3 shadow-sm text-white" style="{{ !$receipt->id ? 'display:none' : '' }}; font-size: 11px;">
                                 <i class="fa fa-trash"></i>
                             </button>
                         </div>
@@ -340,7 +339,7 @@ $(document).ready(function() {
     function calc() {
         let t = 0;
         $('.row-amount').each(function() { t += parseFloat($(this).val()) || 0; });
-        $('#totalAmount').val(t.toLocaleString('en-US', {minimumFractionDigits: 2}));
+        $('#totalAmount').val(t.toFixed(2));
     }
     $(document).on('input', '.row-amount', calc);
 
@@ -394,26 +393,60 @@ $(document).ready(function() {
     $('#editBtn').click(function() { $('#incomeForm').removeClass('form-locked'); $(this).hide(); });
 
     $('#postBtn').click(function() {
-        Swal.fire({
-            title: 'Post Voucher?', text: 'Once posted, accounting entries will be finalized.', icon: 'question', showCancelButton: true
-        }).then((res) => {
-            if(res.isConfirmed) {
-                $('#saveDraftBtn').click();
-                setTimeout(() => {
-                    let id = $('#receipt_id').val();
-                    if(id) {
-                        let f = $('<form>', {action: '{{ route("income.vochers.post", ":id") }}'.replace(':id', id), method: 'POST'});
-                        f.append($('<input>', {type: 'hidden', name: '_token', value: '{{ csrf_token() }}'}));
-                        $('body').append(f); f.submit();
-                    }
-                }, 1000);
+        $('#saveDraftBtn').click();
+        setTimeout(() => {
+            let id = $('#receipt_id').val();
+            if(id) {
+                let f = $('<form>', {action: '{{ route("income.vochers.post", ":id") }}'.replace(':id', id), method: 'POST'});
+                f.append($('<input>', {type: 'hidden', name: '_token', value: '{{ csrf_token() }}'}));
+                $('body').append(f); f.submit();
             }
-        });
+        }, 1000);
     });
 
     $(window).on('keydown', function(e) {
-        if ((e.ctrlKey || e.metaKey) && (e.which == 83 || e.keyCode == 83)) { e.preventDefault(); $('#saveDraftBtn').click(); return false; }
-        if ((e.ctrlKey || e.metaKey) && (e.which == 13 || e.keyCode == 13)) { e.preventDefault(); $('#postBtn').click(); }
+        // Ctrl+S (Save)
+        if ((e.ctrlKey || e.metaKey) && (e.which === 83 || e.keyCode === 83)) {
+            e.preventDefault(); $('#saveDraftBtn').click(); return false;
+        }
+        // Ctrl+Enter (Post)
+        if ((e.ctrlKey || e.metaKey) && (e.which === 13 || e.keyCode === 13)) {
+            e.preventDefault(); $('#postBtn').click(); return false;
+        }
+        // Ctrl+P (Print)
+        if ((e.ctrlKey || e.metaKey) && (e.which === 80 || e.keyCode === 80)) {
+            e.preventDefault();
+            if ($('#previewPrintBtn').length > 0 && !$('#previewPrintBtn').hasClass('disabled')) {
+                window.open($('#previewPrintBtn').attr('href'), '_blank');
+            }
+            return false;
+        }
+        // Ctrl+L (List)
+        if ((e.ctrlKey || e.metaKey) && (e.which === 76 || e.keyCode === 76)) {
+            e.preventDefault();
+            if ($('#listBtn').length > 0) { window.location.href = $('#listBtn').attr('href'); }
+            return false;
+        }
+        // Ctrl+E (Edit)
+        if ((e.ctrlKey || e.metaKey) && (e.which === 69 || e.keyCode === 69)) {
+            e.preventDefault();
+            if ($('#editBtn').is(':visible')) { $('#editBtn').click(); }
+            return false;
+        }
+        // Ctrl+M (New)
+        if ((e.ctrlKey || e.metaKey) && (e.which === 77 || e.keyCode === 77)) {
+            e.preventDefault();
+            window.location.href = "{{ route('income-vochers') }}";
+            return false;
+        }
+        // Escape
+        if (e.which === 27 || e.keyCode === 27) {
+            if ($('.modal.show').length) {
+                $('.modal.show').modal('hide');
+            } else {
+               window.location.href = $('#listBtn').attr('href');
+            }
+        }
     });
 
     $('#deleteBtn').click(function() {

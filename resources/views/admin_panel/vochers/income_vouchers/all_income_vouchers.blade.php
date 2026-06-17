@@ -171,7 +171,7 @@
                                         <tr>
                                             <td class="text-center text-muted small">{{ $item->id }}</td>
                                             <td class="text-center small">IV</td>
-                                            <td class="fw-bold text-success">{{ (int) preg_replace('/[^0-9]/', '', substr($item->ivid, strlen('IVID-'))) }}</td>
+                                            <td class="fw-bold text-success">{{ $item->ivid ?? '-' }}</td>
                                             <td class="small">{{ $item->entry_date ? \Carbon\Carbon::parse($item->entry_date)->format('d-M-Y') : '-' }}</td>
                                             <td class="text-center">
                                                 <span class="badge bg-light text-success border-0 rounded-pill px-2" style="font-size: 9px;">{{ $item->type_label ?? '-' }}</span>

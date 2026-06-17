@@ -495,17 +495,47 @@ class GeneralLedgerController extends Controller
 
         // 7.1 Incomes (IV)
         $ivDateCol = $this->getDateColumn('income_vouchers');
-        $incomes = DB::table('income_vouchers')->where('party_id', $id)->whereIn('party_type', $typeArray)
+        $incomes = DB::table('income_vouchers')->where(function($q) use ($id) {
+                $q->whereJsonContains('party_id', (string)$id)
+                  ->orWhereJsonContains('party_id', (int)$id);
+            })
             ->whereIn('status', ['posted', 'Posted'])->whereBetween(DB::raw($ivDateCol), [$start, $end])->get();
+            
         foreach ($incomes as $iv) {
-            $transactions[] = [
-                'created_at' => $iv->created_at,
-                'date' => $iv->entry_date ?: $iv->created_at,
-                'ref' => 'IV',
-                'inv' => $iv->ivid,
-                'desc' => $iv->remarks ?? 'Income Voucher',
-                'qty' => 0, 'debit' => 0, 'credit' => (float)$iv->amount
-            ];
+            $types = json_decode($iv->party_type, true) ?? [];
+            $pIds = json_decode($iv->party_id, true) ?? [];
+            $amounts = json_decode($iv->amount, true) ?? [];
+            $narrIds = json_decode($iv->narration_id, true) ?? [];
+
+            foreach ($pIds as $idx => $pid) {
+                if ($pid == $id && in_array($types[$idx] ?? '', $typeArray)) {
+                    $rowAmount = (float)($amounts[$idx] ?? 0);
+                    if ($rowAmount <= 0) continue;
+
+                    $narrText = '';
+                    if (isset($narrIds[$idx])) {
+                        if (is_numeric($narrIds[$idx])) {
+                            $narrText = DB::table('narrations')->where('id', $narrIds[$idx])->value('narration');
+                        } else {
+                            $narrText = $narrIds[$idx];
+                        }
+                    }
+                    $desc = $narrText ?: ($iv->remarks ?? 'Income Voucher');
+
+                    $transactions[] = [
+                        'created_at' => $iv->created_at,
+                        'id' => $iv->id . '_' . $idx,
+                        'date' => $iv->entry_date ?: $iv->created_at,
+                        'ref' => 'IV',
+                        'inv' => $iv->ivid,
+                        'desc' => $desc,
+                        'qty' => 0, 
+                        'debit' => $rowAmount,
+                        'credit' => 0,
+                        'priority' => 60
+                    ];
+                }
+            }
         }
 
         usort($transactions, function ($a, $b) {
@@ -698,11 +728,26 @@ class GeneralLedgerController extends Controller
             }
         }
         
-        // 7.1 Income (Credit)
+        // 7.1 Income (Debit)
         $ivDateCol = $this->getDateColumn('income_vouchers');
-        $incomes = (float)DB::table('income_vouchers')->where('party_id', $id)->whereIn('party_type', $typeArray)
+        $ivList = DB::table('income_vouchers')->where(function($q) use ($id) {
+                $q->whereJsonContains('party_id', (string)$id)
+                  ->orWhereJsonContains('party_id', (int)$id);
+            })
             ->whereIn('status', ['posted', 'Posted'])
-            ->where(DB::raw($ivDateCol), '<', $date)->sum('amount');
+            ->where(DB::raw($ivDateCol), '<', $date)->get();
+        $incomes = 0;
+        foreach ($ivList as $iv) {
+            $types = json_decode($iv->party_type, true) ?? [];
+            $pIds = json_decode($iv->party_id, true) ?? [];
+            $amounts = json_decode($iv->amount, true) ?? [];
+
+            foreach ($pIds as $idx => $pid) {
+                if ($pid == $id && in_array($types[$idx] ?? '', $typeArray)) {
+                    $incomes += (float)($amounts[$idx] ?? 0);
+                }
+            }
+        }
 
         // 7.2 Generic Vouchers (Credit)
         $vCredits = (float)DB::table('vouchers')->where('person', $id)->where('type', 'Credit')
@@ -719,15 +764,18 @@ class GeneralLedgerController extends Controller
             ->whereIn('status', ['posted', 'Posted'])
             ->where(DB::raw($jvDateCol), '<', $date)->get();
         $jvCredits = 0;
-        foreach($jvs as $jv) {
+        foreach ($jvs as $jv) {
             $pIds = json_decode($jv->party_id, true) ?? [];
+            $types = json_decode($jv->party_type, true) ?? [];
             $credits = json_decode($jv->credit, true) ?? [];
-            foreach($pIds as $idx => $pid) {
-                if($pid == $id) $jvCredits += (float)($credits[$idx] ?? 0);
+            foreach ($pIds as $idx => $pid) {
+                if ($pid == $id && ($types[$idx] ?? '') == $type) {
+                    $jvCredits += (float)($credits[$idx] ?? 0);
+                }
             }
         }
 
-        $balance += ($sales + $pReturns + $payments + $expenses + $vDebits + $jvDebits) - ($purchases + $sReturns + $receipts + $incomes + $vCredits + $jvCredits);
+        $balance += ($sales + $pReturns + $payments + $expenses + $vDebits + $jvDebits + $incomes) - ($purchases + $sReturns + $receipts + $vCredits + $jvCredits);
         
         return $balance;
     }

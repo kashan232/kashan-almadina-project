@@ -217,6 +217,10 @@
                                                     <input type="hidden" id="overallDiscount" name="discount" value="{{ $returnData->discount_amount ?? 0 }}">
                                                 </td>
                                             </tr>
+                                            <tr>
+                                                <th class="text-secondary">Order Discount Rs</th>
+                                                <td><input type="text" id="tOrderDisc" class="form-control form-control-sm text-end bg-white text-danger fw-semibold" readonly value="{{ $returnData->discount_amount ?? 0 }}"></td>
+                                            </tr>
 
                                             <tr class="border-top">
                                                 <th class="h5 fw-bold pt-3">Net Return Amount</th>
@@ -877,6 +881,7 @@ $(document).ready(function() {
 
         $('#subtotal').val(subtotalNet.toFixed(2));
         $('#overallDiscount').val(totalDisc.toFixed(2));
+        $('#tOrderDisc').val(totalDisc.toFixed(2));
         $('#netAmount').val(finalNet.toFixed(2));
     }
 

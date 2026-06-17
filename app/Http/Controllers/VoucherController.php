@@ -1490,10 +1490,10 @@ class VoucherController extends Controller
                         'admin_or_user_id' => auth()->id(),
                         'date'             => now(),
                         'description'      => "Income Voucher #$ivid",
-                        'debit'            => 0,
-                        'credit'           => $rowAmount,
+                        'debit'            => $rowAmount,
+                        'credit'           => 0,
                         'previous_balance' => $prev,
-                        'closing_balance'  => $prev - $rowAmount,
+                        'closing_balance'  => $prev + $rowAmount,
                     ]);
                 } elseif ($pType === 'customer' || $pType === 'walkin') {
                     $ledger = \App\Models\CustomerLedger::where('customer_id', $pId)->latest()->first();
@@ -1503,10 +1503,10 @@ class VoucherController extends Controller
                         'admin_or_user_id' => auth()->id(),
                         'date'             => now(),
                         'description'      => "Income Voucher #$ivid",
-                        'debit'            => 0,
-                        'credit'           => $rowAmount,
+                        'debit'            => $rowAmount,
+                        'credit'           => 0,
                         'previous_balance' => $prev,
-                        'closing_balance'  => $prev - $rowAmount,
+                        'closing_balance'  => $prev + $rowAmount,
                     ]);
                 } else {
                     // It's a standard Chart of Accounts entry (e.g. Sales Income Account)
