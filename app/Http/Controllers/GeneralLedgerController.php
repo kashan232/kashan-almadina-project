@@ -693,7 +693,11 @@ class GeneralLedgerController extends Controller
         $prDateCol = $this->getDateColumn('purchase_returns', 'current_date');
         $pReturns = (float)PurchaseReturn::where(function($q) use ($id, $type, $class) {
                 if ($type == 'vendor') {
-                    $q->where('vendor_id', $id)->orWhere(function($q2) use ($id, $class) {
+                    $q->where(function($q3) use ($id) {
+                        $q3->where('vendor_id', $id)->where(function($q4) {
+                            $q4->whereNull('purchasable_type')->orWhere('purchasable_type', '');
+                        });
+                    })->orWhere(function($q2) use ($id, $class) {
                         $q2->where('purchasable_id', $id)->where('purchasable_type', $class);
                     });
                 } else {
@@ -749,7 +753,11 @@ class GeneralLedgerController extends Controller
         $pjDateCol = $this->getDateColumn('purchases', 'current_date');
         $purchases = (float)Purchase::where(function($q) use ($id, $type, $class) {
                 if ($type == 'vendor') {
-                    $q->where('vendor_id', $id)->orWhere(function($q2) use ($id, $class) {
+                    $q->where(function($q3) use ($id) {
+                        $q3->where('vendor_id', $id)->where(function($q4) {
+                            $q4->whereNull('purchasable_type')->orWhere('purchasable_type', '');
+                        });
+                    })->orWhere(function($q2) use ($id, $class) {
                         $q2->where('purchasable_id', $id)->where('purchasable_type', $class);
                     });
                 } else {
@@ -1096,7 +1104,11 @@ class GeneralLedgerController extends Controller
         $prDateCol = $this->getDateColumn('purchase_returns', 'current_date');
         $pReturns = PurchaseReturn::where(function($q) use ($id, $type, $class) {
                 if ($type == 'vendor') {
-                    $q->where('vendor_id', $id)->orWhere(function($q2) use ($id, $class) {
+                    $q->where(function($q3) use ($id) {
+                        $q3->where('vendor_id', $id)->where(function($q4) {
+                            $q4->whereNull('purchasable_type')->orWhere('purchasable_type', '');
+                        });
+                    })->orWhere(function($q2) use ($id, $class) {
                         $q2->where('purchasable_id', $id)->where('purchasable_type', $class);
                     });
                 } else {
@@ -1380,7 +1392,11 @@ class GeneralLedgerController extends Controller
         $pjDateCol = $this->getDateColumn('purchases', 'current_date');
         $purchases = Purchase::where(function($q) use ($id, $type, $class) {
                 if ($type == 'vendor') {
-                    $q->where('vendor_id', $id)->orWhere(function($q2) use ($id, $class) {
+                    $q->where(function($q3) use ($id) {
+                        $q3->where('vendor_id', $id)->where(function($q4) {
+                            $q4->whereNull('purchasable_type')->orWhere('purchasable_type', '');
+                        });
+                    })->orWhere(function($q2) use ($id, $class) {
                         $q2->where('purchasable_id', $id)->where('purchasable_type', $class);
                     });
                 } else {
