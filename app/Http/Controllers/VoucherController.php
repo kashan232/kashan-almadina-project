@@ -944,46 +944,33 @@ class VoucherController extends Controller
         $payments = $query->orderBy('id', 'DESC')->get();
 
         foreach ($payments as $voucher) {
-            $partyNames = [];
-            $typeLabels = [];
+            $partyName = '-';
+            $typeLabel = '-';
 
-            $typesRaw = json_decode($voucher->type, true);
-            if (!is_array($typesRaw)) {
-                $typesRaw = [$voucher->type];
+            if (is_numeric($voucher->type)) {
+                $accountHead = DB::table('account_heads')->where('id', $voucher->type)->first();
+                $account = DB::table('accounts')->where('id', $voucher->party_id)->first();
+                $typeLabel = $accountHead->name ?? 'Account';
+                $partyName = $account->title ?? '-';
+            } elseif ($voucher->type === 'vendor') {
+                $vendor = DB::table('vendors')->where('id', $voucher->party_id)->first();
+                $typeLabel = 'Vendor';
+                $partyName = $vendor->name ?? '-';
+            } elseif ($voucher->type === 'customer') {
+                $customer = DB::table('customers')->where('id', $voucher->party_id)->first();
+                $typeLabel = 'Customer';
+                $partyName = $customer->customer_name ?? '-';
+            } elseif ($voucher->type === 'walkin') {
+                $walkin = DB::table('customers')
+                    ->where('id', $voucher->party_id)
+                    ->where('customer_type', 'Walking Customer')
+                    ->first();
+                $typeLabel = 'Walk-in';
+                $partyName = $walkin->customer_name ?? '-';
             }
 
-            $partyIdsRaw = json_decode($voucher->party_id, true);
-            if (!is_array($partyIdsRaw)) {
-                $partyIdsRaw = [$voucher->party_id];
-            }
-
-            foreach ($partyIdsRaw as $index => $pId) {
-                if (empty($pId)) continue;
-                $pType = $typesRaw[$index] ?? '';
-
-                if (is_numeric($pType)) {
-                    $accountHead = DB::table('account_heads')->where('id', $pType)->first();
-                    $account = DB::table('accounts')->where('id', $pId)->first();
-                    $typeLabels[] = $accountHead->name ?? 'Account';
-                    $partyNames[] = $account->title ?? '-';
-                } elseif ($pType === 'vendor') {
-                    $vendor = DB::table('vendors')->where('id', $pId)->first();
-                    $typeLabels[] = 'Vendor';
-                    $partyNames[] = $vendor->name ?? '-';
-                } elseif ($pType === 'customer') {
-                    $customer = DB::table('customers')->where('id', $pId)->first();
-                    $typeLabels[] = 'Customer';
-                    $partyNames[] = $customer->customer_name ?? '-';
-                } elseif ($pType === 'walkin') {
-                    $typeLabels[] = 'Walk-in';
-                    $partyNames[] = 'Walk-in';
-                }
-            }
-
-            // Summarize for list view
-            $uTypes = array_unique($typeLabels);
-            $voucher->type_label = count($uTypes) > 1 ? 'Multiple Heads' : ($uTypes[0] ?? '-');
-            $voucher->party_name = count($partyNames) > 1 ? count($partyNames) . ' Parties' : ($partyNames[0] ?? '-');
+            $voucher->type_label = $typeLabel;
+            $voucher->party_name = $partyName;
 
             $discountRaw = json_decode($voucher->discount_value, true);
             if (is_array($discountRaw)) {
