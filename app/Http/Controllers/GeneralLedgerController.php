@@ -482,7 +482,6 @@ class GeneralLedgerController extends Controller
                     }
                 }
                 $descParts = [];
-                if ($narrText) $descParts[] = $narrText;
                 if (!empty($rv->remarks) && !str_starts_with($rv->remarks, 'Auto-generated from Sale:')) {
                     $descParts[] = $rv->remarks;
                 }
@@ -516,7 +515,7 @@ class GeneralLedgerController extends Controller
                         'date' => $rv->entry_date ?: $rv->created_at,
                         'ref' => $ref,
                         'inv' => $inv,
-                        'desc' => "Discount: " . $desc,
+                        'desc' => "Discount",
                         'qty' => 0, 'debit' => 0, 'credit' => $rowDiscount,
                         'priority' => str_contains($rv->remarks ?? '', 'Auto-generated from Sale:') ? 12 : 61,
                         'sort_inv' => str_contains($rv->remarks ?? '', 'Auto-generated from Sale:') ? preg_replace('/[^0-9]/', '', $rv->remarks) : preg_replace('/[^0-9]/', '', $rv->rvid ?? '')
@@ -916,7 +915,6 @@ class GeneralLedgerController extends Controller
                         }
 
                         $descParts = [];
-                        if ($rowNarr) $descParts[] = $rowNarr;
                         if (!empty($rv->remarks) && !str_starts_with($rv->remarks, 'Auto-generated from Sale:')) {
                             $descParts[] = $rv->remarks;
                         }
@@ -1518,7 +1516,6 @@ class GeneralLedgerController extends Controller
                 }
                 
                 $descParts = [];
-                if ($narrText) $descParts[] = $narrText;
                 if (!empty($rv->remarks) && !str_starts_with($rv->remarks, 'Auto-generated from Sale:')) {
                     $descParts[] = $rv->remarks;
                 }
@@ -1552,7 +1549,7 @@ class GeneralLedgerController extends Controller
                         'date' => $rv->entry_date ?: $rv->created_at,
                         'ref' => $ref,
                         'inv' => $inv,
-                        'desc' => "Discount: " . $desc,
+                        'desc' => "Discount",
                         'price' => 0, 'qty' => 0, 'debit' => 0, 'credit' => $rowDiscount,
                         'priority' => str_contains($rv->remarks ?? '', 'Auto-generated from Sale:') ? 12 : 61,
                         'sort_inv' => str_contains($rv->remarks ?? '', 'Auto-generated from Sale:') ? preg_replace('/[^0-9]/', '', $rv->remarks) : preg_replace('/[^0-9]/', '', $rv->rvid ?? '')
