@@ -732,9 +732,12 @@ class GeneralLedgerController extends Controller
         $jvDebits = 0;
         foreach($jvs as $jv) {
             $pIds = json_decode($jv->party_id, true) ?? [];
+            $types = json_decode($jv->party_type, true) ?? [];
             $debits = json_decode($jv->debit, true) ?? [];
             foreach($pIds as $idx => $pid) {
-                if($pid == $id) $jvDebits += (float)($debits[$idx] ?? 0);
+                if($pid == $id && in_array($types[$idx] ?? '', $typeArray)) {
+                    $jvDebits += (float)($debits[$idx] ?? 0);
+                }
             }
         }
 
@@ -1268,11 +1271,12 @@ class GeneralLedgerController extends Controller
             ->whereIn('status', ['posted', 'Posted'])->whereBetween(DB::raw($jvDateCol), [$start, $end])->get();
         foreach ($jvs as $jv) {
             $pIds = json_decode($jv->party_id, true) ?? [];
+            $types = json_decode($jv->party_type, true) ?? [];
             $debits = json_decode($jv->debit, true) ?? [];
             $credits = json_decode($jv->credit, true) ?? [];
             $narrIds = json_decode($jv->narration_id, true) ?? [];
             foreach($pIds as $idx => $pid) {
-                if ($pid == $id) {
+                if ($pid == $id && in_array($types[$idx] ?? '', $typeArray)) {
                     $ref = 'JV';
                     $inv = $jv->jvid;
                     
