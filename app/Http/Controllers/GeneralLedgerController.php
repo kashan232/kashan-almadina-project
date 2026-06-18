@@ -483,7 +483,9 @@ class GeneralLedgerController extends Controller
                 }
                 $descParts = [];
                 if ($narrText) $descParts[] = $narrText;
-                if (!empty($rv->remarks)) $descParts[] = $rv->remarks;
+                if (!empty($rv->remarks) && !str_starts_with($rv->remarks, 'Auto-generated from Sale:')) {
+                    $descParts[] = $rv->remarks;
+                }
                 $desc = !empty($descParts) ? implode(' ; ', $descParts) : 'Receipt Voucher';
 
                 $ref = 'RV';
@@ -915,7 +917,9 @@ class GeneralLedgerController extends Controller
 
                         $descParts = [];
                         if ($rowNarr) $descParts[] = $rowNarr;
-                        if (!empty($rv->remarks)) $descParts[] = $rv->remarks;
+                        if (!empty($rv->remarks) && !str_starts_with($rv->remarks, 'Auto-generated from Sale:')) {
+                            $descParts[] = $rv->remarks;
+                        }
                         $baseDesc = !empty($descParts) ? implode(' ; ', $descParts) : 'Receipt';
                         
                         $desc = $partyName ? $baseDesc . ' : ' . $partyName : $baseDesc;
@@ -1515,7 +1519,9 @@ class GeneralLedgerController extends Controller
                 
                 $descParts = [];
                 if ($narrText) $descParts[] = $narrText;
-                if (!empty($rv->remarks)) $descParts[] = $rv->remarks;
+                if (!empty($rv->remarks) && !str_starts_with($rv->remarks, 'Auto-generated from Sale:')) {
+                    $descParts[] = $rv->remarks;
+                }
                 $desc = !empty($descParts) ? implode(' ; ', $descParts) : 'Receipt Voucher';
 
                 $ref = 'RV';
