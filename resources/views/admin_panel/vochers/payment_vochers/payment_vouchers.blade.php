@@ -329,11 +329,20 @@ $(document).ready(function() {
             let url = (['vendor','customer','walkin'].includes(id)) ? '{{ route("party.list") }}?type=' + id : '{{ url("get-accounts-by-head") }}/' + id;
             $.get(url, res => {
                 $sub.empty().append('<option value="">Select Party...</option>');
+                let hasSelected = false;
                 res.forEach(i => {
                     let code = i.account_code || '';
-                    $sub.append(`<option value="${i.id}" data-code="${code}" ${i.id == selected ? 'selected' : ''}>${i.text || i.title}</option>`);
+                    let sel = (i.id == selected) ? 'selected' : '';
+                    if (i.id == selected) hasSelected = true;
+                    $sub.append(`<option value="${i.id}" data-code="${code}" ${sel}>${i.text || i.title}</option>`);
                 });
-                if(selected) { let code = $sub.find('option:selected').attr('data-code'); $('#party_code_input').val(code || selected); }
+                if (hasSelected && selected) { 
+                    $sub.val(selected);
+                    let code = $sub.find('option:selected').attr('data-code'); 
+                    $('#party_code_input').val(code || selected); 
+                }
+                $sub.trigger('change');
+                $sub.data('selected', ''); // Clear so it only auto-selects on first load
             });
         }
     }).trigger('change');
@@ -349,8 +358,19 @@ $(document).ready(function() {
         if(headId) {
             $.get('{{ url("get-accounts-by-head") }}/' + headId, res => {
                 $select.empty().append('<option value="">Select Account...</option>');
-                res.forEach(a => $select.append(`<option value="${a.id}" data-code="${a.account_code}" ${a.id == selected ? 'selected' : ''}>${a.title}</option>`));
-                if(selected) { let code = $select.find('option:selected').attr('data-code'); $row.find('.rowAccountCode').val(code || selected); }
+                let hasSelected = false;
+                res.forEach(a => {
+                    let sel = (a.id == selected) ? 'selected' : '';
+                    if (a.id == selected) hasSelected = true;
+                    $select.append(`<option value="${a.id}" data-code="${a.account_code}" ${sel}>${a.title}</option>`);
+                });
+                if (hasSelected && selected) { 
+                    $select.val(String(selected));
+                    let code = $select.find('option:selected').attr('data-code'); 
+                    $row.find('.rowAccountCode').val(code || selected); 
+                }
+                $select.trigger('change');
+                $select.data('selected', ''); // Clear so it only auto-selects on first load
             });
         }
     });

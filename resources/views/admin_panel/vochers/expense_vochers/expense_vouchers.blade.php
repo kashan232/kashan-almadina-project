@@ -304,13 +304,20 @@ $(document).ready(function() {
         let url = (['vendor','customer','walkin'].includes(type)) ? '{{ route("party.list") }}?type=' + type : '{{ url("get-accounts-by-head") }}/' + type;
         $.get(url, function(data) {
             $partySelect.html('<option value="">Select Party...</option>');
+            let hasSelected = false;
             data.forEach(item => {
                 let code = item.account_code || '';
                 let sel = (item.id == selectedId) ? 'selected' : '';
+                if(item.id == selectedId) hasSelected = true;
                 $partySelect.append(`<option value="${item.id}" data-code="${code}" ${sel}>${item.text || item.title}</option>`);
             });
+            if (hasSelected && selectedId) {
+                $partySelect.val(selectedId);
+                let code = $partySelect.find('option:selected').attr('data-code'); 
+                $('#party_code_input').val(code || selectedId);
+            }
             $partySelect.trigger('change');
-            if (selectedId) { let code = $partySelect.find('option:selected').attr('data-code'); $('#party_code_input').val(code || selectedId); }
+            $partySelect.data('selected-id', ''); // Clear so it only auto-selects on first load
         });
     }).trigger('change');
 
@@ -325,14 +332,23 @@ $(document).ready(function() {
         if (headId) {
             $.get('{{ url("get-accounts-by-head") }}/' + headId, function(res) {
                 $subSelect.html('<option value="">Select Account</option>');
+                let hasSelected = false;
                 res.forEach(acc => {
                     let sel = (acc.id == selected) ? 'selected' : '';
+                    if (acc.id == selected) hasSelected = true;
                     $subSelect.append(`<option value="${acc.id}" data-code="${acc.account_code}" ${sel}>${acc.title}</option>`);
                 });
-                if(selected) { let code = $subSelect.find('option:selected').attr('data-code'); $row.find('.account-id-lookup').val(code || selected); }
+                if (hasSelected && selected) { 
+                    $subSelect.val(String(selected));
+                    let code = $subSelect.find('option:selected').attr('data-code'); 
+                    $row.find('.account-id-lookup').val(code || selected); 
+                }
+                $subSelect.trigger('change');
+                $subSelect.data('selected', ''); // Clear so it only auto-selects on first load
             });
         }
-    }).each(function() { if ($(this).val()) $(this).trigger('change'); });
+    });
+    $('.rowAccountHead').each(function() { if ($(this).val()) $(this).trigger('change'); });
 
     $(document).on('blur keydown', '.account-id-lookup', function(e) {
         if(e.type === 'keydown' && e.which != 13 && e.which != 9) return;
