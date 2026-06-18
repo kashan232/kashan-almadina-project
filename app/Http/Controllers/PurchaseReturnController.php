@@ -151,6 +151,8 @@ class PurchaseReturnController extends Controller
                     'subtotal'         => $request->subtotal,
                     'discount'         => $request->discount,
                     'wht'              => $request->wht,
+                    'wht_percent'      => $request->wht_percent,
+                    'wht_type'         => $request->wht_type,
                     'net_amount'       => $request->net_amount,
                     'status'           => 'Unposted',
                     'created_by'       => auth()->id(),
@@ -264,6 +266,8 @@ class PurchaseReturnController extends Controller
                     'subtotal'         => $request->subtotal,
                     'discount'         => $request->discount,
                     'wht'              => $request->wht,
+                    'wht_percent'      => $request->wht_percent,
+                    'wht_type'         => $request->wht_type,
                     'net_amount'       => $request->net_amount,
                 ]);
 

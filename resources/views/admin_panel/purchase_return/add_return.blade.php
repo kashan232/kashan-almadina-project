@@ -212,8 +212,8 @@
                                                 <th class="text-secondary">WHT</th>
                                                 <td>
                                                     <div class="input-group input-group-sm">
-                                                        <input type="number" step="0.01" id="whtPercent" class="form-control text-end" placeholder="%" value="{{ $returnData->wht_percent ?? 0 }}">
-                                                        <select id="whtType" class="form-select form-select-sm" style="max-width:70px;">
+                                                        <input type="number" step="0.01" id="whtPercent" name="wht_percent" class="form-control text-end" placeholder="%" value="{{ $returnData->wht_percent ?? 0 }}">
+                                                        <select id="whtType" name="wht_type" class="form-select form-select-sm" style="max-width:70px;">
                                                             <option value="percent" {{ !isset($returnData) || (isset($returnData) && $returnData->wht_type != 'amount') ? 'selected' : '' }}>%</option>
                                                             <option value="amount" {{ isset($returnData) && $returnData->wht_type == 'amount' ? 'selected' : '' }}>PKR</option>
                                                         </select>
