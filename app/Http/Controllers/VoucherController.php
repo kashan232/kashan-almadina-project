@@ -727,7 +727,7 @@ class VoucherController extends Controller
             }
 
             DB::commit();
-            return back()->with('success', 'Voucher posted successfully!');
+            return redirect()->route('Payment-vochers')->with('success', 'Voucher posted successfully!');
         } catch (\Exception $e) {
             DB::rollBack();
             return back()->with('error', 'Error: ' . $e->getMessage());
