@@ -905,22 +905,25 @@
     if(focusNewRow) $nr.find('.item-id-input').focus();
   }
 
-  function loadNarrationsInto($select) {
-    if ($select.hasClass('select2-hidden-accessible')) $select.select2('destroy');
-    const existingVal = $select.val();
-    $select.prop('disabled', true).empty().append('<option value="">Loading...</option>');
-    $.get('{{ route("narrations.receipts") }}', function(data) {
-      $select.empty().append('<option value="">Select narration...</option>');
-      (data || []).forEach(n => {
-          const text = n.narration_text || n.narration;
-          $select.append(new Option(text, text));
+  function loadNarrationsInto($selects) {
+    $selects.each(function() {
+      const $select = $(this);
+      if ($select.hasClass('select2-hidden-accessible')) $select.select2('destroy');
+      const existingVal = $select.val();
+      $select.prop('disabled', true).empty().append('<option value="">Loading...</option>');
+      $.get('{{ route("narrations.receipts") }}', function(data) {
+        $select.empty().append('<option value="">Select narration...</option>');
+        (data || []).forEach(n => {
+            const text = n.narration_text || n.narration;
+            $select.append(new Option(text, text));
+        });
+        if (existingVal && !$select.find('option[value="'+existingVal+'"]').length) {
+            $select.append(new Option(existingVal, existingVal, true, true));
+        } else if (existingVal) {
+            $select.val(existingVal);
+        }
+        $select.prop('disabled', false).select2({ tags: true, width: '100%', dropdownParent: $select.parent() });
       });
-      if (existingVal && !$select.find('option[value="'+existingVal+'"]').length) {
-          $select.append(new Option(existingVal, existingVal, true, true));
-      } else if (existingVal) {
-          $select.val(existingVal);
-      }
-      $select.prop('disabled', false).select2({ tags: true, width: '100%', dropdownParent: $select.parent() });
     });
   }
 

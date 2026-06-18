@@ -146,14 +146,13 @@
                                     <tr>
                                         <th style="width: 100px;">Item ID</th>
                                         <th style="width: 250px;">Product</th>
-                                        <th>Sales Price</th>
                                         <th>Retail Price</th>
                                         <th>Disc (%)</th>
                                         <th>Disc Amt</th>
                                         <th class="invoice-only">Orig Qty</th>
-                                        <th>Return Qty</th>
+                                        <th><span class="invoice-only">Return </span>Qty</th>
+                                        <th>Price</th>
                                         <th>Amount</th>
-                                        <th>Total</th>
                                         <th>X</th>
                                     </tr>
                                 </thead>
@@ -169,13 +168,12 @@
                                                         <option value="{{ $item->product_id }}" selected>{{ $item->product->name }}</option>
                                                     </select>
                                                 </td>
-                                                <td><input type="number" step="0.01" name="price[]" class="form-control form-control-sm price text-end" value="{{ $item->sales_price }}"></td>
                                                 <td><input type="number" step="0.01" name="retail_price[]" class="form-control form-control-sm retail_price text-end" value="{{ $item->retail_price }}"></td>
                                                 <td><input type="number" step="0.01" name="discount_percent[]" class="form-control form-control-sm discount_percent text-center" value="{{ $item->discount_percent }}"></td>
                                                 <td><input type="number" step="0.01" name="item_disc_amount[]" class="form-control form-control-sm disc_amount text-end" value="{{ $item->sales_qty > 0 ? ($item->discount_amount / $item->sales_qty) : 0 }}"></td>
                                                 <td class="invoice-only"><input type="text" class="form-control form-control-sm bg-light text-center" value="{{ $item->sales_qty }}" readonly></td>
                                                 <td><input type="number" name="qty[]" class="form-control form-control-sm quantity text-center" value="{{ $item->sales_qty }}" min="0"></td>
-                                                <td><input type="text" name="line_amount[]" class="form-control form-control-sm row-amount text-end bg-white" readonly value="0"></td>
+                                                <td><input type="number" step="0.01" name="price[]" class="form-control form-control-sm price text-end" value="{{ $item->sales_price }}"></td>
                                                 <td><input type="text" name="line_total[]" class="form-control form-control-sm row-total text-end bg-white" readonly value="0"></td>
                                                 <td><button type="button" class="btn btn-sm btn-danger remove-row"><i class="fa fa-times"></i></button></td>
                                             </tr>
@@ -743,18 +741,20 @@ $(document).ready(function() {
                         <option value="" disabled selected>Select Product</option>
                     </select>
                 </td>
-                <td><input type="number" step="0.01" name="price[]" class="form-control form-control-sm price text-end"></td>
                 <td><input type="number" step="0.01" name="retail_price[]" class="form-control form-control-sm retail_price text-end"></td>
                 <td><input type="number" step="0.01" name="discount_percent[]" class="form-control form-control-sm discount_percent text-center"></td>
                 <td><input type="number" step="0.01" name="item_disc_amount[]" class="form-control form-control-sm disc_amount text-end"></td>
                 <td class="invoice-only"><input type="text" class="form-control form-control-sm bg-light text-center" value="-" readonly></td>
                 <td><input type="number" name="qty[]" class="form-control form-control-sm quantity text-center" value="1" min="0"></td>
-                <td><input type="text" name="line_amount[]" class="form-control form-control-sm row-amount text-end bg-white" readonly value="0"></td>
+                <td><input type="number" step="0.01" name="price[]" class="form-control form-control-sm price text-end"></td>
                 <td><input type="text" name="line_total[]" class="form-control form-control-sm row-total text-end bg-white" readonly value="0"></td>
                 <td><button type="button" class="btn btn-sm btn-danger remove-row"><i class="fa fa-times"></i></button></td>
             </tr>`;
         
         const $row = $(newRowHtml);
+        if ($('input[name="return_mode"]:checked').val() === 'manual') {
+            $row.find('.invoice-only').hide();
+        }
         $('#saleItems').append($row);
         initProductSelect($row);
         
@@ -800,13 +800,12 @@ $(document).ready(function() {
                 <input type="text" class="form-control form-control-sm bg-white" value="${item.product_name}" readonly title="${item.product_name}">
                 <input type="hidden" name="product_id[]" value="${item.product_id}">
             </td>
-            <td><input type="number" step="0.01" name="price[]" class="form-control form-control-sm price text-end" value="${item.price}"></td>
             <td><input type="number" step="0.01" name="retail_price[]" class="form-control form-control-sm retail_price text-end" value="${item.retail_price}"></td>
             <td><input type="number" step="0.01" name="discount_percent[]" class="form-control form-control-sm discount_percent text-center" value="${item.discount_percent}"></td>
             <td><input type="number" step="0.01" name="item_disc_amount[]" class="form-control form-control-sm disc_amount text-end" value="${discAmt}"></td>
             <td class="invoice-only"><input type="text" class="form-control form-control-sm bg-light text-center" value="${item.qty}" readonly></td>
             <td><input type="number" name="qty[]" class="form-control form-control-sm quantity text-center" value="${item.qty}" max="${item.qty}" min="0" title="Edit return quantity"></td>
-            <td><input type="text" name="line_amount[]" class="form-control form-control-sm row-amount text-end bg-white" readonly value="0"></td>
+            <td><input type="number" step="0.01" name="price[]" class="form-control form-control-sm price text-end" value="${item.price}"></td>
             <td><input type="text" name="line_total[]" class="form-control form-control-sm row-total text-end bg-white" readonly value="0"></td>
             <td><button type="button" class="btn btn-sm btn-danger remove-row"><i class="fa fa-times"></i></button></td>
         </tr>`;
@@ -902,6 +901,18 @@ $(document).ready(function() {
         }
         recalcRow($(this));
     });
+
+    // Populate party list on load so it's correct when unlocked
+    if ($('#vendor_type_select').val()) {
+        updatePartyList();
+        if (_savedReturnId) {
+            $('#party_select').val(@json(isset($returnData) ? $returnData->customer_id : '')).trigger('change.select2');
+            if ($('input[name="return_mode"]:checked').val() === 'invoice') {
+                filterInvoices();
+                $('#sale_invoice_select').val(@json(isset($returnData) && $returnData->sale ? $returnData->sale->invoice_no : '')).trigger('change.select2');
+            }
+        }
+    }
 });
 
 // --- Print Preview Functions ---

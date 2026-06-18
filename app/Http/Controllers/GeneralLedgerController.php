@@ -423,14 +423,14 @@ class GeneralLedgerController extends Controller
         foreach ($sReturns as $sr) {
             $desc = 'Sale Return';
             if ($sr->sale) {
-                $desc .= ' (Against Inv: ' . $sr->sale->invoice_no . ')';
+                $desc .= ' (SR ' . $sr->sale->invoice_no . ')';
             }
             $transactions[] = [
                 'created_at' => $sr->created_at,
                 'id' => $sr->id,
                 'date' => $sr->entry_date ?: $sr->current_date,
                 'ref' => 'SRJ',
-                'inv' => $sr->invoice_no,
+                'inv' => preg_replace('/[^0-9]/', '', substr($sr->invoice_no, strlen('SR-'))) ?: $sr->invoice_no,
                 'desc' => $desc,
                 'qty' => (float)$sr->quantity,
                 'debit' => 0,
@@ -440,14 +440,14 @@ class GeneralLedgerController extends Controller
             if ((float)$sr->discount_amount > 0) {
                 $descDisc = 'Sale Return Discount';
                 if ($sr->sale) {
-                    $descDisc .= ' (Against Inv: ' . $sr->sale->invoice_no . ')';
+                    $descDisc .= ' (SR ' . $sr->sale->invoice_no . ')';
                 }
                 $transactions[] = [
                     'created_at' => $sr->created_at,
                     'id' => $sr->id . '_disc',
                     'date' => $sr->entry_date ?: $sr->current_date,
                     'ref' => 'SRJ',
-                    'inv' => $sr->invoice_no,
+                    'inv' => preg_replace('/[^0-9]/', '', substr($sr->invoice_no, strlen('SR-'))) ?: $sr->invoice_no,
                     'desc' => $descDisc,
                     'qty' => 0,
                     'debit' => (float)$sr->discount_amount,
@@ -1450,7 +1450,7 @@ class GeneralLedgerController extends Controller
                 $brand = $item->product->brandRelation->name ?? '';
                 $desc = ($brand ? $brand . ' - ' : '') . ($item->product->name ?? 'Product');
                 if ($originalInv) {
-                    $desc .= ' (' . $sr->invoice_no . ')';
+                    $desc .= ' (SR ' . $originalInv . ')';
                 }
                 $qty = (float)$item->sales_qty;
                 $price = (float)$item->sales_price;
@@ -1462,7 +1462,7 @@ class GeneralLedgerController extends Controller
                     'id' => $item->id,
                     'date' => $sr->entry_date ?: $sr->current_date,
                     'ref' => 'SRJ',
-                    'inv' => $originalInv ?: (preg_replace('/[^0-9]/', '', substr($sr->invoice_no, strlen('SR-'))) ?: $sr->invoice_no),
+                    'inv' => preg_replace('/[^0-9]/', '', substr($sr->invoice_no, strlen('SR-'))) ?: $sr->invoice_no,
                     'desc' => $desc,
                     'price' => $finalPrice,
                     'qty' => $qty,
@@ -1474,14 +1474,14 @@ class GeneralLedgerController extends Controller
             if ((float)$sr->discount_amount > 0) {
                 $descDisc = 'Discount';
                 if ($originalInv) {
-                    $descDisc .= ' (' . $sr->invoice_no . ')';
+                    $descDisc .= ' (SR ' . $originalInv . ')';
                 }
                 $transactions[] = [
                     'created_at' => $sr->created_at,
                     'id' => $sr->id . '_disc',
                     'date' => $sr->entry_date ?: $sr->current_date,
                     'ref' => 'SRJ',
-                    'inv' => $originalInv ?: (preg_replace('/[^0-9]/', '', substr($sr->invoice_no, strlen('SR-'))) ?: $sr->invoice_no),
+                    'inv' => preg_replace('/[^0-9]/', '', substr($sr->invoice_no, strlen('SR-'))) ?: $sr->invoice_no,
                     'desc' => $descDisc,
                     'price' => 0,
                     'qty' => 0,
