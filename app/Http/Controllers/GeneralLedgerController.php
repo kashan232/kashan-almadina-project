@@ -727,7 +727,9 @@ class GeneralLedgerController extends Controller
                 $q->whereJsonContains('party_id', (string)$id)
                   ->orWhereJsonContains('party_id', (int)$id);
             })
-            ->whereJsonContains('party_type', $type)
+            ->where(function($q) use ($typeArray) {
+                foreach($typeArray as $t) { $q->orWhereJsonContains('party_type', $t); }
+            })
             ->whereIn('status', ['posted', 'Posted'])
             ->where(DB::raw($jvDateCol), '<', $date)->get();
         $jvDebits = 0;
@@ -824,7 +826,9 @@ class GeneralLedgerController extends Controller
                 $q->whereJsonContains('party_id', (string)$id)
                   ->orWhereJsonContains('party_id', (int)$id);
             })
-            ->whereJsonContains('party_type', $type)
+            ->where(function($q) use ($typeArray) {
+                foreach($typeArray as $t) { $q->orWhereJsonContains('party_type', $t); }
+            })
             ->whereIn('status', ['posted', 'Posted'])
             ->where(DB::raw($jvDateCol), '<', $date)->get();
         $jvCredits = 0;
@@ -833,7 +837,7 @@ class GeneralLedgerController extends Controller
             $types = json_decode($jv->party_type, true) ?? [];
             $credits = json_decode($jv->credit, true) ?? [];
             foreach ($pIds as $idx => $pid) {
-                if ($pid == $id && ($types[$idx] ?? '') == $type) {
+                if ($pid == $id && in_array($types[$idx] ?? '', $typeArray)) {
                     $jvCredits += (float)($credits[$idx] ?? 0);
                 }
             }
@@ -1269,7 +1273,9 @@ class GeneralLedgerController extends Controller
                 $q->whereJsonContains('party_id', (string)$id)
                   ->orWhereJsonContains('party_id', (int)$id);
             })
-            ->whereJsonContains('party_type', $type)
+            ->where(function($q) use ($typeArray) {
+                foreach($typeArray as $t) { $q->orWhereJsonContains('party_type', $t); }
+            })
             ->whereIn('status', ['posted', 'Posted'])->whereBetween(DB::raw($jvDateCol), [$start, $end])->get();
         foreach ($jvs as $jv) {
             $pIds = json_decode($jv->party_id, true) ?? [];
@@ -1408,10 +1414,12 @@ class GeneralLedgerController extends Controller
                 } else {
                     $q->where('purchasable_id', $id)->where('purchasable_type', $class);
                 }
-            })->where('status', 'Posted')
+            })->whereIn('status', ['posted', 'Posted'])
             ->whereBetween(DB::raw($pjDateCol), [$start, $end])
             ->with('items.product.brandRelation')->get();
+            
         foreach ($purchases as $p) {
+            $sumLines = 0;
             foreach ($p->items as $item) {
                 $brand = $item->product->brandRelation->name ?? '';
                 $qty = (float)$item->qty;
@@ -1421,18 +1429,47 @@ class GeneralLedgerController extends Controller
                 
                 $finalPrice = $rate ?: (($qty > 0) ? ($price - (($disc > 100) ? ($disc / $qty) : ($price * $disc / 100))) : $price);
 
+                $sumLines += (float)$item->line_total;
+
                 $transactions[] = [
                     'created_at' => $p->created_at,
                     'id' => $item->id,
-                    'date' => $p->entry_date ?: $p->created_at,
+                    'date' => $p->entry_date ?: $p->current_date ?: $p->created_at,
                     'ref' => 'PJ',
-                    'inv' => $p->invoice_no,
+                    'inv' => preg_replace('/[^0-9]/', '', substr($p->invoice_no, strlen('PUR-'))) ?: $p->invoice_no,
                     'desc' => ($brand ? $brand . ' - ' : '') . ($item->product->name ?? 'Product'),
                     'price' => $finalPrice,
                     'qty' => $qty,
                     'debit' => 0,
                     'credit' => (float)$item->line_total,
                     'priority' => 30 // PJ after SJ/SRJ
+                ];
+            }
+
+            $diff = $sumLines - (float)$p->net_amount;
+            if ($diff > 0.001) {
+                $transactions[] = [
+                    'created_at' => $p->created_at,
+                    'id' => $p->id . '_disc',
+                    'date' => $p->entry_date ?: $p->current_date ?: $p->created_at,
+                    'ref' => 'PJ',
+                    'inv' => preg_replace('/[^0-9]/', '', substr($p->invoice_no, strlen('PUR-'))) ?: $p->invoice_no,
+                    'desc' => 'Discount / Tax Deduction (PUR ' . $p->invoice_no . ')',
+                    'price' => 0, 'qty' => 0,
+                    'debit' => $diff, 'credit' => 0,
+                    'priority' => 31
+                ];
+            } elseif ($diff < -0.001) {
+                $transactions[] = [
+                    'created_at' => $p->created_at,
+                    'id' => $p->id . '_charge',
+                    'date' => $p->entry_date ?: $p->current_date ?: $p->created_at,
+                    'ref' => 'PJ',
+                    'inv' => preg_replace('/[^0-9]/', '', substr($p->invoice_no, strlen('PUR-'))) ?: $p->invoice_no,
+                    'desc' => 'Additional Charges (PUR ' . $p->invoice_no . ')',
+                    'price' => 0, 'qty' => 0,
+                    'debit' => 0, 'credit' => abs($diff),
+                    'priority' => 31
                 ];
             }
         }

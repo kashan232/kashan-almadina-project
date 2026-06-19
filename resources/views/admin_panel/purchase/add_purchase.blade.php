@@ -518,7 +518,13 @@
                                 </td>
                                 <td>
                                     <select name="account_id[]" class="form-select form-select-sm accountSub">
-                                        <option value="{{ $acc->account_id }}" selected>{{ $acc->account->title ?? 'Unknown Account' }}</option>
+                                        <option value="" disabled>Select Account</option>
+                                        @php
+                                            $headAccounts = \App\Models\Account::where('head_id', $acc->account_head_id)->where('status', 1)->get();
+                                        @endphp
+                                        @foreach($headAccounts as $hAcc)
+                                            <option value="{{ $hAcc->id }}" {{ $hAcc->id == $acc->account_id ? 'selected' : '' }}>{{ $hAcc->title }}</option>
+                                        @endforeach
                                     </select>
                                 </td>
                                 <td>

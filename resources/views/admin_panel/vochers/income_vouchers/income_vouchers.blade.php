@@ -117,6 +117,9 @@
                                     @foreach($AccountHeads as $head)
                                         <option value="{{ $head->id }}" {{ $receipt->account_head == $head->id ? 'selected' : '' }}>{{ $head->name }}</option>
                                     @endforeach
+                                    <option value="vendor" {{ $receipt->account_head == 'vendor' ? 'selected' : '' }}>Vendor</option>
+                                    <option value="customer" {{ $receipt->account_head == 'customer' ? 'selected' : '' }}>Customer</option>
+                                    <option value="walkin" {{ $receipt->account_head == 'walkin' ? 'selected' : '' }}>Walkin Customer</option>
                                 </select>
                             </div>
                             <div class="col-md-1">
@@ -292,16 +295,27 @@ $(document).ready(function() {
         $('#account_code_input').val('');
         $sub.html('<option value="">Loading...</option>');
         if(id) {
-            $.get('{{ url("get-accounts-by-head") }}/' + id, function(res) {
+            let url = (['vendor','customer','walkin'].includes(id)) ? '{{ route("party.list") }}?type=' + id : '{{ url("get-accounts-by-head") }}/' + id;
+            $.get(url, function(res) {
                 $sub.html('<option value="">Select Account...</option>');
-                res.forEach(a => $sub.append(`<option value="${a.id}" data-code="${a.account_code}" ${a.id == selected ? 'selected' : ''}>${a.title}</option>`));
-                if(selected) {
+                let hasSelected = false;
+                res.forEach(a => {
+                    let code = a.account_code || '';
+                    let sel = (a.id == selected) ? 'selected' : '';
+                    if (a.id == selected) hasSelected = true;
+                    $sub.append(`<option value="${a.id}" data-code="${code}" ${sel}>${a.title || a.text}</option>`);
+                });
+                if (hasSelected && selected) {
+                    $sub.val(String(selected));
                     let code = $sub.find('option:selected').attr('data-code');
                     $('#account_code_input').val(code || selected);
                 }
+                $sub.trigger('change');
+                $sub.data('selected', ''); // Clear so it only auto-selects on first load
             });
         }
-    }).trigger('change');
+    });
+    $('#account_head').each(function() { if ($(this).val()) $(this).trigger('change'); });
 
     $('#account_id').on('change', function() {
         let code = $(this).find('option:selected').attr('data-code');
