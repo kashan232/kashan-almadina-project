@@ -1151,32 +1151,6 @@ class GeneralLedgerController extends Controller
                     'priority' => 40 // PRJ after PJ
                 ];
             }
-            // WHT (Tax) row - Debit
-            if ($pr->wht > 0) {
-                $transactions[] = [
-                    'created_at' => $pr->created_at,
-                    'id' => $pr->id,
-                    'date' => $pr->entry_date ?: $pr->created_at,
-                    'ref' => 'PRJ',
-                    'inv' => $pr->invoice_no,
-                    'desc' => 'WHT (Tax): ' . $pr->invoice_no,
-                    'price' => 0, 'qty' => 0, 'debit' => (float)$pr->wht, 'credit' => 0,
-                    'priority' => 41
-                ];
-            }
-            // Discount row - Credit
-            if ($pr->discount > 0) {
-                $transactions[] = [
-                    'created_at' => $pr->created_at,
-                    'id' => $pr->id,
-                    'date' => $pr->entry_date ?: $pr->created_at,
-                    'ref' => 'PRJ',
-                    'inv' => $pr->invoice_no,
-                    'desc' => 'Total Discount: ' . $pr->invoice_no,
-                    'price' => 0, 'qty' => 0, 'debit' => 0, 'credit' => (float)$pr->discount,
-                    'priority' => 42
-                ];
-            }
         }
 
         // 3. Payments (PV) - Debit
@@ -1485,33 +1459,6 @@ class GeneralLedgerController extends Controller
                     'priority' => 30 // PJ after SJ/SRJ
                 ];
             }
-
-            $diff = $sumLines - (float)$p->net_amount;
-            if ($diff > 0.001) {
-                $transactions[] = [
-                    'created_at' => $p->created_at,
-                    'id' => $p->id . '_disc',
-                    'date' => $p->entry_date ?: $p->current_date ?: $p->created_at,
-                    'ref' => 'PJ',
-                    'inv' => preg_replace('/[^0-9]/', '', substr($p->invoice_no, strlen('PUR-'))) ?: $p->invoice_no,
-                    'desc' => 'Discount / Tax Deduction (PUR ' . $p->invoice_no . ')',
-                    'price' => 0, 'qty' => 0,
-                    'debit' => $diff, 'credit' => 0,
-                    'priority' => 31
-                ];
-            } elseif ($diff < -0.001) {
-                $transactions[] = [
-                    'created_at' => $p->created_at,
-                    'id' => $p->id . '_charge',
-                    'date' => $p->entry_date ?: $p->current_date ?: $p->created_at,
-                    'ref' => 'PJ',
-                    'inv' => preg_replace('/[^0-9]/', '', substr($p->invoice_no, strlen('PUR-'))) ?: $p->invoice_no,
-                    'desc' => 'Additional Charges (PUR ' . $p->invoice_no . ')',
-                    'price' => 0, 'qty' => 0,
-                    'debit' => 0, 'credit' => abs($diff),
-                    'priority' => 31
-                ];
-            }
         }
 
         // 6. Sale Returns (SRJ) - Details
@@ -1544,25 +1491,6 @@ class GeneralLedgerController extends Controller
                     'debit' => 0,
                     'credit' => (float)$item->amount,
                     'priority' => 20 // SRJ after SJ
-                ];
-            }
-            if ((float)$sr->discount_amount > 0) {
-                $descDisc = 'Discount';
-                if ($originalInv) {
-                    $descDisc .= ' (SR ' . $originalInv . ')';
-                }
-                $transactions[] = [
-                    'created_at' => $sr->created_at,
-                    'id' => $sr->id . '_disc',
-                    'date' => $sr->entry_date ?: $sr->current_date,
-                    'ref' => 'SRJ',
-                    'inv' => preg_replace('/[^0-9]/', '', substr($sr->invoice_no, strlen('SR-'))) ?: $sr->invoice_no,
-                    'desc' => $descDisc,
-                    'price' => 0,
-                    'qty' => 0,
-                    'debit' => (float)$sr->discount_amount,
-                    'credit' => 0,
-                    'priority' => 21
                 ];
             }
         }
