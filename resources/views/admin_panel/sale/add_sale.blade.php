@@ -2,6 +2,31 @@
 
 @section('content')
 
+@php
+  $isEdit = isset($booking) || isset($sale);
+  $editData = isset($booking) ? $booking : (isset($sale) ? $sale : null);
+  $eDate = $editData ? $editData->entry_date : date('Y-m-d');
+  $eTime = $editData ? $editData->entry_time : date('H:i');
+  $eInvoice = $editData ? $editData->invoice_no : $nextInvoiceNumber;
+  $eManual = $editData ? $editData->manual_invoice : '';
+  $eIsOrder = $editData ? $editData->is_sale_order : 0;
+  $ePartyType = $editData ? $editData->party_type : 'customer';
+  $ePartyId = $editData ? $editData->customer_id : '';
+  $eAddress = $editData ? $editData->address : '';
+  $eTel = $editData ? $editData->tel : '';
+  $ePrevBal = $editData ? $editData->previous_balance : '0.00';
+  $eRemarks = $editData ? $editData->remarks : '';
+  $eOrderDiscValue = $editData ? ($editData->discount_amount > 0 ? $editData->discount_amount : $editData->discount_percent) : 0;
+  $eOrderDiscMode = $editData && $editData->discount_amount > 0 ? 'amount' : 'percent';
+  
+  // Try to find the exact receipt variables
+  $receiptAccs = $editData ? json_decode($editData->receipt_accounts ?? '[]', true) : [];
+  if (empty($receiptAccs) && $editData) {
+      if ($editData->receipt1) $receiptAccs[] = $editData->receipt1;
+      if ($editData->receipt2) $receiptAccs[] = $editData->receipt2;
+  }
+@endphp
+
 <style>
   .main-container {
     font-size: .85rem;
@@ -360,7 +385,8 @@
 
     <form id="saleForm" autocomplete="off" action="{{ route('sale.ajax.save') }}" method="POST">
       @csrf
-      <input type="hidden" id="booking_id" name="booking_id" value="">
+      <input type="hidden" id="booking_id" name="booking_id" value="{{ isset($booking) ? $booking->id : '' }}">
+      <input type="hidden" id="sale_id" name="sale_id" value="{{ isset($sale) ? $sale->id : '' }}">
 
 
       <div class="d-flex gap-2 align-items-start border-bottom py-2">
@@ -376,11 +402,11 @@
           <div class="row g-1 mb-2">
             <div class="col-6">
               <label class="form-label text-muted small mb-0" style="font-size: 0.7rem;">Entry Date</label>
-              <input type="date" class="form-control form-control-sm py-0" name="entry_date" value="{{ date('Y-m-d') }}" style="font-size: 0.8rem;">
+              <input type="date" class="form-control form-control-sm py-0" name="entry_date" value="{{ old('entry_date', $eDate) }}" style="font-size: 0.8rem;">
             </div>
             <div class="col-6">
               <label class="form-label text-muted small mb-0" style="font-size: 0.7rem;">Entry Time</label>
-              <input type="time" class="form-control form-control-sm py-0" name="entry_time" value="{{ date('H:i') }}" style="font-size: 0.8rem;">
+              <input type="time" class="form-control form-control-sm py-0" name="entry_time" value="{{ old('entry_time', $eTime) }}" style="font-size: 0.8rem;">
             </div>
           </div>
 
@@ -389,12 +415,12 @@
             <div class="col-6">
               <label class="form-label text-muted small mb-0" style="font-size: 0.7rem;">Invoice No.</label>
               <input type="text" class="form-control form-control-sm bg-white border-0 shadow-sm fw-bold text-primary py-0" 
-                     name="Invoice_no" value="{{ $nextInvoiceNumber }}" readonly style="font-size: 0.8rem;">
+                     name="Invoice_no" value="{{ $eInvoice }}" readonly style="font-size: 0.8rem;">
             </div>
             <div class="col-6">
-              <label class="form-label text-muted small mb-0" style="font-size: 0.7rem;">Manual Inv#</label>
+              <label class="form-label text-muted small mb-0" style="font-size: 0.7rem;">Manual Invoice</label>
               <input type="text" class="form-control form-control-sm py-0" 
-                     name="Invoice_main" placeholder="Optional" value="{{ old('Invoice_main') }}" style="font-size: 0.8rem;">
+                     name="Invoice_main" placeholder="Optional" value="{{ old('Invoice_main', $eManual) }}" style="font-size: 0.8rem;">
             </div>
           </div>
 
@@ -413,7 +439,7 @@
                     </div>
                 </div>
                 <div class="form-check form-switch mb-0">
-                    <input class="form-check-input" type="checkbox" name="is_sale_order" id="isSaleOrder" value="1" style="width: 38px; height: 18px; cursor: pointer;">
+                    <input class="form-check-input" type="checkbox" name="is_sale_order" id="isSaleOrder" value="1" {{ old('is_sale_order', $eIsOrder) == 1 ? 'checked' : '' }} style="width: 38px; height: 18px; cursor: pointer;">
                 </div>
             </div>
           </div>
@@ -438,18 +464,19 @@
 
           {{-- Party Type Toggle --}}
           <div class="mb-2">
+            <label class="form-label text-muted small mb-0" style="font-size: 0.7rem;">Party Type</label>
             <div class="btn-group w-100" role="group">
-              <input type="radio" class="btn-check" name="partyType" id="typeCustomers" value="customer" {{ old('partyType', 'customer') == 'customer' ? 'checked' : '' }}>
+              <input type="radio" class="btn-check" name="partyType" id="typeCustomers" value="customer" {{ old('partyType', $ePartyType) == 'customer' ? 'checked' : '' }}>
               <label class="btn btn-outline-primary btn-sm py-0" for="typeCustomers" style="font-size: 0.75rem;">
                 Customers
               </label>
 
-              <input type="radio" class="btn-check" name="partyType" id="typeWalkin" value="walking" {{ old('partyType') == 'walking' ? 'checked' : '' }}>
+              <input type="radio" class="btn-check" name="partyType" id="typeWalkin" value="walking" {{ old('partyType', $ePartyType) == 'walking' ? 'checked' : '' }}>
               <label class="btn btn-outline-primary btn-sm py-0" for="typeWalkin" style="font-size: 0.75rem;">
                 Walk-in
               </label>
 
-              <input type="radio" class="btn-check" name="partyType" id="typeVendors" value="vendor" {{ old('partyType') == 'vendor' ? 'checked' : '' }}>
+              <input type="radio" class="btn-check" name="partyType" id="typeVendors" value="vendor" {{ old('partyType', $ePartyType) == 'vendor' ? 'checked' : '' }}>
               <label class="btn btn-outline-primary btn-sm py-0" for="typeVendors" style="font-size: 0.75rem;">
                 Vendors
               </label>
@@ -460,11 +487,11 @@
           <div class="row g-1 mb-2">
             <div class="col-4">
               <label class="form-label text-muted small mb-0" style="font-size: 0.7rem;">Party ID</label>
-              <input type="text" class="form-control form-control-sm py-0 fw-bold text-danger" id="partyIdInput" placeholder="ID" style="font-size: 0.8rem;">
+              <input type="text" class="form-control form-control-sm py-0 fw-bold text-danger" id="partyIdInput" placeholder="ID" value="{{ $ePartyId }}" style="font-size: 0.8rem;">
             </div>
             <div class="col-8">
               <label class="form-label text-muted small mb-0" style="font-size: 0.7rem;">Select Party</label>
-              <select class="form-select form-select-sm py-0" name="customer" id="customerSelect" data-old-val="{{ old('customer') }}" style="font-size: 0.8rem;">
+              <select class="form-select form-select-sm py-0" name="customer" id="customerSelect" data-old-val="{{ old('customer', $ePartyId) }}" style="font-size: 0.8rem;">
                 <option selected disabled>Loading…</option>
               </select>
             </div>
@@ -473,19 +500,19 @@
           {{-- Address --}}
           <div class="mb-2">
             <label class="form-label text-muted small mb-0" style="font-size: 0.7rem;">Address</label>
-            <textarea class="form-control form-control-sm py-1" id="address" name="address" rows="1" placeholder="Address" style="font-size: 0.75rem;">{{ old('address') }}</textarea>
+            <textarea class="form-control form-control-sm py-1" id="address" name="address" rows="1" placeholder="Address" style="font-size: 0.75rem;">{{ old('address', $eAddress) }}</textarea>
           </div>
 
           {{-- Tel & Balance --}}
           <div class="row g-1 mb-2">
             <div class="col-5">
               <label class="form-label text-muted small mb-0" style="font-size: 0.7rem;">Tel#</label>
-              <input type="text" class="form-control form-control-sm py-0" id="tel" name="tel" placeholder="Phone" value="{{ old('tel') }}" style="font-size: 0.8rem;">
+              <input type="text" class="form-control form-control-sm py-0" id="tel" name="tel" placeholder="Phone" value="{{ old('tel', $eTel) }}" style="font-size: 0.8rem;">
             </div>
             <div class="col-7">
               <label class="form-label text-muted small mb-0" style="font-size: 0.7rem;">Current Balance</label>
               <input type="text" class="form-control form-control-sm text-end fw-bold py-0 input-readonly" id="previousBalance" 
-                     name="previousBalance" value="{{ old('previousBalance', '0.00') }}" placeholder="0.00" readonly 
+                     name="previousBalance" value="{{ old('previousBalance', $ePrevBal) }}" placeholder="0.00" readonly 
                      style="font-size: 1.1rem; color: #d63384; background: #fffcfd;">
             </div>
           </div>
@@ -493,7 +520,7 @@
           {{-- Remarks --}}
           <div class="mb-1">
             <label class="form-label text-muted small mb-0" style="font-size: 0.7rem;">Remarks</label>
-            <textarea class="form-control form-control-sm py-1" id="remarks" name="remarks" rows="1" placeholder="Notes" style="font-size: 0.75rem;">{{ old('remarks') }}</textarea>
+            <textarea class="form-control form-control-sm py-1" id="remarks" name="remarks" rows="1" placeholder="Notes" style="font-size: 0.75rem;">{{ old('remarks', $eRemarks) }}</textarea>
           </div>
 
           <div class="text-end mt-1">
@@ -594,8 +621,8 @@
                       <td class="text-center" style="width: 40px;"><button type="button" class="btn btn-xs btn-outline-danger del-row">&times;</button></td>
                     </tr>
                   @endforeach
-                @elseif(isset($booking))
-                  @foreach($booking->items as $index => $item)
+                @elseif($isEdit)
+                  @foreach($editData->items as $index => $item)
                     @php
                       $rowId = 'row-' . $index . '-' . time();
                       $pid = $item->product_id;
@@ -781,33 +808,30 @@
 
               <!-- Sub-Total moved to table footer -->
 
-              <!-- Order Discount Input -->
+              <!-- Invoice Total -->
+              <div class="d-flex justify-content-between py-2 border-bottom">
+                <span class="text-muted small fw-bold">Invoice Total</span>
+                <span class="fw-bold fs-6" id="tSub">0.00</span>
+              </div>
+
+              <!-- Order Discount (Merged) -->
               <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
                 <span class="text-muted small">Order Discount</span>
-                <div class="d-flex align-items-center gap-1">
-                  <input type="number" step="0.01" class="form-control form-control-sm text-end" 
-                         id="orderDiscountValue" name="order_discount_value" 
-                         value="{{ old('order_discount_value', '0') }}" style="width:70px">
-                  <div class="btn-group btn-group-sm">
-                    <button type="button" class="btn btn-outline-primary order-disc-btn {{ old('order_discount_mode') == 'percent' ? 'active' : '' }}" data-mode="percent">%</button>
-                    <button type="button" class="btn btn-outline-primary order-disc-btn {{ old('order_discount_mode', 'amount') == 'amount' ? 'active' : '' }}" data-mode="amount">₨</button>
+                <div class="d-flex align-items-center gap-3">
+                  <div class="d-flex align-items-center gap-1">
+                    <input type="number" step="0.01" class="form-control form-control-sm text-end" 
+                           id="orderDiscountValue" name="order_discount_value" 
+                           value="{{ old('order_discount_value', $eOrderDiscValue) }}" style="width:70px">
+                    <div class="btn-group btn-group-sm">
+                      <button type="button" class="btn btn-outline-primary order-disc-btn {{ old('order_discount_mode', $eOrderDiscMode) == 'percent' ? 'active' : '' }}" data-mode="percent">%</button>
+                      <button type="button" class="btn btn-outline-primary order-disc-btn {{ old('order_discount_mode', $eOrderDiscMode) == 'amount' ? 'active' : '' }}" data-mode="amount">₨</button>
+                    </div>
                   </div>
+                  <span class="fw-semibold text-danger" id="tOrderDisc" style="min-width: 60px; text-align: right;">0.00</span>
                 </div>
-                  <input type="hidden" id="orderDiscountMode" name="order_discount_mode" value="{{ old('order_discount_mode', 'amount') }}">
-                  <input type="hidden" id="discountPercent" name="discountPercent" value="{{ old('discountPercent', '0') }}">
+                <input type="hidden" id="orderDiscountMode" name="order_discount_mode" value="{{ old('order_discount_mode', $eOrderDiscMode) }}">
+                <input type="hidden" id="discountPercent" name="discountPercent" value="{{ old('discountPercent', $eOrderDiscMode == 'percent' ? $eOrderDiscValue : '0') }}">
                 <input type="hidden" id="discountAmountHidden" value="0">
-              </div>
-
-              <!-- Order Discount Rs -->
-              <div class="d-flex justify-content-between py-2 border-bottom">
-                <span class="text-muted small">Order Discount Rs</span>
-                <span class="fw-semibold text-danger" id="tOrderDisc">0.00</span>
-              </div>
-
-              <!-- Previous Balance -->
-              <div class="d-flex justify-content-between py-2 border-bottom">
-                <span class="text-warning small fw-semibold">Previous Balance</span>
-                <span class="fw-semibold text-warning" id="tPrev">0.00</span>
               </div>
 
               <!-- Total Receipts -->
@@ -816,10 +840,10 @@
                 <span class="fw-semibold text-success" id="tReceiptsMirror">0.00</span>
               </div>
 
-              <!-- Balance After Receipt -->
-              <div class="d-flex justify-content-between py-2 border-bottom bg-light">
-                <span class="text-muted small">Balance After Receipt</span>
-                <span class="fw-semibold" id="tBalAfterReceipt">0.00</span>
+              <!-- Previous Balance -->
+              <div class="d-flex justify-content-between py-2 border-bottom">
+                <span class="text-warning small fw-semibold">Previous Balance</span>
+                <span class="fw-semibold text-warning" id="tPrev">0.00</span>
               </div>
 
               <!-- Payable / Total Balance -->

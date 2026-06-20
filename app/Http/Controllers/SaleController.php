@@ -104,20 +104,20 @@ class SaleController extends Controller
         $customers = Customer::all();
         $accountHeads = AccountHead::all();
         $accounts = Account::all();
-        $lastInvoice = Productbooking::latest('id')->first();
-        $nextInvoiceNumber = $lastInvoice ? intval($lastInvoice->invoice_no) + 1 : 1;
+        $nextInvoiceNumber = $booking->invoice_no;
 
-        return view('admin_panel.sale.booking.edit', compact('booking', 'warehouses', 'customers', 'nextInvoiceNumber', 'accountHeads', 'accounts'));
+        return view('admin_panel.sale.add_sale', compact('booking', 'warehouses', 'customers', 'nextInvoiceNumber', 'accountHeads', 'accounts'));
     }
 
     public function edit($id)
     {
-        $sale = Sale::with('items')->findOrFail($id);
+        $sale = Sale::with('items.product', 'customer')->findOrFail($id);
         $warehouses = Warehouse::all();
         $customers = Customer::all();
         $accountHeads = AccountHead::all();
         $accounts = Account::all();
-        return view('admin_panel.sale.edit', compact('sale', 'warehouses', 'customers', 'accountHeads', 'accounts'));
+        $nextInvoiceNumber = $sale->invoice_no;
+        return view('admin_panel.sale.add_sale', compact('sale', 'warehouses', 'customers', 'nextInvoiceNumber', 'accountHeads', 'accounts'));
     }
 
     public function update(Request $request, $id)

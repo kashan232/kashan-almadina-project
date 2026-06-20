@@ -175,8 +175,10 @@
                             <label class="column-picker-item"><input type="checkbox" data-column="7" checked> Qty</label>
                             <label class="column-picker-item"><input type="checkbox" data-column="8" checked> Created By</label>
                             <label class="column-picker-item"><input type="checkbox" data-column="9" checked> Date</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="10" checked> Net Amount</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="11" checked> Status</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="10" checked> Sub Total</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="11" checked> WHT Amount</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="12" checked> Net Amount</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="13" checked> Status</label>
                         </div>
                     </div>
                 </div>
@@ -195,6 +197,8 @@
                                     <th class="text-center">Qty</th>
                                     <th>Created By</th>
                                     <th>Date</th>
+                                    <th class="text-end">Sub Total</th>
+                                    <th class="text-end">WHT Amount</th>
                                     <th class="text-end">Net Amount</th>
                                     <th class="text-center">Status</th>
                                     <th class="text-center" style="min-width: 120px;">Action</th>
@@ -224,6 +228,8 @@
                                     </td>
                                     <td class="small text-muted">{{ $ret->user->name ?? 'N/A' }}</td>
                                     <td class="small">{{ \Carbon\Carbon::parse($ret->current_date)->format('d-M-Y') }}</td>
+                                    <td class="text-end fw-bold">{{ number_format($ret->subtotal, 0) }}</td>
+                                    <td class="text-end fw-bold">{{ number_format($ret->wht, 0) }}</td>
                                     <td class="text-end fw-bold text-danger">{{ number_format($ret->net_amount, 0) }}</td>
                                     <td class="text-center">
                                         @if($ret->status === 'Posted')
@@ -304,7 +310,7 @@
             }
         });
 
-        const storageKey = 'purchase_return_cols_v4';
+        const storageKey = 'purchase_return_cols_v5';
         const savedState = localStorage.getItem(storageKey);
 
         if (savedState) {
