@@ -630,7 +630,7 @@
                       $whId = $item->warehouse_id;
                       $stock = $item->stock;
                       $sPrice = $item->sales_price;
-                      $qty = $item->sales_qty;
+                      $qty = $item->sales_qty + 0;
                       $rPrice = $item->retail_price;
                       $dMode = $item->discount_mode ?? 'percent';
                       $dPct = $item->discount_percent;
