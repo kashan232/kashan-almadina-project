@@ -169,14 +169,15 @@
                                                         <option value="{{ $item->product_id }}" selected>{{ $item->product->name }}</option>
                                                     </select>
                                                 </td>
+                                                <td><input type="number" step="0.01" name="sales_price[]" class="form-control form-control-sm sales_price text-end" value="{{ $item->sales_price ?? 0 }}"></td>
                                                 <td><input type="number" step="0.01" name="retail_price[]" class="form-control form-control-sm retail_price text-end" value="{{ $item->retail_price }}"></td>
                                                 <td><input type="number" step="0.01" name="discount_percent[]" class="form-control form-control-sm discount_percent text-center" value="{{ $item->discount_percent }}"></td>
                                                 <td><input type="number" step="0.01" name="item_disc_amount[]" class="form-control form-control-sm disc_amount text-end" value="{{ $item->sales_qty > 0 ? ($item->discount_amount / $item->sales_qty) : 0 }}"></td>
                                                 <td class="invoice-only"><input type="text" class="form-control form-control-sm bg-light text-center" value="{{ $item->sales_qty }}" readonly></td>
                                                 <td><input type="number" name="qty[]" class="form-control form-control-sm quantity text-center" value="{{ $item->sales_qty }}" min="0"></td>
-                                                <td><input type="number" step="0.01" name="price[]" class="form-control form-control-sm price text-end" value="{{ $item->sales_price }}"></td>
+                                                <td><input type="number" step="0.01" name="price[]" class="form-control form-control-sm price text-end" value="{{ $item->sales_price }}" readonly></td>
                                                 <td><input type="text" name="line_total[]" class="form-control form-control-sm row-total text-end bg-white" readonly value="0"></td>
-                                                <td><button type="button" class="btn btn-sm btn-danger remove-row"><i class="fa fa-times"></i></button></td>
+                                                <td><button type="button" class="btn btn-sm btn-danger remove-row"><i class="fa fa-trash"></i></button></td>
                                             </tr>
                                         @endforeach
                                     @else
@@ -750,7 +751,7 @@ $(document).ready(function() {
                 <td><input type="number" name="qty[]" class="form-control form-control-sm quantity text-center" value="1" min="0"></td>
                 <td><input type="number" step="0.01" name="price[]" class="form-control form-control-sm price text-end bg-white" readonly></td>
                 <td><input type="text" name="line_total[]" class="form-control form-control-sm row-total text-end bg-white" readonly value="0"></td>
-                <td><button type="button" class="btn btn-sm btn-danger remove-row"><i class="fa fa-times"></i></button></td>
+                <td><button type="button" class="btn btn-sm btn-danger remove-row"><i class="fa fa-trash"></i></button></td>
             </tr>`;
         
         const $row = $(newRowHtml);
@@ -810,7 +811,7 @@ $(document).ready(function() {
             <td><input type="number" name="qty[]" class="form-control form-control-sm quantity text-center" value="${item.qty}" max="${item.qty}" min="0" title="Edit return quantity"></td>
             <td><input type="number" step="0.01" name="price[]" class="form-control form-control-sm price text-end bg-white" value="${item.price}" readonly></td>
             <td><input type="text" name="line_total[]" class="form-control form-control-sm row-total text-end bg-white" readonly value="0"></td>
-            <td><button type="button" class="btn btn-sm btn-danger remove-row"><i class="fa fa-times"></i></button></td>
+            <td><button type="button" class="btn btn-sm btn-danger remove-row"><i class="fa fa-trash"></i></button></td>
         </tr>`;
         $('#saleItems').append(html);
         recalcRow($('#saleItems tr:last'));
