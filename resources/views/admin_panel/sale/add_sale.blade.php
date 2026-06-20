@@ -709,35 +709,64 @@
             </div>
             
             <div id="rvWrapper">
-              @if(old('receipt_account_id'))
-                  @foreach(old('receipt_account_id') as $index => $accId)
+              @php
+                $receiptLoop = [];
+                if (old('receipt_account_id')) {
+                    foreach(old('receipt_account_id') as $i => $accId) {
+                        $receiptLoop[] = [
+                            'head_id' => old('receipt_head_id')[$i] ?? '',
+                            'account_id' => $accId,
+                            'amount' => old('receipt_amount')[$i] ?? '',
+                            'narration' => old('receipt_narration')[$i] ?? '',
+                        ];
+                    }
+                } else if ($editData && !empty(json_decode($editData->receipt_accounts ?? '[]', true))) {
+                    $h = json_decode($editData->receipt_heads ?? '[]', true);
+                    $a = json_decode($editData->receipt_accounts ?? '[]', true);
+                    $m = json_decode($editData->receipt_amounts_json ?? '[]', true);
+                    $n = json_decode($editData->receipt_narrations ?? '[]', true);
+                    if(is_array($a)) {
+                        foreach($a as $i => $accId) {
+                            $receiptLoop[] = [
+                                'head_id' => $h[$i] ?? '',
+                                'account_id' => $accId,
+                                'amount' => $m[$i] ?? '',
+                                'narration' => $n[$i] ?? '',
+                            ];
+                        }
+                    }
+                }
+              @endphp
+
+              @if(count($receiptLoop) > 0)
+                  @foreach($receiptLoop as $index => $rv)
                       <div class="receipt-row bg-white border rounded p-1 mb-1 shadow-sm rv-row">
                         <div class="row g-2 align-items-center">
                           <div class="col-md-3">
                             <label class="form-label text-muted small mb-0" style="font-size:0.7rem;">Head</label>
                             <select class="form-select form-select-sm rv-head" name="receipt_head_id[]">
-                              <option value="" disabled selected>Select Head</option>
+                              <option value="" disabled {{ empty($rv['head_id']) ? 'selected' : '' }}>Select Head</option>
                               @foreach ($accountHeads as $head)
-                                <option value="{{ $head->id }}" {{ (old('receipt_head_id')[$index] ?? '') == $head->id ? 'selected' : '' }}>{{ $head->name }}</option>
+                                <option value="{{ $head->id }}" {{ $rv['head_id'] == $head->id ? 'selected' : '' }}>{{ $head->name }}</option>
                               @endforeach
                             </select>
                           </div>
                           <div class="col-md-3">
                             <label class="form-label text-muted small mb-0" style="font-size:0.7rem;">Account</label>
-                            <select class="form-select form-select-sm rv-account" name="receipt_account_id[]" data-selected="{{ $accId }}">
+                            <select class="form-select form-select-sm rv-account" name="receipt_account_id[]" data-selected="{{ $rv['account_id'] }}">
                               <option value="" disabled selected>Select account</option>
                             </select>
                           </div>
                           <div class="col-md-2">
                             <label class="form-label text-muted small mb-0" style="font-size:0.7rem;">Amount</label>
-                            <input type="text" class="form-control form-control-sm text-end fw-bold rv-amount" 
-                                   name="receipt_amount[]" placeholder="0.00" value="{{ old('receipt_amount')[$index] ?? '' }}"
-                                   {{ !$accId ? 'disabled' : '' }}>
+                            <input type="number" step="0.01" class="form-control form-control-sm text-end fw-bold rv-amount" 
+                                   name="receipt_amount[]" placeholder="0.00" value="{{ $rv['amount'] }}"
+                                   {{ empty($rv['account_id']) ? 'disabled' : '' }}>
                           </div>
                           <div class="col-md-3">
                             <label class="form-label text-muted small mb-0" style="font-size:0.7rem;">Narration</label>
                             <select class="form-select form-select-sm rv-narration" name="receipt_narration[]" 
-                                    data-selected="{{ old('receipt_narration')[$index] ?? '' }}">
+                                    data-selected="{{ $rv['narration'] }}">
                               <option value="">Select narration...</option>
                             </select>
                           </div>
@@ -781,7 +810,7 @@
                           <option value="">Select narration...</option>
                         </select>
                       </div>
-                      <div class="col-md-1"></div>
+                      <div class="col-md-1 text-center"></div>
                     </div>
                   </div>
               @endif
@@ -1143,8 +1172,7 @@
       $select.select2({
         tags: true,
         placeholder: "Select or type narration...",
-        width: '100%',
-        dropdownParent: $select.parent()
+        width: '100%'
       });
 
     }).fail(function(xhr, status, error) {
@@ -1505,22 +1533,28 @@
       $sel.select2({
           placeholder: 'Select ' + type,
           allowClear: true,
-          width: '100%',
-          dropdownParent: $sel.parent()
+          width: '100%'
       });
 
       // Handle old values if any
-      const oldVal = $sel.data('old-val');
+      const oldVal = $sel.attr('data-old-val');
       if (oldVal) {
-          $sel.val(oldVal).trigger('change');
-          $sel.data('old-val', '');
+          let $matchedOpt = $sel.find('option[value="' + oldVal + '"]');
+          if ($matchedOpt.length === 0) {
+              $matchedOpt = $sel.find('option[data-customer_id="' + oldVal + '"]');
+          }
+          if ($matchedOpt.length > 0) {
+              $sel.val($matchedOpt.val()).trigger('change');
+          }
+          $sel.attr('data-old-val', '');
       }
     }).fail(function() {
       $sel.empty().append('<option selected disabled>Error loading</option>').prop('disabled', false);
     });
   }
 
-  loadCustomersByType('customer');
+  let initialType = $('input[name="partyType"]:checked').val() || 'customer';
+  loadCustomersByType(initialType);
 
   $(document).on('change', 'input[name="partyType"]', function() {
     $('#customerSelect').val(null).trigger('change');
@@ -2124,7 +2158,8 @@
       }
     }
 
-    loadCustomersByType('customer');
+    let initialType = $('input[name="partyType"]:checked').val() || 'customer';
+    loadCustomersByType(initialType);
     loadNarrationsInto($('.rv-narration'));
 
     // If there are existing heads (from old() or edit), load their accounts
