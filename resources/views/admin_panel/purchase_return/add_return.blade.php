@@ -150,7 +150,7 @@
                                         <th>Disc Amt</th>
                                         <th class="invoice-only">Orig Qty</th>
                                         <th><span class="invoice-only">Return </span>Qty</th>
-                                        <th>Price</th>
+                                        <th>Sales Price</th>
                                         <th>Amount</th>
                                         <th>X</th>
                                     </tr>
@@ -173,7 +173,7 @@
                                                 <td class="invoice-only"><input type="text" class="form-control form-control-sm bg-light text-center" value="{{ $item->qty }}" readonly></td>
                                                 <td><input type="number" name="qty[]" class="form-control form-control-sm quantity text-center" value="{{ $item->qty }}" min="0"></td>
                                                 <td><input type="number" step="0.01" name="price[]" class="form-control form-control-sm price text-end" value="{{ $item->price }}"></td>
-                                                <td><input type="text" name="line_total[]" class="form-control form-control-sm row-total text-end bg-white" readonly value="0"></td>
+                                                <td><input type="text" name="line_total[]" class="form-control form-control-sm row-total text-end bg-white fw-bold" readonly value="0"></td>
                                                 <td><button type="button" class="btn btn-sm btn-danger remove-row"><i class="fa fa-times"></i></button></td>
                                             </tr>
                                         @endforeach

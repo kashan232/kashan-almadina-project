@@ -1143,7 +1143,7 @@ class GeneralLedgerController extends Controller
                     'date' => $pr->entry_date ?: $pr->created_at,
                     'ref' => 'PRJ',
                     'inv' => $pr->invoice_no,
-                    'desc' => 'Purchase Return: ' . ($brand ? $brand . ' - ' : '') . ($item->product->name ?? 'Product'),
+                    'desc' => ($brand ? $brand . ' - ' : '') . ($item->product->name ?? 'Product'),
                     'price' => $netPrice,
                     'qty' => $qty,
                     'debit' => (float)$item->line_total,
