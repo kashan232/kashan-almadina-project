@@ -918,13 +918,16 @@ class GeneralLedgerController extends Controller
                             }
                         }
 
+                        $accName = DB::table('accounts')->where('id', $aid)->value('name');
+
                         $descParts = [];
+                        if ($rowNarr) $descParts[] = $rowNarr;
                         if (!empty($rv->remarks) && !str_starts_with($rv->remarks, 'Auto-generated from Sale:')) {
                             $descParts[] = $rv->remarks;
                         }
-                        $baseDesc = !empty($descParts) ? implode(' ; ', $descParts) : 'Receipt';
+                        $desc = !empty($descParts) ? implode(' : ', $descParts) : 'Receipt Voucher';
                         
-                        $desc = $partyName ? $baseDesc . ' : ' . $partyName : $baseDesc;
+                        $desc = $partyName ? $desc . ' : ' . $partyName : $desc;
 
                         $transactions[] = [
                             'created_at' => $rv->created_at,
@@ -1181,16 +1184,53 @@ class GeneralLedgerController extends Controller
         $payments = PaymentVoucher::where('party_id', $id)->whereIn('type', $typeArray)
             ->whereIn('status', ['posted', 'Posted'])->whereBetween(DB::raw($pvDateCol), [$start, $end])->get();
         foreach ($payments as $pv) {
-            $transactions[] = [
-                'created_at' => $pv->created_at,
-                'id' => $pv->id,
-                'date' => $pv->entry_date ?: $pv->created_at,
-                'ref' => 'PV',
-                'inv' => $pv->pvid,
-                'desc' => $pv->remarks ?? 'Payment Voucher',
-                'price' => 0, 'qty' => 0, 'debit' => (float)$pv->total_amount, 'credit' => 0,
-                'priority' => 50
-            ];
+            $accIds = json_decode($pv->row_account_id, true) ?? [];
+            $amounts = json_decode($pv->amount, true) ?? [];
+            $narrIds = json_decode($pv->narration_id, true) ?? [];
+            $discounts = json_decode($pv->discount_value, true) ?? [];
+
+            foreach ($accIds as $idx => $aid) {
+                $rowAmount = (float)($amounts[$idx] ?? 0);
+                $rowDiscount = (float)($discounts[$idx] ?? 0);
+                if ($rowAmount <= 0 && $rowDiscount <= 0) continue;
+
+                $accName = DB::table('accounts')->where('id', $aid)->value('title');
+                $narrText = '';
+                if (isset($narrIds[$idx])) {
+                    $narrText = is_numeric($narrIds[$idx]) ? DB::table('narrations')->where('id', $narrIds[$idx])->value('narration') : $narrIds[$idx];
+                }
+                
+                $descParts = [];
+                if ($narrText) $descParts[] = $narrText;
+                if (!empty($pv->remarks)) $descParts[] = $pv->remarks;
+                $desc = !empty($descParts) ? implode(' : ', $descParts) : 'Payment Voucher';
+
+                if ($rowAmount > 0) {
+                    $transactions[] = [
+                        'created_at' => $pv->created_at,
+                        'id' => $pv->id . '_' . $idx,
+                        'date' => $pv->entry_date ?: $pv->created_at,
+                        'ref' => 'PV',
+                        'inv' => $pv->pvid,
+                        'desc' => $desc,
+                        'price' => 0, 'qty' => 0, 'debit' => $rowAmount, 'credit' => 0,
+                        'priority' => 50
+                    ];
+                }
+
+                if ($rowDiscount > 0) {
+                    $transactions[] = [
+                        'created_at' => $pv->created_at,
+                        'id' => $pv->id . '_disc_' . $idx,
+                        'date' => $pv->entry_date ?: $pv->created_at,
+                        'ref' => 'PV',
+                        'inv' => $pv->pvid,
+                        'desc' => 'Discount',
+                        'price' => 0, 'qty' => 0, 'debit' => $rowDiscount, 'credit' => 0,
+                        'priority' => 51
+                    ];
+                }
+            }
         }
 
         // 3.1 Expenses (EV) - Credit
@@ -1553,10 +1593,11 @@ class GeneralLedgerController extends Controller
                 }
                 
                 $descParts = [];
+                if ($narrText) $descParts[] = $narrText;
                 if (!empty($rv->remarks) && !str_starts_with($rv->remarks, 'Auto-generated from Sale:')) {
                     $descParts[] = $rv->remarks;
                 }
-                $desc = !empty($descParts) ? implode(' ; ', $descParts) : 'Receipt Voucher';
+                $desc = !empty($descParts) ? implode(' : ', $descParts) : 'Receipt Voucher';
 
                 $ref = 'RV';
                 $inv = $rv->rvid;
