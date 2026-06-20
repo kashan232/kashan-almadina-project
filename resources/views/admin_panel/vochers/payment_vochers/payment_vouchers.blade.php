@@ -206,15 +206,22 @@
                                         <td><input name="kg[]" type="number" step="any" class="form-control form-control-sm text-center kg" value="{{ $kgs[$index] ?? '' }}"></td>
                                         <td><input name="rate[]" type="number" step="any" class="form-control form-control-sm text-end rate" value="{{ $rates[$index] ?? '' }}"></td>
                                         <td><input name="amount[]" type="text" class="form-control form-control-sm text-end fw-bold amount" value="{{ $amounts[$index] ?? '' }}"></td>
-                                        <td class="text-center"><button type="button" class="btn text-danger btn-xs removeRow p-0"><i class="fa fa-trash-o fs-6"></i></button></td>
+                                        <td class="text-center"><button type="button" class="btn btn-xs btn-outline-danger removeRow"><i class="fa fa-times"></i></button></td>
                                     </tr>
                                     @endforeach
                                 </tbody>
                                 <tfoot class="bg-light">
                                     <tr class="fw-bold">
-                                        <td colspan="8" class="text-end py-2 text-muted small">TOTAL PAYMENT AMOUNT</td>
+                                        <td colspan="5" class="text-end py-2 text-muted small">TOTALS</td>
                                         <td class="text-end py-1">
-                                            <input type="text" id="totalAmount" name="total_amount" class="form-control form-control-sm text-end border-0 bg-transparent fw-bold text-primary fs-6 py-0" readonly value="{{ $receipt->total_amount ?? '0.00' }}">
+                                            <input type="text" id="totalDisc" class="form-control form-control-sm text-end border-0 bg-transparent fw-bold text-dark fs-5 py-0" readonly value="0.00">
+                                        </td>
+                                        <td class="text-center py-1">
+                                            <input type="text" id="totalKg" class="form-control form-control-sm text-center border-0 bg-transparent fw-bold text-dark fs-5 py-0" readonly value="0.00">
+                                        </td>
+                                        <td></td>
+                                        <td class="text-end py-1">
+                                            <input type="text" id="totalAmount" name="total_amount" class="form-control form-control-sm text-end border-0 bg-transparent fw-bold text-dark fs-5 py-0" readonly value="{{ $receipt->total_amount ?? '0.00' }}">
                                         </td>
                                         <td></td>
                                     </tr>
@@ -403,7 +410,7 @@ $(document).ready(function() {
             <td><input name="kg[]" type="number" step="any" class="form-control form-control-sm text-center kg"></td>
             <td><input name="rate[]" type="number" step="any" class="form-control form-control-sm text-end rate"></td>
             <td><input name="amount[]" type="text" class="form-control form-control-sm text-end fw-bold amount"></td>
-            <td class="text-center"><button type="button" class="btn text-danger btn-xs removeRow p-0"><i class="fa fa-trash-o fs-6"></i></button></td>
+            <td class="text-center"><button type="button" class="btn btn-xs btn-outline-danger removeRow"><i class="fa fa-times"></i></button></td>
         </tr>`;
         $('#voucherTable tbody').append(row);
         initSelectors($('#voucherTable tbody tr').last());
@@ -412,9 +419,13 @@ $(document).ready(function() {
     $(document).on('click', '.removeRow', function() { if($('#voucherTable tbody tr').length > 1) { $(this).closest('tr').remove(); calc(); } });
 
     function calc() {
-        let t = 0;
+        let t = 0, d = 0, k = 0;
         $('.amount').each(function() { t += parseFloat($(this).val()) || 0; });
+        $('.discount').each(function() { d += parseFloat($(this).val()) || 0; });
+        $('.kg').each(function() { k += parseFloat($(this).val()) || 0; });
         $('#totalAmount').val(t.toLocaleString('en-US', {minimumFractionDigits: 2}));
+        $('#totalDisc').val(d.toLocaleString('en-US', {minimumFractionDigits: 2}));
+        $('#totalKg').val(k.toLocaleString('en-US', {minimumFractionDigits: 2}));
     }
 
     $(document).on('input', '.kg, .rate, .discount, .amount', function() {
@@ -422,6 +433,14 @@ $(document).ready(function() {
         let k = parseFloat($r.find('.kg').val()) || 0, rt = parseFloat($r.find('.rate').val()) || 0;
         if(k > 0 && rt > 0) $r.find('.amount').val((k * rt).toFixed(2));
         calc();
+    });
+
+    $(document).on('keydown', '.amount', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            $('#btnAddRow').click();
+            $('#voucherTable tbody tr').last().find('.narrationSelect').focus();
+        }
     });
 
     // 💾 Storage Logic

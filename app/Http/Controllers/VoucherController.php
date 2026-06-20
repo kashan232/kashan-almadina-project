@@ -633,7 +633,7 @@ class VoucherController extends Controller
             'kg'               => json_encode($request->kg),
             'rate'             => json_encode($request->rate),
             'amount'           => json_encode($request->amount),
-            'total_amount'     => $request->total_amount,
+            'total_amount'     => str_replace(',', '', $request->total_amount),
         ];
 
         if ($id) {
@@ -850,7 +850,7 @@ class VoucherController extends Controller
                 'kg'               => json_encode($request->kg),
                 'rate'             => json_encode($request->rate),
                 'amount'           => json_encode($request->amount),
-                'total_amount'     => $request->total_amount,
+                'total_amount'     => str_replace(',', '', $request->total_amount),
             ];
 
             PaymentVoucher::create($voucherData);
@@ -1105,7 +1105,7 @@ class VoucherController extends Controller
             'row_account_head' => json_encode($request->row_account_head),
             'row_account_id'   => json_encode($request->row_account_id),
             'amount'           => json_encode($request->amount),
-            'total_amount'     => $request->total_amount,
+            'total_amount'     => str_replace(',', '', $request->total_amount),
             'status'           => 'draft'
         ];
 
@@ -1439,7 +1439,7 @@ class VoucherController extends Controller
             $voucher->party_id     = json_encode($request->input('party_id', []));
             $voucher->reference_no = json_encode($request->input('reference_no', []));
             $voucher->amount       = json_encode($request->input('amount', []));
-            $voucher->total_amount = $request->total_amount;
+            $voucher->total_amount = str_replace(',', '', $request->total_amount);
             
             $voucher->save();
 
