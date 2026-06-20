@@ -206,15 +206,22 @@
                                         <td><input name="kg[]" type="number" step="any" class="form-control form-control-sm text-center kg" value="{{ $kgs[$index] ?? '' }}"></td>
                                         <td><input name="rate[]" type="number" step="any" class="form-control form-control-sm text-end rate" value="{{ $rates[$index] ?? '' }}"></td>
                                         <td><input name="amount[]" type="text" class="form-control form-control-sm text-end fw-bold amount" value="{{ $amounts[$index] ?? '' }}"></td>
-                                        <td class="text-center"><button type="button" class="btn text-danger btn-xs removeRow p-0"><i class="fa fa-trash-o fs-6"></i></button></td>
+                                        <td class="text-center"><button type="button" class="btn btn-xs btn-outline-danger removeRow"><i class="fa fa-times"></i></button></td>
                                     </tr>
                                     @endforeach
                                 </tbody>
                                 <tfoot class="bg-light">
                                     <tr class="fw-bold">
-                                        <td colspan="8" class="text-end py-2 text-muted small">TOTAL RECEIPT AMOUNT</td>
+                                        <td colspan="5" class="text-end py-2 text-muted small">TOTALS</td>
                                         <td class="text-end py-1">
-                                            <input type="text" name="total_amount" id="totalAmount" class="form-control form-control-sm text-end border-0 bg-transparent fw-bold text-primary fs-6 py-0" readonly value="{{ $receipt->total_amount ?? '0.00' }}">
+                                            <input type="text" id="totalDisc" class="form-control form-control-sm text-end border-0 bg-transparent fw-bold text-dark fs-5 py-0" readonly value="0.00">
+                                        </td>
+                                        <td class="text-center py-1">
+                                            <input type="text" id="totalKg" class="form-control form-control-sm text-center border-0 bg-transparent fw-bold text-dark fs-5 py-0" readonly value="0.00">
+                                        </td>
+                                        <td></td>
+                                        <td class="text-end py-1">
+                                            <input type="text" name="total_amount" id="totalAmount" class="form-control form-control-sm text-end border-0 bg-transparent fw-bold text-dark fs-5 py-0" readonly value="{{ $receipt->total_amount ?? '0.00' }}">
                                         </td>
                                         <td></td>
                                     </tr>
@@ -369,8 +376,15 @@ $(document).ready(function() {
     // ➕ Table Actions
     function calculateTotals() {
         let grandTotal = 0;
+        let grandDisc = 0;
+        let grandKg = 0;
         $('.amount').each(function() { grandTotal += parseFloat($(this).val()) || 0; });
+        $('.discountValue').each(function() { grandDisc += parseFloat($(this).val()) || 0; });
+        $('.kg').each(function() { grandKg += parseFloat($(this).val()) || 0; });
+
         $('#totalAmount').val(grandTotal.toLocaleString('en-US', {minimumFractionDigits: 2}));
+        $('#totalDisc').val(grandDisc.toLocaleString('en-US', {minimumFractionDigits: 2}));
+        $('#totalKg').val(grandKg.toLocaleString('en-US', {minimumFractionDigits: 2}));
     }
 
     $(document).on('input', '.kg, .rate, .discountValue', function() {
@@ -410,7 +424,7 @@ $(document).ready(function() {
             <td><input name="kg[]" type="number" step="any" class="form-control form-control-sm text-center kg"></td>
             <td><input name="rate[]" type="number" step="any" class="form-control form-control-sm text-end rate"></td>
             <td><input name="amount[]" type="text" class="form-control form-control-sm text-end fw-bold amount"></td>
-            <td class="text-center"><button type="button" class="btn text-danger btn-xs removeRow p-0"><i class="fa fa-trash-o fs-6"></i></button></td>
+            <td class="text-center"><button type="button" class="btn btn-xs btn-outline-danger removeRow"><i class="fa fa-times"></i></button></td>
         </tr>`;
         $('#voucherTable tbody').append(newRow);
         initSelectors($('#voucherTable tbody tr').last());

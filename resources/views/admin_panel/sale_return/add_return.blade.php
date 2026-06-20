@@ -146,12 +146,13 @@
                                     <tr>
                                         <th style="width: 100px;">Item ID</th>
                                         <th style="width: 250px;">Product</th>
+                                        <th>Sales Price</th>
                                         <th>Retail Price</th>
                                         <th>Disc (%)</th>
                                         <th>Disc Amt</th>
                                         <th class="invoice-only">Orig Qty</th>
                                         <th><span class="invoice-only">Return </span>Qty</th>
-                                        <th>Price</th>
+                                        <th>Rate</th>
                                         <th>Amount</th>
                                         <th>X</th>
                                     </tr>
@@ -713,7 +714,7 @@ $(document).ready(function() {
             const $currentRow = $(this).closest('tr');
 
             $currentRow.find('.item-id-input').val(data.id);
-            $currentRow.find('.price').val(data.price).trigger('input');
+            $currentRow.find('.sales_price').val(data.price).trigger('input');
             $currentRow.find('.purchase_price').val(data.purchase_price);
             $currentRow.find('.retail_price').val(data.retail);
             $currentRow.find('.quantity').val(1).trigger('input');
@@ -741,12 +742,13 @@ $(document).ready(function() {
                         <option value="" disabled selected>Select Product</option>
                     </select>
                 </td>
+                <td><input type="number" step="0.01" name="sales_price[]" class="form-control form-control-sm sales_price text-end"></td>
                 <td><input type="number" step="0.01" name="retail_price[]" class="form-control form-control-sm retail_price text-end"></td>
                 <td><input type="number" step="0.01" name="discount_percent[]" class="form-control form-control-sm discount_percent text-center"></td>
                 <td><input type="number" step="0.01" name="item_disc_amount[]" class="form-control form-control-sm disc_amount text-end"></td>
                 <td class="invoice-only"><input type="text" class="form-control form-control-sm bg-light text-center" value="-" readonly></td>
                 <td><input type="number" name="qty[]" class="form-control form-control-sm quantity text-center" value="1" min="0"></td>
-                <td><input type="number" step="0.01" name="price[]" class="form-control form-control-sm price text-end"></td>
+                <td><input type="number" step="0.01" name="price[]" class="form-control form-control-sm price text-end bg-white" readonly></td>
                 <td><input type="text" name="line_total[]" class="form-control form-control-sm row-total text-end bg-white" readonly value="0"></td>
                 <td><button type="button" class="btn btn-sm btn-danger remove-row"><i class="fa fa-times"></i></button></td>
             </tr>`;
@@ -779,7 +781,7 @@ $(document).ready(function() {
             $('#warehouse_select').val(res.warehouse_id).trigger('change');
 
             if (res.items.length === 0) {
-                $('#saleItems').html('<tr><td colspan="11" class="text-danger p-3">This sale has no items!</td></tr>');
+                $('#saleItems').html('<tr><td colspan="12" class="text-danger p-3">This sale has no items!</td></tr>');
             } else {
                 res.items.forEach(item => {
                     appendInvoiceRow(item);
@@ -800,12 +802,13 @@ $(document).ready(function() {
                 <input type="text" class="form-control form-control-sm bg-white" value="${item.product_name}" readonly title="${item.product_name}">
                 <input type="hidden" name="product_id[]" value="${item.product_id}">
             </td>
+            <td><input type="number" step="0.01" name="sales_price[]" class="form-control form-control-sm sales_price text-end" value="${item.sales_price}"></td>
             <td><input type="number" step="0.01" name="retail_price[]" class="form-control form-control-sm retail_price text-end" value="${item.retail_price}"></td>
             <td><input type="number" step="0.01" name="discount_percent[]" class="form-control form-control-sm discount_percent text-center" value="${item.discount_percent}"></td>
             <td><input type="number" step="0.01" name="item_disc_amount[]" class="form-control form-control-sm disc_amount text-end" value="${discAmt}"></td>
             <td class="invoice-only"><input type="text" class="form-control form-control-sm bg-light text-center" value="${item.qty}" readonly></td>
             <td><input type="number" name="qty[]" class="form-control form-control-sm quantity text-center" value="${item.qty}" max="${item.qty}" min="0" title="Edit return quantity"></td>
-            <td><input type="number" step="0.01" name="price[]" class="form-control form-control-sm price text-end" value="${item.price}"></td>
+            <td><input type="number" step="0.01" name="price[]" class="form-control form-control-sm price text-end bg-white" value="${item.price}" readonly></td>
             <td><input type="text" name="line_total[]" class="form-control form-control-sm row-total text-end bg-white" readonly value="0"></td>
             <td><button type="button" class="btn btn-sm btn-danger remove-row"><i class="fa fa-times"></i></button></td>
         </tr>`;
@@ -818,7 +821,7 @@ $(document).ready(function() {
         recalcSummary();
     });
 
-    $(document).on('input change', '.quantity, .price, .discount_percent, .disc_amount, .retail_price', function() {
+    $(document).on('input change', '.quantity, .sales_price, .price, .discount_percent, .disc_amount, .retail_price', function() {
         let row = $(this).closest('tr');
         if ($(this).hasClass('disc_amount')) {
             row.data('manual-disc', true);
@@ -831,28 +834,36 @@ $(document).ready(function() {
 
     function recalcRow($row) {
         let qty = parseFloat($row.find('.quantity').val()) || 0;
-        let price = parseFloat($row.find('.price').val()) || 0;
+        let salesPrice = parseFloat($row.find('.sales_price').val()) || 0;
         let retail = parseFloat($row.find('.retail_price').val()) || 0;
         let discPercent = parseFloat($row.find('.discount_percent').val()) || 0;
         let discAmt = parseFloat($row.find('.disc_amount').val()) || 0;
 
-        let discBase = (retail > 0) ? retail : price;
-
         if ($row.data('manual-disc') === true) {
-            discPercent = discBase > 0 ? (discAmt / discBase) * 100 : 0;
+            let baseForPercent = retail * qty;
+            if (baseForPercent > 0) {
+                discPercent = (discAmt / baseForPercent) * 100;
+            } else {
+                discPercent = 0;
+            }
             $row.find('.discount_percent').val(discPercent.toFixed(2));
         } else {
-            discAmt = (discBase * discPercent) / 100;
+            discAmt = ((retail * qty) * discPercent) / 100.0;
             $row.find('.disc_amount').val(discAmt.toFixed(2));
         }
         
-        let totalDisc = discAmt * qty;
-        let grossAmount = price * qty;
-        let netAmount = grossAmount - totalDisc;
-        let rate = price - discAmt;
+        let rate = 0;
+        if (qty > 0) {
+            rate = salesPrice - (discAmt / qty);
+        } else {
+            rate = salesPrice;
+        }
 
-        // Amount = 1 single unit price
-        $row.find('.row-amount').val(rate.toFixed(2));
+        let lineGross = salesPrice * qty;
+        let netAmount = Math.max(0, lineGross - discAmt);
+
+        // Amount = 1 single unit price (Price/Rate column)
+        $row.find('.price').val(rate.toFixed(2));
         // Total = Price * Qty - Discount
         $row.find('.row-total').val(netAmount.toFixed(2));
     }
