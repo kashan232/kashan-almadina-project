@@ -1451,7 +1451,11 @@
       });
 
       $('#editBtn').on('click', function() {
+          const currentCust = $('#customerSelect').val();
           $('#saleForm').removeClass('form-locked');
+          if (currentCust) {
+              $('#customerSelect').val(currentCust).trigger('change.select2');
+          }
           // Update status if needed or just show a message
           Swal.fire({ icon: 'info', title: 'Unlocked', text: 'Form is now editable.', timer: 1000, showConfirmButton: false });
           // Note: User wants and asked for buttons to stay, so we don't hide this button necessarily, 
@@ -1516,45 +1520,55 @@
   /* ---------- Customer type & list ---------- */
   function loadCustomersByType(type) {
     const $sel = $('#customerSelect').prop('disabled', true).empty().append('<option selected disabled>Loading...</option>');
-    $.get('{{ route("customers.filter") }}', {
-      type
-    }, function(list) {
-      $sel.empty().append('<option selected disabled value="">Select ' + (type === 'vendor' ? 'vendor' : (type === 'walking' ? 'walk-in customer' : 'customer')) + '</option>');
-      list.forEach(r => {
-        let opt = $('<option>').val(r.id).text(r.text).attr('data-customer_id', r.customer_id);
-        $sel.append(opt);
-      });
-      $sel.prop('disabled', false);
+        $.get('{{ route("customers.filter") }}', {
+        type
+      }, function(list) {
+        $sel.empty().append('<option disabled value="">Select ' + (type === 'vendor' ? 'vendor' : (type === 'walking' ? 'walk-in customer' : 'customer')) + '</option>');
+        
+        const oldVal = String($sel.attr('data-old-val') || '');
+        let selectedValue = null;
 
-      // Initialize Select2 if not already initialized, or refresh it
-      if ($sel.hasClass('select2-hidden-accessible')) {
-          $sel.select2('destroy');
-      }
-      $sel.select2({
-          placeholder: 'Select ' + type,
-          allowClear: true,
-          width: '100%'
-      });
+        list.forEach(r => {
+          let opt = $('<option>').val(r.id).text(r.text).attr('data-customer_id', r.customer_id);
+          if (oldVal && (String(r.id) === oldVal || String(r.customer_id) === oldVal)) {
+              selectedValue = String(r.id);
+              opt.prop('selected', true);
+          }
+          $sel.append(opt);
+        });
+        
+        $sel.prop('disabled', false);
 
-      // Handle old values if any
-      const oldVal = $sel.attr('data-old-val');
-      if (oldVal) {
-          let $matchedOpt = $sel.find('option[value="' + oldVal + '"]');
-          if ($matchedOpt.length === 0) {
-              $matchedOpt = $sel.find('option[data-customer_id="' + oldVal + '"]');
-          }
-          if ($matchedOpt.length > 0) {
-              $sel.val($matchedOpt.val()).trigger('change');
-          }
-          $sel.attr('data-old-val', '');
-      }
-    }).fail(function() {
+        if (selectedValue !== null) {
+            $sel.val(selectedValue);
+        }
+
+        // Initialize Select2 if not already initialized, or refresh it
+        if ($sel.hasClass('select2-hidden-accessible')) {
+            $sel.select2('destroy');
+        }
+        $sel.select2({
+            placeholder: 'Select ' + type,
+            allowClear: true,
+            width: '100%'
+        });
+
+        if (selectedValue !== null) {
+            // Trigger change for our listeners
+            $sel.val(selectedValue).trigger('change');
+            
+            // Force Select2 UI update with a slight delay to avoid race conditions
+            setTimeout(function() {
+                $sel.trigger('change.select2');
+            }, 50);
+        }
+        
+        $sel.attr('data-old-val', '');
+
+      }).fail(function() {
       $sel.empty().append('<option selected disabled>Error loading</option>').prop('disabled', false);
     });
   }
-
-  let initialType = $('input[name="partyType"]:checked').val() || 'customer';
-  loadCustomersByType(initialType);
 
   $(document).on('change', 'input[name="partyType"]', function() {
     $('#customerSelect').val(null).trigger('change');
