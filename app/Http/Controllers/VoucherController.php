@@ -1613,7 +1613,19 @@ class VoucherController extends Controller
             $v->party_name = count($pNames) > 1 ? count(array_unique($pNames)) . ' Parties' : ($pNames[0] ?? '-');
             
             $accountHead = DB::table('account_heads')->where('id', $v->account_head)->first();
-            $v->type_label = count(array_unique($typesRaw)) > 1 ? 'Multiple Types' : ucfirst($typesRaw[0] ?? 'Account');
+            if (count(array_unique($typesRaw)) > 1) {
+                $v->type_label = 'Multiple Types';
+            } else {
+                $firstType = $typesRaw[0] ?? 'Account';
+                if (is_numeric($firstType)) {
+                    $accHead = DB::table('account_heads')->where('id', $firstType)->first();
+                    $v->type_label = $accHead->name ?? 'Account';
+                } elseif (in_array($firstType, ['walkin', 'walking'])) {
+                    $v->type_label = 'Walk-in';
+                } else {
+                    $v->type_label = ucfirst($firstType);
+                }
+            }
             
             $discountRaw = json_decode($v->discount_value, true);
             $v->total_discount = is_array($discountRaw) ? array_sum(array_map('floatval', $discountRaw)) : (float)$v->discount_value;

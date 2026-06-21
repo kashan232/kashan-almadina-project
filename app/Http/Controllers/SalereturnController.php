@@ -72,6 +72,7 @@ class SaleReturnController extends Controller
                     'id' => $item->id,
                     'product_id' => $item->product_id,
                     'product_name' => $product->name ?? 'N/A',
+                    'sales_price' => $item->sales_price,
                     'price' => $item->sales_price,
                     'purchase_price' => $product->latestPrice->purchase_net_amount ?? 0,
                     'qty' => $item->sales_qty,

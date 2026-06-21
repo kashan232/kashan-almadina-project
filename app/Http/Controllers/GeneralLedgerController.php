@@ -438,7 +438,7 @@ class GeneralLedgerController extends Controller
                 'priority' => 20
             ];
             if ((float)$sr->discount_amount > 0) {
-                $descDisc = 'Sale Return Discount';
+                $descDisc = 'Discount';
                 if ($sr->sale) {
                     $descDisc .= ' (SR ' . $sr->sale->invoice_no . ')';
                 }
@@ -656,6 +656,51 @@ class GeneralLedgerController extends Controller
                 }
             }
                 
+            // IVs
+            $ivDateCol = $this->getDateColumn('income_vouchers');
+            $ivs = \App\Models\IncomeVoucher::where(function($q) use ($id) {
+                    $q->where('account_id', $id)
+                      ->orWhereJsonContains('party_id', (string)$id)
+                      ->orWhereJsonContains('party_id', (int)$id);
+                })
+                ->where(DB::raw($ivDateCol), '>=', $date)->get();
+            $ivImpact = 0;
+            foreach($ivs as $iv) {
+                if ($iv->account_id == $id) {
+                    $ivImpact -= (float)$iv->total_amount;
+                }
+                $pIds = json_decode($iv->party_id, true) ?? [];
+                $amounts = json_decode($iv->amount, true) ?? [];
+                $types = json_decode($iv->party_type, true) ?? [];
+                foreach($pIds as $idx => $pid) {
+                    if ($pid == $id && is_numeric($types[$idx] ?? '')) {
+                        $ivImpact += (float)($amounts[$idx] ?? 0);
+                    }
+                }
+            }
+
+            // EVs
+            $evDateCol = $this->getDateColumn('expense_vouchers');
+            $evs = \App\Models\ExpenseVoucher::where(function($q) use ($id) {
+                    $q->where('party_id', $id)
+                      ->orWhereJsonContains('row_account_id', (string)$id)
+                      ->orWhereJsonContains('row_account_id', (int)$id);
+                })
+                ->where(DB::raw($evDateCol), '>=', $date)->get();
+            $evImpact = 0;
+            foreach($evs as $ev) {
+                if ($ev->party_id == $id && is_numeric($ev->type ?? '')) {
+                    $evImpact += (float)$ev->total_amount;
+                }
+                $accIds = json_decode($ev->row_account_id, true) ?? [];
+                $amounts = json_decode($ev->amount, true) ?? [];
+                foreach($accIds as $idx => $aid) {
+                    if ($aid == $id) {
+                        $evImpact -= (float)($amounts[$idx] ?? 0);
+                    }
+                }
+            }
+
             // JVs
             $jvDateCol = $this->getDateColumn('journal_vouchers');
             $jvs = JournalVoucher::where(function($q) use ($id) {
@@ -675,7 +720,7 @@ class GeneralLedgerController extends Controller
                 }
             }
             
-            return $balance - ($rvSum - $pvSum + $jvImpact);
+            return $balance - ($rvSum - $pvSum + $jvImpact + $ivImpact + $evImpact);
         }
 
         // For Party (Customer/Vendor)
@@ -918,7 +963,7 @@ class GeneralLedgerController extends Controller
                             }
                         }
 
-                        $accName = DB::table('accounts')->where('id', $aid)->value('name');
+                        $accName = DB::table('accounts')->where('id', $aid)->value('title');
 
                         $descParts = [];
                         if ($rowNarr) $descParts[] = $rowNarr;
@@ -989,6 +1034,104 @@ class GeneralLedgerController extends Controller
                             'inv' => $pv->pvid,
                             'desc' => $desc,
                             'price' => 0, 'qty' => 0, 'debit' => 0, 'credit' => $rowAmount,
+                            'priority' => 60
+                        ];
+                    }
+                }
+            }
+            // Incomes
+            $ivDateCol = $this->getDateColumn('income_vouchers');
+            $ivs = \App\Models\IncomeVoucher::where(function($q) use ($id) {
+                    $q->where('account_id', $id)
+                      ->orWhereJsonContains('party_id', (string)$id)
+                      ->orWhereJsonContains('party_id', (int)$id);
+                })
+                ->whereIn('status', ['posted', 'Posted'])->whereBetween(DB::raw($ivDateCol), [$start, $end])->get();
+            foreach($ivs as $iv) {
+                if ($iv->account_id == $id) {
+                    $transactions[] = [
+                        'created_at' => $iv->created_at,
+                        'id' => $iv->id . '_h',
+                        'date' => $iv->entry_date ?: $iv->created_at,
+                        'ref' => 'IV',
+                        'inv' => $iv->ivid,
+                        'desc' => $iv->remarks ?? 'Income Voucher (Deposit)',
+                        'price' => 0, 'qty' => 0, 'debit' => 0, 'credit' => (float)$iv->total_amount,
+                        'priority' => 60
+                    ];
+                }
+                $pIds = json_decode($iv->party_id, true) ?? [];
+                $amounts = json_decode($iv->amount, true) ?? [];
+                $types = json_decode($iv->party_type, true) ?? [];
+                $narrIds = json_decode($iv->narration_id, true) ?? [];
+                foreach($pIds as $idx => $pid) {
+                    if ($pid == $id && is_numeric($types[$idx] ?? '')) {
+                        $rowNarr = '';
+                        if (isset($narrIds[$idx])) {
+                            if (is_numeric($narrIds[$idx])) {
+                                $rowNarr = DB::table('narrations')->where('id', $narrIds[$idx])->value('narration');
+                            } else {
+                                $rowNarr = $narrIds[$idx];
+                            }
+                        }
+                        $desc = $rowNarr ?: ($iv->remarks ?? 'Income Voucher (Source)');
+                        $transactions[] = [
+                            'created_at' => $iv->created_at,
+                            'id' => $iv->id . '_' . $idx,
+                            'date' => $iv->entry_date ?: $iv->created_at,
+                            'ref' => 'IV',
+                            'inv' => $iv->ivid,
+                            'desc' => $desc,
+                            'price' => 0, 'qty' => 0, 'debit' => (float)($amounts[$idx] ?? 0), 'credit' => 0,
+                            'priority' => 60
+                        ];
+                    }
+                }
+            }
+
+            // Expenses
+            $evDateCol = $this->getDateColumn('expense_vouchers');
+            $evs = \App\Models\ExpenseVoucher::where(function($q) use ($id) {
+                    $q->where('party_id', $id)
+                      ->orWhereJsonContains('row_account_id', (string)$id)
+                      ->orWhereJsonContains('row_account_id', (int)$id);
+                })
+                ->whereIn('status', ['posted', 'Posted'])->whereBetween(DB::raw($evDateCol), [$start, $end])->get();
+            foreach($evs as $ev) {
+                if ($ev->party_id == $id && is_numeric($ev->type ?? '')) {
+                    $transactions[] = [
+                        'created_at' => $ev->created_at,
+                        'id' => $ev->id . '_h',
+                        'date' => $ev->entry_date ?: $ev->created_at,
+                        'ref' => 'EV',
+                        'inv' => $ev->evid,
+                        'desc' => $ev->remarks ?? 'Expense Voucher (Expense Head)',
+                        'price' => 0, 'qty' => 0, 'debit' => (float)$ev->total_amount, 'credit' => 0,
+                        'priority' => 60
+                    ];
+                }
+                $accIds = json_decode($ev->row_account_id, true) ?? [];
+                $amounts = json_decode($ev->amount, true) ?? [];
+                $narrIds = json_decode($ev->narration_id, true) ?? [];
+                foreach($accIds as $idx => $aid) {
+                    if ($aid == $id) {
+                        $rowNarr = '';
+                        if (isset($narrIds[$idx])) {
+                            if (is_numeric($narrIds[$idx])) {
+                                $rowNarr = DB::table('narrations')->where('id', $narrIds[$idx])->value('narration');
+                            } else {
+                                $rowNarr = $narrIds[$idx];
+                            }
+                        }
+                        $desc = $rowNarr ?: ($ev->remarks ?? 'Expense Voucher (Source)');
+                        $transactions[] = [
+                            'created_at' => $ev->created_at,
+                            'id' => $ev->id . '_' . $idx,
+                            'date' => $ev->entry_date ?: $ev->created_at,
+                            'ref' => 'EV',
+                            'inv' => $ev->evid,
+                            'desc' => $desc,
+                            'price' => 0, 'qty' => 0, 'debit' => 0, 'credit' => (float)($amounts[$idx] ?? 0),
                             'priority' => 60
                         ];
                     }
@@ -1531,6 +1674,25 @@ class GeneralLedgerController extends Controller
                     'debit' => 0,
                     'credit' => (float)$item->amount,
                     'priority' => 20 // SRJ after SJ
+                ];
+            }
+            if ((float)$sr->discount_amount > 0) {
+                $descDisc = 'Discount';
+                if ($originalInv) {
+                    $descDisc .= ' (SR ' . $originalInv . ')';
+                }
+                $transactions[] = [
+                    'created_at' => $sr->created_at,
+                    'id' => $sr->id . '_disc',
+                    'date' => $sr->entry_date ?: $sr->current_date,
+                    'ref' => 'SRJ',
+                    'inv' => preg_replace('/[^0-9]/', '', substr($sr->invoice_no, strlen('SR-'))) ?: $sr->invoice_no,
+                    'desc' => $descDisc,
+                    'price' => 0,
+                    'qty' => 0,
+                    'debit' => (float)$sr->discount_amount,
+                    'credit' => 0,
+                    'priority' => 21
                 ];
             }
         }
