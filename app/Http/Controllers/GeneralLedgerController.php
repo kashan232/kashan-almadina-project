@@ -1151,6 +1151,46 @@ class GeneralLedgerController extends Controller
                     'priority' => 40 // PRJ after PJ
                 ];
             }
+
+            if ($pr->wht > 0) {
+                $whtHeadName = 'WHT Deduction (Tax)';
+                if ($pr->purchase_id) {
+                    $purchase = \App\Models\Purchase::find($pr->purchase_id);
+                    if ($purchase && $purchase->wht_account_id) {
+                        $whtAcc = \App\Models\Account::find($purchase->wht_account_id);
+                        if ($whtAcc) $whtHeadName = $whtAcc->title;
+                    }
+                }
+                $transactions[] = [
+                    'created_at' => $pr->created_at,
+                    'id' => $pr->id . '_wht',
+                    'date' => $pr->entry_date ?: $pr->created_at,
+                    'ref' => 'PRJ',
+                    'inv' => $pr->invoice_no,
+                    'desc' => $whtHeadName,
+                    'price' => 0,
+                    'qty' => 0,
+                    'debit' => (float)$pr->wht,
+                    'credit' => 0,
+                    'priority' => 41
+                ];
+            }
+
+            if ($pr->discount > 0) {
+                $transactions[] = [
+                    'created_at' => $pr->created_at,
+                    'id' => $pr->id . '_disc',
+                    'date' => $pr->entry_date ?: $pr->created_at,
+                    'ref' => 'PRJ',
+                    'inv' => $pr->invoice_no,
+                    'desc' => 'Purchase Return Discount',
+                    'price' => 0,
+                    'qty' => 0,
+                    'debit' => 0,
+                    'credit' => (float)$pr->discount,
+                    'priority' => 42
+                ];
+            }
         }
 
         // 3. Payments (PV) - Debit
