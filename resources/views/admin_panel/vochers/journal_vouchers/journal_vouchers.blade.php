@@ -338,19 +338,15 @@ $(document).ready(function() {
         let cr = parseFloat($('#totalCredit').val().replace(/,/g, '')) || 0;
         if(Math.abs(dr - cr) > 0.01) { Swal.fire({ title: 'Unbalanced!', text: 'Debit and Credit must be equal.', icon: 'error' }); return; }
 
-        Swal.fire({ title: 'Post Voucher?', icon: 'question', showCancelButton: true }).then((res) => {
-            if(res.isConfirmed) {
-                $('#saveDraftBtn').trigger('click');
-                setTimeout(() => {
-                    let id = $('#receipt_id').val();
-                    if(id) {
-                        let f = $('<form>', {action: '{{ route("journal.vochers.post", ":id") }}'.replace(':id', id), method: 'POST'});
-                        f.append($('<input>', {type: 'hidden', name: '_token', value: '{{ csrf_token() }}'}));
-                        $('body').append(f); f.submit();
-                    }
-                }, 1000);
+        $('#saveDraftBtn').trigger('click');
+        setTimeout(() => {
+            let id = $('#receipt_id').val();
+            if(id) {
+                let f = $('<form>', {action: '{{ route("journal.vochers.post", ":id") }}'.replace(':id', id), method: 'POST'});
+                f.append($('<input>', {type: 'hidden', name: '_token', value: '{{ csrf_token() }}'}));
+                $('body').append(f); f.submit();
             }
-        });
+        }, 1000);
     });
 
     $('#deleteBtn').click(function() {

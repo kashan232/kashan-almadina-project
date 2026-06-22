@@ -912,7 +912,23 @@ class GeneralLedgerController extends Controller
             ->whereIn('status', ['posted', 'Posted'])
             ->where(DB::raw($evDateCol), '<', $date)->sum('total_amount');
 
-        $balance += ($sales + $pReturns + $payments + $vDebits + $jvDebits + $avDebits + $incomes) - ($purchases + $sReturns + $receipts + $vCredits + $jvCredits + $avCredits + $expenses);
+        // 10. Customer Claims
+        $claimDateCol = $this->getDateColumn('customer_claims');
+        $claims = \App\Models\CustomerClaim::where('party_id', $id)
+            ->whereIn('party_type', $typeArray)
+            ->where('status', 'Posted')
+            ->where(DB::raw($claimDateCol), '<', $date)->get();
+            
+        $claimCredits = 0;
+        $claimDebits = 0;
+        foreach ($claims as $claim) {
+            $claimCredits += (float)$claim->sales_price;
+            if ($claim->claim_type === 'credit_note') {
+                $claimDebits += (float)$claim->replacement_sales_price;
+            }
+        }
+
+        $balance += ($sales + $pReturns + $payments + $vDebits + $jvDebits + $avDebits + $incomes + $claimDebits) - ($purchases + $sReturns + $receipts + $vCredits + $jvCredits + $avCredits + $expenses + $claimCredits);
         
         return $balance;
     }
@@ -1816,6 +1832,42 @@ class GeneralLedgerController extends Controller
                         'priority' => 61
                     ];
                 }
+            }
+        }
+
+        // 8. Customer Claims
+        $claimDateCol = $this->getDateColumn('customer_claims');
+        $claims = \App\Models\CustomerClaim::with(['product', 'replacementProduct'])
+            ->where('party_id', $id)
+            ->whereIn('party_type', $typeArray)
+            ->where('status', 'Posted')
+            ->whereBetween(DB::raw($claimDateCol), [$start, $end])
+            ->get();
+            
+        foreach ($claims as $claim) {
+            if ((float)$claim->sales_price > 0) {
+                $transactions[] = [
+                    'created_at' => $claim->created_at,
+                    'id' => 'clm_' . $claim->id . '_f',
+                    'date' => $claim->entry_date ?: substr((string)$claim->created_at, 0, 10),
+                    'ref' => 'CLM',
+                    'inv' => preg_replace('/[^0-9]/', '', $claim->claim_no ?? '0'),
+                    'desc' => 'Claim Received: ' . ($claim->product->name ?? 'Battery') . ' (' . $claim->claim_no . ')',
+                    'price' => 0, 'qty' => 1, 'debit' => 0, 'credit' => (float)$claim->sales_price,
+                    'priority' => 30
+                ];
+            }
+            if ($claim->claim_type === 'credit_note' && (float)$claim->replacement_sales_price > 0) {
+                $transactions[] = [
+                    'created_at' => $claim->created_at,
+                    'id' => 'clm_' . $claim->id . '_r',
+                    'date' => $claim->entry_date ?: substr((string)$claim->created_at, 0, 10),
+                    'ref' => 'CLM',
+                    'inv' => preg_replace('/[^0-9]/', '', $claim->claim_no ?? '0'),
+                    'desc' => 'Claim Replacement: ' . ($claim->replacementProduct->name ?? 'Battery') . ' (' . $claim->claim_no . ')',
+                    'price' => 0, 'qty' => 1, 'debit' => (float)$claim->replacement_sales_price, 'credit' => 0,
+                    'priority' => 31
+                ];
             }
         }
 

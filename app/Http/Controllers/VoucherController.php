@@ -2028,13 +2028,15 @@ class VoucherController extends Controller
                 }
             }
 
-            $totalDr = (float)$request->total_debit;
-            $totalCr = (float)$request->total_credit;
+            $totalDr = (float)str_replace(',', '', $request->total_debit);
+            $totalCr = (float)str_replace(',', '', $request->total_credit);
             if (abs($totalDr - $totalCr) > 0.01) {
                 return response()->json(['success' => false, 'message' => 'Total Debit must equal Total Credit.'], 422);
             }
 
-            $data = $request->only(['entry_date', 'reference_no', 'remarks', 'total_debit', 'total_credit']);
+            $data = $request->only(['entry_date', 'reference_no', 'remarks']);
+            $data['total_debit'] = $totalDr;
+            $data['total_credit'] = $totalCr;
             
             // Handle Narrations
             $narrationIds = [];
@@ -2050,8 +2052,13 @@ class VoucherController extends Controller
             $data['narration_id'] = json_encode($narrationIds);
             $data['party_type'] = json_encode($request->party_type);
             $data['party_id'] = json_encode($request->party_id);
-            $data['debit'] = json_encode($request->debit);
-            $data['credit'] = json_encode($request->credit);
+            
+            // Strip commas from row debits and credits
+            $debits = array_map(function($val) { return (float)str_replace(',', '', $val); }, $request->debit ?? []);
+            $credits = array_map(function($val) { return (float)str_replace(',', '', $val); }, $request->credit ?? []);
+            
+            $data['debit'] = json_encode($debits);
+            $data['credit'] = json_encode($credits);
             $data['dr_cr'] = json_encode([]); // No longer needed but stored for structure
 
             if ($request->id) {
@@ -2068,6 +2075,7 @@ class VoucherController extends Controller
 
             return response()->json(['success' => true, 'id' => $voucher->id, 'jvid' => $voucher->jvid]);
         } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('JV Save Error: ' . $e->getMessage() . ' Trace: ' . $e->getTraceAsString());
             return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
         }
     }
@@ -2183,7 +2191,14 @@ class VoucherController extends Controller
 
                 // Set first row as header display
                 if ($idx === 0) {
-                    $v->type_label = ucfirst($type);
+                    if (is_numeric($type)) {
+                        $accHead = DB::table('account_heads')->where('id', $type)->first();
+                        $v->type_label = $accHead->name ?? 'Account';
+                    } elseif (in_array($type, ['walkin', 'walking'])) {
+                        $v->type_label = 'Walk-in';
+                    } else {
+                        $v->type_label = ucfirst($type);
+                    }
                     $v->party_name = $pName;
                 }
 
