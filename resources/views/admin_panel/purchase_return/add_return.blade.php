@@ -140,41 +140,53 @@
 
                         <!-- Items Table -->
                         <div class="table-responsive">
-                            <table class="table table-bordered table-sm text-center align-middle">
-                                <thead class="table-dark">
+                            <table class="table table-bordered table-sm text-center align-middle" style="table-layout: fixed; min-width: 1000px;">
+                                <thead class="table-light">
                                     <tr>
-                                        <th style="width: 100px;">Item ID</th>
-                                        <th style="width: 250px;">Product</th>
-                                        <th>Retail Price</th>
-                                        <th>Disc (%)</th>
-                                        <th>Disc Amt</th>
-                                        <th class="invoice-only">Orig Qty</th>
-                                        <th><span class="invoice-only">Return </span>Qty</th>
-                                        <th>Sales Price</th>
-                                        <th>Amount</th>
-                                        <th>X</th>
+                                      <th style="width:80px;">Item ID</th>
+                                      <th style="width:160px;">Product</th>
+                                      <th style="width:120px;">Brand</th>
+                                      <th style="width:100px;" class="text-end">Price</th>
+                                      <th style="width:100px;" class="text-end">Retail Price</th>
+                                      <th style="width:180px;">Disc</th>
+                                      <th class="invoice-only text-center" style="width:80px;">Orig Qty</th>
+                                      <th style="width:80px;" class="text-center">Qty</th>
+                                      <th style="width:100px;" class="text-end">Rate</th>
+                                      <th style="width:110px;" class="text-end">Total</th>
+                                      <th style="width:40px;" class="text-center">&times;</th>
                                     </tr>
                                 </thead>
                                 <tbody id="purchaseItems">
                                     @if(isset($returnData))
                                         @foreach($returnData->items as $item)
+                                            @php 
+                                                $discAmt = $item->qty > 0 ? ($item->item_discount / $item->qty) : 0;
+                                                $rate = $item->price - $discAmt; 
+                                            @endphp
                                             <tr>
                                                 <td>
-                                                    <input type="text" class="form-control form-control-sm item-id-input" value="{{ $item->product_id }}">
+                                                    <input type="text" class="form-control form-control-sm item-id-input text-center" value="{{ $item->product_id }}">
                                                 </td>
                                                 <td>
                                                     <select name="product_id[]" class="form-control form-control-sm product-select" style="width: 100%;">
                                                         <option value="{{ $item->product_id }}" selected>{{ $item->product->name }}</option>
                                                     </select>
                                                 </td>
-                                                <td><input type="number" step="0.01" name="retail_price[]" class="form-control form-control-sm retail_price text-end bg-light" value="{{ $item->retail_price }}" readonly></td>
-                                                <td><input type="number" step="0.01" name="discount_percent[]" class="form-control form-control-sm discount_percent text-center" value="{{ $item->discount_percent }}"></td>
-                                                <td><input type="number" step="0.01" name="item_disc_amount[]" class="form-control form-control-sm disc_amount text-end bg-light" value="{{ $item->qty > 0 ? ($item->item_discount / $item->qty) : 0 }}" readonly></td>
-                                                <td class="invoice-only"><input type="text" class="form-control form-control-sm bg-light text-center" value="{{ $item->qty }}" readonly></td>
-                                                <td><input type="number" name="qty[]" class="form-control form-control-sm quantity text-center" value="{{ $item->qty }}" min="0"></td>
+                                                <td><input type="text" name="brand[]" class="form-control form-control-sm brand-name input-readonly" readonly value="{{ $item->product->brand ?? '' }}"></td>
                                                 <td><input type="number" step="0.01" name="price[]" class="form-control form-control-sm price text-end" value="{{ $item->price }}"></td>
-                                                <td><input type="text" name="line_total[]" class="form-control form-control-sm row-total text-end bg-white fw-bold" readonly value="0"></td>
-                                                <td><button type="button" class="btn btn-sm btn-danger remove-row"><i class="fa fa-times"></i></button></td>
+                                                <td><input type="number" step="0.01" name="retail_price[]" class="form-control form-control-sm retail_price text-end" value="{{ $item->retail_price }}"></td>
+                                                <td>
+                                                    <div class="input-group input-group-sm">
+                                                        <input type="number" step="0.01" min="0" name="discount_percent[]" class="form-control form-control-sm discount_percent text-end" value="{{ $item->discount_percent }}">
+                                                        <span class="input-group-text px-1" style="font-size: 0.7rem;">%</span>
+                                                        <input type="text" name="item_disc_amount[]" class="form-control form-control-sm disc_amount text-end input-readonly" value="{{ number_format($discAmt, 2, '.', '') }}" readonly>
+                                                    </div>
+                                                </td>
+                                                <td class="invoice-only"><input type="text" class="form-control form-control-sm text-center input-readonly" value="{{ $item->qty }}" readonly></td>
+                                                <td><input type="number" name="qty[]" class="form-control form-control-sm quantity text-center" value="{{ $item->qty }}" min="0"></td>
+                                                <td><input type="number" step="0.01" name="rate[]" class="form-control form-control-sm rate text-end input-readonly" value="{{ number_format($rate, 2, '.', '') }}" readonly></td>
+                                                <td><input type="text" name="line_total[]" class="form-control form-control-sm row-total text-end fw-bold input-readonly" readonly value="{{ $item->line_total }}"></td>
+                                                <td class="text-center"><button type="button" class="btn btn-xs btn-outline-danger remove-row" title="Delete">&times;</button></td>
                                             </tr>
                                         @endforeach
                                     @else
@@ -621,7 +633,8 @@ $(document).ready(function() {
                         id: item.id,
                         text: item.name,
                         price: item.purchase_net_amount,
-                        retail: item.purchase_retail_price
+                        retail: item.purchase_retail_price,
+                        brand: item.brand || (item.brand_relation ? item.brand_relation.name : '') || ''
                     }))
                 }),
                 cache: true
@@ -661,9 +674,7 @@ $(document).ready(function() {
                 }
 
                 if (product) {
-                    const newOption = new Option(product.name, product.id, true, true);
-                    $select.empty().append(newOption).trigger('change');
-                    
+                    $select.empty().append(new Option(product.name, product.id, true, true));
                     $select.trigger({
                         type: 'select2:select',
                         params: {
@@ -671,7 +682,8 @@ $(document).ready(function() {
                                 id: product.id,
                                 text: product.name,
                                 price: product.purchase_net_amount,
-                                retail: product.purchase_retail_price
+                                retail: product.purchase_retail_price,
+                                brand: product.brand
                             }
                         }
                     });
@@ -689,6 +701,7 @@ $(document).ready(function() {
             const $currentRow = $(this).closest('tr');
 
             $currentRow.find('.item-id-input').val(data.id);
+            $currentRow.find('.brand-name').val(data.brand || '');
             $currentRow.find('.price').val(data.price).trigger('input');
             $currentRow.find('.retail_price').val(data.retail);
             $currentRow.find('.quantity').val(1).trigger('input');
@@ -710,25 +723,36 @@ $(document).ready(function() {
 
         const newRowHtml = `
             <tr>
-                <td><input type="text" class="form-control form-control-sm item-id-input" placeholder="ID"></td>
+                <td><input type="text" class="form-control form-control-sm item-id-input text-center" placeholder="ID"></td>
                 <td>
                     <select name="product_id[]" class="form-control form-control-sm product-select" style="width: 100%;">
                         <option value="" disabled selected>Select Product</option>
                     </select>
                 </td>
-                <td><input type="number" step="0.01" name="retail_price[]" class="form-control form-control-sm retail_price text-end bg-light" readonly></td>
-                <td><input type="number" step="0.01" name="discount_percent[]" class="form-control form-control-sm discount_percent text-center"></td>
-                <td><input type="number" step="0.01" name="item_disc_amount[]" class="form-control form-control-sm disc_amount text-end bg-light" readonly></td>
-                <td class="invoice-only"><input type="text" class="form-control form-control-sm bg-light text-center" value="-" readonly></td>
-                <td><input type="number" name="qty[]" class="form-control form-control-sm quantity text-center" value="1" min="0"></td>
+                <td><input type="text" name="brand[]" class="form-control form-control-sm brand-name input-readonly" readonly></td>
                 <td><input type="number" step="0.01" name="price[]" class="form-control form-control-sm price text-end"></td>
-                <td><input type="text" name="line_total[]" class="form-control form-control-sm row-total text-end bg-white" readonly value="0"></td>
-                <td><button type="button" class="btn btn-sm btn-danger remove-row"><i class="fa fa-times"></i></button></td>
+                <td><input type="number" step="0.01" name="retail_price[]" class="form-control form-control-sm retail_price text-end"></td>
+                <td>
+                    <div class="input-group input-group-sm">
+                        <input type="number" step="0.01" min="0" name="discount_percent[]" class="form-control form-control-sm discount_percent text-end" placeholder="%">
+                        <span class="input-group-text px-1" style="font-size: 0.7rem;">%</span>
+                        <input type="text" name="item_disc_amount[]" class="form-control form-control-sm disc_amount text-end input-readonly" readonly placeholder="Amt">
+                    </div>
+                </td>
+                <td class="invoice-only"><input type="text" class="form-control form-control-sm text-center input-readonly" value="-" readonly></td>
+                <td><input type="number" name="qty[]" class="form-control form-control-sm quantity text-center" value="1" min="0"></td>
+                <td><input type="number" step="0.01" name="rate[]" class="form-control form-control-sm rate text-end input-readonly" readonly></td>
+                <td><input type="text" name="line_total[]" class="form-control form-control-sm row-total text-end fw-bold input-readonly" readonly value="0"></td>
+                <td class="text-center"><button type="button" class="btn btn-xs btn-outline-danger remove-row" title="Delete">&times;</button></td>
             </tr>`;
         
         const $row = $(newRowHtml);
         if ($('input[name="return_mode"]:checked').val() === 'manual') {
             $row.find('.invoice-only').hide();
+            $row.find('.manual-only').show();
+        } else {
+            $row.find('.invoice-only').show();
+            $row.find('.manual-only').hide();
         }
         $('#purchaseItems').append($row);
         initProductSelect($row);
@@ -779,22 +803,37 @@ $(document).ready(function() {
         let html = `
         <tr>
             <td>
-                <input type="text" class="form-control form-control-sm bg-light" value="${item.product_id}" readonly>
+                <input type="text" class="form-control form-control-sm text-center input-readonly" value="${item.product_id}" readonly>
             </td>
             <td>
                 <input type="text" class="form-control form-control-sm bg-white" value="${item.product_name}" readonly title="${item.product_name}">
                 <input type="hidden" name="product_id[]" value="${item.product_id}">
             </td>
-            <td><input type="number" step="0.01" name="retail_price[]" class="form-control form-control-sm retail_price text-end bg-light" value="${item.retail_price}" readonly></td>
-            <td><input type="number" step="0.01" name="discount_percent[]" class="form-control form-control-sm discount_percent text-center" value="${item.discount_percent}"></td>
-            <td><input type="number" step="0.01" name="item_disc_amount[]" class="form-control form-control-sm disc_amount text-end bg-light" value="${discAmt}" readonly></td>
-            <td class="invoice-only"><input type="text" class="form-control form-control-sm bg-light text-center" value="${item.qty}" readonly></td>
+            <td><input type="text" name="brand[]" class="form-control form-control-sm brand-name input-readonly" readonly value="${item.brand || ''}"></td>
+            <td><input type="number" step="0.01" name="price[]" class="form-control form-control-sm price text-end input-readonly" readonly value="${item.price}"></td>
+            <td><input type="number" step="0.01" name="retail_price[]" class="form-control form-control-sm retail_price text-end input-readonly" value="${item.retail_price}" readonly></td>
+            <td>
+                <div class="input-group input-group-sm">
+                    <input type="number" step="0.01" min="0" name="discount_percent[]" class="form-control form-control-sm discount_percent text-end" value="${item.discount_percent}">
+                    <span class="input-group-text px-1" style="font-size: 0.7rem;">%</span>
+                    <input type="text" name="item_disc_amount[]" class="form-control form-control-sm disc_amount text-end input-readonly" value="${discAmt}" readonly>
+                </div>
+            </td>
+            <td class="invoice-only"><input type="text" class="form-control form-control-sm text-center input-readonly" value="${item.qty}" readonly></td>
             <td><input type="number" name="qty[]" class="form-control form-control-sm quantity text-center" value="${item.qty}" max="${item.qty}" min="0"></td>
-            <td><input type="number" step="0.01" name="price[]" class="form-control form-control-sm price text-end" value="${item.price}"></td>
-            <td><input type="text" name="line_total[]" class="form-control form-control-sm row-total text-end bg-white" readonly value="0"></td>
-            <td><button type="button" class="btn btn-sm btn-danger remove-row"><i class="fa fa-times"></i></button></td>
+            <td><input type="number" step="0.01" name="rate[]" class="form-control form-control-sm rate text-end input-readonly" readonly></td>
+            <td><input type="text" name="line_total[]" class="form-control form-control-sm row-total text-end fw-bold input-readonly" readonly value="0"></td>
+            <td class="text-center"><button type="button" class="btn btn-xs btn-outline-danger remove-row" title="Delete">&times;</button></td>
         </tr>`;
-        $('#purchaseItems').append(html);
+        const $row = $(html);
+        if ($('input[name="return_mode"]:checked').val() === 'manual') {
+            $row.find('.invoice-only').hide();
+            $row.find('.manual-only').show();
+        } else {
+            $row.find('.invoice-only').show();
+            $row.find('.manual-only').hide();
+        }
+        $('#purchaseItems').append($row);
         recalcRow($('#purchaseItems tr:last'));
     }
 
@@ -818,11 +857,10 @@ $(document).ready(function() {
         let discBase = (retail > 0) ? retail : price;
         let perUnitDisc = (discBase * discPercent) / 100;
         
-        let totalDisc = perUnitDisc * qty;
-        let grossAmount = price * qty;
-        let netAmount = grossAmount - totalDisc;
+        let rate = price - perUnitDisc;
+        let netAmount = rate * qty;
 
-        // Total = Price * Qty - Discount
+        $row.find('.rate').val(rate.toFixed(2));
         $row.find('.row-total').val(netAmount.toFixed(2));
         $row.find('.disc_amount').val(perUnitDisc.toFixed(2));
     }
@@ -851,6 +889,15 @@ $(document).ready(function() {
         $('#subtotal').val(subtotal.toFixed(2));
         $('#overallDiscount').val(0);
         $('#netAmount').val(net.toFixed(2));
+    }
+
+    // Ensure correct column visibility based on current mode
+    if ($('input[name="return_mode"]:checked').val() === 'manual') {
+        $('.invoice-only').hide();
+        $('.manual-only').show();
+    } else {
+        $('.invoice-only').show();
+        $('.manual-only').hide();
     }
 
     // Initialize existing rows

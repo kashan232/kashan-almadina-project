@@ -603,7 +603,7 @@
                         </select>
                       </td>
                       <td style="width: 80px;"><input type="text" class="form-control form-control-sm stock text-center input-readonly" name="stock[]" value="{{ $stock }}" readonly></td>
-                      <td style="width: 100px;"><input type="text" class="form-control form-control-sm text-end sales-price input-readonly" name="sales-price[]" value="{{ $sPrice }}" readonly></td>
+                      <td style="width: 100px;"><input type="number" step="0.01" class="form-control form-control-sm text-end sales-price" name="sales-price[]" value="{{ $sPrice }}"></td>
                       <td style="width: 70px;"><input type="number" step="any" class="form-control form-control-sm text-center sales-qty" name="sales-qty[]" value="{{ $qty }}"></td>
                       <td style="width: 100px;"><input type="text" class="form-control form-control-sm text-end retail-price input-readonly" name="retail-price[]" value="{{ $rPrice }}" readonly></td>
                       <td style="width:165px;">
@@ -659,7 +659,7 @@
                         </select>
                       </td>
                       <td style="width: 80px;"><input type="text" class="form-control form-control-sm stock text-center input-readonly" name="stock[]" value="{{ $stock }}" readonly></td>
-                      <td style="width: 100px;"><input type="text" class="form-control form-control-sm text-end sales-price input-readonly" name="sales-price[]" value="{{ $sPrice }}" readonly></td>
+                      <td style="width: 100px;"><input type="number" step="0.01" class="form-control form-control-sm text-end sales-price" name="sales-price[]" value="{{ $sPrice }}"></td>
                       <td style="width: 70px;"><input type="number" step="any" class="form-control form-control-sm text-center sales-qty" name="sales-qty[]" value="{{ $qty }}"></td>
                       <td style="width: 100px;"><input type="text" class="form-control form-control-sm text-end retail-price input-readonly" name="retail-price[]" value="{{ $rPrice }}" readonly></td>
                       <td style="width:165px;">
@@ -1106,7 +1106,7 @@
         </select>
       </td>
       <td style="width: 80px;"><input type="text" class="form-control form-control-sm stock text-center input-readonly" name="stock[]" readonly></td>
-      <td style="width: 100px;"><input type="text" class="form-control form-control-sm text-end sales-price input-readonly" name="sales-price[]" value="0" readonly></td>
+      <td style="width: 100px;"><input type="number" step="0.01" class="form-control form-control-sm text-end sales-price" name="sales-price[]" value="0"></td>
       <td style="width: 70px;"><input type="number" step="any" class="form-control form-control-sm text-center sales-qty" name="sales-qty[]" value=""></td>
       <td style="width: 100px;"><input type="text" class="form-control form-control-sm text-end retail-price input-readonly" name="retail-price[]" value="0" readonly></td>
       <td style="width: 165px;">

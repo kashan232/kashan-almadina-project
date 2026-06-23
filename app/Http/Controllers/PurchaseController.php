@@ -528,8 +528,14 @@ class PurchaseController extends Controller
                 
                 $typeKey = ucfirst(strtolower($request['vendor_type']));
 
+                if ($purchase->status === 'Posted') {
+                    // Reverse the previous posting before updating
+                    $this->reversePosting($purchase);
+                }
+
                 // Update purchase header
                 $purchase->update([
+                    'status'           => 'Unposted',
                     'warehouse_id'     => $request['warehouse_id'],
                     'vendor_id'        => $request['vendor_id'],
                     'purchasable_type' => $typeMap[$typeKey] ?? null,
@@ -854,6 +860,84 @@ class PurchaseController extends Controller
         // 6. Inward Update if exists
         if ($purchase->inward_id) {
             InwardGatepass::where('id', $purchase->inward_id)->update(['status' => 'linked']);
+        }
+    }
+
+    private function reversePosting(Purchase $purchase)
+    {
+        // 1. Reverse Stock
+        foreach ($purchase->items as $item) {
+            $productId = $item->product_id;
+            $qty = (float)($item->qty ?? 0);
+            
+            if ($purchase->warehouse_id == 0) {
+                $product = Product::find($productId);
+                if ($product) {
+                    $product->stock = ($product->stock ?? 0) - $qty;
+                    $product->save();
+                }
+            } else {
+                $stock = \App\Models\WarehouseStock::where('warehouse_id', $purchase->warehouse_id)
+                    ->where('product_id', $productId)->first();
+                if ($stock) {
+                    $stock->quantity = ($stock->quantity ?? 0) - $qty;
+                    $stock->save();
+                }
+            }
+        }
+
+        // 2. Reverse Ledger Impact
+        $impact = (float)($purchase->net_amount ?? 0);
+        $type = strtolower(class_basename($purchase->purchasable_type));
+        $party_id = $purchase->purchasable_id;
+
+        $ledgerModel = null;
+        $partyCol = '';
+        if ($type === 'vendor') {
+            $ledgerModel = \App\Models\VendorLedger::class;
+            $partyCol = 'vendor_id';
+        } elseif ($type === 'customer') {
+            $ledgerModel = \App\Models\CustomerLedger::class;
+            $partyCol = 'customer_id';
+        } elseif ($type === 'subcustomer') {
+            $ledgerModel = \App\Models\SubCustomerLedger::class;
+            $partyCol = 'sub_customer_id';
+        }
+
+        if ($ledgerModel) {
+            $ledger = $ledgerModel::where($partyCol, $party_id)->first();
+            if ($ledger) {
+                $ledger->update([
+                    'closing_balance'  => $ledger->closing_balance - $impact,
+                ]);
+            }
+        }
+
+        // 3. Reverse WHT Account Impact
+        if ($purchase->wht > 0 && $purchase->wht_account_id) {
+            $whtAccount = Account::find($purchase->wht_account_id);
+            if ($whtAccount) {
+                $whtAccount->opening_balance = ($whtAccount->opening_balance ?? 0) - $purchase->wht;
+                $whtAccount->save();
+            }
+        }
+
+        // 4. Reverse Account Allocations Impact
+        foreach ($purchase->accountAllocations as $allocation) {
+            $account = $allocation->account;
+            if ($account) {
+                $account->opening_balance = ($account->opening_balance ?? 0) + $allocation->amount; 
+                $account->save();
+            }
+        }
+
+        // 5. Delete Journal Vouchers
+        JournalVoucher::where('jvid', 'PJ-WHT-' . $purchase->invoice_no)->delete();
+        JournalVoucher::where('jvid', 'PJ-ALLOC-' . $purchase->invoice_no)->delete();
+
+        // 6. Reverse Inward Status if exists
+        if ($purchase->inward_id) {
+            InwardGatepass::where('id', $purchase->inward_id)->update(['status' => 'pending']);
         }
     }
 }

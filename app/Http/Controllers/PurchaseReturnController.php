@@ -53,7 +53,7 @@ class PurchaseReturnController extends Controller
     public function getPurchaseDetails($invoice)
     {
         try {
-            $purchase = Purchase::with(['items.product.latestPrice', 'purchasable', 'warehouse'])
+            $purchase = Purchase::with(['items.product.latestPrice', 'items.product.brandRelation', 'purchasable', 'warehouse'])
                 ->where('invoice_no', $invoice)
                 ->first();
 
@@ -75,6 +75,7 @@ class PurchaseReturnController extends Controller
                     'id' => $item->id,
                     'product_id' => $item->product_id,
                     'product_name' => $product->name ?? 'N/A',
+                    'brand' => $product->brandRelation->name ?? '',
                     'price' => $item->price,
                     'qty' => $item->qty,
                     'item_discount' => $item->item_discount,

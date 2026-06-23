@@ -624,8 +624,15 @@
                     </button>
                 @endif
 
-                <button type="button" id="postBtn" class="btn btn-sm btn-primary rounded-pill px-4 shadow-sm">
+                <button type="button" id="postBtn" class="btn btn-sm btn-primary rounded-pill px-4 shadow-sm" style="{{ (isset($purchase) && $purchase->status == 'Posted') ? 'display: none;' : '' }}">
                     <i class="fa fa-send me-1"></i> {{ isset($purchase) ? 'Update & Post' : 'Save & Post' }} <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+&#8629;</kbd>
+                </button>
+
+                <button type="button" id="editInvoiceBtn" 
+                    class="btn btn-sm btn-warning rounded-pill px-4 shadow-sm text-dark" 
+                    style="{{ (isset($purchase) && $purchase->status == 'Posted') ? '' : 'display: none;' }}">
+                    <i class="fa fa-edit me-1"></i> Edit 
+                    <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+E</kbd>
                 </button>
 
                 <a href="{{ route('add_purchase') }}" id="newInvoiceBtn" 
