@@ -478,12 +478,16 @@ class SaleController extends Controller
 
                 $totalQty += $qty;
 
+                $inputSalesPrice = (float) ($salesPrices[$i] ?? 0);
+                $productDefaultPrice = \App\Models\Product::find($productId)->latestPrice->sale_net_amount ?? 0;
+                $salesPriceToSave = $inputSalesPrice > 0 ? $inputSalesPrice : $productDefaultPrice;
+
                 ProductBookingItem::create([
                     'booking_id' => $booking->id,
                     'warehouse_id' => $warehouse_id,
                     'product_id' => $productId,
                     'stock' => (float) ($stocks[$i] ?? 0),
-                    'sales_price' => (float) ($salesPrices[$i] ?? 0),
+                    'sales_price' => $salesPriceToSave,
                     'sales_qty' => $qty,
                     'retail_price' => (float) ($retailPrices[$i] ?? 0),
                     'sales_rate' => (float) ($salesRates[$i] ?? 0),
@@ -608,13 +612,16 @@ class SaleController extends Controller
                         ]);
                     }
 
+                    $productDefaultPrice = \App\Models\Product::find($it->product_id)->latestPrice->sale_net_amount ?? 0;
+                    $salesPriceToSave = $salesPrice > 0 ? $salesPrice : $productDefaultPrice;
+
                     SaleItem::create([
                         'sale_id' => $sale->id,
                         'warehouse_id' => $it->warehouse_id,
                         'product_id' => $it->product_id,
                         'stock' => (float) data_get($it, 'stock', 0),
                         'price_level' => (float) data_get($it, 'price_level', 0),
-                        'sales_price' => $salesPrice,
+                        'sales_price' => $salesPriceToSave,
                         'sales_qty' => $salesQty,
                         'retail_price' => $retail,
                         'sales_rate' => (float) data_get($it, 'sales_rate', 0),

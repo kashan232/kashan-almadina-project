@@ -67,13 +67,14 @@ class SaleReturnController extends Controller
             $items = $sale->items->map(function($item) {
                 $product = $item->product;
                 $pPrice = $product->latestPrice; 
+                $fallbackPrice = $pPrice ? $pPrice->sale_net_amount : ($product->prices()->latest('start_date')->first()->sale_net_amount ?? 0);
                 
                 return [
                     'id' => $item->id,
                     'product_id' => $item->product_id,
                     'product_name' => $product->name ?? 'N/A',
-                    'sales_price' => (float)$item->sales_price > 0 ? $item->sales_price : ($product->latestPrice->sale_net_amount ?? 0),
-                    'price' => (float)$item->sales_price > 0 ? $item->sales_price : ($product->latestPrice->sale_net_amount ?? 0),
+                    'sales_price' => (float)$item->sales_price > 0 ? $item->sales_price : $fallbackPrice,
+                    'price' => (float)$item->sales_price > 0 ? $item->sales_price : $fallbackPrice,
                     'purchase_price' => $product->latestPrice->purchase_net_amount ?? 0,
                     'qty' => $item->sales_qty,
                     'item_discount' => $item->discount_amount,
