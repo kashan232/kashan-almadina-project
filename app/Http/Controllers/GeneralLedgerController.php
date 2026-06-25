@@ -1064,24 +1064,16 @@ class GeneralLedgerController extends Controller
                 })
                 ->whereIn('status', ['posted', 'Posted'])->whereBetween(DB::raw($ivDateCol), [$start, $end])->get();
             foreach($ivs as $iv) {
-                if ($iv->account_id == $id) {
-                    $transactions[] = [
-                        'created_at' => $iv->created_at,
-                        'id' => $iv->id . '_h',
-                        'date' => $iv->entry_date ?: $iv->created_at,
-                        'ref' => 'IV',
-                        'inv' => $iv->ivid,
-                        'desc' => $iv->remarks ?? 'Income Voucher (Deposit)',
-                        'price' => 0, 'qty' => 0, 'debit' => 0, 'credit' => (float)$iv->total_amount,
-                        'priority' => 60
-                    ];
-                }
                 $pIds = json_decode($iv->party_id, true) ?? [];
                 $amounts = json_decode($iv->amount, true) ?? [];
                 $types = json_decode($iv->party_type, true) ?? [];
                 $narrIds = json_decode($iv->narration_id, true) ?? [];
-                foreach($pIds as $idx => $pid) {
-                    if ($pid == $id && is_numeric($types[$idx] ?? '')) {
+
+                if ($iv->account_id == $id) {
+                    foreach($pIds as $idx => $pid) {
+                        $rowAmount = (float)($amounts[$idx] ?? 0);
+                        if ($rowAmount <= 0) continue;
+
                         $rowNarr = '';
                         if (isset($narrIds[$idx])) {
                             if (is_numeric($narrIds[$idx])) {
@@ -1090,7 +1082,57 @@ class GeneralLedgerController extends Controller
                                 $rowNarr = $narrIds[$idx];
                             }
                         }
-                        $desc = $rowNarr ?: ($iv->remarks ?? 'Income Voucher (Source)');
+
+                        $partyName = '';
+                        $pType = strtolower($types[$idx] ?? '');
+                        if (is_numeric($pType) || $pType === 'expense') {
+                            $partyName = DB::table('accounts')->where('id', $pid)->value('title');
+                        } elseif ($pType === 'vendor') {
+                            $partyName = DB::table('vendors')->where('id', $pid)->value('name');
+                        } elseif (in_array($pType, ['customer', 'walkin', 'subcustomer'])) {
+                            $partyName = DB::table('customers')->where('id', $pid)->value('customer_name');
+                        }
+
+                        $baseDesc = $rowNarr ?: ($iv->remarks ?? 'Income Voucher (Deposit)');
+                        $desc = $partyName ? $baseDesc . ' ; ' . $partyName : $baseDesc;
+
+                        $transactions[] = [
+                            'created_at' => $iv->created_at,
+                            'id' => $iv->id . '_h_' . $idx,
+                            'date' => $iv->entry_date ?: $iv->created_at,
+                            'ref' => 'IV',
+                            'inv' => $iv->ivid,
+                            'desc' => $desc,
+                            'price' => 0, 'qty' => 0, 'debit' => $rowAmount, 'credit' => 0,
+                            'priority' => 60
+                        ];
+                    }
+                }
+                
+                foreach($pIds as $idx => $pid) {
+                    $pType = strtolower($types[$idx] ?? '');
+                    if ($pid == $id && (is_numeric($pType) || $pType === 'expense')) {
+                        $rowNarr = '';
+                        if (isset($narrIds[$idx])) {
+                            if (is_numeric($narrIds[$idx])) {
+                                $rowNarr = DB::table('narrations')->where('id', $narrIds[$idx])->value('narration');
+                            } else {
+                                $rowNarr = $narrIds[$idx];
+                            }
+                        }
+                        
+                        $hType = strtolower($iv->account_head ?? '');
+                        $depositAccName = '';
+                        if ($hType === 'vendor') {
+                            $depositAccName = DB::table('vendors')->where('id', $iv->account_id)->value('name');
+                        } elseif (in_array($hType, ['customer', 'walkin', 'subcustomer'])) {
+                            $depositAccName = DB::table('customers')->where('id', $iv->account_id)->value('customer_name');
+                        } else {
+                            $depositAccName = DB::table('accounts')->where('id', $iv->account_id)->value('title');
+                        }
+                        $baseDesc = $rowNarr ?: ($iv->remarks ?? 'Income Voucher (Source)');
+                        $desc = $depositAccName ? $baseDesc . ' ; ' . $depositAccName : $baseDesc;
+                        
                         $transactions[] = [
                             'created_at' => $iv->created_at,
                             'id' => $iv->id . '_' . $idx,
@@ -1098,7 +1140,7 @@ class GeneralLedgerController extends Controller
                             'ref' => 'IV',
                             'inv' => $iv->ivid,
                             'desc' => $desc,
-                            'price' => 0, 'qty' => 0, 'debit' => (float)($amounts[$idx] ?? 0), 'credit' => 0,
+                            'price' => 0, 'qty' => 0, 'debit' => 0, 'credit' => (float)($amounts[$idx] ?? 0),
                             'priority' => 60
                         ];
                     }
@@ -1122,7 +1164,7 @@ class GeneralLedgerController extends Controller
                         'ref' => 'EV',
                         'inv' => $ev->evid,
                         'desc' => $ev->remarks ?? 'Expense Voucher (Expense Head)',
-                        'price' => 0, 'qty' => 0, 'debit' => (float)$ev->total_amount, 'credit' => 0,
+                        'price' => 0, 'qty' => 0, 'debit' => 0, 'credit' => (float)$ev->total_amount,
                         'priority' => 60
                     ];
                 }
@@ -1139,7 +1181,19 @@ class GeneralLedgerController extends Controller
                                 $rowNarr = $narrIds[$idx];
                             }
                         }
-                        $desc = $rowNarr ?: ($ev->remarks ?? 'Expense Voucher (Source)');
+                        
+                        $partyName = '';
+                        if (is_numeric($ev->type ?? '')) {
+                            $partyName = DB::table('accounts')->where('id', $ev->party_id)->value('title');
+                        } elseif ($ev->type === 'vendor') {
+                            $partyName = DB::table('vendors')->where('id', $ev->party_id)->value('name');
+                        } elseif ($ev->type === 'customer' || $ev->type === 'walkin' || $ev->type === 'subcustomer') {
+                            $partyName = DB::table('customers')->where('id', $ev->party_id)->value('customer_name');
+                        }
+
+                        $baseDesc = $rowNarr ?: ($ev->remarks ?? 'Expense Voucher (Source)');
+                        $desc = $partyName ? $baseDesc . ' ; ' . $partyName : $baseDesc;
+
                         $transactions[] = [
                             'created_at' => $ev->created_at,
                             'id' => $ev->id . '_' . $idx,
@@ -1147,7 +1201,7 @@ class GeneralLedgerController extends Controller
                             'ref' => 'EV',
                             'inv' => $ev->evid,
                             'desc' => $desc,
-                            'price' => 0, 'qty' => 0, 'debit' => 0, 'credit' => (float)($amounts[$idx] ?? 0),
+                            'price' => 0, 'qty' => 0, 'debit' => (float)($amounts[$idx] ?? 0), 'credit' => 0,
                             'priority' => 60
                         ];
                     }
@@ -1435,7 +1489,7 @@ class GeneralLedgerController extends Controller
                 if (!empty($ev->remarks)) $descParts[] = $ev->remarks;
                 
                 $baseDesc = !empty($descParts) ? implode(' ; ', $descParts) : 'Expense Voucher';
-                $desc = $accName ? $baseDesc . ' (Expense Account: ' . $accName . ')' : $baseDesc;
+                $desc = $accName ? $baseDesc . ' ; ' . $accName : $baseDesc;
 
                 $transactions[] = [
                     'created_at' => $ev->created_at,
@@ -1784,9 +1838,13 @@ class GeneralLedgerController extends Controller
 
         // 7.1 Incomes (IV) - Debit
         $ivDateCol = $this->getDateColumn('income_vouchers');
-        $incomes = \App\Models\IncomeVoucher::where(function($q) use ($id) {
-                $q->whereJsonContains('party_id', (string)$id)
-                  ->orWhereJsonContains('party_id', (int)$id);
+        $incomes = \App\Models\IncomeVoucher::where(function($q) use ($id, $typeArray) {
+                $q->where(function($q2) use ($id, $typeArray) {
+                    $q2->where('account_id', $id)
+                       ->whereIn('account_head', $typeArray);
+                })
+                ->orWhereJsonContains('party_id', (string)$id)
+                ->orWhereJsonContains('party_id', (int)$id);
             })
             ->whereIn('status', ['posted', 'Posted'])->whereBetween(DB::raw($ivDateCol), [$start, $end])->get();
             
@@ -1795,6 +1853,47 @@ class GeneralLedgerController extends Controller
             $pIds = json_decode($iv->party_id, true) ?? [];
             $amounts = json_decode($iv->amount, true) ?? [];
             $narrIds = json_decode($iv->narration_id, true) ?? [];
+
+            $hType = strtolower($iv->account_head ?? '');
+            if ($iv->account_id == $id && in_array($hType, $typeArray)) {
+                foreach($pIds as $idx => $pid) {
+                    $rowAmount = (float)($amounts[$idx] ?? 0);
+                    if ($rowAmount <= 0) continue;
+
+                    $rowNarr = '';
+                    if (isset($narrIds[$idx])) {
+                        if (is_numeric($narrIds[$idx])) {
+                            $rowNarr = DB::table('narrations')->where('id', $narrIds[$idx])->value('narration');
+                        } else {
+                            $rowNarr = $narrIds[$idx];
+                        }
+                    }
+
+                    $partyName = '';
+                    $pType = strtolower($types[$idx] ?? '');
+                    if (is_numeric($pType) || $pType === 'expense') {
+                        $partyName = DB::table('accounts')->where('id', $pid)->value('title');
+                    } elseif ($pType === 'vendor') {
+                        $partyName = DB::table('vendors')->where('id', $pid)->value('name');
+                    } elseif (in_array($pType, ['customer', 'walkin', 'subcustomer'])) {
+                        $partyName = DB::table('customers')->where('id', $pid)->value('customer_name');
+                    }
+
+                    $baseDesc = $rowNarr ?: ($iv->remarks ?? 'Income Voucher (Deposit)');
+                    $desc = $partyName ? $baseDesc . ' ; ' . $partyName : $baseDesc;
+
+                    $transactions[] = [
+                        'created_at' => $iv->created_at,
+                        'id' => $iv->id . '_h_' . $idx,
+                        'date' => $iv->entry_date ?: $iv->created_at,
+                        'ref' => 'IV',
+                        'inv' => $iv->ivid,
+                        'desc' => $desc,
+                        'price' => 0, 'qty' => 0, 'debit' => $rowAmount, 'credit' => 0,
+                        'priority' => 60
+                    ];
+                }
+            }
 
             foreach ($pIds as $idx => $pid) {
                 if ($pid == $id && in_array($types[$idx] ?? '', $typeArray)) {
@@ -1810,14 +1909,22 @@ class GeneralLedgerController extends Controller
                         }
                     }
                     
-                    $depositAccName = DB::table('accounts')->where('id', $iv->account_id)->value('title');
+                    $hType = strtolower($iv->account_head ?? '');
+                    $depositAccName = '';
+                    if ($hType === 'vendor') {
+                        $depositAccName = DB::table('vendors')->where('id', $iv->account_id)->value('name');
+                    } elseif (in_array($hType, ['customer', 'walkin', 'subcustomer'])) {
+                        $depositAccName = DB::table('customers')->where('id', $iv->account_id)->value('customer_name');
+                    } else {
+                        $depositAccName = DB::table('accounts')->where('id', $iv->account_id)->value('title');
+                    }
                     
                     $descParts = [];
                     if ($narrText) $descParts[] = $narrText;
                     if (!empty($iv->remarks)) $descParts[] = $iv->remarks;
                     
                     $baseDesc = !empty($descParts) ? implode(' ; ', $descParts) : 'Income Voucher';
-                    $desc = $depositAccName ? $baseDesc . ' (Deposit To: ' . $depositAccName . ')' : $baseDesc;
+                    $desc = $depositAccName ? $baseDesc . ' ; ' . $depositAccName : $baseDesc;
 
                     $transactions[] = [
                         'created_at' => $iv->created_at,
@@ -1827,9 +1934,9 @@ class GeneralLedgerController extends Controller
                         'inv' => $iv->ivid,
                         'desc' => $desc,
                         'price' => 0, 'qty' => 0, 
-                        'debit' => $rowAmount,
-                        'credit' => 0,
-                        'priority' => 61
+                        'debit' => 0,
+                        'credit' => $rowAmount,
+                        'priority' => 60
                     ];
                 }
             }

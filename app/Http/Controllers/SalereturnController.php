@@ -161,7 +161,7 @@ class SaleReturnController extends Controller
                     $qty = $request->qty[$index];
                     if ($qty <= 0) continue;
 
-                    $price = $request->price[$index];
+                    $price = $request->sales_price[$index];
                     $retail = $request->retail_price[$index] ?? 0;
                     $disc_percent = $request->discount_percent[$index] ?? 0;
                     $disc_amount = ($request->item_disc_amount[$index] ?? 0) * $qty;
@@ -271,7 +271,7 @@ class SaleReturnController extends Controller
                     $qty = $request->qty[$index];
                     if ($qty <= 0) continue;
 
-                    $price = $request->price[$index];
+                    $price = $request->sales_price[$index];
                     $retail = $request->retail_price[$index] ?? 0;
                     $disc_percent = $request->discount_percent[$index] ?? 0;
                     $disc_amount = ($request->item_disc_amount[$index] ?? 0) * $qty;

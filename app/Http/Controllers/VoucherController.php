@@ -1134,30 +1134,22 @@ class VoucherController extends Controller
             // Header Side (Source of payment) -> MINUS
             if ($voucher->type === 'vendor') {
                 $ledger = VendorLedger::where('vendor_id', $voucher->party_id)->latest()->first();
-                if ($ledger) {
-                    $ledger->previous_balance = $ledger->closing_balance;
-                    $ledger->closing_balance -= $amount;
-                    $ledger->save();
-                } else {
-                    VendorLedger::create([
-                        'vendor_id' => $voucher->party_id, 'admin_or_user_id' => auth()->id(),
-                        'date' => now(), 'description' => "Expense Voucher #$voucher->evid",
-                        'opening_balance' => 0, 'debit' => 0, 'credit' => $amount,
-                        'previous_balance' => 0, 'closing_balance' => -$amount
-                    ]);
-                }
-            } elseif ($voucher->type === 'customer') {
+                $prev = $ledger ? $ledger->closing_balance : 0;
+                VendorLedger::create([
+                    'vendor_id' => $voucher->party_id, 'admin_or_user_id' => auth()->id(),
+                    'date' => now(), 'description' => "Expense Voucher #$voucher->evid",
+                    'debit' => 0, 'credit' => $amount,
+                    'previous_balance' => $prev, 'closing_balance' => $prev - $amount
+                ]);
+            } elseif ($voucher->type === 'customer' || $voucher->type === 'walkin') {
                 $ledger = CustomerLedger::where('customer_id', $voucher->party_id)->latest()->first();
-                if ($ledger) {
-                    $ledger->previous_balance = $ledger->closing_balance;
-                    $ledger->closing_balance -= $amount;
-                    $ledger->save();
-                } else {
-                    CustomerLedger::create([
-                        'customer_id' => $voucher->party_id, 'admin_or_user_id' => auth()->id(),
-                        'previous_balance' => 0, 'opening_balance' => 0, 'closing_balance' => -$amount
-                    ]);
-                }
+                $prev = $ledger ? $ledger->closing_balance : 0;
+                CustomerLedger::create([
+                    'customer_id' => $voucher->party_id, 'admin_or_user_id' => auth()->id(),
+                    'date' => now(), 'description' => "Expense Voucher #$voucher->evid",
+                    'debit' => 0, 'credit' => $amount,
+                    'previous_balance' => $prev, 'closing_balance' => $prev - $amount
+                ]);
             } else {
                 $account = Account::find($voucher->party_id);
                 if ($account) {
@@ -1201,11 +1193,9 @@ class VoucherController extends Controller
 
             // Revert Header
             if ($voucher->type === 'vendor') {
-                $ledger = VendorLedger::where('vendor_id', $voucher->party_id)->latest()->first();
-                if ($ledger) { $ledger->closing_balance += $amount; $ledger->save(); }
-            } elseif ($voucher->type === 'customer') {
-                $ledger = CustomerLedger::where('customer_id', $voucher->party_id)->latest()->first();
-                if ($ledger) { $ledger->closing_balance += $amount; $ledger->save(); }
+                \App\Models\VendorLedger::where('vendor_id', $voucher->party_id)->where('description', "Expense Voucher #$voucher->evid")->delete();
+            } elseif ($voucher->type === 'customer' || $voucher->type === 'walkin') {
+                \App\Models\CustomerLedger::where('customer_id', $voucher->party_id)->where('description', "Expense Voucher #$voucher->evid")->delete();
             } else {
                 $account = Account::find($voucher->party_id);
                 if ($account) { $account->opening_balance += $amount; $account->save(); }
@@ -1460,10 +1450,39 @@ class VoucherController extends Controller
             $ivid = $voucher->ivid;
 
             // 🏦 1. Update Header Account (Destination) -> DEBIT (Increase)
-            $headerAcc = \App\Models\Account::find($voucher->account_id);
-            if ($headerAcc) {
-                $headerAcc->opening_balance += $totalAmount;
-                $headerAcc->save();
+            $hType = strtolower($voucher->account_head ?? '');
+            if ($hType === 'vendor') {
+                $ledger = \App\Models\VendorLedger::where('vendor_id', $voucher->account_id)->latest()->first();
+                $prev = $ledger ? $ledger->closing_balance : 0;
+                \App\Models\VendorLedger::create([
+                    'vendor_id'        => $voucher->account_id,
+                    'admin_or_user_id' => auth()->id(),
+                    'date'             => now(),
+                    'description'      => "Income Voucher #$ivid",
+                    'debit'            => $totalAmount,
+                    'credit'           => 0,
+                    'previous_balance' => $prev,
+                    'closing_balance'  => $prev + $totalAmount,
+                ]);
+            } elseif (in_array($hType, ['customer', 'walkin', 'subcustomer'])) {
+                $ledger = \App\Models\CustomerLedger::where('customer_id', $voucher->account_id)->latest()->first();
+                $prev = $ledger ? $ledger->closing_balance : 0;
+                \App\Models\CustomerLedger::create([
+                    'customer_id'      => $voucher->account_id,
+                    'admin_or_user_id' => auth()->id(),
+                    'date'             => now(),
+                    'description'      => "Income Voucher #$ivid",
+                    'debit'            => $totalAmount,
+                    'credit'           => 0,
+                    'previous_balance' => $prev,
+                    'closing_balance'  => $prev + $totalAmount,
+                ]);
+            } else {
+                $headerAcc = \App\Models\Account::find($voucher->account_id);
+                if ($headerAcc) {
+                    $headerAcc->opening_balance += $totalAmount;
+                    $headerAcc->save();
+                }
             }
 
             // 🧩 2. Update Row Sources (Parties) -> CREDIT (Impact depends on type)
@@ -1534,10 +1553,17 @@ class VoucherController extends Controller
             $ivid = $voucher->ivid;
 
             // 🏦 1. Reverse Header Account Destination -> DEBIT (Decrease)
-            $headerAcc = \App\Models\Account::find($voucher->account_id);
-            if ($headerAcc) {
-                $headerAcc->opening_balance -= $totalAmount;
-                $headerAcc->save();
+            $hType = strtolower($voucher->account_head ?? '');
+            if ($hType === 'vendor') {
+                \App\Models\VendorLedger::where('vendor_id', $voucher->account_id)->where('description', "Income Voucher #$ivid")->delete();
+            } elseif (in_array($hType, ['customer', 'walkin', 'subcustomer'])) {
+                \App\Models\CustomerLedger::where('customer_id', $voucher->account_id)->where('description', "Income Voucher #$ivid")->delete();
+            } else {
+                $headerAcc = \App\Models\Account::find($voucher->account_id);
+                if ($headerAcc) {
+                    $headerAcc->opening_balance -= $totalAmount;
+                    $headerAcc->save();
+                }
             }
 
             // 🧩 2. Reverse Row Sources (Delete created ledgers & reverse COA accounts)
