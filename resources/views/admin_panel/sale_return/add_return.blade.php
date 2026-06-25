@@ -803,7 +803,7 @@ $(document).ready(function() {
                 <input type="text" class="form-control form-control-sm bg-white" value="${item.product_name}" readonly title="${item.product_name}">
                 <input type="hidden" name="product_id[]" value="${item.product_id}">
             </td>
-            <td><input type="number" step="0.01" name="sales_price[]" class="form-control form-control-sm sales_price text-end" value="${item.sales_price || 0}"></td>
+            <td><input type="number" step="0.01" name="sales_price[]" class="form-control form-control-sm sales_price text-end" value="${item.sales_price || item.price || 0}"></td>
             <td><input type="number" step="0.01" name="retail_price[]" class="form-control form-control-sm retail_price text-end" value="${item.retail_price}"></td>
             <td><input type="number" step="0.01" name="discount_percent[]" class="form-control form-control-sm discount_percent text-center" value="${item.discount_percent}"></td>
             <td><input type="number" step="0.01" name="item_disc_amount[]" class="form-control form-control-sm disc_amount text-end" value="${discAmt}"></td>
