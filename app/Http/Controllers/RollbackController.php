@@ -391,7 +391,7 @@ class RollbackController extends Controller
 
     private function rollbackCustomerClaim($invoiceNo)
     {
-        $claim = $this->findRecord(CustomerClaim::class, 'invoice_no', $invoiceNo);
+        $claim = $this->findRecord(CustomerClaim::class, 'claim_no', $invoiceNo);
         if (!$claim) throw new \Exception("Claim $invoiceNo not found.");
         $claim->update(['status' => 'Unposted']);
         return back()->with('success', "Customer Claim #$invoiceNo set to Unposted.");

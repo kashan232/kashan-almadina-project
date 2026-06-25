@@ -252,7 +252,16 @@ $(document).ready(function() {
                 url: "{{ url('search-products') }}",
                 dataType: 'json', delay: 250,
                 data: (params) => ({ q: params.term }),
-                processResults: (data) => ({ results: data })
+                processResults: function(data) {
+                    return {
+                        results: data.map(function(item) {
+                            return {
+                                id: item.id,
+                                text: item.name || item.text
+                            };
+                        })
+                    };
+                }
             }
         }).on('select2:select', function(e) {
             var data = e.params.data;
@@ -309,16 +318,26 @@ $(document).ready(function() {
             var $row = $(this).closest('tr');
             var id = $(this).val();
             if (!id) return;
-            $.get("{{ url('products/get-by-id') }}/" + id, (res) => {
-                if (res && res.success) {
-                    var prodName = res.name || res.text || 'N/A';
-                    $row.find('.product-select').html(`<option value="${res.id}" selected>${prodName}</option>`).trigger('change');
-                    $row.find('.quantity-input').focus().select();
-                    autoAddRow($row);
-                } else {
-                    alert('Product not found!');
-                }
-            });
+              $row.find('.item-id-display').addClass('loading-indicator');
+              $.get("{{ url('search-products') }}", { q: id }, (res) => {
+                  $row.find('.item-id-display').removeClass('loading-indicator');
+                  if (res && res.length > 0) {
+                      let item = res.find(i => String(i.id) === String(id)) || res.find(i => i.name.toLowerCase() === String(id).toLowerCase());
+                      if (!item && res.length === 1) item = res[0];
+                      
+                      if (item) {
+                          var prodName = item.name || item.text || 'N/A';
+                          $row.find('.product-select').html(`<option value="${item.id}" selected>${prodName}</option>`).trigger('change');
+                          $row.find('.item-id-display').val(item.id);
+                          $row.find('.quantity-input').focus().select();
+                          autoAddRow($row);
+                      } else {
+                          alert('Product not found!');
+                      }
+                  } else {
+                      alert('Product not found!');
+                  }
+              });
         }
     });
 

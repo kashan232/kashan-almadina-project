@@ -142,12 +142,19 @@
                                 </button>
                                 <div class="column-picker-menu shadow" id="columnPickerMenu">
                                     <div class="p-2 border-bottom fw-bold small text-muted">Show/Hide Columns</div>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="1" checked> Claim#</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="2" checked> Date</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="3" checked> Party</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="4" checked> Product</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="5" checked> Claim Income</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="6" checked> Status</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="1" checked> ID</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="2" checked> Type</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="3" checked> Inv#</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="4" checked> Date</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="5" checked> Party</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="6" checked> Product</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="7" checked> Claim Type</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="8" checked> Sales Price</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="9" checked> Replacement</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="10" checked> Fault</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="11" checked> Remarks</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="12" checked> Claim Income</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="13" checked> Status</label>
                                 </div>
                             </div>
                         </div>
@@ -157,10 +164,17 @@
                                 <table id="claimsTable" class="table table-sm table-striped table-bordered w-100 mb-0">
                                     <thead>
                                         <tr>
-                                            <th>Claim#</th>
+                                            <th>ID</th>
+                                            <th>Type</th>
+                                            <th>Inv#</th>
                                             <th>Date</th>
                                             <th>Party</th>
                                             <th>Product</th>
+                                            <th>Claim Type</th>
+                                            <th class="text-end">Sales Price</th>
+                                            <th>Replacement</th>
+                                            <th>Fault</th>
+                                            <th>Remarks</th>
                                             <th class="text-end">Claim Income</th>
                                             <th class="text-center">Status</th>
                                             <th class="text-center" style="min-width: 120px;">Action</th>
@@ -169,7 +183,9 @@
                                     <tbody>
                                         @foreach ($claims as $claim)
                                         <tr>
-                                            <td class="fw-bold text-primary">{{ $claim->claim_no }}</td>
+                                            <td>{{ $claim->id }}</td>
+                                            <td class="text-center small">CLM</td>
+                                            <td class="fw-bold text-success">{{ preg_replace('/[^0-9]/', '', $claim->claim_no) ?: '-' }}</td>
                                             <td class="small">{{ \Carbon\Carbon::parse($claim->claim_date)->format('d-M-Y') }}</td>
                                             <td>
                                                 <span class="fw-semibold text-dark small">
@@ -180,13 +196,13 @@
                                                     @endif
                                                 </span>
                                             </td>
-                                            <td>
-                                                <div class="item-detail-row">
-                                                    {{ $claim->product->name ?? 'N/A' }}
-                                                    <span class="text-muted small ms-1">({{ $claim->claim_type }})</span>
-                                                </div>
-                                            </td>
-                                            <td class="text-end fw-bold">{{ number_format($claim->claim_income, 0) }}</td>
+                                            <td class="small text-dark">{{ $claim->product->name ?? 'N/A' }}</td>
+                                            <td class="small text-muted">{{ $claim->claim_type }}</td>
+                                            <td class="text-end fw-bold">{{ number_format((float)$claim->sales_price, 0) }}</td>
+                                            <td class="small text-dark">{{ $claim->replacementProduct->name ?? '-' }}</td>
+                                            <td class="small text-muted">{{ Str::limit($claim->fault_found, 15) }}</td>
+                                            <td class="small text-muted">{{ Str::limit($claim->remarks, 15) }}</td>
+                                            <td class="text-end fw-bold">{{ number_format((float)$claim->claim_income, 0) }}</td>
                                             <td class="text-center">
                                                 @if($claim->status === 'Posted')
                                                     <span class="badge bg-success rounded-pill px-3">Posted</span>

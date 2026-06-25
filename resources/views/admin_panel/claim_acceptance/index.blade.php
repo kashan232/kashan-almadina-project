@@ -165,7 +165,7 @@
                                         @foreach($vouchers as $v)
                                         <tr>
                                             <td class="text-muted small">CLA</td>
-                                            <td class="fw-bold text-primary">{{ (int) preg_replace('/[^0-9]/', '', substr($v->voucher_no, strlen('ACC-'))) }}</td>
+                                            <td class="fw-bold text-success">{{ preg_replace('/[^0-9]/', '', $v->voucher_no) ?: '-' }}</td>
                                             <td class="small">{{ \Carbon\Carbon::parse($v->date)->format('d-M-Y') }}</td>
                                             <td class="fw-bold text-dark">{{ $v->btr_no ?? '-' }}</td>
                                             <td>
