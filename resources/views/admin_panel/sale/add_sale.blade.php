@@ -1523,7 +1523,7 @@
         $.get('{{ route("customers.filter") }}', {
         type
       }, function(list) {
-        $sel.empty().append('<option disabled value="">Select ' + (type === 'vendor' ? 'vendor' : (type === 'walking' ? 'walk-in customer' : 'customer')) + '</option>');
+        $sel.empty().append('<option value="" selected>Select ' + (type === 'vendor' ? 'vendor' : (type === 'walking' ? 'walk-in customer' : 'customer')) + '</option>');
         
         const oldVal = String($sel.attr('data-old-val') || '');
         let selectedValue = null;

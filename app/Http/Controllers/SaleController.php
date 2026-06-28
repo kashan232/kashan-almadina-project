@@ -953,14 +953,9 @@ class SaleController extends Controller
                 return response()->json(['error' => 'Vendor not found'], 404);
             }
 
-            $glController = new \App\Http\Controllers\GeneralLedgerController();
-            $openingBalance = $glController->calculateOpeningBalance('vendor', $id, '1970-01-01');
-            $transactions = $glController->fetchTransactions('vendor', $id, '1970-01-01', '2099-12-31');
-            $previous_balance = $openingBalance;
-            foreach ($transactions as $trx) {
-                $previous_balance += ($trx['debit'] - $trx['credit']);
-            }
-            
+            // Get closing balance directly from VendorLedger as shown on Vendor index
+            $previous_balance = $v->latestLedger ? (float) $v->latestLedger->closing_balance : (float) $v->opening_balance;
+
             // Revert sign for Vendors (GL displays Credits as positive for Vendor)
             // Wait, GL Preview displays: $runningBalance >= 0 ? 'DR.' : 'CR.'
             // So if $previous_balance is -420485, it's CR. 420485.
@@ -980,13 +975,10 @@ class SaleController extends Controller
             return response()->json(['error' => 'Customer not found'], 404);
         }
 
-        $glController = new \App\Http\Controllers\GeneralLedgerController();
-        $openingBalance = $glController->calculateOpeningBalance($type, $id, '1970-01-01');
-        $transactions = $glController->fetchTransactions($type, $id, '1970-01-01', '2099-12-31');
-        $previous_balance = $openingBalance;
-        foreach ($transactions as $trx) {
-            $previous_balance += ($trx['debit'] - $trx['credit']);
-        }
+        // Get closing balance directly from CustomerLedger as shown on Customer index
+        $previous_balance = $c->customerLedger ? (float) $c->customerLedger->closing_balance : (float) $c->opening_balance;
+
+
 
         return response()->json([
             'filer_type' => $c->filer_type,
