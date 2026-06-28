@@ -21,7 +21,7 @@ class GroupIsolationScope implements Scope
         $user = Auth::user();
 
         // If not logged in, or if user is an Admin, skip the scope
-        if (!$user || $user->roles->pluck('name')->contains('Admin')) {
+        if (!$user || $user->roles->pluck('name')->contains('Admin') || $user->usertype == 'admin') {
             return;
         }
 
