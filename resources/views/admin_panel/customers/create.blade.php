@@ -104,9 +104,10 @@
                             <div class="col-md-6">
                                 <label><strong>Assigned User Groups:</strong></label>
                                 @if($isAdmin)
+                                    @php $myGroupIds = Auth::user()->userGroups->pluck('id')->toArray(); @endphp
                                     <select name="user_group_ids[]" class="form-control select2" multiple>
                                         @foreach($userGroups as $group)
-                                            <option value="{{ $group->id }}">{{ $group->group_name }}</option>
+                                            <option value="{{ $group->id }}" {{ in_array($group->id, $myGroupIds) ? 'selected' : '' }}>{{ $group->group_name }}</option>
                                         @endforeach
                                     </select>
                                 @else
