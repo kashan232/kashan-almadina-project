@@ -101,7 +101,7 @@ class CustomerController extends Controller
         $zones = Zone::all();
         $SalesOfficer = SalesOfficer::all();
         $userGroups = UserGroup::all();
-        $latestId = 'CUST-' . str_pad(Customer::max('id') + 1, 1, STR_PAD_LEFT);
+        $latestId = 'CUST-' . str_pad(Customer::withoutGlobalScopes()->max('id') + 1, 1, STR_PAD_LEFT);
         $isAdmin = Auth::user()->roles->pluck('name')->contains('Admin') || Auth::user()->usertype == 'admin';
         return view('admin_panel.customers.create', compact('latestId', 'SalesOfficer', 'zones', 'userGroups', 'isAdmin'));
     }
@@ -155,7 +155,7 @@ class CustomerController extends Controller
         ]);
 
         $data['created_by'] = Auth::id();
-        $data['customer_id'] = 'CUST-' . str_pad(Customer::max('id') + 1, 1, STR_PAD_LEFT);
+        $data['customer_id'] = 'CUST-' . str_pad(Customer::withoutGlobalScopes()->max('id') + 1, 1, STR_PAD_LEFT);
 
         $customer = Customer::create($data);
 
