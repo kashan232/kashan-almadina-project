@@ -189,6 +189,16 @@ class RollbackController extends Controller
             $dv->delete();
         }
 
+        // Reverse JournalVoucher for Sale Discount
+        $discountJVs = \App\Models\JournalVoucher::where('jvid', 'SJ-DISC-' . $sale->invoice_no)->get();
+        foreach ($discountJVs as $jv) {
+            // Deduct from Account opening_balance
+            if ($sale->discount_account_id) {
+                $this->adjustAccount($sale->discount_account_id, $sale->discount_amount, 'subtract');
+            }
+            $jv->delete();
+        }
+
         // 4. Convert back to Booking (Draft)
         $bookingData = $sale->toArray();
         unset($bookingData['id']); 

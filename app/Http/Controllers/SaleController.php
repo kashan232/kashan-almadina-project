@@ -421,6 +421,8 @@ class SaleController extends Controller
             $booking->sub_total2     = $request->subTotal2 ?? 0;
             $booking->discount_percent = $request->discountPercent ?? 0;
             $booking->discount_amount  = $request->discountAmount ?? 0;
+            $booking->discount_head  = $request->discount_head;
+            $booking->discount_account_id = $request->discount_account_id;
             $booking->previous_balance = $request->previousBalance ?? 0;
             $booking->total_balance    = $request->totalBalance ?? 0;
             
@@ -686,6 +688,8 @@ class SaleController extends Controller
                 'sub_total2' => $booking->sub_total2,
                 'discount_percent' => $booking->discount_percent,
                 'discount_amount' => $booking->discount_amount,
+                'discount_head' => $booking->discount_head,
+                'discount_account_id' => $booking->discount_account_id,
                 'previous_balance' => $booking->previous_balance,
                 'total_balance' => $booking->total_balance,
                 'receipt1' => $booking->receipt1,
@@ -1180,8 +1184,28 @@ class SaleController extends Controller
             ]);
         }
 
-        // 3. Create Vouchers for documentation (Voucher table only)
-        if ($orderDiscount > 0) {
+        // 3. Create Vouchers for documentation
+        if ($orderDiscount > 0 && $sale->discount_account_id) {
+            $discountAccount = \App\Models\Account::find($sale->discount_account_id);
+            if ($discountAccount) {
+                // Sale Discount is an expense. Debit increases expense.
+                $discountAccount->opening_balance = ($discountAccount->opening_balance ?? 0) + $orderDiscount;
+                $discountAccount->save();
+
+                \App\Models\JournalVoucher::create([
+                    'jvid' => 'SJ-DISC-' . $invoiceNo,
+                    'entry_date' => $date,
+                    'status' => 'posted',
+                    'total_debit' => $orderDiscount,
+                    'total_credit' => $orderDiscount,
+                    'party_type' => json_encode([$pType, (string)$discountAccount->head_id]),
+                    'party_id' => json_encode([$partyId, $discountAccount->id]),
+                    'debit' => json_encode([0, $orderDiscount]), // Debit Discount Account
+                    'credit' => json_encode([$orderDiscount, 0]), // Credit Customer
+                    'remarks' => 'Discount on Sale: ' . $invoiceNo . ' ; ' . ($discountAccount->head->name ?? 'Head') . ' ; ' . ($discountAccount->title ?? 'Subhead'),
+                ]);
+            }
+        } elseif ($orderDiscount > 0) {
             Voucher::create([
                 'voucher_type'  => 'Discount voucher',
                 'date'          => $date,

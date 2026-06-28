@@ -1622,9 +1622,20 @@ class GeneralLedgerController extends Controller
 
             $ref = 'VO';
             $inv = $v->voucher_type;
+            $desc = $v->narration ?? $v->voucher_type;
             if (str_contains($v->narration ?? '', 'Discount on Sale:')) {
                 $ref = 'SJ';
                 $inv = trim(str_replace('Discount on Sale:', '', $v->narration));
+                
+                $sale = \App\Models\Sale::where('invoice_no', $inv)->first();
+                if ($sale && $sale->discount_account_id) {
+                    $acc = \App\Models\Account::with('head')->find($sale->discount_account_id);
+                    if ($acc) {
+                        $desc = 'Discount ; ' . ($acc->head->name ?? '') . ' ; ' . $acc->title;
+                    }
+                } else {
+                    $desc = 'Discount ; Sale';
+                }
             }
 
                 $transactions[] = [
@@ -1633,7 +1644,7 @@ class GeneralLedgerController extends Controller
                     'date' => $v->date ?: $v->created_at,
                     'ref' => $ref,
                     'inv' => $inv,
-                    'desc' => $v->narration ?? $v->voucher_type,
+                    'desc' => $desc,
                     'price' => 0, 'qty' => 0,
                     'debit' => ($v->type == 'Debit') ? (float)$v->amount : 0,
                     'credit' => ($v->type == 'Credit') ? (float)$v->amount : 0,
@@ -1685,8 +1696,21 @@ class GeneralLedgerController extends Controller
                     $descParts = [];
                     if ($narrText) $descParts[] = $narrText;
                     if (!empty($jv->remarks)) $descParts[] = $jv->remarks;
-                    
+
                     $desc = !empty($descParts) ? implode(' ; ', $descParts) : 'Journal Voucher';
+
+                    if (str_starts_with($jv->jvid, 'SJ-DISC-')) {
+                        $otherIdx = $idx == 0 ? 1 : 0;
+                        $accId = $pIds[$otherIdx] ?? null;
+                        if ($accId) {
+                            $acc = \App\Models\Account::with('head')->find($accId);
+                            if ($acc) {
+                                $desc = 'Discount ; ' . ($acc->head->name ?? '') . ' ; ' . $acc->title;
+                            }
+                        } else {
+                            $desc = 'Discount ; Sale';
+                        }
+                    }
 
                     $transactions[] = [
                         'created_at' => $jv->created_at,

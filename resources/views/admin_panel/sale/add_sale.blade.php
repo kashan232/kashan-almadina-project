@@ -847,6 +847,27 @@
               <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
                 <span class="text-muted small">Order Discount</span>
                 <div class="d-flex align-items-center gap-3">
+                  <div class="d-flex gap-1" style="width:230px;">
+                    <select id="discount_head" name="discount_head" class="form-select form-select-sm" style="width:100px;">
+                      <option value="">Head</option>
+                      @foreach($accountHeads as $head)
+                          <option value="{{ $head->id }}" {{ (isset($booking) && $booking->discount_head == $head->id) ? 'selected' : '' }}>
+                              {{ $head->name }}
+                          </option>
+                      @endforeach
+                    </select>
+                    <select name="discount_account_id" id="discount_account_id" class="form-select form-select-sm" style="flex-grow:1;">
+                      <option value="">Select Account</option>
+                      @if(isset($booking) && $booking->discount_account_id)
+                          @php
+                              $acc = \App\Models\Account::find($booking->discount_account_id);
+                          @endphp
+                          @if($acc)
+                              <option value="{{ $booking->discount_account_id }}" selected>{{ $acc->title }}</option>
+                          @endif
+                      @endif
+                    </select>
+                  </div>
                   <div class="d-flex align-items-center gap-1">
                     <input type="number" step="0.01" class="form-control form-control-sm text-end" 
                            id="orderDiscountValue" name="order_discount_value" 
@@ -2653,7 +2674,6 @@
     saveFormState();
   });
 
-  // Restore on page load
   $(function() {
     // Init existing Select2
     $('#salesTableBody tr').each(function() {
@@ -2665,6 +2685,35 @@
         addNewRow();
       }
     }
+  });
+
+  $(document).on('change', '#discount_head', function() {
+      var headId = $(this).val();
+      var $accSelect = $('#discount_account_id');
+
+      if (!headId) {
+          $accSelect.html('<option value="">Select Account</option>');
+          return;
+      }
+
+      $.ajax({
+          url: "{{ url('/get-accounts-by-head') }}/" + headId,
+          type: "GET",
+          success: function(res) {
+              var html = '<option value="">Select Account</option>';
+              if (res && res.length) {
+                  res.forEach(function(acc) {
+                      html += '<option value="' + acc.id + '">' + acc.title + '</option>';
+                  });
+              } else {
+                  html = '<option value="">No Accounts Found</option>';
+              }
+              $accSelect.html(html);
+          },
+          error: function(err) {
+              console.error('AJAX Error:', err.statusText);
+          }
+      });
   });
 
   // Full Grid Navigation (Arrows Up/Down/Left/Right)
