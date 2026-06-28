@@ -149,10 +149,8 @@
                             <label class="column-picker-item"><input type="checkbox" data-column="3" checked> Type</label>
                             <label class="column-picker-item"><input type="checkbox" data-column="4" checked> Name</label>
                             <label class="column-picker-item"><input type="checkbox" data-column="5" checked> Groups</label>
-                            @if($isAdmin)
-                                <label class="column-picker-item"><input type="checkbox" data-column="6" checked> Created By</label>
-                            @endif
-                            @php $shift = $isAdmin ? 0 : -1; @endphp
+                            <label class="column-picker-item"><input type="checkbox" data-column="6" checked> Created By</label>
+                            @php $shift = 0; @endphp
                             <label class="column-picker-item"><input type="checkbox" data-column="{{ 7 + $shift }}" checked> Mobile</label>
                             <label class="column-picker-item"><input type="checkbox" data-column="{{ 8 + $shift }}" checked> Zone</label>
                             <label class="column-picker-item"><input type="checkbox" data-column="{{ 9 + $shift }}" checked> Opening</label>
@@ -172,9 +170,7 @@
                                     <th>Type</th>
                                     <th>Name</th>
                                     <th>Groups</th>
-                                    @if($isAdmin)
-                                        <th>Created By</th>
-                                    @endif
+                                    <th>Created By</th>
                                     <th>Mobile</th>
                                     <th>Zone</th>
                                     <th class="text-end">Opening</th>
@@ -210,9 +206,7 @@
                                             <span class="text-muted small">-</span>
                                         @endif
                                     </td>
-                                    @if($isAdmin)
-                                        <td class="small">{{ $customer->creator->name ?? 'System' }}</td>
-                                    @endif
+                                    <td class="small">{{ $customer->creator->name ?? 'System' }}</td>
                                     <td class="small">{{ $customer->mobile }}</td>
                                     <td class="small">{{ $customer->zone }}</td>
                                     <td class="text-end text-success fw-bold">
