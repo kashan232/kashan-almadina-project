@@ -135,7 +135,6 @@ class CustomerController extends Controller
     public function store(Request $request)
     {
         $data = $request->validate([
-            'customer_id' => 'required|unique:customers',
             'customer_name' => 'nullable',
             'customer_name_ur' => 'nullable',
             'cnic' => 'nullable',
@@ -156,6 +155,7 @@ class CustomerController extends Controller
         ]);
 
         $data['created_by'] = Auth::id();
+        $data['customer_id'] = 'CUST-' . str_pad(Customer::max('id') + 1, 1, STR_PAD_LEFT);
 
         $customer = Customer::create($data);
 
