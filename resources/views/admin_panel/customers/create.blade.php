@@ -103,27 +103,18 @@
 
                             <div class="col-md-6">
                                 <label><strong>Assigned User Groups:</strong></label>
-                                @if($isAdmin)
-                                    @php $myGroupIds = Auth::user()->userGroups->pluck('id')->toArray(); @endphp
-                                    <select name="user_group_ids[]" class="form-control select2" multiple>
-                                        @foreach($userGroups as $group)
-                                            <option value="{{ $group->id }}" {{ in_array($group->id, $myGroupIds) ? 'selected' : '' }}>{{ $group->group_name }}</option>
+                                <div class="form-control bg-light" style="height: auto; min-height: 38px;">
+                                    @php $myGroups = Auth::user()->userGroups; @endphp
+                                    @if($myGroups->count() > 0)
+                                        @foreach($myGroups as $group)
+                                            <span class="badge bg-info text-dark">{{ $group->group_name }}</span>
+                                            <input type="hidden" name="user_group_ids[]" value="{{ $group->id }}">
                                         @endforeach
-                                    </select>
-                                @else
-                                    <div class="form-control bg-light" style="height: auto; min-height: 38px;">
-                                        @php $myGroups = Auth::user()->userGroups; @endphp
-                                        @if($myGroups->count() > 0)
-                                            @foreach($myGroups as $group)
-                                                <span class="badge bg-info text-dark">{{ $group->group_name }}</span>
-                                                <input type="hidden" name="user_group_ids[]" value="{{ $group->id }}">
-                                            @endforeach
-                                        @else
-                                            <span class="text-muted">No Groups Assigned to You</span>
-                                        @endif
-                                    </div>
-                                    <small class="text-muted">Your groups are automatically assigned to this customer.</small>
-                                @endif
+                                    @else
+                                        <span class="text-muted">No Groups Assigned to You</span>
+                                    @endif
+                                </div>
+                                <small class="text-muted">Your groups are automatically assigned to this customer.</small>
                             </div>
                         </div>
 
