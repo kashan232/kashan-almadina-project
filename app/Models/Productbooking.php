@@ -44,6 +44,8 @@ class Productbooking extends Model
         'is_sale_order',
         'entry_date',
         'entry_time',
+        'created_by',
+        'user_group_ids',
     ];
 
     // Relation to sale items

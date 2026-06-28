@@ -547,6 +547,8 @@ class SaleController extends Controller
                     'weight' => $booking->weight,
                     'entry_date' => $booking->entry_date,
                     'entry_time' => $booking->entry_time,
+                    'created_by' => $booking->created_by,
+                    'user_group_ids' => $booking->user_group_ids,
                 ]);
 
                 // If Sale Order, create a Stock Hold Voucher (Prevent Double)
@@ -697,6 +699,8 @@ class SaleController extends Controller
                 'weight' => $booking->weight,
                 'entry_date' => $booking->entry_date,
                 'entry_time' => $booking->entry_time,
+                'created_by' => $booking->created_by,
+                'user_group_ids' => $booking->user_group_ids,
             ]);
 
             // If Sale Order, create a Stock Hold Voucher (Prevent Double)

@@ -90,11 +90,11 @@ class ClaimCreditNoteController extends Controller
         $rules = [
             'date'              => 'required|date',
             'from_warehouse_id' => 'required',
-            'to_warehouse_id'   => 'required',
+            'to_warehouse_id'   => 'nullable',
             'party_type'        => 'required',
             'party_id'          => 'required',
             'product_id'        => 'required|array',
-            'quantity'          => 'required|array',
+            'qty'               => 'required|array',
         ];
 
         $validator = Validator::make($request->all(), $rules);
@@ -162,8 +162,12 @@ class ClaimCreditNoteController extends Controller
 
                 if ($status === 'Posted') {
                     // 1. Stock Adjustments
-                    $this->adjustStock($voucher->from_warehouse_id, $pid, -$qty);
-                    $this->adjustStock($voucher->to_warehouse_id, $pid, $qty);
+                    if ($voucher->from_warehouse_id !== null) {
+                        $this->adjustStock($voucher->from_warehouse_id, $pid, -$qty);
+                    }
+                    if ($voucher->to_warehouse_id !== null) {
+                        $this->adjustStock($voucher->to_warehouse_id, $pid, $qty);
+                    }
                 }
             }
 
@@ -196,8 +200,12 @@ class ClaimCreditNoteController extends Controller
             $voucher->update(['status' => 'Posted']);
             foreach ($voucher->items as $item) {
                 $item->update(['status' => 'Posted']);
-                $this->adjustStock($voucher->from_warehouse_id, $item->product_id, -$item->quantity);
-                $this->adjustStock($voucher->to_warehouse_id, $item->product_id, $item->quantity);
+                if ($voucher->from_warehouse_id !== null) {
+                    $this->adjustStock($voucher->from_warehouse_id, $item->product_id, -$item->quantity);
+                }
+                if ($voucher->to_warehouse_id !== null) {
+                    $this->adjustStock($voucher->to_warehouse_id, $item->product_id, $item->quantity);
+                }
             }
 
             $this->updateLedger($voucher);
@@ -237,35 +245,35 @@ class ClaimCreditNoteController extends Controller
         $amount = (float)$voucher->net_total;
         if ($amount <= 0) return;
 
-        $description = 'Claim Credit Note: ' . $voucher->voucher_no;
+        $description = 'CIR: ' . $voucher->voucher_no;
 
         if ($voucher->party_type == 'vendor') {
-            $ledger = VendorLedger::where('vendor_id', $voucher->party_id)->latest('id')->first();
+            $ledger = \App\Models\VendorLedger::where('vendor_id', $voucher->party_id)->latest('id')->first();
             $prevBal = $ledger ? $ledger->closing_balance : 0;
-            VendorLedger::create([
+            \App\Models\VendorLedger::create([
                 'vendor_id'        => $voucher->party_id,
                 'admin_or_user_id' => auth()->id(),
                 'date'             => $voucher->date,
                 'description'      => $description,
-                'debit'            => 0,
-                'credit'           => $amount,
+                'debit'            => $amount,
+                'credit'           => 0,
                 'previous_balance' => $prevBal,
-                'closing_balance'  => $prevBal - $amount,
-                'opening_balance'  => $ledger ? $ledger->opening_balance : ($prevBal - $amount),
+                'closing_balance'  => $prevBal + $amount,
+                'opening_balance'  => $ledger ? $ledger->opening_balance : ($prevBal + $amount),
             ]);
         } else {
-            $ledger = CustomerLedger::where('customer_id', $voucher->party_id)->latest('id')->first();
+            $ledger = \App\Models\CustomerLedger::where('customer_id', $voucher->party_id)->latest('id')->first();
             $prevBal = $ledger ? $ledger->closing_balance : 0;
-            CustomerLedger::create([
+            \App\Models\CustomerLedger::create([
                 'customer_id'      => $voucher->party_id,
                 'admin_or_user_id' => auth()->id(),
                 'date'             => $voucher->date,
                 'description'      => $description,
-                'debit'            => 0,
-                'credit'           => $amount,
+                'debit'            => $amount,
+                'credit'           => 0,
                 'previous_balance' => $prevBal,
-                'closing_balance'  => $prevBal - $amount,
-                'opening_balance'  => $ledger ? $ledger->opening_balance : ($prevBal - $amount),
+                'closing_balance'  => $prevBal + $amount,
+                'opening_balance'  => $ledger ? $ledger->opening_balance : ($prevBal + $amount),
             ]);
         }
     }

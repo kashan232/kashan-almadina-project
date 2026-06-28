@@ -164,8 +164,14 @@
                                     <tbody>
                                         @foreach($vouchers as $v)
                                         <tr>
-                                            <td class="text-muted small text-center">CLR</td>
-                                            <td class="fw-bold text-primary text-center">{{ (int) preg_replace('/[^0-9]/', '', substr($v->voucher_no, strlen('CIR-'))) }}</td>
+                                            <td class="text-muted small text-center fw-bold">{{ $v->doc_type == 'credit' ? 'CRN' : 'CLR' }}</td>
+                                            <td class="fw-bold text-primary text-center">
+                                                @if($v->doc_type == 'credit')
+                                                    {{ $v->voucher_no }}
+                                                @else
+                                                    {{ (int) preg_replace('/[^0-9]/', '', substr($v->voucher_no, strlen('CIR-'))) }}
+                                                @endif
+                                            </td>
                                             <td class="small">{{ \Carbon\Carbon::parse($v->date)->format('d-M-Y') }}</td>
                                             <td>
                                                 <small class="text-muted d-block" style="font-size:9px;">{{ ucfirst($v->party_type) }}</small>
@@ -189,19 +195,38 @@
                                             <td class="text-center">
                                                 <div class="d-flex gap-1 justify-content-center">
                                                     @if($v->status != 'Posted')
-                                                        <form action="{{ route('claim-item-receipt.post', $v->id) }}" method="POST" class="d-inline">
-                                                            @csrf
-                                                            <button type="submit" class="btn btn-primary btn-xs px-2 py-0" onclick="return confirm('Post this receipt?')" title="Post now" style="font-size: 10px;">
-                                                                <i class="fa fa-send"></i> Post
-                                                            </button>
-                                                        </form>
-                                                        <a href="{{ route('claim-item-receipt.edit', $v->id) }}" class="btn btn-outline-warning btn-xs px-1 py-0" title="Edit" style="height: 20px;">
-                                                            <i class="fa fa-edit text-dark"></i>
+                                                        @if($v->doc_type == 'credit')
+                                                            <form action="{{ route('claim-credit-note.post', $v->id) }}" method="POST" class="d-inline">
+                                                                @csrf
+                                                                <button type="submit" class="btn btn-primary btn-xs px-2 py-0" onclick="return confirm('Post this Credit Note?')" title="Post now" style="font-size: 10px;">
+                                                                    <i class="fa fa-send"></i> Post
+                                                                </button>
+                                                            </form>
+                                                            <a href="{{ route('claim-credit-note.edit', $v->id) }}" class="btn btn-outline-warning btn-xs px-1 py-0" title="Edit" style="height: 20px;">
+                                                                <i class="fa fa-edit text-dark"></i>
+                                                            </a>
+                                                        @else
+                                                            <form action="{{ route('claim-item-receipt.post', $v->id) }}" method="POST" class="d-inline">
+                                                                @csrf
+                                                                <button type="submit" class="btn btn-primary btn-xs px-2 py-0" onclick="return confirm('Post this receipt?')" title="Post now" style="font-size: 10px;">
+                                                                    <i class="fa fa-send"></i> Post
+                                                                </button>
+                                                            </form>
+                                                            <a href="{{ route('claim-item-receipt.edit', $v->id) }}" class="btn btn-outline-warning btn-xs px-1 py-0" title="Edit" style="height: 20px;">
+                                                                <i class="fa fa-edit text-dark"></i>
+                                                            </a>
+                                                        @endif
+                                                    @endif
+                                                    
+                                                    @if($v->doc_type == 'credit')
+                                                        <a href="{{ route('claim-credit-note.print', $v->id) }}" target="_blank" class="btn btn-outline-dark btn-xs px-1 py-0" title="Print" style="height: 20px;">
+                                                            <i class="fa fa-print"></i>
+                                                        </a>
+                                                    @else
+                                                        <a href="{{ route('claim-item-receipt.print', $v->id) }}" target="_blank" class="btn btn-outline-dark btn-xs px-1 py-0" title="Print" style="height: 20px;">
+                                                            <i class="fa fa-print"></i>
                                                         </a>
                                                     @endif
-                                                    <a href="{{ route('claim-item-receipt.print', $v->id) }}" target="_blank" class="btn btn-outline-dark btn-xs px-1 py-0" title="Print" style="height: 20px;">
-                                                        <i class="fa fa-print"></i>
-                                                    </a>
                                                 </div>
                                             </td>
                                         </tr>
@@ -235,7 +260,7 @@
             }
         });
 
-        const storageKey = 'claim_receipt_table_cols_v1';
+        const storageKey = 'claim_receipt_table_cols_v2';
         
         var dt = $('#receiptTable').DataTable({
             scrollX: true,

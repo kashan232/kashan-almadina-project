@@ -199,25 +199,32 @@
                                     </table>
                                 </div>
                             </div>
-                            <div class="card-footer bg-white py-3 text-end gap-2 d-flex justify-content-end">
-                                <a href="{{ route('claim-item-receipt.create') }}" id="receiptNewBtn" class="btn btn-sm btn-info rounded-pill px-4 shadow-sm fw-bold text-white" style="{{ isset($voucher) ? '' : 'display:none;' }}">
-                                    <i class="fa fa-plus me-1"></i> New <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+M</kbd>
-                                </a>
-                                <button type="button" id="receiptEditBtn" class="btn btn-sm btn-warning rounded-pill px-4 shadow-sm fw-bold" style="{{ (isset($voucher) && $voucher->status == 'Posted') ? '' : 'display:none;' }}">
-                                    <i class="fa fa-pencil me-1"></i> Edit <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+E</kbd>
-                                </button>
-                                <button type="button" id="receiptSaveDraftBtn" class="btn btn-sm btn-warning rounded-pill px-4 shadow-sm fw-bold">
-                                    <i class="fa fa-floppy-o me-1"></i> Save Draft <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+S</kbd>
-                                </button>
-                                <button type="button" id="receiptPreviewPrintBtn" class="btn btn-sm btn-dark rounded-pill px-4 shadow-sm fw-bold" style="{{ isset($voucher) ? '' : 'display:none;' }}">
-                                    <i class="fa fa-print me-1"></i> Print Preview <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+P</kbd>
-                                </button>
-                                <button type="button" id="receiptPostBtn" class="btn btn-sm btn-primary rounded-pill px-4 shadow-sm fw-bold" style="{{ (isset($voucher) && $voucher->status == 'Posted') ? 'display:none;' : '' }}">
-                                    <i class="fa fa-send me-1"></i> Save & Post <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+&#8629;</kbd>
-                                </button>
-                                <a href="{{ route('claim-item-receipt.index') }}" id="receiptCancelBtn" class="btn btn-sm btn-danger rounded-pill px-4 shadow-sm fw-bold text-white">
-                                    <i class="fa fa-times me-1"></i> Cancel <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Esc</kbd>
-                                </a>
+                            <div class="card-footer bg-white py-3">
+                                <div class="d-flex gap-2 justify-content-end">
+                                    <button type="button" id="receiptSaveDraftBtn" class="btn btn-sm btn-warning rounded-pill px-4 shadow-sm" style="{{ (isset($voucher) && $voucher->status == 'Posted') ? 'display:none;' : '' }}">
+                                        <i class="fa fa-floppy-o me-1"></i> Save Draft <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+S</kbd>
+                                    </button>
+
+                                    <button type="button" id="receiptPreviewPrintBtn" class="btn btn-sm btn-outline-dark rounded-pill px-4" style="{{ isset($voucher) ? '' : 'display:none;' }}">
+                                        <i class="fa fa-print me-1"></i> Print Preview <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+P</kbd>
+                                    </button>
+
+                                    <button type="button" id="receiptPostBtn" class="btn btn-sm btn-primary rounded-pill px-4 shadow-sm" style="{{ (isset($voucher) && $voucher->status == 'Posted') ? 'display:none;' : '' }}">
+                                        <i class="fa fa-send me-1"></i> Save & Post <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+&#8629;</kbd>
+                                    </button>
+
+                                    <button type="button" id="receiptEditBtn" class="btn btn-sm btn-warning rounded-pill px-4 shadow-sm" style="{{ (isset($voucher) && $voucher->status == 'Posted') ? '' : 'display:none;' }}">
+                                        <i class="fa fa-pencil me-1"></i> Edit <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+E</kbd>
+                                    </button>
+
+                                    <a href="{{ route('claim-item-receipt.create') }}" id="receiptNewBtn" class="btn btn-sm btn-info rounded-pill px-4 shadow-sm text-white" style="{{ isset($voucher) ? '' : 'display:none;' }}">
+                                        <i class="fa fa-plus me-1"></i> New <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+M</kbd>
+                                    </a>
+
+                                    <a href="{{ route('claim-item-receipt.index') }}" id="receiptCancelBtn" class="btn btn-sm btn-danger rounded-pill px-4 shadow-sm text-white">
+                                        <i class="fa fa-times me-1"></i> Cancel <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Esc</kbd>
+                                    </a>
+                                </div>
                             </div>
                         </div>
                     </form>
@@ -272,9 +279,9 @@
                                             @endforeach
                                         </select>
                                     </div>
-                                    <div class="col-md-2">
+                                    <div class="col-md-2 d-none">
                                         <label class="form-label small fw-bold text-success mb-1">Add To (+) Dr</label>
-                                        <select name="to_warehouse_id" id="credit_to_warehouse_id" class="form-select input-sm" required>
+                                        <select name="to_warehouse_id" id="credit_to_warehouse_id" class="form-select input-sm">
                                             <option value="">Select Target...</option>
                                             @if(auth()->user()->canAccessShop())
                                                 <option value="0">Shop Stock</option>
@@ -383,25 +390,32 @@
                         </div>
 
                         <div class="card shadow-sm mt-3 border-0 bg-transparent">
-                            <div class="card-body p-0 text-end gap-2 d-flex justify-content-end">
-                                <a href="{{ route('claim-item-receipt.create') }}?tab=credit" id="creditNewBtn" class="btn btn-sm btn-info rounded-pill px-4 shadow-sm fw-bold text-white" style="display:none;">
-                                    <i class="fa fa-plus me-1"></i> New <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+M</kbd>
-                                </a>
-                                <button type="button" id="creditEditBtn" class="btn btn-sm btn-warning rounded-pill px-4 shadow-sm fw-bold" style="display:none;">
-                                    <i class="fa fa-pencil me-1"></i> Edit <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+E</kbd>
-                                </button>
-                                <button type="button" id="creditSaveDraftBtn" class="btn btn-sm btn-warning rounded-pill px-4 shadow-sm fw-bold">
-                                    <i class="fa fa-floppy-o me-1"></i> Save Draft <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+S</kbd>
-                                </button>
-                                <button type="button" id="creditPreviewPrintBtn" class="btn btn-sm btn-dark rounded-pill px-4 shadow-sm fw-bold" style="display:none;">
-                                    <i class="fa fa-print me-1"></i> Print Preview <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+P</kbd>
-                                </button>
-                                <button type="button" id="creditPostBtn" class="btn btn-sm btn-primary rounded-pill px-4 shadow-sm fw-bold">
-                                    <i class="fa fa-send me-1"></i> Save & Post <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+&#8629;</kbd>
-                                </button>
-                                <a href="{{ route('claim-item-receipt.index') }}" id="creditCancelBtn" class="btn btn-sm btn-danger rounded-pill px-4 shadow-sm fw-bold text-white">
-                                    <i class="fa fa-times me-1"></i> Cancel <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Esc</kbd>
-                                </a>
+                            <div class="card-footer bg-white py-3 border rounded">
+                                <div class="d-flex gap-2 justify-content-end">
+                                    <button type="button" id="creditSaveDraftBtn" class="btn btn-sm btn-warning rounded-pill px-4 shadow-sm">
+                                        <i class="fa fa-floppy-o me-1"></i> Save Draft <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+S</kbd>
+                                    </button>
+
+                                    <button type="button" id="creditPreviewPrintBtn" class="btn btn-sm btn-outline-dark rounded-pill px-4" style="display:none;">
+                                        <i class="fa fa-print me-1"></i> Print Preview <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+P</kbd>
+                                    </button>
+
+                                    <button type="button" id="creditPostBtn" class="btn btn-sm btn-primary rounded-pill px-4 shadow-sm">
+                                        <i class="fa fa-send me-1"></i> Save & Post <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+&#8629;</kbd>
+                                    </button>
+
+                                    <button type="button" id="creditEditBtn" class="btn btn-sm btn-warning rounded-pill px-4 shadow-sm" style="display:none;">
+                                        <i class="fa fa-pencil me-1"></i> Edit <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+E</kbd>
+                                    </button>
+
+                                    <a href="{{ route('claim-item-receipt.create') }}?tab=credit" id="creditNewBtn" class="btn btn-sm btn-info rounded-pill px-4 shadow-sm text-white" style="display:none;">
+                                        <i class="fa fa-plus me-1"></i> New <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+M</kbd>
+                                    </a>
+
+                                    <a href="{{ route('claim-credit-note.index') }}" id="creditCancelBtn" class="btn btn-sm btn-danger rounded-pill px-4 shadow-sm text-white">
+                                        <i class="fa fa-times me-1"></i> Cancel <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Esc</kbd>
+                                    </a>
+                                </div>
                             </div>
                         </div>
                     </form>
@@ -498,14 +512,16 @@ $(document).ready(function() {
                     _savedReceiptId = res.id;
                     $('[name="id"]', '#receiptForm').val(res.id);
                     $('#receiptForm').addClass('form-locked');
-                    $('#receiptSaveDraftBtn, #receiptPostBtn').hide();
+                    $('#receiptSaveDraftBtn').hide();
                     $('#receiptPreviewPrintBtn, #receiptEditBtn, #receiptNewBtn').show();
                     $('#receiptIdBadge').text('ID: ' + res.id).show();
                     if(res.status === 'Posted') {
+                        $('#receiptPostBtn').hide();
                         $('#receiptStatusBadge').removeClass('bg-warning').addClass('bg-success text-white').html('<i class="fa fa-check"></i> Posted');
                         $('#receiptPostedWatermark').addClass('show');
                         showToast('Receipt Posted Successfully!');
                     } else {
+                        $('#receiptPostBtn').show();
                         $('#receiptStatusBadge').removeClass('bg-warning').addClass('bg-info text-white').html('<i class="fa fa-pencil"></i> Draft');
                         showToast('Receipt Draft Saved');
                     }
@@ -572,21 +588,32 @@ $(document).ready(function() {
             let row = $(this);
             let price = parseFloat(row.find('.price').val()) || 0;
             let qty = parseFloat(row.find('.quantity').val()) || 0;
-            let discPct = parseFloat(row.find('.discount_percent').val()) || 0;
-            let discAmt = parseFloat(row.find('.discount_amount').val()) || 0;
+            let $discPctInput = row.find('.discount_percent');
+            let $discAmtInput = row.find('.discount_amount');
+            let discPct = parseFloat($discPctInput.val());
+            let discAmt = parseFloat($discAmtInput.val()) || 0;
             let total_before_disc = price * qty;
             
-            // If percentage is entered, calculate amount.
-            if (discPct > 0) {
-                discAmt = (total_before_disc * discPct) / 100;
-                row.find('.discount_amount').val(discAmt.toFixed(2));
-            } else if (row.find('.discount_percent').val() === "") {
-                // If percentage is COMPLETELY cleared by user, reset amount to 0
-                discAmt = 0;
-                row.find('.discount_amount').val('');
+            if ($discPctInput.is(':focus')) {
+                if (isNaN(discPct) || discPct === 0 || $discPctInput.val() === '') {
+                    discAmt = 0;
+                    $discAmtInput.val('');
+                } else {
+                    discAmt = (total_before_disc * discPct) / 100;
+                    $discAmtInput.val(discAmt.toFixed(2));
+                }
+            } else if ($discAmtInput.is(':focus')) {
+                if (isNaN(discAmt) || discAmt === 0 || $discAmtInput.val() === '') {
+                    discAmt = 0;
+                }
+                $discPctInput.val('');
             } else {
-                // Use manual amount if percentage is 0 or not empty (but not >0)
-                discAmt = parseFloat(row.find('.discount_amount').val()) || 0;
+                if (!isNaN(discPct) && discPct > 0) {
+                    discAmt = (total_before_disc * discPct) / 100;
+                    $discAmtInput.val(discAmt.toFixed(2));
+                } else {
+                    discAmt = parseFloat($discAmtInput.val()) || 0;
+                }
             }
 
             let net_line_total = total_before_disc - discAmt;
@@ -622,14 +649,16 @@ $(document).ready(function() {
                     _savedCreditId = res.id;
                     $('[name="id"]', '#creditForm').val(res.id);
                     $('#creditForm').addClass('form-locked');
-                        $('#creditIdBadge').text('ID: ' + res.id).show();
-                        $('#creditSaveDraftBtn, #creditPostBtn').hide();
-                        $('#creditPreviewPrintBtn, #creditEditBtn, #creditNewBtn').show();
-                        if(res.status === 'Posted') {
+                    $('#creditSaveDraftBtn').hide();
+                    $('#creditPreviewPrintBtn, #creditEditBtn, #creditNewBtn').show();
+                    $('#creditIdBadge').text('ID: ' + res.id).show();
+                    if(res.status === 'Posted') {
+                        $('#creditPostBtn').hide();
                         $('#creditStatusBadge').removeClass('bg-warning').addClass('bg-success text-white').html('<i class="fa fa-check"></i> Posted');
                         $('#creditPostedWatermark').addClass('show');
                         showToast('Credit Note Posted Successfully!');
                     } else {
+                        $('#creditPostBtn').show();
                         $('#creditStatusBadge').removeClass('bg-warning').addClass('bg-info text-white').html('<i class="fa fa-pencil"></i> Draft');
                         showToast('Credit Note Draft Saved');
                     }
@@ -693,13 +722,23 @@ $(document).ready(function() {
         // Ctrl+L: List
         if(e.ctrlKey && (e.key === 'l' || e.key === 'L')) {
             e.preventDefault();
-            window.location.href = "{{ route('claim-item-receipt.index') }}";
+            if(activeTab === 'receipt-tab') window.location.href = "{{ route('claim-item-receipt.index') }}";
+            else window.location.href = "{{ route('claim-credit-note.index') }}";
         }
 
         // Esc: Cancel
         if(e.key === 'Escape') {
-            window.location.href = "{{ route('claim-item-receipt.index') }}";
+            if(activeTab === 'receipt-tab') window.location.href = "{{ route('claim-item-receipt.index') }}";
+            else window.location.href = "{{ route('claim-credit-note.index') }}";
         }
+    });
+
+    // Top List Button Behavior
+    $('#listBtn').on('click', function(e) {
+        e.preventDefault();
+        var activeTab = $('.nav-link.active').attr('id');
+        if(activeTab === 'receipt-tab') window.location.href = "{{ route('claim-item-receipt.index') }}";
+        else window.location.href = "{{ route('claim-credit-note.index') }}";
     });
 });
 </script>

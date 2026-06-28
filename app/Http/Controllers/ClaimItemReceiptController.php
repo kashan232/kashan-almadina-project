@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\ClaimItemReceipt;
+use App\Models\ClaimCreditNote;
 use App\Models\ClaimItemReceiptItem;
 use App\Models\ClaimAcceptanceItem;
 use App\Models\Product;
@@ -18,19 +19,34 @@ class ClaimItemReceiptController extends Controller
 {
     public function index(Request $request)
     {
-        $query = ClaimItemReceipt::with(['vendor', 'customer', 'creator']);
+        $receipts = ClaimItemReceipt::with(['vendor', 'customer', 'creator', 'fromWarehouse', 'toWarehouse']);
+        $credits = ClaimCreditNote::with(['vendor', 'customer', 'creator', 'fromWarehouse', 'toWarehouse']);
         
         if ($request->start_date) {
-            $query->whereDate('date', '>=', $request->start_date);
+            $receipts->whereDate('date', '>=', $request->start_date);
+            $credits->whereDate('date', '>=', $request->start_date);
         }
         if ($request->end_date) {
-            $query->whereDate('date', '<=', $request->end_date);
+            $receipts->whereDate('date', '<=', $request->end_date);
+            $credits->whereDate('date', '<=', $request->end_date);
         }
         if ($request->status) {
-            $query->where('status', $request->status);
+            $receipts->where('status', $request->status);
+            $credits->where('status', $request->status);
         }
         
-        $vouchers = $query->latest()->get();
+        $receiptList = $receipts->get()->map(function($item) {
+            $item->doc_type = 'receipt';
+            return $item;
+        });
+        
+        $creditList = $credits->get()->map(function($item) {
+            $item->doc_type = 'credit';
+            return $item;
+        });
+        
+        $vouchers = $receiptList->concat($creditList)->sortByDesc('created_at')->values();
+        
         return view('admin_panel.claim_item_receipt.index', compact('vouchers'));
     }
 

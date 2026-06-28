@@ -1261,6 +1261,114 @@ class GeneralLedgerController extends Controller
                 }
             }
 
+            // AVs
+            $avDateCol = $this->getDateColumn('adjustment_vouchers');
+            $avs = \App\Models\AdjustmentVoucher::whereIn('status', ['posted', 'Posted'])->whereBetween(DB::raw($avDateCol), [$start, $end])
+                ->where(function($q) use ($id) {
+                    $q->where('party_id', $id)
+                      ->orWhereJsonContains('account_id', (string)$id)
+                      ->orWhereJsonContains('account_id', (int)$id);
+                })->get();
+            
+            foreach($avs as $av) {
+                $accIds = json_decode($av->account_id, true) ?? [];
+                $amounts = json_decode($av->amount, true) ?? [];
+                $narrIds = json_decode($av->narration_id, true) ?? [];
+                $accHeads = json_decode($av->account_head, true) ?? [];
+
+                // Header check
+                if ($av->party_id == $id && is_numeric($av->party_type)) {
+                    foreach ($accIds as $i => $a_id) {
+                        $rType = $accHeads[$i] ?? '';
+                        $destName = '';
+                        if ($rType === 'vendor') {
+                            $destName = \Illuminate\Support\Facades\DB::table('vendors')->where('id', $a_id)->value('name');
+                        } elseif ($rType === 'customer' || $rType === 'walkin') {
+                            $destName = \Illuminate\Support\Facades\DB::table('customers')->where('id', $a_id)->value('customer_name');
+                        } else {
+                            $destName = \Illuminate\Support\Facades\DB::table('accounts')->where('id', $a_id)->value('title');
+                        }
+                        
+                        $headerNarr = '';
+                        if (isset($narrIds[$i])) {
+                            if (is_numeric($narrIds[$i])) {
+                                $headerNarr = \Illuminate\Support\Facades\DB::table('narrations')->where('id', $narrIds[$i])->value('narration');
+                            } else {
+                                $headerNarr = $narrIds[$i];
+                            }
+                        }
+                        
+                        $headerDescParts = [];
+                        if ($headerNarr) $headerDescParts[] = $headerNarr;
+                        if (!empty($av->remarks)) $headerDescParts[] = $av->remarks;
+                        if ($destName) $headerDescParts[] = $destName;
+                        $headerDesc = !empty($headerDescParts) ? implode(' ; ', $headerDescParts) : 'Adjustment Voucher';
+
+                        $rowAmt = (float)($amounts[$i] ?? 0);
+                        if ($rowAmt > 0) {
+                            $transactions[] = [
+                                'created_at' => $av->created_at,
+                                'id' => $av->id . '_h_' . $i,
+                                'date' => $av->entry_date ?: $av->created_at,
+                                'ref' => 'AV',
+                                'inv' => $av->avid,
+                                'desc' => $headerDesc,
+                                'price' => 0, 'qty' => 0, 
+                                'debit' => $rowAmt, 
+                                'credit' => 0,
+                                'priority' => 61
+                            ];
+                        }
+                    }
+                }
+
+                // Row check
+                foreach($accIds as $idx => $aid) {
+                    $rowType = $accHeads[$idx] ?? '';
+                    if ($aid == $id && is_numeric($rowType)) {
+                        $narrText = '';
+                        if (isset($narrIds[$idx])) {
+                            if (is_numeric($narrIds[$idx])) {
+                                $narrText = \Illuminate\Support\Facades\DB::table('narrations')->where('id', $narrIds[$idx])->value('narration');
+                            } else {
+                                $narrText = $narrIds[$idx];
+                            }
+                        }
+
+                        $descParts = [];
+                        if ($narrText) $descParts[] = $narrText;
+                        if (!empty($av->remarks)) $descParts[] = $av->remarks;
+
+                        $sourceName = '';
+                        $pType = $av->party_type;
+                        $pId = $av->party_id;
+                        if ($pType === 'vendor') {
+                            $sourceName = \Illuminate\Support\Facades\DB::table('vendors')->where('id', $pId)->value('name');
+                        } elseif ($pType === 'customer' || $pType === 'walkin') {
+                            $sourceName = \Illuminate\Support\Facades\DB::table('customers')->where('id', $pId)->value('customer_name');
+                        } else {
+                            $sourceName = \Illuminate\Support\Facades\DB::table('accounts')->where('id', $pId)->value('title');
+                        }
+                        if ($sourceName) $descParts[] = $sourceName;
+
+                        $desc = !empty($descParts) ? implode(' ; ', $descParts) : 'Adjustment Voucher';
+
+                        $transactions[] = [
+                            'created_at' => $av->created_at,
+                            'id' => $av->id . '_' . $idx,
+                            'date' => $av->entry_date ?: $av->created_at,
+                            'ref' => 'AV',
+                            'inv' => $av->avid,
+                            'desc' => $desc,
+                            'price' => 0, 'qty' => 0, 
+                            'debit' => 0, 
+                            'credit' => (float)($amounts[$idx] ?? 0),
+                            'priority' => 61
+                        ];
+                    }
+                }
+            }
+
             // Sort by Date, Priority, then created_at for chronological order
             usort($transactions, function ($a, $b) { 
                 $dateA = strtotime(substr($a['date'], 0, 10));
@@ -1615,18 +1723,52 @@ class GeneralLedgerController extends Controller
             
             // Header match check
             if ($av->party_id == $id && in_array($av->party_type, $typeArray)) {
-                $transactions[] = [
-                    'created_at' => $av->created_at,
-                    'id' => $av->id,
-                    'date' => $av->entry_date ?: $av->created_at,
-                    'ref' => 'AV',
-                    'inv' => $av->avid,
-                    'desc' => $av->remarks ?: 'Adjustment Voucher',
-                    'price' => 0, 'qty' => 0,
-                    'debit' => (float)$av->total_amount,
-                    'credit' => 0,
-                    'priority' => 61
-                ];
+                $accIds = json_decode($av->account_id, true) ?? [];
+                $accHeads = json_decode($av->account_head, true) ?? [];
+                $amounts = json_decode($av->amount, true) ?? [];
+                
+                foreach ($accIds as $i => $a_id) {
+                    $rType = $accHeads[$i] ?? '';
+                    $destName = '';
+                    if ($rType === 'vendor') {
+                        $destName = \Illuminate\Support\Facades\DB::table('vendors')->where('id', $a_id)->value('name');
+                    } elseif ($rType === 'customer' || $rType === 'walkin') {
+                        $destName = \Illuminate\Support\Facades\DB::table('customers')->where('id', $a_id)->value('customer_name');
+                    } else {
+                        $destName = \Illuminate\Support\Facades\DB::table('accounts')->where('id', $a_id)->value('title');
+                    }
+                    
+                    $headerNarr = '';
+                    if (isset($narrIds[$i])) {
+                        if (is_numeric($narrIds[$i])) {
+                            $headerNarr = \Illuminate\Support\Facades\DB::table('narrations')->where('id', $narrIds[$i])->value('narration');
+                        } else {
+                            $headerNarr = $narrIds[$i];
+                        }
+                    }
+                    
+                    $headerDescParts = [];
+                    if ($headerNarr) $headerDescParts[] = $headerNarr;
+                    if (!empty($av->remarks)) $headerDescParts[] = $av->remarks;
+                    if ($destName) $headerDescParts[] = $destName;
+                    $headerDesc = !empty($headerDescParts) ? implode(' ; ', $headerDescParts) : 'Adjustment Voucher';
+
+                    $rowAmt = (float)($amounts[$i] ?? 0);
+                    if ($rowAmt > 0) {
+                        $transactions[] = [
+                            'created_at' => $av->created_at,
+                            'id' => $av->id . '_h_' . $i,
+                            'date' => $av->entry_date ?: $av->created_at,
+                            'ref' => 'AV',
+                            'inv' => $av->avid,
+                            'desc' => $headerDesc,
+                            'price' => 0, 'qty' => 0,
+                            'debit' => $rowAmt,
+                            'credit' => 0,
+                            'priority' => 61
+                        ];
+                    }
+                }
             }
 
             // Row match check
@@ -1640,7 +1782,7 @@ class GeneralLedgerController extends Controller
                     $narrText = '';
                     if (isset($narrIds[$idx])) {
                         if (is_numeric($narrIds[$idx])) {
-                            $narrText = DB::table('narrations')->where('id', $narrIds[$idx])->value('narration');
+                            $narrText = \Illuminate\Support\Facades\DB::table('narrations')->where('id', $narrIds[$idx])->value('narration');
                         } else {
                             $narrText = $narrIds[$idx];
                         }
@@ -1649,6 +1791,19 @@ class GeneralLedgerController extends Controller
                     $descParts = [];
                     if ($narrText) $descParts[] = $narrText;
                     if (!empty($av->remarks)) $descParts[] = $av->remarks;
+
+                    $sourceName = '';
+                    $pType = $av->party_type;
+                    $pId = $av->party_id;
+                    if ($pType === 'vendor') {
+                        $sourceName = \Illuminate\Support\Facades\DB::table('vendors')->where('id', $pId)->value('name');
+                    } elseif ($pType === 'customer' || $pType === 'walkin') {
+                        $sourceName = \Illuminate\Support\Facades\DB::table('customers')->where('id', $pId)->value('customer_name');
+                    } else {
+                        $sourceName = \Illuminate\Support\Facades\DB::table('accounts')->where('id', $pId)->value('title');
+                    }
+                    if ($sourceName) $descParts[] = $sourceName;
+
                     $desc = !empty($descParts) ? implode(' ; ', $descParts) : 'Adjustment Voucher';
 
                     $transactions[] = [
@@ -1976,6 +2131,27 @@ class GeneralLedgerController extends Controller
                     'priority' => 31
                 ];
             }
+        }
+        // 12. Claim Credit Notes (CIR)
+        $crnDateCol = $this->getDateColumn('claim_credit_notes');
+        $crNotes = \App\Models\ClaimCreditNote::where('party_id', $id)
+            ->where('party_type', $type == 'customer' ? 'customer' : 'vendor')
+            ->where('status', 'Posted')
+            ->whereBetween(DB::raw($crnDateCol), [$start, $end])
+            ->get();
+        foreach ($crNotes as $crn) {
+            $transactions[] = [
+                'created_at' => $crn->created_at,
+                'id' => 'crn_' . $crn->id,
+                'date' => $crn->entry_date ?: substr((string)$crn->created_at, 0, 10),
+                'ref' => 'CIR',
+                'inv' => preg_replace('/[^0-9]/', '', $crn->voucher_no ?? '0'),
+                'desc' => 'CIR: ' . $crn->voucher_no,
+                'price' => 0, 'qty' => 0, 
+                'debit' => (float)$crn->net_total, 
+                'credit' => 0,
+                'priority' => 32
+            ];
         }
 
         // Strictly chronologically (Time Wise)

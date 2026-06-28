@@ -152,6 +152,8 @@
                                   @endcan
                                   @can('Purchase')
                                   <li><a href="{{route('Purchase.home')}}"><i class="fas fa-shopping-bag mr-2"></i> Purchase</a></li>
+                                  @endcan
+                                  @can('Purchase Return')
                                   <li><a href="{{route('purchase.return.home')}}"><i class="fas fa-undo mr-2"></i> Purchase Return</a></li>
                                   @endcan
                                   @can('Stock Wastage')
@@ -166,13 +168,15 @@
                       @endcanany
 
                       {{-- Inventory Section --}}
-                      @canany(['Warehouse', 'Stock Transfer'])
+                      @canany(['Warehouse', 'Warehouse Stock', 'Stock Transfer'])
                       <li class="nav-item">
                           <a href="#" class="nav-link"><i class="menu_icon fas fa-warehouse"></i><span class="menu-title">Inventory</span><i class="menu-arrow"></i></a>
                           <div class="submenu">
                               <ul class="submenu-item">
                                   @can('Warehouse')
                                   <li><a href="{{url('warehouse')}}"><i class="fas fa-building mr-2"></i> Warehouse</a></li>
+                                  @endcan
+                                  @can('Warehouse Stock')
                                   <li><a href="{{url('warehouse_stocks')}}"><i class="fas fa-boxes mr-2"></i> Warehouse Stock</a></li>
                                   @endcan
                                   @can('Stock Transfer')
@@ -197,6 +201,8 @@
                                   @endcan
                                   @can('Stock Hold')
                                   <li><a href="{{ route('stock-hold-list') }}"><i class="fas fa-pause mr-2"></i> Stock Hold</a></li>
+                                  @endcan
+                                  @can('Stock Release')
                                   <li><a href="{{ route('stock-relase-list') }}"><i class="fas fa-play mr-2"></i> Stock Release</a></li>
                                   @endcan
                                   @can('Customer')
@@ -256,8 +262,10 @@
                                   <li class="nav-item"><a class="nav-link" href="{{ route('branch.index') }}"><i
                                               class="fa-solid fa-code-branch mr-2"></i><span>Branches</span></a></li>
                                   @endcan
+                                  @can('User Groups')
                                   <li class="nav-item"><a class="nav-link" href="{{ route('user-group.index') }}"><i
                                               class="fa-solid fa-users-rectangle mr-2"></i><span>User Groups</span></a></li>
+                                  @endcan
                               </ul>
                           </div>
                       </li>
@@ -329,12 +337,14 @@
                                       </a>
                                   </li>
                                   @endcan
+                                  @can('Adjustment Voucher')
                                   <li class="nav-item">
                                       <a class="nav-link" href="{{ route('all-adjustment-vochers') }}">
                                           <i class="fa-solid fa-adjust mr-2"></i>
                                           <span>Adjustment Voucher</span>
                                       </a>
                                   </li>
+                                  @endcan
 
                               </ul>
                           </div>
@@ -342,7 +352,7 @@
                       @endcanany
 
                       {{-- Tools Section --}}
-                      @can('Rollback')
+                      @canany(['Rollback Posting', 'General Ledger'])
                       <li class="nav-item">
                           <a href="#" class="nav-link">
                               <i class="menu_icon fas fa-tools"></i>
@@ -351,25 +361,29 @@
                           </a>
                           <div class="submenu">
                               <ul class="submenu-item">
+                                  @can('Rollback Posting')
                                   <li class="nav-item">
                                       <a class="nav-link" href="{{ route('rollback.index') }}">
                                           <i class="fas fa-undo-alt mr-2"></i>
                                           <span>Rollback Posting</span>
                                       </a>
                                   </li>
+                                  @endcan
+                                  @can('General Ledger')
                                   <li class="nav-item">
                                       <a class="nav-link" href="{{ route('general-ledger.index') }}">
                                           <i class="fas fa-book mr-2"></i>
                                           <span>General Ledger</span>
                                       </a>
                                   </li>
+                                  @endcan
                               </ul>
                           </div>
                       </li>
-                      @endcan
+                      @endcanany
 
                       {{-- Reports Section --}}
-                      @can('Reports')
+                      @canany(['Reports Dashboard', 'Sales Report', 'Purchase Report'])
                       <li class="nav-item">
                           <a href="#" class="nav-link">
                               <i class="menu_icon feather ft-bar-chart"></i>
@@ -378,28 +392,34 @@
                           </a>
                           <div class="submenu">
                               <ul class="submenu-item">
+                                  @can('Reports Dashboard')
                                   <li class="nav-item">
                                       <a class="nav-link" href="{{ route('reports.dashboard') }}">
                                           <i class="fa-solid fa-dashboard mr-2"></i>
                                           <span>Dashboard</span>
                                       </a>
                                   </li>
+                                  @endcan
+                                  @can('Sales Report')
                                   <li class="nav-item">
                                       <a class="nav-link" href="{{ route('reports.sales.index') }}">
                                           <i class="fa-solid fa-file-invoice mr-2"></i>
                                           <span>Sales Report</span>
                                       </a>
                                   </li>
+                                  @endcan
+                                  @can('Purchase Report')
                                   <li class="nav-item">
                                       <a class="nav-link" href="{{ route('reports.purchase.index') }}">
                                           <i class="fa-solid fa-cart-shopping mr-2"></i>
                                           <span>Purchase Report</span>
                                       </a>
                                   </li>
+                                  @endcan
                               </ul>
                           </div>
                       </li>
-                      @endcan
+                      @endcanany
 
 
                   </ul>

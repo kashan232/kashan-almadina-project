@@ -1,91 +1,108 @@
  @extends('admin_panel.layout.app')
  @section('content')
      
+<style>
+    .permissions-card {
+        border: none;
+        border-radius: 12px;
+        box-shadow: 0 8px 20px rgba(0,0,0,0.06);
+        background-color: #ffffff;
+    }
+    .permissions-header {
+        background: linear-gradient(135deg, #4e73df 0%, #224abe 100%);
+        color: white;
+        border-radius: 12px 12px 0 0 !important;
+        padding: 20px 25px;
+        border-bottom: none;
+    }
+    .table-permissions th {
+        background-color: #f8f9fc;
+        color: #4e73df;
+        font-weight: 700;
+        text-transform: uppercase;
+        font-size: 0.85rem;
+        letter-spacing: 0.05em;
+        border-bottom: 2px solid #e3e6f0 !important;
+        padding: 15px;
+    }
+    .table-permissions td {
+        vertical-align: middle;
+        color: #5a5c69;
+        border-bottom: 1px solid #e3e6f0;
+        padding: 15px;
+    }
+    .table-permissions tbody tr:hover {
+        background-color: #f1f3f9;
+        transition: background-color 0.2s ease-in-out;
+    }
+    .permission-badge {
+        background-color: #e8eaef;
+        color: #3a3b45;
+        font-weight: 600;
+        padding: 8px 16px;
+        border-radius: 30px;
+        font-size: 14px;
+        display: inline-block;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+        border: 1px solid #d1d3e2;
+    }
+    .permission-badge i {
+        color: #1cc88a;
+    }
+    .dataTables_wrapper .dataTables_filter input {
+        border-radius: 20px;
+        border: 1px solid #d1d3e2;
+        padding: 5px 15px;
+        outline: none;
+    }
+    .dataTables_wrapper .dataTables_filter input:focus {
+        border-color: #4e73df;
+        box-shadow: 0 0 0 0.2rem rgba(78, 115, 223, 0.25);
+    }
+</style>
+
 <div class="main-content">
     <div class="main-content-inner">
-        <div class="container">
-            <div class="row">
-                <div class="col-lg-12">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-            <h3>Permissions</h3>
-            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#exampleModal"
-                id="reset-form">Create</button>
-        </div>
-        <div class="border mt-1 shadow rounded " style="background-color: white;">
-            <div class="col-lg-12 m-auto">
-   <div class="table-responsive mt-5 mb-5 ">
-    <table id="default-datatable" class="table ">
-        <thead class="text-center">
-            <tr>
-                <th class="text-center">Id</th>
-                <th class="text-center">Name</th>
-                <th class="text-center">Action</th>
-                <th class="text-center d-none">Action</th>
-            </tr>
-        </thead>
-        <tbody class="text-center">
-            @foreach ($permissions as $permission)
-                <tr>
-                    {{-- <span class="d-none edit-id">{{ $permission->id }}</span> --}}
-                     <td class="d-none">
-                                <input type="hidden" class="edit-id" value="{{ $permission->id }}">
-                            </td>
-                    <td class="id">{{ $permission->id }}</td>
-                    <td class="name">{{ $permission->name }}</td>
-                    <td>
-                        <button class="btn btn-primary btn-sm edit-btn"
-                            data-url="{{ route('permissions.store') }}">
-                            Edit
-                        </button>
-                        <a href="{{ route('permission.delete', $permission->id) }}" class="btn btn-danger btn-sm delete-btn"
-                            data-url="{{ route('permission.delete', $permission->id) }}"
-                            data-msg="Are you sure you want to delete this Permission"
-                            data-method="DELETE"
-                            onclick="confirmedBox(this, event)">
-                            Delete
-                        </a>
-                    </td>
-                </tr>
-            @endforeach
-        </tbody>
-    </table>
-</div>
-
-</div>
-
-            </div>
-        </div>
-      
-    </div>
-    </div>
-    </div>
-    </div>
-    </div>
-    </div>
-
-    <div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="exampleModalLabel">Add Permissions</h5>
-                </div>
-                <div class="modal-body">
-                    <form class="myform" action="{{ route('permissions.store') }}" method="POST">
-                        @csrf
-                        <input type="hidden" name="edit_id" id="id" />
-                        <div class="mb-3">
-                            <label for="title" class="form-label">Name</label>
-                            <input type="text" name="name" class="form-control" id="name" />
+        <div class="container-fluid mt-4">
+            <div class="row justify-content-center">
+                <div class="col-lg-10">
+                    <div class="card permissions-card">
+                        <div class="card-header permissions-header d-flex align-items-center">
+                            <i class="fas fa-shield-alt fa-2x mr-3"></i>
+                            <h3 class="mb-0 text-white" style="font-weight: 600;">System Permissions</h3>
                         </div>
+                        <div class="card-body p-4">
+                            <div class="table-responsive">
+                                <table id="default-datatable" class="table table-hover table-permissions w-100">
+                                    <thead>
+                                        <tr>
+                                            <th class="text-center" width="10%">ID</th>
+                                            <th width="90%">Module Name</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach ($permissions as $permission)
+                                            <tr>
+                                                <td class="text-center fw-bold" style="color: #4e73df;">{{ $permission->id }}</td>
+                                                <td>
+                                                    <span class="permission-badge">
+                                                        <i class="fas fa-check-circle mr-2"></i>{{ $permission->name }}
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                    <input type="submit" class="btn btn-primary save-btn">
-                </div>
-                </form>
             </div>
         </div>
-    </div> 
+    </div>
+</div>
+
+ 
 <!-- DataTable CSS -->
 <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
 
@@ -101,64 +118,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script  src="{{ asset('assets/js/mycode.js') }}">  </script>
- <script>
-    $(document).on('submit', '.myform', function(e) {
-        // alert("as");
-        e.preventDefault();
-        var formdata = new FormData(this);
-        url = $(this).attr('action');
-        method = $(this).attr('method');
-        $(this).find(':submit').attr('disabled', true);
-        myAjax(url, formdata, method);
-    });
-    $(document).on('click', '.edit-btn', function () {
-        $(".modal-title").text("Edit Permissions");
-        var tr = $(this).closest("tr");
-        var id = tr.find(".edit-id").val();
-        // alert(id);
-        var name = tr.find(".name").text();
-        // var address = tr.find(".address").text();
-        // var number = tr.find(".number").text();
-        // var email = tr.find(".email").text().trim(); 
-        $('#id').val(id);
-        $('#name').val(name)
-        $("#exampleModal").modal("show")
 
-
-    });
-   
-
-    function confirmedBox(element, event) {
-        event.preventDefault(); // Stop immediate redirect
-
-        const message = element.getAttribute('data-msg') || 'Are you sure?';
-        const url = element.getAttribute('href');
-
-        Swal.fire({
-            title: 'Confirm Deletion',
-            text: message,
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonText: 'Yes, delete it!',
-            cancelButtonText: 'Cancel',
-            confirmButtonColor: '#d33',
-            cancelButtonColor: '#3085d6'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                // Redirect manually after confirmation
-                window.location.href = url;
-            }
-        });
-    }
-
-    $(document).on('click', '#reset-form', function () {
-        // alert("sd");
-        // Manually clear inputs
-        $('#id').val('');
-        $('#name').val('');
-        $("#exampleModal").modal("show")
-    });
-</script>
 @if(session('success'))
     <script>
         Swal.fire({
