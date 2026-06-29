@@ -160,14 +160,22 @@
                                             <th>Header Party</th>
                                             <th>Details (Rows)</th>
                                             <th class="text-end">Dr / Cr Totals</th>
-                                            <th class="text-center">Status</th>
+                                            <th>Created By</th>
+                                    <th class="text-center">Status</th>
                                             <th class="text-center" style="min-width: 120px;">Action</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         @foreach($vouchers as $item)
                                         <tr>
-                                            <td class="text-center text-muted small">{{ $item->id }}</td>
+                                            <td>
+                                        @if($item->creator)
+                                            <span class="text-dark small">{{ $item->creator->name }}</span>
+                                        @else
+                                            <span class="text-muted small">System</span>
+                                        @endif
+                                    </td>
+                                    <td class="text-center text-muted small">{{ $item->id }}</td>
                                             <td class="text-center small">JV</td>
                                             <td class="fw-bold text-primary">{{ $item->jvid }}</td>
                                             <td class="small">{{ $item->entry_date ? \Carbon\Carbon::parse($item->entry_date)->format('d-M-Y') : '-' }}</td>

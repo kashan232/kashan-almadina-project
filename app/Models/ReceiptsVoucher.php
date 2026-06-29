@@ -65,4 +65,9 @@ class ReceiptsVoucher extends Model
     {
         return $this->belongsTo(Account::class, 'row_account_id', 'id');
     }
+
+    public function creator()
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
 }

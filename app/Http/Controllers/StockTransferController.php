@@ -186,66 +186,82 @@ class StockTransferController extends Controller
     {
         $transfer = StockTransfer::with('items')->findOrFail($id);
 
-        if ($transfer->status === 'Posted') {
-            return response()->json(['success' => false, 'message' => 'Already posted.'], 422);
+        if ($transfer->status === 'Posted' || $transfer->status === 'Pending Approval') {
+            return response()->json(['success' => false, 'message' => 'Already posted or pending approval.'], 422);
         }
 
+        $isAdmin = auth()->user()->roles->pluck('name')->contains('Admin') || auth()->user()->usertype == 'admin';
+
         try {
-            DB::transaction(function () use ($transfer) {
-                foreach ($transfer->items as $item) {
-                    if ($transfer->from_shop) {
-                        // Deduct from shop (Product's direct stock)
-                        $sourceProduct = Product::lockForUpdate()->find($item->product_id);
+            DB::transaction(function () use ($transfer, $isAdmin) {
+                if ($isAdmin) {
+                    // Admin posts directly
+                    foreach ($transfer->items as $item) {
+                        if ($transfer->from_shop) {
+                            $sourceProduct = Product::lockForUpdate()->find($item->product_id);
 
-                        if ($sourceProduct) {
-                            $sourceProduct->stock -= $item->quantity;
-                            $sourceProduct->save();
-                        }
-                    } else {
-                        // Deduct from source warehouse
-                        $sourceStock = WarehouseStock::where('warehouse_id', $transfer->from_warehouse_id)
-                            ->where('product_id', $item->product_id)
-                            ->lockForUpdate()->first();
-
-                        if ($sourceStock) {
-                            $sourceStock->quantity -= $item->quantity;
-                            $sourceStock->save();
+                            if ($sourceProduct) {
+                                $sourceProduct->stock -= $item->quantity;
+                                $sourceProduct->save();
+                            }
                         } else {
-                            // Even if record doesn't exist, we create it with negative quantity if needed
-                            WarehouseStock::create([
-                                'warehouse_id' => $transfer->from_warehouse_id,
-                                'product_id'   => $item->product_id,
-                                'quantity'     => -($item->quantity),
-                            ]);
+                            $sourceStock = WarehouseStock::where('warehouse_id', $transfer->from_warehouse_id)
+                                ->where('product_id', $item->product_id)
+                                ->lockForUpdate()->first();
+
+                            if ($sourceStock) {
+                                $sourceStock->quantity -= $item->quantity;
+                                $sourceStock->save();
+                            } else {
+                                WarehouseStock::create([
+                                    'warehouse_id' => $transfer->from_warehouse_id,
+                                    'product_id'   => $item->product_id,
+                                    'quantity'     => -($item->quantity),
+                                    'status'       => 'Posted',
+                                ]);
+                            }
+                        }
+
+                        if ($transfer->to_shop) {
+                            $destProduct = Product::lockForUpdate()->find($item->product_id);
+                            if ($destProduct) {
+                                $destProduct->stock += $item->quantity;
+                                $destProduct->save();
+                            }
+                        } else {
+                            $destStock = WarehouseStock::where('warehouse_id', $transfer->to_warehouse_id)
+                                ->where('product_id', $item->product_id)
+                                ->lockForUpdate()->first();
+
+                            if ($destStock) {
+                                $destStock->quantity += $item->quantity;
+                                $destStock->save();
+                            } else {
+                                WarehouseStock::create([
+                                    'warehouse_id' => $transfer->to_warehouse_id,
+                                    'product_id'   => $item->product_id,
+                                    'quantity'     => $item->quantity,
+                                    'status'       => 'Posted',
+                                ]);
+                            }
                         }
                     }
 
-                    // Add to destination warehouse
-                    $destStock = WarehouseStock::where('warehouse_id', $transfer->to_warehouse_id)
-                        ->where('product_id', $item->product_id)
-                        ->lockForUpdate()->first();
-
-                    if ($destStock) {
-                        $destStock->quantity += $item->quantity;
-                        $destStock->save();
-                    } else {
-                        WarehouseStock::create([
-                            'warehouse_id' => $transfer->to_warehouse_id,
-                            'product_id'   => $item->product_id,
-                            'quantity'     => $item->quantity,
-                        ]);
-                    }
+                    $transfer->status = 'Posted';
+                    $transfer->confirmed_by = auth()->id();
+                } else {
+                    // Non-admin requires approval
+                    $transfer->status = 'Pending Approval';
                 }
-
-                $transfer->status = 'Posted';
-                $transfer->confirmed_by = auth()->id();
                 $transfer->save();
             });
 
+            $msg = $isAdmin ? 'Stock Transfer Posted Successfully' : 'Stock Transfer Sent for Admin Approval!';
+
             if (request()->ajax()) {
-                return response()->json(['success' => true, 'message' => 'Stock Transfer Posted Successfully']);
+                return response()->json(['success' => true, 'message' => $msg]);
             }
-            return back()->with('success', 'Stock Transfer Posted Successfully');
+            return back()->with('success', $msg);
 
         } catch (\Exception $e) {
             if (request()->ajax()) {
@@ -268,19 +284,13 @@ class StockTransferController extends Controller
         return view('admin_panel.warehouses.stock_transfers.show', compact('transfers'));
     }
 
-    // List pending transfers for a warehouse (optional helper route)
+    // List pending transfers for approval
     public function pending(Request $request)
     {
-        // If you have user->warehouse_id logic, filter by that. Here we accept a query param or show all pending.
-        $warehouseId = $request->get('warehouse_id');
-        $query = StockTransfer::with('items.product', 'fromWarehouse', 'toWarehouse')->where('status', 'pending');
-
-        if ($warehouseId) {
-            $query->where('to_warehouse_id', $warehouseId);
-        }
+        $query = StockTransfer::with(['items.product', 'fromWarehouse', 'toWarehouse', 'creator'])->where('status', 'Pending Approval');
 
         $transfers = $query->orderBy('created_at', 'desc')->get();
-        return view('stock_transfers.pending', compact('transfers'));
+        return view('admin_panel.warehouses.stock_transfers.pending', compact('transfers'));
     }
 
     public function warehouseStockQuantity(Request $request)
@@ -309,83 +319,88 @@ class StockTransferController extends Controller
         DB::transaction(function () use ($id) {
             $transfer = StockTransfer::with('items')->lockForUpdate()->findOrFail($id);
 
-            if ($transfer->status !== 'pending') {
-                throw new \Exception("Transfer already processed.");
-            }
-
-            foreach ($transfer->items as $item) {
-                // --- DO NOT subtract from source here (we assume it was reserved at creation) ---
-
-                // Add to destination warehouse only
-                $destStock = WarehouseStock::where('warehouse_id', $transfer->to_warehouse_id)
-                    ->where('product_id', $item->product_id)
-                    ->lockForUpdate()
-                    ->first();
-
-                if ($destStock) {
-                    $destStock->quantity += $item->quantity;
-                    $destStock->save();
-                } else {
-                    WarehouseStock::create([
-                        'warehouse_id' => $transfer->to_warehouse_id,
-                        'product_id'   => $item->product_id,
-                        'quantity'     => $item->quantity,
-                    ]);
-                }
-            }
-
-            // Update transfer status
-            $transfer->status = 'accepted';
-            $transfer->confirmed_by = auth()->id();
-            $transfer->save();
-        });
-
-        return back()->with('success', 'Transfer accepted. Destination stock updated.');
-    }
-
-
-    // Reject transfer: return reserved stock back to source
-    public function reject(Request $request, $id)
-    {
-        DB::transaction(function () use ($id) {
-            $transfer = StockTransfer::with('items')->lockForUpdate()->findOrFail($id);
-
-            if ($transfer->status !== 'pending') {
+            if ($transfer->status !== 'Pending Approval') {
                 throw new \Exception("Transfer already processed.");
             }
 
             foreach ($transfer->items as $item) {
                 if ($transfer->from_shop) {
                     $sourceProduct = Product::lockForUpdate()->find($item->product_id);
+
                     if ($sourceProduct) {
-                        $sourceProduct->stock += $item->quantity;
+                        $sourceProduct->stock -= $item->quantity;
                         $sourceProduct->save();
                     }
                 } else {
                     $sourceStock = WarehouseStock::where('warehouse_id', $transfer->from_warehouse_id)
                         ->where('product_id', $item->product_id)
-                        ->lockForUpdate()
-                        ->first();
+                        ->lockForUpdate()->first();
 
                     if ($sourceStock) {
-                        $sourceStock->quantity = $sourceStock->quantity + $item->quantity;
+                        $sourceStock->quantity -= $item->quantity;
                         $sourceStock->save();
                     } else {
                         WarehouseStock::create([
                             'warehouse_id' => $transfer->from_warehouse_id,
                             'product_id'   => $item->product_id,
+                            'quantity'     => -($item->quantity),
+                            'status'       => 'Posted',
+                        ]);
+                    }
+                }
+
+                if ($transfer->to_shop) {
+                    $destProduct = Product::lockForUpdate()->find($item->product_id);
+                    if ($destProduct) {
+                        $destProduct->stock += $item->quantity;
+                        $destProduct->save();
+                    }
+                } else {
+                    $destStock = WarehouseStock::where('warehouse_id', $transfer->to_warehouse_id)
+                        ->where('product_id', $item->product_id)
+                        ->lockForUpdate()
+                        ->first();
+
+                    if ($destStock) {
+                        $destStock->quantity += $item->quantity;
+                        $destStock->save();
+                    } else {
+                        WarehouseStock::create([
+                            'warehouse_id' => $transfer->to_warehouse_id,
+                            'product_id'   => $item->product_id,
                             'quantity'     => $item->quantity,
+                            'status'       => 'Posted',
                         ]);
                     }
                 }
             }
 
-            $transfer->status = 'rejected';
+            // Update transfer status
+            $transfer->status = 'Posted';
             $transfer->confirmed_by = auth()->id();
             $transfer->save();
         });
 
-        return back()->with('error', 'Transfer rejected and stock returned to source.');
+        return back()->with('success', 'Transfer accepted. Stock has been impacted.');
+    }
+
+
+    // Reject transfer: simply mark as rejected
+    public function reject(Request $request, $id)
+    {
+        DB::transaction(function () use ($id) {
+            $transfer = StockTransfer::with('items')->lockForUpdate()->findOrFail($id);
+
+            if ($transfer->status !== 'Pending Approval') {
+                throw new \Exception("Transfer already processed.");
+            }
+
+            $transfer->status = 'Rejected';
+            $transfer->confirmed_by = auth()->id();
+            $transfer->save();
+        });
+
+        return back()->with('error', 'Transfer rejected.');
     }
 
     public function destroy(StockTransfer $stockTransfer)

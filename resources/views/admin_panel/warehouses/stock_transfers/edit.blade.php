@@ -458,7 +458,21 @@ $(document).ready(function() {
     }
 
     function postById(id) {
-        $('#postBtn').prop('disabled', true).html('<i class="fa fa-spinner fa-spin me-1"></i> Posting...');
+        let isCashier = {{ auth()->user()->hasRole('Cashier') ? 'true' : 'false' }};
+        let title = isCashier ? 'Send for Approval?' : 'Post Stock Transfer?';
+        let text = isCashier ? 'This transfer will be sent to the admin for approval.' : 'Are you sure you want to post this transfer? Stock will be updated immediately.';
+        
+        Swal.fire({
+            title: title,
+            text: text,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Yes, proceed!'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                $('#postBtn').prop('disabled', true).html('<i class="fa fa-spinner fa-spin me-1"></i> Posting...');
         $.ajax({
             url: '/stock_transfers/' + id + '/post', type: 'POST', 
             data: { _token: '{{ csrf_token() }}' },
@@ -472,6 +486,8 @@ $(document).ready(function() {
                     $('#newInvoiceBtn').show();
                     setTimeout(function() { window.location.href = "{{ route('stock_transfers.index') }}"; }, 1500);
                 } else { showToast(res.message, 'error'); $('#postBtn').prop('disabled', false).html('<i class="fa fa-send me-1"></i> Save & Post'); }
+            }
+        });
             }
         });
     }

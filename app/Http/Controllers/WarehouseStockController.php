@@ -85,6 +85,7 @@ class WarehouseStockController extends Controller
                     ]);
                     $stock->quantity = ($stock->quantity ?? 0) + $qty;
                     $stock->remarks = 'Manual Adjustment #' . $adjustment->adj_id;
+                    $stock->status = 'Posted';
                     $stock->save();
                 }
             }
@@ -128,6 +129,7 @@ class WarehouseStockController extends Controller
                 ]);
                 $stock->quantity = ($stock->quantity ?? 0) + $item->qty;
                 $stock->remarks = 'Manual Adjustment #' . $adjustment->adj_id;
+                $stock->status = 'Posted';
                 $stock->save();
             }
 
@@ -211,6 +213,7 @@ class WarehouseStockController extends Controller
                     ]);
                     $stock->quantity = ($stock->quantity ?? 0) + $qty;
                     $stock->remarks = 'Manual Adjustment Updated #' . $adjustment->adj_id;
+                    $stock->status = 'Posted';
                     $stock->save();
                 }
             }

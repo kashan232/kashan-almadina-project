@@ -9,4 +9,9 @@ class Zone extends Model
 {
     use HasFactory;
     protected $fillable = ['zone'];
+
+    public function creator()
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
 }

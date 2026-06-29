@@ -67,6 +67,7 @@
                                     <th>Name</th>
                                     <th>Name (Urdu)</th>
                                     <th>Mobile</th>
+                                    <th>Created By</th>
                                     <th class="text-center" style="width: 100px;">Action</th>
                                 </tr>
                             </thead>
@@ -77,6 +78,13 @@
                                         <td class="fw-bold text-dark">{{ $officer->name }}</td>
                                         <td class="text-end fw-bold" dir="rtl">{{ $officer->name_urdu }}</td>
                                         <td>{{ $officer->mobile }}</td>
+                                        <td>
+                                            @if($officer->creator)
+                                                <span class="text-dark small">{{ $officer->creator->name }}</span>
+                                            @else
+                                                <span class="text-muted small">System</span>
+                                            @endif
+                                        </td>
                                         <td class="text-center">
                                             <div class="d-flex gap-1 justify-content-center">
                                                 <button class="btn btn-outline-warning btn-xs px-1 py-0 edit-btn" data-id="{{ $officer->id }}" title="Edit" style="height: 20px;">

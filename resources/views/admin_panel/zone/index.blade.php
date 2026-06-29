@@ -65,6 +65,7 @@
                                 <tr>
                                     <th class="text-center" style="width: 50px;">ID</th>
                                     <th>Zone Name</th>
+                                    <th>Created By</th>
                                     <th class="text-center" style="width: 100px;">Action</th>
                                 </tr>
                             </thead>
@@ -73,6 +74,13 @@
                                 <tr id="row-{{ $zone->id }}">
                                     <td class="text-center text-muted">{{ $zone->id }}</td>
                                     <td class="fw-bold text-dark">{{ $zone->zone }}</td>
+                                    <td>
+                                        @if($zone->creator)
+                                            <span class="text-dark small">{{ $zone->creator->name }}</span>
+                                        @else
+                                            <span class="text-muted small">System</span>
+                                        @endif
+                                    </td>
                                     <td class="text-center">
                                         <div class="d-flex gap-1 justify-content-center">
                                             <button class="btn btn-outline-warning btn-xs px-1 py-0 edit-btn" data-id="{{ $zone->id }}" title="Edit" style="height: 20px;">

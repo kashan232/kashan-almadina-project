@@ -254,7 +254,13 @@
                                     </td>
                                     <td class="small">{{ $gp->transport_name ?? '-' }}</td>
                                     <td class="small">{{ $gp->gatepass_no ?? '-' }}</td>
-                                    <td class="small text-muted">{{ $gp->user->name ?? 'N/A' }}</td>
+                                    <td class="small text-muted">
+                                        @if($gp->creator)
+                                            <span class="text-dark small">{{ $gp->creator->name }}</span>
+                                        @else
+                                            <span class="text-muted small">System</span>
+                                        @endif
+                                    </td>
                                     <td class="py-1">
                                         @foreach($gp->items as $item)
                                             <div class="item-detail-row">

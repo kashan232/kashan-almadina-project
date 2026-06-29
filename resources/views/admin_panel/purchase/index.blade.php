@@ -295,7 +295,13 @@
                                     <td class="text-end text-danger">{{ number_format($purchase->discount, 0) }}</td>
                                     <td class="text-end">{{ number_format($purchase->wht, 0) }}</td>
                                     <td class="text-end fw-bold text-success">{{ number_format($purchase->net_amount, 0) }}</td>
-                                    <td class="small text-muted">{{ $purchase->user->name ?? 'N/A' }}</td>
+                                    <td class="small text-muted">
+                                        @if($purchase->creator)
+                                            <span class="text-dark small">{{ $purchase->creator->name }}</span>
+                                        @else
+                                            <span class="text-muted small">System</span>
+                                        @endif
+                                    </td>
                                     <td class="text-center">
                                         @if($purchase->status === 'Posted')
                                             <span class="badge bg-success rounded-pill px-3">Posted</span>

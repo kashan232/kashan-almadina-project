@@ -166,6 +166,7 @@
                                             <th>Party / Customer</th>
                                             <th>Location</th>
                                             <th>Items Details</th>
+                                            <th>Created By</th>
                                             <th class="text-center">Status</th>
                                             <th class="text-center">Action</th>
                                         </tr>
@@ -200,7 +201,14 @@
                                                     </div>
                                                 @endforeach
                                             </td>
-                                            <td class="text-center">
+                                            <td>
+                                                @if($v->creator)
+                                                    <span class="text-dark small">{{ $v->creator->name }}</span>
+                                                @else
+                                                    <span class="text-muted small">System</span>
+                                                @endif
+                                            </td>
+<td class="text-center">
                                                 @if($v->status == 'Posted')
                                                     <span class="badge bg-success rounded-pill px-3">Posted</span>
                                                 @else

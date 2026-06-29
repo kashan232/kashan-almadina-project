@@ -14,4 +14,9 @@ class AdjustmentVoucher extends Model
     protected $casts = [
         'user_group_ids' => 'array',
     ];
+
+    public function creator()
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
 }

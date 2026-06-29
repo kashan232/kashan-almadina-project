@@ -226,7 +226,13 @@
                                             </div>
                                         @endforeach
                                     </td>
-                                    <td class="small text-muted">{{ $ret->user->name ?? 'N/A' }}</td>
+                                    <td class="small text-muted">
+                                        @if($ret->creator)
+                                            <span class="text-dark small">{{ $ret->creator->name }}</span>
+                                        @else
+                                            <span class="text-muted small">System</span>
+                                        @endif
+                                    </td>
                                     <td class="small">{{ \Carbon\Carbon::parse($ret->current_date)->format('d-M-Y') }}</td>
                                     <td class="text-end fw-bold">{{ number_format($ret->subtotal, 0) }}</td>
                                     <td class="text-end fw-bold">{{ number_format($ret->wht, 0) }}</td>

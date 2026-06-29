@@ -224,7 +224,13 @@
                                         @endforeach
                                     </td>
                                     <td><small class="text-muted">{{ Str::limit($wastage->remarks, 20) ?: '-' }}</small></td>
-                                    <td class="small text-muted">{{ $wastage->user->name ?? 'N/A' }}</td>
+                                    <td class="small text-muted">
+                                        @if($wastage->creator)
+                                            <span class="text-dark small">{{ $wastage->creator->name }}</span>
+                                        @else
+                                            <span class="text-muted small">System</span>
+                                        @endif
+                                    </td>
                                     <td class="text-end fw-bold text-danger">{{ number_format($wastage->total_amount, 0) }}</td>
                                     <td class="text-center">
                                         @if($wastage->status == 'Posted')

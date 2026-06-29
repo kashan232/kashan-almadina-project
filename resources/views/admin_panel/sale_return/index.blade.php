@@ -166,7 +166,8 @@
                                             <th>Items</th>
                                             <th>Date</th>
                                             <th class="text-end">Net Amount</th>
-                                            <th class="text-center">Status</th>
+                                            <th>Created By</th>
+                                    <th class="text-center">Status</th>
                                             <th class="text-center">Action</th>
                                         </tr>
                                     </thead>
@@ -187,7 +188,14 @@
                                             </td>
                                             <td class="small">{{ \Carbon\Carbon::parse($ret->current_date)->format('d-M-Y') }}</td>
                                             <td class="text-end fw-bold">{{ number_format($ret->total_balance, 0) }}</td>
-                                            <td class="text-center">
+                                            <td>
+                                        @if($ret->creator)
+                                            <span class="text-dark small">{{ $ret->creator->name }}</span>
+                                        @else
+                                            <span class="text-muted small">System</span>
+                                        @endif
+                                    </td>
+                                    <td class="text-center">
                                                 @if($ret->status === 'Posted')
                                                     <span class="badge bg-success rounded-pill px-3">Posted</span>
                                                 @else

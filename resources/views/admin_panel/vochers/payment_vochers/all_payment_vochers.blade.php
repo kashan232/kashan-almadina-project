@@ -182,6 +182,7 @@
                                     <th>Remarks</th>
                                     <th class="text-end">Disc.</th>
                                     <th class="text-end">Total Amount</th>
+                                    <th>Created By</th>
                                     <th class="text-center">Status</th>
                                     <th class="text-center" style="min-width: 140px;">Action</th>
                                 </tr>
@@ -206,6 +207,13 @@
                                     <td class="small text-muted">{{ Str::limit($item->remarks, 15) }}</td>
                                     <td class="text-end fw-bold text-danger">{{ number_format((float)$item->total_discount, 0) }}</td>
                                     <td class="text-end fw-bold text-dark">{{ number_format((float)$item->total_amount, 0) }}</td>
+                                    <td>
+                                        @if($item->creator)
+                                            <span class="text-dark small">{{ $item->creator->name }}</span>
+                                        @else
+                                            <span class="text-muted small">System</span>
+                                        @endif
+                                    </td>
                                     <td class="text-center">
                                         @if($item->status === 'posted')
                                             <span class="badge bg-success rounded-pill px-3" style="font-size: 9px;">Posted</span>

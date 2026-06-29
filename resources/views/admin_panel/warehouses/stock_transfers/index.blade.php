@@ -171,7 +171,7 @@
                                             <th>From</th>
                                             <th>To</th>
                                             <th>Items</th>
-                                            <th>Prepared By</th>
+                                            <th>Created By</th>
                                             <th class="text-center">Status</th>
                                             <th class="text-center">Action</th>
                                         </tr>
@@ -203,11 +203,18 @@
                                                     </div>
                                                 @endforeach
                                             </td>
-                                            <td><small>{{ $t->creator->name ?? '—' }}</small></td>
+                                            
+                                            <td class="text-center">
+                                                @if($t->creator)
+                                                    <span class="text-dark small">{{ $t->creator->name }}</span>
+                                                @else
+                                                    <span class="text-muted small">System</span>
+                                                @endif
+                                            </td>
                                             <td class="text-center">
                                                 @if($t->status == 'Posted' || $t->status == 'accepted')
                                                     <span class="badge bg-success rounded-pill px-3">Posted</span>
-                                                @elseif($t->status == 'Unposted' || $t->status == 'pending')
+                                                @elseif($t->status == 'Unposted' || $t->status == 'pending' || $t->status == 'Pending Approval')
                                                     <span class="badge bg-warning text-dark rounded-pill px-3">Unposted</span>
                                                 @else
                                                     <span class="badge bg-danger rounded-pill px-3">{{ ucfirst($t->status) }}</span>
@@ -215,7 +222,7 @@
                                             </td>
                                             <td class="text-center">
                                                 <div class="d-flex gap-1 justify-content-center">
-                                                    @if($t->status == 'Unposted' || $t->status == 'pending')
+                                                    @if($t->status == 'Unposted' || $t->status == 'pending' || $t->status == 'Pending Approval')
                                                         <form action="{{ route('stock_transfers.post', $t->id) }}" method="POST" class="d-inline">
                                                             @csrf
                                                             <button type="submit" class="btn btn-primary btn-xs px-2 py-0" title="Post now" style="font-size: 10px;">

@@ -41,4 +41,9 @@ class SaleReturn extends Model
             return \App\Models\Customer::find($this->customer_id)->customer_name ?? 'N/A';
         }
     }
+
+    public function creator()
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
 }

@@ -12,4 +12,9 @@ class SalesOfficer extends Model
     protected $fillable = [
         'name', 'name_urdu', 'mobile',
     ];
+
+    public function creator()
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
 }

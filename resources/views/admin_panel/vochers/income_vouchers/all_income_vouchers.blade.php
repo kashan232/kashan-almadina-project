@@ -168,7 +168,8 @@
                                             <th>Remarks</th>
                                             <th class="text-end">Disc.</th>
                                             <th class="text-end">Total Amount</th>
-                                            <th class="text-center">Status</th>
+                                            <th>Created By</th>
+                                    <th class="text-center">Status</th>
                                             <th class="text-center" style="min-width: 120px;">Action</th>
                                         </tr>
                                     </thead>
@@ -179,7 +180,14 @@
                                             $reference = is_array($refs) ? implode(', ', array_filter($refs)) : $item->reference_no;
                                         @endphp
                                         <tr>
-                                            <td class="text-center text-muted small">{{ $item->id }}</td>
+                                            <td>
+                                        @if($item->creator)
+                                            <span class="text-dark small">{{ $item->creator->name }}</span>
+                                        @else
+                                            <span class="text-muted small">System</span>
+                                        @endif
+                                    </td>
+                                    <td class="text-center text-muted small">{{ $item->id }}</td>
                                             <td class="text-center small">IV</td>
                                             <td class="fw-bold text-success">{{ $item->ivid ?? '-' }}</td>
                                             <td class="small">{{ $item->receipt_date ? \Carbon\Carbon::parse($item->receipt_date)->format('d-M-Y') : '-' }}</td>

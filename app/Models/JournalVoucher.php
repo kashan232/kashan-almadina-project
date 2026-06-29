@@ -39,4 +39,9 @@ class JournalVoucher extends Model
         $num = (int) preg_replace('/[^0-9]/', '', $last->jvid);
         return str_pad($num + 1, 3, '0', STR_PAD_LEFT);
     }
+
+    public function creator()
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
 }

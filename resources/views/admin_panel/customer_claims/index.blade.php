@@ -176,7 +176,8 @@
                                             <th>Fault</th>
                                             <th>Remarks</th>
                                             <th class="text-end">Claim Income</th>
-                                            <th class="text-center">Status</th>
+                                            <th>Created By</th>
+                                    <th class="text-center">Status</th>
                                             <th class="text-center" style="min-width: 120px;">Action</th>
                                         </tr>
                                     </thead>
@@ -184,7 +185,14 @@
                                         @foreach ($claims as $claim)
                                         <tr>
                                             <td>{{ $claim->id }}</td>
-                                            <td class="text-center small">CLM</td>
+                                            <td>
+                                        @if($claim->creator)
+                                            <span class="text-dark small">{{ $claim->creator->name }}</span>
+                                        @else
+                                            <span class="text-muted small">System</span>
+                                        @endif
+                                    </td>
+                                    <td class="text-center small">CLM</td>
                                             <td class="fw-bold text-success">{{ preg_replace('/[^0-9]/', '', $claim->claim_no) ?: '-' }}</td>
                                             <td class="small">{{ \Carbon\Carbon::parse($claim->claim_date)->format('d-M-Y') }}</td>
                                             <td>

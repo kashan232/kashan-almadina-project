@@ -181,6 +181,7 @@
                                   @endcan
                                   @can('Stock Transfer')
                                   <li><a href="{{url('stock_transfers')}}"><i class="fas fa-exchange-alt mr-2"></i> Stock Transfer</a></li>
+                                  <li><a href="{{route('stock_transfers.pending')}}"><i class="fas fa-clock mr-2"></i> Pending Transfer Requests</a></li>
                                   @endcan
                               </ul>
                           </div>

@@ -304,9 +304,8 @@
                                     <td class="text-end fw-bold text-primary">{{ number_format($sale->total_balance, 0) }}</td>
                                     
                                     <td>
-                                        @if($sale->user)
-                                            <span class="text-dark small">{{ $sale->user->name }}</span>
-                                            <br><span class="text-muted" style="font-size: 9px;">({{ $sale->user->roles->first()->name ?? 'User' }})</span>
+                                        @if($sale->creator)
+                                            <span class="text-dark small">{{ $sale->creator->name }}</span>
                                         @else
                                             <span class="text-muted small">System</span>
                                         @endif
