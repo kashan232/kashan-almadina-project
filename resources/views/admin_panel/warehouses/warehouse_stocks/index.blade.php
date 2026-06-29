@@ -205,8 +205,10 @@
                                 <tbody>
                                     @foreach($products as $product)
                                         @php
-                                            $shopStock = (float)$product->stock;
+                                            $shopHoldSum = (float) $product->stockHolds->where('warehouse_id', 0)->sum('hold_qty');
+                                            $shopStock = (float)$product->stock - $shopHoldSum;
                                             $whSum = 0;
+                                            $physicalWhSum = 0;
                                             $holdSum = (float) $product->stockHolds->sum('hold_qty');
                                         @endphp
                                         <tr>
@@ -225,12 +227,17 @@
                                             @foreach($warehouses as $wh)
                                                 @php
                                                     $whStockObj = $product->warehouseStocks->where('warehouse_id', $wh->id)->first();
-                                                    $qty = $whStockObj ? (float)$whStockObj->quantity : 0;
-                                                    $whSum += $qty;
+                                                    $physicalQty = $whStockObj ? (float)$whStockObj->quantity : 0;
+                                                    
+                                                    $whHoldSum = (float) $product->stockHolds->where('warehouse_id', $wh->id)->sum('hold_qty');
+                                                    $availableQty = $physicalQty - $whHoldSum;
+
+                                                    $whSum += $availableQty;
+                                                    $physicalWhSum += $physicalQty;
                                                 @endphp
                                                 <td class="text-center wh-col" style="border-left: 1px solid #f1f5f9;">
-                                                    @if($qty > 0)
-                                                        <span class="stock-badge text-dark">{{ number_format($qty, 0) }}</span>
+                                                    @if($availableQty > 0)
+                                                        <span class="stock-badge text-dark">{{ number_format($availableQty, 0) }}</span>
                                                     @else
                                                         <span class="text-muted" style="opacity: 0.3;">0</span>
                                                     @endif
@@ -246,15 +253,14 @@
                                                 @endif
                                             </td>
 
-                                            {{-- Grand Total --}}
                                             <td class="text-center total-col">
                                                 @php 
-                                                    $systemStock = ($shopStock + $whSum); 
-                                                    $physicalTotal = $systemStock + $holdSum;
+                                                    $availableStock = ($shopStock + $whSum); 
+                                                    $systemStock = $availableStock + $holdSum;
                                                 @endphp
-                                                <span class="fs-6 d-block" title="Physical Total">{{ number_format($physicalTotal, 0) }}</span>
+                                                <span class="fs-6 d-block" title="Physical Total">{{ number_format($systemStock, 0) }}</span>
                                                 @if($holdSum > 0)
-                                                    <small class="text-primary fw-bold" style="font-size: 10px;">Available: {{ number_format($systemStock, 0) }}</small>
+                                                    <small class="text-primary fw-bold" style="font-size: 10px;">Available: {{ number_format($availableStock, 0) }}</small>
                                                 @endif
                                             </td>
                                         </tr>

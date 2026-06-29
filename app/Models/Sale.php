@@ -38,22 +38,15 @@ class Sale extends Model
 
     public static function generateInvoiceNo()
     {
-        // 1. Get max from Sales
-        $lastSale = self::withoutGlobalScopes()
-            ->orderBy('id', 'desc')
-            ->first();
-        
-        // 2. Get max from Productbookings
-        $lastBooking = \App\Models\Productbooking::withoutGlobalScopes()
-            ->orderBy('id', 'desc')
-            ->first();
+        $salesInvoices = self::withoutGlobalScopes()->pluck('invoice_no');
+        $bookingInvoices = \App\Models\Productbooking::withoutGlobalScopes()->pluck('invoice_no');
 
         $maxNum = 0;
 
-        foreach ([$lastSale, $lastBooking] as $last) {
-            if ($last && $last->invoice_no) {
-                // Remove any non-numeric characters to get the number part
-                $num = (int) preg_replace('/[^0-9]/', '', $last->invoice_no);
+        foreach ($salesInvoices->concat($bookingInvoices) as $invoiceNo) {
+            if ($invoiceNo) {
+                // Extract only numbers
+                $num = (int) preg_replace('/[^0-9]/', '', $invoiceNo);
                 if ($num > $maxNum) {
                     $maxNum = $num;
                 }
