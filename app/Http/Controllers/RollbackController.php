@@ -317,36 +317,41 @@ class RollbackController extends Controller
 
     private function rollbackStockHold($invoiceNo)
     {
-        $hold = $this->findRecord(StockHold::class, 'invoice_no', $invoiceNo);
-        if (!$hold) throw new \Exception("Stock Hold $invoiceNo not found.");
+        $hold = $this->findRecord(StockHoldVoucher::class, 'voucher_no', $invoiceNo);
+        if (!$hold) throw new \Exception("Stock Hold Voucher $invoiceNo not found.");
         
         $this->validateRollbackDate($hold);
         
         if ($hold->status !== 'Posted') throw new \Exception("Hold $invoiceNo is not Posted.");
 
-        foreach (json_decode($hold->product_id) as $idx => $pid) {
-            $qty = json_decode($hold->qty)[$idx];
-            $wid = json_decode($hold->warehouse_id)[$idx];
-            $this->adjustStock($pid, $wid, $qty, 'add');
-        }
-
+        // StockHold posting just sets status to Posted. No physical stock was deducted.
         $hold->update(['status' => 'Unposted']);
         return back()->with('success', "Stock Hold #$invoiceNo set to Unposted.");
     }
 
     private function rollbackStockRelease($invoiceNo)
     {
-        $rel = $this->findRecord(StockRelease::class, 'invoice_no', $invoiceNo);
-        if (!$rel) throw new \Exception("Stock Release $invoiceNo not found.");
+        $rel = $this->findRecord(\App\Models\StockReleaseVoucher::class, 'voucher_no', $invoiceNo);
+        if (!$rel) throw new \Exception("Stock Release Voucher $invoiceNo not found.");
         
         $this->validateRollbackDate($rel);
         
         if ($rel->status !== 'Posted') throw new \Exception("Release $invoiceNo is not Posted.");
 
-        foreach (json_decode($rel->product_id) as $idx => $pid) {
-            $qty = json_decode($rel->qty)[$idx];
-            $wid = json_decode($rel->warehouse_id)[$idx];
-            $this->adjustStock($pid, $wid, $qty, 'subtract');
+        $rel->load('items.hold');
+
+        foreach ($rel->items as $item) {
+            // 1. Add back physical stock that was deducted during release
+            $this->adjustStock($item->product_id, $item->warehouse_id, $item->release_qty, 'add');
+
+            // 2. Restore hold_qty in the original StockHold
+            if ($item->hold) {
+                $item->hold->hold_qty += $item->release_qty;
+                $item->hold->status = 0; // Set back to active hold
+                $item->hold->save();
+            }
+
+            $item->update(['status' => 'Unposted']);
         }
 
         $rel->update(['status' => 'Unposted']);

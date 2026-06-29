@@ -43,7 +43,7 @@ class StockHoldVoucher extends Model
     {
         $latest = self::withoutGlobalScopes()->orderBy('id', 'desc')->first();
         $nextId = $latest ? (int) preg_replace('/[^0-9]/', '', $latest->voucher_no) + 1 : 1;
-        return str_pad($nextId, 4, '0', STR_PAD_LEFT);
+        return 'SH-' . str_pad($nextId, 4, '0', STR_PAD_LEFT);
     }
 
     public function creator()

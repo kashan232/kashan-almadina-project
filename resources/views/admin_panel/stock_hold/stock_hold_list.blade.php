@@ -173,7 +173,7 @@
                                         @foreach($vouchers as $v)
                                         <tr>
                                             <td class="text-muted small">SH</td>
-                                            <td class="fw-bold text-primary">{{ (int) preg_replace('/[^0-9]/', '', substr($v->voucher_no, strlen('SH-'))) }}</td>
+                                            <td class="fw-bold text-primary">{{ preg_replace('/^SH-/', '', $v->voucher_no) }}</td>
                                             <td class="small">{{ \Carbon\Carbon::parse($v->date)->format('d-M-Y') }}</td>
                                             <td>
                                                 @if($v->party_type == 'customer' || $v->party_type == 'walkin')

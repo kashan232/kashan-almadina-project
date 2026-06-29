@@ -185,13 +185,7 @@
                                         @foreach ($claims as $claim)
                                         <tr>
                                             <td>{{ $claim->id }}</td>
-                                            <td>
-                                        @if($claim->creator)
-                                            <span class="text-dark small">{{ $claim->creator->name }}</span>
-                                        @else
-                                            <span class="text-muted small">System</span>
-                                        @endif
-                                    </td>
+
                                     <td class="text-center small">CLM</td>
                                             <td class="fw-bold text-success">{{ preg_replace('/[^0-9]/', '', $claim->claim_no) ?: '-' }}</td>
                                             <td class="small">{{ \Carbon\Carbon::parse($claim->claim_date)->format('d-M-Y') }}</td>
@@ -211,6 +205,13 @@
                                             <td class="small text-muted">{{ Str::limit($claim->fault_found, 15) }}</td>
                                             <td class="small text-muted">{{ Str::limit($claim->remarks, 15) }}</td>
                                             <td class="text-end fw-bold">{{ number_format((float)$claim->claim_income, 0) }}</td>
+                                            <td>
+                                                @if($claim->creator)
+                                                    <span class="text-dark small">{{ $claim->creator->name }}</span>
+                                                @else
+                                                    <span class="text-muted small">System</span>
+                                                @endif
+                                            </td>
                                             <td class="text-center">
                                                 @if($claim->status === 'Posted')
                                                     <span class="badge bg-success rounded-pill px-3">Posted</span>

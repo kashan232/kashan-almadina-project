@@ -389,9 +389,9 @@
       <input type="hidden" id="sale_id" name="sale_id" value="{{ isset($sale) ? $sale->id : '' }}">
 
 
-      <div class="d-flex gap-2 align-items-start border-bottom py-2">
+      <div class="d-flex gap-2 align-items-stretch border-bottom py-2">
         {{-- LEFT: Invoice & Customer --}}
-        <div class="bg-light border rounded-3 p-2 shadow-sm" style="min-width: 280px; max-width: 280px; font-size: 0.8rem;">
+        <div class="bg-light border rounded-3 p-2 shadow-sm d-flex flex-column" style="min-width: 280px; max-width: 280px; font-size: 0.8rem;">
           <div class="d-flex align-items-center justify-content-between mb-2 pb-1 border-bottom">
             <h6 class="mb-0 fw-bold text-primary">
               <i class="bi bi-receipt me-1"></i>Invoice & Customer
@@ -531,7 +531,7 @@
         </div>
 
         {{-- RIGHT: Items --}}
-        <div class="flex-grow-1">
+        <div class="flex-grow-1 d-flex flex-column">
           <div class="d-flex justify-content-between align-items-center mb-2">
             <div class="section-title mb-0">Items</div>
             <div class="d-flex align-items-center gap-2 wh-bulk-container">
@@ -548,21 +548,34 @@
             </div>
           </div>
 
-          <div class="table-responsive">
-            <table class="table table-bordered table-sm mb-0" style="width: 100%; font-size: 0.9rem;">
+          <div class="table-responsive flex-grow-1 d-flex flex-column" style="min-height: 420px; overflow-y: auto;">
+            <table class="table table-bordered table-sm mb-0" style="width: 100%; font-size: 0.9rem; table-layout: fixed;">
+              <colgroup>
+                <col style="width:6%">
+                <col style="width:14%">
+                <col style="width:10%">
+                <col style="width:6%">
+                <col style="width:8%">
+                <col style="width:6%">
+                <col style="width:8%">
+                <col style="width:14%">
+                <col style="width:12%">
+                <col style="width:13%">
+                <col style="width:3%">
+              </colgroup>
               <thead class="table-light">
                 <tr>
-                  <th style="width:7%">Item ID</th>
-                  <th style="width:18%">Product</th>
-                  <th style="width:11%" class="wh-col">Warehouse</th>
-                  <th style="width:8%" class="text-center">Stock</th>
-                  <th style="width:10%" class="text-end">Sales Price</th>
-                  <th style="width:7%" class="text-center">Qty</th>
-                  <th style="width:10%" class="text-end">Retail Price</th>
-                  <th style="width:16%" class="text-center">Discount (% | Amt)</th>
-                  <th style="width:10%" class="text-end">Rate</th>
-                  <th style="width:10%" class="text-end">Amount</th>
-                  <th style="width:3%" class="text-center">—</th>
+                  <th>Item ID</th>
+                  <th>Product</th>
+                  <th class="wh-col">Warehouse</th>
+                  <th class="text-center">Stock</th>
+                  <th class="text-end">Sales Price</th>
+                  <th class="text-center">Qty</th>
+                  <th class="text-end">Retail Price</th>
+                  <th class="text-center">Discount (% | Amt)</th>
+                  <th class="text-end">Rate</th>
+                  <th class="text-end">Amount</th>
+                  <th class="text-center">—</th>
                 </tr>
               </thead>
               <tbody id="salesTableBody">
@@ -679,13 +692,29 @@
                   @endforeach
                 @endif
               </tbody>
-              <tfoot class="table-light">
-                <tr>
-                  <td colspan="5" class="text-end fw-bold">Totals:</td>
-                  <td class="text-center fw-bold"><span id="tQty">0</span></td>
-                  <td class="text-end fw-bold"><span id="tRetail">0.00</span></td>
+            </table>
+
+            <table class="table table-bordered table-sm mb-0 mt-auto" style="width: 100%; font-size: 0.9rem; table-layout: fixed;">
+              <colgroup>
+                <col style="width:6%">
+                <col style="width:14%">
+                <col style="width:10%">
+                <col style="width:6%">
+                <col style="width:8%">
+                <col style="width:6%">
+                <col style="width:8%">
+                <col style="width:14%">
+                <col style="width:12%">
+                <col style="width:13%">
+                <col style="width:3%">
+              </colgroup>
+              <tfoot class="bg-light border-top shadow-sm">
+                <tr class="align-middle">
+                  <td colspan="5" class="text-end fw-bold text-muted text-uppercase pe-3" style="font-size: 0.75rem; letter-spacing: 0.5px;">Totals:</td>
+                  <td class="text-center fw-bold text-primary" style="font-size: 0.95rem;"><span id="tQty">0</span></td>
+                  <td class="text-end fw-bold text-dark"><span id="tRetail">0.00</span></td>
                   <td colspan="2"></td>
-                  <td class="text-end fw-bold"><span id="totalAmount">0.00</span></td>
+                  <td class="text-end fw-bold text-success" style="font-size: 1rem;"><span id="totalAmount">0.00</span></td>
                   <td></td>
                 </tr>
               </tfoot>
@@ -695,13 +724,13 @@
       </div>
 
       {{-- Receipt Vouchers + Totals --}}
-      <div class="row g-3 mt-3">
+      <div class="row g-2 mt-2">
         {{-- Receipt Vouchers --}}
         <div class="col-lg-7">
           <div class="bg-light border rounded-3 p-2 shadow-sm">
-            <div class="d-flex align-items-center justify-content-between mb-2 pb-1 border-bottom">
-              <h6 class="mb-0 fw-bold text-success">
-                <i class="bi bi-cash-stack me-2"></i>Receipt Vouchers
+            <div class="d-flex align-items-center justify-content-between mb-1 pb-1 border-bottom">
+              <h6 class="mb-0 fw-bold text-success" style="font-size: 0.85rem;">
+                <i class="bi bi-cash-stack me-1"></i>Receipt Vouchers
               </h6>
               <button type="button" class="btn btn-success btn-sm" id="btnAddRV">
                 <i class="bi bi-plus-circle me-1"></i>Add Receipt
@@ -816,9 +845,9 @@
               @endif
             </div>
             
-            <div class="d-flex justify-content-between align-items-center mt-3 p-2 bg-success bg-opacity-10 rounded-3">
-              <span class="text-success fw-bold">Receipts Total:</span>
-              <span class="fw-bold fs-5 text-success" id="receiptsTotal">0.00</span>
+            <div class="d-flex justify-content-between align-items-center mt-2 p-1 px-2 bg-success bg-opacity-10 rounded-2">
+              <span class="text-success fw-bold small">Receipts Total:</span>
+              <span class="fw-bold text-success" id="receiptsTotal" style="font-size: 1.1rem;">0.00</span>
             </div>
           </div>
         </div>
@@ -826,9 +855,9 @@
         {{-- Totals --}}
         <div class="col-lg-5">
           <div class="bg-light border rounded-3 p-2 shadow-sm">
-            <div class="d-flex align-items-center justify-content-between mb-2 pb-1 border-bottom">
-              <h6 class="mb-0 fw-bold text-info">
-                <i class="bi bi-calculator me-2"></i>Totals
+            <div class="d-flex align-items-center justify-content-between mb-1 pb-1 border-bottom">
+              <h6 class="mb-0 fw-bold text-info" style="font-size: 0.85rem;">
+                <i class="bi bi-calculator me-1"></i>Totals
               </h6>
             </div>
 
@@ -838,13 +867,13 @@
               <!-- Sub-Total moved to table footer -->
 
               <!-- Invoice Total -->
-              <div class="d-flex justify-content-between py-2 border-bottom">
+              <div class="d-flex justify-content-between py-1 border-bottom">
                 <span class="text-muted small fw-bold">Invoice Total</span>
-                <span class="fw-bold fs-6" id="tSub">0.00</span>
+                <span class="fw-bold" id="tSub" style="font-size: 0.95rem;">0.00</span>
               </div>
 
               <!-- Order Discount (Merged) -->
-              <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+              <div class="d-flex justify-content-between align-items-center py-1 border-bottom">
                 <span class="text-muted small">Order Discount</span>
                 <div class="d-flex align-items-center gap-3">
                   <div class="d-flex gap-1" style="width:230px;">
@@ -885,21 +914,21 @@
               </div>
 
               <!-- Total Receipts -->
-              <div class="d-flex justify-content-between py-2 border-bottom">
+              <div class="d-flex justify-content-between py-1 border-bottom">
                 <span class="text-success small fw-semibold">Less: Receipts</span>
                 <span class="fw-semibold text-success" id="tReceiptsMirror">0.00</span>
               </div>
 
               <!-- Previous Balance -->
-              <div class="d-flex justify-content-between py-2 border-bottom">
+              <div class="d-flex justify-content-between py-1 border-bottom">
                 <span class="text-warning small fw-semibold">Previous Balance</span>
                 <span class="fw-semibold text-warning" id="tPrev">0.00</span>
               </div>
 
               <!-- Payable / Total Balance -->
-              <div class="d-flex justify-content-between py-2 bg-primary bg-opacity-10 rounded-3 px-2 mt-1">
-                <span class="fw-bold text-primary">Payable / Total Balance</span>
-                <span class="fw-bold fs-5 text-primary" id="tPayable">0.00</span>
+              <div class="d-flex justify-content-between align-items-center py-1 bg-primary bg-opacity-10 rounded-2 px-2 mt-1">
+                <span class="fw-bold text-primary small">Payable / Total Balance</span>
+                <span class="fw-bold text-primary" id="tPayable" style="font-size: 1.1rem;">0.00</span>
               </div>
 
               {{-- hidden mirrors for backend --}}
@@ -913,7 +942,7 @@
       </div>
 
       {{-- BOTTOM BUTTONS --}}
-      <div class="d-flex gap-2 mt-4 justify-content-end border-top pt-3">
+      <div class="d-flex gap-2 mt-2 justify-content-end border-top pt-2">
         
         <button type="button" id="saveDraftBtn" class="btn btn-sm btn-warning rounded-pill px-4 shadow-sm">
           <i class="fa fa-floppy-o me-1"></i> Save Draft
