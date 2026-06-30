@@ -609,22 +609,22 @@
                           @endforeach
                         </select>
                       </td>
-                      <td style="width: 80px;"><input type="text" class="form-control form-control-sm stock text-center input-readonly" name="stock[]" value="{{ $stock }}" readonly></td>
-                      <td style="width: 100px;"><input type="number" step="0.01" class="form-control form-control-sm text-end sales-price" name="sales-price[]" value="{{ $sPrice }}"></td>
-                      <td style="width: 70px;"><input type="number" step="any" class="form-control form-control-sm text-center sales-qty" name="sales-qty[]" value="{{ $qty }}"></td>
-                      <td style="width: 100px;"><input type="text" class="form-control form-control-sm text-end retail-price input-readonly" name="retail-price[]" value="{{ $rPrice }}" readonly></td>
+                      <td style="width: 80px;"><input type="text" class="form-control form-control-sm stock text-center input-readonly" name="stock[]" value="{{ number_format((float)$stock) }}" readonly></td>
+                      <td style="width: 100px;"><input type="text" class="form-control form-control-sm text-end sales-price" name="sales-price[]" value="{{ number_format((float)$sPrice, 2) }}" onblur="this.value=toNum(this.value).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})"></td>
+                      <td style="width: 70px;"><input type="text" class="form-control form-control-sm text-center sales-qty" name="sales-qty[]" value="{{ $qty }}"></td>
+                      <td style="width: 100px;"><input type="text" class="form-control form-control-sm text-end retail-price input-readonly" name="retail-price[]" value="{{ number_format((float)$rPrice, 2) }}" readonly></td>
                       <td style="width:165px;">
                         <div class="input-group input-group-sm">
-                          <input type="number" step="0.01" class="form-control text-end discount-value" placeholder="%" value="{{ $dPct }}" style="max-width: 65px;">
+                          <input type="text" class="form-control text-end discount-value" placeholder="%" value="{{ number_format((float)$dPct, 2) }}" style="max-width: 65px;" onblur="this.value=toNum(this.value).toLocaleString('en-US', {maximumFractionDigits: 2})">
                           <span class="input-group-text px-1" style="font-size: 0.7rem;">%</span>
-                          <input type="text" class="form-control text-end discount-amount-display input-readonly" value="{{ $dAmt }}" readonly style="background: #f8f9fa;">
+                          <input type="text" class="form-control text-end discount-amount-display input-readonly" value="{{ number_format((float)$dAmt, 2) }}" readonly style="background: #f8f9fa;">
                         </div>
                         <input type="hidden" class="discount-mode" name="discount_mode[]" value="percent">
                         <input type="hidden" class="discount-percent" name="discount-percent[]" value="{{ $dPct }}">
                         <input type="hidden" class="discount-amount" name="discount-amount[]" value="{{ $dAmt }}">
                       </td>
-                      <td style="width: 100px;"><input type="text" class="form-control form-control-sm text-end sales-rate input-readonly" name="sales-rate[]" value="{{ old('sales-rate')[$index] ?? 0 }}" readonly></td>
-                      <td style="width: 100px;"><input type="text" class="form-control form-control-sm text-end sales-amount input-readonly" name="sales-amount[]" value="{{ $sAmount }}" readonly></td>
+                      <td style="width: 100px;"><input type="text" class="form-control form-control-sm text-end sales-rate input-readonly" name="sales-rate[]" value="{{ number_format((float)(old('sales-rate')[$index] ?? 0), 2) }}" readonly></td>
+                      <td style="width: 100px;"><input type="text" class="form-control form-control-sm text-end sales-amount input-readonly" name="sales-amount[]" value="{{ number_format((float)$sAmount, 2) }}" readonly></td>
                       <td class="text-center" style="width: 40px;"><button type="button" class="btn btn-xs btn-outline-danger del-row">&times;</button></td>
                     </tr>
                   @endforeach
@@ -665,22 +665,22 @@
                           @endforeach
                         </select>
                       </td>
-                      <td style="width: 80px;"><input type="text" class="form-control form-control-sm stock text-center input-readonly" name="stock[]" value="{{ $stock }}" readonly></td>
-                      <td style="width: 100px;"><input type="number" step="0.01" class="form-control form-control-sm text-end sales-price" name="sales-price[]" value="{{ $sPrice }}"></td>
-                      <td style="width: 70px;"><input type="number" step="any" class="form-control form-control-sm text-center sales-qty" name="sales-qty[]" value="{{ $qty }}"></td>
-                      <td style="width: 100px;"><input type="text" class="form-control form-control-sm text-end retail-price input-readonly" name="retail-price[]" value="{{ $rPrice }}" readonly></td>
+                      <td style="width: 80px;"><input type="text" class="form-control form-control-sm stock text-center input-readonly" name="stock[]" value="{{ number_format((float)$stock) }}" readonly></td>
+                      <td style="width: 100px;"><input type="text" class="form-control form-control-sm text-end sales-price" name="sales-price[]" value="{{ number_format((float)$sPrice, 2) }}" onblur="this.value=toNum(this.value).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})"></td>
+                      <td style="width: 70px;"><input type="text" class="form-control form-control-sm text-center sales-qty" name="sales-qty[]" value="{{ $qty }}"></td>
+                      <td style="width: 100px;"><input type="text" class="form-control form-control-sm text-end retail-price input-readonly" name="retail-price[]" value="{{ number_format((float)$rPrice, 2) }}" readonly></td>
                       <td style="width:165px;">
                         <div class="input-group input-group-sm">
-                          <input type="number" step="0.01" class="form-control text-end discount-value" placeholder="%" value="{{ $dPct }}" style="max-width: 65px;">
+                          <input type="text" class="form-control text-end discount-value" placeholder="%" value="{{ number_format((float)$dPct, 2) }}" style="max-width: 65px;" onblur="this.value=toNum(this.value).toLocaleString('en-US', {maximumFractionDigits: 2})">
                           <span class="input-group-text px-1" style="font-size: 0.7rem;">%</span>
-                          <input type="text" class="form-control text-end discount-amount-display input-readonly" value="{{ $dAmt }}" readonly style="background: #f8f9fa;">
+                          <input type="text" class="form-control text-end discount-amount-display input-readonly" value="{{ number_format((float)$dAmt, 2) }}" readonly style="background: #f8f9fa;">
                         </div>
                         <input type="hidden" class="discount-mode" name="discount_mode[]" value="{{ $dMode }}">
                         <input type="hidden" class="discount-percent" name="discount-percent[]" value="{{ $dPct }}">
                         <input type="hidden" class="discount-amount" name="discount-amount[]" value="{{ $dAmt }}">
                       </td>
-                      <td style="width: 100px;"><input type="text" class="form-control form-control-sm text-end sales-rate input-readonly" name="sales-rate[]" value="{{ $sRate }}" readonly></td>
-                      <td style="width: 100px;"><input type="text" class="form-control form-control-sm text-end sales-amount input-readonly" name="sales-amount[]" value="{{ $sAmount }}" readonly></td>
+                      <td style="width: 100px;"><input type="text" class="form-control form-control-sm text-end sales-rate input-readonly" name="sales-rate[]" value="{{ number_format((float)$sRate, 2) }}" readonly></td>
+                      <td style="width: 100px;"><input type="text" class="form-control form-control-sm text-end sales-amount input-readonly" name="sales-amount[]" value="{{ number_format((float)$sAmount, 2) }}" readonly></td>
                       <td class="text-center" style="width: 40px;"><button type="button" class="btn btn-xs btn-outline-danger del-row">&times;</button></td>
                     </tr>
                   @endforeach
@@ -1009,10 +1009,14 @@
         $select.empty().append(newOption).trigger('change');
     }
     
-    $row.find('.stock').val(data.stock || 0);
-    $row.find('.sales-price').val(parseFloat(data.sale_price || 0).toFixed(2));
-    $row.find('.retail-price').val(parseFloat(data.retail_price || 0).toFixed(2));
+    $row.find('.stock').val(parseFloat(data.stock || 0).toLocaleString('en-US'));
+    $row.find('.sales-price').val(parseFloat(data.sale_price || 0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}));
+    $row.find('.retail-price').val(parseFloat(data.retail_price || 0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}));
     
+    if (!$row.find('.sales-qty').val()) {
+        $row.find('.sales-qty').val(1);
+    }
+
     computeRow($row);
     updateGrandTotals();
     refreshPostedState();
@@ -1122,21 +1126,21 @@
         </select>
       </td>
       <td style="width: 80px;"><input type="text" class="form-control form-control-sm stock text-center input-readonly" name="stock[]" readonly></td>
-      <td style="width: 100px;"><input type="number" step="0.01" class="form-control form-control-sm text-end sales-price" name="sales-price[]" value="0"></td>
-      <td style="width: 70px;"><input type="number" step="any" class="form-control form-control-sm text-center sales-qty" name="sales-qty[]" value=""></td>
-      <td style="width: 100px;"><input type="text" class="form-control form-control-sm text-end retail-price input-readonly" name="retail-price[]" value="0" readonly></td>
+      <td style="width: 100px;"><input type="text" class="form-control form-control-sm text-end sales-price" name="sales-price[]" value="0.00" onblur="this.value=toNum(this.value).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})"></td>
+      <td style="width: 70px;"><input type="text" class="form-control form-control-sm text-center sales-qty" name="sales-qty[]" value=""></td>
+      <td style="width: 100px;"><input type="text" class="form-control form-control-sm text-end retail-price input-readonly" name="retail-price[]" value="0.00" readonly></td>
       <td style="width: 165px;">
         <div class="input-group input-group-sm">
-          <input type="number" step="0.01" class="form-control text-end discount-value" placeholder="%" value="0" style="max-width: 65px;">
+          <input type="text" class="form-control text-end discount-value" placeholder="%" value="0" style="max-width: 65px;" onblur="this.value=toNum(this.value).toLocaleString('en-US', {maximumFractionDigits: 2})">
           <span class="input-group-text px-1" style="font-size: 0.7rem;">%</span>
-          <input type="text" class="form-control text-end discount-amount-display input-readonly" value="0" readonly style="background: #f8f9fa;">
+          <input type="text" class="form-control text-end discount-amount-display input-readonly" value="0.00" readonly style="background: #f8f9fa;">
         </div>
         <input type="hidden" class="discount-mode" name="discount_mode[]" value="percent">
         <input type="hidden" class="discount-percent" name="discount-percent[]" value="0">
         <input type="hidden" class="discount-amount" name="discount-amount[]" value="0">
       </td>
-      <td style="width: 100px;"><input type="text" class="form-control form-control-sm text-end sales-rate input-readonly" name="sales-rate[]" value="0" readonly></td>
-      <td style="width: 100px;"><input type="text" class="form-control form-control-sm text-end sales-amount input-readonly" name="sales-amount[]" value="0" readonly></td>
+      <td style="width: 100px;"><input type="text" class="form-control form-control-sm text-end sales-rate input-readonly" name="sales-rate[]" value="0.00" readonly></td>
+      <td style="width: 100px;"><input type="text" class="form-control form-control-sm text-end sales-amount input-readonly" name="sales-amount[]" value="0.00" readonly></td>
       <td class="text-center" style="width: 40px;"><button type="button" class="btn btn-xs btn-outline-danger del-row">&times;</button></td>
     </tr>`;
 
@@ -1235,9 +1239,29 @@
     $('#btnPosted, #btnHeaderPosted').prop('disabled', !state);
   }
 
-  /* ---------- SAVE/POST ---------- */
   function serializeForm() {
-    return $('#saleForm').serialize();
+    // Strip commas from formatted fields
+    const formatClasses = ['.stock', '.sales-price', '.sales-qty', '.retail-price', '.discount-value', '.sales-rate', '.sales-amount', '.discount-amount-display'];
+    formatClasses.forEach(cls => {
+        $('#saleForm').find(cls).each(function() {
+            $(this).data('old-val-comma', $(this).val()); // Store original
+            $(this).val(toNum($(this).val()));            // Strip comma
+        });
+    });
+
+    const data = $('#saleForm').serialize();
+
+    // Restore commas
+    formatClasses.forEach(cls => {
+        $('#saleForm').find(cls).each(function() {
+            if ($(this).data('old-val-comma') !== undefined) {
+                $(this).val($(this).data('old-val-comma'));
+                $(this).removeData('old-val-comma');
+            }
+        });
+    });
+    
+    return data;
   }
 
   function ensureSaved() {
@@ -1807,6 +1831,9 @@
 
   /* ---------- Row compute with Discount Toggle ---------- */
   function toNum(v) {
+    if (typeof v === 'string') {
+      v = v.replace(/,/g, '');
+    }
     return parseFloat(v || 0) || 0;
   }
 
@@ -1825,7 +1852,7 @@
     $row.find('.discount-amount').val(discAmt.toFixed(2));
     
     // Update visible discount amount display
-    $row.find('.discount-amount-display').val(discAmt.toFixed(2));
+    $row.find('.discount-amount-display').val(discAmt.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}));
 
     // Calculate Rate per Unit (Sales Price minus unit discount)
     let rate = 0;
@@ -1834,12 +1861,12 @@
     } else {
         rate = sp;
     }
-    $row.find('.sales-rate').val(rate.toFixed(2));
+    $row.find('.sales-rate').val(rate.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}));
 
     // Calculate Net Amount for the row (Sales Price * Qty - Discount)
     const lineGross = sp * qty;
     const netAmount = Math.max(0, lineGross - discAmt);
-    $row.find('.sales-amount').val(netAmount.toFixed(2));
+    $row.find('.sales-amount').val(netAmount.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}));
   }
 
   // Discount Toggle Button Click - ELIMINATED (only percent now)
