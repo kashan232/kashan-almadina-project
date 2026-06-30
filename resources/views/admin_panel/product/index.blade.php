@@ -305,80 +305,43 @@
             <div class="modal-body p-4 bg-light">
                 
                 {{-- Pricing Summary Cards --}}
-                <div class="row g-4 mb-4">
-                    {{-- Purchase Section --}}
-                    <div class="col-lg-6">
-                        <div class="card h-100 border-0 shadow-sm overflow-hidden">
-                            <div class="card-header bg-primary text-white py-2">
-                                <h6 class="mb-0 fs-14 fw-bold"><i class="fa fa-shopping-cart me-2"></i>Current Purchase Details</h6>
-                            </div>
-                            <div class="card-body">
-                                <div class="row g-3">
-                                    <div class="col-4">
-                                        <div class="p-2 border-start border-primary border-4 bg-light rounded">
-                                            <small class="text-muted d-block text-uppercase fw-bold" style="font-size:10px;">Retail Price</small>
-                                            <span class="fw-bold fs-15" id="view_purchase_retail">0.00</span>
-                                        </div>
-                                    </div>
-                                    <div class="col-4">
-                                        <div class="p-2 border-start border-info border-4 bg-light rounded">
-                                            <small class="text-muted d-block text-uppercase fw-bold" style="font-size:10px;">Tax % / Amt</small>
-                                            <span class="fw-bold fs-15"><span id="view_purchase_tax_pct">0%</span> <small class="text-muted">/ <span id="view_purchase_tax_amt">0</span></small></span>
-                                        </div>
-                                    </div>
-                                    <div class="col-4">
-                                        <div class="p-2 border-start border-warning border-4 bg-light rounded">
-                                            <small class="text-muted d-block text-uppercase fw-bold" style="font-size:10px;">Disc % / Amt</small>
-                                            <span class="fw-bold fs-15"><span id="view_purchase_disc_pct">0%</span> <small class="text-muted">/ <span id="view_purchase_disc_amt">0</span></small></span>
-                                        </div>
-                                    </div>
-                                    <div class="col-12">
-                                        <div class="p-2 border-start border-success border-4 bg-info-subtle rounded text-center">
-                                            <small class="text-muted d-block text-uppercase fw-bold" style="font-size:10px;">Net Purchase Cost (Final)</small>
-                                            <span class="fw-bold fs-18 text-primary" id="view_purchase_net">0.00</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    {{-- Sale Section --}}
-                    <div class="col-lg-6">
+                <div class="row justify-content-center mb-4">
+                    {{-- Sale Section Only --}}
+                    <div class="col-lg-10">
                         <div class="card h-100 border-0 shadow-sm overflow-hidden text-white" style="background: linear-gradient(135deg, #198754 0%, #0d6efd 100%);">
-                            <div class="card-header bg-transparent border-bottom border-white border-opacity-25 py-2">
-                                <h6 class="mb-0 fs-14 fw-bold text-white"><i class="fa fa-line-chart me-2"></i>Current Sale Details</h6>
+                            <div class="card-header bg-transparent border-bottom border-white border-opacity-25 py-3">
+                                <h6 class="mb-0 fs-5 fw-bold text-white text-center"><i class="fa fa-line-chart me-2"></i>Current Sale Details</h6>
                             </div>
-                            <div class="card-body">
-                                <div class="row g-3">
-                                    <div class="col-4">
-                                        <div class="p-2 bg-white bg-opacity-10 rounded">
-                                            <small class="text-white-50 d-block text-uppercase fw-bold" style="font-size:10px;">Retail Price</small>
-                                            <span class="fw-bold fs-15 text-white" id="view_sale_retail">0.00</span>
+                            <div class="card-body p-4">
+                                <div class="row g-4">
+                                    <div class="col-md-4">
+                                        <div class="p-3 bg-white bg-opacity-10 rounded text-center h-100">
+                                            <small class="text-white-50 d-block text-uppercase fw-bold mb-2">Retail Price</small>
+                                            <span class="fw-bold fs-4 text-white" id="view_sale_retail">0.00</span>
                                         </div>
                                     </div>
-                                    <div class="col-4">
-                                        <div class="p-2 bg-white bg-opacity-10 rounded">
-                                            <small class="text-white-50 d-block text-uppercase fw-bold" style="font-size:10px;">Tax % / Amt</small>
-                                            <span class="fw-bold fs-15 text-white"><span id="view_sale_tax_pct">0%</span> <small class="text-white-50">/ <span id="view_sale_tax_amt">0</span></small></span>
+                                    <div class="col-md-4">
+                                        <div class="p-3 bg-white bg-opacity-10 rounded text-center h-100">
+                                            <small class="text-white-50 d-block text-uppercase fw-bold mb-2">Tax % / Amt</small>
+                                            <span class="fw-bold fs-4 text-white"><span id="view_sale_tax_pct">0%</span> <small class="text-white-50 fs-6">/ <span id="view_sale_tax_amt">0</span></small></span>
                                         </div>
                                     </div>
-                                    <div class="col-4">
-                                        <div class="p-2 bg-white bg-opacity-10 rounded">
-                                            <small class="text-white-50 d-block text-uppercase fw-bold" style="font-size:10px;">WHT % / Amt</small>
-                                            <span class="fw-bold fs-15 text-white"><span id="view_sale_wht_pct">0%</span> <small class="text-white-50">/ <span id="view_sale_wht_amt">0</span></small></span>
+                                    <div class="col-md-4">
+                                        <div class="p-3 bg-white bg-opacity-10 rounded text-center h-100">
+                                            <small class="text-white-50 d-block text-uppercase fw-bold mb-2">WHT % / Amt</small>
+                                            <span class="fw-bold fs-4 text-white"><span id="view_sale_wht_pct">0%</span> <small class="text-white-50 fs-6">/ <span id="view_sale_wht_amt">0</span></small></span>
                                         </div>
                                     </div>
-                                    <div class="col-6">
-                                        <div class="p-2 bg-white bg-opacity-10 rounded">
-                                            <small class="text-white-50 d-block text-uppercase fw-bold" style="font-size:10px;">Disc % / Amt</small>
-                                            <span class="fw-bold fs-15 text-white"><span id="view_sale_disc_pct">0%</span> <small class="text-white-50">/ <span id="view_sale_disc_amt">0</span></small></span>
+                                    <div class="col-md-6">
+                                        <div class="p-3 bg-white bg-opacity-10 rounded text-center h-100">
+                                            <small class="text-white-50 d-block text-uppercase fw-bold mb-2">Discount % / Amt</small>
+                                            <span class="fw-bold fs-4 text-white"><span id="view_sale_disc_pct">0%</span> <small class="text-white-50 fs-6">/ <span id="view_sale_disc_amt">0</span></small></span>
                                         </div>
                                     </div>
-                                    <div class="col-6">
-                                        <div class="p-2 bg-white rounded text-center">
-                                            <small class="text-success d-block text-uppercase fw-bold" style="font-size:10px;">Net Sale Value (Final)</small>
-                                            <span class="fw-bold fs-18 text-success" id="view_sale_net">0.00</span>
+                                    <div class="col-md-6">
+                                        <div class="p-3 bg-white rounded text-center h-100 d-flex flex-column justify-content-center shadow-sm">
+                                            <small class="text-success d-block text-uppercase fw-bold mb-2">Net Sale Value (Final)</small>
+                                            <span class="fw-bold fs-3 text-success" id="view_sale_net">0.00</span>
                                         </div>
                                     </div>
                                 </div>
@@ -399,10 +362,10 @@
                                 <thead class="bg-light text-muted small text-uppercase fw-bold">
                                     <tr>
                                         <th class="ps-3 py-3">Date Range</th>
-                                        <th class="py-3">Pur. Net</th>
-                                        <th class="py-3">Sale Net</th>
-                                        <th class="py-3">Taxes</th>
+                                        <th class="py-3">Retail Price</th>
+                                        <th class="py-3">Taxes / WHT</th>
                                         <th class="py-3">Discounts</th>
+                                        <th class="py-3">Sale Net</th>
                                         <th class="py-3 text-center">Status</th>
                                     </tr>
                                 </thead>
@@ -547,16 +510,15 @@
                                         <div class="fw-bold text-dark">${p.start_date || 'N/A'}</div>
                                         <small class="text-muted">${p.end_date ? 'to ' + p.end_date : 'present'}</small>
                                     </td>
-                                    <td class="py-3 fw-bold text-primary">₨ ${parseFloat(p.purchase_net_amount || 0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                                    <td class="py-3 fw-bold text-dark">₨ ${parseFloat(p.sale_retail_price || 0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                                    <td class="py-3">
+                                        <small class="d-block text-muted">Tax: ${p.sale_tax_percent || 0}% (₨ ${parseFloat(p.sale_tax_amount || 0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})})</small>
+                                        <small class="d-block text-muted">WHT: ${p.sale_wht_percent || 0}% (₨ ${parseFloat(p.sale_wht_amount || 0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})})</small>
+                                    </td>
+                                    <td class="py-3">
+                                        <small class="d-block text-muted">${p.sale_discount_percent || 0}% (₨ ${parseFloat(p.sale_discount_amount || 0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})})</small>
+                                    </td>
                                     <td class="py-3 fw-bold text-success">₨ ${parseFloat(p.sale_net_amount || 0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
-                                    <td class="py-3">
-                                        <small class="d-block text-muted">Pur: ${p.purchase_tax_percent || 0}%</small>
-                                        <small class="d-block text-muted">Sale: ${p.sale_tax_percent || 0}%</small>
-                                    </td>
-                                    <td class="py-3">
-                                        <small class="d-block text-muted">Pur: ${p.purchase_discount_percent || 0}%</small>
-                                        <small class="d-block text-muted">Sale: ${p.sale_discount_percent || 0}%</small>
-                                    </td>
                                     <td class="py-3 text-center">${statusBadge}</td>
                                 </tr>
                             `;
