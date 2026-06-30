@@ -898,6 +898,7 @@ $(document).ready(function() {
         }
 
         $('#whtAmount').val(whtAmt.toFixed(2));
+        $('#whtValue').val(whtAmt.toFixed(2));
         let net = subtotal + whtAmt;
 
         $('#subtotal').val(subtotal.toFixed(2));

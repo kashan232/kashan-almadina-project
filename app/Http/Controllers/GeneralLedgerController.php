@@ -345,9 +345,9 @@ class GeneralLedgerController extends Controller
             $credits = json_decode($jv->credit, true) ?? [];
             foreach($pIds as $idx => $pid) {
                 if ($pid == $id) {
-                    // For Summary Mode, we skip JVs linked to Purchases because the 'PJ' line shows the Net Amount.
+                    // For Summary Mode, we skip JVs linked to Purchases and Purchase Returns because the 'PJ'/'PRJ' line shows the Net Amount.
                     // Showing both would double-count the discount/tax impact.
-                    if (str_starts_with($jv->jvid, 'PJ-')) {
+                    if (str_starts_with($jv->jvid, 'PJ-') || str_starts_with($jv->jvid, 'PRJ-')) {
                         continue;
                     }
 
@@ -1475,7 +1475,10 @@ class GeneralLedgerController extends Controller
 
             if ($pr->wht > 0) {
                 $whtHeadName = 'WHT Deduction (Tax)';
-                if ($pr->purchase_id) {
+                if ($pr->wht_account_id) {
+                    $whtAcc = \App\Models\Account::find($pr->wht_account_id);
+                    if ($whtAcc) $whtHeadName = $whtAcc->title;
+                } elseif ($pr->purchase_id) {
                     $purchase = \App\Models\Purchase::find($pr->purchase_id);
                     if ($purchase && $purchase->wht_account_id) {
                         $whtAcc = \App\Models\Account::find($purchase->wht_account_id);
@@ -1673,7 +1676,11 @@ class GeneralLedgerController extends Controller
                 if ($pid == $id && in_array($types[$idx] ?? '', $typeArray)) {
                     $ref = 'JV';
                     $inv = $jv->jvid;
-                    
+                    // Skip PRJ-WHT JVs in detailed mode to avoid duplication since PRJ block handles it natively
+                    if (str_starts_with($inv, 'PRJ-WHT')) {
+                        continue;
+                    }
+
                     // Cleanup for Purchase-related JVs (e.g. PJ-ALLOC-50 -> PJ 50)
                     if (str_starts_with($inv, 'PJ-')) {
                         $ref = 'PJ';

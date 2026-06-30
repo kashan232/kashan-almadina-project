@@ -155,6 +155,7 @@ class PurchaseReturnController extends Controller
                     'wht'              => $request->wht,
                     'wht_percent'      => $request->wht_percent,
                     'wht_type'         => $request->wht_type,
+                    'wht_account_id'   => $request->wht_account_id,
                     'net_amount'       => $request->net_amount,
                     'status'           => 'Unposted',
                     'created_by'       => auth()->id(),
@@ -271,6 +272,7 @@ class PurchaseReturnController extends Controller
                     'wht'              => $request->wht,
                     'wht_percent'      => $request->wht_percent,
                     'wht_type'         => $request->wht_type,
+                    'wht_account_id'   => $request->wht_account_id,
                     'net_amount'       => $request->net_amount,
                 ]);
 
@@ -390,6 +392,32 @@ class PurchaseReturnController extends Controller
                         'credit' => $netCredit,
                         'closing_balance' => $impact,
                     ]);
+                }
+
+                // --- Secondary Impacts (JV & Account Balances) ---
+                $partyType = strtolower($pType);
+
+                // Post WHT Account Impact (Tax)
+                if ($ret->wht > 0 && $ret->wht_account_id) {
+                    $whtAccount = \App\Models\Account::find($ret->wht_account_id);
+                    if ($whtAccount) {
+                        // Update WHT account balance (Credit decreases Asset/Expense)
+                        $whtAccount->opening_balance = ($whtAccount->opening_balance ?? 0) - $ret->wht;
+                        $whtAccount->save();
+
+                        \App\Models\JournalVoucher::create([
+                            'jvid' => 'PRJ-WHT-' . $ret->invoice_no,
+                            'entry_date' => $ret->current_date,
+                            'status' => 'posted',
+                            'total_debit' => $ret->wht,
+                            'total_credit' => $ret->wht,
+                            'party_type' => json_encode([$partyType, (string)$whtAccount->head_id]),
+                            'party_id' => json_encode([$ret->purchasable_id, $whtAccount->id]),
+                            'debit' => json_encode([$ret->wht, 0]), // Debit Vendor
+                            'credit' => json_encode([0, $ret->wht]), // Credit WHT Account
+                            'remarks' => $whtAccount->title ?? 'WHT (Tax)',
+                        ]);
+                    }
                 }
 
                 $ret->status = 'Posted';
