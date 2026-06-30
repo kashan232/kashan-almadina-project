@@ -190,7 +190,7 @@ class StockTransferController extends Controller
             return response()->json(['success' => false, 'message' => 'Already posted or pending approval.'], 422);
         }
 
-        $isAdmin = auth()->user()->roles->pluck('name')->contains('Admin') || auth()->user()->usertype == 'admin';
+        $isAdmin = auth()->user()->roles->pluck('name')->contains('Admin');
 
         try {
             DB::transaction(function () use ($transfer, $isAdmin) {

@@ -18,7 +18,7 @@ class VendorController extends Controller
     {
         $query = Vendor::with(['latestLedger', 'creator']);
 
-        $isAdmin = Auth::user()->roles->pluck('name')->contains('Admin') || Auth::user()->usertype == 'admin';
+        $isAdmin = Auth::user()->roles->pluck('name')->contains('Admin');
         // Check if user is NOT an admin
         if (!$isAdmin) {
             $userId = Auth::id();
@@ -53,7 +53,7 @@ class VendorController extends Controller
     public function create()
     {
         $userGroups = UserGroup::all();
-        $isAdmin = Auth::user()->roles->pluck('name')->contains('Admin') || Auth::user()->usertype == 'admin';
+        $isAdmin = Auth::user()->roles->pluck('name')->contains('Admin');
         return view('admin_panel.vendors.create', compact('userGroups', 'isAdmin'));
     }
 
@@ -97,7 +97,7 @@ class VendorController extends Controller
     {
         $vendor = Vendor::findOrFail($id);
         $userGroups = UserGroup::all();
-        $isAdmin = Auth::user()->roles->pluck('name')->contains('Admin') || Auth::user()->usertype == 'admin';
+        $isAdmin = Auth::user()->roles->pluck('name')->contains('Admin');
         return view('admin_panel.vendors.edit', compact('vendor', 'userGroups', 'isAdmin'));
     }
 

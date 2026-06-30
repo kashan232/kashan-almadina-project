@@ -1,7 +1,7 @@
 @extends('admin_panel.layout.app')
 
 @section('content')
-@php $isAdmin = Auth::user()->roles->pluck('name')->contains('Admin') || Auth::user()->usertype == 'admin'; @endphp
+@php $isAdmin = Auth::user()->roles->pluck('name')->contains('Admin'); @endphp
 <style>
     /* Table Responsive & Scroll Enhancements */
     .table-responsive {
