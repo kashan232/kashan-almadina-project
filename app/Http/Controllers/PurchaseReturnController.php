@@ -210,7 +210,7 @@ class PurchaseReturnController extends Controller
 
     public function edit($id)
     {
-        $returnData = PurchaseReturn::with(['items.product.latestPrice', 'purchasable', 'warehouse', 'purchase.items.product'])->findOrFail($id);
+        $returnData = PurchaseReturn::with(['items.product.latestPrice', 'purchasable', 'warehouse', 'purchase.items.product', 'whtAccount'])->findOrFail($id);
         $nextInvoice = $returnData->invoice_no;
         $purchases = Purchase::where('status', 'Posted')->get(['id', 'invoice_no', 'purchasable_type', 'purchasable_id']);
         $vendors = \App\Models\Vendor::all();

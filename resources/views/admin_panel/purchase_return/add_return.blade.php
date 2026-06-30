@@ -48,7 +48,7 @@
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <div>
                     <h6 class="page-title ml-4">Create Purchase Return</h6>
-                    <span class="badge bg-danger ms-3" style="font-size:14px;">Return No: {{ $nextInvoice }}</span>
+                    <span class="badge bg-danger ms-3" style="font-size:14px;" id="invoiceNoDisplay">Return No: {{ isset($returnData) ? $nextInvoice : 'Auto-Generated' }}</span>
                 </div>
                 <div class="d-flex gap-2">
                     <div class="btn-group btn-group-sm" role="group">
@@ -429,6 +429,9 @@ $(document).ready(function() {
                 if(res.success) {
                     _savedReturnId = res.id;
                     showToast('✅ Draft Saved — ' + res.message, 'success');
+                    if (res.invoice_no) {
+                        $('#invoiceNoDisplay').text('Return No: ' + res.invoice_no);
+                    }
 
                     $('#postBtn')
                         .show()
@@ -1091,6 +1094,7 @@ window.printDiv = function(divId) {
     $(document).on('change', '#wht_head_id', function() {
         var headId = $(this).val();
         var $accSelect = $('#wht_account_id');
+        var prevSelected = $accSelect.data('selected') || $accSelect.val();
 
         if (!headId) {
             $accSelect.html('<option value="">Select Account</option>');
@@ -1104,7 +1108,8 @@ window.printDiv = function(divId) {
                 var html = '<option value="">Select Account</option>';
                 if (res && res.length) {
                     res.forEach(function(acc) {
-                        html += '<option value="' + acc.id + '">' + acc.title + '</option>';
+                        var selected = (acc.id == prevSelected) ? 'selected' : '';
+                        html += '<option value="' + acc.id + '" ' + selected + '>' + acc.title + '</option>';
                     });
                 } else {
                     html = '<option value="">No Accounts Found</option>';
@@ -1116,5 +1121,10 @@ window.printDiv = function(divId) {
             }
         });
     });
+
+    if ($('#wht_head_id').val()) {
+        $('#wht_account_id').data('selected', $('#wht_account_id').val());
+        $('#wht_head_id').trigger('change');
+    }
 </script>
 @endsection

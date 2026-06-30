@@ -86,7 +86,7 @@
                                 {{ strtoupper($receipt->status ?: 'DRAFT') }}
                             </span>
                             <span class="badge bg-light text-primary border rounded-pill px-3 py-1" style="font-size: 10px;">
-                                <i class="fa fa-hashtag me-1"></i> <span id="ividBadgeText">{{ $receipt->ivid ?: $nextIvid }}</span>
+                                <i class="fa fa-hashtag me-1"></i> <span id="ividBadgeText">{{ $receipt->id ? $receipt->ivid : 'Auto-Generated' }}</span>
                             </span>
                         </div>
                         <div class="d-flex gap-1">

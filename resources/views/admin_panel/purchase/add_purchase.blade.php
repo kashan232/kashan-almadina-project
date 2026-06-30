@@ -307,7 +307,7 @@
           {{-- Invoice Number --}}
           <div class="mb-2">
             <label class="form-label text-muted small mb-0" style="font-size: 0.7rem;">Inv Number</label>
-            <input type="text" class="form-control form-control-sm py-0 fw-bold text-primary bg-white" value="{{ $nextInvoice }}" readonly>
+            <input type="text" id="invoiceNoDisplay" class="form-control form-control-sm py-0 fw-bold text-primary bg-white" value="{{ isset($purchase) ? $nextInvoice : 'Auto-Generated' }}" readonly>
           </div>
 
           {{-- DC Date & Bilty --}}
@@ -1771,6 +1771,9 @@ $(document).ready(function() {
                     // Clear navigation guard - form is now saved
                     if (typeof window.markFormSaved === 'function') window.markFormSaved();
                     showToast('✅ Draft Saved — ' + (res.message || 'Purchase saved as unposted.'), 'success');
+                    if (res.invoice_no) {
+                        $('#invoiceNoDisplay').val(res.invoice_no);
+                    }
 
                     // Show Post button (becomes real post)
                     $('#postBtn')
