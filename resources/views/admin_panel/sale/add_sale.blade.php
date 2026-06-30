@@ -702,7 +702,7 @@
               <h6 class="mb-0 fw-bold text-success" style="font-size: 0.85rem;">
                 <i class="bi bi-cash-stack me-1"></i>Receipt Vouchers
               </h6>
-              <button type="button" class="btn btn-success btn-sm" id="btnAddRV">
+              <button type="button" class="btn btn-success btn-sm py-0 px-2" id="btnAddRV" style="font-size: 0.75rem;">
                 <i class="bi bi-plus-circle me-1"></i>Add Receipt
               </button>
             </div>
@@ -740,10 +740,10 @@
               @if(count($receiptLoop) > 0)
                   @foreach($receiptLoop as $index => $rv)
                       <div class="receipt-row bg-white border rounded p-1 mb-1 shadow-sm rv-row">
-                        <div class="row g-2 align-items-center">
+                        <div class="row g-1 m-0 align-items-center">
                           <div class="col-md-3">
                             <label class="form-label text-muted small mb-0" style="font-size:0.7rem;">Head</label>
-                            <select class="form-select form-select-sm rv-head" name="receipt_head_id[]">
+                            <select class="form-select form-select-sm rv-head px-1" style="font-size: 0.75rem;" name="receipt_head_id[]">
                               <option value="" disabled {{ empty($rv['head_id']) ? 'selected' : '' }}>Select Head</option>
                               @foreach ($accountHeads as $head)
                                 <option value="{{ $head->id }}" {{ $rv['head_id'] == $head->id ? 'selected' : '' }}>{{ $head->name }}</option>
@@ -752,19 +752,19 @@
                           </div>
                           <div class="col-md-3">
                             <label class="form-label text-muted small mb-0" style="font-size:0.7rem;">Account</label>
-                            <select class="form-select form-select-sm rv-account" name="receipt_account_id[]" data-selected="{{ $rv['account_id'] }}">
+                            <select class="form-select form-select-sm rv-account px-1" style="font-size: 0.75rem;" name="receipt_account_id[]" data-selected="{{ $rv['account_id'] }}">
                               <option value="" disabled selected>Select account</option>
                             </select>
                           </div>
                           <div class="col-md-2">
                             <label class="form-label text-muted small mb-0" style="font-size:0.7rem;">Amount</label>
-                            <input type="number" step="0.01" class="form-control form-control-sm text-end fw-bold rv-amount" 
+                            <input type="number" step="0.01" class="form-control form-control-sm px-1 text-end fw-bold rv-amount" style="font-size: 0.75rem;"
                                    name="receipt_amount[]" placeholder="0.00" value="{{ $rv['amount'] }}"
                                    {{ empty($rv['account_id']) ? 'disabled' : '' }}>
                           </div>
                           <div class="col-md-3">
                             <label class="form-label text-muted small mb-0" style="font-size:0.7rem;">Narration</label>
-                            <select class="form-select form-select-sm rv-narration" name="receipt_narration[]" 
+                            <select class="form-select form-select-sm rv-narration px-1" style="font-size: 0.75rem;" name="receipt_narration[]" 
                                     data-selected="{{ $rv['narration'] }}">
                               <option value="">Select narration...</option>
                             </select>
@@ -772,7 +772,7 @@
                           <div class="col-md-1 text-center">
                             @if(!$loop->first)
                             <label class="form-label text-muted small mb-1">&nbsp;</label>
-                            <button type="button" class="btn btn-outline-danger btn-sm btnRemRV">
+                            <button type="button" class="btn btn-outline-danger btn-sm py-0 px-1 btnRemRV" style="font-size: 0.75rem;">
                               <i class="bi bi-trash"></i>
                             </button>
                             @endif
@@ -782,10 +782,10 @@
                   @endforeach
               @else
                   <div class="receipt-row bg-white border rounded p-1 mb-1 shadow-sm rv-row">
-                    <div class="row g-2 align-items-center">
+                    <div class="row g-1 m-0 align-items-center">
                       <div class="col-md-3">
                         <label class="form-label text-muted small mb-0" style="font-size:0.7rem;">Head</label>
-                        <select class="form-select form-select-sm rv-head" name="receipt_head_id[]">
+                        <select class="form-select form-select-sm rv-head px-1" style="font-size: 0.75rem;" name="receipt_head_id[]">
                           <option value="" disabled selected>Select Head</option>
                           @foreach ($accountHeads as $head)
                             <option value="{{ $head->id }}">{{ $head->name }}</option>
@@ -794,18 +794,18 @@
                       </div>
                       <div class="col-md-3">
                         <label class="form-label text-muted small mb-0" style="font-size:0.7rem;">Account</label>
-                        <select class="form-select form-select-sm rv-account" name="receipt_account_id[]" disabled>
+                        <select class="form-select form-select-sm rv-account px-1" style="font-size: 0.75rem;" name="receipt_account_id[]" disabled>
                           <option value="" disabled selected>Select account</option>
                         </select>
                       </div>
                       <div class="col-md-2">
                         <label class="form-label text-muted small mb-0" style="font-size:0.7rem;">Amount</label>
-                        <input type="text" class="form-control form-control-sm text-end fw-bold rv-amount" 
+                        <input type="text" class="form-control form-control-sm px-1 text-end fw-bold rv-amount" style="font-size: 0.75rem;"
                                name="receipt_amount[]" placeholder="0.00" disabled>
                       </div>
                       <div class="col-md-3">
                         <label class="form-label text-muted small mb-0" style="font-size:0.7rem;">Narration</label>
-                        <select class="form-select form-select-sm rv-narration" name="receipt_narration[]">
+                        <select class="form-select form-select-sm rv-narration px-1" style="font-size: 0.75rem;" name="receipt_narration[]">
                           <option value="">Select narration...</option>
                         </select>
                       </div>
@@ -2157,33 +2157,33 @@
 
     $('#rvWrapper').append(`
     <div class="receipt-row bg-white border rounded p-1 mb-1 shadow-sm rv-row">
-      <div class="row g-2 align-items-center">
+      <div class="row g-1 m-0 align-items-center">
         <div class="col-md-3">
           <label class="form-label text-muted small mb-0" style="font-size:0.7rem;">Head</label>
-          <select class="form-select form-select-sm rv-head" name="receipt_head_id[]">
+          <select class="form-select form-select-sm rv-head px-1" style="font-size: 0.75rem;" name="receipt_head_id[]">
             ${headOptions}
           </select>
         </div>
         <div class="col-md-3">
           <label class="form-label text-muted small mb-0" style="font-size:0.7rem;">Account</label>
-          <select class="form-select form-select-sm rv-account" name="receipt_account_id[]" disabled>
+          <select class="form-select form-select-sm rv-account px-1" style="font-size: 0.75rem;" name="receipt_account_id[]" disabled>
             <option value="" disabled selected>Select account</option>
           </select>
         </div>
         <div class="col-md-2">
           <label class="form-label text-muted small mb-0" style="font-size:0.7rem;">Amount</label>
-          <input type="text" class="form-control form-control-sm text-end fw-bold rv-amount" 
+          <input type="text" class="form-control form-control-sm px-1 text-end fw-bold rv-amount" style="font-size: 0.75rem;"
                  name="receipt_amount[]" placeholder="0.00" disabled>
         </div>
         <div class="col-md-3">
           <label class="form-label text-muted small mb-0" style="font-size:0.7rem;">Narration</label>
-          <select class="form-select form-select-sm rv-narration" name="receipt_narration[]">
+          <select class="form-select form-select-sm rv-narration px-1" style="font-size: 0.75rem;" name="receipt_narration[]">
             <option value="">Select narration...</option>
           </select>
         </div>
         <div class="col-md-1 text-center">
           <label class="form-label text-muted small mb-1">&nbsp;</label>
-          <button type="button" class="btn btn-outline-danger btn-sm btnRemRV">
+          <button type="button" class="btn btn-outline-danger btn-sm py-0 px-1 btnRemRV" style="font-size: 0.75rem;">
             <i class="bi bi-trash"></i>
           </button>
         </div>
