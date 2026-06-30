@@ -874,19 +874,19 @@
                     <select id="discount_head" name="discount_head" class="form-select form-select-sm" style="width:100px;">
                       <option value="">Head</option>
                       @foreach($accountHeads as $head)
-                          <option value="{{ $head->id }}" {{ (isset($booking) && $booking->discount_head == $head->id) ? 'selected' : '' }}>
+                          <option value="{{ $head->id }}" {{ ($editData && $editData->discount_head == $head->id) ? 'selected' : '' }}>
                               {{ $head->name }}
                           </option>
                       @endforeach
                     </select>
                     <select name="discount_account_id" id="discount_account_id" class="form-select form-select-sm" style="flex-grow:1;">
                       <option value="">Select Account</option>
-                      @if(isset($booking) && $booking->discount_account_id)
+                      @if($editData && $editData->discount_account_id)
                           @php
-                              $acc = \App\Models\Account::find($booking->discount_account_id);
+                              $acc = \App\Models\Account::find($editData->discount_account_id);
                           @endphp
                           @if($acc)
-                              <option value="{{ $booking->discount_account_id }}" selected>{{ $acc->title }}</option>
+                              <option value="{{ $editData->discount_account_id }}" selected>{{ $acc->title }}</option>
                           @endif
                       @endif
                     </select>
