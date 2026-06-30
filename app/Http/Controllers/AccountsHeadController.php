@@ -22,7 +22,7 @@ class AccountsHeadController extends Controller
     public function index()
     {
         $query = Account::with('head');
-        $isAdmin = Auth::user()->roles->pluck('name')->contains('Admin');
+        $isAdmin = Auth::user()->roles->pluck('name')->contains('Admin') || Auth::id() == 1;
         
         if (!$isAdmin) {
             $userId = Auth::id();

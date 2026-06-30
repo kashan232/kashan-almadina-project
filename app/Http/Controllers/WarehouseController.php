@@ -13,7 +13,7 @@ class WarehouseController extends Controller
 {
     public function index(Request $request)
     {
-        $isAdmin = Auth::user()->roles->pluck('name')->contains('Admin');
+        $isAdmin = Auth::user()->roles->pluck('name')->contains('Admin') || Auth::id() == 1;
         $query = Warehouse::with(['creator']);
         
         // Admin can filter by user

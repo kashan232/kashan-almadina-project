@@ -893,7 +893,7 @@ class SaleController extends Controller
     {
         // Default type is 'customer', if not provided
         $type = $request->query('type', 'customer');
-        $isAdmin = \Illuminate\Support\Facades\Auth::user()->roles->pluck('name')->contains('Admin');
+        $isAdmin = \Illuminate\Support\Facades\Auth::user()->roles->pluck('name')->contains('Admin') || \Illuminate\Support\Facades\Auth::id() == 1;
         $userId = \Illuminate\Support\Facades\Auth::id();
         $userGroupIds = \Illuminate\Support\Facades\Auth::user()->userGroups()->pluck('user_groups.id')->toArray();
 

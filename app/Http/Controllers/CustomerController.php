@@ -19,7 +19,7 @@ class CustomerController extends Controller
     public function index(Request $request)
     {
         $query = Customer::with(['customerLedger', 'creator']);
-        $isAdmin = Auth::user()->roles->pluck('name')->contains('Admin');
+        $isAdmin = Auth::user()->roles->pluck('name')->contains('Admin') || Auth::id() == 1;
         if (!$isAdmin) {
             $userId = Auth::id();
             $userGroupIds = Auth::user()->userGroups()->pluck('user_groups.id')->toArray();
@@ -105,7 +105,7 @@ class CustomerController extends Controller
         $SalesOfficer = SalesOfficer::all();
         $userGroups = UserGroup::all();
         $latestId = 'CUST-' . str_pad(Customer::withoutGlobalScopes()->max('id') + 1, 1, STR_PAD_LEFT);
-        $isAdmin = Auth::user()->roles->pluck('name')->contains('Admin');
+        $isAdmin = Auth::user()->roles->pluck('name')->contains('Admin') || Auth::id() == 1;
         return view('admin_panel.customers.create', compact('latestId', 'SalesOfficer', 'zones', 'userGroups', 'isAdmin'));
     }
 
@@ -190,7 +190,7 @@ class CustomerController extends Controller
         $zones = Zone::all();
         $SalesOfficer = SalesOfficer::all();
         $userGroups = UserGroup::all();
-        $isAdmin = Auth::user()->roles->pluck('name')->contains('Admin');
+        $isAdmin = Auth::user()->roles->pluck('name')->contains('Admin') || Auth::id() == 1;
         return view('admin_panel.customers.edit', compact('customer', 'zones', 'SalesOfficer', 'userGroups', 'isAdmin'));
     }
 

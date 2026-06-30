@@ -259,7 +259,7 @@
                     <div class="mb-2">
                         <label class="form-label small fw-bold">Assigned User Groups</label>
                         @php 
-                            $isAdmin = Auth::user()->roles->pluck('name')->contains('Admin');
+                            $isAdmin = Auth::user()->roles->pluck('name')->contains('Admin') || Auth::id() == 1;
                         @endphp
                         @if($isAdmin)
                             <select name="user_group_ids[]" id="warehouse_user_groups" class="form-control select2-groups-warehouse" multiple style="width: 100%;" data-placeholder="Select Groups">
