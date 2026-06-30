@@ -289,7 +289,7 @@
 
       <div class="posted-watermark {{ isset($purchase) && $purchase->status == 'Posted' ? 'show' : '' }}" id="postedWatermark">Posted</div>
 
-      <div class="d-flex gap-2 align-items-start border-bottom py-2">
+      <div class="d-flex gap-2 align-items-stretch border-bottom py-2">
         {{-- LEFT: Header & Vendor --}}
         <div class="bg-light border rounded-3 p-2 shadow-sm" style="min-width: 280px; max-width: 280px; font-size: 0.8rem;">
           <div class="d-flex align-items-center justify-content-between mb-2 pb-1 border-bottom">
@@ -396,7 +396,7 @@
         </div>
 
         {{-- RIGHT: Items --}}
-        <div class="flex-grow-1">
+        <div class="flex-grow-1 d-flex flex-column">
           <div class="d-flex justify-content-between align-items-center mb-2 px-2">
             <div class="section-title mb-0">Items</div>
             <button type="button" class="btn btn-sm btn-primary rounded-pill px-3" id="addRow">
@@ -404,20 +404,32 @@
             </button>
           </div>
 
-          <div class="table-responsive">
-            <table class="table table-bordered table-sm mb-0">
+          <div class="table-responsive flex-grow-1 d-flex flex-column" style="min-height: 420px; overflow-y: auto;">
+            <table class="table table-bordered table-sm mb-0" style="width: 100%; font-size: 0.9rem; table-layout: fixed;">
+              <colgroup>
+                  <col style="width:6%"> <!-- Item ID -->
+                  <col style="width:14%"> <!-- Product -->
+                  <col style="width:10%"> <!-- Brand -->
+                  <col style="width:10%"> <!-- Price -->
+                  <col style="width:10%"> <!-- Retail Price -->
+                  <col style="width:15%"> <!-- Disc -->
+                  <col style="width:6%">  <!-- Qty -->
+                  <col style="width:12%"> <!-- Rate -->
+                  <col style="width:14%"> <!-- Total -->
+                  <col style="width:3%">  <!-- Action -->
+              </colgroup>
               <thead class="table-light">
                 <tr>
-                  <th style="width:80px;">Item ID</th>
+                  <th>Item ID</th>
                   <th>Product</th>
-                  <th style="width:120px;">Brand</th>
-                  <th style="width:100px;" class="text-end">Price</th>
-                  <th style="width:100px;" class="text-end">Retail Price</th>
-                  <th style="width:180px;">Disc</th>
-                  <th style="width:80px;" class="text-center">Qty</th>
-                  <th style="width:100px;" class="text-end">Rate</th>
-                  <th style="width:110px;" class="text-end">Total</th>
-                  <th style="width:40px;" class="text-center">—</th>
+                  <th>Brand</th>
+                  <th class="text-end">Price</th>
+                  <th class="text-end">Retail Price</th>
+                  <th>Disc</th>
+                  <th class="text-center">Qty</th>
+                  <th class="text-end">Rate</th>
+                  <th class="text-end">Total</th>
+                  <th class="text-center">—</th>
                 </tr>
               </thead>
               <tbody id="purchaseItems">
@@ -475,6 +487,30 @@
                       @endforeach
                   @endif
               </tbody>
+            </table>
+            
+            <table class="table table-bordered table-sm mb-0 mt-auto" style="width: 100%; font-size: 0.9rem; table-layout: fixed;">
+              <colgroup>
+                  <col style="width:6%"> <!-- Item ID -->
+                  <col style="width:14%"> <!-- Product -->
+                  <col style="width:10%"> <!-- Brand -->
+                  <col style="width:10%"> <!-- Price -->
+                  <col style="width:10%"> <!-- Retail Price -->
+                  <col style="width:15%"> <!-- Disc -->
+                  <col style="width:6%">  <!-- Qty -->
+                  <col style="width:12%"> <!-- Rate -->
+                  <col style="width:14%"> <!-- Total -->
+                  <col style="width:3%">  <!-- Action -->
+              </colgroup>
+              <tfoot class="bg-light border-top shadow-sm">
+                <tr class="align-middle">
+                  <td colspan="6" class="text-end fw-bold text-muted text-uppercase pe-3" style="font-size: 0.75rem; letter-spacing: 0.5px;">Totals:</td>
+                  <td class="text-center fw-bold text-primary" style="font-size: 0.95rem;"><span id="tQty">0</span></td>
+                  <td></td>
+                  <td class="text-end fw-bold text-success" style="font-size: 1rem;"><span id="tSubTotal">0.00</span></td>
+                  <td></td>
+                </tr>
+              </tfoot>
             </table>
           </div>
         </div>
@@ -567,11 +603,11 @@
                 <input type="number" step="0.01" id="overallDiscount" name="discount" class="form-control form-control-sm text-end input-readonly border-0 bg-transparent" value="{{ old('discount', $purchase->discount ?? 0) }}" readonly style="width:150px">
               </div>
 
-              <div class="py-2 border-bottom">
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                  <span class="text-muted small">WHT Account</span>
-                  <div class="d-flex gap-1" style="width:230px;">
-                    <select id="wht_head_id" class="form-select form-select-sm" style="width:100px;">
+              <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                <span class="text-muted small">WHT (Tax)</span>
+                <div class="d-flex align-items-center gap-2">
+                  <div class="d-flex gap-1" style="width:190px;">
+                    <select id="wht_head_id" class="form-select form-select-sm" style="width:80px;">
                       <option value="">Head</option>
                       @foreach($AccountHeads as $head)
                           <option value="{{ $head->id }}" {{ (isset($purchase) && $purchase->whtAccount && $purchase->whtAccount->head_id == $head->id) ? 'selected' : '' }}>
@@ -580,24 +616,21 @@
                       @endforeach
                     </select>
                     <select name="wht_account_id" id="wht_account_id" class="form-select form-select-sm" style="flex-grow:1;">
-                      <option value="">Select Account</option>
+                      <option value="">Account</option>
                       @if(isset($purchase) && $purchase->whtAccount)
                           <option value="{{ $purchase->wht_account_id }}" selected>{{ $purchase->whtAccount->title }}</option>
                       @endif
                     </select>
                   </div>
-                </div>
-                <div class="d-flex justify-content-between align-items-center">
-                  <span class="text-muted small">WHT (Tax)</span>
                   <div class="d-flex align-items-center gap-1">
                     <input type="number" step="0.01" id="whtPercent" name="wht_percent" class="form-control form-control-sm text-end" placeholder="Val" value="{{ old('wht_percent', $purchase->wht_percent ?? '') }}" style="width:60px">
-                    <select id="whtType" name="wht_type" class="form-select form-select-sm" style="width:65px;">
+                    <select id="whtType" name="wht_type" class="form-select form-select-sm" style="width:60px;">
                         @php $wType = old('wht_type', $purchase->wht_type ?? 'percent'); @endphp
                         <option value="percent" {{ $wType == 'percent' ? 'selected' : '' }}>%</option>
                         <option value="amount" {{ $wType == 'amount' ? 'selected' : '' }}>PKR</option>
                     </select>
-                    <input type="text" id="whtAmount" name="wht_amount" class="form-control form-control-sm text-end input-readonly border-0 bg-transparent fw-bold" value="{{ old('wht_amount', 0) }}" readonly style="width:100px">
                   </div>
+                  <input type="text" id="whtAmount" name="wht_amount" class="form-control form-control-sm text-end input-readonly border-0 bg-transparent fw-bold" value="{{ old('wht_amount', 0) }}" readonly style="width:80px">
                 </div>
                 <input type="hidden" id="whtValue" name="wht" value="{{ old('wht', $purchase->wht ?? 0) }}">
               </div>
@@ -1555,11 +1588,16 @@ $(function() {
     // Recalculate bottom summary
     function _recalcSummary() {
         var subTotalNetItems = 0;
+        var totalQty = 0;
 
         // Sum all row net totals (since item discount is 'upr hi dia bs khatam')
         $('#purchaseItems tr').each(function() {
+            totalQty += _n($(this).find('.quantity').val());
             subTotalNetItems += _n($(this).find('.row-total').val());
         });
+
+        $('#tQty').text(totalQty.toLocaleString('en-US', {maximumFractionDigits:0}));
+        $('#tSubTotal').text(subTotalNetItems.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}));
 
         // Sum accounts allocation total
         var accTotal = _n($('#accountsTotal').val());

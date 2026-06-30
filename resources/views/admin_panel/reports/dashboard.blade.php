@@ -533,7 +533,7 @@
                         },
                         callbacks: {
                             label: function(context) {
-                                return 'Sales: Rs.' + context.parsed.y.toLocaleString();
+                                return 'Sales: Rs.' + context.parsed.y.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
                             }
                         }
                     }
@@ -621,7 +621,7 @@
                         },
                         callbacks: {
                             label: function(context) {
-                                return 'Purchases: Rs.' + context.parsed.y.toLocaleString();
+                                return 'Purchases: Rs.' + context.parsed.y.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
                             }
                         }
                     }

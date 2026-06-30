@@ -511,21 +511,21 @@
 
                     if (latest) {
                         // Current Details
-                        $('#view_purchase_retail').text(parseFloat(latest.purchase_retail_price || 0).toLocaleString());
+                        $('#view_purchase_retail').text(parseFloat(latest.purchase_retail_price || 0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}));
                         $('#view_purchase_tax_pct').text((latest.purchase_tax_percent || 0) + '%');
-                        $('#view_purchase_tax_amt').text(parseFloat(latest.purchase_tax_amount || 0).toLocaleString());
+                        $('#view_purchase_tax_amt').text(parseFloat(latest.purchase_tax_amount || 0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}));
                         $('#view_purchase_disc_pct').text((latest.purchase_discount_percent || 0) + '%');
-                        $('#view_purchase_disc_amt').text(parseFloat(latest.purchase_discount_amount || 0).toLocaleString());
-                        $('#view_purchase_net').text(parseFloat(latest.purchase_net_amount || 0).toLocaleString());
+                        $('#view_purchase_disc_amt').text(parseFloat(latest.purchase_discount_amount || 0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}));
+                        $('#view_purchase_net').text(parseFloat(latest.purchase_net_amount || 0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}));
 
-                        $('#view_sale_retail').text(parseFloat(latest.sale_retail_price || 0).toLocaleString());
+                        $('#view_sale_retail').text(parseFloat(latest.sale_retail_price || 0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}));
                         $('#view_sale_tax_pct').text((latest.sale_tax_percent || 0) + '%');
-                        $('#view_sale_tax_amt').text(parseFloat(latest.sale_tax_amount || 0).toLocaleString());
+                        $('#view_sale_tax_amt').text(parseFloat(latest.sale_tax_amount || 0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}));
                         $('#view_sale_wht_pct').text((latest.sale_wht_percent || 0) + '%');
-                        $('#view_sale_wht_amt').text(parseFloat(latest.sale_wht_amount || 0).toLocaleString());
+                        $('#view_sale_wht_amt').text(parseFloat(latest.sale_wht_amount || 0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}));
                         $('#view_sale_disc_pct').text((latest.sale_discount_percent || 0) + '%');
-                        $('#view_sale_disc_amt').text(parseFloat(latest.sale_discount_amount || 0).toLocaleString());
-                        $('#view_sale_net').text(parseFloat(latest.sale_net_amount || 0).toLocaleString());
+                        $('#view_sale_disc_amt').text(parseFloat(latest.sale_discount_amount || 0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}));
+                        $('#view_sale_net').text(parseFloat(latest.sale_net_amount || 0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}));
                     } else {
                         // Clear if no latest price
                         $('#view_purchase_retail, #view_purchase_tax_pct, #view_purchase_tax_amt, #view_purchase_disc_pct, #view_purchase_disc_amt, #view_purchase_net, #view_sale_retail, #view_sale_tax_pct, #view_sale_tax_amt, #view_sale_wht_pct, #view_sale_wht_amt, #view_sale_disc_pct, #view_sale_disc_amt, #view_sale_net').text('N/A');
@@ -547,8 +547,8 @@
                                         <div class="fw-bold text-dark">${p.start_date || 'N/A'}</div>
                                         <small class="text-muted">${p.end_date ? 'to ' + p.end_date : 'present'}</small>
                                     </td>
-                                    <td class="py-3 fw-bold text-primary">₨ ${parseFloat(p.purchase_net_amount || 0).toLocaleString()}</td>
-                                    <td class="py-3 fw-bold text-success">₨ ${parseFloat(p.sale_net_amount || 0).toLocaleString()}</td>
+                                    <td class="py-3 fw-bold text-primary">₨ ${parseFloat(p.purchase_net_amount || 0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                                    <td class="py-3 fw-bold text-success">₨ ${parseFloat(p.sale_net_amount || 0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
                                     <td class="py-3">
                                         <small class="d-block text-muted">Pur: ${p.purchase_tax_percent || 0}%</small>
                                         <small class="d-block text-muted">Sale: ${p.sale_tax_percent || 0}%</small>

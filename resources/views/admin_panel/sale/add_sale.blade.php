@@ -366,23 +366,6 @@
 
     <div id="alertBox" class="alert d-none mb-2" role="alert"></div>
 
-    <div class="d-flex justify-content-between align-items-center mb-2 bg-light p-1 rounded shadow-sm px-3">
-      <div class="d-flex align-items-center gap-2">
-          <span id="statusBadge" class="badge bg-warning text-dark px-2 py-1 rounded shadow-sm" style="font-size:11px;">
-              <i class="fa fa-pencil me-1"></i> New Sale
-          </span>
-          <span id="idBadge" class="badge bg-primary px-2 py-1 rounded shadow-sm" style="display:none;font-size:11px;">
-              <i class="fa fa-tag me-1"></i> ID: N/A
-          </span>
-      </div>
-
-      <div class="d-flex align-items-center gap-2">
-          <a href="{{ route('sale.index') }}" id="listBtn" class="btn btn-sm btn-outline-secondary py-0 px-3">
-              <i class="fa fa-list me-1"></i> List <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+L</kbd>
-          </a>
-      </div>
-    </div>
-
     <form id="saleForm" autocomplete="off" action="{{ route('sale.ajax.save') }}" method="POST">
       @csrf
       <input type="hidden" id="booking_id" name="booking_id" value="{{ isset($booking) ? $booking->id : '' }}">
@@ -396,6 +379,17 @@
             <h6 class="mb-0 fw-bold text-primary">
               <i class="bi bi-receipt me-1"></i>Invoice & Customer
             </h6>
+            <div class="d-flex align-items-center gap-1">
+                <span id="statusBadge" class="badge bg-warning text-dark px-1 py-1 rounded shadow-sm" style="font-size:9px; display:none;">
+                    <i class="fa fa-pencil me-1"></i>Edit
+                </span>
+                <span id="idBadge" class="badge bg-primary px-1 py-1 rounded shadow-sm" style="display:none;font-size:9px;">
+                    <i class="fa fa-tag me-1"></i>ID
+                </span>
+                <a href="{{ route('sale.index') }}" id="listBtn" class="btn btn-sm btn-outline-secondary py-0 px-2" style="font-size: 0.75rem;" title="List (Ctrl+L)">
+                    <i class="fa fa-list me-1"></i> List
+                </a>
+            </div>
           </div>
 
           {{-- Entry Date & Time --}}
@@ -2009,16 +2003,16 @@
     const payable = currentInvoice + balAfterReceipt;
 
     // UI Updates
-    $('#tQty').text(tQty.toFixed(0));
-    $('#tRetail').text(tRetail.toFixed(2));
-    $('#tSub').text(subTotal.toFixed(2));
-    $('#tOrderDisc').text(orderDisc.toFixed(2));
-    $('#tCurrentInvoice').text(currentInvoice.toFixed(2));
-    $('#tPrev').text(prev.toFixed(2));
-    $('#tReceiptsMirror').text(receipts.toFixed(2));
-    $('#tBalAfterReceipt').text(balAfterReceipt.toFixed(2));
-    $('#tPayable').text(payable.toFixed(2));
-    $('#totalAmount').text(subTotal.toFixed(2));
+    $('#tQty').text(tQty.toLocaleString('en-US', {maximumFractionDigits: 0}));
+    $('#tRetail').text(tRetail.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}));
+    $('#tSub').text(subTotal.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}));
+    $('#tOrderDisc').text(orderDisc.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}));
+    $('#tCurrentInvoice').text(currentInvoice.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}));
+    $('#tPrev').text(prev.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}));
+    $('#tReceiptsMirror').text(receipts.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}));
+    $('#tBalAfterReceipt').text(balAfterReceipt.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}));
+    $('#tPayable').text(payable.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}));
+    $('#totalAmount').text(subTotal.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}));
 
     // backend mirrors
     $('#subTotal1').val(subTotal.toFixed(2));
@@ -2146,7 +2140,7 @@
     $('.rv-amount').each(function() {
       sum += toNum($(this).val()); // Sum up all the receipt amounts
     });
-    $('#receiptsTotal').text(sum.toFixed(2)); // Display total in the respective element
+    $('#receiptsTotal').text(sum.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})); // Display total in the respective element
     updateGrandTotals(); // Update other totals if needed
   }
 

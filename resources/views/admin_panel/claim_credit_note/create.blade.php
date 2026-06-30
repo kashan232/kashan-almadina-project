@@ -354,10 +354,10 @@ $(document).ready(function() {
         let whtAmt = (netBeforeWHT * whtPct) / 100;
         let finalNet = netBeforeWHT + whtAmt;
 
-        $('#txtSubtotal').text(subtotal.toLocaleString(undefined, {minimumFractionDigits:2}));
-        $('#txtTotalDisc').text(totalDisc.toLocaleString(undefined, {minimumFractionDigits:2}));
+        $('#txtSubtotal').text(subtotal.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2}));
+        $('#txtTotalDisc').text(totalDisc.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2}));
         $('#wht_amount').val(whtAmt.toFixed(2));
-        $('#txtNetTotal').text(finalNet.toLocaleString(undefined, {minimumFractionDigits:2}));
+        $('#txtNetTotal').text(finalNet.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2}));
 
         $('#subtotal').val(subtotal.toFixed(2));
         $('#total_discount').val(totalDisc.toFixed(2));

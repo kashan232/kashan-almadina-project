@@ -626,10 +626,10 @@ $(document).ready(function() {
         let netBeforeWHT = subtotal; // subtotal already has discounts subtracted
         let whtAmt = (netBeforeWHT * whtPct) / 100;
         let finalNet = netBeforeWHT + whtAmt;
-        $('#txtCreditSubtotal').text(subtotal.toLocaleString(undefined, {minimumFractionDigits:2}));
-        // $('#txtCreditTotalDisc').text(totalDisc.toLocaleString(undefined, {minimumFractionDigits:2}));
+        $('#txtCreditSubtotal').text(subtotal.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2}));
+        // $('#txtCreditTotalDisc').text(totalDisc.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2}));
         $('#credit_wht_amount').val(whtAmt.toFixed(2));
-        $('#txtCreditNetTotal').text(finalNet.toLocaleString(undefined, {minimumFractionDigits:2}));
+        $('#txtCreditNetTotal').text(finalNet.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2}));
         $('#credit_subtotal').val(subtotal.toFixed(2));
         $('#credit_total_discount').val(totalDisc.toFixed(2));
         $('#credit_net_total').val(finalNet.toFixed(2));

@@ -17,14 +17,31 @@
         .page-navigation .nav-item .nav-link {
             padding: 15px 20px !important;
             display: flex;
-            justify-content: space-between;
+            justify-content: flex-start;
             align-items: center;
+            color: #ffffff !important;
+        }
+        .page-navigation .nav-item .nav-link .menu_icon {
+            width: 25px;
+            text-align: center;
+        }
+        .page-navigation .nav-item .nav-link .menu-title {
+            flex-grow: 1;
+            margin-left: 10px;
+        }
+        .page-navigation .nav-item .nav-link .menu-arrow {
+            margin-left: auto;
+        }
+        .page-navigation .nav-item .nav-link .menu_icon, 
+        .page-navigation .nav-item .nav-link .menu-title,
+        .page-navigation .nav-item .nav-link .menu-arrow {
+            color: #ffffff !important;
         }
         .page-navigation .nav-item .submenu {
             position: static !important;
             width: 100% !important;
             display: none;
-            background: #212b36 !important;
+            background: #1e2630 !important;
             box-shadow: none !important;
             border: none !important;
         }
@@ -33,6 +50,32 @@
         }
         .page-navigation .nav-item .submenu .submenu-item {
             padding-left: 20px !important;
+        }
+        .page-navigation .nav-item .submenu .submenu-item li a {
+            color: #d1d5db !important;
+            padding: 10px 0 !important;
+            display: flex !important;
+            align-items: center !important;
+            flex-direction: row !important;
+            text-decoration: none;
+        }
+        .page-navigation .nav-item .submenu .submenu-item li a i {
+            margin-right: 12px !important;
+            width: 20px !important;
+            text-align: center !important;
+            display: inline-block !important;
+            color: #d1d5db !important;
+            padding: 0 !important;
+        }
+        .page-navigation .nav-item .submenu .submenu-item li a span {
+            display: inline-block !important;
+            color: #d1d5db !important;
+            padding: 0 !important;
+        }
+        .page-navigation .nav-item .submenu .submenu-item li a:hover,
+        .page-navigation .nav-item .submenu .submenu-item li a:hover span,
+        .page-navigation .nav-item .submenu .submenu-item li a:hover i {
+            color: #ffffff !important;
         }
         .menu-arrow {
             transform: rotate(0deg);
@@ -50,21 +93,28 @@
             padding: 10px;
             cursor: pointer;
             z-index: 1001;
+            opacity: 1 !important;
         }
         .nav-bottom {
             display: none !important;
+            opacity: 1 !important;
+            background-color: #212b36 !important; /* solid background to prevent transparency */
+            position: absolute !important;
+            top: 100%;
+            left: 0;
+            width: 100%;
+            z-index: 9999 !important;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.5);
         }
         .nav-bottom.header-toggled {
             display: block !important;
             height: auto !important;
-            z-index: 1000 !important;
-            position: relative !important;
         }
     }
 </style>
 <div class="container-scroller">
-      <nav class="rt_nav_header horizontal-layout col-lg-12 col-12 p-0">
-          <div class="top_nav flex-grow-1">
+      <nav class="rt_nav_header horizontal-layout col-lg-12 col-12 p-0" style="position: relative; opacity: 1 !important; overflow: visible !important;">
+          <div class="top_nav flex-grow-1" style="overflow: visible !important;">
               <div class="container d-flex flex-row h-100 align-items-center">
                   <div class="text-center rt_nav_wrapper d-flex align-items-center">
                       <a class="nav_logo rt_logo" href="index.html"><img
@@ -94,7 +144,7 @@
                           </li>
                       </ul>
 
-                      <button class="navbar-toggler align-self-center" type="button">
+                      <button class="navbar-toggler align-self-center" type="button" onclick="var nb = document.querySelector('.nav-bottom'); if(nb.style.display==='block'){nb.style.setProperty('display', 'none', 'important');}else{nb.style.setProperty('display', 'block', 'important');} event.stopPropagation();">
                           <i class="fa-solid fa-bars text-white" style="font-size: 20px;"></i>
                       </button>
 
@@ -243,7 +293,7 @@
                       {{-- User Management Section --}}
                       @canany(['Users', 'Roles', 'Permissions', 'Branches'])
                       <li class="nav-item">
-                          <a href="#" class="nav-link"><i class="menu_icon feather ft-clipboard"></i><span
+                          <a href="#" class="nav-link"><i class="menu_icon fas fa-users-cog"></i><span
                                   class="menu-title">User Management</span><i class="menu-arrow"></i></a>
                           <div class="submenu">
                               <ul class="submenu-item">
@@ -276,7 +326,7 @@
                       @canany(['Chart Of Accounts', 'Narrations', 'Receipts Voucher', 'Payment Voucher', 'Expense Voucher', 'Income Voucher', 'Journal Voucher', 'Adjustment Voucher'])
                       <li class="nav-item">
                           <a href="#" class="nav-link">
-                              <i class="menu_icon feather ft-clipboard"></i>
+                              <i class="menu_icon fas fa-file-invoice-dollar"></i>
                               <span class="menu-title">Vouchers</span>
                               <i class="menu-arrow"></i>
                           </a>
@@ -387,7 +437,7 @@
                       @canany(['Reports Dashboard', 'Sales Report', 'Purchase Report'])
                       <li class="nav-item">
                           <a href="#" class="nav-link">
-                              <i class="menu_icon feather ft-bar-chart"></i>
+                              <i class="menu_icon fas fa-chart-bar"></i>
                               <span class="menu-title">Reports</span>
                               <i class="menu-arrow"></i>
                           </a>
@@ -429,16 +479,7 @@
       </nav>
       <script>
           document.addEventListener('DOMContentLoaded', function() {
-              const toggler = document.querySelector('.navbar-toggler');
-              const navBottom = document.querySelector('.nav-bottom');
-              
-              if (toggler) {
-                  toggler.onclick = function() {
-                      if (navBottom) {
-                          navBottom.classList.toggle('header-toggled');
-                      }
-                  };
-              }
+
 
               const navItems = document.querySelectorAll('.page-navigation .nav-item');
               navItems.forEach(item => {
@@ -446,20 +487,32 @@
                   const submenu = item.querySelector('.submenu');
                   
                   if (submenu && link) {
-                      link.onclick = function(e) {
+                      // Remove any existing click handlers
+                      link.onclick = null;
+                      
+                      // Add new click handler
+                      link.addEventListener('click', function(e) {
                           if (window.innerWidth <= 991) {
                               e.preventDefault();
-                              const wasActive = item.classList.contains('show-submenu');
+                              e.stopPropagation();
                               
-                              // Close all submenus
-                              navItems.forEach(i => i.classList.remove('show-submenu'));
+                              const isCurrentlyOpen = submenu.style.display === 'block';
                               
-                              // Toggle current if it wasn't active
-                              if (!wasActive) {
+                              // Close all submenus first
+                              document.querySelectorAll('.page-navigation .submenu').forEach(sub => {
+                                  sub.style.setProperty('display', 'none', 'important');
+                              });
+                              document.querySelectorAll('.page-navigation .nav-item').forEach(i => {
+                                  i.classList.remove('show-submenu');
+                              });
+                              
+                              // Open the clicked one if it wasn't already open
+                              if (!isCurrentlyOpen) {
+                                  submenu.style.setProperty('display', 'block', 'important');
                                   item.classList.add('show-submenu');
                               }
                           }
-                      };
+                      }, true); // Use capture phase to intercept before template scripts
                   }
               });
           });
