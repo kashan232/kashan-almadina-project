@@ -1224,10 +1224,11 @@ class GeneralLedgerController extends Controller
                         $inv = $jv->jvid;
                         $desc = $jv->remarks ?? 'Journal Voucher';
                         
-                        if (str_starts_with($inv, 'PJ-')) {
-                            $inv_num = preg_replace('/^PJ-[A-Z]+-/', '', $inv);
-                            $ref = 'PJ-' . $inv_num;
-                            $inv = '';
+                        if (str_starts_with($inv, 'PJ-') || str_starts_with($inv, 'PRJ-')) {
+                            $isPrj = str_starts_with($inv, 'PRJ-');
+                            $inv_num = preg_replace('/^(PRJ|PJ)-[A-Z]+-/', '', $inv);
+                            $ref = $isPrj ? 'PRJ' : 'PJ';
+                            $inv = $inv_num;
 
                             $pTypes = json_decode($jv->party_type, true) ?? [];
                             $oppType = $pTypes[0] ?? null;
