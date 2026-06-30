@@ -258,28 +258,7 @@
 
     <div id="alertBox" class="alert d-none mb-2" role="alert"></div>
 
-    {{-- TOP BAR --}}
-    <div class="d-flex justify-content-between align-items-center mb-2 bg-light p-1 rounded shadow-sm px-3">
-      <div class="d-flex align-items-center gap-2">
-          <span id="statusBadge" class="badge {{ isset($purchase) && $purchase->status == 'Posted' ? 'bg-success' : 'bg-warning text-dark' }} px-2 py-1 rounded shadow-sm" style="font-size:11px;">
-              <i class="fa {{ isset($purchase) && $purchase->status == 'Posted' ? 'fa-check' : 'fa-pencil' }} me-1"></i> {{ isset($purchase) ? ucfirst($purchase->status) : 'New Purchase' }}
-          </span>
-      </div>
 
-      <div class="d-flex align-items-center gap-2">
-          @if(isset($purchase) && $purchase->status != 'Posted')
-              <form action="{{ route('purchase.post', $purchase->id) }}" method="POST" class="d-inline">
-                  @csrf
-                  <button type="submit" class="btn btn-sm btn-primary py-0 px-3 rounded-pill shadow-sm">
-                      <i class="fa fa-send me-1"></i> Post
-                  </button>
-              </form>
-          @endif
-          <a href="{{ route('Purchase.home') }}" id="listBtn" class="btn btn-sm btn-outline-secondary py-0 px-3 rounded-pill">
-              <i class="fa fa-list me-1"></i> List <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+L</kbd>
-          </a>
-      </div>
-    </div>
 
     <form id="purchaseForm" class="{{ isset($purchase) && $purchase->status == 'Posted' ? 'form-locked' : '' }}" autocomplete="off" action="{{ isset($purchase) ? route('purchase.update', $purchase->id) : route('store.Purchase') }}" method="POST">
       @csrf
@@ -293,9 +272,27 @@
         {{-- LEFT: Header & Vendor --}}
         <div class="bg-light border rounded-3 p-2 shadow-sm" style="min-width: 280px; max-width: 280px; font-size: 0.8rem;">
           <div class="d-flex align-items-center justify-content-between mb-2 pb-1 border-bottom">
-            <h6 class="mb-0 fw-bold text-primary">
-              <i class="fa fa-info-circle me-1"></i>Purchase Details
+            <h6 class="mb-0 fw-bold text-primary d-flex align-items-center gap-1">
+              <i class="fa fa-info-circle"></i> Purchase Details
+              @if(isset($purchase) && $purchase->status == 'Posted')
+                  <span id="statusBadge" class="badge bg-success px-1 py-0 rounded" style="font-size:9px;">
+                      <i class="fa fa-check"></i> Posted
+                  </span>
+              @endif
             </h6>
+            <div class="d-flex align-items-center gap-1">
+                @if(isset($purchase) && $purchase->status != 'Posted')
+                    <form action="{{ route('purchase.post', $purchase->id) }}" method="POST" class="d-inline">
+                        @csrf
+                        <button type="submit" class="btn btn-xs btn-primary rounded-pill shadow-sm px-2 py-1" style="font-size: 0.75rem;">
+                            <i class="fa fa-send"></i> Post
+                        </button>
+                    </form>
+                @endif
+                <a href="{{ route('Purchase.home') }}" id="listBtn" class="btn btn-xs btn-outline-secondary rounded-pill px-2 py-1" style="font-size: 0.75rem;">
+                    <i class="fa fa-list"></i> List
+                </a>
+            </div>
           </div>
 
           {{-- Entry Date & Time --}}
