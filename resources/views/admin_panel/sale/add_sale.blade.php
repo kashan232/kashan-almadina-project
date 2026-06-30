@@ -688,31 +688,7 @@
               </tbody>
             </table>
 
-            <table class="table table-bordered table-sm mb-0 mt-auto" style="width: 100%; font-size: 0.9rem; table-layout: fixed;">
-              <colgroup>
-                <col style="width:6%">
-                <col style="width:14%">
-                <col style="width:10%">
-                <col style="width:6%">
-                <col style="width:8%">
-                <col style="width:6%">
-                <col style="width:8%">
-                <col style="width:14%">
-                <col style="width:12%">
-                <col style="width:13%">
-                <col style="width:3%">
-              </colgroup>
-              <tfoot class="bg-light border-top shadow-sm">
-                <tr class="align-middle">
-                  <td colspan="5" class="text-end fw-bold text-muted text-uppercase pe-3" style="font-size: 0.75rem; letter-spacing: 0.5px;">Totals:</td>
-                  <td class="text-center fw-bold text-primary" style="font-size: 0.95rem;"><span id="tQty">0</span></td>
-                  <td class="text-end fw-bold text-dark"><span id="tRetail">0.00</span></td>
-                  <td colspan="2"></td>
-                  <td class="text-end fw-bold text-success" style="font-size: 1rem;"><span id="totalAmount">0.00</span></td>
-                  <td></td>
-                </tr>
-              </tfoot>
-            </table>
+            <!-- Bottom totals table removed as requested -->
           </div>
         </div>
       </div>
@@ -849,20 +825,16 @@
         {{-- Totals --}}
         <div class="col-lg-5">
           <div class="bg-light border rounded-3 p-2 shadow-sm">
-            <div class="d-flex align-items-center justify-content-between mb-1 pb-1 border-bottom">
-              <h6 class="mb-0 fw-bold text-info" style="font-size: 0.85rem;">
-                <i class="bi bi-calculator me-1"></i>Totals
-              </h6>
-            </div>
+            <!-- Totals header removed as requested -->
 
             <div class="totals-card">
               <!-- Qty and Retail moved to table footer -->
 
               <!-- Sub-Total moved to table footer -->
 
-              <!-- Invoice Total -->
+              <!-- Total -->
               <div class="d-flex justify-content-between py-1 border-bottom">
-                <span class="text-muted small fw-bold">Invoice Total</span>
+                <span class="text-muted small fw-bold">Total (Qty: <span id="tQty" class="text-primary">0</span>)</span>
                 <span class="fw-bold" id="tSub" style="font-size: 0.95rem;">0.00</span>
               </div>
 
