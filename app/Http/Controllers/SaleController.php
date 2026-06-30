@@ -503,7 +503,7 @@ class SaleController extends Controller
             $booking->is_sale_order = $request->has('is_sale_order') ? 1 : 0;
             $booking->save();
 
-            return response()->json(['ok' => true, 'booking_id' => $booking->id]);
+            return response()->json(['ok' => true, 'booking_id' => $booking->id, 'invoice_no' => $booking->invoice_no]);
         });
     }
 

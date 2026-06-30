@@ -409,7 +409,7 @@
             <div class="col-6">
               <label class="form-label text-muted small mb-0" style="font-size: 0.7rem;">Invoice No.</label>
               <input type="text" class="form-control form-control-sm bg-white border-0 shadow-sm fw-bold text-primary py-0" 
-                     name="Invoice_no" value="{{ $eInvoice }}" readonly style="font-size: 0.8rem;">
+                     name="Invoice_no" value="{{ $editData ? $eInvoice : 'Auto-Generated' }}" readonly style="font-size: 0.8rem;">
             </div>
             <div class="col-6">
               <label class="form-label text-muted small mb-0" style="font-size: 0.7rem;">Manual Invoice</label>
@@ -1280,6 +1280,9 @@
           $('#btnSave, #btnHeaderPosted, #btnPosted').prop('disabled', false);
           if (res?.ok) {
             $('#booking_id').val(res.booking_id);
+            if (res.invoice_no) {
+                $('input[name="Invoice_no"]').val(res.invoice_no);
+            }
             showAlert('success', 'Saved (Booking #' + res.booking_id + ')');
             resolve(res.booking_id);
           } else {
@@ -1370,6 +1373,9 @@
                   if (res.ok) {
                       _savedBookingId = res.booking_id;
                       $('#booking_id').val(res.booking_id);
+                      if (res.invoice_no) {
+                          $('input[name="Invoice_no"]').val(res.invoice_no);
+                      }
                       $('#idBadge').text('ID: ' + res.booking_id).show();
                       $('#saleForm').addClass('form-locked');
                       $('#saveDraftBtn, #postBtn, #previewPrintBtn, #cancelBtn, #editBtn, #newBtn').show();
