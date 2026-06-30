@@ -112,18 +112,29 @@
 
                             <div class="col-md-6">
                                 <label><strong>Assigned User Groups:</strong></label>
-                                <div class="form-control bg-light" style="height: auto; min-height: 38px;">
-                                    @php $myGroups = Auth::user()->userGroups; @endphp
-                                    @if($myGroups->count() > 0)
-                                        @foreach($myGroups as $group)
-                                            <span class="badge bg-info text-dark">{{ $group->group_name }}</span>
-                                            <input type="hidden" name="user_group_ids[]" value="{{ $group->id }}">
-                                        @endforeach
-                                    @else
-                                        <span class="text-muted">No Groups Assigned to You</span>
-                                    @endif
-                                </div>
-                                <small class="text-muted">Your groups are automatically assigned to this customer.</small>
+                                @if(isset($isAdmin) && $isAdmin)
+                                    <select name="user_group_ids[]" class="form-control select2" multiple>
+                                        @if(isset($userGroups) && $userGroups->count() > 0)
+                                            @foreach($userGroups as $group)
+                                                <option value="{{ $group->id }}">{{ $group->group_name }}</option>
+                                            @endforeach
+                                        @endif
+                                    </select>
+                                    <small class="text-muted">Select user groups to assign to this customer.</small>
+                                @else
+                                    <div class="form-control bg-light" style="height: auto; min-height: 38px;">
+                                        @php $myGroups = Auth::user()->userGroups; @endphp
+                                        @if($myGroups->count() > 0)
+                                            @foreach($myGroups as $group)
+                                                <span class="badge bg-info text-dark">{{ $group->group_name }}</span>
+                                                <input type="hidden" name="user_group_ids[]" value="{{ $group->id }}">
+                                            @endforeach
+                                        @else
+                                            <span class="text-muted">No Groups Assigned to You</span>
+                                        @endif
+                                    </div>
+                                    <small class="text-muted">Your groups are automatically assigned to this customer.</small>
+                                @endif
                             </div>
                         </div>
 
