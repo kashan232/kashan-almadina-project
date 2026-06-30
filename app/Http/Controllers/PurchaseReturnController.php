@@ -54,7 +54,7 @@ class PurchaseReturnController extends Controller
     public function getPurchaseDetails($invoice)
     {
         try {
-            $purchase = Purchase::with(['items.product.latestPrice', 'items.product.brandRelation', 'purchasable', 'warehouse'])
+            $purchase = Purchase::with(['items.product.latestPrice', 'items.product.brandRelation', 'purchasable', 'warehouse', 'whtAccount'])
                 ->where('invoice_no', $invoice)
                 ->first();
 
@@ -94,7 +94,9 @@ class PurchaseReturnController extends Controller
                 'warehouse_name' => $purchase->warehouse->warehouse_name ?? 'N/A',
                 'wht' => $purchase->wht ?? 0,
                 'wht_percent' => $purchase->wht_percent ?? 0,
-                'wht_type' => $purchase->wht_type ?? 'percent'
+                'wht_type' => $purchase->wht_type ?? 'percent',
+                'wht_head_id' => $purchase->whtAccount->head_id ?? null,
+                'wht_account_id' => $purchase->wht_account_id ?? null
             ]);
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 500);

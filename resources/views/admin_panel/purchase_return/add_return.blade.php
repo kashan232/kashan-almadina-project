@@ -222,11 +222,24 @@
                                         <span class="text-muted small fw-bold">WHT (Tax)</span>
                                         <div class="d-flex align-items-center gap-2">
                                           <div class="d-flex gap-1" style="width:190px;">
+                                            @php
+                                                $selectedHeadId = null;
+                                                $selectedWhtAcc = null;
+                                                if (isset($returnData)) {
+                                                    if ($returnData->whtAccount) {
+                                                        $selectedHeadId = $returnData->whtAccount->head_id;
+                                                        $selectedWhtAcc = $returnData->whtAccount;
+                                                    } elseif ($returnData->purchase && $returnData->purchase->whtAccount) {
+                                                        $selectedHeadId = $returnData->purchase->whtAccount->head_id;
+                                                        $selectedWhtAcc = $returnData->purchase->whtAccount;
+                                                    }
+                                                }
+                                            @endphp
                                             <select id="wht_head_id" class="form-select form-select-sm" style="width:80px;">
                                               <option value="">Head</option>
                                               @if(isset($AccountHeads))
                                                 @foreach($AccountHeads as $head)
-                                                    <option value="{{ $head->id }}" {{ (isset($returnData) && $returnData->whtAccount && $returnData->whtAccount->head_id == $head->id) ? 'selected' : '' }}>
+                                                    <option value="{{ $head->id }}" {{ $selectedHeadId == $head->id ? 'selected' : '' }}>
                                                         {{ $head->name }}
                                                     </option>
                                                 @endforeach
@@ -234,8 +247,8 @@
                                             </select>
                                             <select name="wht_account_id" id="wht_account_id" class="form-select form-select-sm" style="flex-grow:1;">
                                               <option value="">Account</option>
-                                              @if(isset($returnData) && $returnData->whtAccount)
-                                                  <option value="{{ $returnData->wht_account_id }}" selected>{{ $returnData->whtAccount->title }}</option>
+                                              @if($selectedWhtAcc)
+                                                  <option value="{{ $selectedWhtAcc->id }}" selected>{{ $selectedWhtAcc->title }}</option>
                                               @endif
                                             </select>
                                           </div>
@@ -809,6 +822,26 @@ $(document).ready(function() {
             } else {
                  $('#whtType').val('amount');
                  $('#whtPercent').val(res.wht);
+            }
+
+            if (res.wht_head_id) {
+                $('#wht_head_id').val(res.wht_head_id);
+                $.ajax({
+                    url: "{{ url('/get-accounts-by-head') }}/" + res.wht_head_id,
+                    type: "GET",
+                    success: function(accs) {
+                        var html = '<option value="">Select Account</option>';
+                        if (accs && accs.length) {
+                            accs.forEach(function(acc) {
+                                html += '<option value="' + acc.id + '" ' + (acc.id == res.wht_account_id ? 'selected' : '') + '>' + acc.title + '</option>';
+                            });
+                        }
+                        $('#wht_account_id').html(html);
+                    }
+                });
+            } else {
+                $('#wht_head_id').val('');
+                $('#wht_account_id').html('<option value="">Account</option>');
             }
 
             if (res.items.length === 0) {
