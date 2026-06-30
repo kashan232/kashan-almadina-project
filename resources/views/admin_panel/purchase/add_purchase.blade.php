@@ -499,16 +499,7 @@
                   <col style="width:14%"> <!-- Total -->
                   <col style="width:3%">  <!-- Action -->
               </colgroup>
-              <tfoot class="bg-light border-top shadow-sm">
-                <tr class="align-middle">
-                  <td colspan="6" class="text-end fw-bold text-muted text-uppercase pe-3" style="font-size: 0.75rem; letter-spacing: 0.5px;">Totals:</td>
-                  <td class="text-center fw-bold text-primary" style="font-size: 0.95rem;"><span id="tQty">0</span></td>
-                  <td></td>
-                  <td class="text-end fw-bold text-success" style="font-size: 1rem;"><span id="tSubTotal">0.00</span></td>
-                  <td></td>
-                </tr>
-              </tfoot>
-            </table>
+              </table>
           </div>
         </div>
       </div>
@@ -587,22 +578,29 @@
               <h6 class="mb-0 fw-bold text-info">
                 <i class="fa fa-calculator me-2"></i>Purchase Totals
               </h6>
-              <div class="d-flex align-items-center bg-light px-2 rounded">
-                <span class="fw-bold text-dark me-2 small">Net Amount</span>
-                <input type="text" id="netAmount" name="net_amount" class="form-control text-end fw-bold text-primary border-0 bg-transparent py-0" value="{{ old('net_amount', $purchase->net_amount ?? 0) }}" readonly style="width:130px; font-size: 1.2rem; height: auto;">
-              </div>
             </div>
 
             <div class="totals-card p-1">
+              <div class="d-flex justify-content-between align-items-center py-1 border-bottom bg-light px-2 rounded mb-1">
+                <span class="fw-bold text-dark">Total Qty</span>
+                <span id="tQtyDisplay" class="fw-bold text-dark fs-6">0</span>
+              </div>
+              <div class="d-flex justify-content-between align-items-center py-1 border-bottom bg-light px-2 rounded mb-1">
+                <span class="fw-bold text-dark">Net Amount</span>
+                <span id="netAmountDisplay" class="fw-bold text-primary" style="font-size: 1.25rem;">0.00</span>
+                <input type="hidden" id="netAmount" name="net_amount" value="{{ old('net_amount', $purchase->net_amount ?? 0) }}">
+              </div>
 
               <div class="d-flex justify-content-between align-items-center py-1 border-bottom">
                 <span class="text-muted small">Sub-Total</span>
-                <input type="text" id="subtotal" name="subtotal" class="form-control form-control-sm text-end fw-bold input-readonly border-0 bg-transparent py-0" value="{{ old('subtotal', $purchase->subtotal ?? 0) }}" readonly style="width:150px">
+                <span id="subtotalDisplay" class="fw-bold" style="font-size: 0.9rem;">0.00</span>
+                <input type="hidden" id="subtotal" name="subtotal" value="{{ old('subtotal', $purchase->subtotal ?? 0) }}">
               </div>
 
               <div class="d-flex justify-content-between align-items-center py-1 border-bottom">
                 <span class="text-muted small">Total Discount</span>
-                <input type="number" step="0.01" id="overallDiscount" name="discount" class="form-control form-control-sm text-end input-readonly border-0 bg-transparent py-0" value="{{ old('discount', $purchase->discount ?? 0) }}" readonly style="width:150px">
+                <span id="overallDiscountDisplay" class="fw-bold" style="font-size: 0.9rem;">0.00</span>
+                <input type="hidden" id="overallDiscount" name="discount" value="{{ old('discount', $purchase->discount ?? 0) }}">
               </div>
 
               <div class="d-flex justify-content-between align-items-center py-1 border-bottom">
@@ -632,7 +630,8 @@
                         <option value="amount" {{ $wType == 'amount' ? 'selected' : '' }}>PKR</option>
                     </select>
                   </div>
-                  <input type="text" id="whtAmount" name="wht_amount" class="form-control form-control-sm text-end input-readonly border-0 bg-transparent fw-bold py-0" value="{{ old('wht_amount', 0) }}" readonly style="width:80px">
+                  <span id="whtAmountDisplay" class="fw-bold" style="width:80px; text-align:right;">0.00</span>
+                  <input type="hidden" id="whtAmount" name="wht_amount" value="{{ old('wht_amount', 0) }}">
                 </div>
                 <input type="hidden" id="whtValue" name="wht" value="{{ old('wht', $purchase->wht ?? 0) }}">
               </div>
@@ -1594,15 +1593,17 @@ $(function() {
             subTotalNetItems += _n($(this).find('.row-total').val());
         });
 
-        $('#tQty').text(totalQty.toLocaleString('en-US', {maximumFractionDigits:0}));
-        $('#tSubTotal').text(subTotalNetItems.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}));
+        $('#tQtyDisplay').text(totalQty.toLocaleString('en-US', {maximumFractionDigits:0}));
 
         // Sum accounts allocation total
         var accTotal = _n($('#accountsTotal').val());
         var totalDiscount = accTotal; // ONLY account allocations in bottom discount
 
         $('#subtotal').val(subTotalNetItems.toFixed(2));
+        $('#subtotalDisplay').text(subTotalNetItems.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}));
+
         $('#overallDiscount').val(totalDiscount.toFixed(2));
+        $('#overallDiscountDisplay').text(totalDiscount.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}));
 
         var whtVal = _n($('#whtPercent').val());
         var whtType = $('#whtType').val() || 'percent';
@@ -1616,8 +1617,11 @@ $(function() {
 
         $('#whtValue').val(whtAmt.toFixed(2));
         $('#whtAmount').val(whtAmt.toFixed(2));
+        $('#whtAmountDisplay').text(whtAmt.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}));
+
         var netTotal = subTotalNetItems - totalDiscount + whtAmt;
         $('#netAmount').val(netTotal.toFixed(2));
+        $('#netAmountDisplay').text(netTotal.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}));
     }
 
     // Override window functions so all other code uses these too
