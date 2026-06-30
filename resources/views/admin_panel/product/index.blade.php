@@ -138,18 +138,19 @@
                                         <label class="column-picker-item"><input type="checkbox" data-column="1" checked> Select</label>
                                         <label class="column-picker-item"><input type="checkbox" data-column="2" checked> #</label>
                                         <label class="column-picker-item"><input type="checkbox" data-column="3" checked> Product Name</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="4" checked> Weight</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="4" checked> Brand</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="5" checked> Weight</label>
                                         @if(auth()->user()->canAccessShop())
-                                            <label class="column-picker-item"><input type="checkbox" data-column="5" checked> Stock</label>
+                                            <label class="column-picker-item"><input type="checkbox" data-column="6" checked> Stock</label>
                                         @endif
-                                        <label class="column-picker-item"><input type="checkbox" data-column="6" checked> Base Price</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="7" checked> Disc (%)</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="8" checked> Disc (PKR)</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="9" checked> Tax (%)</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="10" checked> Tax (PKR)</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="11" checked> WHT (%)</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="12" checked> Sale Net Amount</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="13" checked> Status</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="7" checked> Base Price</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="8" checked> Disc (%)</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="9" checked> Disc (PKR)</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="10" checked> Tax (%)</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="11" checked> Tax (PKR)</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="12" checked> WHT (%)</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="13" checked> Sale Net Amount</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="14" checked> Status</label>
                                     </div>
                                 </div>
 
@@ -176,6 +177,7 @@
                                             </th>
                                             <th>#</th>
                                             <th>Product Name</th>
+                                            <th>Brand</th>
                                             <th>Weight</th>
                                             @if(auth()->user()->canAccessShop())
                                                 <th>Stock</th>
@@ -199,13 +201,14 @@
                                             </td>
                                             <td>{{ $index + 1 }}</td>
                                             <td class="fw-bold">{{ $product->name }}</td>
+                                            <td>{{ $product->brandRelation->name ?? 'N/A' }}</td>
                                             <td>{{ $product->weight }}</td>
                                             @if(auth()->user()->canAccessShop())
                                                 <td>{{ $product->stock }}</td>
                                             @endif
                                             <td class="text-end">{{ number_format($product->latestPrice->sale_retail_price ?? 0, 0) }}</td>
-                                            <td class="text-center">{{ $product->latestPrice->purchase_discount_percent ?? '0' }}%</td>
-                                            <td class="text-end">{{ number_format($product->latestPrice->purchase_discount_amount ?? 0, 0) }}</td>
+                                            <td class="text-center">{{ $product->latestPrice->sale_discount_percent ?? '0' }}%</td>
+                                            <td class="text-end">{{ number_format($product->latestPrice->sale_discount_amount ?? 0, 0) }}</td>
                                             <td class="text-center">{{ $product->latestPrice->sale_tax_percent ?? '0' }}%</td>
                                             <td class="text-end">{{ number_format($product->latestPrice->sale_tax_amount ?? 0, 0) }}</td>
                                             <td class="text-center">{{ $product->latestPrice->sale_wht_percent ?? '0' }}%</td>
@@ -481,11 +484,16 @@
                         $('#view_purchase_disc_amt').text(parseFloat(latest.purchase_discount_amount || 0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}));
                         $('#view_purchase_net').text(parseFloat(latest.purchase_net_amount || 0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}));
 
-                        $('#view_sale_retail').text(parseFloat(latest.sale_retail_price || 0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}));
+                        var retail = parseFloat(latest.sale_retail_price || 0);
+                        var wht_pct = parseFloat(latest.sale_wht_percent || 0);
+                        var wht_amt = parseFloat(latest.sale_wht_amount || 0);
+                        if (!wht_amt && wht_pct > 0) wht_amt = (retail * wht_pct) / 100;
+
+                        $('#view_sale_retail').text(retail.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}));
                         $('#view_sale_tax_pct').text((latest.sale_tax_percent || 0) + '%');
                         $('#view_sale_tax_amt').text(parseFloat(latest.sale_tax_amount || 0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}));
-                        $('#view_sale_wht_pct').text((latest.sale_wht_percent || 0) + '%');
-                        $('#view_sale_wht_amt').text(parseFloat(latest.sale_wht_amount || 0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}));
+                        $('#view_sale_wht_pct').text(wht_pct + '%');
+                        $('#view_sale_wht_amt').text(wht_amt.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}));
                         $('#view_sale_disc_pct').text((latest.sale_discount_percent || 0) + '%');
                         $('#view_sale_disc_amt').text(parseFloat(latest.sale_discount_amount || 0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}));
                         $('#view_sale_net').text(parseFloat(latest.sale_net_amount || 0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}));
@@ -504,16 +512,21 @@
                                 ? '<span class="badge bg-success rounded-pill px-3">Current</span>' 
                                 : '<span class="badge bg-light text-muted border rounded-pill px-3">Expired</span>';
                             
+                            var p_retail = parseFloat(p.sale_retail_price || 0);
+                            var p_wht_pct = parseFloat(p.sale_wht_percent || 0);
+                            var p_wht_amt = parseFloat(p.sale_wht_amount || 0);
+                            if (!p_wht_amt && p_wht_pct > 0) p_wht_amt = (p_retail * p_wht_pct) / 100;
+
                             tbody += `
                                 <tr class="${i === 0 ? 'bg-light-primary' : ''}">
                                     <td class="ps-3 py-3">
                                         <div class="fw-bold text-dark">${p.start_date || 'N/A'}</div>
                                         <small class="text-muted">${p.end_date ? 'to ' + p.end_date : 'present'}</small>
                                     </td>
-                                    <td class="py-3 fw-bold text-dark">₨ ${parseFloat(p.sale_retail_price || 0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
+                                    <td class="py-3 fw-bold text-dark">₨ ${p_retail.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
                                     <td class="py-3">
                                         <small class="d-block text-muted">Tax: ${p.sale_tax_percent || 0}% (₨ ${parseFloat(p.sale_tax_amount || 0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})})</small>
-                                        <small class="d-block text-muted">WHT: ${p.sale_wht_percent || 0}% (₨ ${parseFloat(p.sale_wht_amount || 0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})})</small>
+                                        <small class="d-block text-muted">WHT: ${p_wht_pct}% (₨ ${p_wht_amt.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})})</small>
                                     </td>
                                     <td class="py-3">
                                         <small class="d-block text-muted">${p.sale_discount_percent || 0}% (₨ ${parseFloat(p.sale_discount_amount || 0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})})</small>
