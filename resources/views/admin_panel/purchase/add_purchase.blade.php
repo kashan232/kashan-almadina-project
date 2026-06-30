@@ -581,30 +581,26 @@
             </div>
 
             <div class="totals-card p-1">
-              <div class="d-flex justify-content-between align-items-center py-1 border-bottom bg-light px-2 rounded mb-1">
-                <span class="fw-bold text-dark">Total Qty</span>
-                <span id="tQtyDisplay" class="fw-bold text-dark fs-6">0</span>
-              </div>
-              <div class="d-flex justify-content-between align-items-center py-1 border-bottom bg-light px-2 rounded mb-1">
-                <span class="fw-bold text-dark">Net Amount</span>
-                <span id="netAmountDisplay" class="fw-bold text-primary" style="font-size: 1.25rem;">0.00</span>
-                <input type="hidden" id="netAmount" name="net_amount" value="{{ old('net_amount', $purchase->net_amount ?? 0) }}">
-              </div>
-
-              <div class="d-flex justify-content-between align-items-center py-1 border-bottom">
-                <span class="text-muted small">Sub-Total</span>
-                <span id="subtotalDisplay" class="fw-bold" style="font-size: 0.9rem;">0.00</span>
-                <input type="hidden" id="subtotal" name="subtotal" value="{{ old('subtotal', $purchase->subtotal ?? 0) }}">
+              <div class="row align-items-center py-1 border-bottom bg-light px-1 mx-0 rounded mb-1">
+                <div class="col-6 d-flex justify-content-between border-end pe-2">
+                    <span class="text-dark small fw-bold">Total Qty</span>
+                    <span id="tQtyDisplay" class="fw-bold text-dark" style="font-size: 0.9rem;">0</span>
+                </div>
+                <div class="col-6 d-flex justify-content-between ps-2">
+                    <span class="text-dark small fw-bold">Sub-Total</span>
+                    <span id="subtotalDisplay" class="fw-bold text-dark" style="font-size: 0.9rem;">0.00</span>
+                    <input type="hidden" id="subtotal" name="subtotal" value="{{ old('subtotal', $purchase->subtotal ?? 0) }}">
+                </div>
               </div>
 
-              <div class="d-flex justify-content-between align-items-center py-1 border-bottom">
-                <span class="text-muted small">Total Discount</span>
-                <span id="overallDiscountDisplay" class="fw-bold" style="font-size: 0.9rem;">0.00</span>
+              <div class="d-flex justify-content-between align-items-center py-1 border-bottom px-1">
+                <span class="text-dark small fw-bold">Total Discount</span>
+                <span id="overallDiscountDisplay" class="fw-bold text-dark" style="font-size: 0.9rem;">0.00</span>
                 <input type="hidden" id="overallDiscount" name="discount" value="{{ old('discount', $purchase->discount ?? 0) }}">
               </div>
 
-              <div class="d-flex justify-content-between align-items-center py-1 border-bottom">
-                <span class="text-muted small">WHT (Tax)</span>
+              <div class="d-flex justify-content-between align-items-center py-1 border-bottom px-1">
+                <span class="text-dark small fw-bold">WHT (Tax)</span>
                 <div class="d-flex align-items-center gap-2">
                   <div class="d-flex gap-1" style="width:190px;">
                     <select id="wht_head_id" class="form-select form-select-sm py-0" style="width:80px;">
@@ -634,6 +630,12 @@
                   <input type="hidden" id="whtAmount" name="wht_amount" value="{{ old('wht_amount', 0) }}">
                 </div>
                 <input type="hidden" id="whtValue" name="wht" value="{{ old('wht', $purchase->wht ?? 0) }}">
+              </div>
+
+              <div class="d-flex justify-content-between align-items-center py-1 bg-light px-2 rounded mt-1">
+                <span class="fw-bold text-dark">Net Amount</span>
+                <span id="netAmountDisplay" class="fw-bold text-primary" style="font-size: 1.25rem;">0.00</span>
+                <input type="hidden" id="netAmount" name="net_amount" value="{{ old('net_amount', $purchase->net_amount ?? 0) }}">
               </div>
             </div>
 
