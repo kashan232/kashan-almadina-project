@@ -266,6 +266,7 @@ class ProductController extends Controller
 
         return response()->json([
             'product_name' => $product->name,
+            'brand_name' => $product->brandRelation->name ?? 'N/A',
             'prices' => $prices,
         ]);
     }

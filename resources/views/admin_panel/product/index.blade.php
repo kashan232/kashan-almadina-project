@@ -470,7 +470,7 @@
                 url: '/products/' + productId + '/prices',
                 type: 'GET',
                 success: function(res) {
-                    $('#modalProductName').text(res.product_name || 'Product Details');
+                    $('#modalProductName').text((res.product_name || 'Product Details') + (res.brand_name && res.brand_name !== 'N/A' ? ' - ' + res.brand_name : ''));
                     
                     var history = res.prices || [];
                     var latest = history.length > 0 ? history[0] : null;
