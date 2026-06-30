@@ -345,9 +345,20 @@ $(document).ready(function() {
     // =============================================
     var _savedReturnId = @json(isset($returnData) ? $returnData->id : null);
 
+    function setFormLocked(isLocked) {
+        if (isLocked) {
+            $('#returnForm').addClass('form-locked');
+            $('#returnForm input, #returnForm select, #returnForm textarea, #returnForm button').not('#editInvoiceBtn, #cancelBtn, #realPrintBtn, #previewPrintBtn, #newInvoiceBtn, #postBtn').attr('tabindex', '-1');
+            $('#returnForm .select2').prop('disabled', true);
+        } else {
+            $('#returnForm').removeClass('form-locked');
+            $('#returnForm input, #returnForm select, #returnForm textarea, #returnForm button').removeAttr('tabindex');
+            $('#returnForm .select2').prop('disabled', false);
+        }
+    }
+
     if (_savedReturnId) {
-        // Form locked if already saved or in edit mode (initially locked unless User hits edit)
-        $('#returnForm').addClass('form-locked');
+        setFormLocked(true);
         $('#newInvoiceBtn').show();
         $('#editInvoiceBtn').show();
         
@@ -417,7 +428,7 @@ $(document).ready(function() {
                     $('#editInvoiceBtn').show();
                     
                     // Lock form
-                    $('#returnForm').addClass('form-locked');
+                    setFormLocked(true);
 
                     // Update action for future saves (becomes update)
                     $form.attr('action', '/purchase-returns/' + res.id + '/update');
@@ -485,9 +496,10 @@ $(document).ready(function() {
     $('#postBtn').on('click', function(e) { e.preventDefault(); doPost(); });
     
     $('#editInvoiceBtn').on('click', function() {
-        $('#returnForm').removeClass('form-locked');
+        setFormLocked(false);
         $(this).hide();
         $('#saveDraftBtn').show();
+        $('#postBtn').hide();
     });
 
     // --- BLOCK ENTER KEY (prevents accidental form submit on qty, price etc) ---
