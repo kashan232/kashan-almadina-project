@@ -282,12 +282,9 @@
             </h6>
             <div class="d-flex align-items-center gap-1">
                 @if(isset($purchase) && $purchase->status != 'Posted')
-                    <form action="{{ route('purchase.post', $purchase->id) }}" method="POST" class="d-inline">
-                        @csrf
-                        <button type="submit" class="btn btn-xs btn-primary rounded-pill shadow-sm px-2 py-1" style="font-size: 0.75rem;">
-                            <i class="fa fa-send"></i> Post
-                        </button>
-                    </form>
+                    <button type="button" class="btn btn-xs btn-primary rounded-pill shadow-sm px-2 py-1" style="font-size: 0.75rem;" onclick="$('#postBtn').click();">
+                        <i class="fa fa-send"></i> Post
+                    </button>
                 @endif
                 <a href="{{ route('Purchase.home') }}" id="listBtn" class="btn btn-xs btn-outline-secondary rounded-pill px-2 py-1" style="font-size: 0.75rem;">
                     <i class="fa fa-list"></i> List
