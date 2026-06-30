@@ -29,15 +29,18 @@ class GroupIsolationScope implements Scope
         $userGroupIds = $user->userGroups()->pluck('user_groups.id')->toArray();
 
         $builder->where(function ($query) use ($userId, $userGroupIds) {
-            // Include records created by the user
-            $query->where('created_by', $userId);
-
-            // Include records belonging to any of the user's groups
-            if (!empty($userGroupIds)) {
-                foreach ($userGroupIds as $groupId) {
-                    $query->orWhereJsonContains('user_group_ids', (string)$groupId);
-                    $query->orWhereJsonContains('user_group_ids', (int)$groupId);
-                }
+            if (empty($userGroupIds)) {
+                // If the user has no groups assigned, they can only see what they created
+                $query->where('created_by', $userId);
+            } else {
+                // If the user has groups, they must strictly only see records assigned to those groups
+                // (Even if they created the record, if it was moved to another group, they lose access)
+                $query->where(function($sub) use ($userGroupIds) {
+                    foreach ($userGroupIds as $groupId) {
+                        $sub->orWhereJsonContains('user_group_ids', (string)$groupId);
+                        $sub->orWhereJsonContains('user_group_ids', (int)$groupId);
+                    }
+                });
             }
         });
     }

@@ -47,7 +47,8 @@ class PurchaseReturnController extends Controller
         $vendors = \App\Models\Vendor::all();
         $customers = \App\Models\Customer::all();
         $warehouses = \App\Models\Warehouse::all();
-        return view('admin_panel.purchase_return.add_return', compact('nextInvoice', 'purchases', 'vendors', 'customers', 'warehouses'));
+        $AccountHeads = \App\Models\AccountHead::all();
+        return view('admin_panel.purchase_return.add_return', compact('nextInvoice', 'purchases', 'vendors', 'customers', 'warehouses', 'AccountHeads'));
     }
 
     public function getPurchaseDetails($invoice)
@@ -212,8 +213,9 @@ class PurchaseReturnController extends Controller
         $vendors = \App\Models\Vendor::all();
         $customers = \App\Models\Customer::all();
         $warehouses = \App\Models\Warehouse::all();
+        $AccountHeads = \App\Models\AccountHead::all();
         
-        return view('admin_panel.purchase_return.add_return', compact('returnData', 'nextInvoice', 'purchases', 'vendors', 'customers', 'warehouses'));
+        return view('admin_panel.purchase_return.add_return', compact('returnData', 'nextInvoice', 'purchases', 'vendors', 'customers', 'warehouses', 'AccountHeads'));
     }
 
     public function update(Request $request, $id)

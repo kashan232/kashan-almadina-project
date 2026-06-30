@@ -893,13 +893,29 @@ class SaleController extends Controller
     {
         // Default type is 'customer', if not provided
         $type = $request->query('type', 'customer');
+        $isAdmin = \Illuminate\Support\Facades\Auth::user()->roles->pluck('name')->contains('Admin') || \Illuminate\Support\Facades\Auth::user()->usertype == 'admin';
+        $userId = \Illuminate\Support\Facades\Auth::id();
+        $userGroupIds = \Illuminate\Support\Facades\Auth::user()->userGroups()->pluck('user_groups.id')->toArray();
 
         // Check if the type is 'vendor'
         if ($type === 'vendor') {
-            // If type is 'vendor', fetch vendors
-            $rows = Vendor::orderBy('name')->get(['id', 'name', 'phone']); // Vendor details you need
+            $query = Vendor::query();
+            if (!$isAdmin) {
+                $query->where(function($q) use ($userId, $userGroupIds) {
+                    if (empty($userGroupIds)) {
+                        $q->where('created_by', $userId);
+                    } else {
+                        $q->where(function($sub) use ($userGroupIds) {
+                            foreach ($userGroupIds as $groupId) {
+                                $sub->orWhereJsonContains('user_group_ids', (string)$groupId);
+                                $sub->orWhereJsonContains('user_group_ids', (int)$groupId);
+                            }
+                        });
+                    }
+                });
+            }
+            $rows = $query->orderBy('name')->get(['id', 'name', 'phone']); 
 
-            // Return the vendor data
             return response()->json(
                 $rows->map(
                     fn($v) => [
@@ -913,11 +929,22 @@ class SaleController extends Controller
 
         // Check if the type is 'walking'
         if ($type === 'walking') {
-            // If type is 'walking', fetch walking customers
-            $rows = Customer::where('customer_type', 'Walking Customer')
-                ->orderBy('customer_name')
-                ->get(['id', 'customer_id', 'customer_name']);
-            // Return walking customer data
+            $query = Customer::where('customer_type', 'Walking Customer');
+            if (!$isAdmin) {
+                $query->where(function($q) use ($userId, $userGroupIds) {
+                    if (empty($userGroupIds)) {
+                        $q->where('created_by', $userId);
+                    } else {
+                        $q->where(function($sub) use ($userGroupIds) {
+                            foreach ($userGroupIds as $groupId) {
+                                $sub->orWhereJsonContains('user_group_ids', (string)$groupId);
+                                $sub->orWhereJsonContains('user_group_ids', (int)$groupId);
+                            }
+                        });
+                    }
+                });
+            }
+            $rows = $query->orderBy('customer_name')->get(['id', 'customer_id', 'customer_name']);
             return response()->json(
                 $rows->map(
                     fn($c) => [
@@ -930,11 +957,23 @@ class SaleController extends Controller
         }
 
         // Default: Fetch customers for 'customer' type
-        $rows = Customer::where('customer_type', 'Main Customer')
-            ->orderBy('customer_name')
-            ->get(['id', 'customer_id', 'customer_name']);
+        $query = Customer::where('customer_type', 'Main Customer');
+        if (!$isAdmin) {
+            $query->where(function($q) use ($userId, $userGroupIds) {
+                if (empty($userGroupIds)) {
+                    $q->where('created_by', $userId);
+                } else {
+                    $q->where(function($sub) use ($userGroupIds) {
+                        foreach ($userGroupIds as $groupId) {
+                            $sub->orWhereJsonContains('user_group_ids', (string)$groupId);
+                            $sub->orWhereJsonContains('user_group_ids', (int)$groupId);
+                        }
+                    });
+                }
+            });
+        }
+        $rows = $query->orderBy('customer_name')->get(['id', 'customer_id', 'customer_name']);
 
-        // Return customer data
         return response()->json(
             $rows->map(
                 fn($c) => [

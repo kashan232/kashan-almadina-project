@@ -25,14 +25,17 @@ class CustomerController extends Controller
             $userGroupIds = Auth::user()->userGroups()->pluck('user_groups.id')->toArray();
             
             $query->where(function($q) use ($userId, $userGroupIds) {
-                // Customer created by the user
-                $q->where('created_by', $userId);
-                
-                // OR Customer belongs to user's group
-                if (!empty($userGroupIds)) {
-                    foreach ($userGroupIds as $groupId) {
-                        $q->orWhereJsonContains('user_group_ids', (string)$groupId);
-                    }
+                if (empty($userGroupIds)) {
+                    // Customer created by the user
+                    $q->where('created_by', $userId);
+                } else {
+                    // Customer belongs to user's group
+                    $q->where(function($sub) use ($userGroupIds) {
+                        foreach ($userGroupIds as $groupId) {
+                            $sub->orWhereJsonContains('user_group_ids', (string)$groupId);
+                            $sub->orWhereJsonContains('user_group_ids', (int)$groupId);
+                        }
+                    });
                 }
             });
         } else {

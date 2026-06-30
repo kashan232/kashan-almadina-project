@@ -208,39 +208,53 @@
                             </div>
                             <div class="col-md-6">
                                 <div class="card border-0 bg-light">
-                                    <div class="card-body">
-                                        <table class="table table-sm table-borderless mb-0">
-                                            <tr>
-                                                <th class="text-secondary">Subtotal</th>
-                                                <td><input type="text" id="subtotal" name="subtotal" class="form-control form-control-sm text-end bg-white" readonly value="{{ $returnData->subtotal ?? 0 }}"></td>
-                                            </tr>
-                                            <tr style="display:none;">
-                                                <th class="text-secondary">Total Discount</th>
-                                                <td><input type="hidden" id="overallDiscount" name="discount" value="0"></td>
-                                            </tr>
-                                            <tr>
-                                                <th class="text-secondary">WHT</th>
-                                                <td>
-                                                    <div class="input-group input-group-sm">
-                                                        <input type="number" step="0.01" id="whtPercent" name="wht_percent" class="form-control text-end" placeholder="%" value="{{ $returnData->wht_percent ?? 0 }}">
-                                                        <select id="whtType" name="wht_type" class="form-select form-select-sm" style="max-width:70px;">
-                                                            <option value="percent" {{ !isset($returnData) || (isset($returnData) && $returnData->wht_type != 'amount') ? 'selected' : '' }}>%</option>
-                                                            <option value="amount" {{ isset($returnData) && $returnData->wht_type == 'amount' ? 'selected' : '' }}>PKR</option>
-                                                        </select>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                            <tr>
-                                                <th class="text-secondary">WHT Amount</th>
-                                                <td>
-                                                    <input type="text" id="whtAmount" name="wht" class="form-control form-control-sm text-end bg-white" readonly value="{{ $returnData->wht ?? 0 }}">
-                                                </td>
-                                            </tr>
-                                            <tr class="border-top">
-                                                <th class="h5 fw-bold pt-3">Net Return Amount</th>
-                                                <td class="pt-3"><input type="text" id="netAmount" name="net_amount" class="form-control form-control-lg fw-bold text-end text-danger bg-white" readonly value="{{ $returnData->net_amount ?? 0 }}"></td>
-                                            </tr>
-                                        </table>
+                                    <div class="card-body px-4 py-3">
+                                      <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                                        <span class="text-muted small fw-bold">Subtotal</span>
+                                        <input type="text" id="subtotal" name="subtotal" class="form-control form-control-sm text-end bg-transparent border-0 fw-bold" readonly value="{{ $returnData->subtotal ?? 0 }}" style="width:150px">
+                                      </div>
+                                      <div class="d-flex justify-content-between align-items-center py-2 border-bottom" style="display:none !important;">
+                                        <span class="text-muted small">Total Discount</span>
+                                        <input type="hidden" id="overallDiscount" name="discount" value="0">
+                                      </div>
+                                      
+                                      <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+                                        <span class="text-muted small fw-bold">WHT (Tax)</span>
+                                        <div class="d-flex align-items-center gap-2">
+                                          <div class="d-flex gap-1" style="width:190px;">
+                                            <select id="wht_head_id" class="form-select form-select-sm" style="width:80px;">
+                                              <option value="">Head</option>
+                                              @if(isset($AccountHeads))
+                                                @foreach($AccountHeads as $head)
+                                                    <option value="{{ $head->id }}" {{ (isset($returnData) && $returnData->whtAccount && $returnData->whtAccount->head_id == $head->id) ? 'selected' : '' }}>
+                                                        {{ $head->name }}
+                                                    </option>
+                                                @endforeach
+                                              @endif
+                                            </select>
+                                            <select name="wht_account_id" id="wht_account_id" class="form-select form-select-sm" style="flex-grow:1;">
+                                              <option value="">Account</option>
+                                              @if(isset($returnData) && $returnData->whtAccount)
+                                                  <option value="{{ $returnData->wht_account_id }}" selected>{{ $returnData->whtAccount->title }}</option>
+                                              @endif
+                                            </select>
+                                          </div>
+                                          <div class="d-flex align-items-center gap-1">
+                                            <input type="number" step="0.01" id="whtPercent" name="wht_percent" class="form-control form-control-sm text-end" placeholder="Val" value="{{ $returnData->wht_percent ?? 0 }}" style="width:60px">
+                                            <select id="whtType" name="wht_type" class="form-select form-select-sm" style="width:60px;">
+                                                <option value="percent" {{ !isset($returnData) || (isset($returnData) && $returnData->wht_type != 'amount') ? 'selected' : '' }}>%</option>
+                                                <option value="amount" {{ isset($returnData) && $returnData->wht_type == 'amount' ? 'selected' : '' }}>PKR</option>
+                                            </select>
+                                          </div>
+                                          <input type="text" id="whtAmount" class="form-control form-control-sm text-end input-readonly border-0 bg-transparent fw-bold" readonly value="{{ $returnData->wht ?? 0 }}" style="width:80px">
+                                        </div>
+                                        <input type="hidden" id="whtValue" name="wht" value="{{ $returnData->wht ?? 0 }}">
+                                      </div>
+
+                                      <div class="d-flex justify-content-between align-items-center py-3">
+                                        <span class="h5 fw-bold mb-0">Net Return Amount</span>
+                                        <input type="text" id="netAmount" name="net_amount" class="form-control form-control-lg fw-bold text-end text-danger border-0 bg-transparent" readonly value="{{ $returnData->net_amount ?? 0 }}" style="width:180px; font-size: 1.5rem;">
+                                      </div>
                                     </div>
                                 </div>
                             </div>
@@ -1028,5 +1042,33 @@ window.printDiv = function(divId) {
     document.body.innerHTML = originalContents;
     window.location.reload(); 
 };
+    $(document).on('change', '#wht_head_id', function() {
+        var headId = $(this).val();
+        var $accSelect = $('#wht_account_id');
+
+        if (!headId) {
+            $accSelect.html('<option value="">Select Account</option>');
+            return;
+        }
+
+        $.ajax({
+            url: "{{ url('/get-accounts-by-head') }}/" + headId,
+            type: "GET",
+            success: function(res) {
+                var html = '<option value="">Select Account</option>';
+                if (res && res.length) {
+                    res.forEach(function(acc) {
+                        html += '<option value="' + acc.id + '">' + acc.title + '</option>';
+                    });
+                } else {
+                    html = '<option value="">No Accounts Found</option>';
+                }
+                $accSelect.html(html);
+            },
+            error: function(err) {
+                console.error('AJAX Error:', err.statusText);
+            }
+        });
+    });
 </script>
 @endsection
