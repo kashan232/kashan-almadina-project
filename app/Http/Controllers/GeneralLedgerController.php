@@ -730,14 +730,20 @@ class GeneralLedgerController extends Controller
         $balance = (float)($party->opening_balance ?? 0);
         $class = ($type == 'customer') ? 'App\Models\Customer' : 'App\Models\Vendor';
 
-        // 1. Sales (Debit) - Use sub_total2 (Gross net of line discounts)
+        // 1. Sales (Debit) & Discounts (Credit)
         $salesDateCol = $this->getDateColumn('sales');
-        $sales = (float)Sale::where('customer_id', $id)->whereIn('partyType', $typeArray)
-            ->where(DB::raw($salesDateCol), '<', $date)->sum('sub_total2');
+        $salesList = Sale::where('customer_id', $id)->whereIn('partyType', $typeArray)
+            ->whereIn('status', ['posted', 'Posted'])
+            ->where(DB::raw($salesDateCol), '<', $date)->get(['sub_total2', 'discount_amount']);
+        $sales = 0; $saleDiscounts = 0;
+        foreach ($salesList as $s) {
+            $sales += (float)$s->sub_total2;
+            $saleDiscounts += (float)$s->discount_amount;
+        }
         
-        // 2. Purchase Returns (Debit)
+        // 2. Purchase Returns (Debit) & Discounts (Credit)
         $prDateCol = $this->getDateColumn('purchase_returns', 'current_date');
-        $pReturns = (float)PurchaseReturn::where(function($q) use ($id, $type, $class) {
+        $pReturnsList = PurchaseReturn::where(function($q) use ($id, $type, $class) {
                 if ($type == 'vendor') {
                     $q->where(function($q3) use ($id) {
                         $q3->where('vendor_id', $id)->where(function($q4) {
@@ -750,13 +756,28 @@ class GeneralLedgerController extends Controller
                     $q->where('purchasable_id', $id)->where('purchasable_type', $class);
                 }
             })->whereIn('status', ['posted', 'Posted'])
-            ->where(DB::raw($prDateCol), '<', $date)->sum('net_amount');
+            ->where(DB::raw($prDateCol), '<', $date)->get(['net_amount', 'discount']);
+        $pReturns = 0; $pReturnDiscounts = 0;
+        foreach ($pReturnsList as $pr) {
+            $pReturns += (float)$pr->net_amount;
+            $pReturnDiscounts += (float)$pr->discount;
+        }
 
-        // 3. Payments (Debit)
+        // 3. Payments (Debit) & Discounts (Debit)
         $pvDateCol = $this->getDateColumn('payment_vouchers', 'receipt_date');
-        $payments = (float)PaymentVoucher::where('party_id', $id)->whereIn('type', $typeArray)
+        $pvList = PaymentVoucher::where('party_id', $id)->whereIn('type', $typeArray)
             ->whereIn('status', ['posted', 'Posted'])
-            ->where(DB::raw($pvDateCol), '<', $date)->sum('total_amount');
+            ->where(DB::raw($pvDateCol), '<', $date)->get();
+        $payments = 0; $paymentDiscounts = 0;
+        foreach ($pvList as $pv) {
+            $payments += (float)$pv->total_amount;
+            $dArr = json_decode($pv->discount_value, true);
+            if (is_array($dArr)) {
+                foreach ($dArr as $d) {
+                    $paymentDiscounts += (float)$d;
+                }
+            }
+        }
 
         // 3.1 Expenses (was Debit, now moved to Credit calculation below)
         // Kept empty here to maintain numbering
@@ -800,9 +821,9 @@ class GeneralLedgerController extends Controller
             $avDebits += (float)$av->total_amount;
         }
 
-        // 5. Purchases (Credit)
+        // 5. Purchases (Credit) & Discounts (Debit)
         $pjDateCol = $this->getDateColumn('purchases', 'current_date');
-        $purchases = (float)Purchase::where(function($q) use ($id, $type, $class) {
+        $purchasesList = Purchase::where(function($q) use ($id, $type, $class) {
                 if ($type == 'vendor') {
                     $q->where(function($q3) use ($id) {
                         $q3->where('vendor_id', $id)->where(function($q4) {
@@ -815,26 +836,36 @@ class GeneralLedgerController extends Controller
                     $q->where('purchasable_id', $id)->where('purchasable_type', $class);
                 }
             })->whereIn('status', ['posted', 'Posted'])
-            ->where(DB::raw($pjDateCol), '<', $date)->sum('net_amount');
+            ->where(DB::raw($pjDateCol), '<', $date)->get(['net_amount', 'discount']);
+        $purchases = 0; $purchaseDiscounts = 0;
+        foreach ($purchasesList as $p) {
+            $purchases += (float)$p->net_amount;
+            $purchaseDiscounts += (float)$p->discount;
+        }
 
-        // 6. Sale Returns (Credit)
+        // 6. Sale Returns (Credit) & Discounts (Debit)
         $srDateCol = $this->getDateColumn('sale_returns', 'current_date');
-        $sReturns = (float)SaleReturn::where('customer_id', $id)->whereIn('party_type', $typeArray)
+        $sReturnsList = SaleReturn::where('customer_id', $id)->whereIn('party_type', $typeArray)
             ->whereIn('status', ['posted', 'Posted'])
-            ->where(DB::raw($srDateCol), '<', $date)->sum('total_balance');
+            ->where(DB::raw($srDateCol), '<', $date)->get(['total_balance', 'discount_amount']);
+        $sReturns = 0; $sReturnDiscounts = 0;
+        foreach ($sReturnsList as $sr) {
+            $sReturns += (float)$sr->total_balance;
+            $sReturnDiscounts += (float)$sr->discount_amount;
+        }
 
-        // 7. Receipts (Credit)
+        // 7. Receipts (Credit) & Discounts (Credit)
         $rvDateCol = $this->getDateColumn('receipts_vouchers', 'receipt_date');
         $rvsList = ReceiptsVoucher::where('party_id', $id)->whereIn('type', $typeArray)
             ->whereIn('status', ['posted', 'Posted'])
             ->where(DB::raw($rvDateCol), '<', $date)->get();
-        $receipts = 0;
+        $receipts = 0; $receiptDiscounts = 0;
         foreach ($rvsList as $rv) {
             $receipts += (float)$rv->total_amount;
             $dArr = json_decode($rv->discount_value, true);
             if (is_array($dArr)) {
                 foreach ($dArr as $d) {
-                    $receipts += (float)$d;
+                    $receiptDiscounts += (float)$d;
                 }
             }
         }
@@ -848,13 +879,12 @@ class GeneralLedgerController extends Controller
             ->whereIn('status', ['posted', 'Posted'])
             ->where(DB::raw($ivDateCol), '<', $date)->get();
         $incomes = 0;
-        foreach ($ivList as $iv) {
-            $types = json_decode($iv->party_type, true) ?? [];
+        foreach($ivList as $iv) {
             $pIds = json_decode($iv->party_id, true) ?? [];
             $amounts = json_decode($iv->amount, true) ?? [];
-
-            foreach ($pIds as $idx => $pid) {
-                if ($pid == $id && in_array($types[$idx] ?? '', $typeArray)) {
+            $types = json_decode($iv->party_type, true) ?? [];
+            foreach($pIds as $idx => $pid) {
+                if($pid == $id && in_array($types[$idx] ?? '', $typeArray)) {
                     $incomes += (float)($amounts[$idx] ?? 0);
                 }
             }
@@ -889,14 +919,13 @@ class GeneralLedgerController extends Controller
         }
 
         // 8.5 AV Credits
-        $avDateCol = $this->getDateColumn('adjustment_vouchers');
-        $avsCreditList = \App\Models\AdjustmentVoucher::where(function($q) use ($id) {
-                $q->whereJsonContains('account_id', (string)$id)
-                  ->orWhereJsonContains('account_id', (int)$id);
-            })->whereIn('status', ['posted', 'Posted'])->where(DB::raw($avDateCol), '<', $date)->get();
+        $avsCreditList = \App\Models\AdjustmentVoucher::where('row_account_id', $id)
+            ->whereIn('row_account_type', $typeArray)
+            ->whereIn('status', ['posted', 'Posted'])
+            ->where(DB::raw($avDateCol), '<', $date)->get();
         $avCredits = 0;
         foreach($avsCreditList as $av) {
-            $accIds = json_decode($av->account_id, true) ?? [];
+            $accIds = json_decode($av->row_account_id, true) ?? [];
             $accHeads = json_decode($av->account_head, true) ?? [];
             $amounts = json_decode($av->amount, true) ?? [];
             foreach ($accIds as $idx => $aid) {
@@ -928,7 +957,17 @@ class GeneralLedgerController extends Controller
             }
         }
 
-        $balance += ($sales + $pReturns + $payments + $vDebits + $jvDebits + $avDebits + $incomes + $claimDebits) - ($purchases + $sReturns + $receipts + $vCredits + $jvCredits + $avCredits + $expenses + $claimCredits);
+        // 11. Claim Credit Notes (CIR)
+        $crnDateCol = $this->getDateColumn('claim_credit_notes');
+        $crNotes = (float)\App\Models\ClaimCreditNote::where('party_id', $id)
+            ->where('party_type', $type == 'customer' ? 'customer' : 'vendor')
+            ->where('status', 'Posted')
+            ->where(DB::raw($crnDateCol), '<', $date)->sum('net_total');
+
+        $totalDebits = $sales + $pReturns + $payments + $vDebits + $jvDebits + $avDebits + $incomes + $claimDebits + $crNotes + $paymentDiscounts + $purchaseDiscounts + $sReturnDiscounts;
+        $totalCredits = $purchases + $sReturns + $receipts + $vCredits + $jvCredits + $avCredits + $expenses + $claimCredits + $saleDiscounts + $pReturnDiscounts + $receiptDiscounts;
+
+        $balance += $totalDebits - $totalCredits;
         
         return $balance;
     }
