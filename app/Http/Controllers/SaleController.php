@@ -996,8 +996,9 @@ class SaleController extends Controller
                 return response()->json(['error' => 'Vendor not found'], 404);
             }
 
-            // Get closing balance directly from VendorLedger as shown on Vendor index
-            $previous_balance = $v->latestLedger ? (float) $v->latestLedger->closing_balance : (float) $v->opening_balance;
+            // Fetch dynamic balance matching the General Ledger
+            $gl = new \App\Http\Controllers\GeneralLedgerController();
+            $previous_balance = $gl->calculateOpeningBalance('vendor', $id, date('Y-m-d', strtotime('+1 day')));
 
             // Revert sign for Vendors (GL displays Credits as positive for Vendor)
             // Wait, GL Preview displays: $runningBalance >= 0 ? 'DR.' : 'CR.'
@@ -1018,10 +1019,9 @@ class SaleController extends Controller
             return response()->json(['error' => 'Customer not found'], 404);
         }
 
-        // Get closing balance directly from CustomerLedger as shown on Customer index
-        $previous_balance = $c->customerLedger ? (float) $c->customerLedger->closing_balance : (float) $c->opening_balance;
-
-
+        // Fetch dynamic balance matching the General Ledger
+        $gl = new \App\Http\Controllers\GeneralLedgerController();
+        $previous_balance = $gl->calculateOpeningBalance('customer', $id, date('Y-m-d', strtotime('+1 day')));
 
         return response()->json([
             'filer_type' => $c->filer_type,
