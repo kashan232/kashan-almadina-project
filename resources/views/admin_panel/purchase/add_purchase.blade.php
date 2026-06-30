@@ -522,7 +522,7 @@
               <h6 class="mb-0 fw-bold text-success">
                 <i class="fa fa-share-alt me-2"></i>Accounts Allocation
               </h6>
-              <button type="button" class="btn btn-success btn-sm rounded-pill px-3" id="addAccountRow">
+              <button type="button" class="btn btn-success btn-xs rounded-pill px-2 py-1" id="addAccountRow" style="font-size: 0.75rem;">
                 <i class="fa fa-plus me-1"></i>Add Account
               </button>
             </div>
@@ -573,7 +573,7 @@
               </table>
             </div>
             
-            <div class="d-flex justify-content-between align-items-center mt-2 p-2 bg-success bg-opacity-10 rounded-3">
+            <div class="d-flex justify-content-between align-items-center mt-2 p-1 bg-success bg-opacity-10 rounded-3">
               <span class="text-success fw-bold">Allocation Total:</span>
               <input type="text" id="accountsTotal" class="form-control form-control-sm text-end fw-bold text-success border-0 bg-transparent py-0" value="0.00" readonly style="width: 150px; font-size: 1.1rem;">
             </div>
@@ -587,24 +587,29 @@
               <h6 class="mb-0 fw-bold text-info">
                 <i class="fa fa-calculator me-2"></i>Purchase Totals
               </h6>
+              <div class="d-flex align-items-center bg-light px-2 rounded">
+                <span class="fw-bold text-dark me-2 small">Net Amount</span>
+                <input type="text" id="netAmount" name="net_amount" class="form-control text-end fw-bold text-primary border-0 bg-transparent py-0" value="{{ old('net_amount', $purchase->net_amount ?? 0) }}" readonly style="width:130px; font-size: 1.2rem; height: auto;">
+              </div>
             </div>
 
-            <div class="totals-card p-2">
-              <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+            <div class="totals-card p-1">
+
+              <div class="d-flex justify-content-between align-items-center py-1 border-bottom">
                 <span class="text-muted small">Sub-Total</span>
-                <input type="text" id="subtotal" name="subtotal" class="form-control form-control-sm text-end fw-bold input-readonly border-0 bg-transparent" value="{{ old('subtotal', $purchase->subtotal ?? 0) }}" readonly style="width:150px">
+                <input type="text" id="subtotal" name="subtotal" class="form-control form-control-sm text-end fw-bold input-readonly border-0 bg-transparent py-0" value="{{ old('subtotal', $purchase->subtotal ?? 0) }}" readonly style="width:150px">
               </div>
 
-              <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+              <div class="d-flex justify-content-between align-items-center py-1 border-bottom">
                 <span class="text-muted small">Total Discount</span>
-                <input type="number" step="0.01" id="overallDiscount" name="discount" class="form-control form-control-sm text-end input-readonly border-0 bg-transparent" value="{{ old('discount', $purchase->discount ?? 0) }}" readonly style="width:150px">
+                <input type="number" step="0.01" id="overallDiscount" name="discount" class="form-control form-control-sm text-end input-readonly border-0 bg-transparent py-0" value="{{ old('discount', $purchase->discount ?? 0) }}" readonly style="width:150px">
               </div>
 
-              <div class="d-flex justify-content-between align-items-center py-2 border-bottom">
+              <div class="d-flex justify-content-between align-items-center py-1 border-bottom">
                 <span class="text-muted small">WHT (Tax)</span>
                 <div class="d-flex align-items-center gap-2">
                   <div class="d-flex gap-1" style="width:190px;">
-                    <select id="wht_head_id" class="form-select form-select-sm" style="width:80px;">
+                    <select id="wht_head_id" class="form-select form-select-sm py-0" style="width:80px;">
                       <option value="">Head</option>
                       @foreach($AccountHeads as $head)
                           <option value="{{ $head->id }}" {{ (isset($purchase) && $purchase->whtAccount && $purchase->whtAccount->head_id == $head->id) ? 'selected' : '' }}>
@@ -612,7 +617,7 @@
                           </option>
                       @endforeach
                     </select>
-                    <select name="wht_account_id" id="wht_account_id" class="form-select form-select-sm" style="flex-grow:1;">
+                    <select name="wht_account_id" id="wht_account_id" class="form-select form-select-sm py-0" style="flex-grow:1;">
                       <option value="">Account</option>
                       @if(isset($purchase) && $purchase->whtAccount)
                           <option value="{{ $purchase->wht_account_id }}" selected>{{ $purchase->whtAccount->title }}</option>
@@ -620,21 +625,16 @@
                     </select>
                   </div>
                   <div class="d-flex align-items-center gap-1">
-                    <input type="number" step="0.01" id="whtPercent" name="wht_percent" class="form-control form-control-sm text-end" placeholder="Val" value="{{ old('wht_percent', $purchase->wht_percent ?? '') }}" style="width:60px">
-                    <select id="whtType" name="wht_type" class="form-select form-select-sm" style="width:60px;">
+                    <input type="number" step="0.01" id="whtPercent" name="wht_percent" class="form-control form-control-sm text-end py-0" placeholder="Val" value="{{ old('wht_percent', $purchase->wht_percent ?? '') }}" style="width:60px">
+                    <select id="whtType" name="wht_type" class="form-select form-select-sm py-0" style="width:60px;">
                         @php $wType = old('wht_type', $purchase->wht_type ?? 'percent'); @endphp
                         <option value="percent" {{ $wType == 'percent' ? 'selected' : '' }}>%</option>
                         <option value="amount" {{ $wType == 'amount' ? 'selected' : '' }}>PKR</option>
                     </select>
                   </div>
-                  <input type="text" id="whtAmount" name="wht_amount" class="form-control form-control-sm text-end input-readonly border-0 bg-transparent fw-bold" value="{{ old('wht_amount', 0) }}" readonly style="width:80px">
+                  <input type="text" id="whtAmount" name="wht_amount" class="form-control form-control-sm text-end input-readonly border-0 bg-transparent fw-bold py-0" value="{{ old('wht_amount', 0) }}" readonly style="width:80px">
                 </div>
                 <input type="hidden" id="whtValue" name="wht" value="{{ old('wht', $purchase->wht ?? 0) }}">
-              </div>
-
-              <div class="d-flex justify-content-between align-items-center py-3">
-                <span class="fw-bold text-dark">Net Amount</span>
-                <input type="text" id="netAmount" name="net_amount" class="form-control form-control-lg text-end fw-bold text-primary border-0 bg-transparent" value="{{ old('net_amount', $purchase->net_amount ?? 0) }}" readonly style="width:180px; font-size: 1.5rem;">
               </div>
             </div>
 
@@ -1571,13 +1571,14 @@ $(function() {
         var retail = _n($row.find('.purchase_retail_price').val());
 
         var base    = retail > 0 ? retail : price;
-        var discAmt = (base * disc / 100) * qty;
+        var unitDiscAmt = (base * disc / 100);
+        var totalDiscAmt = unitDiscAmt * qty;
 
         var grossAmount = price * qty;
-        var netAmount   = grossAmount - discAmt;
+        var netAmount   = grossAmount - totalDiscAmt;
         var netRate     = (qty > 0) ? (netAmount / qty) : price;
 
-        $row.find('.disc_amount').val(discAmt.toFixed(2));
+        $row.find('.disc_amount').val(unitDiscAmt.toFixed(2));
         $row.find('.row-amount').val(netRate.toFixed(2));
         $row.find('.row-total').val(netAmount.toFixed(2));
     }
