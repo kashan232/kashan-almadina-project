@@ -733,7 +733,6 @@ class GeneralLedgerController extends Controller
         // 1. Sales (Debit) & Discounts (Credit)
         $salesDateCol = $this->getDateColumn('sales');
         $salesList = Sale::where('customer_id', $id)->whereIn('partyType', $typeArray)
-            ->whereIn('status', ['posted', 'Posted'])
             ->where(DB::raw($salesDateCol), '<', $date)->get(['sub_total2', 'discount_amount']);
         $sales = 0; $saleDiscounts = 0;
         foreach ($salesList as $s) {
@@ -919,13 +918,14 @@ class GeneralLedgerController extends Controller
         }
 
         // 8.5 AV Credits
-        $avsCreditList = \App\Models\AdjustmentVoucher::where('row_account_id', $id)
-            ->whereIn('row_account_type', $typeArray)
-            ->whereIn('status', ['posted', 'Posted'])
-            ->where(DB::raw($avDateCol), '<', $date)->get();
+        $avDateCol = $this->getDateColumn('adjustment_vouchers');
+        $avsCreditList = \App\Models\AdjustmentVoucher::where(function($q) use ($id) {
+                $q->whereJsonContains('account_id', (string)$id)
+                  ->orWhereJsonContains('account_id', (int)$id);
+            })->whereIn('status', ['posted', 'Posted'])->where(DB::raw($avDateCol), '<', $date)->get();
         $avCredits = 0;
         foreach($avsCreditList as $av) {
-            $accIds = json_decode($av->row_account_id, true) ?? [];
+            $accIds = json_decode($av->account_id, true) ?? [];
             $accHeads = json_decode($av->account_head, true) ?? [];
             $amounts = json_decode($av->amount, true) ?? [];
             foreach ($accIds as $idx => $aid) {
