@@ -140,7 +140,7 @@
                                 <input type="date" name="bill_date" class="form-control input-sm">
                             </div>
                             <div class="col-md-2 mt-1" id="original_warehouse_div">
-                                <label class="form-label border-danger border-bottom">Deliver From</label>
+                                <label class="form-label border-danger border-bottom"><span class="text-danger"><i class="fa fa-minus-circle"></i></span> Deliver From</label>
                                 <select name="original_warehouse_id" class="form-select input-sm">
                                     @if(auth()->user()->canAccessShop())
                                         <option value="0">Shop</option>
@@ -151,7 +151,7 @@
                                 </select>
                             </div>
                             <div class="col-md-2 mt-1">
-                                <label class="form-label border-primary border-bottom font-weight-bold">Claim WH (To)</label>
+                                <label class="form-label border-primary border-bottom font-weight-bold"><span class="text-success"><i class="fa fa-plus-circle"></i></span> Claim WH (To)</label>
                                 @if(isset($isAdmin) && $isAdmin)
                                     <select name="claim_warehouse_id" class="form-select input-sm">
                                         @foreach($allClaimWarehouses as $wh)
@@ -211,7 +211,7 @@
                                 <input type="number" name="replacement_sales_price" id="replacement_sales_price" class="form-control input-sm text-end fw-bold" placeholder="0.00" readonly>
                             </div>
                             <div class="col-md-2">
-                                <label class="form-label border-danger border-bottom">Deliver From</label>
+                                <label class="form-label border-danger border-bottom"><span class="text-danger"><i class="fa fa-minus-circle"></i></span> Deliver From</label>
                                 <select name="replacement_from_warehouse_id" class="form-select input-sm">
                                     @if(auth()->user()->canAccessShop())
                                         <option value="0">Shop</option>

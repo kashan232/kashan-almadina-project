@@ -161,7 +161,7 @@ class SaleController extends Controller
 
         foreach ($warehouseIds as $i => $warehouse_id) {
             $productId = $productIds[$i] ?? null;
-            $qty = (float)($salesQtys[$i] ?? 0);
+            $qty = (float) str_replace(',', '', $salesQtys[$i] ?? 0);
 
             if (($warehouse_id === null || $warehouse_id === '') || empty($productId) || $qty <= 0) {
                 continue;
@@ -181,15 +181,15 @@ class SaleController extends Controller
                 'sale_id' => $sale->id,
                 'warehouse_id' => $warehouse_id,
                 'product_id' => $productId,
-                'stock' => (float)($stocks[$i] ?? 0),
+                'stock' => (float) str_replace(',', '', $stocks[$i] ?? 0),
                 'price_level' => 0,
-                'sales_price' => (float)($salesPrices[$i] ?? 0),
+                'sales_price' => (float) str_replace(',', '', $salesPrices[$i] ?? 0),
                 'sales_qty' => $qty,
-                'retail_price' => (float)($retailPrices[$i] ?? 0),
-                'sales_rate' => (float)($salesRates[$i] ?? 0),
-                'discount_percent' => (float)($discPercents[$i] ?? 0),
-                'discount_amount' => (float)($discAmounts[$i] ?? 0),
-                'amount' => (float)($amounts[$i] ?? 0),
+                'retail_price' => (float) str_replace(',', '', $retailPrices[$i] ?? 0),
+                'sales_rate' => (float) str_replace(',', '', $salesRates[$i] ?? 0),
+                'discount_percent' => (float) str_replace(',', '', $discPercents[$i] ?? 0),
+                'discount_amount' => (float) str_replace(',', '', $discAmounts[$i] ?? 0),
+                'amount' => (float) str_replace(',', '', $amounts[$i] ?? 0),
             ]);
         }
 
@@ -203,7 +203,7 @@ class SaleController extends Controller
         
         // Aggregate all receipts from common form input array
         $receiptAmounts = $request->input('receipt_amount', []);
-        $totalReceipts = array_sum(array_map('floatval', $receiptAmounts));
+        $totalReceipts = array_sum(array_map(function($val) { return (float) str_replace(',', '', $val); }, $receiptAmounts));
 
         if ($isBooking) {
                 $booking = Productbooking::create([
@@ -216,16 +216,16 @@ class SaleController extends Controller
                     'address' => $request->address,
                     'tel' => $request->tel,
                     'remarks' => $request->remarks,
-                    'sub_total1' => $request->subTotal1 ?? 0,
-                    'sub_total2' => $request->subTotal2 ?? 0,
-                    'discount_percent' => $request->discountPercent ?? 0,
-                    'discount_amount' => $request->discountAmount ?? 0,
-                    'previous_balance' => $request->previousBalance ?? 0,
-                    'total_balance' => $request->totalBalance ?? 0,
+                    'sub_total1' => (float) str_replace(',', '', $request->subTotal1 ?? 0),
+                    'sub_total2' => (float) str_replace(',', '', $request->subTotal2 ?? 0),
+                    'discount_percent' => (float) str_replace(',', '', $request->discountPercent ?? 0),
+                    'discount_amount' => (float) str_replace(',', '', $request->discountAmount ?? 0),
+                    'previous_balance' => (float) str_replace(',', '', $request->previousBalance ?? 0),
+                    'total_balance' => (float) str_replace(',', '', $request->totalBalance ?? 0),
                     'receipt1' => $totalReceipts,
                     'receipt2' => 0,
-                    'final_balance1' => $request->finalBalance1 ?? 0,
-                    'final_balance2' => $request->finalBalance2 ?? 0,
+                    'final_balance1' => (float) str_replace(',', '', $request->finalBalance1 ?? 0),
+                    'final_balance2' => (float) str_replace(',', '', $request->finalBalance2 ?? 0),
                     'weight' => $request->weight ?? null,
                     'entry_date' => $request->entry_date,
                     'entry_time' => $request->entry_time,
@@ -234,7 +234,7 @@ class SaleController extends Controller
             $totalQty = 0;
             foreach ($request->warehouse_name ?? [] as $i => $warehouse_id) {
                 $productId = $request->input("product_id.$i");
-                $qty = (float) $request->input("sales-qty.$i", 0);
+                $qty = (float) str_replace(',', '', $request->input("sales-qty.$i", 0));
                 if (($warehouse_id === null || $warehouse_id === '') || empty($productId) || $qty <= 0) {
                     continue;
                 }
@@ -255,15 +255,15 @@ class SaleController extends Controller
                     'booking_id' => $booking->id,
                     'warehouse_id' => $warehouse_id,
                     'product_id' => $productId,
-                    'stock' => (float) $request->input("stock.$i", 0),
-                    'price_level' => (float) $request->input("price.$i", 0),
-                    'sales_price' => (float) $request->input("sales-price.$i", 0),
+                    'stock' => (float) str_replace(',', '', $request->input("stock.$i", 0)),
+                    'price_level' => (float) str_replace(',', '', $request->input("price.$i", 0)),
+                    'sales_price' => (float) str_replace(',', '', $request->input("sales-price.$i", 0)),
                     'sales_qty' => $qty,
-                    'retail_price' => (float) $request->input("retail-price.$i", 0),
-                    'sales_rate' => (float) $request->input("sales-rate.$i", 0),
-                    'discount_percent' => (float) $request->input("discount-percent.$i", 0),
-                    'discount_amount' => (float) $request->input("discount-amount.$i", 0),
-                    'amount' => (float) $request->input("sales-amount.$i", 0),
+                    'retail_price' => (float) str_replace(',', '', $request->input("retail-price.$i", 0)),
+                    'sales_rate' => (float) str_replace(',', '', $request->input("sales-rate.$i", 0)),
+                    'discount_percent' => (float) str_replace(',', '', $request->input("discount-percent.$i", 0)),
+                    'discount_amount' => (float) str_replace(',', '', $request->input("discount-amount.$i", 0)),
+                    'amount' => (float) str_replace(',', '', $request->input("sales-amount.$i", 0)),
                 ]);
             }
             $booking->quantity = $totalQty;
@@ -285,16 +285,16 @@ class SaleController extends Controller
                 'address' => $request->address ?? null,
                 'tel' => $request->tel ?? null,
                 'remarks' => $request->remarks ?? null,
-                'sub_total1' => $request->subTotal1 ?? 0,
-                'sub_total2' => $request->subTotal2 ?? 0,
-                'discount_percent' => $request->discountPercent ?? 0,
-                'discount_amount' => $request->discountAmount ?? 0,
-                'previous_balance' => $request->previousBalance ?? 0,
-                'total_balance' => $request->totalBalance ?? 0,
-                'receipt1' => $request->receipt1 ?? 0,
-                'receipt2' => $request->receipt2 ?? 0,
-                'final_balance1' => $request->finalBalance1 ?? 0,
-                'final_balance2' => $request->finalBalance2 ?? 0,
+                'sub_total1' => (float) str_replace(',', '', $request->subTotal1 ?? 0),
+                'sub_total2' => (float) str_replace(',', '', $request->subTotal2 ?? 0),
+                'discount_percent' => (float) str_replace(',', '', $request->discountPercent ?? 0),
+                'discount_amount' => (float) str_replace(',', '', $request->discountAmount ?? 0),
+                'previous_balance' => (float) str_replace(',', '', $request->previousBalance ?? 0),
+                'total_balance' => (float) str_replace(',', '', $request->totalBalance ?? 0),
+                'receipt1' => (float) str_replace(',', '', $request->receipt1 ?? 0),
+                'receipt2' => (float) str_replace(',', '', $request->receipt2 ?? 0),
+                'final_balance1' => (float) str_replace(',', '', $request->finalBalance1 ?? 0),
+                'final_balance2' => (float) str_replace(',', '', $request->finalBalance2 ?? 0),
                 'weight' => $request->weight ?? null,
                 'entry_date' => $request->entry_date,
                 'entry_time' => $request->entry_time,
@@ -302,7 +302,7 @@ class SaleController extends Controller
 
             foreach ($request->warehouse_name ?? [] as $i => $warehouse_id) {
                 $productId = $request->input("product_id.$i");
-                $saleQty = (float) $request->input("sales-qty.$i", 0);
+                $saleQty = (float) str_replace(',', '', $request->input("sales-qty.$i", 0));
 
                 if (($warehouse_id === null || $warehouse_id === '') || empty($productId) || $saleQty <= 0) {
                     continue;
@@ -318,7 +318,7 @@ class SaleController extends Controller
                     return back()->with('error', 'Unauthorized access to Warehouse.');
                 }
 
-                $saleQty = (float) $request->input("sales-qty.$i", 0);
+                $saleQty = (float) str_replace(',', '', $request->input("sales-qty.$i", 0));
 
                 // Stock Logic: 0 = Shop, >0 = Warehouse
                 if ($warehouse_id == 0) {
@@ -341,15 +341,15 @@ class SaleController extends Controller
                     'sale_id' => $sale->id,
                     'warehouse_id' => $warehouse_id,
                     'product_id' => $productId,
-                    'stock' => (float) $request->input("stock.$i", 0),
-                    'price_level' => (float) $request->input("price.$i", 0),
-                    'sales_price' => (float) $request->input("sales-price.$i", 0),
+                    'stock' => (float) str_replace(',', '', $request->input("stock.$i", 0)),
+                    'price_level' => (float) str_replace(',', '', $request->input("price.$i", 0)),
+                    'sales_price' => (float) str_replace(',', '', $request->input("sales-price.$i", 0)),
                     'sales_qty' => $saleQty,
-                    'retail_price' => (float) $request->input("retail-price.$i", 0),
-                    'sales_rate' => (float) $request->input("sales-rate.$i", 0),
-                    'discount_percent' => (float) $request->input("discount-percent.$i", 0),
-                    'discount_amount' => (float) $request->input("discount-amount.$i", 0),
-                    'amount' => (float) $request->input("sales-amount.$i", 0),
+                    'retail_price' => (float) str_replace(',', '', $request->input("retail-price.$i", 0)),
+                    'sales_rate' => (float) str_replace(',', '', $request->input("sales-rate.$i", 0)),
+                    'discount_percent' => (float) str_replace(',', '', $request->input("discount-percent.$i", 0)),
+                    'discount_amount' => (float) str_replace(',', '', $request->input("discount-amount.$i", 0)),
+                    'amount' => (float) str_replace(',', '', $request->input("sales-amount.$i", 0)),
                 ]);
             }
 
@@ -417,14 +417,14 @@ class SaleController extends Controller
             $booking->address        = $request->address;
             $booking->tel            = $request->tel;
             $booking->remarks        = $request->remarks;
-            $booking->sub_total1     = $request->subTotal1 ?? 0;
-            $booking->sub_total2     = $request->subTotal2 ?? 0;
-            $booking->discount_percent = $request->discountPercent ?? 0;
-            $booking->discount_amount  = $request->discountAmount ?? 0;
+            $booking->sub_total1     = (float) str_replace(',', '', $request->subTotal1 ?? 0);
+            $booking->sub_total2     = (float) str_replace(',', '', $request->subTotal2 ?? 0);
+            $booking->discount_percent = (float) str_replace(',', '', $request->discountPercent ?? 0);
+            $booking->discount_amount  = (float) str_replace(',', '', $request->discountAmount ?? 0);
             $booking->discount_head  = $request->discount_head;
             $booking->discount_account_id = $request->discount_account_id;
-            $booking->previous_balance = $request->previousBalance ?? 0;
-            $booking->total_balance    = $request->totalBalance ?? 0;
+            $booking->previous_balance = (float) str_replace(',', '', $request->previousBalance ?? 0);
+            $booking->total_balance    = (float) str_replace(',', '', $request->totalBalance ?? 0);
             
             // Sum up all receipt amounts and also save the details
             $receiptHeads = $request->input('receipt_head_id', []);
@@ -432,7 +432,7 @@ class SaleController extends Controller
             $receiptNarrations = $request->input('receipt_narration', []);
             $receiptAmountsArr = $request->input('receipt_amount', []);
             
-            $totalReceipts = array_sum(array_map('floatval', $receiptAmountsArr));
+            $totalReceipts = array_sum(array_map(function($val) { return (float) str_replace(',', '', $val); }, $receiptAmountsArr));
             
             $booking->receipt1 = $totalReceipts;
             $booking->receipt2 = 0;
@@ -441,8 +441,8 @@ class SaleController extends Controller
             $booking->receipt_narrations = json_encode($receiptNarrations);
             $booking->receipt_amounts_json = json_encode($receiptAmountsArr);
 
-            $booking->final_balance1 = $request->finalBalance1 ?? 0;
-            $booking->final_balance2 = $request->finalBalance2 ?? 0;
+            $booking->final_balance1 = (float) str_replace(',', '', $request->finalBalance1 ?? 0);
+            $booking->final_balance2 = (float) str_replace(',', '', $request->finalBalance2 ?? 0);
             $booking->weight         = $request->weight;
             $booking->entry_date     = $request->entry_date;
             $booking->entry_time     = $request->entry_time;
@@ -462,7 +462,7 @@ class SaleController extends Controller
             // Use warehouse_name as the primary loop key since it's now always present
             foreach ($warehouseIds as $i => $warehouse_id) {
                 $productId = $productIds[$i] ?? null;
-                $qty = (float) ($salesQtys[$i] ?? 0);
+                $qty = (float) str_replace(',', '', $salesQtys[$i] ?? 0);
 
                 if (($warehouse_id === null || $warehouse_id === '') || empty($productId) || $qty <= 0) {
                     continue;
@@ -480,7 +480,7 @@ class SaleController extends Controller
 
                 $totalQty += $qty;
 
-                $inputSalesPrice = (float) ($salesPrices[$i] ?? 0);
+                $inputSalesPrice = (float) str_replace(',', '', $salesPrices[$i] ?? 0);
                 $productDefaultPrice = \App\Models\Product::find($productId)->latestPrice->sale_net_amount ?? 0;
                 $salesPriceToSave = $inputSalesPrice > 0 ? $inputSalesPrice : $productDefaultPrice;
 
@@ -488,14 +488,14 @@ class SaleController extends Controller
                     'booking_id' => $booking->id,
                     'warehouse_id' => $warehouse_id,
                     'product_id' => $productId,
-                    'stock' => (float) ($stocks[$i] ?? 0),
+                    'stock' => (float) str_replace(',', '', $stocks[$i] ?? 0),
                     'sales_price' => $salesPriceToSave,
                     'sales_qty' => $qty,
-                    'retail_price' => (float) ($retailPrices[$i] ?? 0),
-                    'sales_rate' => (float) ($salesRates[$i] ?? 0),
-                    'discount_percent' => (float) ($discPercents[$i] ?? 0),
-                    'discount_amount' => (float) ($discAmounts[$i] ?? 0),
-                    'amount' => (float) ($amounts[$i] ?? 0),
+                    'retail_price' => (float) str_replace(',', '', $retailPrices[$i] ?? 0),
+                    'sales_rate' => (float) str_replace(',', '', $salesRates[$i] ?? 0),
+                    'discount_percent' => (float) str_replace(',', '', $discPercents[$i] ?? 0),
+                    'discount_amount' => (float) str_replace(',', '', $discAmounts[$i] ?? 0),
+                    'amount' => (float) str_replace(',', '', $amounts[$i] ?? 0),
                 ]);
             }
 

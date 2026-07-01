@@ -77,7 +77,7 @@
                 </div>
                 <div class="col-md-2">
                     <div class="card border-0 bg-light p-2 shadow-sm h-100">
-                        <label class="form-label text-muted small fw-bold mb-1">Claim From <span class="text-danger">*</span></label>
+                        <label class="form-label text-muted small fw-bold mb-1"><span class="text-danger"><i class="fa fa-minus-circle"></i></span> Claim From <span class="text-danger">*</span></label>
                         <select name="from_warehouse_id" class="form-select form-select-sm" required>
                             <option value="">Select Source...</option>
                             @foreach($customerWarehouses as $w)
@@ -88,7 +88,7 @@
                 </div>
                 <div class="col-md-2">
                     <div class="card border-0 bg-light p-2 shadow-sm h-100">
-                        <label class="form-label text-muted small fw-bold mb-1">Accept In <span class="text-danger">*</span></label>
+                        <label class="form-label text-muted small fw-bold mb-1"><span class="text-success"><i class="fa fa-plus-circle"></i></span> Accept In <span class="text-danger">*</span></label>
                         <select name="to_warehouse_id" class="form-select form-select-sm" required>
                             <option value="">Select Dest...</option>
                             @foreach($companyWarehouses as $w)

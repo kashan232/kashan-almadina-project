@@ -89,7 +89,7 @@
                                         <input type="text" class="form-control input-sm fw-bold text-primary bg-light" value="{{ $voucher->voucher_no ?? $voucherNo }}" readonly>
                                     </div>
                                     <div class="col-md-2">
-                                        <label class="form-label small fw-bold text-danger mb-1">Deduct From (-) Cr</label>
+                                        <label class="form-label small fw-bold text-danger mb-1"><i class="fa fa-minus-circle"></i> Deduct From (-) Cr</label>
                                         <select name="from_warehouse_id" id="receipt_from_warehouse_id" class="form-select input-sm" required>
                                             <option value="">Select Stock Source...</option>
                                             @foreach($companyWarehouses as $wh)
@@ -98,7 +98,7 @@
                                         </select>
                                     </div>
                                     <div class="col-md-2">
-                                        <label class="form-label small fw-bold text-success mb-1">Add To (+) Dr</label>
+                                        <label class="form-label small fw-bold text-success mb-1"><i class="fa fa-plus-circle"></i> Add To (+) Dr</label>
                                         <select name="to_warehouse_id" id="receipt_to_warehouse_id" class="form-select input-sm" required>
                                             <option value="">Select Receipt Wh...</option>
                                             @if(auth()->user()->canAccessShop())
@@ -265,7 +265,7 @@
                                         <input type="text" class="form-control input-sm fw-bold text-primary bg-light" value="{{ $creditNoteVoucherNo }}" readonly>
                                     </div>
                                     <div class="col-md-2">
-                                        <label class="form-label small fw-bold text-danger mb-1">Deduct From (-) Cr</label>
+                                        <label class="form-label small fw-bold text-danger mb-1"><i class="fa fa-minus-circle"></i> Deduct From (-) Cr</label>
                                         <select name="from_warehouse_id" id="credit_from_warehouse_id" class="form-select input-sm" required>
                                             <option value="">Select Stock Source...</option>
                                             @foreach($companyWarehouses as $wh)
@@ -274,7 +274,7 @@
                                         </select>
                                     </div>
                                     <div class="col-md-2 d-none">
-                                        <label class="form-label small fw-bold text-success mb-1">Add To (+) Dr</label>
+                                        <label class="form-label small fw-bold text-success mb-1"><i class="fa fa-plus-circle"></i> Add To (+) Dr</label>
                                         <select name="to_warehouse_id" id="credit_to_warehouse_id" class="form-select input-sm">
                                             <option value="">Select Target...</option>
                                             @if(auth()->user()->canAccessShop())
