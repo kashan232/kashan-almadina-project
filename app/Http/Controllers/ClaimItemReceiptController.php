@@ -55,7 +55,8 @@ class ClaimItemReceiptController extends Controller
         $voucherNo = ClaimItemReceipt::generateVoucherNo();
         $creditNoteVoucherNo = \App\Models\ClaimCreditNote::generateVoucherNo();
         $warehouses = Warehouse::orderBy('warehouse_name')->get();
-        return view('admin_panel.claim_item_receipt.create', compact('voucherNo', 'creditNoteVoucherNo', 'warehouses'));
+        $companyWarehouses = Warehouse::withoutGlobalScope('exclude_claims')->where('claim_type', 'company')->orderBy('warehouse_name')->get();
+        return view('admin_panel.claim_item_receipt.create', compact('voucherNo', 'creditNoteVoucherNo', 'warehouses', 'companyWarehouses'));
     }
 
     public function edit($id)
@@ -65,7 +66,8 @@ class ClaimItemReceiptController extends Controller
             return redirect()->route('claim-item-receipt.index')->with('error', 'Posted vouchers cannot be edited.');
         }
         $warehouses = Warehouse::orderBy('warehouse_name')->get();
-        return view('admin_panel.claim_item_receipt.create', compact('voucher', 'warehouses'));
+        $companyWarehouses = Warehouse::withoutGlobalScope('exclude_claims')->where('claim_type', 'company')->orderBy('warehouse_name')->get();
+        return view('admin_panel.claim_item_receipt.create', compact('voucher', 'warehouses', 'companyWarehouses'));
     }
 
     public function fetchByBTR(Request $request)

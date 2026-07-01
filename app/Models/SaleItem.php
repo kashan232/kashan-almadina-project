@@ -35,7 +35,7 @@ class SaleItem extends Model
     // Relation to Warehouse (agar model hai)
     public function warehouse()
     {
-        return $this->belongsTo(Warehouse::class);
+        return $this->belongsTo(Warehouse::class)->withoutGlobalScopes();
     }
 
     // Relation to Product (agar model hai)

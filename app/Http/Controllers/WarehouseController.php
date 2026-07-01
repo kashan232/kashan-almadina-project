@@ -14,7 +14,7 @@ class WarehouseController extends Controller
     public function index(Request $request)
     {
         $isAdmin = Auth::user()->roles->pluck('name')->contains('Admin') || Auth::id() == 1;
-        $query = Warehouse::with(['creator']);
+        $query = Warehouse::withoutGlobalScopes()->with(['creator']);
         
         // Admin can filter by user
         if ($isAdmin && $request->has('created_by') && $request->created_by != '') {
@@ -35,22 +35,23 @@ class WarehouseController extends Controller
             'warehouse_name' => 'required',
             'branch_id' => 'nullable',
             'user_group_ids' => 'nullable|array',
+            'claim_type' => 'nullable|in:none,customer,company'
         ]);
 
         $data = $request->all();
         
         if ($request->id) {
-            Warehouse::findOrFail($request->id)->update($data);
+            Warehouse::withoutGlobalScopes()->findOrFail($request->id)->update($data);
         } else {
             $data['created_by'] = Auth::id();
-            Warehouse::create($data);
+            Warehouse::withoutGlobalScopes()->create($data);
         }
         return back()->with('success', 'Saved Successfully');
     }
 
     public function delete($id)
     {
-        Warehouse::findOrFail($id)->delete();
+        Warehouse::withoutGlobalScopes()->findOrFail($id)->delete();
         return back()->with('success', 'Deleted Successfully');
     }
 }

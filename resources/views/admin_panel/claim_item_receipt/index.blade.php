@@ -165,13 +165,7 @@
                                     <tbody>
                                         @foreach($vouchers as $v)
                                         <tr>
-                                            <td>
-                                        @if($v->creator)
-                                            <span class="text-dark small">{{ $v->creator->name }}</span>
-                                        @else
-                                            <span class="text-muted small">System</span>
-                                        @endif
-                                    </td>
+                                            
                                     <td class="text-muted small text-center fw-bold">{{ $v->doc_type == 'credit' ? 'CRN' : 'CLR' }}</td>
                                             <td class="fw-bold text-primary text-center">
                                                 @if($v->doc_type == 'credit')
@@ -193,7 +187,15 @@
                                             </td>
                                             <td class="small"><span class="text-danger"><i class="fa fa-minus-circle"></i></span> {{ $v->fromWarehouse->warehouse_name ?? 'Shop' }}</td>
                                             <td class="small"><span class="text-success"><i class="fa fa-plus-circle"></i></span> {{ $v->toWarehouse->warehouse_name ?? 'Shop' }}</td>
-                                            <td class="text-center">
+                                            
+                                            <td>
+                                        @if($v->creator)
+                                            <span class="text-dark small">{{ $v->creator->name }}</span>
+                                        @else
+                                            <span class="text-muted small">System</span>
+                                        @endif
+                                    </td>
+                                    <td class="text-center">
                                                 @if($v->status == 'Posted')
                                                     <span class="badge bg-success rounded-pill px-3">Posted</span>
                                                 @else

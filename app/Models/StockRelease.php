@@ -34,6 +34,6 @@ class StockRelease extends Model
 
     public function warehouse()
     {
-        return $this->belongsTo(\App\Models\Warehouse::class, 'warehouse_id');
+        return $this->belongsTo(\App\Models\Warehouse::class, 'warehouse_id')->withoutGlobalScopes();
     }
 }

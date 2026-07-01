@@ -167,6 +167,7 @@
                                 <tr>
                                     <th>#</th>
                                     <th>Name</th>
+                                    <th>Type</th>
                                     <th>Groups</th>
                                     @if($isAdmin)
                                         <th>Created By</th>
@@ -182,6 +183,15 @@
                                 <tr>
                                     <td class="text-muted">{{ $key+1 }}</td>
                                     <td class="fw-bold text-primary">{{ $w->warehouse_name }}</td>
+                                    <td>
+                                        @if($w->claim_type == 'customer')
+                                            <span class="badge bg-warning text-dark border px-2 py-0" style="font-size: 9px;">Customer Claim</span>
+                                        @elseif($w->claim_type == 'company')
+                                            <span class="badge bg-danger border px-2 py-0" style="font-size: 9px;">Company Claim</span>
+                                        @else
+                                            <span class="badge bg-secondary border px-2 py-0" style="font-size: 9px;">Normal</span>
+                                        @endif
+                                    </td>
                                     <td>
                                         @if(!empty($w->user_group_ids))
                                             @foreach($w->user_group_ids as $groupId)
@@ -205,6 +215,7 @@
                                                 data-name="{{ $w->warehouse_name }}"
                                                 data-location="{{ $w->location }}"
                                                 data-remarks="{{ $w->remarks }}"
+                                                data-claim_type="{{ $w->claim_type }}"
                                                 data-user_group_ids="{{ json_encode($w->user_group_ids ?? []) }}"
                                                 data-bs-toggle="modal"
                                                 data-bs-target="#warehouseModal"
@@ -254,6 +265,23 @@
                     <div class="mb-2">
                         <label class="form-label small fw-bold">Remarks</label>
                         <textarea class="form-control form-control-sm" name="remarks" id="remarks" rows="2" placeholder="Any remarks..."></textarea>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label small fw-bold">Warehouse Type</label>
+                        <div class="d-flex gap-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="claim_type" id="type_none" value="none" checked>
+                                <label class="form-check-label small" for="type_none">Normal</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="claim_type" id="type_customer" value="customer">
+                                <label class="form-check-label small" for="type_customer">Customer Claim</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="claim_type" id="type_company" value="company">
+                                <label class="form-check-label small" for="type_company">Company Claim</label>
+                            </div>
+                        </div>
                     </div>
                     
                     <div class="mb-2">
@@ -368,6 +396,7 @@ function clearWarehouse() {
     $('#warehouse_name').val('');
     $('#location').val('');
     $('#remarks').val('');
+    $('input[name="claim_type"][value="none"]').prop('checked', true);
     $('#warehouse_user_groups').val([]).trigger('change');
 }
 
@@ -377,6 +406,9 @@ $(document).on('click', '.edit-warehouse-btn', function() {
     $('#warehouse_name').val(btn.data('name'));
     $('#location').val(btn.data('location'));
     $('#remarks').val(btn.data('remarks'));
+    
+    const claimType = btn.data('claim_type') || 'none';
+    $('input[name="claim_type"][value="' + claimType + '"]').prop('checked', true);
     
     const groups = btn.data('user_group_ids') ?? [];
     $('#warehouse_user_groups').val(groups).trigger('change');

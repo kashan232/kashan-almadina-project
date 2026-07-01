@@ -35,12 +35,12 @@ class StockTransfer extends Model
 
     public function fromWarehouse()
     {
-        return $this->belongsTo(Warehouse::class, 'from_warehouse_id');
+        return $this->belongsTo(Warehouse::class, 'from_warehouse_id')->withoutGlobalScopes();
     }
 
     public function toWarehouse()
     {
-        return $this->belongsTo(Warehouse::class, 'to_warehouse_id');
+        return $this->belongsTo(Warehouse::class, 'to_warehouse_id')->withoutGlobalScopes();
     }
 
     public function creator()

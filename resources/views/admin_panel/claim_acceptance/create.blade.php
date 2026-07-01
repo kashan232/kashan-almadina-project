@@ -80,10 +80,7 @@
                         <label class="form-label text-muted small fw-bold mb-1">Claim From <span class="text-danger">*</span></label>
                         <select name="from_warehouse_id" class="form-select form-select-sm" required>
                             <option value="">Select Source...</option>
-                            @if(auth()->user()->canAccessShop())
-                                <option value="0" @selected(isset($voucher) && $voucher->from_warehouse_id == 0)>Shop Stock</option>
-                            @endif
-                            @foreach($warehouses as $w)
+                            @foreach($customerWarehouses as $w)
                                 <option value="{{ $w->id }}" @selected(isset($voucher) && $voucher->from_warehouse_id == $w->id)>{{ $w->warehouse_name }}</option>
                             @endforeach
                         </select>
@@ -94,10 +91,7 @@
                         <label class="form-label text-muted small fw-bold mb-1">Accept In <span class="text-danger">*</span></label>
                         <select name="to_warehouse_id" class="form-select form-select-sm" required>
                             <option value="">Select Dest...</option>
-                            @if(auth()->user()->canAccessShop())
-                                <option value="0" @selected(isset($voucher) && $voucher->to_warehouse_id == 0)>Shop Stock</option>
-                            @endif
-                            @foreach($warehouses as $w)
+                            @foreach($companyWarehouses as $w)
                                 <option value="{{ $w->id }}" @selected(isset($voucher) && $voucher->to_warehouse_id == $w->id)>{{ $w->warehouse_name }}</option>
                             @endforeach
                         </select>

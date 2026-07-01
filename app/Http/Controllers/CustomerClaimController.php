@@ -27,9 +27,34 @@ class CustomerClaimController extends Controller
     {
         $products = Product::where('status', 1)->orderBy('name')->get();
         $warehouses = Warehouse::orderBy('warehouse_name')->get();
+        
+        $isAdmin = auth()->user()->roles->pluck('name')->contains('Admin') || auth()->id() == 1;
+        
+        $userGroups = auth()->user()->userGroups->pluck('id')->toArray();
+        $assignedClaimWarehouse = null;
+        $allClaimWarehouses = [];
+
+        if ($isAdmin) {
+            $allClaimWarehouses = Warehouse::withoutGlobalScopes()
+                ->where('claim_type', 'customer')
+                ->orderBy('warehouse_name')
+                ->get();
+        } else {
+            if (!empty($userGroups)) {
+                $assignedClaimWarehouse = Warehouse::withoutGlobalScopes()
+                    ->where('claim_type', 'customer')
+                    ->where(function($q) use ($userGroups) {
+                        foreach($userGroups as $gId) {
+                            $q->orWhereJsonContains('user_group_ids', (string)$gId)
+                              ->orWhereJsonContains('user_group_ids', (int)$gId);
+                        }
+                    })->first();
+            }
+        }
+
         $claimNo = 'CLM-' . (CustomerClaim::count() + 1);
         
-        return view('admin_panel.customer_claims.create', compact('products', 'warehouses', 'claimNo'));
+        return view('admin_panel.customer_claims.create', compact('products', 'warehouses', 'claimNo', 'assignedClaimWarehouse', 'isAdmin', 'allClaimWarehouses'));
     }
 
     public function edit($id)
@@ -41,7 +66,31 @@ class CustomerClaimController extends Controller
         $products = Product::where('status', 1)->orderBy('name')->get();
         $warehouses = Warehouse::orderBy('warehouse_name')->get();
         
-        return view('admin_panel.customer_claims.edit', compact('claim', 'products', 'warehouses'));
+        $isAdmin = auth()->user()->roles->pluck('name')->contains('Admin') || auth()->id() == 1;
+        
+        $userGroups = auth()->user()->userGroups->pluck('id')->toArray();
+        $assignedClaimWarehouse = null;
+        $allClaimWarehouses = [];
+
+        if ($isAdmin) {
+            $allClaimWarehouses = Warehouse::withoutGlobalScopes()
+                ->where('claim_type', 'customer')
+                ->orderBy('warehouse_name')
+                ->get();
+        } else {
+            if (!empty($userGroups)) {
+                $assignedClaimWarehouse = Warehouse::withoutGlobalScopes()
+                    ->where('claim_type', 'customer')
+                    ->where(function($q) use ($userGroups) {
+                        foreach($userGroups as $gId) {
+                            $q->orWhereJsonContains('user_group_ids', (string)$gId)
+                              ->orWhereJsonContains('user_group_ids', (int)$gId);
+                        }
+                    })->first();
+            }
+        }
+        
+        return view('admin_panel.customer_claims.edit', compact('claim', 'products', 'warehouses', 'assignedClaimWarehouse', 'isAdmin', 'allClaimWarehouses'));
     }
 
     public function ajaxSave(Request $request)

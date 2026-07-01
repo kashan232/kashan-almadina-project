@@ -23,7 +23,7 @@ class StockWastage extends Model
 
     public function warehouse()
     {
-        return $this->belongsTo(Warehouse::class);
+        return $this->belongsTo(Warehouse::class)->withoutGlobalScopes();
     }
 
     public function account()

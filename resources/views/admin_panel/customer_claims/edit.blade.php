@@ -152,11 +152,20 @@
                             </div>
                             <div class="col-md-2 mt-1">
                                 <label class="form-label border-primary border-bottom font-weight-bold">Claim WH (To)</label>
-                                <select name="claim_warehouse_id" class="form-select input-sm">
-                                    @foreach($warehouses as $wh)
-                                        <option value="{{ $wh->id }}" {{ $claim->claim_warehouse_id == $wh->id ? 'selected' : '' }}>{{ $wh->warehouse_name }}</option>
-                                    @endforeach
-                                </select>
+                                @if(isset($isAdmin) && $isAdmin)
+                                    <select name="claim_warehouse_id" class="form-select input-sm">
+                                        @foreach($allClaimWarehouses as $wh)
+                                            <option value="{{ $wh->id }}" {{ $claim->claim_warehouse_id == $wh->id ? 'selected' : '' }}>{{ $wh->warehouse_name }}</option>
+                                        @endforeach
+                                    </select>
+                                @elseif($assignedClaimWarehouse)
+                                    <input type="hidden" name="claim_warehouse_id" value="{{ $assignedClaimWarehouse->id }}">
+                                    <input type="text" class="form-control input-sm fw-bold text-primary bg-light" value="{{ $assignedClaimWarehouse->warehouse_name }}" readonly title="Auto-assigned based on your group">
+                                @else
+                                    <select name="claim_warehouse_id" class="form-select input-sm">
+                                        <option value="" disabled selected>No Claim WH Assigned</option>
+                                    </select>
+                                @endif
                             </div>
                             <div class="col-md-2 mt-1">
                                 <label class="form-label text-success fw-bold">Claim Income</label>

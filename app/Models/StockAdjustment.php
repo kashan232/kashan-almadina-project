@@ -17,7 +17,7 @@ class StockAdjustment extends Model
 
     public function warehouse()
     {
-        return $this->belongsTo(Warehouse::class);
+        return $this->belongsTo(Warehouse::class)->withoutGlobalScopes();
     }
 
     public static function generateAdjID()

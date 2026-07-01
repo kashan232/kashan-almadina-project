@@ -35,8 +35,9 @@ class ClaimAcceptanceController extends Controller
     public function create()
     {
         $voucherNo = ClaimAcceptance::generateVoucherNo();
-        $warehouses = Warehouse::orderBy('warehouse_name')->get();
-        return view('admin_panel.claim_acceptance.create', compact('voucherNo', 'warehouses'));
+        $customerWarehouses = Warehouse::withoutGlobalScopes()->where('claim_type', 'customer')->orderBy('warehouse_name')->get();
+        $companyWarehouses = Warehouse::withoutGlobalScopes()->where('claim_type', 'company')->orderBy('warehouse_name')->get();
+        return view('admin_panel.claim_acceptance.create', compact('voucherNo', 'customerWarehouses', 'companyWarehouses'));
     }
 
     public function edit($id)
@@ -45,8 +46,9 @@ class ClaimAcceptanceController extends Controller
         if ($voucher->status === 'Posted') {
             return redirect()->route('claim-acceptance.index')->with('error', 'Posted vouchers cannot be edited.');
         }
-        $warehouses = Warehouse::orderBy('warehouse_name')->get();
-        return view('admin_panel.claim_acceptance.create', compact('voucher', 'warehouses'));
+        $customerWarehouses = Warehouse::withoutGlobalScopes()->where('claim_type', 'customer')->orderBy('warehouse_name')->get();
+        $companyWarehouses = Warehouse::withoutGlobalScopes()->where('claim_type', 'company')->orderBy('warehouse_name')->get();
+        return view('admin_panel.claim_acceptance.create', compact('voucher', 'customerWarehouses', 'companyWarehouses'));
     }
 
     public function ajaxSave(Request $request)

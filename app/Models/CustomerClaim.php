@@ -26,17 +26,17 @@ class CustomerClaim extends Model
 
     public function warehouse()
     {
-        return $this->belongsTo(\App\Models\Warehouse::class, 'claim_warehouse_id');
+        return $this->belongsTo(\App\Models\Warehouse::class, 'claim_warehouse_id')->withoutGlobalScopes();
     }
 
     public function originalWarehouse()
     {
-        return $this->belongsTo(\App\Models\Warehouse::class, 'original_warehouse_id');
+        return $this->belongsTo(\App\Models\Warehouse::class, 'original_warehouse_id')->withoutGlobalScopes();
     }
 
     public function replacementFromWarehouse()
     {
-        return $this->belongsTo(\App\Models\Warehouse::class, 'replacement_from_warehouse_id');
+        return $this->belongsTo(\App\Models\Warehouse::class, 'replacement_from_warehouse_id')->withoutGlobalScopes();
     }
 
     public function party()
