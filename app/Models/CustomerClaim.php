@@ -56,4 +56,21 @@ class CustomerClaim extends Model
     {
         return $this->hasOne(\App\Models\CustomerClaimRelease::class, 'claim_id');
     }
+
+    public static function generateClaimNo()
+    {
+        $last = self::withoutGlobalScopes()->orderBy('id', 'desc')->first();
+        $num = 0;
+        if ($last) {
+            $num = (int) preg_replace('/[^0-9]/', '', $last->claim_no);
+        }
+
+        do {
+            $num++;
+            $nextInvoice = 'CLM-' . $num;
+            $exists = self::withoutGlobalScopes()->where('claim_no', $nextInvoice)->exists();
+        } while ($exists);
+
+        return $nextInvoice;
+    }
 }

@@ -64,6 +64,12 @@ class Purchase extends Model
             $lastNumber = (int) preg_replace('/[^0-9]/', '', $lastInvoice->invoice_no);
         }
 
-        return str_pad($lastNumber + 1, 3, '0', STR_PAD_LEFT);
+        do {
+            $lastNumber++;
+            $nextInvoice = str_pad($lastNumber, 3, '0', STR_PAD_LEFT);
+            $exists = self::withoutGlobalScopes()->where('invoice_no', $nextInvoice)->exists();
+        } while ($exists);
+
+        return $nextInvoice;
     }
 }

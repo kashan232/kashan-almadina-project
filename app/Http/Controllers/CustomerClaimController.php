@@ -52,7 +52,7 @@ class CustomerClaimController extends Controller
             }
         }
 
-        $claimNo = 'CLM-' . (CustomerClaim::count() + 1);
+        $claimNo = CustomerClaim::generateClaimNo();
         
         return view('admin_panel.customer_claims.create', compact('products', 'warehouses', 'claimNo', 'assignedClaimWarehouse', 'isAdmin', 'allClaimWarehouses'));
     }
@@ -118,7 +118,7 @@ class CustomerClaimController extends Controller
             DB::beginTransaction();
 
             if (!$id) {
-                $claim->claim_no = 'CLM-' . (CustomerClaim::count() + 1);
+                $claim->claim_no = CustomerClaim::generateClaimNo();
             }
             
             $claim->entry_date = $request->entry_date ?? date('Y-m-d');
