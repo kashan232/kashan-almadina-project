@@ -69,7 +69,7 @@
                                 <input type="text" class="form-control input-sm fw-bold text-primary bg-light" value="{{ $voucher->voucher_no ?? $voucherNo }}" readonly>
                             </div>
                             <div class="col-md-2">
-                                <label class="form-label small fw-bold text-danger mb-1">Deduct From (-) Cr</label>
+                                <label class="form-label small fw-bold text-danger mb-1"><i class="fa fa-minus-circle"></i> Deduct From (-) Cr</label>
                                 <select name="from_warehouse_id" id="from_warehouse_id" class="form-select input-sm" required>
                                     <option value="">Select Stock Source...</option>
                                     <option value="0" {{ (isset($voucher) && $voucher->from_warehouse_id === 0) ? 'selected' : '' }}>Shop Stock</option>
@@ -79,7 +79,7 @@
                                 </select>
                             </div>
                             <div class="col-md-2">
-                                <label class="form-label small fw-bold text-success mb-1">Add To (+) Dr</label>
+                                <label class="form-label small fw-bold text-success mb-1"><i class="fa fa-plus-circle"></i> Add To (+) Dr</label>
                                 <select name="to_warehouse_id" id="to_warehouse_id" class="form-select input-sm" required>
                                     <option value="">Select Target...</option>
                                     <option value="0" {{ (isset($voucher) && $voucher->to_warehouse_id === 0) ? 'selected' : '' }}>Shop Stock</option>
@@ -101,6 +101,7 @@
                                     <option value="">Select Type...</option>
                                     <option value="vendor" {{ (isset($voucher) && $voucher->party_type == 'vendor') ? 'selected' : '' }}>Vendor</option>
                                     <option value="customer" {{ (isset($voucher) && $voucher->party_type == 'customer') ? 'selected' : '' }}>Customer</option>
+                                    <option value="walking" {{ (isset($voucher) && $voucher->party_type == 'walking') ? 'selected' : '' }}>Walking Customer</option>
                                 </select>
                             </div>
                             <div class="col-md-3">
