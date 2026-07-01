@@ -19,8 +19,8 @@
         color: #333 !important;
         font-weight: 600;
         vertical-align: middle;
-        padding: 6px 8px !important;
-        font-size: 12px;
+        padding: 1px !important;
+        font-size: 11px;
     }
     
     #stockBalancesTable tbody td, #adjustmentTable tbody td {
