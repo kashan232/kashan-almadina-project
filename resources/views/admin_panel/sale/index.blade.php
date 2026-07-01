@@ -10,13 +10,18 @@
         margin-bottom: 1rem;
     }
     
+    .main-content-inner, .content-wrapper {
+        padding: 0 !important;
+    }
+    
+    /* Thead specific */
     #saleListingTable thead th {
-        white-space: nowrap;
+        white-space: normal !important; /* wrap text */
         background-color: #f8f9fa !important;
         color: #333 !important;
         font-weight: 600;
         vertical-align: middle;
-        padding: 2px 10px !important;
+        padding: 1px 4px !important;
         font-size: 11px;
         text-transform: uppercase;
         line-height: 1.2;
@@ -54,10 +59,15 @@
     #saleListingTable tbody td {
         white-space: nowrap;
         vertical-align: middle;
-        padding: 4px 10px !important;
+        padding: 1px 4px !important;
         font-size: 11px;
         color: #333;
     }
+
+    /* Minimize DataTables elements */
+    .dataTables_length select { padding: 0px 10px; height: 26px; font-size: 11px; }
+    .dataTables_filter input { padding: 0px 8px; height: 26px; font-size: 11px; }
+    .dataTables_info, .dataTables_paginate { font-size: 11px; margin-top: 5px; }
 
     /* Small Export Buttons */
     .dt-buttons {
@@ -139,7 +149,7 @@
 
 <div class="main-content">
     <div class="main-content-inner">
-        <div class="container-fluid pt-1">
+        <div class="container-fluid pt-0">
             
             <!-- Filters Section -->
             <div class="row mb-3">
@@ -393,7 +403,6 @@
         var dt = $('#saleListingTable').DataTable({
             "order": [[2, 'desc']], // Default sort by Inv#
             "pageLength": 25,
-            "scrollX": true,
             "autoWidth": false,
             "language": {
                 "search": "_INPUT_",
