@@ -63,21 +63,27 @@
                             </div>
                             <div class="col-md-2">
                                 <label class="form-label small fw-bold">Type</label>
-                                <input type="text" class="form-control input-sm" value="{{ ucfirst($voucher->party_type) }}" readonly>
-                                <input type="hidden" name="vendor_type" value="{{ $voucher->party_type }}">
+                                <select name="vendor_type" id="vendor_type" class="form-select input-sm" required>
+                                    <option value="vendor" {{ $voucher->party_type == 'vendor' ? 'selected' : '' }}>Vendor</option>
+                                    <option value="customer" {{ $voucher->party_type == 'customer' ? 'selected' : '' }}>Customer</option>
+                                    <option value="walkin" {{ $voucher->party_type == 'walkin' ? 'selected' : '' }}>Walkin Customer</option>
+                                </select>
                             </div>
                             <div class="col-md-3">
                                 <label class="form-label small fw-bold">Party</label>
-                                <input type="text" class="form-control input-sm" value="{{ $voucher->party_type == 'vendor' ? ($voucher->partyVendor->name ?? '-') : ($voucher->partyCustomer->customer_name ?? '-') }}" readonly>
-                                <input type="hidden" name="vendor_id" value="{{ $voucher->party_id }}">
+                                <select name="vendor_id" id="vendor_id" class="form-select select2" required>
+                                    <option value="{{ $voucher->party_id }}">
+                                        {{ $voucher->party_type == 'vendor' ? ($voucher->partyVendor->name ?? '-') : ($voucher->partyCustomer->customer_name ?? '-') }}
+                                    </option>
+                                </select>
                             </div>
                             <div class="col-md-2">
                                 <label class="form-label small fw-bold">Voucher No</label>
-                                <input type="text" class="form-control input-sm" value="{{ $voucher->voucher_no }}" readonly>
+                                <input type="text" name="voucher_no" class="form-control input-sm" value="{{ $voucher->voucher_no }}">
                             </div>
                             <div class="col-md-2 mt-2">
                                 <label class="form-label small fw-bold">Location</label>
-                                <select name="warehouse_id" id="warehouse_id" class="form-select select2" required disabled>
+                                <select name="warehouse_id" id="warehouse_id" class="form-select select2" required>
                                     @if(auth()->user()->canAccessShop())
                                         <option value="0" @if($voucher->warehouse_id == 0) selected @endif>🏠 Shop</option>
                                     @endif
@@ -85,7 +91,6 @@
                                         <option value="{{ $wh->id }}" @if($voucher->warehouse_id == $wh->id) selected @endif>{{ $wh->warehouse_name }}</option>
                                     @endforeach
                                 </select>
-                                <input type="hidden" name="warehouse_id" value="{{ $voucher->warehouse_id }}">
                             </div>
                             <div class="col-md-10 mt-2">
                                 <label class="form-label small fw-bold">Remarks</label>
@@ -213,6 +218,15 @@ $(document).ready(function() {
 
     $(document).on('click', '.remove-row', function() { $(this).closest('tr').remove(); updateCount(); });
     function updateCount() { $('#total_items_badge').text($('#itemRows tr').length); }
+
+    $('#vendor_type').on('change', function() {
+        var type = $(this).val();
+        $.get("{{ route('stock-holds.party.list') }}", { type: type }, function(res) {
+            var $p = $('#vendor_id').empty().append('<option value="">Select Party</option>');
+            res.forEach(item => $p.append(`<option value="${item.id}">${item.text}</option>`));
+            $p.trigger('change');
+        });
+    });
 
     $('#manual_product_search').select2({
         ajax: {

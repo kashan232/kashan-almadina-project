@@ -15,6 +15,7 @@ class WarehouseStockController extends Controller
         // View mode: 'balances' or 'history'
         $view = $request->get('view', 'balances');
         $filter_warehouse_ids = $request->get('filter_warehouse_id', []);
+        $filter_claim_type = $request->get('claim_type', 'none'); // Default to 'none' (Normal)
 
         $isAdmin = auth()->check() && (auth()->user()->roles->pluck('name')->contains('Admin') || auth()->id() == 1);
         
@@ -28,6 +29,10 @@ class WarehouseStockController extends Controller
             $warehouses = $allWarehouses->whereIn('id', $filter_warehouse_ids);
         } else {
             $warehouses = $allWarehouses;
+        }
+
+        if ($filter_claim_type !== 'all') {
+            $warehouses = $warehouses->where('claim_type', $filter_claim_type);
         }
 
         if ($view === 'history') {
@@ -48,7 +53,7 @@ class WarehouseStockController extends Controller
             'brandRelation'
         ])->orderBy('name')->get();
 
-        return view('admin_panel.warehouses.warehouse_stocks.index', compact('products', 'warehouses', 'allWarehouses', 'view', 'filter_warehouse_ids'));
+        return view('admin_panel.warehouses.warehouse_stocks.index', compact('products', 'warehouses', 'allWarehouses', 'view', 'filter_warehouse_ids', 'filter_claim_type'));
     }
 
     public function create()

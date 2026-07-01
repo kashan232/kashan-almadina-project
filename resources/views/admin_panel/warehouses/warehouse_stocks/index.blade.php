@@ -205,6 +205,12 @@
                             <div class="col-md-5">
                                 <form action="{{ route('warehouse_stocks.index') }}" method="GET" class="d-flex align-items-center gap-2 m-0">
                                     <input type="hidden" name="view" value="balances">
+                                    <select name="claim_type" class="form-select form-select-sm" style="width: 140px; font-size: 11px;">
+                                        <option value="none" {{ $filter_claim_type == 'none' ? 'selected' : '' }}>Normal</option>
+                                        <option value="company" {{ $filter_claim_type == 'company' ? 'selected' : '' }}>Company Claim</option>
+                                        <option value="customer" {{ $filter_claim_type == 'customer' ? 'selected' : '' }}>Customer Claim</option>
+                                        <option value="all" {{ $filter_claim_type == 'all' ? 'selected' : '' }}>All Types</option>
+                                    </select>
                                     <select name="filter_warehouse_id[]" class="form-select form-select-sm select2" multiple="multiple" data-placeholder="All Warehouses">
                                         @foreach($allWarehouses as $aw)
                                             <option value="{{ $aw->id }}" {{ in_array($aw->id, request('filter_warehouse_id', [])) ? 'selected' : '' }}>{{ $aw->warehouse_name }}</option>
