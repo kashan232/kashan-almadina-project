@@ -23,7 +23,7 @@ return new class extends Migration
 
             $table->decimal('sub_total1', 12, 2)->default(0);
             $table->decimal('sub_total2', 12, 2)->default(0);
-            $table->decimal('discount_percent', 5, 2)->default(0);
+            $table->decimal('discount_percent', 12, 2)->default(0);
             $table->decimal('discount_amount', 12, 2)->default(0);
             $table->decimal('previous_balance', 12, 2)->default(0);
             $table->decimal('total_balance', 12, 2)->default(0);
@@ -47,7 +47,7 @@ return new class extends Migration
             $table->decimal('sales_price', 12, 2)->default(0);
             $table->decimal('sales_qty', 12, 2)->default(0);
             $table->decimal('retail_price', 12, 2)->default(0);
-            $table->decimal('discount_percent', 5, 2)->default(0);
+            $table->decimal('discount_percent', 12, 2)->default(0);
             $table->decimal('discount_amount', 12, 2)->default(0);
             $table->decimal('amount', 12, 2)->default(0);
 

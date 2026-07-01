@@ -1502,11 +1502,6 @@
           if (currentCust) {
               $('#customerSelect').val(currentCust).trigger('change.select2');
           }
-          // Update status if needed or just show a message
-          Swal.fire({ icon: 'info', title: 'Unlocked', text: 'Form is now editable.', timer: 1000, showConfirmButton: false });
-          // Note: User wants and asked for buttons to stay, so we don't hide this button necessarily, 
-          // but usually Edit hides when you ARE editing. Let's keep it visible per request or hide it to avoid confusion.
-          // The user specifically said "sary show hongey", so I'll keep it but maybe it does nothing when unlocked.
       });
 
       // KEYBOARD SHORTCUTS
