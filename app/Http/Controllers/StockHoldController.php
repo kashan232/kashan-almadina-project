@@ -73,6 +73,10 @@ class StockHoldController extends Controller
     public function partyInvoices(Request $request, $partyId)
     {
         $type = $request->type;
+        if ($type === 'walkin') {
+            $type = 'walking';
+        }
+        
         // In this project, 'sales' table uses 'customer_id' and 'partyType' (camelCase)
         $invoices = Sale::where('customer_id', $partyId)
             ->where('partyType', $type)
