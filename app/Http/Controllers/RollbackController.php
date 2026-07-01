@@ -547,7 +547,7 @@ class RollbackController extends Controller
 
     private function validateRollbackDate($record)
     {
-        if (auth()->user()->hasRole('Admin')) {
+        if (auth()->user()->hasRole('Admin') || auth()->user()->usertype === 'admin') {
             return;
         }
 
