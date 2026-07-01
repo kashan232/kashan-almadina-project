@@ -22,7 +22,7 @@ class WarehouseStockController extends Controller
         if ($isAdmin) {
             $allWarehouses = Warehouse::withoutGlobalScopes()->orderBy('warehouse_name')->get();
         } else {
-            $allWarehouses = Warehouse::orderBy('warehouse_name')->get();
+            $allWarehouses = Warehouse::withoutGlobalScope('exclude_claims')->orderBy('warehouse_name')->get();
         }
 
         if (!empty($filter_warehouse_ids)) {

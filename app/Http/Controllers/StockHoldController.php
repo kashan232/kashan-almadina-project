@@ -590,7 +590,28 @@ class StockHoldController extends Controller
                         ->first();
                 }
 
-                if (!$holdItem) continue;
+                if (!$holdItem) {
+                    // Manual item (No prior hold)
+                    \App\Models\StockRelease::create([
+                        'stock_release_voucher_id' => $voucher->id,
+                        'release_no'  => $voucher->voucher_no,
+                        'hold_id'     => null,
+                        'sale_id'     => null,
+                        'party_type'  => $request->vendor_type,
+                        'party_id'    => $request->vendor_id,
+                        'warehouse_id' => $request->warehouse_id,
+                        'product_id'  => $pid,
+                        'sale_qty'    => 0,
+                        'release_qty' => $releaseQty,
+                        'remarks'     => $request->remarks,
+                        'status'      => $status
+                    ]);
+
+                    if ($status === 'Posted') {
+                        $this->adjustStock($request->warehouse_id, $pid, -$releaseQty);
+                    }
+                    continue;
+                }
 
                 // Create Release Record
                 \App\Models\StockRelease::create([
@@ -710,11 +731,15 @@ class StockHoldController extends Controller
                     'status'      => $status
                 ]);
 
-                if ($status === 'Posted' && $holdItem) {
-                    $remaining = (float)$holdItem->hold_qty - $releaseQty;
-                    $holdItem->hold_qty = max(0, $remaining);
-                    if ($holdItem->hold_qty <= 0) $holdItem->status = 1;
-                    $holdItem->save();
+                if ($status === 'Posted') {
+                    if ($holdItem) {
+                        $remaining = (float)$holdItem->hold_qty - $releaseQty;
+                        $holdItem->hold_qty = max(0, $remaining);
+                        if ($holdItem->hold_qty <= 0) $holdItem->status = 1;
+                        $holdItem->save();
+                    }
+                    // Physical Stock Deduction
+                    $this->adjustStock($voucher->warehouse_id, $pid, -$releaseQty);
                 }
             }
 
@@ -739,6 +764,8 @@ class StockHoldController extends Controller
                     if ($item->hold->hold_qty <= 0) $item->hold->status = 1;
                     $item->hold->save();
                 }
+                // Physical Stock Deduction
+                $this->adjustStock($voucher->warehouse_id, $item->product_id, -(float)$item->release_qty);
             }
             DB::commit();
             if (request()->ajax()) {
