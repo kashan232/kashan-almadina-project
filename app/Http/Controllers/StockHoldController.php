@@ -191,6 +191,10 @@ class StockHoldController extends Controller
                     'remarks'      => $request->remarks,
                     'status'       => $status === 'Posted' ? 0 : 0, // In this system, 0 means Active Hold
                 ]);
+
+                if ($status === 'Posted') {
+                    $this->adjustStock($request->warehouse_id, $productId, $qty);
+                }
             }
 
             DB::commit();
@@ -270,6 +274,10 @@ class StockHoldController extends Controller
                     'remarks'      => $request->remarks,
                     'status'       => 0,
                 ]);
+
+                if ($status === 'Posted') {
+                    $this->adjustStock($voucher->warehouse_id, $productId, $qty);
+                }
             }
 
             DB::commit();
@@ -296,13 +304,16 @@ class StockHoldController extends Controller
 
     public function post($id)
     {
-        $voucher = StockHoldVoucher::findOrFail($id);
+        $voucher = StockHoldVoucher::with('items')->findOrFail($id);
         if ($voucher->status === 'Posted') {
             return back()->with('error', 'Already posted.');
         }
         $voucher->update(['status' => 'Posted']);
-        // Here we could also update main stock if "Hold" meant moving to a hold warehouse, 
-        // but typically hold just marks availability.
+        
+        foreach ($voucher->items as $item) {
+            $this->adjustStock($item->warehouse_id, $item->product_id, $item->hold_qty);
+        }
+        
         return back()->with('success', 'Stock Hold Posted successfully.');
     }
 

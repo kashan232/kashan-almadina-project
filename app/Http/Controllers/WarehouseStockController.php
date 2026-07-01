@@ -64,7 +64,7 @@ class WarehouseStockController extends Controller
             'product_id'   => 'required|array|min:1',
             'product_id.*' => 'required|exists:products,id',
             'quantity'     => 'required|array',
-            'quantity.*'   => 'required|numeric|min:0',
+            'quantity.*'   => 'required|numeric',
         ]);
 
         $status = $request->action === 'post' ? 'Posted' : 'Unposted';
@@ -84,7 +84,7 @@ class WarehouseStockController extends Controller
 
             foreach ($request->product_id as $index => $productId) {
                 $qty = (float) $request->quantity[$index];
-                if ($qty <= 0) continue;
+                if ($qty == 0) continue;
 
                 $adjustment->items()->create([
                     'product_id' => $productId,
@@ -182,7 +182,7 @@ class WarehouseStockController extends Controller
             'product_id'   => 'required|array|min:1',
             'product_id.*' => 'required|exists:products,id',
             'quantity'     => 'required|array',
-            'quantity.*'   => 'required|numeric|min:0',
+            'quantity.*'   => 'required|numeric',
         ]);
 
         $adjustment = \App\Models\StockAdjustment::findOrFail($id);
@@ -212,7 +212,7 @@ class WarehouseStockController extends Controller
 
             foreach ($request->product_id as $index => $productId) {
                 $qty = (float) $request->quantity[$index];
-                if ($qty <= 0) continue;
+                if ($qty == 0) continue;
 
                 $adjustment->items()->create([
                     'product_id' => $productId,

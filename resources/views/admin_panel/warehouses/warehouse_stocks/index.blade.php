@@ -11,20 +11,19 @@
     }
     
     #stockBalancesTable thead th, #adjustmentTable thead th {
-        white-space: nowrap;
+        white-space: nowrap !important;
         background-color: #f8f9fa !important;
         color: #333 !important;
         font-weight: 600;
         vertical-align: middle;
-        padding: 8px 10px !important;
+        padding: 6px 8px !important;
         font-size: 12px;
-        text-transform: uppercase;
     }
     
     #stockBalancesTable tbody td, #adjustmentTable tbody td {
-        white-space: nowrap;
+        white-space: nowrap !important;
         vertical-align: middle;
-        padding: 6px 10px !important;
+        padding: 4px 8px !important;
         font-size: 12px;
         color: #333;
     }
@@ -198,7 +197,8 @@
                                             <label class="column-picker-item"><input type="checkbox" data-column="{{ $colCounter++ }}" checked> {{ $wh->warehouse_name }}</label>
                                         @endforeach
                                         <label class="column-picker-item"><input type="checkbox" data-column="{{ $colCounter++ }}" checked> Total Reserved</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="{{ $colCounter++ }}" checked> Net Total</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="{{ $colCounter++ }}" checked> Total Physical</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="{{ $colCounter++ }}" checked> Total Available</label>
                                     </div>
                                 </div>
                             </div>
@@ -217,7 +217,8 @@
                                             <th class="text-center wh-col text-primary" style="border-left: 1px solid #e2e8f0;">{{ $wh->warehouse_name }}</th>
                                         @endforeach
                                         <th class="text-center text-danger" style="background-color: #fff5f5; border-left: 2px solid #e2e8f0; width: 100px;">Total Reserved</th>
-                                        <th class="text-center total-col" style="width: 120px;">Net Total</th>
+                                        <th class="text-center total-col" style="width: 110px;">Total Physical</th>
+                                        <th class="text-center" style="background-color: #f0fdf4; color: #166534; font-weight: bold; width: 110px;">Total Available</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -234,11 +235,17 @@
                                             <td class="fw-bold text-dark">{{ $product->name }}</td>
                                             <td class="text-muted">{{ $product->brandRelation->name ?? '-' }}</td>
                                             
-                                            {{-- Shop Stock Column --}}
+                                            @php
+                                                $physicalShopStock = (float)$product->stock;
+                                            @endphp
                                             <td class="text-center shop-col">
-                                                <span class="stock-badge {{ $shopStock <= 0 ? 'text-danger' : 'text-primary' }}">
-                                                    {{ number_format($shopStock, 0) }}
-                                                </span>
+                                                @if($physicalShopStock != 0)
+                                                    <span class="stock-badge {{ $physicalShopStock < 0 ? 'text-danger' : 'text-primary' }}">
+                                                        {{ number_format($physicalShopStock, 0) }}
+                                                    </span>
+                                                @else
+                                                    <span class="text-muted" style="opacity: 0.3;">0</span>
+                                                @endif
                                             </td>
 
                                             {{-- Warehouse Columns --}}
@@ -254,8 +261,8 @@
                                                     $physicalWhSum += $physicalQty;
                                                 @endphp
                                                 <td class="text-center wh-col" style="border-left: 1px solid #f1f5f9;">
-                                                    @if($availableQty > 0)
-                                                        <span class="stock-badge text-dark">{{ number_format($availableQty, 0) }}</span>
+                                                    @if($physicalQty != 0)
+                                                        <span class="stock-badge {{ $physicalQty < 0 ? 'text-danger' : 'text-dark' }}">{{ number_format($physicalQty, 0) }}</span>
                                                     @else
                                                         <span class="text-muted" style="opacity: 0.3;">0</span>
                                                     @endif
@@ -271,15 +278,15 @@
                                                 @endif
                                             </td>
 
-                                            <td class="text-center total-col">
+                                            <td class="text-center total-col fs-6">
                                                 @php 
-                                                    $availableStock = ($shopStock + $whSum); 
+                                                    $availableStock = ($physicalShopStock + $whSum); 
                                                     $systemStock = $availableStock + $holdSum;
                                                 @endphp
-                                                <span class="fs-6 d-block" title="Physical Total">{{ number_format($systemStock, 0) }}</span>
-                                                @if($holdSum > 0)
-                                                    <small class="text-primary fw-bold" style="font-size: 10px;">Available: {{ number_format($availableStock, 0) }}</small>
-                                                @endif
+                                                {{ number_format($systemStock, 0) }}
+                                            </td>
+                                            <td class="text-center fs-6" style="background-color: #f0fdf4; color: #166534; font-weight: bold;">
+                                                {{ number_format($availableStock, 0) }}
                                             </td>
                                         </tr>
                                     @endforeach
