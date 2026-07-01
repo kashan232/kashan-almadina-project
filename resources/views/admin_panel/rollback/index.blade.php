@@ -31,7 +31,7 @@
                             
                             <div class="mb-3">
                                 <label class="form-label fw-bold text-secondary">Select Module</label>
-                                <select name="module" class="form-select border-2" required>
+                                <select name="module" class="form-select border-2 select2" required>
                                     <option value="" selected disabled>Choose Module</option>
                                     @foreach($modules as $key => $name)
                                         <option value="{{ $key }}">{{ $name }}</option>
@@ -77,4 +77,15 @@
         transform: translateY(-5px);
     }
 </style>
+@endsection
+
+@section('scripts')
+<script>
+    $(document).ready(function() {
+        $('.select2').select2({
+            width: '100%',
+            placeholder: 'Search and Choose Module'
+        });
+    });
+</script>
 @endsection
