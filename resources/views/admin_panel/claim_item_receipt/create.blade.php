@@ -122,6 +122,7 @@
                                             <option value="">Select Type...</option>
                                             <option value="vendor" {{ (isset($voucher) && $voucher->party_type == 'vendor') ? 'selected' : '' }}>Vendor</option>
                                             <option value="customer" {{ (isset($voucher) && $voucher->party_type == 'customer') ? 'selected' : '' }}>Customer</option>
+                                            <option value="walking" {{ (isset($voucher) && $voucher->party_type == 'walking') ? 'selected' : '' }}>Walking Customer</option>
                                         </select>
                                     </div>
                                     <div class="col-md-3">
@@ -298,6 +299,7 @@
                                             <option value="">Select Type...</option>
                                             <option value="vendor">Vendor</option>
                                             <option value="customer">Customer</option>
+                                            <option value="walking">Walking Customer</option>
                                         </select>
                                     </div>
                                     <div class="col-md-3">
