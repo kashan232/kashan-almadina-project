@@ -413,10 +413,10 @@ class RollbackController extends Controller
         
         $this->validateRollbackDate($wastage);
         
-        $wastage->load('details');
+        $wastage->load('items');
         if ($wastage->status !== 'Posted') throw new \Exception("Wastage $invoiceNo is not Posted.");
 
-        foreach ($wastage->details as $item) {
+        foreach ($wastage->items as $item) {
             $this->adjustStock($item->product_id, $wastage->warehouse_id, $item->qty, 'add');
         }
 
