@@ -74,52 +74,80 @@ class RollbackController extends Controller
         ]);
 
         $module = $request->module;
-        $invoiceNo = $request->invoice_no;
+        // Explode by comma, trim whitespace, and remove empty values
+        $invoiceNos = array_filter(array_map('trim', explode(',', $request->invoice_no)));
+
+        if (empty($invoiceNos)) {
+            return back()->with('error', 'Please provide at least one valid invoice number.');
+        }
 
         try {
-            return DB::transaction(function () use ($module, $invoiceNo) {
-                switch ($module) {
-                    case 'sale':
-                        return $this->rollbackSale($invoiceNo);
-                    case 'purchase':
-                        return $this->rollbackPurchase($invoiceNo);
-                    case 'purchase_return':
-                        return $this->rollbackPurchaseReturn($invoiceNo);
-                    case 'sale_return':
-                        return $this->rollbackSaleReturn($invoiceNo);
-                    case 'inward_gatepass':
-                        return $this->rollbackInward($invoiceNo);
-                    case 'stock_hold':
-                        return $this->rollbackStockHold($invoiceNo);
-                    case 'stock_release':
-                        return $this->rollbackStockRelease($invoiceNo);
-                    case 'stock_transfer':
-                        return $this->rollbackStockTransfer($invoiceNo);
-                    case 'stock_wastage':
-                        return $this->rollbackStockWastage($invoiceNo);
-                    case 'warehouse_stock':
-                        return $this->rollbackWarehouseStock($invoiceNo);
-                    case 'customer_claim':
-                        return $this->rollbackCustomerClaim($invoiceNo);
-                    case 'claim_acceptance':
-                        return $this->rollbackClaimAcceptance($invoiceNo);
-                    case 'claim_receipt':
-                        return $this->rollbackClaimReceipt($invoiceNo);
-                    case 'receipt_voucher':
-                        return $this->rollbackVoucher(ReceiptsVoucher::class, 'rvid', $invoiceNo, 'Receipt Voucher');
-                    case 'payment_voucher':
-                        return $this->rollbackVoucher(PaymentVoucher::class, 'pvid', $invoiceNo, 'Payment Voucher');
-                    case 'expense_voucher':
-                        return $this->rollbackVoucher(ExpenseVoucher::class, 'evid', $invoiceNo, 'Expense Voucher');
-                    case 'income_voucher':
-                        return $this->rollbackVoucher(IncomeVoucher::class, 'ivid', $invoiceNo, 'Income Voucher');
-                    case 'journal_voucher':
-                        return $this->rollbackVoucher(JournalVoucher::class, 'jvid', $invoiceNo, 'Journal Voucher');
-                    case 'adjustment_voucher':
-                        return $this->rollbackVoucher(AdjustmentVoucher::class, 'avid', $invoiceNo, 'Adjustment Voucher');
-                    default:
-                        throw new \Exception("Rollback for module '$module' is not yet implemented.");
+            return DB::transaction(function () use ($module, $invoiceNos) {
+                foreach ($invoiceNos as $invoiceNo) {
+                    switch ($module) {
+                        case 'sale':
+                            $this->rollbackSale($invoiceNo);
+                            break;
+                        case 'purchase':
+                            $this->rollbackPurchase($invoiceNo);
+                            break;
+                        case 'purchase_return':
+                            $this->rollbackPurchaseReturn($invoiceNo);
+                            break;
+                        case 'sale_return':
+                            $this->rollbackSaleReturn($invoiceNo);
+                            break;
+                        case 'inward_gatepass':
+                            $this->rollbackInward($invoiceNo);
+                            break;
+                        case 'stock_hold':
+                            $this->rollbackStockHold($invoiceNo);
+                            break;
+                        case 'stock_release':
+                            $this->rollbackStockRelease($invoiceNo);
+                            break;
+                        case 'stock_transfer':
+                            $this->rollbackStockTransfer($invoiceNo);
+                            break;
+                        case 'stock_wastage':
+                            $this->rollbackStockWastage($invoiceNo);
+                            break;
+                        case 'warehouse_stock':
+                            $this->rollbackWarehouseStock($invoiceNo);
+                            break;
+                        case 'customer_claim':
+                            $this->rollbackCustomerClaim($invoiceNo);
+                            break;
+                        case 'claim_acceptance':
+                            $this->rollbackClaimAcceptance($invoiceNo);
+                            break;
+                        case 'claim_receipt':
+                            $this->rollbackClaimReceipt($invoiceNo);
+                            break;
+                        case 'receipt_voucher':
+                            $this->rollbackVoucher(ReceiptsVoucher::class, 'rvid', $invoiceNo, 'Receipt Voucher');
+                            break;
+                        case 'payment_voucher':
+                            $this->rollbackVoucher(PaymentVoucher::class, 'pvid', $invoiceNo, 'Payment Voucher');
+                            break;
+                        case 'expense_voucher':
+                            $this->rollbackVoucher(ExpenseVoucher::class, 'evid', $invoiceNo, 'Expense Voucher');
+                            break;
+                        case 'income_voucher':
+                            $this->rollbackVoucher(IncomeVoucher::class, 'ivid', $invoiceNo, 'Income Voucher');
+                            break;
+                        case 'journal_voucher':
+                            $this->rollbackVoucher(JournalVoucher::class, 'jvid', $invoiceNo, 'Journal Voucher');
+                            break;
+                        case 'adjustment_voucher':
+                            $this->rollbackVoucher(AdjustmentVoucher::class, 'avid', $invoiceNo, 'Adjustment Voucher');
+                            break;
+                        default:
+                            throw new \Exception("Rollback for module '$module' is not yet implemented.");
+                    }
                 }
+                $joined = implode(', ', $invoiceNos);
+                return back()->with('success', "Successfully rolled back records: $joined");
             });
         } catch (\Exception $e) {
             return back()->with('error', $e->getMessage());

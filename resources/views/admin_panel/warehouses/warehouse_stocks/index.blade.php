@@ -165,24 +165,42 @@
             @if($view == 'balances')
                 {{-- Live Balances Matrix View --}}
                 <div class="card shadow-sm">
-                    <div class="card-header bg-white d-flex justify-content-between align-items-center py-2 border-bottom">
-                        <span class="fw-bold text-muted small text-uppercase">Stock Balance Matrix</span>
-                        <div class="column-picker-dropdown">
-                            <button class="btn btn-outline-secondary btn-sm px-3 rounded-pill" type="button" id="columnPickerBtn">
-                                <i class="fa fa-columns me-1"></i> Columns
-                            </button>
-                            <div class="column-picker-menu shadow" id="columnPickerMenu">
-                                <div class="p-2 border-bottom fw-bold small text-muted">Show/Hide Columns</div>
-                                <label class="column-picker-item"><input type="checkbox" data-column="1" checked> ID</label>
-                                <label class="column-picker-item"><input type="checkbox" data-column="2" checked> Product Name</label>
-                                <label class="column-picker-item"><input type="checkbox" data-column="3" checked> Brand</label>
-                                <label class="column-picker-item"><input type="checkbox" data-column="4" checked> Shop Stock</label>
-                                @php $colCounter = 5; @endphp
-                                @foreach($warehouses as $wh)
-                                    <label class="column-picker-item"><input type="checkbox" data-column="{{ $colCounter++ }}" checked> {{ $wh->warehouse_name }}</label>
-                                @endforeach
-                                <label class="column-picker-item"><input type="checkbox" data-column="{{ $colCounter++ }}" checked> Total Reserved</label>
-                                <label class="column-picker-item"><input type="checkbox" data-column="{{ $colCounter++ }}" checked> Net Total</label>
+                    <div class="card-header bg-white py-2 border-bottom">
+                        <div class="row align-items-center">
+                            <div class="col-md-3">
+                                <span class="fw-bold text-muted small text-uppercase">Stock Balance Matrix</span>
+                            </div>
+                            <div class="col-md-5">
+                                <form action="{{ route('warehouse_stocks.index') }}" method="GET" class="d-flex align-items-center gap-2 m-0">
+                                    <input type="hidden" name="view" value="balances">
+                                    <select name="filter_warehouse_id[]" class="form-select form-select-sm select2" multiple="multiple" data-placeholder="All Warehouses">
+                                        @foreach($allWarehouses as $aw)
+                                            <option value="{{ $aw->id }}" {{ in_array($aw->id, request('filter_warehouse_id', [])) ? 'selected' : '' }}>{{ $aw->warehouse_name }}</option>
+                                        @endforeach
+                                    </select>
+                                    <button type="submit" class="btn btn-primary btn-sm"><i class="fa fa-filter"></i> Filter</button>
+                                    <a href="{{ route('warehouse_stocks.index', ['view' => 'balances']) }}" class="btn btn-outline-secondary btn-sm">Reset</a>
+                                </form>
+                            </div>
+                            <div class="col-md-4 text-end">
+                                <div class="column-picker-dropdown">
+                                    <button class="btn btn-outline-secondary btn-sm px-3 rounded-pill" type="button" id="columnPickerBtn">
+                                        <i class="fa fa-columns me-1"></i> Columns
+                                    </button>
+                                    <div class="column-picker-menu shadow text-start" id="columnPickerMenu">
+                                        <div class="p-2 border-bottom fw-bold small text-muted">Show/Hide Columns</div>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="1" checked> ID</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="2" checked> Product Name</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="3" checked> Brand</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="4" checked> Shop Stock</label>
+                                        @php $colCounter = 5; @endphp
+                                        @foreach($warehouses as $wh)
+                                            <label class="column-picker-item"><input type="checkbox" data-column="{{ $colCounter++ }}" checked> {{ $wh->warehouse_name }}</label>
+                                        @endforeach
+                                        <label class="column-picker-item"><input type="checkbox" data-column="{{ $colCounter++ }}" checked> Total Reserved</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="{{ $colCounter++ }}" checked> Net Total</label>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>

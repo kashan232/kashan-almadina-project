@@ -14,8 +14,21 @@ class WarehouseStockController extends Controller
     {
         // View mode: 'balances' or 'history'
         $view = $request->get('view', 'balances');
+        $filter_warehouse_ids = $request->get('filter_warehouse_id', []);
 
-        $warehouses = Warehouse::orderBy('warehouse_name')->get();
+        $isAdmin = auth()->check() && (auth()->user()->roles->pluck('name')->contains('Admin') || auth()->id() == 1);
+        
+        if ($isAdmin) {
+            $allWarehouses = Warehouse::withoutGlobalScopes()->orderBy('warehouse_name')->get();
+        } else {
+            $allWarehouses = Warehouse::orderBy('warehouse_name')->get();
+        }
+
+        if (!empty($filter_warehouse_ids)) {
+            $warehouses = $allWarehouses->whereIn('id', $filter_warehouse_ids);
+        } else {
+            $warehouses = $allWarehouses;
+        }
 
         if ($view === 'history') {
             $query = \App\Models\StockAdjustment::with(['warehouse', 'items.product'])->latest();
@@ -24,7 +37,7 @@ class WarehouseStockController extends Controller
             if ($request->filled('warehouse_id')) $query->where('warehouse_id', $request->warehouse_id);
             if ($request->filled('status')) $query->where('status', $request->status);
             $stocks = $query->get();
-            return view('admin_panel.warehouses.warehouse_stocks.index', compact('stocks', 'warehouses', 'view'));
+            return view('admin_panel.warehouses.warehouse_stocks.index', compact('stocks', 'warehouses', 'allWarehouses', 'view'));
         }
 
         // Live Balances Mode
@@ -35,7 +48,7 @@ class WarehouseStockController extends Controller
             'brandRelation'
         ])->orderBy('name')->get();
 
-        return view('admin_panel.warehouses.warehouse_stocks.index', compact('products', 'warehouses', 'view'));
+        return view('admin_panel.warehouses.warehouse_stocks.index', compact('products', 'warehouses', 'allWarehouses', 'view', 'filter_warehouse_ids'));
     }
 
     public function create()
