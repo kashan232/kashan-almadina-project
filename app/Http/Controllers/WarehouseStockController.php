@@ -49,7 +49,15 @@ class WarehouseStockController extends Controller
         // Fetch all products with their shop stock and warehouse stock relations
         $products = Product::with([
             'warehouseStocks' => function($q) { $q->where('status', 'Posted'); },
-            'stockHolds' => function($q) { $q->where('hold_qty', '>', 0); },
+            'stockHolds' => function($q) { 
+                $q->where('hold_qty', '>', 0)
+                  ->where(function($query) {
+                      $query->whereNull('stock_hold_voucher_id')
+                            ->orWhereHas('voucher', function($v) {
+                                $v->where('status', 'Posted');
+                            });
+                  });
+            },
             'brandRelation'
         ])->orderBy('name')->get();
 
