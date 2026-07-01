@@ -19,7 +19,10 @@
         color: #333 !important;
         font-weight: 600;
         vertical-align: middle;
-        padding: 1px !important;
+        padding-top: 4px !important;
+        padding-bottom: 4px !important;
+        padding-left: 6px !important;
+        /* Keep default right padding for DataTables sorting icons */
         font-size: 11px;
     }
     
@@ -121,6 +124,23 @@
         line-height: 1.5 !important;
         border-radius: 4px !important;
         margin-right: 2px !important;
+    }
+    
+    /* DataTable Search & Length Customization */
+    .dataTables_filter input {
+        padding: 2px 8px !important;
+        height: 26px !important;
+        font-size: 11px !important;
+        margin-left: 4px !important;
+    }
+    .dataTables_filter label, .dataTables_length label {
+        font-size: 11px !important;
+        margin-bottom: 0 !important;
+    }
+    .dataTables_length select {
+        padding: 2px 16px 2px 6px !important;
+        height: 26px !important;
+        font-size: 11px !important;
     }
     
 </style>
@@ -423,7 +443,6 @@
             var dt = $('#stockBalancesTable').DataTable({
                 pageLength: 50,
                 order: [[1, 'asc']],
-                scrollX: true,
                 autoWidth: false,
                 language: { searchPlaceholder: "Search products..." },
                 dom: 'Bfrtip',
@@ -465,10 +484,10 @@
             });
         @else
             $('#adjustmentTable').DataTable({
+                pageLength: 50,
                 order: [[0, 'desc']],
-                scrollX: true,
                 autoWidth: false,
-                language: { searchPlaceholder: "Search adjustments..." }
+                language: { searchPlaceholder: "Search history..." }
             });
         @endif
     });
