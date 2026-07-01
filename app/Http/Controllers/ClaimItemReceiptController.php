@@ -56,7 +56,8 @@ class ClaimItemReceiptController extends Controller
         $creditNoteVoucherNo = \App\Models\ClaimCreditNote::generateVoucherNo();
         $warehouses = Warehouse::orderBy('warehouse_name')->get();
         $companyWarehouses = Warehouse::withoutGlobalScope('exclude_claims')->where('claim_type', 'company')->orderBy('warehouse_name')->get();
-        return view('admin_panel.claim_item_receipt.create', compact('voucherNo', 'creditNoteVoucherNo', 'warehouses', 'companyWarehouses'));
+        $AccountHeads = \App\Models\AccountHead::where('status', 1)->get();
+        return view('admin_panel.claim_item_receipt.create', compact('voucherNo', 'creditNoteVoucherNo', 'warehouses', 'companyWarehouses', 'AccountHeads'));
     }
 
     public function edit($id)
@@ -67,7 +68,8 @@ class ClaimItemReceiptController extends Controller
         }
         $warehouses = Warehouse::orderBy('warehouse_name')->get();
         $companyWarehouses = Warehouse::withoutGlobalScope('exclude_claims')->where('claim_type', 'company')->orderBy('warehouse_name')->get();
-        return view('admin_panel.claim_item_receipt.create', compact('voucher', 'warehouses', 'companyWarehouses'));
+        $AccountHeads = \App\Models\AccountHead::where('status', 1)->get();
+        return view('admin_panel.claim_item_receipt.create', compact('voucher', 'warehouses', 'companyWarehouses', 'AccountHeads'));
     }
 
     public function fetchByBTR(Request $request)

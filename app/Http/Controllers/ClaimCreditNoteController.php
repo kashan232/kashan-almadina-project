@@ -72,8 +72,8 @@ class ClaimCreditNoteController extends Controller
                 'product_id' => $item->product_id,
                 'product_name' => $product->name ?? 'N/A',
                 'brand_name' => $product->brandRelation->brand_name ?? '-',
-                'price' => $priceInfo->purchase_net_amount ?? 0,
-                'retail_price' => $priceInfo->purchase_retail_price ?? 0,
+                'price' => $priceInfo->sale_net_amount ?? 0,
+                'retail_price' => $priceInfo->sale_retail_price ?? 0,
                 'quantity' => $item->quantity,
                 'btr_no' => $item->btr_no
             ];
@@ -126,6 +126,8 @@ class ClaimCreditNoteController extends Controller
             $voucher->total_discount    = $request->total_discount;
             $voucher->wht_percent       = $request->wht_percent;
             $voucher->wht_amount        = $request->wht_amount;
+            $voucher->wht_account_id    = $request->wht_account_id;
+            $voucher->wht_type          = $request->wht_type ?? 'percent';
             $voucher->net_total         = $request->net_total;
             $voucher->remarks           = $request->remarks;
             $voucher->status            = $status;
@@ -137,7 +139,7 @@ class ClaimCreditNoteController extends Controller
             }
 
             foreach ($request->product_id as $index => $pid) {
-                $qty = (float)($request->quantity[$index] ?? 0);
+                $qty = (float)($request->qty[$index] ?? 0);
                 if ($qty <= 0) continue;
 
                 $price = (float)($request->price[$index] ?? 0);

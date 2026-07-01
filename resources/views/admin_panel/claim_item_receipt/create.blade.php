@@ -362,15 +362,28 @@
                                         <input type="hidden" name="subtotal" id="credit_subtotal">
                                     </div>
                                     <input type="hidden" name="total_discount" id="credit_total_discount">
-                                    <div class="row g-2 mb-2 align-items-center">
-                                        <div class="col-6">
-                                            <span class="text-muted fw-bold">WHT (%)|Amt:</span>
-                                        </div>
-                                        <div class="col-3">
-                                            <input type="number" name="wht_percent" id="credit_wht_percent" class="form-control form-control-sm text-center" value="0" step="any">
-                                        </div>
-                                        <div class="col-3">
-                                            <input type="number" name="wht_amount" id="credit_wht_amount" class="form-control form-control-sm text-center bg-light" value="0" readonly>
+                                    <div class="d-flex justify-content-between align-items-center py-1 border-bottom px-1 mb-2">
+                                        <span class="text-muted fw-bold">WHT (Tax):</span>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <div class="d-flex gap-1" style="width:190px;">
+                                                <select id="credit_wht_head_id" class="form-select form-select-sm py-0" style="width:80px;">
+                                                    <option value="">Head</option>
+                                                    @foreach($AccountHeads as $head)
+                                                        <option value="{{ $head->id }}">{{ $head->name }}</option>
+                                                    @endforeach
+                                                </select>
+                                                <select name="wht_account_id" id="credit_wht_account_id" class="form-select form-select-sm py-0" style="flex-grow:1;">
+                                                    <option value="">Account</option>
+                                                </select>
+                                            </div>
+                                            <div class="d-flex align-items-center gap-1">
+                                                <input type="number" step="0.01" name="wht_percent" id="credit_wht_percent" class="form-control form-control-sm text-end py-0" placeholder="Val" value="0" style="width:60px">
+                                                <select id="credit_wht_type" name="wht_type" class="form-select form-select-sm py-0" style="width:60px;">
+                                                    <option value="percent">%</option>
+                                                    <option value="amount">PKR</option>
+                                                </select>
+                                            </div>
+                                            <input type="text" name="wht_amount" id="credit_wht_amount" class="form-control form-control-sm text-end bg-light" value="0.00" readonly style="width:80px;">
                                         </div>
                                     </div>
                                     <hr class="my-2">
@@ -553,20 +566,21 @@ $(document).ready(function() {
 
     function addCreditRow(item) {
         var row = `<tr>
-            <td class="text-center"><input type="text" name="btr_no[]" class="form-control input-sm text-center bg-light" value="${item.btr_no}" readonly></td>
+            <td class="text-center"><input type="text" name="btr_no[]" class="form-control form-control-sm text-center bg-light" value="${item.btr_no}" readonly></td>
             <td class="text-center fw-bold text-primary">${item.product_id} <input type="hidden" name="product_id[]" value="${item.product_id}"></td>
             <td>${item.product_name} <small class="text-muted d-block">${item.brand_name}</small></td>
-            <td><input type="number" name="price[]" class="form-control input-sm text-center credit-line-input price" value="${item.price}" step="any"></td>
-            <td><input type="number" name="retail_price[]" class="form-control input-sm text-center bg-light retail_price" value="${item.retail_price}" readonly></td>
+            <td><input type="number" name="price[]" class="form-control form-control-sm text-center credit-line-input price" value="${parseFloat(item.price).toFixed(2)}" step="any"></td>
+            <td><input type="number" name="retail_price[]" class="form-control form-control-sm text-center credit-line-input retail_price" value="${parseFloat(item.retail_price).toFixed(2)}" step="any"></td>
             <td>
                 <div class="input-group input-group-sm">
                     <input type="number" name="discount_percent[]" class="form-control text-center credit-line-input discount_percent" value="0" step="any" placeholder="%">
-                    <input type="number" name="discount_amount[]" class="form-control text-center credit-line-input discount_amount" value="0" step="any" placeholder="Amt">
+                    <span class="input-group-text px-1" style="font-size: 0.7rem;">%</span>
+                    <input type="text" name="discount_amount[]" class="form-control text-center bg-light discount_amount" value="0.00" readonly>
                 </div>
             </td>
-            <td><input type="number" name="qty[]" class="form-control input-sm text-center credit-line-input quantity" value="${item.quantity}" step="any"></td>
-            <td><input type="text" name="line_amount[]" class="form-control input-sm text-end bg-white row-amount" value="0" readonly></td>
-            <td><input type="text" name="line_total[]" class="form-control input-sm text-end fw-bold bg-white row-total" value="0" readonly></td>
+            <td><input type="number" name="qty[]" class="form-control form-control-sm text-center credit-line-input quantity" value="${item.quantity}" step="any"></td>
+            <td><input type="text" name="line_amount[]" class="form-control form-control-sm text-end bg-light row-rate" value="0.00" readonly></td>
+            <td><input type="text" name="line_total[]" class="form-control form-control-sm text-end fw-bold bg-light row-total" value="0.00" readonly></td>
             <td class="text-center"><button type="button" class="btn btn-sm btn-link text-danger remove-credit-row p-0"><i class="fa fa-trash"></i></button></td>
         </tr>`;
         $('#creditItemRows').append(row);
@@ -581,53 +595,79 @@ $(document).ready(function() {
         $('#creditItemRows tr').each(function() {
             let row = $(this);
             let price = parseFloat(row.find('.price').val()) || 0;
+            let retailPrice = parseFloat(row.find('.retail_price').val()) || 0;
             let qty = parseFloat(row.find('.quantity').val()) || 0;
-            let $discPctInput = row.find('.discount_percent');
-            let $discAmtInput = row.find('.discount_amount');
-            let discPct = parseFloat($discPctInput.val());
-            let discAmt = parseFloat($discAmtInput.val()) || 0;
-            let total_before_disc = price * qty;
             
-            if ($discPctInput.is(':focus')) {
-                if (isNaN(discPct) || discPct === 0 || $discPctInput.val() === '') {
-                    discAmt = 0;
-                    $discAmtInput.val('');
-                } else {
-                    discAmt = (total_before_disc * discPct) / 100;
-                    $discAmtInput.val(discAmt.toFixed(2));
-                }
-            } else if ($discAmtInput.is(':focus')) {
-                if (isNaN(discAmt) || discAmt === 0 || $discAmtInput.val() === '') {
-                    discAmt = 0;
-                }
-                $discPctInput.val('');
-            } else {
-                if (!isNaN(discPct) && discPct > 0) {
-                    discAmt = (total_before_disc * discPct) / 100;
-                    $discAmtInput.val(discAmt.toFixed(2));
-                } else {
-                    discAmt = parseFloat($discAmtInput.val()) || 0;
-                }
-            }
+            // Discount calculated on Unit Retail Price (qty 1)
+            let discPct = parseFloat(row.find('.discount_percent').val()) || 0;
+            let unitDiscAmt = (retailPrice * discPct) / 100.0;
+            row.find('.discount_amount').val(unitDiscAmt.toFixed(2));
 
-            let net_line_total = total_before_disc - discAmt;
-            row.find('.row-amount').val(total_before_disc.toFixed(2));
+            // Rate (Amount column) = Price - Unit Discount
+            let rate = price - unitDiscAmt;
+            row.find('.row-rate').val(rate.toFixed(2));
+
+            // Total (Line Total) = Rate * Qty
+            let net_line_total = Math.max(0, rate * qty);
             row.find('.row-total').val(net_line_total.toFixed(2));
+            
             subtotal += net_line_total;
-            totalDisc += discAmt;
+            totalDisc += (unitDiscAmt * qty);
         });
-        let whtPct = parseFloat($('#credit_wht_percent').val()) || 0;
+        
+        let whtPctVal = parseFloat($('#credit_wht_percent').val()) || 0;
+        let whtType = $('#credit_wht_type').val() || 'percent';
         let netBeforeWHT = subtotal; // subtotal already has discounts subtracted
-        let whtAmt = (netBeforeWHT * whtPct) / 100;
+        
+        let whtAmt = 0;
+        if(whtType === 'percent') {
+            whtAmt = (netBeforeWHT * whtPctVal) / 100.0;
+        } else {
+            whtAmt = whtPctVal;
+        }
+        
         let finalNet = netBeforeWHT + whtAmt;
+        
         $('#txtCreditSubtotal').text(subtotal.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2}));
-        // $('#txtCreditTotalDisc').text(totalDisc.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2}));
         $('#credit_wht_amount').val(whtAmt.toFixed(2));
         $('#txtCreditNetTotal').text(finalNet.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2}));
+        
         $('#credit_subtotal').val(subtotal.toFixed(2));
         $('#credit_total_discount').val(totalDisc.toFixed(2));
         $('#credit_net_total').val(finalNet.toFixed(2));
     }
+    
+    $(document).on('input', '#credit_wht_percent', calculateCredit);
+    $(document).on('change', '#credit_wht_type', calculateCredit);
+
+    $(document).on('change', '#credit_wht_head_id', function() {
+        var headId = $(this).val();
+        var $accSelect = $('#credit_wht_account_id');
+
+        if (!headId) {
+            $accSelect.html('<option value="">Account</option>');
+            return;
+        }
+
+        $.ajax({
+            url: "{{ url('/get-accounts-by-head') }}/" + headId,
+            type: "GET",
+            success: function(res) {
+                var html = '<option value="">Account</option>';
+                if (res && res.length) {
+                    res.forEach(function(acc) {
+                        html += '<option value="' + acc.id + '">' + acc.title + '</option>';
+                    });
+                } else {
+                    html = '<option value="">No Accounts</option>';
+                }
+                $accSelect.html(html);
+            },
+            error: function(err) {
+                console.error('AJAX Error:', err.statusText);
+            }
+        });
+    });
 
     function saveCredit(act) {
         $('#creditFormAction').val(act);

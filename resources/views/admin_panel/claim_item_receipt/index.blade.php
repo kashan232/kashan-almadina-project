@@ -168,11 +168,7 @@
                                             
                                     <td class="text-muted small text-center fw-bold">{{ $v->doc_type == 'credit' ? 'CRN' : 'CLR' }}</td>
                                             <td class="fw-bold text-primary text-center">
-                                                @if($v->doc_type == 'credit')
-                                                    {{ $v->voucher_no }}
-                                                @else
-                                                    {{ (int) preg_replace('/[^0-9]/', '', substr($v->voucher_no, strlen('CIR-'))) }}
-                                                @endif
+                                                {{ $v->voucher_no }}
                                             </td>
                                             <td class="small">{{ \Carbon\Carbon::parse($v->date)->format('d-M-Y') }}</td>
                                             <td>
