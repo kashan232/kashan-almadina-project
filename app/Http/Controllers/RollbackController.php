@@ -408,7 +408,7 @@ class RollbackController extends Controller
 
     private function rollbackStockWastage($invoiceNo)
     {
-        $wastage = $this->findRecord(StockWastage::class, 'invoice_no', $invoiceNo);
+        $wastage = $this->findRecord(StockWastage::class, 'gwn_id', $invoiceNo);
         if (!$wastage) throw new \Exception("Stock Wastage $invoiceNo not found.");
         
         $this->validateRollbackDate($wastage);
