@@ -129,7 +129,7 @@
                             </div>
                             <div class="col-md-2 mt-1">
                                 <label class="form-label font-weight-bold">Sales Price</label>
-                                <input type="number" name="sales_price" id="sales_price" class="form-control input-sm text-end fw-bold text-danger" placeholder="0.00" readonly>
+                                <input type="number" step="any" name="sales_price" id="sales_price" class="form-control input-sm text-end fw-bold text-danger" placeholder="0.00" readonly>
                             </div>
                             <div class="col-md-2 mt-1">
                                 <label class="form-label">Card No</label>
@@ -208,7 +208,7 @@
                             </div>
                             <div class="col-md-2">
                                 <label class="form-label text-primary fw-bold">Sales Price</label>
-                                <input type="number" name="replacement_sales_price" id="replacement_sales_price" class="form-control input-sm text-end fw-bold" placeholder="0.00" readonly>
+                                <input type="number" step="any" name="replacement_sales_price" id="replacement_sales_price" class="form-control input-sm text-end fw-bold" placeholder="0.00" readonly>
                             </div>
                             <div class="col-md-2">
                                 <label class="form-label border-danger border-bottom"><span class="text-danger"><i class="fa fa-minus-circle"></i></span> Deliver From</label>
