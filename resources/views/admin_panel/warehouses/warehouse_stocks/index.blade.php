@@ -9,7 +9,10 @@
         -webkit-overflow-scrolling: touch;
         margin-bottom: 1rem;
     }
-    
+    .main-content-inner, .content-wrapper {
+        padding: 0!important;
+    }
+
     #stockBalancesTable thead th, #adjustmentTable thead th {
         white-space: nowrap !important;
         background-color: #f8f9fa !important;
@@ -110,11 +113,21 @@
         height: 2px;
         background: #3b82f6;
     }
+    
+    /* DataTable Buttons Customization */
+    .dt-buttons .dt-button {
+        padding: 2px 8px !important;
+        font-size: 11px !important;
+        line-height: 1.5 !important;
+        border-radius: 4px !important;
+        margin-right: 2px !important;
+    }
+    
 </style>
 
 <div class="main-content">
     <div class="main-content-inner">
-        <div class="container-fluid pt-3">
+        <div class="container-fluid pt-0">
 
             @if(session('success'))
                 <div class="alert alert-success alert-dismissible fade show shadow-sm border-0 py-2 mb-3" role="alert">
@@ -124,16 +137,16 @@
             @endif
 
             <!-- Header Row -->
-            <div class="row mb-3">
+            <div class="row mb-1">
                 <div class="col-12">
                     <div class="card border-0 shadow-sm">
-                        <div class="card-body p-2">
-                            <div class="row g-2 align-items-center">
+                        <div class="card-body py-1 px-2">
+                            <div class="row g-1 align-items-center">
                                 <div class="col-md-6">
-                                    <h5 class="mb-0 fw-bold text-dark ms-2"><i class="fa fa-cubes me-2 text-primary"></i>Warehouse Stock Management</h5>
+                                    <h6 class="mb-0 fw-bold text-dark ms-2"><i class="fa fa-cubes me-2 text-primary"></i>Warehouse Stock Management</h6>
                                 </div>
                                 <div class="col-md-6 text-end">
-                                    <a class="btn btn-primary btn-sm rounded-pill px-4 shadow-sm" href="{{ route('warehouse_stocks.create') }}">
+                                    <a class="btn btn-primary btn-sm rounded-pill px-3 shadow-sm py-1" href="{{ route('warehouse_stocks.create') }}" style="font-size: 11px;">
                                         <i class="fa fa-plus me-1"></i> Manual Update
                                     </a>
                                 </div>
@@ -144,7 +157,7 @@
             </div>
 
             {{-- Tabs --}}
-            <div class="card border-0 shadow-sm mb-3">
+            <div class="card border-0 shadow-sm mb-2">
                 <div class="card-body p-0">
                     <ul class="nav nav-tabs-custom">
                         <li class="nav-item">
@@ -164,7 +177,7 @@
             @if($view == 'balances')
                 {{-- Live Balances Matrix View --}}
                 <div class="card shadow-sm">
-                    <div class="card-header bg-white py-2 border-bottom">
+                    <div class="card-header bg-white py-1 border-bottom">
                         <div class="row align-items-center">
                             <div class="col-md-3">
                                 <span class="fw-bold text-muted small text-uppercase">Stock Balance Matrix</span>
@@ -177,13 +190,13 @@
                                             <option value="{{ $aw->id }}" {{ in_array($aw->id, request('filter_warehouse_id', [])) ? 'selected' : '' }}>{{ $aw->warehouse_name }}</option>
                                         @endforeach
                                     </select>
-                                    <button type="submit" class="btn btn-primary btn-sm"><i class="fa fa-filter"></i> Filter</button>
-                                    <a href="{{ route('warehouse_stocks.index', ['view' => 'balances']) }}" class="btn btn-outline-secondary btn-sm">Reset</a>
+                                    <button type="submit" class="btn btn-primary btn-sm py-1 px-2" style="font-size: 11px;"><i class="fa fa-filter"></i> Filter</button>
+                                    <a href="{{ route('warehouse_stocks.index', ['view' => 'balances']) }}" class="btn btn-outline-secondary btn-sm py-1 px-2" style="font-size: 11px;">Reset</a>
                                 </form>
                             </div>
                             <div class="col-md-4 text-end">
                                 <div class="column-picker-dropdown">
-                                    <button class="btn btn-outline-secondary btn-sm px-3 rounded-pill" type="button" id="columnPickerBtn">
+                                    <button class="btn btn-outline-secondary btn-sm px-2 py-1 rounded-pill" style="font-size: 11px;" type="button" id="columnPickerBtn">
                                         <i class="fa fa-columns me-1"></i> Columns
                                     </button>
                                     <div class="column-picker-menu shadow text-start" id="columnPickerMenu">
