@@ -51,12 +51,12 @@
                     <span class="badge bg-danger ms-3" style="font-size:14px;" id="invoiceNoDisplay">Return No: {{ isset($returnData) ? $nextInvoice : 'Auto-Generated' }}</span>
                 </div>
                 <div class="d-flex gap-2">
-                    <div class="btn-group btn-group-sm" role="group">
+                    <div class="btn-group btn-group-sm shadow-sm" role="group">
                         <input type="radio" class="btn-check" name="return_mode" id="mode_invoice" value="invoice" {{ !isset($returnData) || (isset($returnData) && $returnData->purchase_id) ? 'checked' : '' }} autocomplete="off">
-                        <label class="btn btn-primary" for="mode_invoice">Invoice Return</label>
+                        <label class="btn btn-outline-primary fw-bold px-3" for="mode_invoice"><i class="fa fa-file-text-o me-1"></i> Invoice Return</label>
 
                         <input type="radio" class="btn-check" name="return_mode" id="mode_manual" value="manual" {{ isset($returnData) && !$returnData->purchase_id ? 'checked' : '' }} autocomplete="off">
-                        <label class="btn btn-primary" for="mode_manual">Manual Return</label>
+                        <label class="btn btn-outline-primary fw-bold px-3" for="mode_manual"><i class="fa fa-pencil-square-o me-1"></i> Manual Return</label>
                     </div>
                     <a href="{{ route('purchase.return.home') }}" class="btn btn-sm btn-dark px-3" id="returnListBtn">
                          <i class="fa fa-list me-1"></i> Return List
