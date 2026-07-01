@@ -56,8 +56,18 @@ class PurchaseReturn extends Model
     public static function generateReturnNo()
     {
         $last = self::withoutGlobalScopes()->orderBy('id', 'desc')->first();
-        $num = $last ? (int) preg_replace('/[^0-9]/', '', $last->invoice_no) + 1 : 1;
-        return str_pad($num, 3, '0', STR_PAD_LEFT);
+        $num = 0;
+        if ($last) {
+            $num = (int) preg_replace('/[^0-9]/', '', $last->invoice_no);
+        }
+
+        do {
+            $num++;
+            $nextInvoice = str_pad($num, 3, '0', STR_PAD_LEFT);
+            $exists = self::withoutGlobalScopes()->where('invoice_no', $nextInvoice)->exists();
+        } while ($exists);
+
+        return $nextInvoice;
     }
 
     public function whtAccount()
