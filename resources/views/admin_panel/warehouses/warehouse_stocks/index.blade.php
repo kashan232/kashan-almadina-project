@@ -14,7 +14,7 @@
     }
 
     #stockBalancesTable thead th, #adjustmentTable thead th {
-        white-space: nowrap !important;
+        white-space: normal !important;
         background-color: #f8f9fa !important;
         color: #333 !important;
         font-weight: 600;
