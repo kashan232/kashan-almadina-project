@@ -341,12 +341,18 @@
                                                     </button>
                                                 </form>
 
-                                                <a class="btn btn-outline-dark btn-xs px-1 py-0" href="{{ route('booking.print', $sale->id) }}" title="Print Preview" style="height: 20px;">
-                                                   <i class="fa fa-file-text-o"></i>
+                                                <a class="btn btn-outline-dark btn-xs px-1 py-0" href="{{ route('booking.print', $sale->id) }}" title="Print Invoice" style="height: 20px;">
+                                                   <i class="fa fa-file-text-o"></i> Inv
+                                               </a>
+                                                <a class="btn btn-outline-dark btn-xs px-1 py-0" href="{{ route('booking.dc', $sale->id) }}" title="Print DC" style="height: 20px;">
+                                                   <i class="fa fa-truck"></i> DC
                                                </a>
                                             @else
-                                                <a class="btn btn-outline-dark btn-xs px-1 py-0" href="{{ route('sale.invoice', $sale->id) }}" title="Invoice" style="height: 20px;">
-                                                    <i class="fa fa-print"></i>
+                                                <a class="btn btn-outline-dark btn-xs px-1 py-0" href="{{ route('sale.invoice', $sale->id) }}" title="Print Invoice" style="height: 20px;">
+                                                    <i class="fa fa-print"></i> Inv
+                                                </a>
+                                                <a class="btn btn-outline-dark btn-xs px-1 py-0" href="{{ route('sale.dc', $sale->id) }}" title="Print DC" style="height: 20px;">
+                                                    <i class="fa fa-truck"></i> DC
                                                 </a>
                                             @endif
                                          </div>
