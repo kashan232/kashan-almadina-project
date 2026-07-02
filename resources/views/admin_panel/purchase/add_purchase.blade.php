@@ -278,6 +278,7 @@
       @if(isset($purchase) && !$isViewMode)
           @method('PUT')
       @endif
+      <input type="hidden" id="purchase_id" name="purchase_id" value="{{ isset($purchase) ? $purchase->id : '' }}">
 
       <div class="posted-watermark {{ $isPosted ? 'show' : '' }}" id="postedWatermark">Posted</div>
 
@@ -1722,6 +1723,23 @@ $(document).ready(function() {
     var _savedPurchaseId = @json(isset($purchase) ? $purchase->id : null);
     var isViewMode = @json(isset($viewMode) && $viewMode);
 
+    function switchFormToUpdateMode(purchaseId) {
+        if (!purchaseId) return;
+        _savedPurchaseId = purchaseId;
+        $('#purchase_id').val(purchaseId);
+
+        var $form = $('#purchaseForm');
+        $form.attr('action', '/purchase/' + purchaseId);
+
+        if ($form.find('input[name="_method"]').length === 0) {
+            $form.append('<input type="hidden" name="_method" value="PUT">');
+        }
+    }
+
+    if (_savedPurchaseId) {
+        switchFormToUpdateMode(_savedPurchaseId);
+    }
+
     if (isViewMode) {
         $('#purchaseForm').addClass('form-locked');
         $('#purchaseForm input, #purchaseForm select, #purchaseForm textarea, #purchaseForm button')
@@ -1781,6 +1799,10 @@ $(document).ready(function() {
         }
 
         var $form  = $('#purchaseForm');
+        if (_savedPurchaseId) {
+            switchFormToUpdateMode(_savedPurchaseId);
+        }
+
         $('#saveDraftBtn').prop('disabled', true).html('<i class="fa fa-spinner fa-spin me-1"></i> Saving...');
 
         $.ajax({
@@ -1790,7 +1812,7 @@ $(document).ready(function() {
             headers: { 'X-Requested-With': 'XMLHttpRequest' },
             success: function(res) {
                 if (res.success) {
-                    _savedPurchaseId = res.id;
+                    switchFormToUpdateMode(res.id);
                     // Clear navigation guard - form is now saved
                     if (typeof window.markFormSaved === 'function') window.markFormSaved();
                     showToast('✅ Draft Saved — ' + (res.message || 'Purchase saved as unposted.'), 'success');

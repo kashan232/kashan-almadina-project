@@ -72,6 +72,14 @@ class PurchaseController extends Controller
 
     public function store(Request $request)
     {
+        // If draft already saved once, update same record (keep same invoice number)
+        if ($request->filled('purchase_id')) {
+            $existing = \App\Models\Purchase::find($request->purchase_id);
+            if ($existing && $existing->status !== 'Posted') {
+                return $this->update($request, $existing->id);
+            }
+        }
+
         // 1) Server-side validation (accounts removed from required rules)
         $rules = [
             'vendor_type'         => 'required|string',
@@ -647,10 +655,12 @@ class PurchaseController extends Controller
             });
 
             if ($request->ajax() || $request->wantsJson()) {
+                $purchase = Purchase::findOrFail($id);
                 return response()->json([
                     'success' => true,
                     'message' => 'Purchase updated successfully!',
-                    'id'      => $id
+                    'id'      => $id,
+                    'invoice_no' => $purchase->invoice_no,
                 ]);
             }
 
