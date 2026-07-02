@@ -87,22 +87,6 @@
                                     </div>
                                 </div>
                             </div>
-                            <!-- Sub-Category -->
-                            <div class="col-md-1" style="min-width: 100px;">
-                                <div class="filter-column">
-                                    <div class="filter-header">
-                                        <input type="checkbox" class="select-all" data-target="subcat-list"> Sub-Cat
-                                    </div>
-                                    <div class="filter-list" id="subcat-list">
-                                        @foreach($subcategories as $sub)
-                                            <div class="filter-item" data-category="{{ $sub->category_id }}">
-                                                <input type="checkbox" name="subcategory[]" value="{{ $sub->id }}">
-                                                <span>{{ $sub->name }}</span>
-                                            </div>
-                                        @endforeach
-                                    </div>
-                                </div>
-                            </div>
                             <!-- Brand -->
                             <div class="col-md-1" style="min-width: 100px;">
                                 <div class="filter-column">
@@ -134,8 +118,7 @@
                                             <div class="filter-item"
                                                  data-search="{{ strtolower($prod->name) }}"
                                                  data-brand="{{ $prod->brand_id }}"
-                                                 data-category="{{ $prod->category_id }}"
-                                                 data-subcategory="{{ $prod->sub_category_id }}">
+                                                 data-category="{{ $prod->category_id }}">
                                                 <input type="checkbox" name="item[]" value="{{ $prod->id }}">
                                                 <span>{{ $prod->name }}</span>
                                             </div>
@@ -345,14 +328,6 @@
             $('#officer-list .filter-item, #warehouse-list .filter-item').each(function() {
                 const $item = $(this);
                 const show = matchesGroups($item, selectedGroups);
-                $item.toggle(show);
-                if (!show) uncheckItem($item);
-            });
-
-            $('#subcat-list .filter-item').each(function() {
-                const $item = $(this);
-                const catId = String($item.data('category'));
-                const show = !selectedCategories.length || selectedCategories.includes(catId);
                 $item.toggle(show);
                 if (!show) uncheckItem($item);
             });

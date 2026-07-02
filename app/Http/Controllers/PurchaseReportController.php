@@ -38,7 +38,6 @@ class PurchaseReportController extends Controller
         $users = User::with('userGroups')->orderBy('name')->get();
         $warehouses = Warehouse::all();
         $categories = Category::orderBy('name')->get();
-        $subcategories = Subcategory::orderBy('name')->get();
         $brands = Brand::orderBy('name')->get();
         $products = Product::orderBy('name')->get();
         $customers = Customer::orderBy('customer_name')->get();
@@ -46,7 +45,7 @@ class PurchaseReportController extends Controller
         $shopGroupIds = $userGroups->where('allow_shop', 1)->pluck('id')->implode(',');
 
         return view('admin_panel.reports.purchase.index', compact(
-            'userGroups', 'users', 'warehouses', 'categories', 'subcategories',
+            'userGroups', 'users', 'warehouses', 'categories',
             'brands', 'products', 'customers', 'vendors', 'shopGroupIds'
         ));
     }
@@ -82,7 +81,6 @@ class PurchaseReportController extends Controller
                 $q->withoutGlobalScopes()->with(['vendor', 'purchasable', 'warehouse', 'user']);
             },
             'product.brandRelation',
-            'product.sub_category_relation',
             'product.latestPrice',
         ])->whereHas('purchase', function ($q) use (
             $from_date, $to_date, $invoice_no, $parties, $party_types,

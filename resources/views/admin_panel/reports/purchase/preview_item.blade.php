@@ -170,14 +170,14 @@
                 <tr class="item-heading-row">
                     <td colspan="8" class="text-left" style="border-top: 2px solid #000;">
                         ITEM: {{ $product ? strtoupper($product->name) : 'N/A' }} 
-                        <span class="ms-3" style="color: #666;">( {{ $product && $product->sub_category_relation ? strtoupper($product->sub_category_relation->name) : '-' }} )</span>
+                        <span class="ms-3" style="color: #666;">( {{ $product && $product->brandRelation ? strtoupper($product->brandRelation->name) : '-' }} )</span>
                     </td>
                 </tr>
 
                 @foreach($items as $item)
                     @php
                         $qty = $item->qty;
-                        $purchase_p = $item->net_rate;
+                        $purchase_p = (float) ($item->price ?? 0);
                         $purchase_a = $item->line_total;
                         $purchaseDate = \Carbon\Carbon::parse($item->purchase->current_date)->format('d-m-y');
                         $displayInv = preg_replace('/[^0-9]/', '', $item->purchase->invoice_no) ?: $item->purchase->invoice_no;

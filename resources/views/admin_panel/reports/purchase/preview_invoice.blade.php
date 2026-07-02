@@ -136,7 +136,7 @@
         <thead>
             <tr>
                 <th width="25%">Item Description</th>
-                <th width="12%">Sub-Category</th>
+                <th width="12%">Brand</th>
                 <th width="8%">Qty</th>
                 <th width="12%">Retail Price</th>
                 <th width="13%">Retail Value</th>
@@ -191,7 +191,7 @@
                     @foreach($items as $item)
                         @php
                             $qty = $item->qty;
-                            $purchase_p = $item->net_rate;
+                            $purchase_p = (float) ($item->price ?? 0);
                             
                             $latestPrice = $item->product->latestPrice;
                             $retail_p = $latestPrice ? $latestPrice->sale_retail_price : 0;
@@ -205,7 +205,7 @@
                         @endphp
                         <tr class="item-row">
                             <td>{{ $item->product ? $item->product->name : 'N/A' }}</td>
-                            <td class="text-center">{{ $item->product && $item->product->sub_category_relation ? $item->product->sub_category_relation->name : '-' }}</td>
+                            <td class="text-center">{{ $item->product && $item->product->brandRelation ? $item->product->brandRelation->name : '-' }}</td>
                             <td class="text-center">{{ number_format($qty) }}</td>
                             <td class="text-right">{{ number_format($retail_p, 0) }}</td>
                             <td class="text-right">{{ number_format($retail_a, 0) }}</td>
