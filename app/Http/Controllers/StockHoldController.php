@@ -644,55 +644,90 @@ class StockHoldController extends Controller
 
     public function editRelease($id)
     {
-        $voucher = \App\Models\StockReleaseVoucher::with('items.product', 'warehouse')->findOrFail($id);
+        $voucher = \App\Models\StockReleaseVoucher::with([
+            'items.product',
+            'items.hold',
+            'warehouse',
+            'holdVoucher',
+            'partyCustomer',
+            'partyVendor',
+        ])->findOrFail($id);
+
+        if ($voucher->status === 'Posted') {
+            return redirect()->route('stock-relase-list')->with('error', 'Posted releases cannot be edited.');
+        }
+
         $warehouses = Warehouse::orderBy('warehouse_name')->get();
-        return view('admin_panel.stock_hold.edit_release', compact('voucher', 'warehouses'));
+        $releaseNo = $voucher->voucher_no;
+
+        return view('admin_panel.stock_hold.edit_release', compact('voucher', 'warehouses', 'releaseNo'));
     }
 
     public function updateRelease(Request $request, $id)
     {
         $request->validate([
-            'entry_date' => 'required|date',
-            'product_id' => 'required|array',
-            'release_qty' => 'required|array',
+            'entry_date'   => 'required|date',
+            'warehouse_id' => 'required|integer',
+            'vendor_type'  => 'required',
+            'vendor_id'    => 'required',
+            'product_id'   => 'required|array',
+            'release_qty'  => 'required|array',
         ]);
+
+        if ($request->warehouse_id == 0 && !auth()->user()->canAccessShop()) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized access to Shop Stock.'], 403);
+        }
 
         $status = $request->action === 'post' ? 'Posted' : 'Unposted';
 
         try {
             DB::beginTransaction();
             $voucher = \App\Models\StockReleaseVoucher::findOrFail($id);
+
+            if ($voucher->status === 'Posted') {
+                return response()->json(['success' => false, 'message' => 'Posted records cannot be modified.'], 422);
+            }
+
+            $holdVoucherId = $request->filled('hold_voucher_id') ? $request->hold_voucher_id : null;
+            $claimId = $request->filled('claim_id') ? $request->claim_id : null;
+            $releaseType = $claimId ? 'claim' : 'stock';
+
             $voucher->update([
-                'date'    => $request->entry_date,
-                'entry_time' => $request->entry_time ?? date('H:i'),
-                'remarks' => $request->remarks,
-                'status'  => $status
+                'date'            => $request->entry_date,
+                'entry_time'      => $request->entry_time ?? date('H:i'),
+                'warehouse_id'    => $request->warehouse_id,
+                'party_type'      => $request->vendor_type,
+                'party_id'        => $request->vendor_id,
+                'hold_voucher_id' => $holdVoucherId,
+                'claim_id'        => $claimId,
+                'remarks'         => $request->remarks,
+                'status'          => $status,
             ]);
 
-            // Sync items (delete old then create new for simplicity as it's bulk updated)
             $voucher->items()->delete();
 
             foreach ($request->product_id as $index => $pid) {
                 $releaseQty = (float)($request->release_qty[$index] ?? 0);
                 if ($releaseQty <= 0) continue;
 
-                $holdItem = StockHold::withoutGlobalScopes()
-                    ->where('stock_hold_voucher_id', $voucher->hold_voucher_id)
-                    ->where('product_id', $pid)
-                    ->where('status', 0)
-                    ->where('hold_qty', '>', 0)
-                    ->first();
+                $holdItem = $this->findHoldItemForRelease(
+                    $request,
+                    (int) $pid,
+                    $releaseType,
+                    $holdVoucherId,
+                    $claimId
+                );
 
                 \App\Models\StockRelease::create([
                     'stock_release_voucher_id' => $voucher->id,
                     'release_no'  => $voucher->voucher_no,
                     'hold_id'     => $holdItem?->id,
                     'sale_id'     => $holdItem?->sale_id,
-                    'party_type'  => $voucher->party_type,
-                    'party_id'    => $voucher->party_id,
-                    'warehouse_id' => $voucher->warehouse_id,
+                    'party_type'  => $request->vendor_type,
+                    'party_id'    => $request->vendor_id,
+                    'warehouse_id' => $request->warehouse_id,
                     'product_id'  => $pid,
-                    'sale_qty'    => $holdItem?->sale_qty ?? 0,
+                    'sale_qty'    => $holdItem?->sale_qty ?? ($request->sale_qty[$index] ?? 0),
                     'release_qty' => $releaseQty,
                     'remarks'     => $request->remarks,
                     'status'      => $status
@@ -700,7 +735,7 @@ class StockHoldController extends Controller
 
                 if ($status === 'Posted') {
                     $this->applyReleaseEffects(
-                        (int) $voucher->warehouse_id,
+                        (int) $request->warehouse_id,
                         (int) $pid,
                         $releaseQty,
                         $holdItem
@@ -709,8 +744,16 @@ class StockHoldController extends Controller
             }
 
             DB::commit();
-            return response()->json(['success' => true, 'message' => 'Release ' . $status, 'status' => $status, 'id' => $voucher->id]);
-        } catch (\Exception $e) { DB::rollBack(); return response()->json(['success' => false, 'message' => $e->getMessage()], 500); }
+            return response()->json([
+                'success' => true,
+                'message' => 'Release ' . ($status === 'Posted' ? 'Posted' : 'Updated') . ' successfully.',
+                'status'  => $status,
+                'id'      => $voucher->id,
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
     }
 
     public function postRelease($id)
