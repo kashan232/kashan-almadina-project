@@ -62,6 +62,13 @@
     }
     .form-locked input, .form-locked select, .form-locked textarea { pointer-events: none; opacity: 0.8; }
     .form-locked .remove-row, .form-locked .removeAccountRow, .form-locked #addRow, .form-locked #addAccountRow, .form-locked #saveDraftBtn { display: none !important; }
+    .form-locked #exitBtn,
+    .form-locked #newInvoiceBtn,
+    .form-locked #realPrintBtn {
+        pointer-events: auto !important;
+        opacity: 1 !important;
+        cursor: pointer !important;
+    }
     
 </style>
 <div class="main-content bg-white">
@@ -258,15 +265,21 @@
 
     <div id="alertBox" class="alert d-none mb-2" role="alert"></div>
 
+    @php
+        $isViewMode = isset($viewMode) && $viewMode;
+        $isPosted = isset($purchase) && $purchase->status == 'Posted';
+        $isDraft = isset($purchase) && $purchase->status != 'Posted';
+        $isNew = !isset($purchase);
+        $formLocked = $isViewMode || $isPosted;
+    @endphp
 
-
-    <form id="purchaseForm" class="{{ isset($purchase) && $purchase->status == 'Posted' ? 'form-locked' : '' }}" autocomplete="off" action="{{ isset($purchase) ? route('purchase.update', $purchase->id) : route('store.Purchase') }}" method="POST">
+    <form id="purchaseForm" class="{{ $formLocked ? 'form-locked' : '' }}" autocomplete="off" action="{{ $isViewMode ? '#' : (isset($purchase) ? route('purchase.update', $purchase->id) : route('store.Purchase')) }}" method="POST">
       @csrf
-      @if(isset($purchase))
+      @if(isset($purchase) && !$isViewMode)
           @method('PUT')
       @endif
 
-      <div class="posted-watermark {{ isset($purchase) && $purchase->status == 'Posted' ? 'show' : '' }}" id="postedWatermark">Posted</div>
+      <div class="posted-watermark {{ $isPosted ? 'show' : '' }}" id="postedWatermark">Posted</div>
 
       <div class="d-flex gap-2 align-items-stretch border-bottom py-2">
         {{-- LEFT: Header & Vendor --}}
@@ -274,14 +287,18 @@
           <div class="d-flex align-items-center justify-content-between mb-2 pb-1 border-bottom">
             <h6 class="mb-0 fw-bold text-primary d-flex align-items-center gap-1">
               <i class="fa fa-info-circle"></i> Purchase Details
-              @if(isset($purchase) && $purchase->status == 'Posted')
+              @if($isViewMode)
+                  <span class="badge bg-info px-1 py-0 rounded" style="font-size:9px;">
+                      <i class="fa fa-eye"></i> View Only
+                  </span>
+              @elseif($isPosted)
                   <span id="statusBadge" class="badge bg-success px-1 py-0 rounded" style="font-size:9px;">
                       <i class="fa fa-check"></i> Posted
                   </span>
               @endif
             </h6>
             <div class="d-flex align-items-center gap-1">
-                @if(isset($purchase) && $purchase->status != 'Posted')
+                @if($isDraft && !$isViewMode)
                     <button type="button" class="btn btn-xs btn-primary rounded-pill shadow-sm px-2 py-1" style="font-size: 0.75rem;" onclick="$('#postBtn').click();">
                         <i class="fa fa-send"></i> Post
                     </button>
@@ -642,25 +659,20 @@
 
       {{-- BOTTOM BUTTONS --}}
       <div class="d-flex flex-wrap gap-2 mt-3 justify-content-center bg-light p-3 rounded-3 border shadow-sm w-100">
-          @php 
-              $isPosted = isset($purchase) && $purchase->status == 'Posted';
-              $isDraft = isset($purchase) && $purchase->status != 'Posted';
-              $isNew = !isset($purchase);
-          @endphp
 
-          <button type="button" id="saveDraftBtn" class="btn btn-primary px-4 fw-bold shadow-sm" {{ $isPosted || $isDraft ? 'disabled' : '' }}>
+          <button type="button" id="saveDraftBtn" class="btn btn-primary px-4 fw-bold shadow-sm" {{ $isPosted || $isDraft || $isViewMode ? 'disabled' : '' }}>
               <u>S</u>ave <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+S</kbd>
           </button>
 
-          <button type="button" id="editInvoiceBtn" class="btn btn-warning px-4 fw-bold text-dark shadow-sm" {{ $isNew || $isPosted ? 'disabled' : '' }}>
+          <button type="button" id="editInvoiceBtn" class="btn btn-warning px-4 fw-bold text-dark shadow-sm" {{ $isNew || $isPosted || $isViewMode ? 'disabled' : '' }}>
               <u>E</u>dit <kbd style="font-size:10px;opacity:.8;margin-left:4px;color:#fff;">Ctrl+E</kbd>
           </button>
 
-          <button type="button" id="postBtn" class="btn btn-success px-4 fw-bold shadow-sm" {{ $isNew || $isPosted ? 'disabled' : '' }}>
+          <button type="button" id="postBtn" class="btn btn-success px-4 fw-bold shadow-sm" {{ $isNew || $isPosted || $isViewMode ? 'disabled' : '' }}>
               <u>P</u>ost <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+&crarr;</kbd>
           </button>
 
-          <button type="button" id="deleteBtn" class="btn btn-danger px-4 fw-bold shadow-sm" {{ $isNew || $isPosted ? 'disabled' : '' }}>
+          <button type="button" id="deleteBtn" class="btn btn-danger px-4 fw-bold shadow-sm" {{ $isNew || $isPosted || $isViewMode ? 'disabled' : '' }}>
               <u>D</u>elete <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+D</kbd>
           </button>
 
@@ -1708,6 +1720,18 @@ $(document).ready(function() {
     //  SAVED PURCHASE STATE (after AJAX save)
     // =============================================
     var _savedPurchaseId = @json(isset($purchase) ? $purchase->id : null);
+    var isViewMode = @json(isset($viewMode) && $viewMode);
+
+    if (isViewMode) {
+        $('#purchaseForm').addClass('form-locked');
+        $('#purchaseForm input, #purchaseForm select, #purchaseForm textarea, #purchaseForm button')
+            .not('#exitBtn, #newInvoiceBtn, #realPrintBtn')
+            .attr('tabindex', '-1');
+        $('#purchaseForm select').prop('disabled', true);
+        if ($.fn.select2) {
+            $('#purchaseForm .select2').prop('disabled', true);
+        }
+    }
 
     // =============================================
     //  SHOW SUCCESS TOAST
@@ -1914,6 +1938,23 @@ $(document).ready(function() {
 
     // Keyboard Shortcuts Capture
     document.addEventListener('keydown', function(e) {
+        if (isViewMode) {
+            if (e.key === 'Escape') {
+                e.preventDefault();
+                window.location.href = $('#exitBtn').attr('href');
+            }
+            if (e.ctrlKey && (e.key === 'm' || e.key === 'M')) {
+                e.preventDefault();
+                window.location.href = $('#newInvoiceBtn').attr('href');
+            }
+            if (e.ctrlKey && (e.key === 'p' || e.key === 'P')) {
+                e.preventDefault();
+                if ($('#realPrintBtn').length && !$('#realPrintBtn').prop('disabled')) {
+                    $('#realPrintBtn')[0].click();
+                }
+            }
+            return;
+        }
         // Ctrl+S -> Add (Save Draft)
         if (e.ctrlKey && (e.key === 's' || e.key === 'S')) {
             e.preventDefault();
@@ -1967,6 +2008,7 @@ $(document).ready(function() {
 
 
     $(document).on('keydown', '.price', function(e) {
+        if (isViewMode) return;
         if (e.key === 'Enter') {
             const $row = $(this).closest('tr');
             $row.find('.quantity').focus().select();
@@ -1976,6 +2018,7 @@ $(document).ready(function() {
     });
 
     $(document).on('keydown', '.quantity', function(e) {
+        if (isViewMode) return;
         if (e.key === 'Enter') {
             const $row = $(this).closest('tr');
             if ($row.is(':last-child')) {
@@ -2136,6 +2179,7 @@ $(document).ready(function() {
 
     // 5. Enter on Account Amount -> Add New Row
     $(document).on('keydown', '.accountAmount', function(e) {
+        if (isViewMode) return;
         if (e.key === 'Enter') {
             e.preventDefault();
             $('#addAccountRow').trigger('click');
@@ -2150,6 +2194,9 @@ $(document).ready(function() {
     //  GLOBAL SHORTCUTS
     // =============================================
     $(document).on('keydown', function(e) {
+        if (isViewMode) {
+            return;
+        }
         // Ctrl + S -> Save Draft
         if (e.ctrlKey && (e.key === 's' || e.key === 'S')) {
             e.preventDefault();
@@ -2191,6 +2238,7 @@ $(document).ready(function() {
 
     // Full Grid Navigation (Arrows Up/Down/Left/Right)
     $(document).on('keydown', '#purchaseItems input, #accountsTable input', function(e) {
+        if (isViewMode) return;
         if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].indexOf(e.key) === -1) return;
         
         var $this = $(this);

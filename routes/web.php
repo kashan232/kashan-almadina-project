@@ -353,6 +353,7 @@ Route::middleware('auth')->group(function () {
     route::get('/Purchase', [PurchaseController::class, 'index'])->name('Purchase.home');
     route::get('/add/Purchase', [PurchaseController::class, 'add_purchase'])->name('add_purchase');
     route::post('/Purchase/stote', [PurchaseController::class, 'store'])->name('store.Purchase');
+    Route::get('/purchase/{id}/view', [PurchaseController::class, 'show'])->name('purchase.view');
     Route::get('/purchase/{id}/edit', [PurchaseController::class, 'edit'])->name('purchase.edit');
     Route::put('/purchase/{id}', [PurchaseController::class, 'update'])->name('purchase.update');
     Route::delete('/purchase/{id}', [PurchaseController::class, 'destroy'])->name('purchase.destroy');

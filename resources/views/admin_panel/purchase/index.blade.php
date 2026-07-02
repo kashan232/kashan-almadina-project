@@ -296,8 +296,8 @@
                                     <td class="text-end">{{ number_format($purchase->wht, 0) }}</td>
                                     <td class="text-end fw-bold text-success">{{ number_format($purchase->net_amount, 0) }}</td>
                                     <td class="small text-muted">
-                                        @if($purchase->creator)
-                                            <span class="text-dark small">{{ $purchase->creator->name }}</span>
+                                        @if($purchase->user)
+                                            <span class="text-dark small">{{ $purchase->user->name }}</span>
                                         @else
                                             <span class="text-muted small">System</span>
                                         @endif
@@ -309,34 +309,34 @@
                                             <span class="badge bg-warning text-dark rounded-pill px-3">Unposted</span>
                                         @endif
                                     </td>
-                                     <td class="text-center">
-                                         <div class="d-flex gap-1 justify-content-center">
-                                             @if($purchase->status === 'Unposted')
-                                                 <form action="{{ route('purchase.post', $purchase->id) }}" method="POST" class="d-inline">
-                                                     @csrf
-                                                     <button type="submit" class="btn btn-primary btn-xs px-2 py-0" title="Post now" style="font-size: 10px;">
-                                                         <i class="fa fa-send"></i> Post
-                                                     </button>
-                                                 </form>
-                                                 
-                                                 <a href="{{ route('purchase.edit', $purchase->id) }}" class="btn btn-warning btn-mini" title="Edit">
-                                                    <i class="fa fa-pencil"></i>
-                                                 </a>
-
-                                                 <form action="{{ route('purchase.destroy', $purchase->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Delete this unposted purchase?')">
-                                                     @csrf
-                                                     @method('DELETE')
-                                                     <button type="submit" class="btn btn-danger btn-mini" title="Delete">
-                                                         <i class="fa fa-trash"></i>
-                                                     </button>
-                                                 </form>
-                                             @endif
-                                             
-                                             <a href="{{ route('purchase.invoice', $purchase->id) }}" class="btn btn-dark btn-mini" title="Print Invoice">
-                                                 <i class="fa fa-print"></i>
-                                             </a>
-                                         </div>
-                                     </td>
+                                    <td class="text-center">
+                                        <div class="d-flex gap-1 justify-content-center">
+                                            <a href="{{ route('purchase.view', $purchase->id) }}" class="btn btn-outline-info btn-xs px-1 py-0" title="View Purchase" style="height: 20px;">
+                                                <i class="fa fa-eye"></i>
+                                            </a>
+                                            @if($purchase->status === 'Unposted')
+                                                <a href="{{ route('purchase.edit', $purchase->id) }}" class="btn btn-outline-warning btn-xs px-1 py-0" title="Edit" style="height: 20px;">
+                                                    <i class="fa fa-edit text-dark"></i>
+                                                </a>
+                                                <form action="{{ route('purchase.post', $purchase->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Post this purchase?')">
+                                                    @csrf
+                                                    <button type="submit" class="btn btn-primary btn-xs px-2 py-0" title="Post now" style="font-size: 10px;">
+                                                        <i class="fa fa-send"></i>
+                                                    </button>
+                                                </form>
+                                                <form action="{{ route('purchase.destroy', $purchase->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Delete this purchase?')">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button type="submit" class="btn btn-outline-danger btn-xs px-1 py-0" title="Delete" style="height: 20px;">
+                                                        <i class="fa fa-trash"></i>
+                                                    </button>
+                                                </form>
+                                            @endif
+                                            <a href="{{ route('purchase.invoice', $purchase->id) }}" target="_blank" class="btn btn-outline-dark btn-xs px-1 py-0" title="Print" style="height: 20px;">
+                                                <i class="fa fa-print"></i>
+                                            </a>
+                                        </div>
+                                    </td>
                                 </tr>
                                 @endforeach
                             </tbody>

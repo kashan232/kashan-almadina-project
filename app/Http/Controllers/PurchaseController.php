@@ -389,9 +389,39 @@ class PurchaseController extends Controller
     }
 
 
+    public function show($id)
+    {
+        $purchase = Purchase::with([
+            'purchasable',
+            'items.product.brandRelation',
+            'items.product.latestPrice',
+            'accountAllocations.account',
+            'whtAccount',
+        ])->findOrFail($id);
+
+        $Vendor = Vendor::all();
+        $customers = Customer::all();
+        $Warehouse = Warehouse::all();
+        $AccountHeads = AccountHead::all();
+        $expenseAccounts = Account::where('head_id', 1)->get();
+        $nextInvoice = $purchase->invoice_no;
+        $viewMode = true;
+
+        return view('admin_panel.purchase.add_purchase', compact(
+            'purchase',
+            'Vendor',
+            'customers',
+            'Warehouse',
+            'AccountHeads',
+            'nextInvoice',
+            'expenseAccounts',
+            'viewMode'
+        ));
+    }
+
     public function edit($id)
     {
-        $purchase = Purchase::with(['purchasable', 'items.product.brandRelation', 'items.product.latestPrice', 'accountAllocations.account'])
+        $purchase = Purchase::with(['purchasable', 'items.product.brandRelation', 'items.product.latestPrice', 'accountAllocations.account', 'whtAccount'])
             ->findOrFail($id);
         
         $Vendor = Vendor::all();
