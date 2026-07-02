@@ -19,6 +19,38 @@
                     
                     <div class="filter-grid-container">
                         <div class="row g-1 mb-3">
+                            <!-- User Group -->
+                            <div class="col-md-1" style="min-width: 100px;">
+                                <div class="filter-column">
+                                    <div class="filter-header">
+                                        <input type="checkbox" class="select-all" data-target="group-list"> Group
+                                    </div>
+                                    <div class="filter-list" id="group-list">
+                                        @foreach($userGroups as $group)
+                                            <div class="filter-item">
+                                                <input type="checkbox" name="user_group[]" value="{{ $group->id }}">
+                                                <span>{{ $group->group_name }}</span>
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- User -->
+                            <div class="col-md-1" style="min-width: 110px;">
+                                <div class="filter-column">
+                                    <div class="filter-header">
+                                        <input type="checkbox" class="select-all" data-target="officer-list"> User
+                                    </div>
+                                    <div class="filter-list" id="officer-list">
+                                        @foreach($users as $u)
+                                            <div class="filter-item" data-groups="{{ $u->userGroups->pluck('id')->implode(',') }}">
+                                                <input type="checkbox" name="sales_officer[]" value="{{ $u->id }}">
+                                                <span>{{ $u->name }}</span>
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                </div>
+                            </div>
                             <!-- Warehouse -->
                             <div class="col-md-1">
                                 <div class="filter-column">
@@ -26,12 +58,12 @@
                                         <input type="checkbox" class="select-all" data-target="warehouse-list"> WH
                                     </div>
                                     <div class="filter-list" id="warehouse-list">
-                                        <div class="filter-item">
+                                        <div class="filter-item" data-groups="{{ $shopGroupIds }}">
                                             <input type="checkbox" name="warehouse[]" value="0">
                                             <span>Shop</span>
                                         </div>
                                         @foreach($warehouses as $w)
-                                            <div class="filter-item">
+                                            <div class="filter-item" data-groups="{{ is_array($w->user_group_ids) ? implode(',', $w->user_group_ids) : '' }}">
                                                 <input type="checkbox" name="warehouse[]" value="{{ $w->id }}">
                                                 <span>{{ $w->warehouse_name }}</span>
                                             </div>
@@ -63,7 +95,7 @@
                                     </div>
                                     <div class="filter-list" id="subcat-list">
                                         @foreach($subcategories as $sub)
-                                            <div class="filter-item">
+                                            <div class="filter-item" data-category="{{ $sub->category_id }}">
                                                 <input type="checkbox" name="subcategory[]" value="{{ $sub->id }}">
                                                 <span>{{ $sub->name }}</span>
                                             </div>
@@ -89,7 +121,7 @@
                             </div>
 
                             <!-- Items -->
-                            <div class="col-md-4">
+                            <div class="col-md-2">
                                 <div class="filter-column">
                                     <div class="filter-header">
                                         <input type="checkbox" class="select-all" data-target="item-list"> Item
@@ -99,7 +131,11 @@
                                     </div>
                                     <div class="filter-list" id="item-list">
                                         @foreach($products as $prod)
-                                            <div class="filter-item" data-search="{{ strtolower($prod->name) }}">
+                                            <div class="filter-item"
+                                                 data-search="{{ strtolower($prod->name) }}"
+                                                 data-brand="{{ $prod->brand_id }}"
+                                                 data-category="{{ $prod->category_id }}"
+                                                 data-subcategory="{{ $prod->sub_category_id }}">
                                                 <input type="checkbox" name="item[]" value="{{ $prod->id }}">
                                                 <span>{{ $prod->name }}</span>
                                             </div>
@@ -107,21 +143,43 @@
                                     </div>
                                 </div>
                             </div>
-                            
-                            <!-- Vendor -->
-                            <div class="col-md-4 flex-grow-1">
+                            <!-- Party Type -->
+                            <div class="col-md-1" style="min-width: 90px;">
                                 <div class="filter-column">
                                     <div class="filter-header">
-                                        <input type="checkbox" class="select-all" data-target="vendor-list"> Vendor
+                                        <input type="checkbox" class="select-all" data-target="partytype-list"> Type
+                                    </div>
+                                    <div class="filter-list" id="partytype-list">
+                                        <div class="filter-item"><input type="checkbox" name="party_type[]" value="Main Customer"><span>Main</span></div>
+                                        <div class="filter-item"><input type="checkbox" name="party_type[]" value="Walking Customer"><span>Walk-in</span></div>
+                                        <div class="filter-item"><input type="checkbox" name="party_type[]" value="Vendor"><span>Vendor</span></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Party -->
+                            <div class="col-md-1" style="min-width: 130px;">
+                                <div class="filter-column">
+                                    <div class="filter-header">
+                                        <input type="checkbox" class="select-all" data-target="party-list"> Party
                                     </div>
                                     <div class="p-1 bg-light border-bottom">
-                                        <input type="text" class="form-control form-control-sm" id="vendorSearch" placeholder="Search vendor..." style="height: 24px; font-size: 11px;">
+                                        <input type="text" class="form-control form-control-sm" id="partySearch" placeholder="Search party..." style="height: 24px; font-size: 11px;">
                                     </div>
-                                    <div class="filter-list" id="vendor-list">
-                                        @foreach($vendors as $v)
-                                            <div class="filter-item" data-search="{{ strtolower($v->name) }}">
-                                                <input type="checkbox" name="vendor[]" value="{{ $v->id }}">
-                                                <span>{{ $v->name }}</span>
+                                    <div class="filter-list" id="party-list">
+                                        @foreach($customers as $cust)
+                                            <div class="filter-item"
+                                                 data-search="{{ strtolower($cust->customer_name) }}"
+                                                 data-party-type="{{ $cust->customer_type }}">
+                                                <input type="checkbox" name="party[]" value="{{ $cust->id }}">
+                                                <span>{{ $cust->customer_name }}</span>
+                                            </div>
+                                        @endforeach
+                                        @foreach($vendors as $vendor)
+                                            <div class="filter-item"
+                                                 data-search="{{ strtolower($vendor->name) }}"
+                                                 data-party-type="Vendor">
+                                                <input type="checkbox" name="party[]" value="{{ $vendor->id }}">
+                                                <span>{{ $vendor->name }}</span>
                                             </div>
                                         @endforeach
                                     </div>
@@ -189,7 +247,7 @@
         overflow: hidden;
         display: flex;
         flex-direction: column;
-        height: 280px !important; 
+        height: 280px !important;
     }
     
     .filter-header {
@@ -238,6 +296,11 @@
         background: #ccc;
         border-radius: 3px;
     }
+
+    #itemSearch, #partySearch {
+        height: 24px;
+        font-size: 11px;
+    }
 </style>
 
 @endsection
@@ -245,19 +308,96 @@
 @section('scripts')
 <script>
     $(document).ready(function() {
-        // Toggle item selection
+
+        function uncheckItem($item) {
+            const cb = $item.find('input[type="checkbox"]');
+            cb.prop('checked', false);
+            $item.removeClass('selected');
+        }
+
+        function getCheckedValues(listId, inputName) {
+            const values = [];
+            $('#' + listId + ' .filter-item:visible input[name="' + inputName + '"]:checked').each(function() {
+                values.push(String($(this).val()));
+            });
+            return values;
+        }
+
+        function parseDataList(value) {
+            return String(value || '').split(',').map(v => v.trim()).filter(Boolean);
+        }
+
+        function matchesGroups($item, selectedGroups) {
+            if (!selectedGroups.length) return true;
+            const itemGroups = parseDataList($item.data('groups'));
+            if (!itemGroups.length) return true;
+            return selectedGroups.some(g => itemGroups.includes(g));
+        }
+
+        function applyCascadeFilters() {
+            const selectedGroups = getCheckedValues('group-list', 'user_group[]');
+            const selectedCategories = getCheckedValues('category-list', 'category[]');
+            const selectedBrands = getCheckedValues('brand-list', 'brand[]');
+            const selectedPartyTypes = getCheckedValues('partytype-list', 'party_type[]');
+            const itemSearch = ($('#itemSearch').val() || '').toLowerCase();
+            const partySearch = ($('#partySearch').val() || '').toLowerCase();
+
+            $('#officer-list .filter-item, #warehouse-list .filter-item').each(function() {
+                const $item = $(this);
+                const show = matchesGroups($item, selectedGroups);
+                $item.toggle(show);
+                if (!show) uncheckItem($item);
+            });
+
+            $('#subcat-list .filter-item').each(function() {
+                const $item = $(this);
+                const catId = String($item.data('category'));
+                const show = !selectedCategories.length || selectedCategories.includes(catId);
+                $item.toggle(show);
+                if (!show) uncheckItem($item);
+            });
+
+            $('#item-list .filter-item').each(function() {
+                const $item = $(this);
+                const brandId = String($item.data('brand'));
+                const searchText = String($item.data('search') || '');
+                const brandMatch = !selectedBrands.length || selectedBrands.includes(brandId);
+                const searchMatch = !itemSearch || searchText.indexOf(itemSearch) > -1;
+                const show = brandMatch && searchMatch;
+                $item.toggle(show);
+                if (!show) uncheckItem($item);
+            });
+
+            $('#party-list .filter-item').each(function() {
+                const $item = $(this);
+                const partyType = String($item.data('party-type') || '');
+                const searchText = String($item.data('search') || '');
+                const typeMatch = !selectedPartyTypes.length || selectedPartyTypes.includes(partyType);
+                const searchMatch = !partySearch || searchText.indexOf(partySearch) > -1;
+                const show = typeMatch && searchMatch;
+                $item.toggle(show);
+                if (!show) uncheckItem($item);
+            });
+        }
+
         $(document).on('click', '.filter-item', function(e) {
             if ($(e.target).is('input[type="checkbox"]')) return;
+
             const checkbox = $(this).find('input[type="checkbox"]');
             checkbox.prop('checked', !checkbox.prop('checked'));
             $(this).toggleClass('selected', checkbox.prop('checked'));
+
+            const listId = $(this).closest('.filter-list').attr('id');
+            if (['group-list', 'category-list', 'brand-list', 'partytype-list'].includes(listId)) {
+                applyCascadeFilters();
+            }
         });
 
-        // Select All functionality
         $('.select-all').on('change', function() {
             const targetId = $(this).data('target');
             const isChecked = $(this).prop('checked');
             const $list = $('#' + targetId);
+
             $list.find('.filter-item').each(function() {
                 if ($(this).css('display') !== 'none') {
                     const cb = $(this).find('input[type="checkbox"]');
@@ -265,9 +405,12 @@
                     $(this).toggleClass('selected', isChecked);
                 }
             });
+
+            if (['group-list', 'category-list', 'brand-list', 'partytype-list'].includes(targetId)) {
+                applyCascadeFilters();
+            }
         });
 
-        // Global Select All
         $('#globalSelectAll').on('change', function() {
             const isChecked = $(this).prop('checked');
             $('.select-all').prop('checked', isChecked);
@@ -276,26 +419,17 @@
                 cb.prop('checked', isChecked);
                 $(this).toggleClass('selected', isChecked);
             });
+            applyCascadeFilters();
         });
 
-        // Search functionality
         $('#itemSearch').on('keyup', function() {
-            const value = $(this).val().toLowerCase();
-            $('#item-list .filter-item').each(function() {
-                const text = $(this).data('search');
-                $(this).toggle(text.indexOf(value) > -1);
-            });
+            applyCascadeFilters();
         });
 
-        $('#vendorSearch').on('keyup', function() {
-            const value = $(this).val().toLowerCase();
-            $('#vendor-list .filter-item').each(function() {
-                const text = $(this).data('search');
-                $(this).toggle(text.indexOf(value) > -1);
-            });
+        $('#partySearch').on('keyup', function() {
+            applyCascadeFilters();
         });
 
-        // AUTO-SELECT ALL FILTERS BY DEFAULT
         setTimeout(() => {
             $('#globalSelectAll').prop('checked', true).trigger('change');
         }, 300);
