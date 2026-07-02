@@ -21,14 +21,14 @@ class PurchaseReportController extends Controller
         return !empty($selected) && ($total === 0 || count($selected) < $total);
     }
 
-    /** Match purchase list date column (current_date). */
+    /** Match purchase list: filter on current_date only (not created_at). */
     private function applyPurchaseDateFilter($query, ?string $from_date, ?string $to_date): void
     {
         if (!empty($from_date)) {
-            $query->whereRaw('DATE(COALESCE(current_date, entry_date, created_at)) >= ?', [$from_date]);
+            $query->whereDate('current_date', '>=', $from_date);
         }
         if (!empty($to_date)) {
-            $query->whereRaw('DATE(COALESCE(current_date, entry_date, created_at)) <= ?', [$to_date]);
+            $query->whereDate('current_date', '<=', $to_date);
         }
     }
 

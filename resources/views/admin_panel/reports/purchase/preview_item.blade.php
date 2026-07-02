@@ -179,7 +179,7 @@
                         $qty = $item->qty;
                         $purchase_p = $item->net_rate;
                         $purchase_a = $item->line_total;
-                        $purchaseDate = \Carbon\Carbon::parse($item->purchase->current_date ?? $item->purchase->entry_date ?? $item->purchase->created_at)->format('d-m-y');
+                        $purchaseDate = \Carbon\Carbon::parse($item->purchase->current_date)->format('d-m-y');
                         $displayInv = preg_replace('/[^0-9]/', '', $item->purchase->invoice_no) ?: $item->purchase->invoice_no;
                         $party = $item->purchase->purchasable;
                         $partyName = $party

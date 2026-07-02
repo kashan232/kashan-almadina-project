@@ -167,7 +167,7 @@
                         $partyName = $party
                             ? strtoupper($party->name ?? $party->customer_name ?? 'N/A')
                             : strtoupper($purchase->vendor->name ?? 'N/A');
-                        $purchaseDate = \Carbon\Carbon::parse($purchase->current_date ?? $purchase->entry_date ?? $purchase->created_at)->format('d-m-y');
+                        $purchaseDate = \Carbon\Carbon::parse($purchase->current_date)->format('d-m-y');
                         $displayInv = preg_replace('/[^0-9]/', '', $invoiceNo) ?: $invoiceNo;
                         
                         $inv_qty = 0;
