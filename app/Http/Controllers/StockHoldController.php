@@ -186,6 +186,18 @@ class StockHoldController extends Controller
                 $qty = (float) $request->hold_qty[$index];
                 if ($qty <= 0) continue;
 
+                if ($status === 'Posted') {
+                    $qty = $this->applyHoldReservedIncrease(
+                        (int) $productId,
+                        $qty,
+                        $request->vendor_type,
+                        (int) $request->vendor_id,
+                        (int) $voucher->id
+                    );
+                }
+
+                if ($qty <= 0) continue;
+
                 StockHold::create([
                     'stock_hold_voucher_id' => $voucher->id,
                     'entry_date'   => $request->entry_date,
@@ -249,8 +261,43 @@ class StockHoldController extends Controller
         if ($voucher->status === 'Posted') {
             return back()->with('error', 'Already posted.');
         }
-        $voucher->update(['status' => 'Posted']);
-        
+
+        try {
+            DB::beginTransaction();
+
+            foreach ($voucher->items as $item) {
+                $grossQty = (float) $item->hold_qty;
+                if ($grossQty <= 0) {
+                    $item->delete();
+                    continue;
+                }
+
+                $effectiveQty = $this->applyHoldReservedIncrease(
+                    (int) $item->product_id,
+                    $grossQty,
+                    $voucher->party_type,
+                    (int) $voucher->party_id,
+                    (int) $voucher->id
+                );
+
+                if ($effectiveQty <= 0) {
+                    $item->delete();
+                    continue;
+                }
+
+                $item->hold_qty = $effectiveQty;
+                $item->status = 0;
+                $item->save();
+            }
+
+            $voucher->update(['status' => 'Posted']);
+
+            DB::commit();
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->with('error', 'Failed to post hold: ' . $e->getMessage());
+        }
+
         return back()->with('success', 'Stock Hold Posted successfully.');
     }
 
@@ -784,6 +831,58 @@ class StockHoldController extends Controller
         return $query->orderByRaw('CASE WHEN hold_qty <= 0 THEN 0 ELSE 1 END')
             ->orderByDesc('id')
             ->first();
+    }
+
+    /** Increase reserved on hold — pay off negative (over-release) balance first, same signed math as release. */
+    private function applyHoldReservedIncrease(
+        int $productId,
+        float $holdQty,
+        ?string $partyType = null,
+        ?int $partyId = null,
+        ?int $excludeVoucherId = null
+    ): float {
+        $remaining = $holdQty;
+
+        $query = StockHold::withoutGlobalScopes()
+            ->where('product_id', $productId)
+            ->where(function ($q) {
+                $q->where('status', 0)->orWhereNull('status');
+            })
+            ->where('hold_qty', '<', 0)
+            ->where(function ($q) {
+                $q->whereNull('stock_hold_voucher_id')
+                    ->orWhereHas('voucher', function ($v) {
+                        $v->where('status', 'Posted');
+                    });
+            });
+
+        if ($partyType && $partyId) {
+            $query->where('party_type', $partyType)->where('party_id', $partyId);
+        }
+
+        if ($excludeVoucherId) {
+            $query->where(function ($q) use ($excludeVoucherId) {
+                $q->whereNull('stock_hold_voucher_id')
+                    ->orWhere('stock_hold_voucher_id', '!=', $excludeVoucherId);
+            });
+        }
+
+        $negativeHolds = $query->orderBy('id')->get();
+
+        foreach ($negativeHolds as $hold) {
+            if ($remaining <= 0) {
+                break;
+            }
+
+            $debt = abs((float) $hold->hold_qty);
+            $pay = min($remaining, $debt);
+            $hold->hold_qty = (float) $hold->hold_qty + $pay;
+            $hold->status = (float) $hold->hold_qty == 0 ? 1 : 0;
+            $hold->save();
+            $remaining -= $pay;
+        }
+
+        return $remaining;
     }
 
     private function createReleaseOverflowHold(
