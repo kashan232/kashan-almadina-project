@@ -5,38 +5,42 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Sale;
 use App\Models\SaleItem;
-use App\Models\Zone;
 use App\Models\User;
+use App\Models\UserGroup;
 use App\Models\Warehouse;
 use App\Models\Category;
 use App\Models\Subcategory;
 use App\Models\Brand;
 use App\Models\Product;
 use App\Models\Customer;
+use App\Models\Vendor;
 use Carbon\Carbon;
 
 class SalesReportController extends Controller
 {
     public function index()
     {
-        $zones = Zone::all();
-        $users = User::all();
+        $userGroups = UserGroup::orderBy('group_name')->get();
+        $users = User::with('userGroups')->orderBy('name')->get();
         $warehouses = Warehouse::all();
-        $categories = Category::all();
-        $subcategories = Subcategory::all();
-        $brands = Brand::all();
-        $products = Product::all();
-        $customers = Customer::all();
+        $categories = Category::orderBy('name')->get();
+        $subcategories = Subcategory::orderBy('name')->get();
+        $brands = Brand::orderBy('name')->get();
+        $products = Product::orderBy('name')->get();
+        $customers = Customer::orderBy('customer_name')->get();
+        $vendors = Vendor::orderBy('name')->get();
+        $shopGroupIds = $userGroups->where('allow_shop', 1)->pluck('id')->implode(',');
 
         return view('admin_panel.reports.sales.index', compact(
-            'zones', 'users', 'warehouses', 'categories', 'subcategories', 'brands', 'products', 'customers'
+            'userGroups', 'users', 'warehouses', 'categories', 'subcategories',
+            'brands', 'products', 'customers', 'vendors', 'shopGroupIds'
         ));
     }
 
     public function preview(Request $request)
     {
         // Extract filters
-        $zones = $request->zone ?? [];
+        $user_groups = $request->user_group ?? [];
         $sales_officers = $request->sales_officer ?? [];
         $warehouses = $request->warehouse ?? [];
         $categories = $request->category ?? [];
@@ -52,7 +56,7 @@ class SalesReportController extends Controller
 
         // Build Query
         $query = SaleItem::with(['sale.customer', 'product.brandRelation', 'warehouse'])
-            ->whereHas('sale', function($q) use ($from_date, $to_date, $invoice_no, $parties, $zones, $party_types, $sales_officers) {
+            ->whereHas('sale', function($q) use ($from_date, $to_date, $invoice_no, $parties, $party_types, $sales_officers, $user_groups) {
                 $q->where('is_sale_order', 0);
                 if (!empty($from_date)) {
                     $q->whereDate('created_at', '>=', $from_date);
@@ -66,13 +70,32 @@ class SalesReportController extends Controller
                 if (!empty($parties)) {
                     $q->whereIn('customer_id', $parties);
                 }
-                if (!empty($zones) || !empty($party_types)) {
-                    $q->whereHas('customer', function($c) use ($zones, $party_types) {
-                        if (!empty($zones)) {
-                            $c->whereIn('zone', $zones);
+                if (!empty($sales_officers)) {
+                    $q->whereIn('created_by', $sales_officers);
+                }
+                if (!empty($user_groups)) {
+                    $q->where(function ($sub) use ($user_groups) {
+                        foreach ($user_groups as $gid) {
+                            $sub->orWhereJsonContains('user_group_ids', (string) $gid)
+                                ->orWhereJsonContains('user_group_ids', (int) $gid);
                         }
-                        if (!empty($party_types)) {
-                            $c->whereIn('customer_type', $party_types);
+                    });
+                }
+                if (!empty($party_types)) {
+                    $q->where(function ($pt) use ($party_types) {
+                        $customerTypes = array_values(array_intersect($party_types, ['Main Customer', 'Walking Customer']));
+                        if (in_array('Vendor', $party_types)) {
+                            $pt->orWhere('partyType', 'vendor');
+                        }
+                        if (!empty($customerTypes)) {
+                            $pt->orWhere(function ($sq) use ($customerTypes) {
+                                $sq->where(function ($s2) {
+                                    $s2->whereIn('partyType', ['customer', 'walking'])
+                                        ->orWhereNull('partyType');
+                                })->whereHas('customer', function ($c) use ($customerTypes) {
+                                    $c->whereIn('customer_type', $customerTypes);
+                                });
+                            });
                         }
                     });
                 }
