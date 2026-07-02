@@ -179,6 +179,12 @@
                         $qty = $item->qty;
                         $purchase_p = $item->net_rate;
                         $purchase_a = $item->line_total;
+                        $purchaseDate = \Carbon\Carbon::parse($item->purchase->current_date ?? $item->purchase->entry_date ?? $item->purchase->created_at)->format('d-m-y');
+                        $displayInv = preg_replace('/[^0-9]/', '', $item->purchase->invoice_no) ?: $item->purchase->invoice_no;
+                        $party = $item->purchase->purchasable;
+                        $partyName = $party
+                            ? strtoupper($party->name ?? $party->customer_name ?? 'N/A')
+                            : strtoupper($item->purchase->vendor->name ?? 'N/A');
 
                         $latestPrice = $item->product->latestPrice;
                         $retail_p = $latestPrice ? $latestPrice->sale_retail_price : 0;
@@ -189,9 +195,9 @@
                         $item_retail_amt += $retail_a;
                     @endphp
                     <tr class="data-row">
-                        <td class="text-center">{{ $item->purchase->invoice_no }}</td>
-                        <td class="text-center">{{ \Carbon\Carbon::parse($item->purchase->created_at)->format('d-m-y') }}</td>
-                        <td class="text-left">{{ $item->purchase->vendor ? strtoupper($item->purchase->vendor->name) : 'N/A' }}</td>
+                        <td class="text-center">{{ $displayInv }}</td>
+                        <td class="text-center">{{ $purchaseDate }}</td>
+                        <td class="text-left">{{ $partyName }}</td>
                         <td class="text-center">{{ number_format($qty) }}</td>
                         <td class="text-right">{{ number_format($retail_p, 0) }}</td>
                         <td class="text-right">{{ number_format($retail_a, 0) }}</td>

@@ -163,8 +163,12 @@
                     @php
                         $firstItem = $items->first();
                         $purchase = $firstItem->purchase;
-                        $vendor = $purchase->vendor;
-                        $purchaseDate = \Carbon\Carbon::parse($purchase->created_at)->format('d-m-y');
+                        $party = $purchase->purchasable;
+                        $partyName = $party
+                            ? strtoupper($party->name ?? $party->customer_name ?? 'N/A')
+                            : strtoupper($purchase->vendor->name ?? 'N/A');
+                        $purchaseDate = \Carbon\Carbon::parse($purchase->current_date ?? $purchase->entry_date ?? $purchase->created_at)->format('d-m-y');
+                        $displayInv = preg_replace('/[^0-9]/', '', $invoiceNo) ?: $invoiceNo;
                         
                         $inv_qty = 0;
                         $inv_purchase_amt = 0;
@@ -175,11 +179,11 @@
                     <!-- Invoice Heading Row -->
                     <tr class="customer-row">
                         <td colspan="4" class="text-left">
-                            PUR No: <b style="color: #000;">{{ $invoiceNo }}</b> &nbsp;&nbsp;&nbsp; 
+                            PUR No: <b style="color: #000;">{{ $displayInv }}</b> &nbsp;&nbsp;&nbsp; 
                             Date: <b style="color: #000;">{{ $purchaseDate }}</b>
                         </td>
                         <td colspan="3" class="text-right">
-                            Vendor: <b style="color: #000;">{{ $vendor ? strtoupper($vendor->name) : 'N/A' }}</b>
+                            Supplier: <b style="color: #000;">{{ $partyName }}</b>
                         </td>
                     </tr>
 

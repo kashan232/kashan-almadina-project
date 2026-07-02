@@ -21,6 +21,17 @@ class PurchaseReportController extends Controller
         return !empty($selected) && ($total === 0 || count($selected) < $total);
     }
 
+    /** Match purchase list date column (current_date). */
+    private function applyPurchaseDateFilter($query, ?string $from_date, ?string $to_date): void
+    {
+        if (!empty($from_date)) {
+            $query->whereRaw('DATE(COALESCE(current_date, entry_date, created_at)) >= ?', [$from_date]);
+        }
+        if (!empty($to_date)) {
+            $query->whereRaw('DATE(COALESCE(current_date, entry_date, created_at)) <= ?', [$to_date]);
+        }
+    }
+
     public function index()
     {
         $userGroups = UserGroup::orderBy('group_name')->get();
@@ -42,7 +53,6 @@ class PurchaseReportController extends Controller
 
     public function preview(Request $request)
     {
-        // Extract filters
         $user_groups = $request->user_group ?? [];
         $sales_officers = $request->sales_officer ?? [];
         $warehouses = $request->warehouse ?? [];
@@ -59,76 +69,90 @@ class PurchaseReportController extends Controller
 
         $totalGroups = UserGroup::count();
         $totalUsers = User::count();
-        $totalPartyTypes = 3; // Main Customer, Walking Customer, Vendor
+        $totalPartyTypes = 3;
         $totalParties = Customer::count() + Vendor::count();
-        $totalWarehouses = Warehouse::count() + 1; // + Shop
+        $totalWarehouses = Warehouse::count() + 1;
         $totalCategories = Category::count();
         $totalSubcategories = Subcategory::count();
         $totalBrands = Brand::count();
         $totalProducts = Product::count();
 
-        // Build Query
-        $query = PurchaseItem::with(['purchase.vendor', 'purchase.purchasable', 'product.brandRelation', 'product.sub_category_relation', 'product.latestPrice'])
-            ->whereHas('purchase', function($q) use ($from_date, $to_date, $invoice_no, $parties, $party_types, $sales_officers, $user_groups, $warehouses, $totalGroups, $totalUsers, $totalPartyTypes, $totalParties, $totalWarehouses) {
-                $q->where('status', 'Posted');
-                if (!empty($from_date)) {
-                    $q->whereDate('created_at', '>=', $from_date);
-                }
-                if (!empty($to_date)) {
-                    $q->whereDate('created_at', '<=', $to_date);
-                }
-                if (!empty($invoice_no)) {
-                    $q->where('invoice_no', 'like', "%$invoice_no%");
-                }
-                if ($this->shouldApplyFilter($parties, $totalParties)) {
-                    $q->where(function ($sub) use ($parties) {
-                        $sub->whereIn('vendor_id', $parties)
-                            ->orWhereIn('purchasable_id', $parties);
-                    });
-                }
-                if ($this->shouldApplyFilter($sales_officers, $totalUsers)) {
-                    $q->whereIn('created_by', $sales_officers);
-                }
-                if ($this->shouldApplyFilter($user_groups, $totalGroups)) {
-                    $q->where(function ($sub) use ($user_groups) {
-                        foreach ($user_groups as $gid) {
-                            $sub->orWhereJsonContains('user_group_ids', (string) $gid)
-                                ->orWhereJsonContains('user_group_ids', (int) $gid);
-                        }
-                    });
-                }
-                if ($this->shouldApplyFilter($warehouses, $totalWarehouses)) {
-                    $q->whereIn('warehouse_id', $warehouses);
-                }
-                if ($this->shouldApplyFilter($party_types, $totalPartyTypes)) {
-                    $q->where(function ($pt) use ($party_types) {
-                        if (in_array('Vendor', $party_types)) {
-                            $pt->orWhere('purchasable_type', Vendor::class);
-                        }
-                        if (in_array('Main Customer', $party_types)) {
-                            $mainCustomerIds = Customer::where('customer_type', 'Main Customer')->pluck('id');
-                            $pt->orWhere(function ($sq) use ($mainCustomerIds) {
-                                $sq->where('purchasable_type', Customer::class)
-                                    ->whereIn('purchasable_id', $mainCustomerIds);
-                            });
-                        }
-                        if (in_array('Walking Customer', $party_types)) {
-                            $walkinCustomerIds = Customer::where('customer_type', 'Walking Customer')->pluck('id');
-                            $pt->orWhere(function ($sq) use ($walkinCustomerIds) {
-                                $sq->where('purchasable_type', Customer::class)
-                                    ->whereIn('purchasable_id', $walkinCustomerIds);
-                            });
-                        }
-                    });
-                }
-            });
+        $query = PurchaseItem::with([
+            'purchase' => function ($q) {
+                $q->withoutGlobalScopes()->with(['vendor', 'purchasable', 'warehouse', 'user']);
+            },
+            'product.brandRelation',
+            'product.sub_category_relation',
+            'product.latestPrice',
+        ])->whereHas('purchase', function ($q) use (
+            $from_date, $to_date, $invoice_no, $parties, $party_types,
+            $sales_officers, $user_groups, $warehouses,
+            $totalGroups, $totalUsers, $totalPartyTypes, $totalParties, $totalWarehouses
+        ) {
+            $q->withoutGlobalScopes();
+            $q->where('status', 'Posted');
 
-        // Apply Item level filters
+            $this->applyPurchaseDateFilter($q, $from_date, $to_date);
+
+            if (!empty($invoice_no)) {
+                $q->where(function ($sub) use ($invoice_no) {
+                    $sub->where('invoice_no', 'like', "%{$invoice_no}%")
+                        ->orWhere('invoice_no', 'like', '%' . ltrim($invoice_no, '0') . '%');
+                });
+            }
+            if ($this->shouldApplyFilter($parties, $totalParties)) {
+                $q->where(function ($sub) use ($parties) {
+                    $sub->whereIn('vendor_id', $parties)
+                        ->orWhereIn('purchasable_id', $parties);
+                });
+            }
+            if ($this->shouldApplyFilter($sales_officers, $totalUsers)) {
+                $q->whereIn('created_by', $sales_officers);
+            }
+            if ($this->shouldApplyFilter($user_groups, $totalGroups)) {
+                $q->where(function ($sub) use ($user_groups) {
+                    foreach ($user_groups as $gid) {
+                        $sub->orWhereJsonContains('user_group_ids', (string) $gid)
+                            ->orWhereJsonContains('user_group_ids', (int) $gid);
+                    }
+                });
+            }
+            if ($this->shouldApplyFilter($warehouses, $totalWarehouses)) {
+                $q->whereIn('warehouse_id', $warehouses);
+            }
+            if ($this->shouldApplyFilter($party_types, $totalPartyTypes)) {
+                $q->where(function ($pt) use ($party_types) {
+                    if (in_array('Vendor', $party_types)) {
+                        $pt->orWhere('purchasable_type', Vendor::class);
+                    }
+                    if (in_array('Main Customer', $party_types)) {
+                        $mainCustomerIds = Customer::where('customer_type', 'Main Customer')->pluck('id');
+                        $pt->orWhere(function ($sq) use ($mainCustomerIds) {
+                            $sq->where('purchasable_type', Customer::class)
+                                ->whereIn('purchasable_id', $mainCustomerIds);
+                        });
+                    }
+                    if (in_array('Walking Customer', $party_types)) {
+                        $walkinCustomerIds = Customer::where('customer_type', 'Walking Customer')->pluck('id');
+                        $pt->orWhere(function ($sq) use ($walkinCustomerIds) {
+                            $sq->where('purchasable_type', Customer::class)
+                                ->whereIn('purchasable_id', $walkinCustomerIds);
+                        });
+                    }
+                });
+            }
+        });
+
         if ($this->shouldApplyFilter($items, $totalProducts)) {
             $query->whereIn('product_id', $items);
         }
-        if ($this->shouldApplyFilter($brands, $totalBrands) || $this->shouldApplyFilter($categories, $totalCategories) || $this->shouldApplyFilter($subcategories, $totalSubcategories)) {
-            $query->whereHas('product', function($p) use ($brands, $categories, $subcategories, $totalBrands, $totalCategories, $totalSubcategories) {
+        if ($this->shouldApplyFilter($brands, $totalBrands)
+            || $this->shouldApplyFilter($categories, $totalCategories)
+            || $this->shouldApplyFilter($subcategories, $totalSubcategories)) {
+            $query->whereHas('product', function ($p) use (
+                $brands, $categories, $subcategories,
+                $totalBrands, $totalCategories, $totalSubcategories
+            ) {
                 if ($this->shouldApplyFilter($brands, $totalBrands)) {
                     $p->whereIn('brand_id', $brands);
                 }
@@ -149,16 +173,20 @@ class PurchaseReportController extends Controller
             return $this->previewItemWise($purchaseItems, $from_date, $to_date);
         } elseif ($report_type == 'Invoice Wise') {
             return $this->previewInvoiceWise($purchaseItems, $from_date, $to_date);
-        } else {
-            return back()->with('error', 'Invalid Report Type Selected');
         }
+
+        return back()->with('error', 'Invalid Report Type Selected');
+    }
+
+    private function partyKey($item): string
+    {
+        $purchase = $item->purchase;
+        return (string) ($purchase->purchasable_id ?? $purchase->vendor_id ?? '0');
     }
 
     private function previewPartyWise($purchaseItems, $from_date, $to_date)
     {
-        $grouped = $purchaseItems->groupBy(function($item) {
-            return $item->purchase->vendor_id;
-        });
+        $grouped = $purchaseItems->groupBy(fn ($item) => $this->partyKey($item));
 
         return view('admin_panel.reports.purchase.preview_party', compact('grouped', 'from_date', 'to_date'));
     }
@@ -172,14 +200,10 @@ class PurchaseReportController extends Controller
 
     private function previewInvoiceWise($purchaseItems, $from_date, $to_date)
     {
-        // Group by Vendor ID first, then by Invoice No
-        $grouped = $purchaseItems->groupBy(function($item) {
-            return $item->purchase->vendor_id;
-        })->map(function($items) {
-            return $items->groupBy(function($item) {
-                return $item->purchase->invoice_no;
+        $grouped = $purchaseItems->groupBy(fn ($item) => $this->partyKey($item))
+            ->map(function ($items) {
+                return $items->groupBy(fn ($item) => $item->purchase->invoice_no);
             });
-        });
 
         return view('admin_panel.reports.purchase.preview_invoice', compact('grouped', 'from_date', 'to_date'));
     }

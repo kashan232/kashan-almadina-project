@@ -161,7 +161,11 @@
 
             @foreach($grouped as $vendorId => $items)
                 @php
-                    $vendor = $items->first()->purchase->vendor;
+                    $firstPurchase = $items->first()->purchase;
+                    $party = $firstPurchase->purchasable;
+                    $partyName = $party
+                        ? strtoupper($party->name ?? $party->customer_name ?? 'N/A')
+                        : strtoupper($firstPurchase->vendor->name ?? 'N/A');
                     $party_qty = 0;
                     $party_purchase_amt = 0;
                     $party_retail_amt = 0;
@@ -169,7 +173,7 @@
                 
                 <tr class="party-heading-row">
                     <td colspan="8" class="text-left">
-                        VENDOR: {{ $vendor ? strtoupper($vendor->name) : 'N/A' }}
+                        SUPPLIER: {{ $partyName }}
                     </td>
                 </tr>
 
@@ -178,6 +182,8 @@
                         $qty = $item->qty;
                         $purchase_p = $item->net_rate;
                         $purchase_a = $item->line_total;
+                        $purchaseDate = \Carbon\Carbon::parse($item->purchase->current_date ?? $item->purchase->entry_date ?? $item->purchase->created_at)->format('d-m-y');
+                        $displayInv = preg_replace('/[^0-9]/', '', $item->purchase->invoice_no) ?: $item->purchase->invoice_no;
 
                         $latestPrice = $item->product->latestPrice;
                         $retail_p = $latestPrice ? $latestPrice->sale_retail_price : 0;
@@ -188,8 +194,8 @@
                         $party_retail_amt += $retail_a;
                     @endphp
                     <tr class="data-row">
-                        <td class="text-center">{{ $item->purchase->invoice_no }}</td>
-                        <td class="text-center">{{ \Carbon\Carbon::parse($item->purchase->created_at)->format('d-m-y') }}</td>
+                        <td class="text-center">{{ $displayInv }}</td>
+                        <td class="text-center">{{ $purchaseDate }}</td>
                         <td class="text-left">{{ $item->product ? $item->product->name : 'N/A' }}</td>
                         <td class="text-center">{{ number_format($qty) }}</td>
                         <td class="text-right">{{ number_format($retail_p, 0) }}</td>

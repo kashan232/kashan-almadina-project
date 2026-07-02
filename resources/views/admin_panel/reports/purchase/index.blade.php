@@ -209,7 +209,7 @@
                                 </div>
                                 <div class="col-md-3">
                                     <label class="fw-bold mb-1" style="font-size: 11px;">From Date</label>
-                                    <input type="date" name="from_date" class="form-control form-control-sm" value="{{ date('Y-m-01') }}" style="height: 30px; font-size: 12px;">
+                                    <input type="date" name="from_date" class="form-control form-control-sm" value="{{ date('Y-01-01') }}" style="height: 30px; font-size: 12px;">
                                 </div>
                                 <div class="col-md-3">
                                     <label class="fw-bold mb-1" style="font-size: 11px;">To Date</label>
