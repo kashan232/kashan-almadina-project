@@ -44,6 +44,15 @@ class ClaimItemReceipt extends Model
         return $this->belongsTo(User::class, 'created_by');
     }
 
+    public function partyName(): string
+    {
+        if ($this->party_type === 'vendor') {
+            return strtoupper($this->vendor->name ?? 'N/A');
+        }
+
+        return strtoupper($this->customer->customer_name ?? 'N/A');
+    }
+
     public static function generateVoucherNo()
     {
         $latest = self::withoutGlobalScopes()->orderBy('id', 'desc')->first();

@@ -555,7 +555,7 @@
                       @endcanany
 
                       {{-- Reports Section --}}
-                      @canany(['Reports Dashboard', 'Sales Report', 'Purchase Report', 'Claim Report', 'Claim Acceptance Report'])
+                      @canany(['Reports Dashboard', 'Sales Report', 'Purchase Report', 'Claim Report', 'Claim Acceptance Report', 'Claim Receipt Report'])
                       <li class="nav-item">
                           <a href="#" class="nav-link">
                               <span class="menu-title">Reports</span>
@@ -600,6 +600,14 @@
                                       <a class="nav-link" href="{{ route('reports.claim-acceptance.index') }}">
                                           <i class="fa-solid fa-check-double mr-2"></i>
                                           <span>Claim Acceptance Report</span>
+                                      </a>
+                                  </li>
+                                  @endcan
+                                  @can('Claim Receipt Report')
+                                  <li class="nav-item">
+                                      <a class="nav-link" href="{{ route('reports.claim-item-receipt.index') }}">
+                                          <i class="fa-solid fa-file-invoice-dollar mr-2"></i>
+                                          <span>Claim Receipt Report</span>
                                       </a>
                                   </li>
                                   @endcan
