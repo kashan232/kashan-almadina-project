@@ -178,7 +178,16 @@
                         </div>
                         <div class="card-body p-2">
                             <div class="row g-2 align-items-end">
-                                <div class="col-md-3">
+                                <div class="col-md-2">
+                                    <label class="fw-bold mb-1" style="font-size: 11px;">Transaction Type</label>
+                                    <select name="transaction_type" class="form-select form-select-sm" required style="height: 30px; font-size: 12px;">
+                                        <option value="purchase" selected>Purchase</option>
+                                        <option value="purchase_return">Purchase Return</option>
+                                        <option value="claim_credit_note">Claim Credit Note</option>
+                                        <option value="both">All (Return &amp; Credit Minus)</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-2">
                                     <label class="fw-bold mb-1" style="font-size: 11px;">Purchase No.</label>
                                     <input type="text" name="invoice_no" class="form-control form-control-sm" placeholder="PUR-..." style="height: 30px; font-size: 12px;">
                                 </div>
@@ -190,11 +199,11 @@
                                         <option value="Party Wise">Party Wise</option>
                                     </select>
                                 </div>
-                                <div class="col-md-3">
+                                <div class="col-md-2">
                                     <label class="fw-bold mb-1" style="font-size: 11px;">From Date</label>
                                     <input type="date" name="from_date" class="form-control form-control-sm" value="{{ date('Y-01-01') }}" style="height: 30px; font-size: 12px;">
                                 </div>
-                                <div class="col-md-3">
+                                <div class="col-md-2">
                                     <label class="fw-bold mb-1" style="font-size: 11px;">To Date</label>
                                     <input type="date" name="to_date" class="form-control form-control-sm" value="{{ date('Y-m-d') }}" style="height: 30px; font-size: 12px;">
                                 </div>

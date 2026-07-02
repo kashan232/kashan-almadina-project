@@ -117,6 +117,7 @@
             body { padding: 0; }
             tr { page-break-inside: avoid; }
         }
+        @include('admin_panel.reports.purchase.partials.report_line_styles')
     </style>
 </head>
 <body>
@@ -136,14 +137,15 @@
     <table>
         <thead>
             <tr>
-                <th width="10%">PUR No.</th>
-                <th width="10%">Date</th>
-                <th width="20%" class="text-left">Vendor Name</th>
-                <th width="8%">Qty</th>
-                <th width="12%">Retail Price</th>
-                <th width="13%">Retail Value</th>
-                <th width="12%">Purchase Rate</th>
-                <th width="15%">Net Amount</th>
+                <th width="9%">PUR No.</th>
+                <th width="9%">Date</th>
+                <th width="10%">Type</th>
+                <th width="18%" class="text-left">Vendor Name</th>
+                <th width="7%">Qty</th>
+                <th width="11%">Retail Price</th>
+                <th width="12%">Retail Value</th>
+                <th width="11%">Purchase Rate</th>
+                <th width="13%">Net Amount</th>
             </tr>
         </thead>
         <tbody>
@@ -155,7 +157,7 @@
 
             @if($grouped->isEmpty())
                 <tr>
-                    <td colspan="8" style="text-align: center; padding: 50px;">No Data Found</td>
+                    <td colspan="10" style="text-align: center; padding: 50px;">No Data Found</td>
                 </tr>
             @endif
 
@@ -168,7 +170,7 @@
                 @endphp
                 
                 <tr class="item-heading-row">
-                    <td colspan="8" class="text-left" style="border-top: 2px solid #000;">
+                    <td colspan="10" class="text-left" style="border-top: 2px solid #000;">
                         ITEM: {{ $product ? strtoupper($product->name) : 'N/A' }} 
                         <span class="ms-3" style="color: #666;">( {{ $product && $product->brandRelation ? strtoupper($product->brandRelation->name) : '-' }} )</span>
                     </td>
@@ -194,9 +196,10 @@
                         $item_purchase_amt += $purchase_a;
                         $item_retail_amt += $retail_a;
                     @endphp
-                    <tr class="data-row">
+                    <tr class="data-row {{ ($item->entry_type ?? 'purchase') !== 'purchase' ? 'return-row' : '' }}">
                         <td class="text-center">{{ $displayInv }}</td>
                         <td class="text-center">{{ $purchaseDate }}</td>
+                        @include('admin_panel.reports.purchase.partials.type_cell', ['item' => $item])
                         <td class="text-left">{{ $partyName }}</td>
                         <td class="text-center">{{ number_format($qty) }}</td>
                         <td class="text-right">{{ number_format($retail_p, 0) }}</td>
@@ -207,14 +210,14 @@
                 @endforeach
 
                 <tr class="total-row">
-                    <td colspan="3" class="text-right">Total:</td>
+                    <td colspan="4" class="text-right">Total:</td>
                     <td class="qty-box">{{ number_format($item_qty) }}</td>
                     <td style="border:none; background:none;"></td>
                     <td class="val-box">{{ number_format($item_retail_amt, 0) }}</td>
                     <td style="border:none; background:none;"></td>
                     <td class="val-box">{{ number_format($item_purchase_amt, 0) }}</td>
                 </tr>
-                <tr style="height: 25px;"><td colspan="8" style="border:none;"></td></tr>
+                <tr style="height: 25px;"><td colspan="10" style="border:none;"></td></tr>
 
                 @php
                     $grand_qty += $item_qty;
@@ -224,7 +227,7 @@
             @endforeach
 
             <tr class="grand-total-row">
-                <td colspan="3" class="text-right">Grand Total:</td>
+                <td colspan="4" class="text-right">Grand Total:</td>
                 <td class="qty-box" style="background-color: #cfd8dc;">{{ number_format($grand_qty) }}</td>
                 <td style="border:none; background:none;"></td>
                 <td class="val-box" style="background-color: #fce4ec;">{{ number_format($grand_retail_amt, 0) }}</td>
