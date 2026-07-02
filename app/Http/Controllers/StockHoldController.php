@@ -678,6 +678,18 @@ class StockHoldController extends Controller
     ): ?StockHold {
         $remaining = $releaseQty;
         $primaryHold = null;
+        $explicitHold = null;
+
+        if ($explicitHoldId) {
+            $explicitHold = StockHold::withoutGlobalScopes()->find($explicitHoldId);
+            if ($explicitHold && (int) $explicitHold->product_id === $productId) {
+                $primaryHold = $explicitHold;
+            }
+        }
+
+        if (!$holdVoucherId && $explicitHold?->stock_hold_voucher_id) {
+            $holdVoucherId = (int) $explicitHold->stock_hold_voucher_id;
+        }
 
         $query = StockHold::withoutGlobalScopes()
             ->where('product_id', $productId)
@@ -686,19 +698,27 @@ class StockHoldController extends Controller
             })
             ->where('hold_qty', '>', 0);
 
-        if ($explicitHoldId) {
-            $query->where('id', $explicitHoldId);
-        } elseif ($claimId) {
+        if ($claimId) {
             $query->where('meta->claim_id', (string) $claimId);
         } elseif ($holdVoucherId) {
             $query->where('stock_hold_voucher_id', $holdVoucherId);
         } elseif ($partyType && $partyId) {
             $query->where('party_type', $partyType)->where('party_id', $partyId);
+        } elseif ($explicitHoldId) {
+            if ($explicitHold?->stock_hold_voucher_id) {
+                $query->where('stock_hold_voucher_id', $explicitHold->stock_hold_voucher_id);
+            } else {
+                $query->where('id', $explicitHoldId);
+            }
         } else {
-            return null;
+            return $this->applyReleaseOverflow($productId, $releaseQty, $partyType, $partyId, null);
         }
 
+        if ($explicitHoldId) {
+            $query->orderByRaw('CASE WHEN id = ? THEN 0 ELSE 1 END', [$explicitHoldId]);
+        }
         $holds = $query->orderBy('id')->get();
+
         foreach ($holds as $hold) {
             if ($remaining <= 0) {
                 break;
@@ -708,15 +728,80 @@ class StockHoldController extends Controller
             }
 
             $deduct = min((float) $hold->hold_qty, $remaining);
-            $hold->hold_qty = max(0, (float) $hold->hold_qty - $deduct);
-            if ($hold->hold_qty <= 0) {
-                $hold->status = 1;
-            }
+            $hold->hold_qty = (float) $hold->hold_qty - $deduct;
+            $hold->status = (float) $hold->hold_qty <= 0 ? 1 : 0;
             $hold->save();
             $remaining -= $deduct;
         }
 
+        if ($remaining > 0) {
+            $overflowHold = $primaryHold ?? $explicitHold ?? $this->findReleaseOverflowHold($productId, $partyType, $partyId);
+            if (!$overflowHold) {
+                $overflowHold = $this->createReleaseOverflowHold($productId, $partyType, $partyId, $explicitHold?->warehouse_id);
+            }
+
+            $overflowHold->hold_qty = (float) $overflowHold->hold_qty - $remaining;
+            $overflowHold->status = (float) $overflowHold->hold_qty < 0 ? 0 : (((float) $overflowHold->hold_qty == 0) ? 1 : 0);
+            $overflowHold->save();
+            $primaryHold = $primaryHold ?? $overflowHold;
+        }
+
         return $primaryHold;
+    }
+
+    /** When no hold link exists, still track reserved impact (can go negative / over-release). */
+    private function applyReleaseOverflow(
+        int $productId,
+        float $releaseQty,
+        ?string $partyType = null,
+        ?int $partyId = null,
+        ?StockHold $preferredHold = null
+    ): ?StockHold {
+        $hold = $preferredHold ?? $this->findReleaseOverflowHold($productId, $partyType, $partyId);
+        if (!$hold) {
+            $hold = $this->createReleaseOverflowHold($productId, $partyType, $partyId, null);
+        }
+
+        $hold->hold_qty = (float) $hold->hold_qty - $releaseQty;
+        $hold->status = (float) $hold->hold_qty < 0 ? 0 : (((float) $hold->hold_qty == 0) ? 1 : 0);
+        $hold->save();
+
+        return $hold;
+    }
+
+    private function findReleaseOverflowHold(int $productId, ?string $partyType, ?int $partyId): ?StockHold
+    {
+        $query = StockHold::withoutGlobalScopes()
+            ->where('product_id', $productId)
+            ->where(function ($q) {
+                $q->where('status', 0)->orWhereNull('status');
+            });
+
+        if ($partyType && $partyId) {
+            $query->where('party_type', $partyType)->where('party_id', $partyId);
+        }
+
+        return $query->orderByRaw('CASE WHEN hold_qty <= 0 THEN 0 ELSE 1 END')
+            ->orderByDesc('id')
+            ->first();
+    }
+
+    private function createReleaseOverflowHold(
+        int $productId,
+        ?string $partyType,
+        ?int $partyId,
+        $warehouseId
+    ): StockHold {
+        return StockHold::create([
+            'product_id'   => $productId,
+            'party_type'   => $partyType,
+            'party_id'     => $partyId,
+            'warehouse_id' => $warehouseId ?? 0,
+            'hold_qty'     => 0,
+            'status'       => 0,
+            'entry_date'   => now()->toDateString(),
+            'entry_time'   => now()->format('H:i'),
+        ]);
     }
 
     private function adjustStock($warehouseId, $productId, $qty)
