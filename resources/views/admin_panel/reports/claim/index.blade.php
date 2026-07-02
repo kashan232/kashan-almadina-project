@@ -143,7 +143,16 @@
                         </div>
                         <div class="card-body p-2">
                             <div class="row g-2 align-items-end">
-                                <div class="col-md-3">
+                                <div class="col-md-2">
+                                    <label class="fw-bold mb-1" style="font-size: 11px;">Claim Type</label>
+                                    <select name="claim_entry_type" class="form-select form-select-sm" required style="height: 30px; font-size: 12px;">
+                                        <option value="all" selected>All Types</option>
+                                        <option value="item_return">Item Return</option>
+                                        <option value="credit_note">Credit Note</option>
+                                        <option value="claim_hold">Claim Hold</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-2">
                                     <label class="fw-bold mb-1" style="font-size: 11px;">Claim No.</label>
                                     <input type="text" name="claim_no" class="form-control form-control-sm" placeholder="CLM-..." style="height: 30px; font-size: 12px;">
                                 </div>
@@ -151,15 +160,17 @@
                                     <label class="fw-bold mb-1" style="font-size: 11px;">Report Type</label>
                                     <select name="report_type" class="form-select form-select-sm" required style="height: 30px; font-size: 12px;">
                                         <option value="Party Wise" selected>Party Wise</option>
+                                        <option value="Claim Type Wise">Claim Type Wise</option>
+                                        <option value="Brand Wise">Brand Wise</option>
                                         <option value="Item Wise">Item Wise</option>
                                         <option value="Claim Wise">Claim Wise</option>
                                     </select>
                                 </div>
-                                <div class="col-md-3">
+                                <div class="col-md-2">
                                     <label class="fw-bold mb-1" style="font-size: 11px;">From Date</label>
                                     <input type="date" name="from_date" class="form-control form-control-sm" value="{{ date('Y-01-01') }}" style="height: 30px; font-size: 12px;">
                                 </div>
-                                <div class="col-md-3">
+                                <div class="col-md-2">
                                     <label class="fw-bold mb-1" style="font-size: 11px;">To Date</label>
                                     <input type="date" name="to_date" class="form-control form-control-sm" value="{{ date('Y-m-d') }}" style="height: 30px; font-size: 12px;">
                                 </div>

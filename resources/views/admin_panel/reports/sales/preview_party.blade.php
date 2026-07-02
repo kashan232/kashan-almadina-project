@@ -80,6 +80,14 @@
             text-decoration: underline;
         }
 
+        .inv-meta-row td {
+            background-color: #f5f5f5;
+            border: 1px solid #ddd;
+            padding: 6px 6px 4px 6px;
+            font-weight: bold;
+            font-size: 11px;
+        }
+
         /* Data Row */
         .data-row td {
             border: 1px solid #999;
@@ -132,6 +140,7 @@
             body { padding: 0; }
             tr { page-break-inside: avoid; }
         }
+        @include('admin_panel.reports.sales.partials.report_line_styles')
     </style>
 </head>
 <body>
@@ -151,14 +160,13 @@
     <table>
         <thead>
             <tr>
-                <th width="8%">Invoice No.</th>
-                <th width="10%">Date</th>
-                <th width="20%" class="text-left">Item Description</th>
-                <th width="8%">Sub-Category</th>
+                <th width="8%">Type</th>
+                <th width="22%" class="text-left">Item Description</th>
+                <th width="10%">Brand</th>
                 <th width="5%">Qty</th>
-                <th width="8%">Retail Price</th>
-                <th width="10%">Retail Amount</th>
-                <th width="10%">Rate</th>
+                <th width="9%">Retail Price</th>
+                <th width="11%">Retail Amount</th>
+                <th width="9%">Rate</th>
                 <th width="12%">Amount</th>
             </tr>
         </thead>
@@ -172,7 +180,7 @@
 
             @if($grouped->isEmpty())
                 <tr>
-                    <td colspan="11" style="text-align: center; padding: 50px;">No Data Found</td>
+                    <td colspan="8" style="text-align: center; padding: 50px;">No Data Found</td>
                 </tr>
             @endif
 
@@ -185,17 +193,25 @@
                     $party_invoice_amt = 0;
                 @endphp
                 
-                <!-- Party Heading -->
-                <tr class="party-heading-row">
-                    <td colspan="6" class="text-left">
-                        <span class="party-name">{{ $customer ? strtoupper($customer->customer_name) : 'CASH CUSTOMER' }}</span>
-                    </td>
-                    <td colspan="5" class="text-right">
-                        <span class="party-name">{{ $customer ? $customer->cnic : '' }}</span>
-                    </td>
-                </tr>
+                @foreach($items->groupBy(fn ($row) => $row->sale->invoice_no) as $invoiceNo => $invoiceItems)
+                    @php
+                        $saleDate = \Carbon\Carbon::parse($invoiceItems->first()->sale->created_at)->format('d-m-y');
+                        $invCustomer = $invoiceItems->first()->sale->customer;
+                        $customerName = $invCustomer ? strtoupper($invCustomer->customer_name) : 'CASH CUSTOMER';
+                        $customerCnic = $invCustomer?->cnic ?? '';
+                    @endphp
+                    @include('admin_panel.reports.sales.partials.heading_inv_date', [
+                        'colspan' => 8,
+                        'invoiceNo' => $invoiceNo,
+                        'saleDate' => $saleDate,
+                    ])
+                    @include('admin_panel.reports.sales.partials.heading_customer', [
+                        'colspan' => 8,
+                        'customerName' => $customerName,
+                        'customerCnic' => $customerCnic,
+                    ])
 
-                @foreach($items as $item)
+                @foreach($invoiceItems as $item)
                     @php
                         $qty = $item->sales_qty;
                         $retail_p = $item->retail_price ?? 0;
@@ -210,11 +226,10 @@
                         $party_sales_amt += $sales_a;
                         $party_invoice_amt += $invoice_a;
                     @endphp
-                    <tr class="data-row">
-                        <td class="text-center">{{ $item->sale->invoice_no }}</td>
-                        <td class="text-center">{{ \Carbon\Carbon::parse($item->sale->created_at)->format('d-m-y') }}</td>
+                    <tr class="data-row {{ ($item->entry_type ?? 'sale') === 'sale_return' ? 'return-row' : '' }}">
+                        @include('admin_panel.reports.sales.partials.type_cell', ['item' => $item])
                         <td class="text-left">{{ $item->product ? $item->product->name : 'N/A' }}</td>
-                        <td class="text-center">{{ $item->product && $item->product->sub_category_relation ? $item->product->sub_category_relation->name : '-' }}</td>
+                        @include('admin_panel.reports.sales.partials.brand_cell', ['item' => $item])
                         <td class="text-center">{{ number_format($qty) }}</td>
                         <td class="text-right">{{ number_format($retail_p, 0) }}</td>
                         <td class="text-right bold-val">{{ number_format($retail_a, 0) }}</td>
@@ -222,18 +237,18 @@
                         <td class="text-right bold-val">{{ number_format($sales_a, 0) }}</td>
                     </tr>
                 @endforeach
+                @endforeach
 
                 <!-- Party Total Row -->
                 <tr class="total-row">
-                    <td colspan="4" class="text-right">Total:</td>
+                    <td colspan="3" class="text-right">Total:</td>
                     <td class="qty-box">{{ number_format($party_qty) }}</td>
                     <td style="border:none; background:none;"></td>
                     <td class="val-box">{{ number_format($party_retail_amt, 0) }}</td>
                     <td style="border:none; background:none;"></td>
                     <td class="sales-amt-box">{{ number_format($party_sales_amt, 0) }}</td>
                 </tr>
-                <!-- Separation Gap -->
-                <tr style="height: 25px;"><td colspan="11" style="border:none;"></td></tr>
+                <tr style="height: 25px;"><td colspan="8" style="border:none;"></td></tr>
 
                 @php
                     $grand_qty += $party_qty;
@@ -245,7 +260,7 @@
 
             <!-- Grand Total -->
             <tr class="grand-total-row">
-                <td colspan="4" class="text-right">Grand Total:</td>
+                <td colspan="3" class="text-right">Grand Total:</td>
                 <td class="qty-box" style="background-color: #cfd8dc;">{{ number_format($grand_qty) }}</td>
                 <td style="border:none; background:none;"></td>
                 <td class="val-box" style="background-color: #bbdefb;">{{ number_format($grand_retail_amt, 0) }}</td>

@@ -56,6 +56,7 @@ class ClaimReportController extends Controller
         $partyTypes = $request->party_type ?? [];
         $parties = $request->party ?? [];
         $claimNo = $request->claim_no;
+        $claimEntryType = $request->input('claim_entry_type', 'all');
         $reportType = $request->report_type;
         $from_date = $request->from_date;
         $to_date = $request->to_date;
@@ -106,6 +107,10 @@ class ClaimReportController extends Controller
             $query->whereIn('claim_type', $claimTypes);
         }
 
+        if ($claimEntryType !== 'all') {
+            $query->where('claim_type', $claimEntryType);
+        }
+
         if ($this->shouldApplyFilter($items, $totalProducts)) {
             $query->whereIn('product_id', $items);
         }
@@ -134,6 +139,12 @@ class ClaimReportController extends Controller
         if ($reportType === 'Party Wise') {
             return $this->previewPartyWise($claims, $from_date, $to_date);
         }
+        if ($reportType === 'Claim Type Wise') {
+            return $this->previewClaimTypeWise($claims, $from_date, $to_date);
+        }
+        if ($reportType === 'Brand Wise') {
+            return $this->previewBrandWise($claims, $from_date, $to_date);
+        }
         if ($reportType === 'Item Wise') {
             return $this->previewItemWise($claims, $from_date, $to_date);
         }
@@ -154,6 +165,33 @@ class ClaimReportController extends Controller
         $grouped = $claims->groupBy(fn ($claim) => $this->partyKey($claim));
 
         return view('admin_panel.reports.claim.preview_party', compact('grouped', 'from_date', 'to_date'));
+    }
+
+    private function previewClaimTypeWise($claims, $from_date, $to_date)
+    {
+        $order = ['item_return', 'credit_note', 'claim_hold'];
+        $grouped = $claims->groupBy('claim_type')->sortBy(function ($items, $type) use ($order) {
+            $index = array_search($type, $order, true);
+            return $index === false ? 99 : $index;
+        });
+
+        return view('admin_panel.reports.claim.preview_claim_type', compact('grouped', 'from_date', 'to_date'));
+    }
+
+    private function previewBrandWise($claims, $from_date, $to_date)
+    {
+        $sorted = $claims->sortBy(fn ($claim) => [
+            $claim->product?->brandRelation?->name ?? 'ZZZ',
+            $claim->product?->name ?? '',
+            $claim->claim_date,
+            $claim->id,
+        ]);
+
+        $grouped = $sorted
+            ->groupBy(fn ($claim) => $claim->product?->brandRelation?->name ?? 'N/A')
+            ->map(fn ($brandClaims) => $brandClaims->groupBy('product_id'));
+
+        return view('admin_panel.reports.claim.preview_brand', compact('grouped', 'from_date', 'to_date'));
     }
 
     private function previewItemWise($claims, $from_date, $to_date)

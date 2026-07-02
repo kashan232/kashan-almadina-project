@@ -144,6 +144,7 @@
             body { padding: 0; }
             tr { page-break-inside: avoid; }
         }
+        @include('admin_panel.reports.sales.partials.report_line_styles')
     </style>
 </head>
 <body>
@@ -163,12 +164,13 @@
     <table>
         <thead>
             <tr>
-                <th width="30%">Item Description</th>
-                <th width="10%">Sub-Category</th>
+                <th width="8%">Type</th>
+                <th width="26%" class="text-left">Item Description</th>
+                <th width="10%">Brand</th>
                 <th width="5%">Qty</th>
-                <th width="8%">Retail Price</th>
-                <th width="10%">Retail Amount</th>
-                <th width="8%">Rate</th>
+                <th width="9%">Retail Price</th>
+                <th width="11%">Retail Amount</th>
+                <th width="9%">Rate</th>
                 <th width="12%">Amount</th>
             </tr>
         </thead>
@@ -197,12 +199,13 @@
                     <!-- Invoice Heading Row -->
                     <tr class="customer-row">
                         <td colspan="4" class="text-left">
-                            Inv.No: <b style="color: #000;">{{ $invoiceNo }}</b> &nbsp;&nbsp;&nbsp; 
-                            Date: <b style="color: #000;">{{ $saleDate }}</b>
-                        </td>
-                        <td colspan="5" class="text-right">
-                            Customer: <b style="color: #000;">{{ $customer ? strtoupper($customer->customer_name) : 'CASH CUSTOMER' }}</b> 
+                            Customer: <b style="color: #000;">{{ $customer ? strtoupper($customer->customer_name) : 'CASH CUSTOMER' }}</b>
                             {{ $customer && $customer->cnic ? ' - '.$customer->cnic : '' }}
+                        </td>
+                        <td colspan="4" class="text-right">
+                            Inv.No: <b style="color: #000;">{{ $invoiceNo }}</b>
+                            &nbsp;&nbsp;&nbsp;
+                            Date: <b style="color: #000;">{{ $saleDate }}</b>
                         </td>
                     </tr>
 
@@ -222,9 +225,10 @@
                             $inv_sales_amt += $sales_a;
                             $inv_invoice_amt += $invoice_a;
                         @endphp
-                        <tr class="item-row">
+                        <tr class="item-row {{ ($item->entry_type ?? 'sale') === 'sale_return' ? 'return-row' : '' }}">
+                            @include('admin_panel.reports.sales.partials.type_cell', ['item' => $item])
                             <td>{{ $item->product ? $item->product->name : 'N/A' }}</td>
-                            <td class="text-center">{{ $item->product && $item->product->sub_category_relation ? $item->product->sub_category_relation->name : '-' }}</td>
+                            @include('admin_panel.reports.sales.partials.brand_cell', ['item' => $item])
                             <td class="text-center">{{ number_format($qty) }}</td>
                             <td class="text-right">{{ number_format($retail_p, 0) }}</td>
                             <td class="text-right">{{ number_format($retail_a, 0) }}</td>
@@ -235,15 +239,14 @@
 
                     <!-- Invoice Total Row -->
                     <tr class="subtotal-row">
-                        <td colspan="2" class="text-right">Total:</td>
+                        <td colspan="3" class="text-right">Total:</td>
                         <td class="qty-box">{{ number_format($inv_qty) }}</td>
                         <td style="border:none; background:none;"></td>
                         <td class="val-box">{{ number_format($inv_retail_amt, 0) }}</td>
                         <td style="border:none; background:none;"></td>
                         <td class="val-box">{{ number_format($inv_sales_amt, 0) }}</td>
                     </tr>
-                    <!-- Separation Gap -->
-                    <tr style="height: 25px;"><td colspan="9" style="border:none;"></td></tr>
+                    <tr style="height: 25px;"><td colspan="8" style="border:none;"></td></tr>
 
                     @php
                         $grand_qty += $inv_qty;
@@ -256,7 +259,7 @@
 
             <!-- Grand Total -->
             <tr class="grand-total-row">
-                <td colspan="2" class="text-right">Grand Total:</td>
+                <td colspan="3" class="text-right">Grand Total:</td>
                 <td class="grand-qty-box">{{ number_format($grand_qty) }}</td>
                 <td style="border:none; background:none;"></td>
                 <td class="grand-val-box">{{ number_format($grand_retail_amt, 0) }}</td>

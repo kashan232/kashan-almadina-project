@@ -14,4 +14,14 @@ class SaleReturnItem extends Model
     {
         return $this->belongsTo(Product::class, 'product_id');
     }
+
+    public function saleReturn()
+    {
+        return $this->belongsTo(SaleReturn::class, 'sale_return_id');
+    }
+
+    public function warehouse()
+    {
+        return $this->belongsTo(Warehouse::class)->withoutGlobalScopes();
+    }
 }

@@ -65,7 +65,7 @@
             vertical-align: middle;
         }
 
-        /* Sub-Category Heading Row */
+        /* Brand Heading Row */
         .brand-heading-row td {
             background-color: #fff;
             border: none;
@@ -120,6 +120,7 @@
             body { padding: 0; }
             tr { page-break-inside: avoid; }
         }
+        @include('admin_panel.reports.sales.partials.report_line_styles')
     </style>
 </head>
 <body>
@@ -139,8 +140,8 @@
     <table>
         <thead>
             <tr>
-                <th width="15%">Sub-Category</th>
-                <th width="45%" class="text-left">Item Name</th>
+                <th width="12%">Type</th>
+                <th width="43%" class="text-left">Item Name</th>
                 <th width="10%">Qty</th>
                 <th width="15%">Retail Price</th>
                 <th width="15%">Retail Value</th>
@@ -160,7 +161,7 @@
                     $b_qty = 0; $b_retail_val = 0;
                 @endphp
                 
-                <!-- Sub-Category Heading -->
+                <!-- Brand Heading -->
                 <tr class="brand-heading-row">
                     <td colspan="5" class="text-left" style="border-top: 2px solid #000; padding-top: 15px;">{{ strtoupper($brandName) }}</td>
                 </tr>
@@ -174,8 +175,8 @@
                         $b_qty += $qty;
                         $b_retail_val += $value;
                     @endphp
-                    <tr class="item-row">
-                        <td class="text-left">{{ $item->product && $item->product->sub_category_relation ? $item->product->sub_category_relation->name : 'N/A' }}</td>
+                    <tr class="item-row {{ ($item->entry_type ?? 'sale') === 'sale_return' ? 'return-row' : '' }}">
+                        @include('admin_panel.reports.sales.partials.type_cell', ['item' => $item])
                         <td class="text-left">{{ $item->product ? $item->product->name : 'N/A' }}</td>
                         <td class="text-center">{{ number_format($qty) }}</td>
                         <td class="text-right">{{ number_format($price, 0) }}</td>

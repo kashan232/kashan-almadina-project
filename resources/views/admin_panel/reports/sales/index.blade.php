@@ -195,7 +195,15 @@
                         </div>
                         <div class="card-body p-2">
                             <div class="row g-2 align-items-end">
-                                <div class="col-md-3">
+                                <div class="col-md-2">
+                                    <label class="fw-bold mb-1" style="font-size: 11px;">Transaction Type</label>
+                                    <select name="transaction_type" class="form-select form-select-sm" required style="height: 30px; font-size: 12px;">
+                                        <option value="sale" selected>Sale</option>
+                                        <option value="sale_return">Sale Return</option>
+                                        <option value="both">Both (Return Minus)</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-2">
                                     <label class="fw-bold mb-1" style="font-size: 11px;">Invoice No.</label>
                                     <input type="text" name="invoice_no" class="form-control form-control-sm" placeholder="Invoice No" style="height: 30px; font-size: 12px;">
                                 </div>
@@ -211,11 +219,11 @@
                                         <option value="Sale vs List">Sale vs List</option>
                                     </select>
                                 </div>
-                                <div class="col-md-3">
+                                <div class="col-md-2">
                                     <label class="fw-bold mb-1" style="font-size: 11px;">From Date</label>
                                     <input type="date" name="from_date" class="form-control form-control-sm" value="{{ date('Y-m-01') }}" style="height: 30px; font-size: 12px;">
                                 </div>
-                                <div class="col-md-3">
+                                <div class="col-md-2">
                                     <label class="fw-bold mb-1" style="font-size: 11px;">To Date</label>
                                     <input type="date" name="to_date" class="form-control form-control-sm" value="{{ date('Y-m-d') }}" style="height: 30px; font-size: 12px;">
                                 </div>
