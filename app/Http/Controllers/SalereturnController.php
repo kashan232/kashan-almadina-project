@@ -46,18 +46,28 @@ class SaleReturnController extends Controller
 
     private function generateReturnNo()
     {
-        $lastReturn = DB::table('sale_returns')->orderBy('id', 'desc')->first();
-        $num = 0;
-        if ($lastReturn && isset($lastReturn->invoice_no)) {
-            $num = (int) preg_replace('/[^0-9]/', '', $lastReturn->invoice_no);
+        // Get all invoice numbers that start with SR-
+        $invoices = DB::table('sale_returns')
+            ->where('invoice_no', 'LIKE', 'SR-%')
+            ->pluck('invoice_no');
+            
+        $maxNum = 0;
+        foreach ($invoices as $inv) {
+            $num = (int) preg_replace('/[^0-9]/', '', $inv);
+            if ($num > $maxNum) {
+                $maxNum = $num;
+            }
         }
 
-        // Guarantee uniqueness
-        do {
-            $num++;
-            $nextInvoice = 'SR-' . $num;
-            $exists = DB::table('sale_returns')->where('invoice_no', $nextInvoice)->exists();
-        } while ($exists);
+        // If no SR- invoices exist, we start from 1, otherwise increment max
+        $maxNum++;
+        $nextInvoice = 'SR-' . $maxNum;
+        
+        // Final safety check to ensure absolute uniqueness
+        while (DB::table('sale_returns')->where('invoice_no', $nextInvoice)->exists()) {
+            $maxNum++;
+            $nextInvoice = 'SR-' . $maxNum;
+        }
 
         return $nextInvoice;
     }

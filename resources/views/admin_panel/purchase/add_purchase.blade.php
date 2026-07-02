@@ -390,15 +390,15 @@
         </div>
 
         {{-- RIGHT: Items --}}
-        <div class="flex-grow-1 d-flex flex-column">
-          <div class="d-flex justify-content-between align-items-center mb-2 px-2">
-            <div class="section-title mb-0">Items</div>
-            <button type="button" class="btn btn-sm btn-primary rounded-pill px-3" id="addRow">
-                <i class="fa fa-plus me-1"></i> Add Row
+        <div class="flex-grow-1 d-flex flex-column px-2">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <h5 class="fw-bold mb-0 text-dark" style="letter-spacing: 0.5px;">Items</h5>
+            <button type="button" class="btn btn-sm btn-primary shadow-sm px-3" id="addRow">
+                <i class="fa fa-plus"></i> Add Row
             </button>
           </div>
 
-          <div class="table-responsive flex-grow-1 d-flex flex-column" style="min-height: 420px; overflow-y: auto;">
+          <div class="table-responsive flex-grow-1 d-flex flex-column border rounded-3 shadow-sm" style="min-height: 420px; overflow-y: auto;">
             <table class="table table-bordered table-sm mb-0" style="width: 100%; font-size: 0.9rem; table-layout: fixed;">
               <colgroup>
                   <col style="width:6%"> <!-- Item ID -->
@@ -649,7 +649,7 @@
           @endphp
 
           <button type="button" id="saveDraftBtn" class="btn btn-primary px-4 fw-bold shadow-sm" {{ $isPosted || $isDraft ? 'disabled' : '' }}>
-              <u>A</u>dd <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+S</kbd>
+              <u>S</u>ave <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+S</kbd>
           </button>
 
           <button type="button" id="editInvoiceBtn" class="btn btn-warning px-4 fw-bold text-dark shadow-sm" {{ $isNew || $isPosted ? 'disabled' : '' }}>
@@ -657,7 +657,7 @@
           </button>
 
           <button type="button" id="postBtn" class="btn btn-success px-4 fw-bold shadow-sm" {{ $isNew || $isPosted ? 'disabled' : '' }}>
-              <u>S</u>ave <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+&crarr;</kbd>
+              <u>P</u>ost <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+&crarr;</kbd>
           </button>
 
           <button type="button" id="deleteBtn" class="btn btn-danger px-4 fw-bold shadow-sm" {{ $isNew || $isPosted ? 'disabled' : '' }}>
@@ -1774,8 +1774,8 @@ $(document).ready(function() {
                         $('#invoiceNoDisplay').val(res.invoice_no);
                     }
 
-                    // Show Edit, Save, Delete, Print buttons, hide Add
-                    $('#saveDraftBtn').prop('disabled', true).html('<u>A</u>dd');
+                    // Show Edit, Post, Delete, Print buttons, hide Save
+                    $('#saveDraftBtn').prop('disabled', true).html('<u>S</u>ave');
                     $('#editInvoiceBtn').prop('disabled', false);
                     $('#postBtn').prop('disabled', false);
                     $('#deleteBtn').prop('disabled', false);
@@ -1788,6 +1788,7 @@ $(document).ready(function() {
                     
                 } else {
                     showToast('❌ ' + (res.message || 'Error saving draft.'), 'error');
+                    $('#saveDraftBtn').prop('disabled', false).html('<u>S</u>ave');
                 }
             },
             error: function(xhr) {
@@ -1825,10 +1826,7 @@ $(document).ready(function() {
                     }
                 } catch(e){}
                 showToast('❌ ' + msg, 'error');
-            },
-            complete: function() {
-                $('#saveDraftBtn').prop('disabled', false)
-                    .html('<i class="fa fa-floppy-o me-1"></i> Save Draft <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+S</kbd>');
+                $('#saveDraftBtn').prop('disabled', false).html('<u>S</u>ave');
             }
         });
     }
@@ -1886,8 +1884,11 @@ $(document).ready(function() {
     // Edit logic
     $('#editInvoiceBtn').on('click', function() {
         $('#purchaseForm').removeClass('form-locked');
-        $('#saveDraftBtn').prop('disabled', false).html('<u>A</u>dd');
+        $('#saveDraftBtn').prop('disabled', false).html('<u>S</u>ave');
         $(this).prop('disabled', true);
+        $('#postBtn').prop('disabled', true);
+        $('#deleteBtn').prop('disabled', true);
+        $('#realPrintBtn').prop('disabled', true);
     });
 
     // Delete logic
