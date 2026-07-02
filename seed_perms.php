@@ -6,7 +6,7 @@ $perms = [
     'Customer', 'Sales Officer', 'Zone', 'Customer Claim', 'Claim Acceptance', 'Claim Receipt', 
     'Users', 'Roles', 'Permissions', 'Branches', 'User Groups', 
     'Chart Of Accounts', 'Narrations', 'Receipts Voucher', 'Payment Voucher', 'Expense Voucher', 'Income Voucher', 'Journal Voucher', 'Adjustment Voucher', 
-    'Rollback Posting', 'General Ledger', 'Reports Dashboard', 'Sales Report', 'Purchase Report', 'Claim Report', 'Claim Acceptance Report', 'Claim Receipt Report'
+    'Rollback Posting', 'General Ledger', 'Reports Dashboard', 'Sales Report', 'Purchase Report', 'Claim Report', 'Claim Acceptance Report', 'Claim Receipt Report', 'Stock Wastage Report'
 ];
 
 foreach ($perms as $p) {

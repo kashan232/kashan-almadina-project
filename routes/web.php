@@ -527,6 +527,8 @@ Route::middleware('auth')->group(function () {
     Route::post('/reports/claim-acceptance/preview', [\App\Http\Controllers\ClaimAcceptanceReportController::class, 'preview'])->name('reports.claim-acceptance.preview');
     Route::get('/reports/claim-item-receipt', [\App\Http\Controllers\ClaimItemReceiptReportController::class, 'index'])->name('reports.claim-item-receipt.index');
     Route::post('/reports/claim-item-receipt/preview', [\App\Http\Controllers\ClaimItemReceiptReportController::class, 'preview'])->name('reports.claim-item-receipt.preview');
+    Route::get('/reports/stock-wastage', [\App\Http\Controllers\StockWastageReportController::class, 'index'])->name('reports.stock-wastage.index');
+    Route::post('/reports/stock-wastage/preview', [\App\Http\Controllers\StockWastageReportController::class, 'preview'])->name('reports.stock-wastage.preview');
 
 
 });
