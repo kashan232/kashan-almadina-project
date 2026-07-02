@@ -523,6 +523,8 @@ Route::middleware('auth')->group(function () {
     Route::post('/reports/purchase/preview', [\App\Http\Controllers\PurchaseReportController::class, 'preview'])->name('reports.purchase.preview');
     Route::get('/reports/claim', [\App\Http\Controllers\ClaimReportController::class, 'index'])->name('reports.claim.index');
     Route::post('/reports/claim/preview', [\App\Http\Controllers\ClaimReportController::class, 'preview'])->name('reports.claim.preview');
+    Route::get('/reports/claim-acceptance', [\App\Http\Controllers\ClaimAcceptanceReportController::class, 'index'])->name('reports.claim-acceptance.index');
+    Route::post('/reports/claim-acceptance/preview', [\App\Http\Controllers\ClaimAcceptanceReportController::class, 'preview'])->name('reports.claim-acceptance.preview');
 
 
 });

@@ -34,6 +34,25 @@ class ClaimAcceptance extends Model
         return $this->belongsTo(Customer::class, 'party_id');
     }
 
+    public function fromWarehouse()
+    {
+        return $this->belongsTo(Warehouse::class, 'from_warehouse_id')->withoutGlobalScopes();
+    }
+
+    public function toWarehouse()
+    {
+        return $this->belongsTo(Warehouse::class, 'to_warehouse_id')->withoutGlobalScopes();
+    }
+
+    public function partyName(): string
+    {
+        if ($this->party_type === 'vendor') {
+            return strtoupper($this->vendor->name ?? 'N/A');
+        }
+
+        return strtoupper($this->customer->customer_name ?? 'N/A');
+    }
+
     public static function generateVoucherNo()
     {
         $last = self::withoutGlobalScopes()->orderBy('id', 'desc')->first();
