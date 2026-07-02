@@ -555,7 +555,7 @@
                       @endcanany
 
                       {{-- Reports Section --}}
-                      @canany(['Reports Dashboard', 'Sales Report', 'Purchase Report'])
+                      @canany(['Reports Dashboard', 'Sales Report', 'Purchase Report', 'Claim Report'])
                       <li class="nav-item">
                           <a href="#" class="nav-link">
                               <span class="menu-title">Reports</span>
@@ -584,6 +584,14 @@
                                       <a class="nav-link" href="{{ route('reports.purchase.index') }}">
                                           <i class="fa-solid fa-cart-shopping mr-2"></i>
                                           <span>Purchase Report</span>
+                                      </a>
+                                  </li>
+                                  @endcan
+                                  @can('Claim Report')
+                                  <li class="nav-item">
+                                      <a class="nav-link" href="{{ route('reports.claim.index') }}">
+                                          <i class="fa-solid fa-handshake mr-2"></i>
+                                          <span>Claim Report</span>
                                       </a>
                                   </li>
                                   @endcan

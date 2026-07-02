@@ -57,6 +57,35 @@ class CustomerClaim extends Model
         return $this->hasOne(\App\Models\CustomerClaimRelease::class, 'claim_id');
     }
 
+    public function getReportAmountAttribute(): float
+    {
+        if ($this->claim_type === 'credit_note') {
+            return (float) ($this->replacement_sales_price ?? 0);
+        }
+
+        return (float) ($this->sales_price ?? 0);
+    }
+
+    public function getPartyNameAttribute(): string
+    {
+        $party = $this->party;
+        if (!$party) {
+            return 'N/A';
+        }
+
+        return $party->name ?? $party->customer_name ?? 'N/A';
+    }
+
+    public function getClaimTypeLabelAttribute(): string
+    {
+        return match ($this->claim_type) {
+            'item_return' => 'Item Return',
+            'credit_note' => 'Credit Note',
+            'claim_hold'  => 'Claim Hold',
+            default       => ucfirst(str_replace('_', ' ', (string) $this->claim_type)),
+        };
+    }
+
     public static function generateClaimNo()
     {
         $last = self::withoutGlobalScopes()->orderBy('id', 'desc')->first();
