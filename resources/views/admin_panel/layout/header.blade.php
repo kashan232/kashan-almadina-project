@@ -555,7 +555,7 @@
                       @endcanany
 
                       {{-- Reports Section --}}
-                      @canany(['Reports Dashboard', 'Sales Report', 'Purchase Report', 'Claim Report', 'Claim Acceptance Report', 'Claim Receipt Report', 'Stock Wastage Report', 'Stock Transfer Report'])
+                      @canany(['Reports Dashboard', 'Sales Report', 'Purchase Report', 'Claim Report', 'Claim Acceptance Report', 'Claim Receipt Report', 'Stock Wastage Report', 'Stock Transfer Report', 'Receipt Voucher Report'])
                       <li class="nav-item">
                           <a href="#" class="nav-link">
                               <span class="menu-title">Reports</span>
@@ -624,6 +624,14 @@
                                       <a class="nav-link" href="{{ route('reports.stock-transfer.index') }}">
                                           <i class="fa-solid fa-exchange-alt mr-2"></i>
                                           <span>Stock Transfer Report</span>
+                                      </a>
+                                  </li>
+                                  @endcan
+                                  @can('Receipt Voucher Report')
+                                  <li class="nav-item">
+                                      <a class="nav-link" href="{{ route('reports.receipt-voucher.index') }}">
+                                          <i class="fa-solid fa-receipt mr-2"></i>
+                                          <span>Receipt Voucher Report</span>
                                       </a>
                                   </li>
                                   @endcan
