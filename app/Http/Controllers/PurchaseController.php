@@ -240,7 +240,8 @@ class PurchaseController extends Controller
                     $qty  = $request->qty[$index] ?? 0;
                     $price = $request->price[$index] ?? 0;
                     $disc = $request->item_disc[$index] ?? 0;
-                    $lineTotal = ($price * $qty) - ($request->item_disc_amount[$index] ?? 0);
+                    $unitDisc = (float) ($request->item_disc_amount[$index] ?? 0);
+                    $lineTotal = ($price * $qty) - ($unitDisc * $qty);
                     $rate = ($qty > 0) ? ($lineTotal / $qty) : $price;
 
                     \App\Models\PurchaseItem::create([
@@ -352,8 +353,8 @@ class PurchaseController extends Controller
 
                 $qty       = $request['qty'][$index];
                 $price     = $request['purchase_retail_price'][$index]; // ✅ retail
-                $discAmt   = $request['item_disc_amount'][$index] ?? 0;
-                $lineTotal = ($price * $qty) - $discAmt;
+                $discAmt   = (float) ($request['item_disc_amount'][$index] ?? 0);
+                $lineTotal = ($price * $qty) - ($discAmt * $qty);
                 $rate      = ($qty > 0) ? ($lineTotal / $qty) : $price;
 
                 PurchaseItem::create([
@@ -607,7 +608,8 @@ class PurchaseController extends Controller
                     $qty  = $cleanQtys[$index] ?? 0;
                     $price = $cleanPrices[$index] ?? 0;
                     $disc = $cleanItemDiscs[$index] ?? 0;
-                    $lineTotal = ($price * $qty) - ($cleanDiscAmounts[$index] ?? 0);
+                    $unitDisc = (float) ($cleanDiscAmounts[$index] ?? 0);
+                    $lineTotal = ($price * $qty) - ($unitDisc * $qty);
                     $rate = ($qty > 0) ? ($lineTotal / $qty) : $price;
 
                     \App\Models\PurchaseItem::create([

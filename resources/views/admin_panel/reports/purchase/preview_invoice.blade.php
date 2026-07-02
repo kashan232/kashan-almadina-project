@@ -191,13 +191,13 @@
                     @foreach($items as $item)
                         @php
                             $qty = $item->qty;
-                            $purchase_p = (float) ($item->price ?? 0);
+                            $purchase_p = $item->form_rate;
                             
                             $latestPrice = $item->product->latestPrice;
                             $retail_p = $latestPrice ? $latestPrice->sale_retail_price : 0;
                             $retail_a = $retail_p * $qty;
 
-                            $net_a = $item->line_total;
+                            $net_a = $item->form_line_total;
 
                             $inv_qty += $qty;
                             $inv_retail_amt += $retail_a;

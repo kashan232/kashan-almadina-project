@@ -214,8 +214,8 @@
                             <td>{{ $item->product_id }}</td>
                             <td class="text-start">{{ $item->product->name ?? 'N/A' }}</td>
                             <td>{{ number_format($item->qty, 0) }}</td>
-                            <td class="text-end">{{ number_format($item->price, 2) }}</td>
-                            <td class="text-end fw-bold">{{ number_format($item->line_total, 2) }}</td>
+                            <td class="text-end">{{ number_format($item->form_rate, 2) }}</td>
+                            <td class="text-end fw-bold">{{ number_format($item->form_line_total, 2) }}</td>
                         </tr>
                         @endforeach
                     </tbody>

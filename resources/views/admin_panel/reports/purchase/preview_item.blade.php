@@ -177,8 +177,8 @@
                 @foreach($items as $item)
                     @php
                         $qty = $item->qty;
-                        $purchase_p = (float) ($item->price ?? 0);
-                        $purchase_a = $item->line_total;
+                        $purchase_p = $item->form_rate;
+                        $purchase_a = $item->form_line_total;
                         $purchaseDate = \Carbon\Carbon::parse($item->purchase->current_date)->format('d-m-y');
                         $displayInv = preg_replace('/[^0-9]/', '', $item->purchase->invoice_no) ?: $item->purchase->invoice_no;
                         $party = $item->purchase->purchasable;

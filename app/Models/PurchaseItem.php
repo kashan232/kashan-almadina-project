@@ -21,19 +21,38 @@ class PurchaseItem extends Model
     }
 
     /**
+     * Rate column on purchase form: Price minus per-unit discount (discount % on retail/base).
+     */
+    public function getFormRateAttribute(): float
+    {
+        $price = (float) ($this->price ?? 0);
+        $discPct = (float) ($this->item_discount ?? 0);
+
+        $retail = 0.0;
+        if ($this->product) {
+            $lp = $this->product->latestPrice;
+            if ($lp) {
+                $retail = (float) ($lp->purchase_retail_price ?? $lp->sale_retail_price ?? 0);
+            }
+        }
+
+        $base = $retail > 0 ? $retail : $price;
+        $unitDiscAmt = $base * $discPct / 100;
+
+        return $price - $unitDiscAmt;
+    }
+
+    /** Total after line discount — matches form Total column. */
+    public function getFormLineTotalAttribute(): float
+    {
+        return $this->form_rate * (float) ($this->qty ?? 0);
+    }
+
+    /**
      * Net purchase rate per unit (after discount) — matches Rate on purchase form.
      */
-    public function getNetRateAttribute()
+    public function getNetRateAttribute(): float
     {
-        if ($this->purchase_rate !== null && (float) $this->purchase_rate > 0) {
-            return (float) $this->purchase_rate;
-        }
-
-        $qty = (float) ($this->qty ?? 0);
-        if ($qty > 0) {
-            return (float) ($this->line_total ?? 0) / $qty;
-        }
-
-        return (float) ($this->price ?? 0);
+        return $this->form_rate;
     }
 }
