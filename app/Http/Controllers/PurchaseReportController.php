@@ -91,19 +91,17 @@ class PurchaseReportController extends Controller
                             $pt->orWhere('purchasable_type', Vendor::class);
                         }
                         if (in_array('Main Customer', $party_types)) {
-                            $pt->orWhere(function ($sq) {
+                            $mainCustomerIds = Customer::where('customer_type', 'Main Customer')->pluck('id');
+                            $pt->orWhere(function ($sq) use ($mainCustomerIds) {
                                 $sq->where('purchasable_type', Customer::class)
-                                    ->whereHas('purchasable', function ($c) {
-                                        $c->where('customer_type', 'Main Customer');
-                                    });
+                                    ->whereIn('purchasable_id', $mainCustomerIds);
                             });
                         }
                         if (in_array('Walking Customer', $party_types)) {
-                            $pt->orWhere(function ($sq) {
+                            $walkinCustomerIds = Customer::where('customer_type', 'Walking Customer')->pluck('id');
+                            $pt->orWhere(function ($sq) use ($walkinCustomerIds) {
                                 $sq->where('purchasable_type', Customer::class)
-                                    ->whereHas('purchasable', function ($c) {
-                                        $c->where('customer_type', 'Walking Customer');
-                                    });
+                                    ->whereIn('purchasable_id', $walkinCustomerIds);
                             });
                         }
                     });
