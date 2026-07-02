@@ -344,7 +344,7 @@ $(document).ready(function() {
             $.get("{{ url('customer-claims-release/details') }}/" + id, function(res) {
                 $('#warehouse_id').val(res.warehouse_id);
                 $('#itemRows').empty();
-                addRow(res.product_id, res.product_name, res.hold_qty, res.hold_qty, res.hold_qty);
+                addRow(res.product_id, res.product_name, res.hold_qty, res.hold_qty, res.hold_qty, res.hold_id || '');
             });
         } else {
             $('#hold_voucher_id').val(id);
@@ -353,15 +353,16 @@ $(document).ready(function() {
                 $('#warehouse_id').val(res.warehouse_id);
                 $('#itemRows').empty();
                 res.items.forEach(item => {
-                    addRow(item.product_id, item.item_name, item.sale_qty, item.hold_qty, item.hold_qty);
+                    addRow(item.product_id, item.item_name, item.sale_qty, item.hold_qty, item.hold_qty, item.hold_id || '');
                 });
             });
         }
     });
 
-    function addRow(pid, name, saleQty, holdQty, releaseQty) {
+    function addRow(pid, name, saleQty, holdQty, releaseQty, holdId) {
+        holdId = holdId || '';
         var row = `<tr>
-            <td class="text-center font-weight-bold text-primary">${pid} <input type="hidden" name="product_id[]" value="${pid}"></td>
+            <td class="text-center font-weight-bold text-primary">${pid} <input type="hidden" name="product_id[]" value="${pid}"><input type="hidden" name="hold_id[]" value="${holdId}"></td>
             <td>${name}</td>
             <td class="text-center"><input type="number" name="sale_qty[]" class="form-control input-sm text-center bg-light" value="${saleQty}" readonly></td>
             <td class="text-center"><input type="number" name="hold_qty[]" class="form-control input-sm text-center bg-light" value="${holdQty}" readonly></td>
@@ -377,6 +378,23 @@ $(document).ready(function() {
 
     var _savedVoucherId = null;
 
+    function serializeForm() {
+        var data = $('#stockReleaseForm').serializeArray();
+        ['vendor_id', 'warehouse_id', 'vendor_type'].forEach(function(name) {
+            var val = $('[name="' + name + '"]').val() || '';
+            var found = false;
+            for (var i = 0; i < data.length; i++) {
+                if (data[i].name === name) {
+                    data[i].value = val;
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) data.push({ name: name, value: val });
+        });
+        return $.param(data);
+    }
+
     // 4. Save Logic
     function save(act) {
         $('#formAction').val(act);
@@ -388,7 +406,7 @@ $(document).ready(function() {
         $(btn).prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Processing...');
 
         $.ajax({
-            url: $form.attr('action'), type: 'POST', data: $form.serialize(),
+            url: $form.attr('action'), type: 'POST', data: serializeForm(),
             success: function(res) {
                 if(res.success) {
                     _savedVoucherId = res.id;

@@ -181,11 +181,11 @@
                                             }
                                         @endphp
                                         <tr>
-                                            <td class="text-center font-weight-bold text-primary">{{ $item->product_id }} <input type="hidden" name="product_id[]" value="{{ $item->product_id }}"></td>
+                                            <td class="text-center font-weight-bold text-primary">{{ $item->product_id }} <input type="hidden" name="product_id[]" value="{{ $item->product_id }}"><input type="hidden" name="hold_id[]" value="{{ $item->hold_id }}"></td>
                                             <td>{{ $item->product->name ?? 'Product' }}</td>
                                             <td class="text-center"><input type="number" name="sale_qty[]" class="form-control input-sm text-center bg-light" value="{{ (float) $item->sale_qty }}" readonly></td>
                                             <td class="text-center"><input type="number" name="hold_qty[]" class="form-control input-sm text-center bg-light" value="{{ $holdQty }}" readonly></td>
-                                            <td class="text-center"><input type="number" name="release_qty[]" class="form-control input-sm text-center release-qty-input border-success" value="{{ (float) $item->release_qty }}" step="any"></td>
+                                            <td class="text-center"><input type="number" name="release_qty[]" class="form-control input-sm text-center release-qty-input border-success" value="{{ (float) $item->release_qty }}" step="any" min="0"></td>
                                             <td class="text-center"><button type="button" class="btn btn-sm btn-link text-danger remove-row p-0"><i class="fa fa-trash fs-5"></i></button></td>
                                         </tr>
                                     @endforeach
@@ -338,7 +338,7 @@ $(document).ready(function() {
             $.get("{{ url('customer-claims-release/details') }}/" + id, function(res) {
                 $('#warehouse_id').val(res.warehouse_id);
                 $('#itemRows').empty();
-                addRow(res.product_id, res.product_name, res.hold_qty, res.hold_qty, res.hold_qty);
+                addRow(res.product_id, res.product_name, res.hold_qty, res.hold_qty, res.hold_qty, res.hold_id || '');
             });
         } else {
             $('#hold_voucher_id').val(id);
@@ -347,7 +347,7 @@ $(document).ready(function() {
                 $('#warehouse_id').val(res.warehouse_id);
                 $('#itemRows').empty();
                 res.items.forEach(function(item) {
-                    addRow(item.product_id, item.item_name, item.sale_qty, item.hold_qty, item.hold_qty);
+                    addRow(item.product_id, item.item_name, item.sale_qty, item.hold_qty, item.hold_qty, item.hold_id || '');
                 });
             });
         }
@@ -386,13 +386,14 @@ $(document).ready(function() {
         $('#manual_product_search').val(null).trigger('change');
     });
 
-    function addRow(pid, name, saleQty, holdQty, releaseQty) {
+    function addRow(pid, name, saleQty, holdQty, releaseQty, holdId) {
+        holdId = holdId || '';
         var row = '<tr>' +
-            '<td class="text-center font-weight-bold text-primary">' + pid + ' <input type="hidden" name="product_id[]" value="' + pid + '"></td>' +
+            '<td class="text-center font-weight-bold text-primary">' + pid + ' <input type="hidden" name="product_id[]" value="' + pid + '"><input type="hidden" name="hold_id[]" value="' + holdId + '"></td>' +
             '<td>' + name + '</td>' +
             '<td class="text-center"><input type="number" name="sale_qty[]" class="form-control input-sm text-center bg-light" value="' + saleQty + '" readonly></td>' +
             '<td class="text-center"><input type="number" name="hold_qty[]" class="form-control input-sm text-center bg-light" value="' + holdQty + '" readonly></td>' +
-            '<td class="text-center"><input type="number" name="release_qty[]" class="form-control input-sm text-center release-qty-input border-success" value="' + releaseQty + '" step="any"></td>' +
+            '<td class="text-center"><input type="number" name="release_qty[]" class="form-control input-sm text-center release-qty-input border-success" value="' + releaseQty + '" step="any" min="0"></td>' +
             '<td class="text-center"><button type="button" class="btn btn-sm btn-link text-danger remove-row p-0"><i class="fa fa-trash fs-5"></i></button></td>' +
             '</tr>';
         $('#itemRows').append(row);
