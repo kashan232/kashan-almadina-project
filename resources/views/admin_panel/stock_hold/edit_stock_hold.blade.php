@@ -49,6 +49,7 @@
 
             <form action="{{ route('stock-holds.update', $voucher->id) }}" method="POST" id="stockHoldForm" class="position-relative form-locked">
                 @csrf
+                <input type="hidden" name="id" value="{{ $voucher->id }}">
                 <input type="hidden" name="action" id="formAction" value="save">
                 <input type="hidden" name="sale_id" id="sale_id" value="{{ $voucher->sale_id }}">
                 <div class="posted-watermark @if($voucher->status == 'Posted') show @endif" id="postedWatermark">Posted</div>
@@ -72,9 +73,7 @@
                             <div class="col-md-3">
                                 <label class="form-label small fw-bold">Party</label>
                                 <select name="vendor_id" id="vendor_id" class="form-select select2" required>
-                                    <option value="{{ $voucher->party_id }}">
-                                        {{ $voucher->party_type == 'vendor' ? ($voucher->partyVendor->name ?? '-') : ($voucher->partyCustomer->customer_name ?? '-') }}
-                                    </option>
+                                    <option value="">Select Party</option>
                                 </select>
                             </div>
                             <div class="col-md-2">
@@ -194,6 +193,22 @@
 $(document).ready(function() {
     $('.select2').select2({ width: '100%' });
     var _savedVoucherId = "{{ $voucher->id }}";
+    var _selectedPartyId = "{{ $voucher->party_id }}";
+
+    function loadParties(type, selectId) {
+        $.get("{{ route('stock-holds.party.list') }}", { type: type }, function(res) {
+            var $p = $('#vendor_id').empty().append('<option value="">Select Party</option>');
+            res.forEach(function(item) {
+                $p.append('<option value="' + item.id + '">' + item.text + '</option>');
+            });
+            if (selectId) {
+                $p.val(String(selectId));
+            }
+            $p.trigger('change');
+        });
+    }
+
+    loadParties($('#vendor_type').val(), _selectedPartyId);
 
     function showToast(msg, type = 'success') {
         var icon = type === 'success' ? 'fa-check-circle' : 'fa-times-circle';
@@ -223,12 +238,7 @@ $(document).ready(function() {
     function updateCount() { $('#total_items_badge').text($('#itemRows tr').length); }
 
     $('#vendor_type').on('change', function() {
-        var type = $(this).val();
-        $.get("{{ route('stock-holds.party.list') }}", { type: type }, function(res) {
-            var $p = $('#vendor_id').empty().append('<option value="">Select Party</option>');
-            res.forEach(item => $p.append(`<option value="${item.id}">${item.text}</option>`));
-            $p.trigger('change');
-        });
+        loadParties($(this).val(), null);
     });
 
     $('#manual_product_search').select2();
@@ -243,6 +253,25 @@ $(document).ready(function() {
         $('#manual_product_search').val('').trigger('change');
     });
 
+    function serializeForm() {
+        var data = $('#stockHoldForm').serializeArray();
+        ['vendor_id', 'warehouse_id', 'vendor_type'].forEach(function(name) {
+            var val = $('[name="' + name + '"]').val() || '';
+            var found = false;
+            for (var i = 0; i < data.length; i++) {
+                if (data[i].name === name) {
+                    data[i].value = val;
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                data.push({ name: name, value: val });
+            }
+        });
+        return $.param(data);
+    }
+
     function update(act) {
         $('#formAction').val(act);
         if($('#itemRows tr').length === 0) { showToast('Add at least one item', 'error'); return; }
@@ -253,26 +282,32 @@ $(document).ready(function() {
         $(btn).prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i>');
 
         $.ajax({
-            url: $form.attr('action'), type: 'POST', data: $form.serialize(),
+            url: $form.attr('action'), type: 'POST', data: serializeForm(),
             success: function(res) {
                 if(res.success) {
-                    $('#stockHoldForm').addClass('form-locked');
-                    $('#saveDraftBtn').hide();
-                    $('#postBtn, #editBtn').show();
                     if(res.status === 'Posted') {
-                        $('#statusBadge').removeClass('bg-info').addClass('bg-success text-white').html('<i class="fa fa-check"></i> Posted');
-                        $('#postedWatermark').addClass('show');
                         showToast('Stock Hold Posted! Redirecting...', 'success');
-                        setTimeout(() => window.location.href = "{{ route('stock-hold-list') }}", 1500);
+                        setTimeout(function() { window.location.href = "{{ route('stock-hold-list') }}"; }, 1200);
                     } else {
-                        $('#statusBadge').html('<i class="fa fa-pencil"></i> Unposted');
-                        showToast('Draft Updated - Ctrl+E to edit');
-                        setTimeout(() => $('#editBtn').focus(), 100);
+                        showToast('All changes saved successfully', 'success');
+                        setTimeout(function() { window.location.reload(); }, 800);
                     }
                 } else { showToast(res.message, 'error'); }
             },
-            error: function(e) { showToast('Server Error', 'error'); },
-            complete: function() { $(btn).prop('disabled', false).html(act === 'post' ? '<i class="fa fa-send"></i> Update & Post' : '<i class="fa fa-floppy-o"></i> Update Draft'); }
+            error: function(xhr) {
+                var msg = 'Server Error';
+                if (xhr.responseJSON && xhr.responseJSON.message) {
+                    msg = xhr.responseJSON.message;
+                } else if (xhr.responseJSON && xhr.responseJSON.errors) {
+                    msg = Object.values(xhr.responseJSON.errors).flat().join(', ');
+                }
+                showToast(msg, 'error');
+            },
+            complete: function() {
+                $(btn).prop('disabled', false).html(act === 'post'
+                    ? '<i class="fa fa-send me-1"></i> Post <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+&#8629;</kbd>'
+                    : '<i class="fa fa-floppy-o me-1"></i> Update Draft <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+S</kbd>');
+            }
         });
     }
 

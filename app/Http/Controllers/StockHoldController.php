@@ -148,6 +148,10 @@ class StockHoldController extends Controller
             $voucherId = $request->id;
             $voucher = $voucherId ? StockHoldVoucher::findOrFail($voucherId) : new StockHoldVoucher();
 
+            if ($voucherId && $voucher->status === 'Posted') {
+                return response()->json(['success' => false, 'message' => 'Posted records cannot be modified.'], 422);
+            }
+
             // Prevent Double Hold for same Sale (Excluding current voucher if updating)
             if ($request->filled('sale_id')) {
                 $query = StockHold::where('sale_id', $request->sale_id);
@@ -161,6 +165,8 @@ class StockHoldController extends Controller
 
             if (!$voucherId) {
                 $voucher->voucher_no = StockHoldVoucher::generateVoucherNo();
+            } elseif ($request->filled('voucher_no')) {
+                $voucher->voucher_no = $request->voucher_no;
             }
             
             $voucher->date         = $request->entry_date;
@@ -206,7 +212,7 @@ class StockHoldController extends Controller
             if ($request->ajax()) {
                 return response()->json([
                     'success' => true,
-                    'message' => 'Stock Hold ' . ($status == 'Posted' ? 'Posted' : 'Saved') . ' successfully.',
+                    'message' => 'Stock Hold ' . ($status == 'Posted' ? 'Posted' : ($voucherId ? 'Updated' : 'Saved')) . ' successfully.',
                     'status'  => $status,
                     'id'      => $voucher->id
                 ]);
@@ -236,80 +242,9 @@ class StockHoldController extends Controller
 
     public function update(Request $request, $id)
     {
-        $request->validate([
-            'entry_date'   => 'required|date',
-            'warehouse_id' => 'required|integer',
-            'product_id'   => 'required|array',
-            'hold_qty'     => 'required|array',
-        ]);
+        $request->merge(['id' => $id]);
 
-        if ($request->warehouse_id == 0 && !auth()->user()->canAccessShop()) {
-            return response()->json(['success' => false, 'message' => 'Unauthorized access to Shop Stock.'], 403);
-        }
-
-        $voucher = StockHoldVoucher::findOrFail($id);
-        if ($voucher->status === 'Posted') {
-            return response()->json(['success' => false, 'message' => 'Posted records cannot be modified.'], 422);
-        }
-
-        $status = $request->action === 'post' ? 'Posted' : 'Unposted';
-
-        try {
-            DB::beginTransaction();
-
-            $voucher->update([
-                'date'         => $request->entry_date,
-                'entry_time'   => $request->entry_time ?? date('H:i'),
-                'warehouse_id' => $request->warehouse_id,
-                'remarks'      => $request->remarks,
-                'status'       => $status,
-            ]);
-
-            $voucher->items()->delete();
-
-            foreach ($request->product_id as $index => $productId) {
-                $qty = (float) $request->hold_qty[$index];
-                if ($qty <= 0) continue;
-
-                StockHold::create([
-                    'stock_hold_voucher_id' => $voucher->id,
-                    'entry_date'   => $request->entry_date,
-                    'entry_time'   => $request->entry_time ?? date('H:i'),
-                    'sale_id'      => $voucher->sale_id,
-                    'party_type'   => $voucher->party_type,
-                    'party_id'     => $voucher->party_id,
-                    'warehouse_id' => $request->warehouse_id,
-                    'product_id'   => $productId,
-                    'sale_qty'     => $request->sale_qty[$index] ?? 0,
-                    'hold_qty'     => $qty,
-                    'remarks'      => $request->remarks,
-                    'status'       => 0,
-                ]);
-                if ($status === 'Posted') {
-                    $this->adjustStock($request->warehouse_id, $productId, $qty);
-                }
-            }
-
-            DB::commit();
-
-            if ($request->ajax()) {
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Stock Hold ' . ($status == 'Posted' ? 'Posted' : 'Updated') . ' successfully.',
-                    'status'  => $status,
-                    'id'      => $voucher->id
-                ]);
-            }
-
-            return redirect()->route('stock-hold-list')->with('success', 'Stock Hold updated successfully.');
-
-        } catch (\Exception $e) {
-            DB::rollBack();
-            if ($request->ajax()) {
-                return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
-            }
-            return back()->with('error', $e->getMessage());
-        }
+        return $this->store($request);
     }
 
     public function post($id)
