@@ -196,25 +196,23 @@ class CustomerClaimController extends Controller
     private function syncInventory(CustomerClaim $claim)
     {
         // 1. Faulty Item Movement
-        // Subtract from original warehouse
-        if (isset($claim->original_warehouse_id)) {
-            $this->adjustStock($claim->original_warehouse_id, $claim->product_id, -1);
-        }
-        
         // Add to claim warehouse
         if (isset($claim->claim_warehouse_id)) {
             $this->adjustStock($claim->claim_warehouse_id, $claim->product_id, 1);
         }
 
-        // 2. Replacement Item (Credit Note)
-        if ($claim->claim_type === 'credit_note' && $claim->replacement_product_id) {
-            if (isset($claim->replacement_from_warehouse_id)) {
+        if ($claim->claim_type === 'item_return') {
+            // Subtract from original warehouse
+            if (isset($claim->original_warehouse_id)) {
+                $this->adjustStock($claim->original_warehouse_id, $claim->product_id, -1);
+            }
+        } elseif ($claim->claim_type === 'credit_note') {
+            // 2. Replacement Item (Credit Note)
+            if ($claim->replacement_product_id && isset($claim->replacement_from_warehouse_id)) {
                 $this->adjustStock($claim->replacement_from_warehouse_id, $claim->replacement_product_id, -1);
             }
-        }
-
-        // 3. Handle Claim Hold (Reservation)
-        if ($claim->claim_type === 'claim_hold') {
+        } elseif ($claim->claim_type === 'claim_hold') {
+            // 3. Handle Claim Hold (Reservation)
             StockHold::create([
                 'entry_date'   => $claim->entry_date,
                 'entry_time'   => $claim->entry_time,

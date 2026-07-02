@@ -440,13 +440,37 @@ class RollbackController extends Controller
     {
         $claim = $this->findRecord(CustomerClaim::class, 'claim_no', $invoiceNo);
         if (!$claim) throw new \Exception("Claim $invoiceNo not found.");
+        
+        $this->validateRollbackDate($claim);
+        if ($claim->status !== 'Posted') throw new \Exception("Claim $invoiceNo is not Posted.");
+
+        // Reverse faulty item from claim warehouse
+        if (isset($claim->claim_warehouse_id)) {
+            $this->adjustStock($claim->product_id, $claim->claim_warehouse_id, 1, 'subtract');
+        }
+
+        if ($claim->claim_type === 'item_return') {
+            // Reverse from original warehouse
+            if (isset($claim->original_warehouse_id)) {
+                $this->adjustStock($claim->product_id, $claim->original_warehouse_id, 1, 'add');
+            }
+        } elseif ($claim->claim_type === 'credit_note') {
+            // Reverse Replacement Item
+            if ($claim->replacement_product_id && isset($claim->replacement_from_warehouse_id)) {
+                $this->adjustStock($claim->replacement_product_id, $claim->replacement_from_warehouse_id, 1, 'add');
+            }
+        } elseif ($claim->claim_type === 'claim_hold') {
+            // Reverse Reservation
+            StockHold::where('remarks', 'Reserved via Customer Claim Hold: ' . $claim->claim_no)->delete();
+        }
+
         $claim->update(['status' => 'Unposted']);
         return back()->with('success', "Customer Claim #$invoiceNo set to Unposted.");
     }
 
     private function rollbackClaimAcceptance($invoiceNo)
     {
-        $acc = $this->findRecord(ClaimAcceptance::class, 'invoice_no', $invoiceNo);
+        $acc = $this->findRecord(ClaimAcceptance::class, 'voucher_no', $invoiceNo);
         if (!$acc) throw new \Exception("Acceptance $invoiceNo not found.");
         $acc->update(['status' => 'Unposted']);
         return back()->with('success', "Claim Acceptance #$invoiceNo set to Unposted.");
@@ -454,7 +478,7 @@ class RollbackController extends Controller
 
     private function rollbackClaimReceipt($invoiceNo)
     {
-        $rec = $this->findRecord(ClaimItemReceipt::class, 'invoice_no', $invoiceNo);
+        $rec = $this->findRecord(ClaimItemReceipt::class, 'voucher_no', $invoiceNo);
         if (!$rec) throw new \Exception("Receipt $invoiceNo not found.");
         $rec->update(['status' => 'Unposted']);
         return back()->with('success', "Claim Receipt #$invoiceNo set to Unposted.");

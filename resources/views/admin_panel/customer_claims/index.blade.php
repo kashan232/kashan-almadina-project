@@ -153,8 +153,7 @@
                                     <label class="column-picker-item"><input type="checkbox" data-column="9" checked> Replacement</label>
                                     <label class="column-picker-item"><input type="checkbox" data-column="10" checked> Fault</label>
                                     <label class="column-picker-item"><input type="checkbox" data-column="11" checked> Remarks</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="12" checked> Claim Income</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="13" checked> Status</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="12" checked> Status</label>
                                 </div>
                             </div>
                         </div>
@@ -175,7 +174,6 @@
                                             <th>Replacement</th>
                                             <th>Fault</th>
                                             <th>Remarks</th>
-                                            <th class="text-end">Claim Income</th>
                                             <th>Created By</th>
                                     <th class="text-center">Status</th>
                                             <th class="text-center" style="min-width: 120px;">Action</th>
@@ -204,7 +202,6 @@
                                             <td class="small text-dark">{{ $claim->replacementProduct->name ?? '-' }}</td>
                                             <td class="small text-muted">{{ Str::limit($claim->fault_found, 15) }}</td>
                                             <td class="small text-muted">{{ Str::limit($claim->remarks, 15) }}</td>
-                                            <td class="text-end fw-bold">{{ number_format((float)$claim->claim_income, 0) }}</td>
                                             <td>
                                                 @if($claim->creator)
                                                     <span class="text-dark small">{{ $claim->creator->name }}</span>

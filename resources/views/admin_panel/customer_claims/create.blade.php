@@ -167,16 +167,11 @@
                                     </select>
                                 @endif
                             </div>
-                            <div class="col-md-2 mt-1">
-                                <label class="form-label text-success fw-bold">Claim Income</label>
-                                <input type="number" name="claim_income" class="form-control input-sm text-end fw-bold" placeholder="0.00">
-                            </div>
-
-                            <div class="col-md-4 mt-1">
+                            <div class="col-md-5 mt-1">
                                 <label class="form-label">Fault Found / Analysis</label>
                                 <textarea name="fault_found" class="form-control input-sm" rows="1" placeholder="Detail fault..."></textarea>
                             </div>
-                            <div class="col-md-4 mt-1">
+                            <div class="col-md-5 mt-1">
                                 <label class="form-label">Remarks</label>
                                 <textarea name="remarks" class="form-control input-sm" rows="1" placeholder="General remarks..."></textarea>
                             </div>
@@ -443,12 +438,15 @@ $(document).ready(function() {
     $('#newBtn').on('click', () => window.location.href = "{{ route('customer-claims.create') }}");
 
     $(document).on('keydown', function(e) {
-        if(e.ctrlKey && e.key === 's') { e.preventDefault(); $('#saveDraftBtn:visible').click(); }
-        if(e.ctrlKey && e.key === 'Enter') { e.preventDefault(); $('#postBtn:visible').click(); }
-        if(e.ctrlKey && e.key === 'p') { e.preventDefault(); $('#previewPrintBtn:visible').click(); }
-        if(e.ctrlKey && e.key === 'e') { e.preventDefault(); $('#editBtn:visible').click(); }
-        if(e.ctrlKey && e.key === 'm') { e.preventDefault(); $('#newBtn:visible').click() || (window.location.href = "{{ route('customer-claims.create') }}"); }
-        if(e.ctrlKey && e.key === 'l') { e.preventDefault(); window.location.href = "{{ route('customer-claims.index') }}"; }
+        if(e.ctrlKey) {
+            var key = e.key.toLowerCase();
+            if(key === 's') { e.preventDefault(); $('#saveDraftBtn:visible').click(); }
+            if(key === 'enter') { e.preventDefault(); $('#postBtn:visible').click(); }
+            if(key === 'p') { e.preventDefault(); $('#previewPrintBtn:visible').click(); }
+            if(key === 'e') { e.preventDefault(); $('#editBtn:visible').click(); }
+            if(key === 'm') { e.preventDefault(); $('#newBtn:visible').click() || (window.location.href = "{{ route('customer-claims.create') }}"); }
+            if(key === 'l') { e.preventDefault(); window.location.href = "{{ route('customer-claims.index') }}"; }
+        }
         if(e.key === 'Escape') { window.location.href = "{{ route('customer-claims.index') }}"; }
     });
 });
