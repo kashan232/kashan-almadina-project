@@ -111,54 +111,177 @@
             height: auto !important;
         }
     }
+    
+    /* Desktop Navbar Merged Styles */
+    @media (min-width: 992px) {
+        .rt_nav_header .top_nav {
+            padding: 5px 0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .rt_nav_header .nav-bottom {
+            display: flex !important;
+            align-items: center;
+            background: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+            margin-left: 10px;
+            margin-right: 10px;
+        }
+        .page-navigation {
+            display: flex;
+            flex-direction: row;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+            background: transparent !important;
+            border: none !important;
+            margin: 0 !important;
+            gap: 2px;
+        }
+        .page-navigation .nav-item {
+            border: none !important;
+            position: relative !important;
+            padding-bottom: 5px; /* Extend hover area to bridge any micro-gaps */
+            margin-bottom: -5px; /* Offset the padding */
+        }
+        .page-navigation .nav-item .nav-link {
+            color: #ffffff !important;
+            padding: 5px 8px !important;
+            font-size: 13px !important;
+            font-weight: 600;
+            white-space: nowrap;
+            transition: all 0.3s ease;
+        }
+        .page-navigation .nav-item .nav-link:hover,
+        .page-navigation .nav-item:hover .nav-link {
+            color: #ffffff !important;
+            background: rgba(255,255,255,0.25);
+            border-radius: 6px;
+        }
+
+        /* Dashboard specific override to fix blue color */
+        .page-navigation .nav-item a[href*="home"] {
+            color: #ffffff !important;
+        }
+
+          /* Style dropdown menus for desktop */
+        .page-navigation .nav-item .submenu {
+            background: #ffffff !important;
+            border-radius: 6px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1) !important;
+            border: 1px solid rgba(0,0,0,0.05);
+            margin-top: 0px !important; /* Fixes mouse hover dead zone */
+            padding: 5px 0 !important;
+            position: absolute !important;
+            top: 100% !important;
+            left: 0;
+            min-width: 220px;
+            z-index: 9999;
+            /* Smooth fade in */
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(10px);
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+        /* Show on hover */
+        .page-navigation .nav-item:hover .submenu {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+        .page-navigation .nav-item .submenu .submenu-item {
+            margin: 0;
+            padding: 0;
+            list-style: none;
+        }
+        
+        .rt_nav_header.horizontal-layout .nav-bottom .page-navigation>.nav-item:not(.mega-menu) .submenu ul {
+            width: auto !important;
+            padding: 0px !important;
+        }
+        
+        .page-navigation .nav-item .submenu .submenu-item li a {
+            color: #333333 !important;
+            font-size: 13px !important;
+            padding: 6px 15px !important;
+            font-weight: 500;
+        }
+        .page-navigation .nav-item .submenu .submenu-item li a:hover {
+            background: #f4f6f9 !important;
+            color: #0d6efd !important;
+            padding-left: 20px !important; /* tiny hover effect */
+            transition: all 0.2s;
+        }
+        .page-navigation .nav-item .submenu .submenu-item li a i {
+            color: #6c757d !important;
+        }
+        .page-navigation .nav-item .submenu .submenu-item li a:hover i {
+            color: #0d6efd !important;
+        }
+        
+        .menu-arrow {
+            margin-left: 4px;
+            font-size: 9px;
+            display: inline-block;
+            vertical-align: middle;
+            transition: transform 0.3s ease;
+        }
+        .page-navigation .nav-item:hover .menu-arrow {
+            transform: rotate(180deg);
+        }
+        
+        .menu-arrow::before {
+            content: none !important;
+            display: none !important;
+        }
+        .menu-arrow::after {
+            content: '\25BC' !important; /* Native downward caret */
+            font-family: sans-serif !important;
+            opacity: 0.9;
+            display: inline-block !important;
+        }
+        /* Hide any default arrows from the nav-link itself */
+        .page-navigation .nav-item .nav-link::after,
+        .page-navigation .nav-item .nav-link::before {
+            content: none !important;
+            display: none !important;
+        }
+        
+        .navbar-toggler {
+            display: none !important;
+        }
+    }
+    
+    /* Dashboard specific override to fix blue color */
+    .page-navigation .nav-item a[href*="home"] {
+        color: #ffffff !important;
+    }
+    
+    /* Global header background (Blue) */
+    .rt_nav_header {
+        background: linear-gradient(90deg, #0a3d62 0%, #3c6382 100%) !important;
+        border-bottom: 2px solid #072a44;
+    }
 </style>
 <div class="container-scroller">
       <nav class="rt_nav_header horizontal-layout col-lg-12 col-12 p-0" style="position: relative; opacity: 1 !important; overflow: visible !important;">
           <div class="top_nav flex-grow-1" style="overflow: visible !important;">
-              <div class="container d-flex flex-row h-100 align-items-center">
-                  <div class="text-center rt_nav_wrapper d-flex align-items-center">
-                      <a class="nav_logo rt_logo" href="index.html"><img
-                              src="{{ asset('assets/images/WIJDAN-removebg-preview.png') }}" alt="logo" /></a>
+              <div class="container-fluid px-2 d-flex flex-row h-100 align-items-center justify-content-between">
+                  <!-- BRAND NAME -->
+                  <div class="d-flex align-items-center me-2">
+                      <a class="nav_logo rt_logo text-decoration-none" href="{{ url('/home') }}">
+                          <h4 class="text-white m-0 fw-bold" style="letter-spacing: 0.5px; font-size: 1rem;">AL MADINA TRADERS</h4>
+                      </a>
                   </div>
-                  <div class="nav_wrapper_main d-flex align-items-center justify-content-between flex-grow-1">
-                      <ul class="navbar-nav navbar-nav-right mr-0 ml-auto">
-                          <li class="nav-item">
-                              <span class="nav-link text-white me-3" style="cursor: default;">
-                                  <i class="fa-solid fa-user-circle me-1"></i> {{ Auth::user()->name }}
-                              </span>
-                          </li>
-                          <li class="nav-item">
-                              <a class="nav-link" href="#" onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
-                                   <span class="profile_name"><i class="fa-solid fa-sign-out-alt me-1"></i> Logout</span>
-                              </a>
-                              <div class="dropdown-menu dropdown-menu-right navbar-dropdown pt-2" style="display:none;"
-                                  aria-labelledby="profileDropdown">
-                                  <span role="separator" class="divider"></span>
-                                  <form id="logout-form" method="POST" action="{{ route('logout') }}">
-                                      @csrf
-                                      <button type="submit" class="dropdown-item">
-                                          <i class="ti-power-off text-dark mr-3"></i> Logout
-                                      </button>
-                                  </form>
-                              </div>
-                          </li>
-                      </ul>
 
-                      <button class="navbar-toggler align-self-center" type="button" onclick="var nb = document.querySelector('.nav-bottom'); if(nb.style.display==='block'){nb.style.setProperty('display', 'none', 'important');}else{nb.style.setProperty('display', 'block', 'important');} event.stopPropagation();">
-                          <i class="fa-solid fa-bars text-white" style="font-size: 20px;"></i>
-                      </button>
-
-                  </div>
-              </div>
-          </div>
-          <div class="nav-bottom">
-              <div class="container">
-                  <ul class="nav page-navigation">
+                  <!-- MAIN NAVIGATION -->
+                  <div class="nav-bottom flex-grow-1">
+                      <div class="container-fluid p-0">
+                          <ul class="nav page-navigation d-flex justify-content-center">
                       @can('Dashboard')
                       <li class="nav-item">
-                          <a href="{{ url('/home') }}" class="nav-link"><i
-                                  class="menu_icon feather ft-home"></i><span
-                                  class="menu-title">Dashboard</span></a>
+                          <a href="{{ url('/home') }}" class="nav-link"><span
+                                  class="menu-title text-white">Dashboard</span></a>
 
                       </li>
                       @endcan
@@ -167,7 +290,7 @@
                       {{-- Products Section --}}
                       @canany(['Products', 'Category', 'Sub Category', 'Brands', 'Units'])
                       <li class="nav-item">
-                          <a href="#" class="nav-link"><i class="menu_icon fas fa-box"></i><span class="menu-title">Products</span><i class="menu-arrow"></i></a>
+                          <a href="#" class="nav-link"><span class="menu-title">Products</span><i class="menu-arrow"></i></a>
                           <div class="submenu">
                               <ul class="submenu-item">
                                   @can('Products')
@@ -193,7 +316,7 @@
                       {{-- Purchase Section --}}
                       @canany(['Inward Gatepass', 'Purchase', 'Stock Wastage', 'Vendor'])
                       <li class="nav-item">
-                          <a href="#" class="nav-link"><i class="menu_icon fas fa-shopping-cart"></i><span class="menu-title">Purchase</span><i class="menu-arrow"></i></a>
+                          <a href="#" class="nav-link"><span class="menu-title">Purchase</span><i class="menu-arrow"></i></a>
                           <div class="submenu">
                               <ul class="submenu-item">
                                   @can('Inward Gatepass')
@@ -220,7 +343,7 @@
                       {{-- Inventory Section --}}
                       @canany(['Warehouse', 'Warehouse Stock', 'Stock Transfer'])
                       <li class="nav-item">
-                          <a href="#" class="nav-link"><i class="menu_icon fas fa-warehouse"></i><span class="menu-title">Inventory</span><i class="menu-arrow"></i></a>
+                          <a href="#" class="nav-link"><span class="menu-title">Inventory</span><i class="menu-arrow"></i></a>
                           <div class="submenu">
                               <ul class="submenu-item">
                                   @can('Warehouse')
@@ -241,7 +364,7 @@
                       {{-- Sales Section --}}
                       @canany(['Sales', 'Sale Return', 'Stock Hold', 'Customer', 'Sales Officer', 'Zone'])
                       <li class="nav-item">
-                          <a href="#" class="nav-link"><i class="menu_icon fas fa-receipt"></i><span class="menu-title">Sales</span><i class="menu-arrow"></i></a>
+                          <a href="#" class="nav-link"><span class="menu-title">Sales</span><i class="menu-arrow"></i></a>
                           <div class="submenu">
                               <ul class="submenu-item">
                                   @can('Sales')
@@ -273,7 +396,7 @@
                       {{-- Claims Section --}}
                       @canany(['Customer Claim', 'Claim Acceptance', 'Claim Receipt'])
                       <li class="nav-item">
-                          <a href="#" class="nav-link"><i class="menu_icon fas fa-shield-alt"></i><span class="menu-title">Claims</span><i class="menu-arrow"></i></a>
+                          <a href="#" class="nav-link"><span class="menu-title">Claims</span><i class="menu-arrow"></i></a>
                           <div class="submenu">
                               <ul class="submenu-item">
                                   @can('Customer Claim')
@@ -293,8 +416,8 @@
                       {{-- User Management Section --}}
                       @canany(['Users', 'Roles', 'Permissions', 'Branches'])
                       <li class="nav-item">
-                          <a href="#" class="nav-link"><i class="menu_icon fas fa-users-cog"></i><span
-                                  class="menu-title">User Management</span><i class="menu-arrow"></i></a>
+                          <a href="#" class="nav-link"><span
+                                  class="menu-title">User</span><i class="menu-arrow"></i></a>
                           <div class="submenu">
                               <ul class="submenu-item">
                                   @can('Users')
@@ -326,7 +449,6 @@
                       @canany(['Chart Of Accounts', 'Narrations', 'Receipts Voucher', 'Payment Voucher', 'Expense Voucher', 'Income Voucher', 'Journal Voucher', 'Adjustment Voucher'])
                       <li class="nav-item">
                           <a href="#" class="nav-link">
-                              <i class="menu_icon fas fa-file-invoice-dollar"></i>
                               <span class="menu-title">Vouchers</span>
                               <i class="menu-arrow"></i>
                           </a>
@@ -406,7 +528,6 @@
                       @canany(['Rollback Posting', 'General Ledger'])
                       <li class="nav-item">
                           <a href="#" class="nav-link">
-                              <i class="menu_icon fas fa-tools"></i>
                               <span class="menu-title">Tools</span>
                               <i class="menu-arrow"></i>
                           </a>
@@ -437,7 +558,6 @@
                       @canany(['Reports Dashboard', 'Sales Report', 'Purchase Report'])
                       <li class="nav-item">
                           <a href="#" class="nav-link">
-                              <i class="menu_icon fas fa-chart-bar"></i>
                               <span class="menu-title">Reports</span>
                               <i class="menu-arrow"></i>
                           </a>
@@ -472,8 +592,31 @@
                       </li>
                       @endcanany
 
-
                   </ul>
+                      </div>
+                  </div>
+
+                  <!-- PROFILE & MOBILE TOGGLE -->
+                  <div class="nav_wrapper_main d-flex align-items-center justify-content-end ms-3">
+                      <ul class="navbar-nav navbar-nav-right d-none d-lg-flex flex-row align-items-center m-0">
+                          <li class="nav-item me-3">
+                              <span class="nav-link text-white p-0" style="cursor: default;">
+                                  <i class="fa-solid fa-user-circle me-1"></i> {{ Auth::user()->name ?? 'Admin' }}
+                              </span>
+                          </li>
+                          <li class="nav-item">
+                              <a class="nav-link text-white p-0" href="#" onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
+                                   <span class="profile_name"><i class="fa-solid fa-sign-out-alt me-1"></i> Logout</span>
+                              </a>
+                              <form id="logout-form" method="POST" action="{{ route('logout') }}" style="display:none;">@csrf</form>
+                          </li>
+                      </ul>
+                      
+                      <button class="navbar-toggler align-self-center d-lg-none ms-3" type="button" onclick="var nb = document.querySelector('.nav-bottom'); if(nb.style.display==='block'){nb.style.setProperty('display', 'none', 'important');}else{nb.style.setProperty('display', 'block', 'important');} event.stopPropagation();">
+                          <i class="fa-solid fa-bars text-white" style="font-size: 20px;"></i>
+                      </button>
+                  </div>
+
               </div>
           </div>
       </nav>

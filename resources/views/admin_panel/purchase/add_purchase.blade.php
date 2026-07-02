@@ -635,45 +635,46 @@
                 <input type="hidden" id="netAmount" name="net_amount" value="{{ old('net_amount', $purchase->net_amount ?? 0) }}">
               </div>
             </div>
-
-            {{-- BOTTOM BUTTONS --}}
-            <div class="d-flex gap-2 mt-3 justify-content-center bg-light p-2 rounded border">
-                @php 
-                    $isPosted = isset($purchase) && $purchase->status == 'Posted';
-                    $isDraft = isset($purchase) && $purchase->status != 'Posted';
-                    $isNew = !isset($purchase);
-                @endphp
-
-                <button type="button" id="saveDraftBtn" class="btn btn-sm btn-primary px-4 fw-bold shadow-sm" {{ $isPosted || $isDraft ? 'disabled' : '' }}>
-                    <u>A</u>dd <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Alt+A</kbd>
-                </button>
-
-                <button type="button" id="editInvoiceBtn" class="btn btn-sm btn-warning px-4 fw-bold text-dark shadow-sm" {{ $isNew || $isPosted ? 'disabled' : '' }}>
-                    <u>E</u>dit <kbd style="font-size:9px;opacity:.8;margin-left:4px;color:#fff;">Alt+E</kbd>
-                </button>
-
-                <button type="button" id="postBtn" class="btn btn-sm btn-success px-4 fw-bold shadow-sm" {{ $isNew || $isPosted ? 'disabled' : '' }}>
-                    <u>S</u>ave <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Alt+S</kbd>
-                </button>
-
-                <button type="button" id="deleteBtn" class="btn btn-sm btn-danger px-4 fw-bold shadow-sm" {{ $isNew || $isPosted ? 'disabled' : '' }}>
-                    <u>D</u>elete <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Alt+D</kbd>
-                </button>
-
-                <a href="{{ isset($purchase) ? route('purchase.invoice', $purchase->id) : 'javascript:void(0)' }}" id="realPrintBtn" target="_blank" class="btn btn-sm btn-info px-4 fw-bold text-dark shadow-sm" {{ $isNew ? 'disabled' : '' }}>
-                    <u>P</u>rint <kbd style="font-size:9px;opacity:.8;margin-left:4px;color:#fff;">Alt+P</kbd>
-                </a>
-
-                <a href="{{ route('Purchase.home') }}" id="exitBtn" class="btn btn-sm btn-secondary px-4 fw-bold shadow-sm text-white">
-                    E<u>x</u>it <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Alt+X</kbd>
-                </a>
-
-                <a href="{{ route('add_purchase') }}" id="newInvoiceBtn" class="btn btn-sm btn-dark px-4 fw-bold shadow-sm text-white">
-                    <u>N</u>ew <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Alt+N</kbd>
-                </a>
             </div>
           </div>
         </div>
+      </div>
+
+      {{-- BOTTOM BUTTONS --}}
+      <div class="d-flex flex-wrap gap-2 mt-3 justify-content-center bg-light p-3 rounded-3 border shadow-sm w-100">
+          @php 
+              $isPosted = isset($purchase) && $purchase->status == 'Posted';
+              $isDraft = isset($purchase) && $purchase->status != 'Posted';
+              $isNew = !isset($purchase);
+          @endphp
+
+          <button type="button" id="saveDraftBtn" class="btn btn-primary px-4 fw-bold shadow-sm" {{ $isPosted || $isDraft ? 'disabled' : '' }}>
+              <u>A</u>dd <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+S</kbd>
+          </button>
+
+          <button type="button" id="editInvoiceBtn" class="btn btn-warning px-4 fw-bold text-dark shadow-sm" {{ $isNew || $isPosted ? 'disabled' : '' }}>
+              <u>E</u>dit <kbd style="font-size:10px;opacity:.8;margin-left:4px;color:#fff;">Ctrl+E</kbd>
+          </button>
+
+          <button type="button" id="postBtn" class="btn btn-success px-4 fw-bold shadow-sm" {{ $isNew || $isPosted ? 'disabled' : '' }}>
+              <u>S</u>ave <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+&crarr;</kbd>
+          </button>
+
+          <button type="button" id="deleteBtn" class="btn btn-danger px-4 fw-bold shadow-sm" {{ $isNew || $isPosted ? 'disabled' : '' }}>
+              <u>D</u>elete <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+D</kbd>
+          </button>
+
+          <a href="{{ isset($purchase) ? route('purchase.invoice', $purchase->id) : 'javascript:void(0)' }}" id="realPrintBtn" target="_blank" class="btn btn-info px-4 fw-bold text-dark shadow-sm" {{ $isNew ? 'disabled' : '' }}>
+              <u>P</u>rint <kbd style="font-size:10px;opacity:.8;margin-left:4px;color:#fff;">Ctrl+P</kbd>
+          </a>
+
+          <a href="{{ route('Purchase.home') }}" id="exitBtn" class="btn btn-secondary px-4 fw-bold shadow-sm text-white">
+              E<u>x</u>it <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Esc</kbd>
+          </a>
+
+          <a href="{{ route('add_purchase') }}" id="newInvoiceBtn" class="btn btn-dark px-4 fw-bold shadow-sm text-white">
+              <u>N</u>ew <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+M</kbd>
+          </a>
       </div>
     </form>
   </div>
@@ -1912,38 +1913,38 @@ $(document).ready(function() {
 
     // Keyboard Shortcuts Capture
     document.addEventListener('keydown', function(e) {
-        // Alt+A or Ctrl+S -> Add (Save Draft)
-        if ((e.altKey && (e.key === 'a' || e.key === 'A')) || (e.ctrlKey && (e.key === 's' || e.key === 'S'))) {
+        // Ctrl+S -> Add (Save Draft)
+        if (e.ctrlKey && (e.key === 's' || e.key === 'S')) {
             e.preventDefault();
             if (!$('#saveDraftBtn').prop('disabled')) $('#saveDraftBtn').click();
         }
-        // Alt+E or Ctrl+E -> Edit
-        if ((e.altKey && (e.key === 'e' || e.key === 'E')) || (e.ctrlKey && (e.key === 'e' || e.key === 'E'))) {
+        // Ctrl+E -> Edit
+        if (e.ctrlKey && (e.key === 'e' || e.key === 'E')) {
             e.preventDefault();
             if (!$('#editInvoiceBtn').prop('disabled')) $('#editInvoiceBtn').click();
         }
-        // Alt+S or Ctrl+Enter -> Save (Post)
-        if ((e.altKey && (e.key === 's' || e.key === 'S')) || (e.ctrlKey && e.key === 'Enter')) {
+        // Ctrl+Enter -> Save (Post)
+        if (e.ctrlKey && e.key === 'Enter') {
             e.preventDefault();
             if (!$('#postBtn').prop('disabled')) $('#postBtn').click();
         }
-        // Alt+D -> Delete
-        if (e.altKey && (e.key === 'd' || e.key === 'D')) {
+        // Ctrl+D -> Delete
+        if (e.ctrlKey && (e.key === 'd' || e.key === 'D')) {
             e.preventDefault();
             if (!$('#deleteBtn').prop('disabled')) $('#deleteBtn').click();
         }
-        // Alt+X or Esc -> Exit
-        if ((e.altKey && (e.key === 'x' || e.key === 'X')) || e.key === 'Escape') {
+        // Esc -> Exit
+        if (e.key === 'Escape') {
             e.preventDefault();
             window.location.href = $('#exitBtn').attr('href');
         }
-        // Alt+N or Ctrl+M -> New
-        if ((e.altKey && (e.key === 'n' || e.key === 'N')) || (e.ctrlKey && (e.key === 'm' || e.key === 'M'))) {
+        // Ctrl+M -> New
+        if (e.ctrlKey && (e.key === 'm' || e.key === 'M')) {
             e.preventDefault();
             window.location.href = $('#newInvoiceBtn').attr('href');
         }
-        // Alt+P or Ctrl+P -> Print
-        if ((e.altKey && (e.key === 'p' || e.key === 'P')) || (e.ctrlKey && (e.key === 'p' || e.key === 'P'))) {
+        // Ctrl+P -> Print
+        if (e.ctrlKey && (e.key === 'p' || e.key === 'P')) {
             e.preventDefault();
             if ($('#realPrintBtn').length && !$('#realPrintBtn').prop('disabled')) {
                 $('#realPrintBtn')[0].click();
