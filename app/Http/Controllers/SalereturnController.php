@@ -46,9 +46,9 @@ class SaleReturnController extends Controller
 
     private function generateReturnNo()
     {
-        $lastReturn = SaleReturn::withoutGlobalScopes()->orderBy('id', 'desc')->first();
+        $lastReturn = DB::table('sale_returns')->orderBy('id', 'desc')->first();
         $num = 0;
-        if ($lastReturn) {
+        if ($lastReturn && isset($lastReturn->invoice_no)) {
             $num = (int) preg_replace('/[^0-9]/', '', $lastReturn->invoice_no);
         }
 
@@ -56,7 +56,7 @@ class SaleReturnController extends Controller
         do {
             $num++;
             $nextInvoice = 'SR-' . $num;
-            $exists = SaleReturn::withoutGlobalScopes()->where('invoice_no', $nextInvoice)->exists();
+            $exists = DB::table('sale_returns')->where('invoice_no', $nextInvoice)->exists();
         } while ($exists);
 
         return $nextInvoice;
