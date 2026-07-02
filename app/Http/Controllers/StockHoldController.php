@@ -238,9 +238,14 @@ class StockHoldController extends Controller
     {
         $request->validate([
             'entry_date'   => 'required|date',
+            'warehouse_id' => 'required|integer',
             'product_id'   => 'required|array',
             'hold_qty'     => 'required|array',
         ]);
+
+        if ($request->warehouse_id == 0 && !auth()->user()->canAccessShop()) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized access to Shop Stock.'], 403);
+        }
 
         $voucher = StockHoldVoucher::findOrFail($id);
         if ($voucher->status === 'Posted') {
@@ -255,6 +260,7 @@ class StockHoldController extends Controller
             $voucher->update([
                 'date'         => $request->entry_date,
                 'entry_time'   => $request->entry_time ?? date('H:i'),
+                'warehouse_id' => $request->warehouse_id,
                 'remarks'      => $request->remarks,
                 'status'       => $status,
             ]);
@@ -272,7 +278,7 @@ class StockHoldController extends Controller
                     'sale_id'      => $voucher->sale_id,
                     'party_type'   => $voucher->party_type,
                     'party_id'     => $voucher->party_id,
-                    'warehouse_id' => $voucher->warehouse_id,
+                    'warehouse_id' => $request->warehouse_id,
                     'product_id'   => $productId,
                     'sale_qty'     => $request->sale_qty[$index] ?? 0,
                     'hold_qty'     => $qty,
@@ -280,7 +286,7 @@ class StockHoldController extends Controller
                     'status'       => 0,
                 ]);
                 if ($status === 'Posted') {
-                    $this->adjustStock($voucher->warehouse_id, $productId, $qty);
+                    $this->adjustStock($request->warehouse_id, $productId, $qty);
                 }
             }
 
