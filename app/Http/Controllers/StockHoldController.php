@@ -608,11 +608,6 @@ class StockHoldController extends Controller
 
         if ($holdItem) {
             $remaining = (float) $holdItem->hold_qty - $releaseQty;
-            if ($remaining < -0.0001) {
-                throw new \RuntimeException(
-                    'Release qty exceeds reserved qty for product #' . $productId
-                );
-            }
             $holdItem->hold_qty = max(0, $remaining);
             if ($holdItem->hold_qty <= 0) {
                 $holdItem->status = 1;
