@@ -142,7 +142,7 @@
                 <th width="8%">Qty</th>
                 <th width="12%">Retail Price</th>
                 <th width="13%">Retail Value</th>
-                <th width="12%">Purchase Price</th>
+                <th width="12%">Purchase Rate</th>
                 <th width="15%">Net Amount</th>
             </tr>
         </thead>
@@ -177,7 +177,7 @@
                 @foreach($items as $item)
                     @php
                         $qty = $item->qty;
-                        $purchase_p = $item->purchase_rate ?: (($qty > 0) ? ($item->price - (($item->item_discount > 100) ? ($item->item_discount / $qty) : ($item->price * $item->item_discount / 100))) : $item->price);
+                        $purchase_p = $item->net_rate;
                         $purchase_a = $item->line_total;
 
                         $latestPrice = $item->product->latestPrice;
