@@ -18,6 +18,11 @@ use Carbon\Carbon;
 
 class SalesReportController extends Controller
 {
+    private function shouldApplyFilter(array $selected, int $total): bool
+    {
+        return !empty($selected) && ($total === 0 || count($selected) < $total);
+    }
+
     public function index()
     {
         $userGroups = UserGroup::orderBy('group_name')->get();
@@ -54,9 +59,19 @@ class SalesReportController extends Controller
         $from_date = $request->from_date;
         $to_date = $request->to_date;
 
+        $totalGroups = UserGroup::count();
+        $totalUsers = User::count();
+        $totalPartyTypes = 3;
+        $totalParties = Customer::count() + Vendor::count();
+        $totalWarehouses = Warehouse::count() + 1;
+        $totalCategories = Category::count();
+        $totalSubcategories = Subcategory::count();
+        $totalBrands = Brand::count();
+        $totalProducts = Product::count();
+
         // Build Query
         $query = SaleItem::with(['sale.customer', 'product.brandRelation', 'warehouse'])
-            ->whereHas('sale', function($q) use ($from_date, $to_date, $invoice_no, $parties, $party_types, $sales_officers, $user_groups) {
+            ->whereHas('sale', function($q) use ($from_date, $to_date, $invoice_no, $parties, $party_types, $sales_officers, $user_groups, $totalGroups, $totalUsers, $totalPartyTypes, $totalParties) {
                 $q->where('is_sale_order', 0);
                 if (!empty($from_date)) {
                     $q->whereDate('created_at', '>=', $from_date);
@@ -67,13 +82,13 @@ class SalesReportController extends Controller
                 if (!empty($invoice_no)) {
                     $q->where('invoice_no', 'like', "%$invoice_no%");
                 }
-                if (!empty($parties)) {
+                if ($this->shouldApplyFilter($parties, $totalParties)) {
                     $q->whereIn('customer_id', $parties);
                 }
-                if (!empty($sales_officers)) {
+                if ($this->shouldApplyFilter($sales_officers, $totalUsers)) {
                     $q->whereIn('created_by', $sales_officers);
                 }
-                if (!empty($user_groups)) {
+                if ($this->shouldApplyFilter($user_groups, $totalGroups)) {
                     $q->where(function ($sub) use ($user_groups) {
                         foreach ($user_groups as $gid) {
                             $sub->orWhereJsonContains('user_group_ids', (string) $gid)
@@ -81,7 +96,7 @@ class SalesReportController extends Controller
                         }
                     });
                 }
-                if (!empty($party_types)) {
+                if ($this->shouldApplyFilter($party_types, $totalPartyTypes)) {
                     $q->where(function ($pt) use ($party_types) {
                         $customerTypes = array_values(array_intersect($party_types, ['Main Customer', 'Walking Customer']));
                         if (in_array('Vendor', $party_types)) {
@@ -102,21 +117,21 @@ class SalesReportController extends Controller
             });
 
         // Apply Item level filters
-        if (!empty($warehouses)) {
+        if ($this->shouldApplyFilter($warehouses, $totalWarehouses)) {
             $query->whereIn('warehouse_id', $warehouses);
         }
-        if (!empty($items)) {
+        if ($this->shouldApplyFilter($items, $totalProducts)) {
             $query->whereIn('product_id', $items);
         }
-        if (!empty($brands) || !empty($categories) || !empty($subcategories)) {
-            $query->whereHas('product', function($p) use ($brands, $categories, $subcategories) {
-                if (!empty($brands)) {
+        if ($this->shouldApplyFilter($brands, $totalBrands) || $this->shouldApplyFilter($categories, $totalCategories) || $this->shouldApplyFilter($subcategories, $totalSubcategories)) {
+            $query->whereHas('product', function($p) use ($brands, $categories, $subcategories, $totalBrands, $totalCategories, $totalSubcategories) {
+                if ($this->shouldApplyFilter($brands, $totalBrands)) {
                     $p->whereIn('brand_id', $brands);
                 }
-                if (!empty($categories)) {
+                if ($this->shouldApplyFilter($categories, $totalCategories)) {
                     $p->whereIn('category_id', $categories);
                 }
-                if (!empty($subcategories)) {
+                if ($this->shouldApplyFilter($subcategories, $totalSubcategories)) {
                     $p->whereIn('sub_category_id', $subcategories);
                 }
             });
