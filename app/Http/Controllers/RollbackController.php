@@ -479,9 +479,17 @@ class RollbackController extends Controller
     private function rollbackClaimReceipt($invoiceNo)
     {
         $rec = $this->findRecord(ClaimItemReceipt::class, 'voucher_no', $invoiceNo);
-        if (!$rec) throw new \Exception("Receipt $invoiceNo not found.");
+        $type = "Receipt";
+
+        if (!$rec) {
+            $rec = $this->findRecord(\App\Models\ClaimCreditNote::class, 'voucher_no', $invoiceNo);
+            $type = "Credit Note";
+        }
+
+        if (!$rec) throw new \Exception("Receipt or Credit Note $invoiceNo not found.");
+        
         $rec->update(['status' => 'Unposted']);
-        return back()->with('success', "Claim Receipt #$invoiceNo set to Unposted.");
+        return back()->with('success', "Claim $type #$invoiceNo set to Unposted.");
     }
 
     private function rollbackVoucher($model, $field, $invoiceNo, $name)

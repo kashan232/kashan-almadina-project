@@ -637,41 +637,39 @@
             </div>
 
             {{-- BOTTOM BUTTONS --}}
-            <div class="d-flex gap-2 mt-3 justify-content-end">
-                <button type="button" id="saveDraftBtn" class="btn btn-sm btn-warning rounded-pill px-4 shadow-sm">
-                    <i class="fa fa-floppy-o me-1"></i> Save Draft <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+S</kbd>
+            <div class="d-flex gap-2 mt-3 justify-content-center bg-light p-2 rounded border">
+                @php 
+                    $isPosted = isset($purchase) && $purchase->status == 'Posted';
+                    $isDraft = isset($purchase) && $purchase->status != 'Posted';
+                    $isNew = !isset($purchase);
+                @endphp
+
+                <button type="button" id="saveDraftBtn" class="btn btn-sm btn-primary px-4 fw-bold shadow-sm" {{ $isPosted || $isDraft ? 'disabled' : '' }}>
+                    <u>A</u>dd <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Alt+A</kbd>
                 </button>
 
-                @if(isset($purchase))
-                    <a href="{{ route('purchase.invoice', $purchase->id) }}" target="_blank" class="btn btn-sm btn-outline-dark rounded-pill px-4">
-                        <i class="fa fa-print me-1"></i> Print <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+P</kbd>
-                    </a>
-                @else
-                    <button type="button" id="previewPrintBtn" class="btn btn-sm btn-outline-dark rounded-pill px-4">
-                        <i class="fa fa-print me-1"></i> Preview <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+P</kbd>
-                    </button>
-                @endif
-
-                <button type="button" id="postBtn" class="btn btn-sm btn-primary rounded-pill px-4 shadow-sm" style="{{ (isset($purchase) && $purchase->status == 'Posted') ? 'display: none;' : '' }}">
-                    <i class="fa fa-send me-1"></i> {{ isset($purchase) ? 'Update & Post' : 'Save & Post' }} <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+&#8629;</kbd>
+                <button type="button" id="editInvoiceBtn" class="btn btn-sm btn-warning px-4 fw-bold text-dark shadow-sm" {{ $isNew || $isPosted ? 'disabled' : '' }}>
+                    <u>E</u>dit <kbd style="font-size:9px;opacity:.8;margin-left:4px;color:#fff;">Alt+E</kbd>
                 </button>
 
-                <button type="button" id="editInvoiceBtn" 
-                    class="btn btn-sm btn-warning rounded-pill px-4 shadow-sm text-dark" 
-                    style="{{ (isset($purchase) && $purchase->status == 'Posted') ? '' : 'display: none;' }}">
-                    <i class="fa fa-edit me-1"></i> Edit 
-                    <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+E</kbd>
+                <button type="button" id="postBtn" class="btn btn-sm btn-success px-4 fw-bold shadow-sm" {{ $isNew || $isPosted ? 'disabled' : '' }}>
+                    <u>S</u>ave <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Alt+S</kbd>
                 </button>
 
-                <a href="{{ route('add_purchase') }}" id="newInvoiceBtn" 
-                    class="btn btn-sm btn-info rounded-pill px-4 shadow-sm text-white" 
-                    style="{{ isset($purchase) ? '' : 'display: none;' }}">
-                    <i class="fa fa-plus me-1"></i> New 
-                    <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+M</kbd>
+                <button type="button" id="deleteBtn" class="btn btn-sm btn-danger px-4 fw-bold shadow-sm" {{ $isNew || $isPosted ? 'disabled' : '' }}>
+                    <u>D</u>elete <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Alt+D</kbd>
+                </button>
+
+                <a href="{{ isset($purchase) ? route('purchase.invoice', $purchase->id) : 'javascript:void(0)' }}" id="realPrintBtn" target="_blank" class="btn btn-sm btn-info px-4 fw-bold text-dark shadow-sm" {{ $isNew ? 'disabled' : '' }}>
+                    <u>P</u>rint <kbd style="font-size:9px;opacity:.8;margin-left:4px;color:#fff;">Alt+P</kbd>
                 </a>
 
-                <a href="{{ route('Purchase.home') }}" class="btn btn-sm btn-danger rounded-pill px-4 shadow-sm text-white">
-                    <i class="fa fa-times me-1"></i> Cancel <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Esc</kbd>
+                <a href="{{ route('Purchase.home') }}" id="exitBtn" class="btn btn-sm btn-secondary px-4 fw-bold shadow-sm text-white">
+                    E<u>x</u>it <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Alt+X</kbd>
+                </a>
+
+                <a href="{{ route('add_purchase') }}" id="newInvoiceBtn" class="btn btn-sm btn-dark px-4 fw-bold shadow-sm text-white">
+                    <u>N</u>ew <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Alt+N</kbd>
                 </a>
             </div>
           </div>
@@ -1775,26 +1773,14 @@ $(document).ready(function() {
                         $('#invoiceNoDisplay').val(res.invoice_no);
                     }
 
-                    // Show Post button (becomes real post)
-                    $('#postBtn')
-                        .show()
-                        .prop('disabled', false)
-                        .removeClass('btn-primary')
-                        .addClass('btn-success')
-                        .html('<i class="fa fa-send me-1"></i> Post <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+↵</kbd>');
-
-                    // Update print button to real invoice link
-                    var printUrl = '/purchase/' + res.id + '/invoice';
-                    if ($('#previewPrintBtn').length) {
-                        $('#previewPrintBtn').replaceWith(
-                            $('<a>').attr({href: printUrl, target:'_blank', id:'realPrintBtn', class:'btn btn-sm btn-outline-dark rounded-pill px-4'})
-                            .html('<i class="fa fa-print me-1"></i> Print <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+P</kbd>')
-                        );
-                    }
+                    // Show Edit, Save, Delete, Print buttons, hide Add
+                    $('#saveDraftBtn').prop('disabled', true).html('<u>A</u>dd');
+                    $('#editInvoiceBtn').prop('disabled', false);
+                    $('#postBtn').prop('disabled', false);
+                    $('#deleteBtn').prop('disabled', false);
                     
-                    // Show New & Edit buttons
-                    $('#newInvoiceBtn').show();
-                    $('#editInvoiceBtn').show();
+                    var printUrl = '/purchase/' + res.id + '/invoice';
+                    $('#realPrintBtn').attr('href', printUrl).prop('disabled', false);
                     
                     // Lock the entire form visually from taking new input
                     $('#purchaseForm').addClass('form-locked');
@@ -1899,39 +1885,69 @@ $(document).ready(function() {
     // Edit logic
     $('#editInvoiceBtn').on('click', function() {
         $('#purchaseForm').removeClass('form-locked');
-        $(this).hide();
+        $('#saveDraftBtn').prop('disabled', false).html('<u>A</u>dd');
+        $(this).prop('disabled', true);
+    });
+
+    // Delete logic
+    $('#deleteBtn').on('click', function() {
+        if (!_savedPurchaseId) return;
+        if (confirm('Are you sure you want to delete this draft?')) {
+            $(this).prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i>...');
+            $.ajax({
+                url: '/purchase/' + _savedPurchaseId,
+                type: 'DELETE',
+                data: { _token: $('input[name="_token"]').first().val() },
+                success: function(res) {
+                    showToast('✅ Purchase deleted successfully!', 'success');
+                    setTimeout(function() { window.location.href = '/add/Purchase'; }, 1500);
+                },
+                error: function(xhr) {
+                    showToast('❌ Failed to delete.', 'error');
+                    $('#deleteBtn').prop('disabled', false).html('<u>D</u>elete');
+                }
+            });
+        }
     });
 
     // Keyboard Shortcuts Capture
     document.addEventListener('keydown', function(e) {
-        // Ctrl+L → List page
-        if (e.ctrlKey && (e.key === 'l' || e.key === 'L')) {
+        // Alt+A or Ctrl+S -> Add (Save Draft)
+        if ((e.altKey && (e.key === 'a' || e.key === 'A')) || (e.ctrlKey && (e.key === 's' || e.key === 'S'))) {
             e.preventDefault();
-            window.location.href = $('#listBtn').attr('href');
+            if (!$('#saveDraftBtn').prop('disabled')) $('#saveDraftBtn').click();
         }
-        
-        // Ctrl+M → New Invoice
-        if (e.ctrlKey && (e.key === 'm' || e.key === 'M')) {
+        // Alt+E or Ctrl+E -> Edit
+        if ((e.altKey && (e.key === 'e' || e.key === 'E')) || (e.ctrlKey && (e.key === 'e' || e.key === 'E'))) {
             e.preventDefault();
-            if ($('#newInvoiceBtn').is(':visible')) {
-                window.location.href = $('#newInvoiceBtn').attr('href');
-            } else {
-                window.location.href = "{{ url('add/Purchase') }}";
+            if (!$('#editInvoiceBtn').prop('disabled')) $('#editInvoiceBtn').click();
+        }
+        // Alt+S or Ctrl+Enter -> Save (Post)
+        if ((e.altKey && (e.key === 's' || e.key === 'S')) || (e.ctrlKey && e.key === 'Enter')) {
+            e.preventDefault();
+            if (!$('#postBtn').prop('disabled')) $('#postBtn').click();
+        }
+        // Alt+D -> Delete
+        if (e.altKey && (e.key === 'd' || e.key === 'D')) {
+            e.preventDefault();
+            if (!$('#deleteBtn').prop('disabled')) $('#deleteBtn').click();
+        }
+        // Alt+X or Esc -> Exit
+        if ((e.altKey && (e.key === 'x' || e.key === 'X')) || e.key === 'Escape') {
+            e.preventDefault();
+            window.location.href = $('#exitBtn').attr('href');
+        }
+        // Alt+N or Ctrl+M -> New
+        if ((e.altKey && (e.key === 'n' || e.key === 'N')) || (e.ctrlKey && (e.key === 'm' || e.key === 'M'))) {
+            e.preventDefault();
+            window.location.href = $('#newInvoiceBtn').attr('href');
+        }
+        // Alt+P or Ctrl+P -> Print
+        if ((e.altKey && (e.key === 'p' || e.key === 'P')) || (e.ctrlKey && (e.key === 'p' || e.key === 'P'))) {
+            e.preventDefault();
+            if ($('#realPrintBtn').length && !$('#realPrintBtn').prop('disabled')) {
+                $('#realPrintBtn')[0].click();
             }
-        }
-        
-        // Ctrl+E → Edit Invoice
-        if (e.ctrlKey && (e.key === 'e' || e.key === 'E')) {
-            if ($('#editInvoiceBtn').is(':visible')) {
-                e.preventDefault();
-                $('#editInvoiceBtn').trigger('click');
-            }
-        }
-        
-        // Esc → Cancel (Redirect to list)
-        if (e.key === 'Escape') {
-            e.preventDefault();
-            window.location.href = $('#cancelBtn').attr('href');
         }
     }, true);
 

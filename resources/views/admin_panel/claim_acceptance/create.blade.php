@@ -41,7 +41,7 @@
                     {{ strtoupper(isset($voucher) ? $voucher->status : 'DRAFT') }}
                 </span>
                 <span class="badge bg-primary px-3 py-2 rounded-pill shadow-sm">
-                    <i class="fa fa-tag me-1"></i> <span id="voucherNoText">{{ $voucher->voucher_no ?? $voucherNo }}</span>
+                    <i class="fa fa-tag me-1"></i> <span id="voucherNoText">{{ isset($voucher) ? $voucher->voucher_no : 'Auto-Generated' }}</span>
                 </span>
             </div>
             <div class="d-flex align-items-center gap-2">

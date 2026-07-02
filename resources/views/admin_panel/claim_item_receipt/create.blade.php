@@ -86,7 +86,7 @@
                                     </div>
                                     <div class="col-md-1">
                                         <label class="form-label small fw-bold text-muted mb-1">Receipt No</label>
-                                        <input type="text" class="form-control input-sm fw-bold text-primary bg-light" value="{{ $voucher->voucher_no ?? $voucherNo }}" readonly>
+                                        <input type="text" class="form-control input-sm fw-bold text-primary bg-light" value="{{ isset($voucher) ? $voucher->voucher_no : 'Auto-Generated' }}" readonly style="font-size: 0.8rem;">
                                     </div>
                                     <div class="col-md-2">
                                         <label class="form-label small fw-bold text-danger mb-1"><i class="fa fa-minus-circle"></i> Deduct From (-) Cr</label>
@@ -263,7 +263,7 @@
                                     </div>
                                     <div class="col-md-1">
                                         <label class="form-label small fw-bold text-muted mb-1">Voucher No</label>
-                                        <input type="text" class="form-control input-sm fw-bold text-primary bg-light" value="{{ $creditNoteVoucherNo }}" readonly>
+                                        <input type="text" class="form-control input-sm fw-bold text-primary bg-light" value="{{ isset($voucher) ? $voucher->voucher_no : 'Auto-Generated' }}" readonly style="font-size: 0.8rem;">
                                     </div>
                                     <div class="col-md-2">
                                         <label class="form-label small fw-bold text-danger mb-1"><i class="fa fa-minus-circle"></i> Deduct From (-) Cr</label>

@@ -60,7 +60,7 @@
                             <!-- Main Row -->
                             <div class="col-md-1">
                                 <label class="form-label">Claim No</label>
-                                <input type="text" class="form-control input-sm bg-light fw-bold text-primary" value="{{ $claim->claim_no }}" readonly>
+                                <input type="text" class="form-control input-sm bg-light fw-bold text-primary" value="{{ $claim->claim_no }}" readonly style="font-size: 0.8rem;">
                             </div>
                             <div class="col-md-2">
                                 <label class="form-label">Entry Date</label>
