@@ -52,7 +52,8 @@ class StockHoldController extends Controller
     public function create()
     {
         $warehouses = Warehouse::orderBy('warehouse_name')->get();
-        return view('admin_panel.stock_hold.create_stock_hold', compact('warehouses'));
+        $products = Product::select('id', 'name')->orderBy('name')->get();
+        return view('admin_panel.stock_hold.create_stock_hold', compact('warehouses', 'products'));
     }
 
     public function partyList(Request $request)
@@ -195,7 +196,6 @@ class StockHoldController extends Controller
                     'remarks'      => $request->remarks,
                     'status'       => $status === 'Posted' ? 0 : 0, // In this system, 0 means Active Hold
                 ]);
-
                 if ($status === 'Posted') {
                     $this->adjustStock($request->warehouse_id, $productId, $qty);
                 }
@@ -230,7 +230,8 @@ class StockHoldController extends Controller
             return redirect()->route('stock-hold-list')->with('error', 'Posted holds cannot be edited.');
         }
         $warehouses = Warehouse::orderBy('warehouse_name')->get();
-        return view('admin_panel.stock_hold.edit_stock_hold', compact('voucher', 'warehouses'));
+        $products = Product::select('id', 'name')->orderBy('name')->get();
+        return view('admin_panel.stock_hold.edit_stock_hold', compact('voucher', 'warehouses', 'products'));
     }
 
     public function update(Request $request, $id)
@@ -278,7 +279,6 @@ class StockHoldController extends Controller
                     'remarks'      => $request->remarks,
                     'status'       => 0,
                 ]);
-
                 if ($status === 'Posted') {
                     $this->adjustStock($voucher->warehouse_id, $productId, $qty);
                 }

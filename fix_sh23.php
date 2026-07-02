@@ -8,5 +8,5 @@ $ws = \App\Models\WarehouseStock::where('warehouse_id', 3)->where('product_id', 
 if($ws) {
     $ws->quantity -= 6;
     $ws->save();
-    echo 'Fixed';
+    echo 'Fixed stuck stock from SH-0023';
 }

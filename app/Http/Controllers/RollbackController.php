@@ -352,7 +352,11 @@ class RollbackController extends Controller
         
         if ($hold->status !== 'Posted') throw new \Exception("Hold $invoiceNo is not Posted.");
 
-        // StockHold posting just sets status to Posted. No physical stock was deducted.
+        $hold->load('items');
+        foreach ($hold->items as $item) {
+            $this->adjustStock($item->product_id, $item->warehouse_id, $item->hold_qty, 'subtract');
+        }
+
         $hold->update(['status' => 'Unposted']);
         return back()->with('success', "Stock Hold #$invoiceNo set to Unposted.");
     }

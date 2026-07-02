@@ -114,6 +114,9 @@
                                 <label class="form-label small fw-bold text-primary mb-1">Manual Product Search (to add extra items)</label>
                                 <select id="manual_product_search" class="form-select select2">
                                     <option value="">Search for a product...</option>
+                                    @foreach($products as $p)
+                                        <option value="{{ $p->id }}" data-name="{{ $p->name }}">{{ $p->id }} - {{ $p->name }}</option>
+                                    @endforeach
                                 </select>
                             </div>
                             <div class="col-md-2">
@@ -252,19 +255,16 @@ $(document).ready(function() {
     $(document).on('click', '.remove-row', function() { $(this).closest('tr').remove(); updateCount(); });
     function updateCount() { $('#total_items_badge').text($('#itemRows tr').length); }
 
-    $('#manual_product_search').select2({
-        ajax: {
-            url: "{{ route('stock-holds.products.search') }}", dataType: 'json', delay: 250,
-            data: function(params) { return { q: params.term }; },
-            processResults: function(data) { return { results: data.map(p => ({ id: p.id, text: p.id + ' - ' + p.name, name: p.name })) }; }
-        }
-    });
+    $('#manual_product_search').select2();
 
     $('#addItemBtn').on('click', function() {
-        var data = $('#manual_product_search').select2('data')[0];
-        if(!data) { showToast('Select a product first', 'error'); return; }
-        addRow(data.id, data.name, 0, 1);
-        $('#manual_product_search').val(null).trigger('change');
+        var $opt = $('#manual_product_search').find(':selected');
+        var id = $opt.val();
+        var name = $opt.data('name');
+        
+        if(!id) { showToast('Select a product first', 'error'); return; }
+        addRow(id, name, 0, 1);
+        $('#manual_product_search').val('').trigger('change');
     });
 
     function save(act) {
