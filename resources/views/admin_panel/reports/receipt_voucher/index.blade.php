@@ -52,12 +52,27 @@
                             <div class="col-md-1" style="min-width: 110px;">
                                 <div class="filter-column">
                                     <div class="filter-header">
-                                        <input type="checkbox" class="select-all" data-target="head-list"> Sub Head
+                                        <input type="checkbox" class="select-all" data-target="main-head-list"> Main Head
                                     </div>
-                                    <div class="filter-list" id="head-list">
+                                    <div class="filter-list" id="main-head-list">
                                         @foreach($accountHeads as $head)
                                             <div class="filter-item">
-                                                <input type="checkbox" name="account_head[]" value="{{ $head->id }}">
+                                                <input type="checkbox" name="main_head[]" value="{{ $head->id }}">
+                                                <span>{{ $head->name }}</span>
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-1" style="min-width: 110px;">
+                                <div class="filter-column">
+                                    <div class="filter-header">
+                                        <input type="checkbox" class="select-all" data-target="sub-head-list"> Sub Head
+                                    </div>
+                                    <div class="filter-list" id="sub-head-list">
+                                        @foreach($accountHeads as $head)
+                                            <div class="filter-item" data-head-id="{{ $head->id }}">
+                                                <input type="checkbox" name="sub_head[]" value="{{ $head->id }}">
                                                 <span>{{ $head->name }}</span>
                                             </div>
                                         @endforeach
@@ -67,7 +82,25 @@
                             <div class="col-md-2" style="min-width: 130px;">
                                 <div class="filter-column">
                                     <div class="filter-header">
-                                        <input type="checkbox" class="select-all" data-target="party-list"> Source Party
+                                        <input type="checkbox" class="select-all" data-target="account-list"> Account
+                                    </div>
+                                    <div class="p-1 bg-light border-bottom">
+                                        <input type="text" class="form-control form-control-sm" id="accountSearch" placeholder="Search account..." style="height: 24px; font-size: 11px;">
+                                    </div>
+                                    <div class="filter-list" id="account-list">
+                                        @foreach($accounts as $acc)
+                                            <div class="filter-item" data-head-id="{{ $acc->head_id }}" data-search="{{ strtolower($acc->title) }}">
+                                                <input type="checkbox" name="account[]" value="{{ $acc->id }}">
+                                                <span>{{ $acc->title }}</span>
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-2" style="min-width: 130px;">
+                                <div class="filter-column">
+                                    <div class="filter-header">
+                                        <input type="checkbox" class="select-all" data-target="party-list"> Party
                                     </div>
                                     <div class="p-1 bg-light border-bottom">
                                         <input type="text" class="form-control form-control-sm" id="partySearch" placeholder="Search party..." style="height: 24px; font-size: 11px;">
@@ -184,7 +217,7 @@
     .filter-item:hover { background-color: #f8f9fa; }
     .filter-item.selected { background-color: #3498db !important; color: #fff !important; }
     .filter-item input[type="checkbox"] { display: none; }
-    #partySearch { height: 24px; font-size: 11px; }
+    #partySearch, #accountSearch { height: 24px; font-size: 11px; }
 </style>
 @endsection
 
@@ -232,6 +265,42 @@
                 $(this).toggle(match);
                 if (!match) uncheckItem($(this));
             });
+        });
+
+        $('#accountSearch').on('keyup', function() {
+            filterByMainHead();
+        });
+
+        function filterByMainHead() {
+            const selectedMainHeads = getCheckedValues('main-head-list', 'main_head[]');
+            const selectedSubHeads = getCheckedValues('sub-head-list', 'sub_head[]');
+
+            $('#sub-head-list .filter-item').each(function() {
+                const headId = String($(this).data('head-id') || '');
+                const visible = selectedMainHeads.length === 0 || selectedMainHeads.includes(headId);
+                $(this).toggle(visible);
+                if (!visible) uncheckItem($(this));
+            });
+
+            const activeHeads = selectedSubHeads.length > 0 ? selectedSubHeads : selectedMainHeads;
+
+            $('#account-list .filter-item').each(function() {
+                const headId = String($(this).data('head-id') || '');
+                const searchTerm = ($('#accountSearch').val() || '').toLowerCase();
+                const matchesHead = activeHeads.length === 0 || activeHeads.includes(headId);
+                const matchesSearch = !searchTerm || ($(this).data('search') || '').includes(searchTerm);
+                const visible = matchesHead && matchesSearch;
+                $(this).toggle(visible);
+                if (!visible) uncheckItem($(this));
+            });
+        }
+
+        $('#main-head-list .filter-item').on('click', function() {
+            setTimeout(filterByMainHead, 50);
+        });
+
+        $('#sub-head-list .filter-item').on('click', function() {
+            setTimeout(filterByMainHead, 50);
         });
 
         function filterByGroup() {

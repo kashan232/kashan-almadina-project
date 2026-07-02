@@ -58,6 +58,7 @@ class ReceiptVoucherReportController extends Controller
         $userGroups = UserGroup::orderBy('group_name')->get();
         $users = User::with('userGroups')->orderBy('name')->get();
         $accountHeads = AccountHead::where('status', 1)->orderBy('name')->get();
+        $accounts = Account::with('head')->orderBy('title')->get();
         $customers = Customer::orderBy('customer_name')->get();
         $vendors = Vendor::orderBy('name')->get();
         $shopGroupIds = $userGroups->where('allow_shop', 1)->pluck('id')->implode(',');
@@ -66,6 +67,7 @@ class ReceiptVoucherReportController extends Controller
             'userGroups',
             'users',
             'accountHeads',
+            'accounts',
             'customers',
             'vendors',
             'shopGroupIds'
@@ -97,7 +99,9 @@ class ReceiptVoucherReportController extends Controller
         $user_groups = $request->user_group ?? [];
         $officers = $request->sales_officer ?? [];
         $parties = $request->party ?? [];
-        $accountHeads = $request->account_head ?? [];
+        $mainHeads = $request->main_head ?? [];
+        $subHeads = $request->sub_head ?? $request->account_head ?? [];
+        $accounts = $request->account ?? [];
         $voucherId = $request->voucher_id;
         $report_type = $request->input('report_type', 'source_party');
         $receipt_from = $request->receipt_from;
@@ -109,6 +113,7 @@ class ReceiptVoucherReportController extends Controller
         $totalUsers = User::count();
         $totalParties = Customer::count() + Vendor::count();
         $totalAccountHeads = AccountHead::count();
+        $totalAccounts = Account::count();
 
         $query = ReceiptsVoucher::query()->withoutGlobalScopes()->where('status', 'posted');
 
@@ -154,7 +159,15 @@ class ReceiptVoucherReportController extends Controller
         $lines = collect();
 
         foreach ($vouchers as $voucher) {
-            $lines = $lines->merge($this->expandVoucherLines($voucher, $report_type, $accountHeads, $totalAccountHeads));
+            $lines = $lines->merge($this->expandVoucherLines(
+                $voucher,
+                $report_type,
+                $mainHeads,
+                $subHeads,
+                $accounts,
+                $totalAccountHeads,
+                $totalAccounts
+            ));
         }
 
         return $lines->sortBy(fn ($line) => sprintf(
@@ -168,8 +181,11 @@ class ReceiptVoucherReportController extends Controller
     private function expandVoucherLines(
         ReceiptsVoucher $voucher,
         string $reportType,
-        array $selectedHeads,
-        int $totalAccountHeads
+        array $mainHeads,
+        array $subHeads,
+        array $selectedAccounts,
+        int $totalAccountHeads,
+        int $totalAccounts
     ): Collection {
         $partyName = $this->resolvePartyName($voucher);
         $narrationIds = json_decode($voucher->narration_id, true) ?? [];
@@ -184,7 +200,13 @@ class ReceiptVoucherReportController extends Controller
             $headId = $rowHeads[$index] ?? null;
             $headName = $headId ? (AccountHead::find($headId)?->name ?? 'N/A') : 'N/A';
 
-            if ($this->shouldApplyFilter($selectedHeads, $totalAccountHeads) && !in_array((string) $headId, array_map('strval', $selectedHeads), true)) {
+            $activeHeadFilter = !empty($subHeads) ? $subHeads : $mainHeads;
+            if ($this->shouldApplyFilter($activeHeadFilter, $totalAccountHeads) && !in_array((string) $headId, array_map('strval', $activeHeadFilter), true)) {
+                continue;
+            }
+
+            $accountId = $rowAccounts[$index] ?? null;
+            if ($this->shouldApplyFilter($selectedAccounts, $totalAccounts) && !in_array((string) $accountId, array_map('strval', $selectedAccounts), true)) {
                 continue;
             }
 
@@ -197,7 +219,7 @@ class ReceiptVoucherReportController extends Controller
                 }
             }
 
-            $account = !empty($rowAccounts[$index]) ? Account::find($rowAccounts[$index]) : null;
+            $account = !empty($accountId) ? Account::find($accountId) : null;
             $amount = (float) ($amounts[$index] ?? 0);
 
             if ($amount == 0.0 && empty($narrId) && empty($rowAccounts[$index])) {

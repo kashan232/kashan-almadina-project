@@ -146,8 +146,8 @@
             <th width="8%">Vouc. ID</th>
             <th width="9%">Receipt Date</th>
             <th width="10%">Reference No.</th>
-            <th width="22%">Narration</th>
             <th width="16%">{{ $extraColLabel }}</th>
+            <th width="22%">Narration</th>
             <th width="18%">Bank Details</th>
             <th width="12%">Amount</th>
         </tr>
@@ -184,8 +184,8 @@
                     <td class="text-center">{{ $displayVouc }}</td>
                     <td class="text-center">{{ $line->receipt_date ? \Carbon\Carbon::parse($line->receipt_date)->format('d-m-y') : '-' }}</td>
                     <td class="text-center">{{ $line->reference_no ?: '-' }}</td>
-                    <td class="text-left">{{ $line->narration }}</td>
                     <td class="text-left">{{ $isPartyWise ? $line->sub_head_name : $line->party_name }}</td>
+                    <td class="text-left">{{ $line->narration }}</td>
                     <td class="text-left">{{ $line->bank_details }}</td>
                     <td class="amount-cell">{{ number_format($line->amount, 0) }}</td>
                 </tr>
