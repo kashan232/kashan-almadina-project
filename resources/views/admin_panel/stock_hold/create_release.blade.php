@@ -63,7 +63,7 @@
                             </div>
                             <div class="col-md-2">
                                 <label class="form-label small fw-bold text-muted mb-1">Release No</label>
-                                <input type="text" name="release_no" class="form-control input-sm fw-bold text-primary bg-light" value="{{ $releaseNo }}" readonly>
+                                <input type="text" id="release_no" class="form-control input-sm fw-bold text-primary bg-light" value="Auto-Generated" readonly>
                             </div>
                             <div class="col-md-2">
                                 <label class="form-label small fw-bold text-muted mb-1">Deliver From <span class="text-danger">*</span></label>
@@ -410,6 +410,9 @@ $(document).ready(function() {
             success: function(res) {
                 if(res.success) {
                     _savedVoucherId = res.id;
+                    if (res.voucher_no) {
+                        $('#release_no').val(res.voucher_no);
+                    }
                     $('#stockReleaseForm').addClass('form-locked');
                     $('#saveDraftBtn').hide();
                     $('#previewPrintBtn, #editBtn, #newBtn').show();

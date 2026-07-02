@@ -165,8 +165,6 @@ class StockHoldController extends Controller
 
             if (!$voucherId) {
                 $voucher->voucher_no = StockHoldVoucher::generateVoucherNo();
-            } elseif ($request->filled('voucher_no')) {
-                $voucher->voucher_no = $request->voucher_no;
             }
             
             $voucher->date         = $request->entry_date;
@@ -211,7 +209,8 @@ class StockHoldController extends Controller
                     'success' => true,
                     'message' => 'Stock Hold ' . ($status == 'Posted' ? 'Posted' : ($voucherId ? 'Updated' : 'Saved')) . ' successfully.',
                     'status'  => $status,
-                    'id'      => $voucher->id
+                    'id'      => $voucher->id,
+                    'voucher_no' => $voucher->voucher_no,
                 ]);
             }
 
@@ -407,8 +406,7 @@ class StockHoldController extends Controller
     public function createRelease()
     {
         $warehouses = Warehouse::orderBy('warehouse_name')->get();
-        $releaseNo = \App\Models\StockReleaseVoucher::generateVoucherNo();
-        return view('admin_panel.stock_hold.create_release', compact('warehouses', 'releaseNo'));
+        return view('admin_panel.stock_hold.create_release', compact('warehouses'));
     }
 
     public function holdVoucherList(Request $request)
@@ -566,7 +564,8 @@ class StockHoldController extends Controller
                 'success' => true,
                 'message' => 'Stock Released ' . ($status == 'Posted' ? 'Posted' : 'Saved') . ' successfully.',
                 'status'  => $status,
-                'id'      => $voucher->id
+                'id'      => $voucher->id,
+                'voucher_no' => $voucher->voucher_no,
             ]);
 
         } catch (\Exception $e) {
@@ -755,9 +754,8 @@ class StockHoldController extends Controller
         }
 
         $warehouses = Warehouse::orderBy('warehouse_name')->get();
-        $releaseNo = $voucher->voucher_no;
 
-        return view('admin_panel.stock_hold.edit_release', compact('voucher', 'warehouses', 'releaseNo'));
+        return view('admin_panel.stock_hold.edit_release', compact('voucher', 'warehouses'));
     }
 
     public function updateRelease(Request $request, $id)
@@ -855,6 +853,7 @@ class StockHoldController extends Controller
                 'message' => 'Release ' . ($status === 'Posted' ? 'Posted' : 'Updated') . ' successfully.',
                 'status'  => $status,
                 'id'      => $voucher->id,
+                'voucher_no' => $voucher->voucher_no,
             ]);
         } catch (\Exception $e) {
             DB::rollBack();

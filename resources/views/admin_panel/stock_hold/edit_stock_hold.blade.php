@@ -78,7 +78,7 @@
                             </div>
                             <div class="col-md-2">
                                 <label class="form-label small fw-bold">Voucher No</label>
-                                <input type="text" name="voucher_no" class="form-control input-sm" value="{{ $voucher->voucher_no }}">
+                                <input type="text" class="form-control input-sm bg-light fw-bold text-primary" value="{{ (int) preg_replace('/[^0-9]/', '', $voucher->voucher_no) ?: $voucher->voucher_no }}" readonly>
                             </div>
                             <div class="col-md-2 mt-2">
                                 <label class="form-label small fw-bold">Location</label>

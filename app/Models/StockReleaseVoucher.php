@@ -41,9 +41,23 @@ class StockReleaseVoucher extends Model
 
     public static function generateVoucherNo()
     {
-        $latest = self::withoutGlobalScopes()->orderBy('id', 'desc')->first();
-        $nextId = $latest ? (int) preg_replace('/[^0-9]/', '', $latest->voucher_no) + 1 : 1;
-        return str_pad($nextId, 4, '0', STR_PAD_LEFT);
+        $lastNumber = 0;
+        foreach (self::withoutGlobalScopes()->pluck('voucher_no') as $voucherNo) {
+            if ($voucherNo) {
+                $num = (int) preg_replace('/[^0-9]/', '', $voucherNo);
+                if ($num > $lastNumber) {
+                    $lastNumber = $num;
+                }
+            }
+        }
+
+        do {
+            $lastNumber++;
+            $next = str_pad($lastNumber, 3, '0', STR_PAD_LEFT);
+            $exists = self::withoutGlobalScopes()->where('voucher_no', $next)->exists();
+        } while ($exists);
+
+        return $next;
     }
 
     public function creator()

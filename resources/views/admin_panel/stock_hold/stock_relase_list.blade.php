@@ -174,8 +174,8 @@
                                     <tbody>
                                         @foreach($vouchers as $v)
                                         <tr>
-                                            <td class="text-muted small text-center">SRJ</td>
-                                            <td class="fw-bold text-primary text-center">{{ (int) preg_replace('/[^0-9]/', '', substr($v->voucher_no, strlen('SR-'))) }}</td>
+                                            <td class="text-muted small text-center">SR</td>
+                                            <td class="fw-bold text-primary text-center">{{ (int) preg_replace('/[^0-9]/', '', $v->voucher_no) ?: $v->voucher_no }}</td>
                                             <td class="small">{{ \Carbon\Carbon::parse($v->date)->format('d-M-Y') }}</td>
                                             <td class="text-center">
                                                 @if(($v->release_type ?? 'stock') == 'claim')

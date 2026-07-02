@@ -67,6 +67,10 @@
                                 <input type="time" name="entry_time" class="form-control input-sm" value="{{ date('H:i') }}" required>
                             </div>
                             <div class="col-md-2">
+                                <label class="form-label small fw-bold">Hold No.</label>
+                                <input type="text" id="voucher_no" class="form-control input-sm fw-bold text-primary bg-light" value="Auto-Generated" readonly>
+                            </div>
+                            <div class="col-md-2">
                                 <label class="form-label small fw-bold">Type</label>
                                 <select name="vendor_type" id="vendor_type" class="form-select input-sm" required>
                                     <option value="" disabled selected>Select Type</option>
@@ -282,6 +286,9 @@ $(document).ready(function() {
                 if(res.success) {
                     _savedVoucherId = res.id;
                     $('#voucher_id').val(res.id);
+                    if (res.voucher_no) {
+                        $('#voucher_no').val(res.voucher_no);
+                    }
                     $('#idBadge').text('ID: ' + res.id).show();
                     $('#stockHoldForm').addClass('form-locked');
                     $('#saveDraftBtn').hide();
