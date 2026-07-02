@@ -45,7 +45,7 @@ class PurchaseController extends Controller
             $query->where('created_by', $request->user_id);
         }
 
-        $Purchase = $query->orderBy('current_date', 'desc')->latest()->get();
+        $Purchase = $query->orderByDesc('id')->get();
         $users = User::orderBy('name')->get();
         return view("admin_panel.purchase.index", compact('Purchase', 'users'));
     }

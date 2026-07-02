@@ -260,7 +260,7 @@
                                         {{ \Carbon\Carbon::parse($purchase->current_date)->format('d-M-Y') }}
                                     </td>
                                     <td class="text-center small fw-bold">PJ</td>
-                                    <td class="fw-bold text-primary">{{ preg_replace('/[^0-9]/', '', $purchase->invoice_no) }}</td>
+                                    <td class="fw-bold text-primary" data-order="{{ (int) preg_replace('/[^0-9]/', '', $purchase->invoice_no) ?: $purchase->id }}">{{ preg_replace('/[^0-9]/', '', $purchase->invoice_no) }}</td>
                                     <td class="text-center">
                                         @if($purchase->inward_id)
                                             <span class="badge bg-info-subtle text-info border border-info px-2 py-0" style="font-size: 9px;">Inward ({{ $purchase->inward_id }})</span>
@@ -371,7 +371,10 @@
         
         // Initialize DataTable
         var dt = $('#purchaseTable').DataTable({
-            "order": [[1, 'desc']], // Default sort by Date DESC
+            "order": [[3, 'desc']], // Latest Inv# first
+            "columnDefs": [
+                { "type": "num", "targets": 3 }
+            ],
             "pageLength": 25,
             "scrollX": true,
             "autoWidth": false,

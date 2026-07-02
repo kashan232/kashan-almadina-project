@@ -1296,6 +1296,7 @@
     });
 
     $('#purchaseForm').on('submit', function(e) {
+        e.preventDefault();
         $('#purchaseItems tr').each(function() {
             const pid = $(this).find('.product-select').val() || '';
             if (!pid.toString().trim()) $(this).remove();
@@ -1306,13 +1307,15 @@
         }
 
         if ($('#purchaseItems .product-select').filter(function() { return $(this).val(); }).length === 0) {
-            e.preventDefault();
             showToast('⚠️ Please add at least one valid item before saving.', 'error');
             return false;
         }
 
-        recalcSummary();
-        return true;
+        if (typeof recalcSummary === 'function') recalcSummary();
+        if (typeof window.ajaxSaveDraft === 'function' && !$('#saveDraftBtn').prop('disabled')) {
+            window.ajaxSaveDraft();
+        }
+        return false;
     });
 
 
@@ -1722,6 +1725,13 @@ $(document).ready(function() {
     // =============================================
     var _savedPurchaseId = @json(isset($purchase) ? $purchase->id : null);
     var isViewMode = @json(isset($viewMode) && $viewMode);
+    var _saveInFlight = false;
+    var _postInFlight = false;
+    var _storeUrl = @json(route('store.Purchase'));
+
+    function getSaveUrl() {
+        return _savedPurchaseId ? ('/purchase/' + _savedPurchaseId) : _storeUrl;
+    }
 
     function switchFormToUpdateMode(purchaseId) {
         if (!purchaseId) return;
@@ -1775,6 +1785,7 @@ $(document).ready(function() {
     //  AJAX SAVE DRAFT (no page reload)
     // =============================================
     function ajaxSaveDraft() {
+        if (_saveInFlight) return;
         $('.ajax-valid-error').remove();
         
         // ✨ Remove empty product rows before saving
@@ -1803,19 +1814,32 @@ $(document).ready(function() {
             switchFormToUpdateMode(_savedPurchaseId);
         }
 
+        _saveInFlight = true;
         $('#saveDraftBtn').prop('disabled', true).html('<i class="fa fa-spinner fa-spin me-1"></i> Saving...');
 
+        var saveUrl = getSaveUrl();
+        var postData = $form.serializeArray();
+        if (_savedPurchaseId) {
+            var hasMethod = postData.some(function(f) { return f.name === '_method'; });
+            var hasPid = postData.some(function(f) { return f.name === 'purchase_id'; });
+            if (!hasMethod) postData.push({ name: '_method', value: 'PUT' });
+            if (!hasPid) postData.push({ name: 'purchase_id', value: _savedPurchaseId });
+        }
+
         $.ajax({
-            url:  $form.attr('action'),
+            url:  saveUrl,
             type: 'POST',
-            data: $form.serialize(),
+            data: $.param(postData),
             headers: { 'X-Requested-With': 'XMLHttpRequest' },
             success: function(res) {
                 if (res.success) {
                     switchFormToUpdateMode(res.id);
                     // Clear navigation guard - form is now saved
                     if (typeof window.markFormSaved === 'function') window.markFormSaved();
-                    showToast('✅ Draft Saved — ' + (res.message || 'Purchase saved as unposted.'), 'success');
+                    var savedMsg = _savedPurchaseId && res.message && res.message.indexOf('updated') !== -1
+                        ? res.message
+                        : (res.message || 'Purchase saved as unposted.');
+                    showToast('✅ ' + savedMsg, 'success');
                     if (res.invoice_no) {
                         $('#invoiceNoDisplay').val(res.invoice_no);
                     }
@@ -1873,18 +1897,24 @@ $(document).ready(function() {
                 } catch(e){}
                 showToast('❌ ' + msg, 'error');
                 $('#saveDraftBtn').prop('disabled', false).html('<u>S</u>ave');
+            },
+            complete: function() {
+                _saveInFlight = false;
             }
         });
     }
+    window.ajaxSaveDraft = ajaxSaveDraft;
 
     // =============================================
     //  POST (after save) → AJAX → reload create page
     // =============================================
     function doPost() {
+        if (_postInFlight) return;
         if (!_savedPurchaseId) {
             showToast('⚠️ Please save draft first before posting.', 'error');
             return;
         }
+        _postInFlight = true;
         $('#postBtn').prop('disabled', true)
             .html('<i class="fa fa-spinner fa-spin me-1"></i> Posting...');
 
@@ -1895,6 +1925,8 @@ $(document).ready(function() {
             headers: { 'X-Requested-With': 'XMLHttpRequest' },
             success: function(res) {
                 showToast('✅ Purchase posted successfully! Redirecting...', 'success');
+                $('#postedWatermark').addClass('show');
+                $('#statusBadge').removeClass('bg-warning').addClass('bg-success text-white').html('<i class="fa fa-check"></i> Posted');
                 setTimeout(function() {
                     window.location.href = '/add/Purchase';
                 }, 2000);
@@ -1908,6 +1940,9 @@ $(document).ready(function() {
                 showToast('❌ ' + msg, 'error');
                 $('#postBtn').prop('disabled', false)
                     .html('<i class="fa fa-send me-1"></i> Post <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+↵</kbd>');
+            },
+            complete: function() {
+                _postInFlight = false;
             }
         });
     }
@@ -1958,7 +1993,7 @@ $(document).ready(function() {
         }
     });
 
-    // Keyboard Shortcuts Capture
+    // Keyboard Shortcuts Capture (single handler — duplicate removed to prevent double save/post)
     document.addEventListener('keydown', function(e) {
         if (isViewMode) {
             if (e.key === 'Escape') {
@@ -1977,20 +2012,26 @@ $(document).ready(function() {
             }
             return;
         }
-        // Ctrl+S -> Add (Save Draft)
+        // Ctrl+S -> Save Draft (only once)
         if (e.ctrlKey && (e.key === 's' || e.key === 'S')) {
             e.preventDefault();
-            if (!$('#saveDraftBtn').prop('disabled')) $('#saveDraftBtn').click();
+            e.stopImmediatePropagation();
+            if (!_saveInFlight && !$('#saveDraftBtn').prop('disabled')) {
+                $('#saveDraftBtn').click();
+            }
         }
         // Ctrl+E -> Edit
         if (e.ctrlKey && (e.key === 'e' || e.key === 'E')) {
             e.preventDefault();
             if (!$('#editInvoiceBtn').prop('disabled')) $('#editInvoiceBtn').click();
         }
-        // Ctrl+Enter -> Save (Post)
+        // Ctrl+Enter -> Post (only once)
         if (e.ctrlKey && e.key === 'Enter') {
             e.preventDefault();
-            if (!$('#postBtn').prop('disabled')) $('#postBtn').click();
+            e.stopImmediatePropagation();
+            if (!_postInFlight && !$('#postBtn').prop('disabled')) {
+                $('#postBtn').click();
+            }
         }
         // Ctrl+D -> Delete
         if (e.ctrlKey && (e.key === 'd' || e.key === 'D')) {
@@ -2006,6 +2047,11 @@ $(document).ready(function() {
         if (e.ctrlKey && (e.key === 'm' || e.key === 'M')) {
             e.preventDefault();
             window.location.href = $('#newInvoiceBtn').attr('href');
+        }
+        // Ctrl+L -> List
+        if (e.ctrlKey && (e.key === 'l' || e.key === 'L')) {
+            e.preventDefault();
+            window.location.href = $('#listBtn').attr('href');
         }
         // Ctrl+P -> Print
         if (e.ctrlKey && (e.key === 'p' || e.key === 'P')) {
@@ -2209,47 +2255,6 @@ $(document).ready(function() {
             setTimeout(function() {
                 $('#accountsTable tbody tr:last .accountHead').focus();
             }, 60);
-        }
-    });
-
-    // =============================================
-    //  GLOBAL SHORTCUTS
-    // =============================================
-    $(document).on('keydown', function(e) {
-        if (isViewMode) {
-            return;
-        }
-        // Ctrl + S -> Save Draft
-        if (e.ctrlKey && (e.key === 's' || e.key === 'S')) {
-            e.preventDefault();
-            $('#saveDraftBtn').trigger('click');
-        }
-        // Ctrl + P -> Print
-        if (e.ctrlKey && (e.key === 'p' || e.key === 'P')) {
-            e.preventDefault();
-            if ($('#previewPrintBtn').length) {
-                $('#previewPrintBtn').trigger('click');
-            } else {
-                 const prtLink = $('a.btn-outline-dark[href*="invoice"]').attr('href');
-                 if(prtLink) window.open(prtLink, '_blank');
-            }
-        }
-        // Ctrl + Enter -> Post
-        if (e.ctrlKey && e.key === 'Enter') {
-            e.preventDefault();
-            $('#postBtn').trigger('click');
-        }
-        // Ctrl + L -> List
-        if (e.ctrlKey && (e.key === 'l' || e.key === 'L')) {
-            e.preventDefault();
-            const listUrl = $('#listBtn').attr('href');
-            if(listUrl) window.location.href = listUrl;
-        }
-        // Ctrl + M -> New
-        if (e.ctrlKey && (e.key === 'm' || e.key === 'M')) {
-            e.preventDefault();
-            const newUrl = $('#newInvoiceBtn').attr('href');
-            if(newUrl) window.location.href = newUrl;
         }
     });
 
