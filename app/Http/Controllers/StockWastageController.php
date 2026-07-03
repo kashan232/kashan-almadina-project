@@ -392,24 +392,23 @@ class StockWastageController extends Controller
         return view('admin_panel.stock_wastage.print', compact('wastage'));
     }
 
-    public function destroy(StockWastage $stock_wastage)
+    public function destroy(Request $request, StockWastage $stock_wastage)
     {
         if ($stock_wastage->status === 'Posted') {
-             // If user wants to allow deleting posted, we should reverse stock.
-             // But based on "uske bad nhi ho sakta", maybe we should prevent it?
-             // Usually preventing delete of posted records is safer unless "Unpost" feature exists.
-             // I'll return error for safety.
+             if ($request->ajax() || $request->wantsJson()) {
+                 return response()->json(['success' => false, 'message' => 'Cannot delete Posted record.'], 422);
+             }
              return redirect()->back()->with('error', 'Cannot delete Posted record.');
         }
 
         DB::transaction(function () use ($stock_wastage) {
-            // Only restore stock if it was deducted? 
-            // My previous logic deducted only on 'Posted'.
-            // So if Unposted, no stock deduction happened. So no restore needed.
-            // Since we block deleting Posted above, we just delete the record here.
-            
-            $stock_wastage->delete(); // Soft delete
+            $stock_wastage->delete();
         });
+
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json(['success' => true, 'message' => 'Stock Wastage deleted.']);
+        }
+
         return redirect()->route('stock-wastage.index')->with('success', 'Stock Wastage deleted.');
     }
 }

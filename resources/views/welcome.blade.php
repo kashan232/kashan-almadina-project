@@ -333,7 +333,6 @@
             <!-- Footer -->
             <div class="footer">
                 <p><strong>AL Madina Traders</strong></p>
-                <p>© {{ date('Y') }} All Rights Reserved</p>
             </div>
         </div>
     </div>

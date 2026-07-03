@@ -2,139 +2,100 @@
 
 <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 <style>
-    /* Select2 customizations to match theme */
-    .select2-container .select2-selection--single {
-        height: 31px !important;
-        border: 1px solid #ced4da;
-    }
-    .select2-container .select2-selection--single .select2-selection__rendered {
-        line-height: 31px !important;
-        padding-left: 8px;
-    }
-    .select2-container .select2-selection--single .select2-selection__arrow {
-        height: 31px !important;
-    }
-    .input-sm {
-        height: 31px;
-        padding: 2px 8px;
-        font-size: 14px;
-    }
-    .table td, .table th {
-        vertical-align: middle;
-        padding: 4px;
-    }
-    .badge-gwn {
-        font-size: 16px;
-        font-weight: bold;
-        background-color: #007bff;
-        color: white;
-        padding: 5px 10px;
-        border-radius: 4px;
-    }
+    .purchase-page.container-fluid { padding: .2rem .35rem !important; }
+    .purchase-page .main-content-inner { padding: 0 !important; }
+    .purchase-page .form-label { margin-bottom: 0 !important; font-size: .7rem !important; }
+    .purchase-page .input-sm,
+    .purchase-page .form-control-sm,
+    .purchase-page .form-select-sm { height: 24px !important; min-height: 24px !important; font-size: .75rem !important; padding: .1rem .35rem !important; }
+    .purchase-page .select2-container--default .select2-selection--single { height: 24px !important; font-size: .75rem !important; border: 1px solid #ced4da; }
+    .purchase-page .select2-container--default .select2-selection--single .select2-selection__rendered { line-height: 22px !important; padding-left: 6px !important; }
+    .purchase-page .select2-container--default .select2-selection--single .select2-selection__arrow { height: 22px !important; }
+    .purchase-page .table td, .purchase-page .table th { padding: 2px 4px !important; vertical-align: middle; font-size: .75rem; }
+    .purchase-page .card-header { padding: .35rem .5rem !important; }
+    .purchase-page .card-body { padding: .5rem !important; }
+    .purchase-page .row.g-3 { --bs-gutter-x: .5rem; --bs-gutter-y: .35rem; }
+    .purchase-page .bottom-bar { margin-top: .4rem !important; padding: .75rem !important; }
+    .purchase-page .page-head { padding: .35rem .5rem !important; margin-bottom: .35rem !important; }
+    .purchase-page .btn-xs { padding: 1px 4px; font-size: .7rem; line-height: 1.2; }
     .posted-watermark {
         position: absolute;
         top: 50%;
         left: 50%;
         transform: translate(-50%, -50%) rotate(-30deg);
-        font-size: 100px;
-        color: rgba(255, 0, 0, 0.1);
-        font-weight: bold;
+        font-size: 8rem;
+        color: rgba(220, 53, 69, 0.1);
+        font-weight: 900;
         pointer-events: none;
         z-index: 1000;
         text-transform: uppercase;
-        border: 10px solid rgba(255, 0, 0, 0.1);
-        padding: 20px;
-        border-radius: 20px;
         display: none;
+        border: 10px solid rgba(220, 53, 69, 0.1);
+        padding: 20px 50px;
+        border-radius: 20px;
     }
     .posted-watermark.show { display: block; }
-    .locked-bg {
-        background-color: #f8f9fa !important;
-    }
-    .form-locked {
-        background-color: #f8f9fa !important;
-        position: relative;
-    }
-    .form-locked input, 
+    .form-locked input,
     .form-locked .select2-container--default .select2-selection--single,
-    .form-locked .select2-container, 
-    .form-locked select, 
-    .form-locked textarea { 
-        pointer-events: none !important; 
-        opacity: 0.85 !important; 
+    .form-locked .select2-container,
+    .form-locked select,
+    .form-locked textarea {
+        pointer-events: none !important;
+        opacity: 0.85 !important;
         background-color: #f1f3f5 !important;
         cursor: not-allowed !important;
     }
-    .form-locked .remove-row, .form-locked #addItemBtn, .form-locked #saveDraftBtn { 
-        display: none !important; 
+    .form-locked .remove-row,
+    .form-locked #saveDraftBtn { display: none !important; }
+    .form-locked #editInvoiceBtn,
+    .form-locked #newInvoiceBtn,
+    .form-locked #realPrintBtn,
+    .form-locked #postBtn,
+    .form-locked #exitBtn,
+    .form-locked #deleteBtn {
+        pointer-events: auto !important;
+        opacity: 1 !important;
     }
 </style>
 
 @section('content')
-<div class="main-content">
+<div class="main-content purchase-page">
     <div class="main-content-inner">
-        <div class="container-fluid pt-3">
+        <div class="container-fluid purchase-page-inner">
 
             @if(session('success'))
-                <div class="alert alert-success alert-dismissible fade show">
+                <div class="alert alert-success alert-dismissible fade show py-1 mb-1">
                     <i class="fa fa-check-circle me-1"></i> {{ session('success') }}
                     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
             @endif
             @if(session('error'))
-                <div class="alert alert-danger alert-dismissible fade show">
+                <div class="alert alert-danger alert-dismissible fade show py-1 mb-1">
                     {{ session('error') }}
                     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
             @endif
 
-            {{-- TOP BAR: Left | Center | Right --}}
-            <div class="d-flex justify-content-between align-items-center mb-3 bg-light p-2 rounded shadow-sm">
-
-                {{-- LEFT: Post button (only on edit, when unposted) --}}
-                <div class="d-flex align-items-center" style="min-width:80px;">
-                    @if(isset($stock_wastage) && $stock_wastage->status != 'Posted')
-                        <form action="{{ route('stock-wastage.post', $stock_wastage->id) }}" method="POST" class="d-inline">
-                            @csrf
-                            <button type="submit" class="btn btn-sm btn-primary rounded-pill px-4 shadow-sm">
-                                <i class="fa fa-send me-1"></i> Post
-                            </button>
-                        </form>
-                    @else
-                        <span></span>
-                    @endif
+            <div class="d-flex justify-content-between align-items-center page-head bg-light rounded border shadow-sm">
+                <div class="d-flex align-items-center gap-2">
+                    <h6 class="mb-0 fw-bold" style="font-size:.85rem;">Edit Stock Wastage</h6>
+                    <span class="badge bg-warning text-dark px-2 py-0" style="font-size:10px;">{{ $stock_wastage->status ?? 'Draft' }}</span>
+                    <span class="badge bg-primary px-2 py-0" style="font-size:10px;">GWN: {{ $gwnId }}</span>
                 </div>
-
-                {{-- CENTER: Title + Status badge + GWN ID --}}
-                <div class="d-flex align-items-center gap-2 justify-content-center flex-grow-1">
-                    <h6 class="page-title mb-0 fw-bold">{{ isset($stock_wastage) ? 'Edit Stock Wastage' : 'Create Stock Wastage' }}</h6>
-                    <span class="badge {{ isset($stock_wastage) && $stock_wastage->status == 'Posted' ? 'bg-success' : 'bg-warning text-dark' }} px-3 py-2 rounded-pill shadow-sm" style="font-size:12px;">
-                        <i class="fa {{ isset($stock_wastage) && $stock_wastage->status == 'Posted' ? 'fa-check-circle' : 'fa-pencil' }} me-1"></i>
-                        {{ $stock_wastage->status ?? 'Draft' }}
-                    </span>
-                    <span class="badge bg-primary px-3 py-2 rounded-pill shadow-sm" style="font-size:12px;">
-                        <i class="fa fa-tag me-1"></i> GWN: {{ $gwnId }}
-                    </span>
-                </div>
-
-                {{-- RIGHT: List button --}}
-                <div class="d-flex align-items-center justify-content-end" style="min-width:115px;">
-                    <a href="{{ route('stock-wastage.index') }}" id="listBtn" class="btn btn-sm btn-outline-secondary rounded-pill px-3">
-                        <i class="fa fa-list me-1"></i> List
-                        <kbd style="font-size:9px;opacity:.7;margin-left:4px;">Ctrl+L</kbd>
-                    </a>
-                </div>
-
+                <a href="{{ route('stock-wastage.index') }}" id="listBtn" class="btn btn-xs btn-outline-secondary rounded-pill px-2 py-0" style="font-size:.7rem;">
+                    <i class="fa fa-list"></i> List
+                    <kbd style="font-size:8px;opacity:.8;margin-left:3px;">Ctrl+L</kbd>
+                </a>
             </div>
 
-            <form action="{{ route('stock-wastage.update', $stock_wastage->id) }}" method="POST" id="wastageForm" class="position-relative {{ $stock_wastage->status == 'Posted' ? 'form-locked' : '' }}">
+            <form action="{{ route('stock-wastage.update', $stock_wastage->id) }}" method="POST" id="wastageForm" class="position-relative">
                 @csrf
                 @method('PUT')
-                <div class="posted-watermark {{ $stock_wastage->status == 'Posted' ? 'show' : '' }}">Posted</div>
+                <div class="posted-watermark">Posted</div>
 
-                <div class="card shadow-sm mb-3">
-                    <div class="card-header bg-white py-2">
-                        <h6 class="mb-0 fw-bold text-muted"><i class="fa fa-info-circle me-1"></i> Wastage Details</h6>
+                <div class="card shadow-sm mb-2">
+                    <div class="card-header bg-white">
+                        <h6 class="mb-0 fw-bold text-muted" style="font-size:.8rem;"><i class="fa fa-info-circle me-1"></i> Wastage Details</h6>
                     </div>
                     
                     <div class="card-body">
@@ -196,8 +157,7 @@
                     </div>
                 </div>
 
-                <!-- Items Table -->
-                <div class="card shadow-sm">
+                <div class="card shadow-sm mb-2">
                     <div class="card-body p-0">
                         <div class="table-responsive">
                             <table class="table table-bordered table-striped mb-0" id="itemsTable">
@@ -208,7 +168,7 @@
                                         <th style="width: 110px;">Price</th>
                                         <th style="width: 90px;">Qty</th>
                                         <th style="width: 110px;">Amount</th>
-                                        <th style="width: 50px;">Act</th>
+                                        <th style="width: 50px;" class="text-center"><span style="font-size:9px;font-weight:normal;color:#888;"><kbd style="font-size:8px;padding:0 2px;">Ctrl+I</kbd></span></th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -230,69 +190,50 @@
                                 </tbody>
                                 <tfoot>
                                     <tr>
-                                        <th class="text-end" colspan="3">Total:</th>
+                                        <th class="text-end">Total:</th>
+                                        <th></th>
                                         <th>
                                             <input type="text" id="total_qty" class="form-control input-sm text-center fw-bold" readonly value="{{ (float)$stock_wastage->items->sum('qty') }}">
                                         </th>
                                         <th>
                                             <input type="text" name="grand_total" id="grand_total" class="form-control input-sm text-end fw-bold" readonly value="{{ number_format($stock_wastage->total_amount, 2, '.', '') }}">
                                         </th>
-                                        <th>
-                                            <button type="button" class="btn btn-primary btn-sm" id="addItemBtn">+</button>
-                                        </th>
+                                        <th></th>
                                     </tr>
                                 </tfoot>
                             </table>
                         </div>
                     </div>
-                    <div class="card-footer bg-white py-3">
-                        <div class="d-flex gap-2 justify-content-end">
-                            {{-- Save Draft --}}
-                            <button type="button" id="saveDraftBtn" value="draft"
-                                class="btn btn-sm btn-warning rounded-pill px-4 shadow-sm api-save-btn"
-                                style="{{ $stock_wastage->status == 'Posted' ? 'display:none;' : '' }}">
-                                <i class="fa fa-floppy-o me-1"></i> Save Draft
-                                <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+S</kbd>
-                            </button>
+                </div>
 
-                            {{-- Print Preview --}}
-                            <button type="button" id="previewPrintBtn"
-                                class="btn btn-sm btn-outline-dark rounded-pill px-4">
-                                <i class="fa fa-print me-1"></i> Print Preview
-                                <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+P</kbd>
-                            </button>
+                <div class="d-flex flex-wrap gap-2 justify-content-center bg-light bottom-bar rounded-2 border shadow-sm w-100">
+                    <button type="button" id="saveDraftBtn" class="btn btn-primary px-3 fw-bold shadow-sm">
+                        <u>S</u>ave <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+S</kbd>
+                    </button>
 
-                            {{-- Post --}}
-                            <button type="button" id="postBtn" value="post"
-                                class="btn btn-sm btn-primary rounded-pill px-4 shadow-sm api-save-btn"
-                                style="{{ $stock_wastage->status == 'Posted' ? 'display:none;' : '' }}">
-                                <i class="fa fa-send me-1"></i> Save & Post
-                                <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+&#8629;</kbd>
-                            </button>
+                    <button type="button" id="editInvoiceBtn" class="btn btn-warning px-3 fw-bold text-dark shadow-sm" disabled>
+                        <u>E</u>dit <kbd style="font-size:10px;opacity:.8;margin-left:4px;color:#fff;">Ctrl+E</kbd>
+                    </button>
 
-                            {{-- Edit --}}
-                            <button type="button" id="editInvoiceBtn" 
-                                class="btn btn-sm btn-warning rounded-pill px-4 shadow-sm" 
-                                style="{{ $stock_wastage->status == 'Posted' ? 'display:block;' : 'display:none;' }}">
-                                <i class="fa fa-pencil me-1"></i> Edit 
-                                <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+E</kbd>
-                            </button>
+                    <button type="button" id="postBtn" class="btn btn-success px-3 fw-bold shadow-sm">
+                        <u>P</u>ost <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+&crarr;</kbd>
+                    </button>
 
-                            {{-- New --}}
-                            <a href="{{ route('stock-wastage.create') }}" id="newInvoiceBtn" 
-                                class="btn btn-sm btn-info rounded-pill px-4 shadow-sm text-white">
-                                <i class="fa fa-plus me-1"></i> New 
-                                <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+M</kbd>
-                            </a>
+                    <button type="button" id="deleteBtn" class="btn btn-danger px-3 fw-bold shadow-sm">
+                        <u>D</u>elete <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+D</kbd>
+                    </button>
 
-                            {{-- Cancel --}}
-                            <a href="{{ route('stock-wastage.index') }}" id="cancelBtn" 
-                                class="btn btn-sm btn-danger rounded-pill px-4 shadow-sm text-white">
-                                <i class="fa fa-times me-1"></i> Cancel 
-                                <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Esc</kbd>
-                            </a>
-                        </div>
-                    </div>
+                    <a href="{{ route('stock-wastage.print', $stock_wastage->id) }}" target="_blank" id="realPrintBtn" class="btn btn-info px-3 fw-bold text-dark shadow-sm">
+                        <u>P</u>rint <kbd style="font-size:10px;opacity:.8;margin-left:4px;color:#fff;">Ctrl+P</kbd>
+                    </a>
+
+                    <a href="{{ route('stock-wastage.index') }}" id="exitBtn" class="btn btn-secondary px-3 fw-bold shadow-sm text-white">
+                        E<u>x</u>it <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Esc</kbd>
+                    </a>
+
+                    <a href="{{ route('stock-wastage.create') }}" id="newInvoiceBtn" class="btn btn-dark px-3 fw-bold shadow-sm text-white">
+                        <u>N</u>ew <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+M</kbd>
+                    </a>
                 </div>
 
             </form>
@@ -336,11 +277,20 @@
         // =============================================
         //  SAVED WASTAGE STATE (after AJAX save)
         // =============================================
-        var _savedWastageId = "{{ $stock_wastage->id }}";
+        var _savedWastageId = {{ $stock_wastage->id }};
+        var _saveInFlight = false;
+        var _postInFlight = false;
 
-        // =============================================
-        //  SHOW SUCCESS TOAST
-        // =============================================
+        function setFormLocked(isLocked) {
+            if (isLocked) {
+                $('#wastageForm').addClass('form-locked');
+                $('#wastageForm .select2').prop('disabled', true);
+            } else {
+                $('#wastageForm').removeClass('form-locked');
+                $('#wastageForm .select2').prop('disabled', false).trigger('change.select2');
+            }
+        }
+
         function showToast(msg, type) {
             type = type || 'success';
             var icon = type === 'success' ? 'fa-check-circle' : 'fa-times-circle';
@@ -353,83 +303,59 @@
                 fontSize: '14px', fontWeight: '500',
                 display: 'flex', alignItems: 'center', gap: '8px',
                 minWidth: '280px', animation: 'fadein .3s'
-            }).html('<i class="fa ' + icon + ' : ' + msg + '"></i>');
+            }).html('<i class="fa ' + icon + '"></i> ' + msg);
             $('body').append($toast);
             setTimeout(function() { $toast.fadeOut(400, function(){ $(this).remove(); }); }, 3500);
         }
 
-        // =============================================
-        //  AJAX SAVE DRAFT (no page reload)
-        // =============================================
         function ajaxSaveDraft() {
-            var $form  = $('#wastageForm');
-            
-            // Remove empty rows before anything else
+            if (_saveInFlight) return;
+            var $form = $('#wastageForm');
+
             $('#itemsTable tbody tr').each(function() {
                 if (!$(this).find('.product-select').val()) {
                     $(this).remove();
                 }
             });
 
-            // Re-calculate after removing rows
             calcTotal();
 
-            // At least one row must exist
             if ($('#itemsTable tbody tr').length === 0) {
                 addRow();
                 showToast('❌ Please add at least one item.', 'error');
                 return;
             }
 
-            // Now check validity
             if (!$form[0].checkValidity()) { $form[0].reportValidity(); return; }
 
-            // Set action = save
             if ($form.find('input[name="action"]').length === 0) {
                 $form.append('<input type="hidden" name="action" value="save">');
             }
             $form.find('input[name="action"]').val('save');
 
+            _saveInFlight = true;
             $('#saveDraftBtn').prop('disabled', true).html('<i class="fa fa-spinner fa-spin me-1"></i> Saving...');
 
-        $.ajax({
-                url:  $form.attr('action'),
+            $.ajax({
+                url: $form.attr('action'),
                 type: 'POST',
                 data: $form.serialize(),
                 headers: { 'X-Requested-With': 'XMLHttpRequest' },
                 success: function(res) {
                     if (res.success) {
                         _savedWastageId = res.id;
-                        showToast('✅ Draft Saved — ' + (res.message || 'Wastage saved as unposted.'), 'success');
+                        showToast('✅ Updated — ' + (res.message || 'Wastage saved.'), 'success');
 
-                        // Show Post button
-                        $('#postBtn')
-                            .show()
-                            .prop('disabled', false)
-                            .removeClass('btn-primary')
-                            .addClass('btn-success')
-                            .html('<i class="fa fa-send me-1"></i> Post <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+↵</kbd>');
+                        $('#realPrintBtn').attr('href', '{{ url("stock-wastage") }}/' + res.id + '/print').attr('target', '_blank');
 
-                        // Update print button
-                        var printUrl = '{{ url("stock-wastage") }}/' + res.id + '/print';
-                        if ($('#previewPrintBtn').length) {
-                            $('#previewPrintBtn').replaceWith(
-                                $('<a>').attr({href: printUrl, target:'_blank', id:'realPrintBtn', class:'btn btn-sm btn-outline-dark rounded-pill px-4'})
-                                .html('<i class="fa fa-print me-1"></i> Print <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+P</kbd>')
-                            );
-                        }
-                        
-                        // Show New & Edit buttons
-                        $('#newInvoiceBtn').show();
-                        $('#editInvoiceBtn').show();
-                        
-                        // Explicitly Lock the form
-                        console.log("Locking form...");
-                        $('#wastageForm').addClass('form-locked');
+                        $('#editInvoiceBtn').prop('disabled', false);
+                        $('#postBtn').prop('disabled', false);
+                        $('#deleteBtn').prop('disabled', false);
+
+                        setFormLocked(true);
                         showToast('🔒 Form Locked — Press Ctrl+E to Edit', 'success');
-                        
                     } else {
-                        showToast('❌ ' + (res.message || 'Error saving draft.'), 'error');
+                        showToast('❌ ' + (res.message || 'Error saving.'), 'error');
                     }
                 },
                 error: function(xhr) {
@@ -438,32 +364,33 @@
                     showToast('❌ ' + msg, 'error');
                 },
                 complete: function() {
-                    $('#saveDraftBtn').prop('disabled', false)
-                        .html('<i class="fa fa-floppy-o me-1"></i> Save Draft <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+S</kbd>');
+                    _saveInFlight = false;
+                    if (!$('#wastageForm').hasClass('form-locked')) {
+                        $('#saveDraftBtn').prop('disabled', false)
+                            .html('<u>S</u>ave <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+S</kbd>');
+                    }
                 }
             });
         }
 
-        // =============================================
-        //  POST (after save) → AJAX → reload create page
-        // =============================================
         function doPost() {
+            if (_postInFlight) return;
             if (!_savedWastageId) {
-                showToast('⚠️ پہلے Save Draft کریں!', 'error');
+                showToast('⚠️ پہلے Save کریں!', 'error');
                 return;
             }
+            _postInFlight = true;
             $('#postBtn').prop('disabled', true)
                 .html('<i class="fa fa-spinner fa-spin me-1"></i> Posting...');
 
             $.ajax({
-                url:  '{{ url("stock-wastage") }}/' + _savedWastageId + '/post',
+                url: '{{ url("stock-wastage") }}/' + _savedWastageId + '/post',
                 type: 'POST',
                 data: { _token: '{{ csrf_token() }}' },
                 headers: { 'X-Requested-With': 'XMLHttpRequest' },
-                success: function(res) {
+                success: function() {
                     showToast('✅ Posted successfully! نئی انٹری شروع کریں...');
                     setTimeout(function() {
-                        // Reload create page for new entry
                         window.location.href = '{{ route("stock-wastage.create") }}';
                     }, 1500);
                 },
@@ -474,75 +401,106 @@
                         msg = r.message || r.error || msg;
                     } catch(e) {}
                     showToast('❌ ' + msg, 'error');
+                    _postInFlight = false;
                     $('#postBtn').prop('disabled', false)
-                        .html('<i class="fa fa-send me-1"></i> Post <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+↵</kbd>');
+                        .html('<u>P</u>ost <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+&crarr;</kbd>');
                 }
             });
         }
 
-        // =============================================
-        //  BUTTON CLICK HANDLERS
-        // =============================================
         $('#saveDraftBtn').on('click', function() { ajaxSaveDraft(); });
-        $('#postBtn').on('click',      function() { doPost(); });
+        $('#postBtn').on('click', function() { doPost(); });
 
-        // Unlock form on Edit button
         $('#editInvoiceBtn').on('click', function() {
-            $('#wastageForm').removeClass('form-locked');
-            $(this).hide();
-            $('#saveDraftBtn, #postBtn').show();
+            if ($(this).prop('disabled')) return;
+            setFormLocked(false);
+            $(this).prop('disabled', true);
+            $('#saveDraftBtn').prop('disabled', false)
+                .html('<u>S</u>ave <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+S</kbd>');
             showToast('🔓 Form Unlocked for Editing', 'success');
         });
 
-        // =============================================
-        //  GLOBAL KEYBOARD SHORTCUTS
-        // =============================================
-        $(document).on('keydown', function(e) {
-            // Ctrl+S  →  Save Draft (AJAX)
-            if (e.ctrlKey && e.key === 's') {
-                e.preventDefault();
-                ajaxSaveDraft();
+        $('#deleteBtn').on('click', function() {
+            if (!_savedWastageId || $(this).prop('disabled')) return;
+            if (confirm('Are you sure you want to delete this draft?')) {
+                $(this).prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i>...');
+                $.ajax({
+                    url: '{{ url("stock-wastage") }}/' + _savedWastageId,
+                    type: 'DELETE',
+                    data: { _token: '{{ csrf_token() }}' },
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                    success: function() {
+                        showToast('✅ Wastage deleted successfully!', 'success');
+                        setTimeout(function() { window.location.href = '{{ route("stock-wastage.index") }}'; }, 1500);
+                    },
+                    error: function() {
+                        showToast('❌ Failed to delete.', 'error');
+                        $('#deleteBtn').prop('disabled', false)
+                            .html('<u>D</u>elete <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+D</kbd>');
+                    }
+                });
             }
-            // Ctrl+Enter  →  Post (after save)
-            if (e.ctrlKey && e.key === 'Enter') {
+        });
+
+        $('#realPrintBtn').on('click', function(e) {
+            var href = $(this).attr('href');
+            if (!href || href === 'javascript:void(0)' || href.indexOf('stock-wastage') === -1) {
                 e.preventDefault();
-                doPost();
+                showPreviewModal();
             }
-            // Ctrl+P  →  Print
-            if (e.ctrlKey && e.key === 'p') {
+        });
+
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey && (e.key === 's' || e.key === 'S')) {
                 e.preventDefault();
-                if ($('#realPrintBtn').length > 0) {
-                    window.open($('#realPrintBtn').attr('href'), '_blank');
-                } else {
-                    $('#previewPrintBtn').trigger('click');
+                e.stopImmediatePropagation();
+                if (!_saveInFlight && !$('#saveDraftBtn').prop('disabled') && $('#saveDraftBtn').is(':visible')) {
+                    $('#saveDraftBtn').click();
                 }
             }
-            // Ctrl+L  →  List page
-            if (e.ctrlKey && e.key === 'l') {
+            if (e.ctrlKey && (e.key === 'e' || e.key === 'E')) {
+                e.preventDefault();
+                if (!$('#editInvoiceBtn').prop('disabled')) $('#editInvoiceBtn').click();
+            }
+            if (e.ctrlKey && e.key === 'Enter') {
+                e.preventDefault();
+                e.stopImmediatePropagation();
+                if (!_postInFlight && !$('#postBtn').prop('disabled')) $('#postBtn').click();
+            }
+            if (e.ctrlKey && (e.key === 'd' || e.key === 'D')) {
+                e.preventDefault();
+                if (!$('#deleteBtn').prop('disabled')) $('#deleteBtn').click();
+            }
+            if (e.ctrlKey && (e.key === 'p' || e.key === 'P')) {
+                e.preventDefault();
+                var href = $('#realPrintBtn').attr('href');
+                if (href && href !== 'javascript:void(0)' && href.indexOf('stock-wastage') !== -1) {
+                    window.open(href, '_blank');
+                } else {
+                    showPreviewModal();
+                }
+            }
+            if (e.ctrlKey && (e.key === 'l' || e.key === 'L')) {
                 e.preventDefault();
                 window.location.href = $('#listBtn').attr('href');
             }
-            // Ctrl+E → Unlock form (Edit)
-            if (e.ctrlKey && e.key === 'e') {
-                e.preventDefault();
-                if ($('#editInvoiceBtn').is(':visible')) {
-                    $('#editInvoiceBtn').trigger('click');
-                }
-            }
-            // Ctrl+M → New
-            if (e.ctrlKey && e.key === 'm') {
+            if (e.ctrlKey && (e.key === 'm' || e.key === 'M')) {
                 e.preventDefault();
                 window.location.href = $('#newInvoiceBtn').attr('href');
             }
-            // ESC → Cancel / Modal Close
+            if (e.ctrlKey && (e.key === 'i' || e.key === 'I')) {
+                e.preventDefault();
+                if (!$('#wastageForm').hasClass('form-locked')) addRow(true);
+            }
             if (e.key === 'Escape') {
                 if ($('.modal.show').length) {
                     $('.modal.show').modal('hide');
                 } else {
-                   window.location.href = $('#cancelBtn').attr('href');
+                    e.preventDefault();
+                    window.location.href = $('#exitBtn').attr('href');
                 }
             }
-        });
+        }, true);
 
         // Initialize rows with select2
         function initProductSelect($select) {
@@ -601,7 +559,7 @@
             }
         }
 
-        $('#addItemBtn').click(function() { addRow(); });
+        // Add row via Ctrl+I
 
         // Account Head Logic
         $('#account_head_id').on('change', function() {
@@ -688,8 +646,7 @@
             setTimeout(function() { $row.find('.price').focus().select(); }, 80);
         });
 
-        // Summary Preview
-        $('#previewPrintBtn').on('click', function() {
+        function showPreviewModal() {
             var html = '<div class="p-3 border rounded mb-3 bg-light">';
             html += '<h5 class="fw-bold mb-3 border-bottom pb-2 text-primary">Wastage Summary</h5>';
             html += '<div class="row g-2">';
@@ -708,7 +665,7 @@
                 var q = $(this).find('.qty').val();
                 var p = $(this).find('.price').val();
                 var a = $(this).find('.amount').val();
-                if(prod !== 'Select Product') {
+                if(prod && prod !== 'Select Product') {
                     html += '<tr><td>'+prod+'</td><td class="text-center">'+q+'</td><td class="text-end">'+p+'</td><td class="text-end">'+a+'</td></tr>';
                 }
             });
@@ -718,7 +675,8 @@
 
             $('#printPreviewBody').html(html);
             $('#printPreviewModal').modal('show');
-        });
+        }
+
     });
 </script>
 @endsection

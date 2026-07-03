@@ -718,7 +718,6 @@
 
         <footer>
             <div class="footer-area">
-                <p>&copy; Copyright 2025. All right reserved. Prowave Software Solutions.</p>
             </div>
         </footer>
         <!--=================================*

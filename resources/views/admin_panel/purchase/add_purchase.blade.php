@@ -29,15 +29,16 @@
                 }
     /* Select2 customizations to match theme */
     .select2-container .select2-selection--single {
-        height: 31px !important;
+        height: 24px !important;
         border: 1px solid #ced4da;
     }
     .select2-container .select2-selection--single .select2-selection__rendered {
-        line-height: 31px !important;
-        padding-left: 8px;
+        line-height: 24px !important;
+        padding-left: 6px;
+        font-size: 0.75rem;
     }
     .select2-container .select2-selection--single .select2-selection__arrow {
-        height: 31px !important;
+        height: 24px !important;
     }
     th {
         font-weight: 500 !important;
@@ -61,7 +62,7 @@
         background-color: #fcfcfc !important;
     }
     .form-locked input, .form-locked select, .form-locked textarea { pointer-events: none; opacity: 0.8; }
-    .form-locked .remove-row, .form-locked .removeAccountRow, .form-locked #addRow, .form-locked #addAccountRow, .form-locked #saveDraftBtn { display: none !important; }
+    .form-locked .remove-row, .form-locked .removeAccountRow, .form-locked #addAccountRow, .form-locked #saveDraftBtn { display: none !important; }
     .form-locked #exitBtn,
     .form-locked #newInvoiceBtn,
     .form-locked #realPrintBtn {
@@ -71,7 +72,7 @@
     }
     
 </style>
-<div class="main-content bg-white">
+<div class="main-content bg-white purchase-page">
     <div class="main-content-inner">
         <div class="row">
             <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css"
@@ -116,8 +117,8 @@
                 <div class="body-wrapper">
                     <div class="bodywrapper__inner">
 
-                        <div class="row gy-3 ">
-                            <div class="col-lg-12 col-md-12 mb-30 m-auto">
+                        <div class="row gy-1">
+                            <div class="col-lg-12 col-md-12 m-auto">
 
 <style>
   .main-container {
@@ -155,7 +156,6 @@
   .form-locked .select2-container,
   .form-locked .remove-row,
   .form-locked .removeAccountRow,
-  .form-locked #addRow,
   .form-locked #addAccountRow {
     pointer-events: none !important;
     opacity: 0.65 !important;
@@ -258,12 +258,49 @@
     font-size: 0.7rem;
     line-height: 1.2;
   }
+
+  /* Ultra-compact purchase layout */
+  .purchase-page.container-fluid,
+  .purchase-page-inner.container-fluid { padding: .2rem .35rem !important; }
+  .purchase-page .main-container { padding: .35rem !important; border-radius: .35rem !important; }
+  .purchase-page .header-panel { padding: .4rem !important; min-width: 255px !important; max-width: 255px !important; }
+  .purchase-page .section-block { padding: .4rem !important; }
+  .purchase-page .items-panel { padding-left: .35rem !important; padding-right: 0 !important; }
+  .purchase-page .items-table-wrap { min-height: 280px !important; border-radius: .35rem !important; }
+  .purchase-page .main-row { gap: .35rem !important; padding-top: .25rem !important; padding-bottom: .25rem !important; }
+  .purchase-page .field-gap { margin-bottom: .3rem !important; }
+  .purchase-page .panel-head { margin-bottom: .35rem !important; padding-bottom: .2rem !important; }
+  .purchase-page .panel-head h6 { font-size: .8rem !important; }
+  .purchase-page .form-label { margin-bottom: 0 !important; line-height: 1.1; }
+  .purchase-page .form-control-sm,
+  .purchase-page .form-select-sm { padding: .1rem .35rem !important; font-size: .75rem !important; height: 24px !important; min-height: 24px !important; }
+  .purchase-page textarea.form-control-sm { height: auto !important; min-height: 38px !important; padding: .15rem .35rem !important; }
+  .purchase-page .btn-sm.py-0 { padding-top: .1rem !important; padding-bottom: .1rem !important; }
+  .purchase-page .table-sm .form-control,
+  .purchase-page .table-sm .form-select { height: 24px !important; min-height: 24px !important; font-size: .75rem !important; }
+  .purchase-page .select2-container--default .select2-selection--single { height: 24px !important; }
+  .purchase-page .select2-container--default .select2-selection--single .select2-selection__rendered { line-height: 22px !important; font-size: .75rem !important; }
+  .purchase-page .select2-container--default .select2-selection--single .select2-selection__arrow { height: 22px !important; }
+  .purchase-page .table thead th { padding: 2px !important; font-size: .7rem !important; }
+  .purchase-page .table-sm td { padding: 1px !important; }
+  .purchase-page .accounts-scroll { max-height: 180px !important; }
+  .purchase-page .totals-card .py-1 { padding-top: .15rem !important; padding-bottom: .15rem !important; }
+  .purchase-page #netAmountDisplay { font-size: 1rem !important; }
+  .purchase-page #accountsTotal { font-size: .95rem !important; }
+  .purchase-page .allocation-bar { margin-top: .35rem !important; padding: .15rem .35rem !important; }
+  .purchase-page .bottom-bar { margin-top: .4rem !important; padding: .4rem !important; gap: .35rem !important; }
+  .purchase-page .bottom-bar .btn { padding: .2rem .55rem !important; font-size: .75rem !important; }
+  .purchase-page .bottom-bar kbd { font-size: 8px !important; padding: 1px 3px !important; }
+  .purchase-page .accounts-section { --bs-gutter-x: .5rem; --bs-gutter-y: .35rem; margin-top: .25rem !important; }
+  .purchase-page.main-content,
+  .purchase-page .main-content-inner,
+  .purchase-page .bodywrapper__inner { padding: 0 !important; }
 </style>
 
-<div class="container-fluid py-2 main-content bg-white">
-  <div class="main-container bg-white border shadow-sm mx-auto p-2 rounded-3" style="max-width: 98%;">
+<div class="container-fluid purchase-page-inner bg-white">
+  <div class="main-container bg-white border shadow-sm mx-auto rounded-3" style="max-width: 99%;">
 
-    <div id="alertBox" class="alert d-none mb-2" role="alert"></div>
+    <div id="alertBox" class="alert d-none mb-1" role="alert"></div>
 
     @php
         $isViewMode = isset($viewMode) && $viewMode;
@@ -282,10 +319,10 @@
 
       <div class="posted-watermark {{ $isPosted ? 'show' : '' }}" id="postedWatermark">Posted</div>
 
-      <div class="d-flex gap-2 align-items-stretch border-bottom py-2">
+      <div class="d-flex align-items-stretch border-bottom main-row">
         {{-- LEFT: Header & Vendor --}}
-        <div class="bg-light border rounded-3 p-2 shadow-sm" style="min-width: 280px; max-width: 280px; font-size: 0.8rem;">
-          <div class="d-flex align-items-center justify-content-between mb-2 pb-1 border-bottom">
+        <div class="bg-light border rounded-3 header-panel shadow-sm" style="font-size: 0.78rem;">
+          <div class="d-flex align-items-center justify-content-between panel-head border-bottom">
             <h6 class="mb-0 fw-bold text-primary d-flex align-items-center gap-1">
               <i class="fa fa-info-circle"></i> Purchase Details
               @if($isViewMode)
@@ -311,7 +348,7 @@
           </div>
 
           {{-- Entry Date & Time --}}
-          <div class="row g-1 mb-2">
+          <div class="row g-1 field-gap">
             <div class="col-6">
               <label class="form-label text-muted small mb-0" style="font-size: 0.7rem;">Entry Date</label>
               <input type="date" class="form-control form-control-sm py-0" name="entry_date" value="{{ old('entry_date', isset($purchase) ? ($purchase->entry_date ?? \Carbon\Carbon::parse($purchase->current_date)->format('Y-m-d')) : date('Y-m-d')) }}" required>
@@ -323,13 +360,13 @@
           </div>
 
           {{-- Invoice Number --}}
-          <div class="mb-2">
+          <div class="field-gap">
             <label class="form-label text-muted small mb-0" style="font-size: 0.7rem;">Inv Number</label>
             <input type="text" id="invoiceNoDisplay" class="form-control form-control-sm py-0 fw-bold text-primary bg-white" value="{{ isset($purchase) ? $nextInvoice : 'Auto-Generated' }}" readonly>
           </div>
 
           {{-- DC Date & Bilty --}}
-          <div class="row g-1 mb-2">
+          <div class="row g-1 field-gap">
             <div class="col-6">
               <label class="form-label text-muted small mb-0" style="font-size: 0.7rem;">DC Date</label>
               <input type="date" class="form-control form-control-sm py-0" name="dc_date" value="{{ old('dc_date', isset($purchase) ? \Carbon\Carbon::parse($purchase->dc_date)->format('Y-m-d') : date('Y-m-d')) }}">
@@ -341,7 +378,7 @@
           </div>
 
           {{-- DC# & Warehouse --}}
-          <div class="row g-1 mb-2">
+          <div class="row g-1 field-gap">
             <div class="col-4">
               <label class="form-label text-muted small mb-0" style="font-size: 0.7rem;">DC No.</label>
               <input type="text" class="form-control form-control-sm py-0 fw-bold text-primary" name="dc" value="{{ old('dc', $purchase->dc ?? '') }}" placeholder="DC #">
@@ -360,7 +397,7 @@
           </div>
 
           {{-- Party Type Toggle --}}
-          <div class="mb-2">
+          <div class="field-gap">
             <label class="form-label text-muted small mb-0" style="font-size: 0.7rem;">Party Type</label>
             @php 
               $vType = old('vendor_type');
@@ -388,7 +425,7 @@
           </div>
 
           {{-- Select Party --}}
-          <div class="mb-2">
+          <div class="field-gap">
             <label class="form-label text-muted small mb-0" style="font-size: 0.7rem;">Select Party</label>
             <select name="vendor_id" id="vendor_id_select" class="form-select form-select-sm py-0 select2" required>
                 <option value="" disabled selected>Select Party</option>
@@ -403,21 +440,14 @@
           {{-- Remarks --}}
           <div class="mb-1">
             <label class="form-label text-muted small mb-0" style="font-size: 0.7rem;">Remarks</label>
-            <textarea class="form-control form-control-sm py-1" name="remarks" rows="2" placeholder="Purchase notes..." style="font-size: 0.75rem;">{{ old('remarks', $purchase->note ?? '') }}</textarea>
+            <textarea class="form-control form-control-sm py-0" name="remarks" rows="1" placeholder="Notes..." style="font-size: 0.72rem;">{{ old('remarks', $purchase->note ?? '') }}</textarea>
           </div>
         </div>
 
-        {{-- RIGHT: Items --}}
-        <div class="flex-grow-1 d-flex flex-column px-2">
-          <div class="d-flex justify-content-between align-items-center mb-2">
-            <h5 class="fw-bold mb-0 text-dark" style="letter-spacing: 0.5px;">Items</h5>
-            <button type="button" class="btn btn-sm btn-primary shadow-sm px-3" id="addRow">
-                <i class="fa fa-plus"></i> Add Row
-            </button>
-          </div>
-
-          <div class="table-responsive flex-grow-1 d-flex flex-column border rounded-3 shadow-sm" style="min-height: 420px; overflow-y: auto;">
-            <table class="table table-bordered table-sm mb-0" style="width: 100%; font-size: 0.9rem; table-layout: fixed;">
+        {{-- RIGHT: Items table --}}
+        <div class="flex-grow-1 d-flex flex-column items-panel">
+          <div class="table-responsive flex-grow-1 d-flex flex-column border shadow-sm items-table-wrap" style="overflow-y: auto;">
+            <table class="table table-bordered table-sm mb-0" style="width: 100%; font-size: 0.82rem; table-layout: fixed;">
               <colgroup>
                   <col style="width:6%"> <!-- Item ID -->
                   <col style="width:14%"> <!-- Product -->
@@ -441,7 +471,7 @@
                   <th class="text-center">Qty</th>
                   <th class="text-end">Rate</th>
                   <th class="text-end">Total</th>
-                  <th class="text-center">—</th>
+                  <th class="text-center"><span style="font-size:9px;font-weight:normal;color:#888;"><kbd style="font-size:8px;padding:0 2px;">Ctrl+I</kbd></span></th>
                 </tr>
               </thead>
               <tbody id="purchaseItems">
@@ -500,40 +530,25 @@
                   @endif
               </tbody>
             </table>
-            
-            <table class="table table-bordered table-sm mb-0 mt-auto" style="width: 100%; font-size: 0.9rem; table-layout: fixed;">
-              <colgroup>
-                  <col style="width:6%"> <!-- Item ID -->
-                  <col style="width:14%"> <!-- Product -->
-                  <col style="width:10%"> <!-- Brand -->
-                  <col style="width:10%"> <!-- Price -->
-                  <col style="width:10%"> <!-- Retail Price -->
-                  <col style="width:15%"> <!-- Disc -->
-                  <col style="width:6%">  <!-- Qty -->
-                  <col style="width:12%"> <!-- Rate -->
-                  <col style="width:14%"> <!-- Total -->
-                  <col style="width:3%">  <!-- Action -->
-              </colgroup>
-              </table>
           </div>
         </div>
       </div>
 
       {{-- Accounts Allocation & Totals --}}
-      <div class="row g-3 mt-1">
+      <div class="row accounts-section">
         {{-- Accounts Allocation --}}
         <div class="col-lg-7">
-          <div class="bg-light border rounded-3 p-2 shadow-sm h-100">
-            <div class="d-flex align-items-center justify-content-between mb-2 pb-1 border-bottom">
+          <div class="bg-light border rounded-3 section-block shadow-sm h-100">
+            <div class="d-flex align-items-center justify-content-between panel-head border-bottom">
               <h6 class="mb-0 fw-bold text-success">
-                <i class="fa fa-share-alt me-2"></i>Accounts Allocation
+                <i class="fa fa-share-alt me-1"></i>Accounts Allocation
               </h6>
-              <button type="button" class="btn btn-success btn-xs rounded-pill px-2 py-1" id="addAccountRow" style="font-size: 0.75rem;">
-                <i class="fa fa-plus me-1"></i>Add Account
+              <button type="button" class="btn btn-success btn-xs rounded-pill px-2 py-0" id="addAccountRow" style="font-size: 0.7rem;">
+                <i class="fa fa-plus"></i>
               </button>
             </div>
             
-            <div class="table-responsive" style="max-height: 250px;">
+            <div class="table-responsive accounts-scroll">
               <table class="table table-bordered table-sm mb-0" id="accountsTable">
                 <thead class="table-light">
                   <tr>
@@ -579,7 +594,7 @@
               </table>
             </div>
             
-            <div class="d-flex justify-content-between align-items-center mt-2 p-1 bg-success bg-opacity-10 rounded-3">
+            <div class="d-flex justify-content-between align-items-center allocation-bar bg-success bg-opacity-10 rounded-2">
               <span class="text-success fw-bold">Allocation Total:</span>
               <input type="text" id="accountsTotal" class="form-control form-control-sm text-end fw-bold text-success border-0 bg-transparent py-0" value="0.00" readonly style="width: 150px; font-size: 1.1rem;">
             </div>
@@ -588,14 +603,14 @@
 
         {{-- Totals --}}
         <div class="col-lg-5">
-          <div class="bg-light border rounded-3 p-2 shadow-sm h-100">
-            <div class="d-flex align-items-center justify-content-between mb-2 pb-1 border-bottom">
+          <div class="bg-light border rounded-3 section-block shadow-sm h-100">
+            <div class="d-flex align-items-center justify-content-between panel-head border-bottom">
               <h6 class="mb-0 fw-bold text-info">
-                <i class="fa fa-calculator me-2"></i>Purchase Totals
+                <i class="fa fa-calculator me-1"></i>Purchase Totals
               </h6>
             </div>
 
-            <div class="totals-card p-1">
+            <div class="totals-card p-0">
               <div class="row align-items-center py-1 border-bottom bg-light px-1 mx-0 rounded mb-1">
                 <div class="col-6 d-flex justify-content-between border-end pe-2">
                     <span class="text-dark small fw-bold">Total Qty</span>
@@ -659,33 +674,33 @@
       </div>
 
       {{-- BOTTOM BUTTONS --}}
-      <div class="d-flex flex-wrap gap-2 mt-3 justify-content-center bg-light p-3 rounded-3 border shadow-sm w-100">
+      <div class="d-flex flex-wrap justify-content-center bg-light bottom-bar rounded-2 border shadow-sm w-100">
 
-          <button type="button" id="saveDraftBtn" class="btn btn-primary px-4 fw-bold shadow-sm" {{ $isPosted || $isDraft || $isViewMode ? 'disabled' : '' }}>
+          <button type="button" id="saveDraftBtn" class="btn btn-primary px-3 fw-bold shadow-sm" {{ $isPosted || $isDraft || $isViewMode ? 'disabled' : '' }}>
               <u>S</u>ave <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+S</kbd>
           </button>
 
-          <button type="button" id="editInvoiceBtn" class="btn btn-warning px-4 fw-bold text-dark shadow-sm" {{ $isNew || $isPosted || $isViewMode ? 'disabled' : '' }}>
+          <button type="button" id="editInvoiceBtn" class="btn btn-warning px-3 fw-bold text-dark shadow-sm" {{ $isNew || $isPosted || $isViewMode ? 'disabled' : '' }}>
               <u>E</u>dit <kbd style="font-size:10px;opacity:.8;margin-left:4px;color:#fff;">Ctrl+E</kbd>
           </button>
 
-          <button type="button" id="postBtn" class="btn btn-success px-4 fw-bold shadow-sm" {{ $isNew || $isPosted || $isViewMode ? 'disabled' : '' }}>
+          <button type="button" id="postBtn" class="btn btn-success px-3 fw-bold shadow-sm" {{ $isNew || $isPosted || $isViewMode ? 'disabled' : '' }}>
               <u>P</u>ost <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+&crarr;</kbd>
           </button>
 
-          <button type="button" id="deleteBtn" class="btn btn-danger px-4 fw-bold shadow-sm" {{ $isNew || $isPosted || $isViewMode ? 'disabled' : '' }}>
+          <button type="button" id="deleteBtn" class="btn btn-danger px-3 fw-bold shadow-sm" {{ $isNew || $isPosted || $isViewMode ? 'disabled' : '' }}>
               <u>D</u>elete <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+D</kbd>
           </button>
 
-          <a href="{{ isset($purchase) ? route('purchase.invoice', $purchase->id) : 'javascript:void(0)' }}" id="realPrintBtn" target="_blank" class="btn btn-info px-4 fw-bold text-dark shadow-sm" {{ $isNew ? 'disabled' : '' }}>
+          <a href="{{ isset($purchase) ? route('purchase.invoice', $purchase->id) : 'javascript:void(0)' }}" id="realPrintBtn" target="_blank" class="btn btn-info px-3 fw-bold text-dark shadow-sm" {{ $isNew ? 'disabled' : '' }}>
               <u>P</u>rint <kbd style="font-size:10px;opacity:.8;margin-left:4px;color:#fff;">Ctrl+P</kbd>
           </a>
 
-          <a href="{{ route('Purchase.home') }}" id="exitBtn" class="btn btn-secondary px-4 fw-bold shadow-sm text-white">
+          <a href="{{ route('Purchase.home') }}" id="exitBtn" class="btn btn-secondary px-3 fw-bold shadow-sm text-white">
               E<u>x</u>it <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Esc</kbd>
           </a>
 
-          <a href="{{ route('add_purchase') }}" id="newInvoiceBtn" class="btn btn-dark px-4 fw-bold shadow-sm text-white">
+          <a href="{{ route('add_purchase') }}" id="newInvoiceBtn" class="btn btn-dark px-3 fw-bold shadow-sm text-white">
               <u>N</u>ew <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+M</kbd>
           </a>
       </div>
@@ -1325,9 +1340,6 @@
         }
         $('.vendor-type-radio').on('change', function() {
             // Handled in the footer script to ensure loadParties is defined
-        });
-        $('#addRow').on('click', function() {
-            window.appendBlankRow(true);
         });
         setTimeout(function() {
             $('#purchaseItems tr:first .item-id-input').focus();
@@ -2052,6 +2064,13 @@ $(document).ready(function() {
         if (e.ctrlKey && (e.key === 'l' || e.key === 'L')) {
             e.preventDefault();
             window.location.href = $('#listBtn').attr('href');
+        }
+        // Ctrl+I -> Add Row
+        if (e.ctrlKey && (e.key === 'i' || e.key === 'I')) {
+            e.preventDefault();
+            if (typeof window.appendBlankRow === 'function') {
+                window.appendBlankRow(true);
+            }
         }
         // Ctrl+P -> Print
         if (e.ctrlKey && (e.key === 'p' || e.key === 'P')) {

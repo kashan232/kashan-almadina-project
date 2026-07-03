@@ -64,9 +64,6 @@
                         </div>
                     </form>
                 </div>
-                <div class="card-footer text-center text-muted small">
-                    © 2025 ALmadina Bettery
-                </div>
             </div>
         </div>
     </div>

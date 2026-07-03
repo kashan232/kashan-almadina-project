@@ -1,7 +1,4 @@
 <footer>
-    <div class="footer-area">
-        <p>&copy; Copyright 2025</p>
-    </div>
     </div>
 
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>

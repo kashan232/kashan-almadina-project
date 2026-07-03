@@ -324,9 +324,6 @@
                     @if (Route::has('password.request'))
                         <a href="{{ route('password.request') }}">Forgot your password?</a>
                     @endif
-                    <div style="margin-top: 10px; font-size: 12px; color: #999;">
-                        &copy; {{ date('Y') }} AL Madina Traders
-                    </div>
                 </div>
             </form>
         </div>

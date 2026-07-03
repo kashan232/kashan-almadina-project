@@ -2,113 +2,92 @@
 
 <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 <style>
-    .select2-container .select2-selection--single {
-        height: 31px !important;
-        border: 1px solid #ced4da;
-    }
-    .select2-container .select2-selection--single .select2-selection__rendered {
-        line-height: 31px !important;
-        padding-left: 8px;
-    }
-    .select2-container .select2-selection--single .select2-selection__arrow {
-        height: 31px !important;
-    }
-    .input-sm { height: 31px; padding: 2px 8px; font-size: 14px; }
-    .table td, .table th { vertical-align: middle !important; padding: 4px !important; }
-    
+    .purchase-page.container-fluid { padding: .2rem .35rem !important; }
+    .purchase-page .main-content-inner { padding: 0 !important; }
+    .purchase-page .form-label { margin-bottom: 0 !important; font-size: .7rem !important; }
+    .purchase-page .input-sm,
+    .purchase-page .form-control-sm,
+    .purchase-page .form-select-sm { height: 24px !important; min-height: 24px !important; font-size: .75rem !important; padding: .1rem .35rem !important; }
+    .purchase-page .select2-container--default .select2-selection--single { height: 24px !important; font-size: .75rem !important; border: 1px solid #ced4da; }
+    .purchase-page .select2-container--default .select2-selection--single .select2-selection__rendered { line-height: 22px !important; padding-left: 6px !important; }
+    .purchase-page .select2-container--default .select2-selection--single .select2-selection__arrow { height: 22px !important; }
+    .purchase-page .table td, .purchase-page .table th { padding: 2px 4px !important; vertical-align: middle; font-size: .75rem; }
+    .purchase-page .card-header { padding: .35rem .5rem !important; }
+    .purchase-page .card-body { padding: .5rem !important; }
+    .purchase-page .row.g-2, .purchase-page .row.g-3 { --bs-gutter-x: .5rem; --bs-gutter-y: .35rem; }
+    .purchase-page .bottom-bar { margin-top: .4rem !important; padding: .75rem !important; }
+    .purchase-page .page-head { padding: .35rem .5rem !important; margin-bottom: .35rem !important; }
+    .purchase-page .btn-xs { padding: 1px 4px; font-size: .7rem; line-height: 1.2; }
     .posted-watermark {
-        position: absolute;
-        top: 50%;
-        left: 50%;
+        position: absolute; top: 50%; left: 50%;
         transform: translate(-50%, -50%) rotate(-30deg);
-        font-size: 100px;
-        color: rgba(255, 0, 0, 0.1);
-        font-weight: bold;
-        pointer-events: none;
-        z-index: 1000;
-        text-transform: uppercase;
-        border: 10px solid rgba(255, 0, 0, 0.1);
-        padding: 20px;
-        border-radius: 20px;
-        display: none;
+        font-size: 8rem; color: rgba(220, 53, 69, 0.1); font-weight: 900;
+        pointer-events: none; z-index: 1000; text-transform: uppercase;
+        display: none; border: 10px solid rgba(220, 53, 69, 0.1);
+        padding: 20px 50px; border-radius: 20px;
     }
     .posted-watermark.show { display: block; }
-
-    .form-locked {
-        position: relative;
-        pointer-events: none !important;
+    .form-locked input,
+    .form-locked .select2-container--default .select2-selection--single,
+    .form-locked .select2-container,
+    .form-locked select,
+    .form-locked textarea {
+        pointer-events: none !important; opacity: 0.85 !important;
+        background-color: #f1f3f5 !important; cursor: not-allowed !important;
     }
-    .form-locked input, 
-    .form-locked .select2-container, 
-    .form-locked select, 
-    .form-locked textarea { 
-        background-color: #f1f3f5 !important;
-        cursor: not-allowed !important;
-    }
-    .form-locked .remove-row, .form-locked #addRowBtn { 
-        visibility: hidden !important; 
+    .form-locked .remove-row,
+    .form-locked #saveDraftBtn { display: none !important; }
+    .form-locked #editInvoiceBtn,
+    .form-locked #newInvoiceBtn,
+    .form-locked #realPrintBtn,
+    .form-locked #postBtn,
+    .form-locked #exitBtn,
+    .form-locked #deleteBtn {
+        pointer-events: auto !important; opacity: 1 !important;
     }
 </style>
 
+@php $isPosted = $transfer->status === 'Posted'; @endphp
+
 @section('content')
-<div class="main-content">
+<div class="main-content purchase-page">
     <div class="main-content-inner">
-        <div class="container-fluid pt-3">
+        <div class="container-fluid purchase-page-inner">
 
             @if(session('success'))
-                <div class="alert alert-success alert-dismissible fade show">
+                <div class="alert alert-success alert-dismissible fade show py-1 mb-1">
                     <i class="fa fa-check-circle me-1"></i> {{ session('success') }}
                     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
             @endif
             @if(session('error'))
-                <div class="alert alert-danger alert-dismissible fade show">
+                <div class="alert alert-danger alert-dismissible fade show py-1 mb-1">
                     {{ session('error') }}
                     <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                 </div>
             @endif
 
-            {{-- TOP BAR --}}
-            <div class="d-flex justify-content-between align-items-center mb-3 bg-light p-2 rounded shadow-sm">
-
-                {{-- LEFT: Actions --}}
-                <div id="postActionArea" style="min-width:80px;">
-                    @if($transfer->status == 'Unposted')
-                        <button type="button" onclick="$('#postBtn').trigger('click')" class="btn btn-sm btn-primary rounded-pill px-4 shadow-sm"><i class="fa fa-send me-1"></i> Post</button>
-                    @endif
+            <div class="d-flex justify-content-between align-items-center page-head bg-light rounded border shadow-sm">
+                <div class="d-flex align-items-center gap-2">
+                    <h6 class="mb-0 fw-bold" style="font-size:.85rem;">Edit Stock Transfer</h6>
+                    <span id="statusBadge" class="badge {{ $isPosted ? 'bg-success' : 'bg-info' }} text-white px-2 py-0" style="font-size:10px;">{{ ucfirst($transfer->status) }}</span>
+                    <span id="idBadge" class="badge bg-primary px-2 py-0" style="font-size:10px;">ID: {{ $transfer->id }}</span>
                 </div>
-
-                {{-- CENTER: Title + Status + ID Badge --}}
-                <div class="d-flex align-items-center gap-2 justify-content-center flex-grow-1">
-                    <h6 class="page-title mb-0 fw-bold">Edit Stock Transfer</h6>
-                    <span id="statusBadge" class="badge {{ $transfer->status == 'Posted' ? 'bg-success' : 'bg-info' }} text-white px-3 py-2 rounded-pill shadow-sm" style="font-size:12px;">
-                        <i class="fa {{ $transfer->status == 'Posted' ? 'fa-check' : 'fa-pencil' }} me-1"></i> {{ ucfirst($transfer->status) }}
-                    </span>
-                    <span id="idBadge" class="badge bg-primary px-3 py-2 rounded-pill shadow-sm" style="font-size:12px;">
-                        <i class="fa fa-tag me-1"></i> ID: {{ $transfer->id }}
-                    </span>
-                </div>
-
-                {{-- RIGHT: List button --}}
-                <div class="d-flex align-items-center justify-content-end" style="min-width:115px;">
-                    <a href="{{ route('stock_transfers.index') }}" id="listBtn" class="btn btn-sm btn-outline-secondary rounded-pill px-3">
-                        <i class="fa fa-list me-1"></i> List
-                        <kbd style="font-size:9px;opacity:.7;margin-left:4px;">Ctrl+L</kbd>
-                    </a>
-                </div>
-
+                <a href="{{ route('stock_transfers.index') }}" id="listBtn" class="btn btn-xs btn-outline-secondary rounded-pill px-2 py-0" style="font-size:.7rem;">
+                    <i class="fa fa-list"></i> List
+                    <kbd style="font-size:8px;opacity:.8;margin-left:3px;">Ctrl+L</kbd>
+                </a>
             </div>
 
-            <form action="{{ route('stock_transfers.update', $transfer->id) }}" method="POST" id="transferForm" class="position-relative {{ $transfer->status == 'Posted' ? 'form-locked' : '' }}">
+            <form action="{{ route('stock_transfers.update', $transfer->id) }}" method="POST" id="transferForm" class="position-relative {{ $isPosted ? 'form-locked' : '' }}">
                 @csrf
                 @method('PUT')
-                
-                <div class="posted-watermark {{ $transfer->status == 'Posted' ? 'show' : '' }}" id="postedWatermark">Posted</div>
 
-                {{-- Header Details --}}
-                <div class="card shadow-sm mb-3">
-                    <div class="card-header bg-white py-2">
-                        <h6 class="mb-0 fw-bold text-muted"><i class="fa fa-info-circle me-1"></i> Transfer Details</h6>
+                <div class="posted-watermark {{ $isPosted ? 'show' : '' }}" id="postedWatermark">Posted</div>
+
+                <div class="card shadow-sm mb-2">
+                    <div class="card-header bg-white">
+                        <h6 class="mb-0 fw-bold text-muted" style="font-size:.8rem;"><i class="fa fa-info-circle me-1"></i> Transfer Details</h6>
                     </div>
                     <div class="card-body">
                         <div class="row g-2">
@@ -167,8 +146,7 @@
                     </div>
                 </div>
 
-                {{-- Items Table --}}
-                <div class="card shadow-sm">
+                <div class="card shadow-sm mb-2">
                     <div class="card-body p-0">
                         <div class="table-responsive">
                             <table class="table table-bordered table-striped mb-0" id="itemsTable">
@@ -178,7 +156,7 @@
                                         <th style="width:300px;">Product Description</th>
                                         <th style="width:130px;">Available Stock</th>
                                         <th style="width:120px;">Qty to Transfer</th>
-                                        <th style="width:50px;">Act</th>
+                                        <th style="width:50px;" class="text-center"><span style="font-size:9px;font-weight:normal;color:#888;"><kbd style="font-size:8px;padding:0 2px;">Ctrl+I</kbd></span></th>
                                     </tr>
                                 </thead>
                                 <tbody id="transferItems">
@@ -202,56 +180,36 @@
                                         <th>
                                             <input type="text" id="total_qty" class="form-control input-sm text-center fw-bold" readonly value="0">
                                         </th>
-                                        <th>
-                                            <button type="button" class="btn btn-primary btn-sm" id="addRowBtn">+</button>
-                                        </th>
+                                        <th></th>
                                     </tr>
                                 </tfoot>
                             </table>
                         </div>
                     </div>
+                </div>
 
-                    <div class="card-footer bg-white py-3">
-                        <div class="d-flex justify-content-end gap-2">
-
-                            {{-- Save Draft --}}
-                            <button type="button" id="saveDraftBtn" class="btn btn-sm btn-warning rounded-pill px-4 shadow-sm" {!! $transfer->status == 'Posted' ? 'style="display:none;"' : '' !!}>
-                                <i class="fa fa-floppy-o me-1"></i> Update Draft
-                                <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+S</kbd>
-                            </button>
-
-                            {{-- Print Preview --}}
-                            <button type="button" id="previewPrintBtn" class="btn btn-sm btn-outline-dark rounded-pill px-4">
-                                <i class="fa fa-print me-1"></i> Print Preview
-                                <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+P</kbd>
-                            </button>
-
-                            {{-- Post --}}
-                            <button type="button" id="postBtn" class="btn btn-sm btn-primary rounded-pill px-4 shadow-sm" {!! $transfer->status == 'Posted' ? 'style="display:none;"' : '' !!}>
-                                <i class="fa fa-send me-1"></i> Save & Post
-                                <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+&#8629;</kbd>
-                            </button>
-
-                            {{-- Edit (Hidden initially for unposted, unless locked) --}}
-                            <button type="button" id="editInvoiceBtn" class="btn btn-sm btn-warning rounded-pill px-4 shadow-sm" style="display:none;">
-                                <i class="fa fa-pencil me-1"></i> Edit
-                                <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+E</kbd>
-                            </button>
-
-                            {{-- New --}}
-                            <a href="{{ route('stock_transfers.create') }}" id="newInvoiceBtn" class="btn btn-sm btn-info rounded-pill px-4 shadow-sm text-white" {!! $transfer->status != 'Posted' ? 'style="display:none;"' : '' !!}>
-                                <i class="fa fa-plus me-1"></i> New
-                                <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+M</kbd>
-                            </a>
-
-                            {{-- Cancel --}}
-                            <a href="{{ route('stock_transfers.index') }}" id="cancelBtn" class="btn btn-sm btn-danger rounded-pill px-4 shadow-sm text-white">
-                                <i class="fa fa-times me-1"></i> Cancel
-                                <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Esc</kbd>
-                            </a>
-
-                        </div>
-                    </div>
+                <div class="d-flex flex-wrap gap-2 justify-content-center bg-light bottom-bar rounded-2 border shadow-sm w-100">
+                    <button type="button" id="saveDraftBtn" class="btn btn-primary px-3 fw-bold shadow-sm" {{ $isPosted ? 'disabled' : '' }}>
+                        <u>S</u>ave <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+S</kbd>
+                    </button>
+                    <button type="button" id="editInvoiceBtn" class="btn btn-warning px-3 fw-bold text-dark shadow-sm" disabled>
+                        <u>E</u>dit <kbd style="font-size:10px;opacity:.8;margin-left:4px;color:#fff;">Ctrl+E</kbd>
+                    </button>
+                    <button type="button" id="postBtn" class="btn btn-success px-3 fw-bold shadow-sm" {{ $isPosted ? 'disabled' : '' }}>
+                        <u>P</u>ost <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+&crarr;</kbd>
+                    </button>
+                    <button type="button" id="deleteBtn" class="btn btn-danger px-3 fw-bold shadow-sm" disabled title="Delete not available">
+                        <u>D</u>elete <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+D</kbd>
+                    </button>
+                    <a href="{{ route('stock_transfers.print', $transfer->id) }}" target="_blank" id="realPrintBtn" class="btn btn-info px-3 fw-bold text-dark shadow-sm">
+                        <u>P</u>rint <kbd style="font-size:10px;opacity:.8;margin-left:4px;color:#fff;">Ctrl+P</kbd>
+                    </a>
+                    <a href="{{ route('stock_transfers.index') }}" id="exitBtn" class="btn btn-secondary px-3 fw-bold shadow-sm text-white">
+                        E<u>x</u>it <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Esc</kbd>
+                    </a>
+                    <a href="{{ route('stock_transfers.create') }}" id="newInvoiceBtn" class="btn btn-dark px-3 fw-bold shadow-sm text-white">
+                        <u>N</u>ew <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+M</kbd>
+                    </a>
                 </div>
 
             </form>
@@ -293,8 +251,20 @@ $(document).ready(function() {
 
     $('.select2').select2({ width: '100%' });
 
-    var _savedTransferId = "{{ $transfer->id }}";
-    var _isPosted = "{{ $transfer->status == 'Posted' ? 'true' : 'false' }}" === 'true';
+    var _savedTransferId = {{ $transfer->id }};
+    var _isPosted = {{ $isPosted ? 'true' : 'false' }};
+    var _saveInFlight = false;
+    var _postInFlight = false;
+
+    function setFormLocked(isLocked) {
+        if (isLocked) {
+            $('#transferForm').addClass('form-locked');
+            $('#transferForm .select2').prop('disabled', true);
+        } else {
+            $('#transferForm').removeClass('form-locked');
+            $('#transferForm .select2').prop('disabled', false).trigger('change.select2');
+        }
+    }
 
     function showToast(msg, type) {
         type = type || 'success';
@@ -411,13 +381,12 @@ $(document).ready(function() {
 
     $(document).on('input', '.quantity', recalcTotals);
 
-    $('#addRowBtn').on('click', function() { appendBlankRow().find('.item-id-input').focus(); });
-
     $('#from_warehouse_id').on('change', function() {
         $('#transferItems tr').each(function() { fetchStock($(this), $(this).find('.item-id-input').val()); });
     });
 
     function ajaxSaveDraft(callback) {
+        if (_saveInFlight || _isPosted) return;
         $('#transferItems tr').each(function() { if (!$(this).find('.product-select').val()) { $(this).remove(); } });
         recalcTotals();
         if ($('#transferItems tr').length === 0) { appendBlankRow(); showToast('❌ Add at least one item.', 'error'); return; }
@@ -425,35 +394,35 @@ $(document).ready(function() {
         var $form = $('#transferForm');
         if (!$form[0].checkValidity()) { $form[0].reportValidity(); return; }
 
-        $('#saveDraftBtn').prop('disabled', true).html('<i class="fa fa-spinner fa-spin me-1"></i> Updating...');
-
-        var url = "/stock_transfers/" + _savedTransferId;
-        var data = $form.serializeArray();
+        _saveInFlight = true;
+        $('#saveDraftBtn').prop('disabled', true).html('<i class="fa fa-spinner fa-spin me-1"></i> Saving...');
 
         $.ajax({
-            url: url, type: 'POST', data: $.param(data),
+            url: "/stock_transfers/" + _savedTransferId, type: 'POST', data: $.param($form.serializeArray()),
             headers: { 'X-Requested-With': 'XMLHttpRequest' },
             success: function(res) {
                 if (res.success) {
                     showToast('✅ Updated successfully!');
                     if (typeof callback === 'function') callback(res.id);
                     else {
-                        // Lock form after update
-                        $('#transferForm').addClass('form-locked');
-                        $('#editInvoiceBtn').show();
-                        $('#newInvoiceBtn').show();
-                        $('#saveDraftBtn, #postBtn').hide();
-                        $('#postActionArea').html(`<button type="button" onclick="$('#postBtn').trigger('click')" class="btn btn-sm btn-primary rounded-pill px-4 shadow-sm"><i class="fa fa-send me-1"></i> Post</button>`);
+                        setFormLocked(true);
+                        $('#editInvoiceBtn').prop('disabled', false);
+                        showToast('🔒 Form Locked — Ctrl+E to Edit', 'success');
                     }
                 } else { showToast(res.message, 'error'); }
             },
             complete: function() {
-                $('#saveDraftBtn').prop('disabled', false).html('<i class="fa fa-floppy-o me-1"></i> Update Draft <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+S</kbd>');
+                _saveInFlight = false;
+                if (!$('#transferForm').hasClass('form-locked') && !_isPosted) {
+                    $('#saveDraftBtn').prop('disabled', false)
+                        .html('<u>S</u>ave <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+S</kbd>');
+                }
             }
         });
     }
 
     function doPost() {
+        if (_postInFlight || _isPosted) return;
         ajaxSaveDraft(function(id) { postById(id); });
     }
 
@@ -461,33 +430,40 @@ $(document).ready(function() {
         let isCashier = {{ auth()->user()->hasRole('Cashier') ? 'true' : 'false' }};
         let title = isCashier ? 'Send for Approval?' : 'Post Stock Transfer?';
         let text = isCashier ? 'This transfer will be sent to the admin for approval.' : 'Are you sure you want to post this transfer? Stock will be updated immediately.';
-        
+
         Swal.fire({
-            title: title,
-            text: text,
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#3085d6',
-            cancelButtonColor: '#d33',
-            confirmButtonText: 'Yes, proceed!'
+            title: title, text: text, icon: 'warning',
+            showCancelButton: true, confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33', confirmButtonText: 'Yes, proceed!'
         }).then((result) => {
             if (result.isConfirmed) {
+                _postInFlight = true;
                 $('#postBtn').prop('disabled', true).html('<i class="fa fa-spinner fa-spin me-1"></i> Posting...');
-        $.ajax({
-            url: '/stock_transfers/' + id + '/post', type: 'POST', 
-            data: { _token: '{{ csrf_token() }}' },
-            success: function(res) {
-                if (res.success) {
-                    showToast('✅ Posted Successfully!');
-                    $('#statusBadge').removeClass('bg-info').addClass('bg-success text-white').html('<i class="fa fa-check me-1"></i> Posted');
-                    $('#postedWatermark').addClass('show');
-                    $('#transferForm').addClass('form-locked');
-                    $('#saveDraftBtn, #postBtn, #editInvoiceBtn, #postActionArea button').hide();
-                    $('#newInvoiceBtn').show();
-                    setTimeout(function() { window.location.href = "{{ route('stock_transfers.index') }}"; }, 1500);
-                } else { showToast(res.message, 'error'); $('#postBtn').prop('disabled', false).html('<i class="fa fa-send me-1"></i> Save & Post'); }
-            }
-        });
+                $.ajax({
+                    url: '/stock_transfers/' + id + '/post', type: 'POST',
+                    data: { _token: '{{ csrf_token() }}' },
+                    success: function(res) {
+                        if (res.success) {
+                            showToast('✅ Posted Successfully!');
+                            _isPosted = true;
+                            $('#statusBadge').removeClass('bg-info').addClass('bg-success text-white').text('Posted');
+                            $('#postedWatermark').addClass('show');
+                            setFormLocked(true);
+                            $('#saveDraftBtn, #postBtn, #editInvoiceBtn').prop('disabled', true);
+                            setTimeout(function() { window.location.href = "{{ route('stock_transfers.index') }}"; }, 1500);
+                        } else {
+                            showToast(res.message, 'error');
+                            _postInFlight = false;
+                            $('#postBtn').prop('disabled', false)
+                                .html('<u>P</u>ost <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+&crarr;</kbd>');
+                        }
+                    },
+                    error: function() {
+                        _postInFlight = false;
+                        $('#postBtn').prop('disabled', false)
+                            .html('<u>P</u>ost <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+&crarr;</kbd>');
+                    }
+                });
             }
         });
     }
@@ -495,13 +471,23 @@ $(document).ready(function() {
     $('#saveDraftBtn').on('click', function() { ajaxSaveDraft(); });
     $('#postBtn').on('click', function() { doPost(); });
     $('#editInvoiceBtn').on('click', function() {
-        $('#transferForm').removeClass('form-locked');
-        $(this).hide();
-        $('#saveDraftBtn, #postBtn').show();
+        if ($(this).prop('disabled')) return;
+        setFormLocked(false);
+        $(this).prop('disabled', true);
+        $('#saveDraftBtn').prop('disabled', false)
+            .html('<u>S</u>ave <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+S</kbd>');
         showToast('🔓 Form Unlocked for Editing', 'success');
     });
 
-    $('#previewPrintBtn').on('click', function() {
+    $('#realPrintBtn').on('click', function(e) {
+        var href = $(this).attr('href');
+        if (!href || href === 'javascript:void(0)' || href.indexOf('stock_transfers') === -1) {
+            e.preventDefault();
+            showPreviewModal();
+        }
+    });
+
+    function showPreviewModal() {
         var fromWh  = $('#from_warehouse_id option:selected').text();
         var toWh    = $('#to_warehouse_id option:selected').text();
         if ($('#toShop').is(':checked')) toWh = 'Shop';
@@ -543,25 +529,42 @@ $(document).ready(function() {
             </div>`;
         $('#printPreviewBody').html(html);
         new bootstrap.Modal(document.getElementById('printPreviewModal')).show();
-    });
+    }
 
-    $(document).on('keydown', function(e) {
-        if (e.ctrlKey && (e.key === 's' || e.key === 'S')) { e.preventDefault(); $('#saveDraftBtn').trigger('click'); }
-        if (e.ctrlKey && e.key === 'Enter') { e.preventDefault(); $('#postBtn').trigger('click'); }
-        if (e.ctrlKey && (e.key === 'p' || e.key === 'P')) { e.preventDefault(); $('#previewPrintBtn').trigger('click'); }
-        if (e.ctrlKey && (e.key === 'l' || e.key === 'L')) { e.preventDefault(); window.location.href = $('#listBtn').attr('href'); }
-        if (e.ctrlKey && (e.key === 'e' || e.key === 'E')) { e.preventDefault(); $('#editInvoiceBtn').trigger('click'); }
-        if (e.ctrlKey && (e.key === 'm' || e.key === 'M')) { e.preventDefault(); window.location.href = $('#newInvoiceBtn').attr('href'); }
-        if (e.key === 'Escape') { 
-            if ($('.modal.show').length) { $('.modal.show').modal('hide'); } 
-            else { window.location.href = $('#cancelBtn').attr('href'); }
+    document.addEventListener('keydown', function(e) {
+        if (e.ctrlKey && (e.key === 's' || e.key === 'S')) {
+            e.preventDefault(); e.stopImmediatePropagation();
+            if (!_saveInFlight && !$('#saveDraftBtn').prop('disabled') && $('#saveDraftBtn').is(':visible')) $('#saveDraftBtn').click();
         }
-    });
+        if (e.ctrlKey && (e.key === 'e' || e.key === 'E')) {
+            e.preventDefault();
+            if (!$('#editInvoiceBtn').prop('disabled')) $('#editInvoiceBtn').click();
+        }
+        if (e.ctrlKey && e.key === 'Enter') {
+            e.preventDefault(); e.stopImmediatePropagation();
+            if (!_postInFlight && !$('#postBtn').prop('disabled')) $('#postBtn').click();
+        }
+        if (e.ctrlKey && (e.key === 'p' || e.key === 'P')) {
+            e.preventDefault();
+            var href = $('#realPrintBtn').attr('href');
+            if (href && href !== 'javascript:void(0)' && href.indexOf('stock_transfers') !== -1) window.open(href, '_blank');
+            else showPreviewModal();
+        }
+        if (e.ctrlKey && (e.key === 'l' || e.key === 'L')) { e.preventDefault(); window.location.href = $('#listBtn').attr('href'); }
+        if (e.ctrlKey && (e.key === 'm' || e.key === 'M')) { e.preventDefault(); window.location.href = $('#newInvoiceBtn').attr('href'); }
+        if (e.ctrlKey && (e.key === 'i' || e.key === 'I')) {
+            e.preventDefault();
+            if (!_isPosted && !$('#transferForm').hasClass('form-locked')) appendBlankRow(true);
+        }
+        if (e.key === 'Escape') {
+            if ($('.modal.show').length) { $('.modal.show').modal('hide'); }
+            else { e.preventDefault(); window.location.href = $('#exitBtn').attr('href'); }
+        }
+    }, true);
 
-    if(_isPosted) {
-        $('#transferForm').addClass('form-locked');
-        $('#saveDraftBtn, #postBtn, #editInvoiceBtn').hide();
-        $('#postedWatermark').addClass('show');
+    if (_isPosted) {
+        setFormLocked(true);
+        $('#saveDraftBtn, #postBtn, #editInvoiceBtn').prop('disabled', true);
     }
 });
 </script>

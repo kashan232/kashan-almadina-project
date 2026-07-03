@@ -168,9 +168,6 @@
         <div class="footer-credits">
             <div class="dev-text">Develop By: <span>ProWave Software Solutions</span></div>
             <div class="contact-info">+92 317 3836 223 | +92 317 3859 647</div>
-            <div class="copyright-text">
-                © Copyright 2025. All right reserved. AL madina traders
-            </div>
         </div>
     </div>
 </div>

@@ -257,14 +257,40 @@
         color: #ffffff !important;
     }
     
-    /* Global header background (Blue) */
-    .rt_nav_header {
+    /* Global header background (Blue) + full bar sticky/fixed on scroll */
+    .rt_nav_header.horizontal-layout {
+        position: sticky !important;
+        top: 0 !important;
+        left: 0;
+        right: 0;
+        z-index: 1030 !important;
         background: linear-gradient(90deg, #0a3d62 0%, #3c6382 100%) !important;
         border-bottom: 2px solid #072a44;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+        overflow: visible !important;
+    }
+
+    /* Keep menu inside header — theme was fixing only .nav-bottom and losing blue bar */
+    .rt_nav_header.horizontal-layout .nav-bottom,
+    .rt_nav_header.horizontal-layout.fixed-on-scroll .nav-bottom {
+        position: static !important;
+        top: auto !important;
+        left: auto !important;
+        right: auto !important;
+        width: auto !important;
+        background: transparent !important;
+        box-shadow: none !important;
+        border: none !important;
+    }
+
+    @media (max-width: 991px) {
+        .rt_nav_header.horizontal-layout {
+            position: fixed !important;
+        }
     }
 </style>
 <div class="container-scroller">
-      <nav class="rt_nav_header horizontal-layout col-lg-12 col-12 p-0" style="position: relative; opacity: 1 !important; overflow: visible !important;">
+      <nav class="rt_nav_header horizontal-layout col-lg-12 col-12 p-0" style="opacity: 1 !important; overflow: visible !important;">
           <div class="top_nav flex-grow-1" style="overflow: visible !important;">
               <div class="container-fluid px-2 d-flex flex-row h-100 align-items-center justify-content-between">
                   <!-- BRAND NAME -->
