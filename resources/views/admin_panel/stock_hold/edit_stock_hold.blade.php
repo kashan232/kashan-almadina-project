@@ -2,18 +2,39 @@
 
 <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 <style>
-    .select2-container .select2-selection--single { height: 31px !important; border: 1px solid #ced4da; }
-    .select2-container .select2-selection--single .select2-selection__rendered { line-height: 31px !important; padding-left: 8px; }
-    .select2-container .select2-selection--single .select2-selection__arrow { height: 31px !important; }
-    .input-sm { height: 31px; padding: 2px 8px; font-size: 14px; }
-    .table td, .table th { vertical-align: middle !important; padding: 4px !important; }
+    .stock-hold-page.container-fluid { padding: .25rem .4rem !important; }
+    .stock-hold-page .main-content-inner { padding: 0 !important; }
+    .stock-hold-page .page-top-bar { margin-bottom: .35rem !important; padding: .35rem .5rem !important; }
+    .stock-hold-page .page-top-bar .page-title { font-size: .9rem !important; }
+    .stock-hold-page .page-top-bar .badge { font-size: 11px !important; padding: .2rem .55rem !important; }
+    .stock-hold-page .card { margin-bottom: .35rem !important; }
+    .stock-hold-page .card-body { padding: .45rem .55rem !important; }
+    .stock-hold-page .card-footer { padding: .45rem .55rem !important; }
+    .stock-hold-page .row.g-2 { --bs-gutter-x: .4rem; --bs-gutter-y: .25rem; }
+    .stock-hold-page .form-label { margin-bottom: .1rem !important; font-size: .72rem !important; line-height: 1.1; }
+    .stock-hold-page .input-sm,
+    .stock-hold-page .form-control,
+    .stock-hold-page .form-select { height: 26px !important; min-height: 26px !important; padding: .1rem .4rem !important; font-size: .78rem !important; }
+    .stock-hold-page .select2-container .select2-selection--single { height: 26px !important; border: 1px solid #ced4da; }
+    .stock-hold-page .select2-container .select2-selection--single .select2-selection__rendered { line-height: 24px !important; padding-left: 6px !important; font-size: .78rem !important; }
+    .stock-hold-page .select2-container .select2-selection--single .select2-selection__arrow { height: 24px !important; }
+    .stock-hold-page .table td, .stock-hold-page .table th { vertical-align: middle !important; padding: 2px 4px !important; font-size: .78rem !important; }
+    .stock-hold-page .table .form-control { height: 24px !important; min-height: 24px !important; padding: 1px 4px !important; font-size: .75rem !important; }
+    .stock-hold-page .manual-search-card .card-body { padding: .35rem .55rem !important; }
+    .stock-hold-page #addItemBtn { height: 26px; padding: 0 .65rem; font-size: .75rem; line-height: 1.2; }
+    .stock-hold-page .bottom-bar-btns { gap: .35rem !important; }
+    .stock-hold-page .bottom-bar-btns .btn { padding: .25rem .65rem !important; font-size: .78rem !important; }
     
     .form-locked { position: relative; opacity: 0.8; }
     .form-locked .card-body { pointer-events: none !important; }
     .form-locked input, .form-locked .select2-container--default .select2-selection--single, .form-locked select, .form-locked textarea { 
         background-color: #e9ecef !important; cursor: not-allowed !important; 
     }
-    .form-locked .remove-row, .form-locked #addItemBtn { display: none !important; }
+    .form-locked .remove-row, .form-locked #addItemBtn, .form-locked #saveDraftBtn { display: none !important; }
+    .form-locked #editInvoiceBtn, .form-locked #newInvoiceBtn, .form-locked #realPrintBtn,
+    .form-locked #postBtn, .form-locked #exitBtn, .form-locked #deleteBtn {
+        pointer-events: auto !important; opacity: 1 !important;
+    }
     
     .posted-watermark {
         position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-30deg);
@@ -26,10 +47,10 @@
 @section('content')
 <div class="main-content">
     <div class="main-content-inner">
-        <div class="container-fluid pt-3">
+        <div class="container-fluid stock-hold-page">
             
             {{-- TOP BAR --}}
-            <div class="d-flex justify-content-between align-items-center mb-3 bg-light p-2 rounded shadow-sm">
+            <div class="d-flex justify-content-between align-items-center page-top-bar bg-light rounded shadow-sm">
                 <div style="min-width:105px;"></div>
                 <div class="d-flex align-items-center gap-2 justify-content-center flex-grow-1">
                     <h6 class="page-title mb-0 fw-bold">Edit Stock Hold</h6>
@@ -55,7 +76,7 @@
                 <div class="posted-watermark @if($voucher->status == 'Posted') show @endif" id="postedWatermark">Posted</div>
 
                 {{-- Header Details --}}
-                <div class="card shadow-sm mb-3">
+                <div class="card shadow-sm">
                     <div class="card-body">
                         <div class="row g-2">
                             <div class="col-md-2">
@@ -80,7 +101,7 @@
                                 <label class="form-label small fw-bold">Voucher No</label>
                                 <input type="text" class="form-control input-sm bg-light fw-bold text-primary" value="{{ (int) preg_replace('/[^0-9]/', '', $voucher->voucher_no) ?: $voucher->voucher_no }}" readonly>
                             </div>
-                            <div class="col-md-2 mt-2">
+                            <div class="col-md-2">
                                 <label class="form-label small fw-bold">Location</label>
                                 <select name="warehouse_id" id="warehouse_id" class="form-select select2" required>
                                     @if(auth()->user()->canAccessShop())
@@ -91,7 +112,7 @@
                                     @endforeach
                                 </select>
                             </div>
-                            <div class="col-md-10 mt-2">
+                            <div class="col-md-10">
                                 <label class="form-label small fw-bold">Remarks</label>
                                 <input type="text" name="remarks" class="form-control input-sm" value="{{ $voucher->remarks }}" placeholder="Any special notes...">
                             </div>
@@ -100,11 +121,11 @@
                 </div>
 
                 {{-- MANUAL SEARCH BOX --}}
-                <div class="card shadow-sm mb-3 bg-light border-primary border-opacity-25">
-                    <div class="card-body py-2">
+                <div class="card shadow-sm manual-search-card bg-light border-primary border-opacity-25">
+                    <div class="card-body">
                         <div class="row g-2 align-items-end">
                             <div class="col-md-10">
-                                <label class="form-label small fw-bold text-primary mb-1">Manual Product Search (to add extra items)</label>
+                                <label class="form-label small fw-bold text-primary mb-0">Manual Product Search (to add extra items)</label>
                                 <select id="manual_product_search" class="form-select select2">
                                     <option value="">Search for a product...</option>
                                     @foreach($products as $p)
@@ -156,27 +177,28 @@
                             </table>
                         </div>
                     </div>
-                    <div class="card-footer bg-white py-3">
-                        <div class="d-flex justify-content-end gap-2">
-                            @if($voucher->status != 'Posted')
-                                <button type="button" id="saveDraftBtn" class="btn btn-sm btn-warning rounded-pill px-4 shadow-sm" style="display:none;">
-                                    <i class="fa fa-floppy-o me-1"></i> Update Draft <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+S</kbd>
-                                </button>
-                                <button type="button" id="previewPrintBtn" class="btn btn-sm btn-outline-dark rounded-pill px-4">
-                                    <i class="fa fa-print me-1"></i> Print Preview <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+P</kbd>
-                                </button>
-                                <button type="button" id="postBtn" class="btn btn-sm btn-primary rounded-pill px-4 shadow-sm">
-                                    <i class="fa fa-send me-1"></i> Post <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+&#8629;</kbd>
-                                </button>
-                                <button type="button" id="editBtn" class="btn btn-sm btn-warning rounded-pill px-4 shadow-sm">
-                                    <i class="fa fa-pencil me-1"></i> Edit <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+E</kbd>
-                                </button>
-                            @endif
-                            <a href="{{ route('create-stock-hold') }}" id="newBtn" class="btn btn-sm btn-info rounded-pill px-4 shadow-sm text-white">
-                                <i class="fa fa-plus me-1"></i> New <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+M</kbd>
+                    <div class="card-footer bg-white">
+                        <div class="d-flex flex-wrap justify-content-center w-100 bottom-bar-btns">
+                            <button type="button" id="saveDraftBtn" class="btn btn-primary px-3 fw-bold shadow-sm" disabled>
+                                <u>S</u>ave <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+S</kbd>
+                            </button>
+                            <button type="button" id="editInvoiceBtn" class="btn btn-warning px-3 fw-bold text-dark shadow-sm">
+                                <u>E</u>dit <kbd style="font-size:10px;opacity:.8;margin-left:4px;color:#fff;">Ctrl+E</kbd>
+                            </button>
+                            <button type="button" id="postBtn" class="btn btn-success px-3 fw-bold shadow-sm">
+                                <u>P</u>ost <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+&crarr;</kbd>
+                            </button>
+                            <button type="button" id="deleteBtn" class="btn btn-danger px-3 fw-bold shadow-sm" disabled title="Delete not available">
+                                <u>D</u>elete <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+D</kbd>
+                            </button>
+                            <a href="{{ route('stock-holds.print', $voucher->id) }}" target="_blank" id="realPrintBtn" class="btn btn-info px-3 fw-bold text-dark shadow-sm">
+                                <u>P</u>rint <kbd style="font-size:10px;opacity:.8;margin-left:4px;color:#fff;">Ctrl+P</kbd>
                             </a>
-                            <a href="{{ route('stock-hold-list') }}" id="cancelBtn" class="btn btn-sm btn-danger rounded-pill px-4 shadow-sm text-white">
-                                <i class="fa fa-times me-1"></i> Cancel <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Esc</kbd>
+                            <a href="{{ route('stock-hold-list') }}" id="exitBtn" class="btn btn-secondary px-3 fw-bold shadow-sm text-white">
+                                E<u>x</u>it <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Esc</kbd>
+                            </a>
+                            <a href="{{ route('create-stock-hold') }}" id="newInvoiceBtn" class="btn btn-dark px-3 fw-bold shadow-sm text-white">
+                                <u>N</u>ew <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+M</kbd>
                             </a>
                         </div>
                     </div>
@@ -193,7 +215,11 @@
 $(document).ready(function() {
     $('.select2').select2({ width: '100%' });
     var _savedVoucherId = "{{ $voucher->id }}";
+    var _saveInFlight = false;
+    var _postInFlight = false;
     var _selectedPartyId = "{{ $voucher->party_id }}";
+    var saveBtnHtml = '<u>S</u>ave <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+S</kbd>';
+    var postBtnHtml = '<u>P</u>ost <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+&crarr;</kbd>';
 
     function loadParties(type, selectId) {
         $.get("{{ route('stock-holds.party.list') }}", { type: type }, function(res) {
@@ -273,65 +299,114 @@ $(document).ready(function() {
     }
 
     function update(act) {
+        if (_saveInFlight || _postInFlight) return;
         $('#formAction').val(act);
         if($('#itemRows tr').length === 0) { showToast('Add at least one item', 'error'); return; }
         var $form = $('#stockHoldForm');
         if(!$form[0].checkValidity()) { $form[0].reportValidity(); return; }
 
         var btn = act === 'post' ? '#postBtn' : '#saveDraftBtn';
-        $(btn).prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i>');
+        if (act === 'post') _postInFlight = true; else _saveInFlight = true;
+        $(btn).prop('disabled', true).html('<i class="fa fa-spinner fa-spin me-1"></i>');
 
         $.ajax({
             url: $form.attr('action'), type: 'POST', data: serializeForm(),
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
             success: function(res) {
                 if(res.success) {
                     if(res.status === 'Posted') {
+                        $('#editInvoiceBtn, #postBtn').prop('disabled', true);
                         showToast('Stock Hold Posted! Redirecting...', 'success');
                         setTimeout(function() { window.location.href = "{{ route('stock-hold-list') }}"; }, 1200);
                     } else {
                         showToast('All changes saved successfully', 'success');
-                        setTimeout(function() { window.location.reload(); }, 800);
+                        $('#stockHoldForm').addClass('form-locked');
+                        $('#editInvoiceBtn, #postBtn').prop('disabled', false);
+                        $('#saveDraftBtn').prop('disabled', true);
                     }
                 } else { showToast(res.message, 'error'); }
             },
             error: function(xhr) {
                 var msg = 'Server Error';
-                if (xhr.responseJSON && xhr.responseJSON.message) {
-                    msg = xhr.responseJSON.message;
-                } else if (xhr.responseJSON && xhr.responseJSON.errors) {
-                    msg = Object.values(xhr.responseJSON.errors).flat().join(', ');
-                }
+                if (xhr.responseJSON && xhr.responseJSON.message) msg = xhr.responseJSON.message;
+                else if (xhr.responseJSON && xhr.responseJSON.errors) msg = Object.values(xhr.responseJSON.errors).flat().join(', ');
                 showToast(msg, 'error');
             },
             complete: function() {
-                $(btn).prop('disabled', false).html(act === 'post'
-                    ? '<i class="fa fa-send me-1"></i> Post <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+&#8629;</kbd>'
-                    : '<i class="fa fa-floppy-o me-1"></i> Update Draft <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+S</kbd>');
+                if (act === 'post') _postInFlight = false; else _saveInFlight = false;
+                if (!$('#stockHoldForm').hasClass('form-locked') || act === 'post') {
+                    $(btn).prop('disabled', act === 'post' ? $('#postBtn').prop('disabled') : false).html(act === 'post' ? postBtnHtml : saveBtnHtml);
+                }
             }
         });
     }
 
-    $('#saveDraftBtn').on('click', () => update('save'));
-    $('#postBtn').on('click', () => update('post'));
-    $('#editBtn').on('click', function() { 
-        if("{{ $voucher->status }}" === 'Posted') return;
-        $('#stockHoldForm').removeClass('form-locked'); 
-        $('#saveDraftBtn, #postBtn').show(); 
-        $('#postBtn').html('<i class="fa fa-send"></i> Update & Post <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+&#8629;</kbd>');
-        $(this).hide(); 
+    function doPost() {
+        if (_postInFlight) return;
+        _postInFlight = true;
+        $('#postBtn').prop('disabled', true).html('<i class="fa fa-spinner fa-spin me-1"></i>');
+        $.ajax({
+            url: '/stock-holds/post/' + _savedVoucherId,
+            type: 'POST',
+            data: { _token: $('input[name="_token"]').val() },
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+            success: function() {
+                showToast('Stock Hold Posted! Redirecting...', 'success');
+                setTimeout(function() { window.location.href = "{{ route('stock-hold-list') }}"; }, 1200);
+            },
+            error: function() {
+                showToast('Post failed', 'error');
+                _postInFlight = false;
+                $('#postBtn').prop('disabled', false).html(postBtnHtml);
+            }
+        });
+    }
+
+    $('#saveDraftBtn').on('click', function(e) { e.preventDefault(); if (!$(this).prop('disabled')) update('save'); });
+    $('#postBtn').on('click', function(e) {
+        e.preventDefault();
+        if ($(this).prop('disabled')) return;
+        if ($('#stockHoldForm').hasClass('form-locked')) doPost();
+        else update('post');
+    });
+    $('#editInvoiceBtn').on('click', function() {
+        if ($(this).prop('disabled')) return;
+        $('#stockHoldForm').removeClass('form-locked');
+        $(this).prop('disabled', true);
+        $('#postBtn').prop('disabled', true);
+        $('#saveDraftBtn').prop('disabled', false).html(saveBtnHtml);
     });
 
-    $('#previewPrintBtn').on('click', function() {
-        window.open("/stock-holds/print/" + _savedVoucherId, "_blank");
-    });
-
-    $(document).on('keydown', function(e) {
-        if(e.ctrlKey && e.key === 's') { e.preventDefault(); $('#saveDraftBtn:visible').click(); }
-        if(e.ctrlKey && e.key === 'Enter') { e.preventDefault(); $('#postBtn:visible').click(); }
-        if(e.ctrlKey && e.key === 'e') { e.preventDefault(); $('#editBtn:visible').click(); }
-        if(e.ctrlKey && e.key === 'm') { e.preventDefault(); window.location.href = "{{ route('create-stock-hold') }}"; }
-        if(e.key === 'Escape') { window.location.href = "{{ route('stock-hold-list') }}"; }
-    });
+    document.addEventListener('keydown', function(e) {
+        if (e.ctrlKey && (e.key === 's' || e.key === 'S')) {
+            e.preventDefault(); e.stopImmediatePropagation();
+            if (!_saveInFlight && !$('#saveDraftBtn').prop('disabled')) $('#saveDraftBtn').click();
+        }
+        if (e.ctrlKey && e.key === 'Enter') {
+            e.preventDefault(); e.stopImmediatePropagation();
+            if (!_postInFlight && !$('#postBtn').prop('disabled')) $('#postBtn').click();
+        }
+        if (e.ctrlKey && (e.key === 'p' || e.key === 'P')) {
+            e.preventDefault();
+            window.open($('#realPrintBtn').attr('href'), '_blank');
+        }
+        if (e.ctrlKey && (e.key === 'e' || e.key === 'E')) {
+            e.preventDefault();
+            if (!$('#editInvoiceBtn').prop('disabled')) $('#editInvoiceBtn').click();
+        }
+        if (e.ctrlKey && (e.key === 'm' || e.key === 'M')) {
+            e.preventDefault();
+            window.location.href = $('#newInvoiceBtn').attr('href');
+        }
+        if (e.ctrlKey && (e.key === 'l' || e.key === 'L')) {
+            e.preventDefault();
+            window.location.href = $('#listBtn').attr('href');
+        }
+        if (e.key === 'Escape') {
+            e.preventDefault();
+            window.location.href = $('#exitBtn').attr('href');
+        }
+    }, true);
 });
 </script>
 @endsection
