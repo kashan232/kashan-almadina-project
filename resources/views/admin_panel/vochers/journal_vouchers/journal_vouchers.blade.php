@@ -3,61 +3,12 @@
 @section('content')
 <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 <style>
-    /* Ultra-High Density Form Design */
-    .main-content-inner { background: #f4f7fa; min-height: 100vh; }
-    .form-card { border-radius: 8px; border: none; box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075); margin-bottom: 1rem; }
-    
-    /* Input Styling */
-    .form-control-sm, .form-select-sm { 
-        font-size: 11px !important; 
-        height: 28px !important; 
-        padding: 0.2rem 0.5rem !important; 
-        border-radius: 4px !important;
-        border: 1px solid #dee2e6 !important;
-    }
-    .form-label { font-size: 10px !important; font-weight: 700 !important; color: #64748b !important; text-transform: uppercase; margin-bottom: 2px !important; }
-    
-    /* Select2 High Density Overrides */
-    .select2-container--default .select2-selection--single {
-        height: 28px !important; font-size: 11px !important; border-radius: 4px !important; border: 1px solid #dee2e6 !important;
-    }
-    .select2-container--default .select2-selection--single .select2-selection__rendered { line-height: 26px !important; padding-left: 8px !important; }
-    .select2-container--default .select2-selection--single .select2-selection__arrow { height: 26px !important; }
-
-    /* Table Density */
-    #voucherTable { font-size: 11px !important; }
-    #voucherTable thead th { 
-        padding: 2px 8px !important; 
-        font-size: 10.5px !important; 
-        height: 24px !important;
-        background: #f8fafc !important;
-        color: #475569 !important;
-        font-weight: 700 !important;
-        text-transform: uppercase;
-        border-bottom: 2px solid #e2e8f0 !important;
-    }
-    #voucherTable tbody td { padding: 4px 6px !important; vertical-align: middle !important; border-bottom: 1px solid #f1f5f9 !important; }
-    
-    /* Watermark & Locked State */
-    .posted-watermark {
-        position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-30deg);
-        font-size: 6rem; color: rgba(220, 53, 69, 0.05); font-weight: 900; text-transform: uppercase;
-        pointer-events: none; z-index: 1000; border: 8px solid rgba(220, 53, 69, 0.05); padding: 10px 40px; border-radius: 15px;
-    }
-    .form-locked { pointer-events: none !important; }
-    .form-locked input, .form-locked select, .form-locked textarea, .form-locked button:not(#editBtn):not(#previewPrintBtn):not(#newBtn):not(#listBtn) {
-        background-color: #f8fafc !important; opacity: 0.7 !important;
-    }
-
-    .btn-mini { padding: 0px 4px; font-size: 9px; height: 18px; display: inline-flex; align-items: center; justify-content: center; }
-    .ajax-valid-error { color: #dc3545; font-size: 9px; font-weight: 700; margin-top: 1px; display: block; }
-    
-    .header-info-box { background: #fff; border-left: 3px solid #10b981; padding: 4px 10px; border-radius: 4px; }
+@include('admin_panel.vochers._compact_voucher_styles', ['accentColor' => '#10b981'])
 </style>
 
 <div class="main-content">
     <div class="main-content-inner">
-        <div class="container-fluid pt-1">
+        <div class="container-fluid stock-hold-page">
             
             <div id="alertBox" class="alert d-none py-2 mb-2" role="alert" style="font-size: 12px;"></div>
 
@@ -189,40 +140,20 @@
                     </div>
                 </div>
 
-                <!-- Footer Remarks & Actions -->
-                <div class="row g-2 align-items-end mb-4">
-                    <div class="col-md-7">
+                <!-- Footer Remarks -->
+                <div class="row g-2 align-items-end mb-2">
+                    <div class="col-md-12">
                         <div class="alert alert-info py-1 px-2 mb-0" style="font-size: 10px;">
                             <i class="fa fa-info-circle me-1"></i> Ensure Debit and Credit totals are balanced before posting.
                         </div>
                     </div>
-                    <div class="col-md-5">
-                        <div class="d-flex gap-1 justify-content-end mb-1">
-                            @if($receipt->status != 'posted')
-                                <button type="button" id="saveDraftBtn" class="btn btn-warning btn-sm fw-bold rounded-pill px-3 shadow-sm" style="font-size: 11px;">
-                                    <i class="fa fa-save me-1"></i> Save Draft <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+S</kbd>
-                                </button>
-                                <button type="button" id="postBtn" class="btn btn-primary btn-sm fw-bold rounded-pill px-3 shadow-sm" style="font-size: 11px;">
-                                    <i class="fa fa-send me-1"></i> Post <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+Enter</kbd>
-                                </button>
-                            @endif
-                            
-                            <button type="button" id="editBtn" class="btn btn-secondary btn-sm fw-bold rounded-pill px-3 shadow-sm" style="{{ ($receipt->id && $receipt->status != 'posted') ? 'display:block' : 'display:none' }}; font-size: 11px;">
-                                <i class="fa fa-pencil me-1"></i> Edit <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+E</kbd>
-                            </button>
-
-                            <a href="{{ $receipt->id ? route('journalVoucher.print', $receipt->id) : 'javascript:void(0)' }}" id="previewPrintBtn" target="_blank" class="btn btn-dark btn-sm rounded-pill px-3 shadow-sm {{ !$receipt->id ? 'disabled' : '' }}" style="font-size: 11px;">
-                                <i class="fa fa-print"></i> Print <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+P</kbd>
-                            </a>
-                            <a href="{{ route('journal-vochers') }}" id="newBtn" class="btn btn-info btn-sm text-dark fw-bold rounded-pill px-3 shadow-sm" style="font-size: 11px;">
-                                <i class="fa fa-plus"></i> New <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+M</kbd>
-                            </a>
-                            <button type="button" id="deleteBtn" class="btn btn-danger btn-sm fw-bold rounded-pill px-3 shadow-sm" style="{{ !$receipt->id ? 'display:none' : '' }}; font-size: 11px;">
-                                <i class="fa fa-times"></i> Cancel <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Esc</kbd>
-                            </button>
-                        </div>
-                    </div>
                 </div>
+                @include('admin_panel.vochers._standard_voucher_buttons', [
+                    'printRoute' => 'journalVoucher.print',
+                    'listRoute' => 'all-journal-vochers',
+                    'newRoute' => 'journal-vochers',
+                    'showUnpost' => false,
+                ])
             </form>
 
             @if($receipt->status == 'posted')
@@ -323,15 +254,23 @@ $(document).ready(function() {
             .done(res => {
                 if(res.success) {
                     $('#receipt_id').val(res.id); $('#jvidBadgeText').text(res.jvid);
-                    $('#journalForm').addClass('form-locked'); $('#editBtn').show();
-                    $('#previewPrintBtn').attr('href', '{{ route("journalVoucher.print", ":id") }}'.replace(':id', res.id)).removeClass('disabled');
+                    $('#journalForm').addClass('form-locked');
+                    $('#editInvoiceBtn, #postBtn').prop('disabled', false);
+                    $('#realPrintBtn').attr('href', '{{ route("journalVoucher.print", ":id") }}'.replace(':id', res.id)).removeClass('pe-none opacity-50');
+                    $('#deleteBtn').prop('disabled', false);
                     showAlert('Draft saved successfully!');
                 }
             })
             .fail(xhr => { showAlert('Error saving draft.', 'danger'); });
     });
 
-    $('#editBtn').click(function() { $('#journalForm').removeClass('form-locked'); $(this).hide(); });
+    $('#editInvoiceBtn').on('click', function() {
+        if ($(this).prop('disabled')) return;
+        $('#journalForm').removeClass('form-locked');
+        $(this).prop('disabled', true);
+        $('#postBtn').prop('disabled', true);
+        $('#saveDraftBtn').prop('disabled', false);
+    });
 
     $('#postBtn').click(function() {
         let dr = parseFloat($('#totalDebit').val().replace(/,/g, '')) || 0;
@@ -349,48 +288,60 @@ $(document).ready(function() {
         }, 1000);
     });
 
-    $('#deleteBtn').click(function() {
-        Swal.fire({ title: 'Delete permanently?', icon: 'warning', showCancelButton: true, confirmButtonColor: '#d33' }).then((res) => {
-            if(res.isConfirmed) {
-                let id = $('#receipt_id').val();
-                let f = $('<form>', {action: '{{ route("journal.vochers.cancel", ":id") }}'.replace(':id', id), method: 'POST'});
-                f.append($('<input>', {type: 'hidden', name: '_token', value: '{{ csrf_token() }}'}));
-                f.append($('<input>', {type: 'hidden', name: '_method', value: 'DELETE'}));
-                $('body').append(f); f.submit();
-            }
-        });
-    });
-
     $(window).on('keydown', function(e) {
         if ((e.ctrlKey || e.metaKey) && e.which == 83) { // Ctrl+S (Save)
-            e.preventDefault(); 
-            if($('#saveDraftBtn').is(':visible')) $('#saveDraftBtn').click(); 
+            e.preventDefault();
+            if(!$('#saveDraftBtn').prop('disabled')) $('#saveDraftBtn').click();
         }
         if ((e.ctrlKey || e.metaKey) && e.which == 13) { // Ctrl+Enter (Post)
-            e.preventDefault(); 
-            if($('#postBtn').is(':visible')) $('#postBtn').click(); 
+            e.preventDefault();
+            if(!$('#postBtn').prop('disabled')) $('#postBtn').click();
         }
         if ((e.ctrlKey || e.metaKey) && e.which == 69) { // Ctrl+E (Edit)
-            e.preventDefault(); 
-            if($('#editBtn').is(':visible')) $('#editBtn').click(); 
+            e.preventDefault();
+            if(!$('#editInvoiceBtn').prop('disabled')) $('#editInvoiceBtn').click();
         }
         if ((e.ctrlKey || e.metaKey) && e.which == 80) { // Ctrl+P (Print)
-            e.preventDefault(); 
-            if(!$('#previewPrintBtn').hasClass('disabled')) {
-                window.open($('#previewPrintBtn').attr('href'), '_blank');
-            }
+            e.preventDefault();
+            const href = $('#realPrintBtn').attr('href');
+            if (href && href !== 'javascript:void(0)') window.open(href, '_blank');
+        }
+        if ((e.ctrlKey || e.metaKey) && e.which == 68) { // Ctrl+D (Delete draft)
+            e.preventDefault();
+            if(!$('#deleteBtn').prop('disabled')) handleCancel();
         }
         if ((e.ctrlKey || e.metaKey) && e.which == 77) { // Ctrl+M (New)
-            e.preventDefault(); 
-            window.location.href = $('#newBtn').attr('href');
+            e.preventDefault();
+            window.location.href = $('#newInvoiceBtn').attr('href');
+        }
+        if ((e.ctrlKey || e.metaKey) && e.which == 76) { // Ctrl+L (List)
+            e.preventDefault();
+            window.location.href = $('#listBtn').attr('href');
         }
         if (e.which == 27) { // Esc (Cancel)
             e.preventDefault();
-            if($('#deleteBtn').is(':visible')) $('#deleteBtn').click();
+            window.location.href = $('#exitBtn').attr('href');
         }
     });
 
     calc();
 });
+
+function handleCancel() {
+    let id = $('#receipt_id').val();
+    if (!id) {
+        window.location.href = "{{ route('all-journal-vochers') }}";
+        return;
+    }
+    Swal.fire({ title: 'Delete this draft?', icon: 'warning', showCancelButton: true }).then((res) => {
+        if(res.isConfirmed) {
+            let form = $('<form>', {action: '{{ route("journal.vochers.cancel", ":id") }}'.replace(':id', id), method: 'POST'})
+                .append($('<input>', {type: 'hidden', name: '_token', value: '{{ csrf_token() }}'}))
+                .append($('<input>', {type: 'hidden', name: '_method', value: 'DELETE'}));
+            $('body').append(form);
+            form.submit();
+        }
+    });
+}
 </script>
 @endsection

@@ -3,61 +3,12 @@
 @section('content')
 <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 <style>
-    /* Ultra-High Density Form Design */
-    .main-content-inner { background: #f4f7fa; min-height: 100vh; }
-    .form-card { border-radius: 8px; border: none; box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075); margin-bottom: 1rem; }
-    
-    /* Input Styling */
-    .form-control-sm, .form-select-sm { 
-        font-size: 11px !important; 
-        height: 28px !important; 
-        padding: 0.2rem 0.5rem !important; 
-        border-radius: 4px !important;
-        border: 1px solid #dee2e6 !important;
-    }
-    .form-label { font-size: 10px !important; font-weight: 700 !important; color: #64748b !important; text-transform: uppercase; margin-bottom: 2px !important; }
-    
-    /* Select2 High Density Overrides */
-    .select2-container--default .select2-selection--single {
-        height: 28px !important; font-size: 11px !important; border-radius: 4px !important; border: 1px solid #dee2e6 !important;
-    }
-    .select2-container--default .select2-selection--single .select2-selection__rendered { line-height: 26px !important; padding-left: 8px !important; }
-    .select2-container--default .select2-selection--single .select2-selection__arrow { height: 26px !important; }
-
-    /* Table Density */
-    #voucherTable { font-size: 11px !important; }
-    #voucherTable thead th { 
-        padding: 2px 8px !important; 
-        font-size: 10.5px !important; 
-        height: 24px !important;
-        background: #f8fafc !important;
-        color: #475569 !important;
-        font-weight: 700 !important;
-        text-transform: uppercase;
-        border-bottom: 2px solid #e2e8f0 !important;
-    }
-    #voucherTable tbody td { padding: 4px 6px !important; vertical-align: middle !important; border-bottom: 1px solid #f1f5f9 !important; }
-    
-    /* Watermark & Locked State */
-    .posted-watermark {
-        position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-30deg);
-        font-size: 6rem; color: rgba(220, 53, 69, 0.05); font-weight: 900; text-transform: uppercase;
-        pointer-events: none; z-index: 1000; border: 8px solid rgba(220, 53, 69, 0.05); padding: 10px 40px; border-radius: 15px;
-    }
-    .form-locked { pointer-events: none !important; }
-    .form-locked input, .form-locked select, .form-locked textarea, .form-locked button:not(#editBtn):not(#previewPrintBtn):not(#newBtn):not(#listBtn) {
-        background-color: #f8fafc !important; opacity: 0.7 !important;
-    }
-
-    .btn-mini { padding: 0px 4px; font-size: 9px; height: 18px; display: inline-flex; align-items: center; justify-content: center; }
-    .ajax-valid-error { color: #dc3545; font-size: 9px; font-weight: 700; margin-top: 1px; display: block; }
-    
-    .header-info-box { background: #fff; border-left: 3px solid #3b82f6; padding: 4px 10px; border-radius: 4px; }
+@include('admin_panel.vochers._compact_voucher_styles', ['accentColor' => '#8b5cf6'])
 </style>
 
 <div class="main-content">
     <div class="main-content-inner">
-        <div class="container-fluid pt-1">
+        <div class="container-fluid stock-hold-page">
             
             <div id="alertBox" class="alert d-none py-2 mb-2" role="alert" style="font-size: 12px;"></div>
 
@@ -204,9 +155,9 @@
                     </div>
                 </div>
 
-                <!-- Footer Remarks & Actions -->
-                <div class="row g-2 align-items-end mb-4">
-                    <div class="col-md-7">
+                <!-- Footer Remarks -->
+                <div class="row g-2 align-items-end mb-2">
+                    <div class="col-md-12">
                         <div class="card form-card mb-0">
                             <div class="card-body p-2">
                                 <label class="form-label">General Remarks / Note</label>
@@ -214,36 +165,13 @@
                             </div>
                         </div>
                     </div>
-                    <div class="col-md-5">
-                        <div class="d-flex gap-1 justify-content-end mb-1">
-                            @if($receipt->status != 'posted')
-                                <button type="button" id="saveDraftBtn" class="btn btn-warning btn-sm fw-bold rounded-pill px-4 shadow-sm" style="font-size: 11px;">
-                                    <i class="fa fa-save me-1"></i> Save Draft [Ctrl+S]
-                                </button>
-                                <button type="button" id="postBtn" class="btn btn-primary btn-sm fw-bold rounded-pill px-4 shadow-sm" style="font-size: 11px;">
-                                    <i class="fa fa-send me-1"></i> Post Voucher [Ctrl+Enter]
-                                </button>
-                            @endif
-                            
-                            <button type="button" id="editBtn" class="btn btn-warning btn-sm fw-bold rounded-pill px-4 shadow-sm" style="{{ ($receipt->id && $receipt->status != 'posted') ? 'display:block' : 'display:none' }}; font-size: 11px;">
-                                <i class="fa fa-pencil me-1"></i> Unlock Edit [Ctrl+E]
-                            </button>
-
-                            <a href="{{ $receipt->id ? route('adjustmentVoucher.print', $receipt->id) : 'javascript:void(0)' }}" id="previewPrintBtn" target="_blank" class="btn btn-dark btn-sm rounded-pill px-3 shadow-sm {{ !$receipt->id ? 'disabled' : '' }}" style="font-size: 11px;">
-                                <i class="fa fa-print"></i> Print [Ctrl+P]
-                            </a>
-                            <a href="{{ route('adjustment-vochers') }}" id="newBtn" class="btn btn-info btn-sm text-dark fw-bold rounded-pill px-3 shadow-sm" style="font-size: 11px;">
-                                <i class="fa fa-plus"></i> New [Ctrl+M]
-                            </a>
-                            <button type="button" id="deleteBtn" class="btn btn-danger btn-sm fw-bold rounded-pill px-3 shadow-sm" style="{{ !$receipt->id ? 'display:none' : '' }}; font-size: 11px;">
-                                <i class="fa fa-trash"></i>
-                            </button>
-                            <a href="{{ route('all-adjustment-vochers') }}" id="cancelBtn" class="btn btn-secondary btn-sm fw-bold rounded-pill px-3 shadow-sm" style="font-size: 11px;">
-                                <i class="fa fa-times"></i> Cancel [Esc]
-                            </a>
-                        </div>
-                    </div>
                 </div>
+                @include('admin_panel.vochers._standard_voucher_buttons', [
+                    'printRoute' => 'adjustmentVoucher.print',
+                    'listRoute' => 'all-adjustment-vochers',
+                    'newRoute' => 'adjustment-vochers',
+                    'showUnpost' => false,
+                ])
             </form>
 
             @if($receipt->status == 'posted')
@@ -384,8 +312,10 @@ $(document).ready(function() {
             .done(res => {
                 if(res.success) {
                     $('#receipt_id').val(res.id); $('#avidBadgeText').text(res.avid);
-                    $('#adjustmentForm').addClass('form-locked'); $('#editBtn').show();
-                    $('#previewPrintBtn').attr('href', '{{ route("adjustmentVoucher.print", ":id") }}'.replace(':id', res.id)).removeClass('disabled');
+                    $('#adjustmentForm').addClass('form-locked');
+                    $('#editInvoiceBtn, #postBtn').prop('disabled', false);
+                    $('#realPrintBtn').attr('href', '{{ route("adjustmentVoucher.print", ":id") }}'.replace(':id', res.id)).removeClass('pe-none opacity-50');
+                    $('#deleteBtn').prop('disabled', false);
                     showAlert('Draft saved and form locked.');
                 }
             })
@@ -402,7 +332,13 @@ $(document).ready(function() {
             });
     });
 
-    $('#editBtn').click(function() { $('#adjustmentForm').removeClass('form-locked'); $(this).hide(); });
+    $('#editInvoiceBtn').on('click', function() {
+        if ($(this).prop('disabled')) return;
+        $('#adjustmentForm').removeClass('form-locked');
+        $(this).prop('disabled', true);
+        $('#postBtn').prop('disabled', true);
+        $('#saveDraftBtn').prop('disabled', false);
+    });
 
     $('#postBtn').click(function() {
         Swal.fire({
@@ -423,25 +359,37 @@ $(document).ready(function() {
     });
 
     $(window).on('keydown', function(e) {
-        if ((e.ctrlKey || e.metaKey) && (e.which == 83 || e.keyCode == 83)) { e.preventDefault(); $('#saveDraftBtn').click(); return false; } // Ctrl + S
-        if ((e.ctrlKey || e.metaKey) && (e.which == 13 || e.keyCode == 13)) { e.preventDefault(); $('#postBtn').click(); return false; } // Ctrl + Enter
-        if ((e.ctrlKey || e.metaKey) && (e.which == 69 || e.keyCode == 69)) { e.preventDefault(); $('#editBtn').click(); return false; } // Ctrl + E
-        if ((e.ctrlKey || e.metaKey) && (e.which == 80 || e.keyCode == 80)) { e.preventDefault(); if(!$('#previewPrintBtn').hasClass('disabled')) { window.open($('#previewPrintBtn').attr('href'), '_blank'); } return false; } // Ctrl + P
-        if ((e.ctrlKey || e.metaKey) && (e.which == 77 || e.keyCode == 77)) { e.preventDefault(); window.location.href = $('#newBtn').attr('href'); return false; } // Ctrl + M
-        if (e.which == 27 || e.keyCode == 27) { e.preventDefault(); window.location.href = $('#cancelBtn').attr('href'); return false; } // Esc
-    });
-
-    $('#deleteBtn').click(function() {
-        Swal.fire({ title: 'Delete permanently?', icon: 'warning', showCancelButton: true, confirmButtonColor: '#d33' }).then((res) => {
-            if(res.isConfirmed) {
-                let id = $('#receipt_id').val();
-                let f = $('<form>', {action: '{{ route("adjustment.vochers.cancel", ":id") }}'.replace(':id', id), method: 'POST'});
-                f.append($('<input>', {type: 'hidden', name: '_token', value: '{{ csrf_token() }}'}));
-                f.append($('<input>', {type: 'hidden', name: '_method', value: 'DELETE'}));
-                $('body').append(f); f.submit();
-            }
-        });
+        if ((e.ctrlKey || e.metaKey) && (e.which == 83 || e.keyCode == 83)) { e.preventDefault(); if (!$('#saveDraftBtn').prop('disabled')) $('#saveDraftBtn').click(); return false; } // Ctrl + S
+        if ((e.ctrlKey || e.metaKey) && (e.which == 13 || e.keyCode == 13)) { e.preventDefault(); if (!$('#postBtn').prop('disabled')) $('#postBtn').click(); return false; } // Ctrl + Enter
+        if ((e.ctrlKey || e.metaKey) && (e.which == 69 || e.keyCode == 69)) { e.preventDefault(); if (!$('#editInvoiceBtn').prop('disabled')) $('#editInvoiceBtn').click(); return false; } // Ctrl + E
+        if ((e.ctrlKey || e.metaKey) && (e.which == 80 || e.keyCode == 80)) {
+            e.preventDefault();
+            const href = $('#realPrintBtn').attr('href');
+            if (href && href !== 'javascript:void(0)') window.open(href, '_blank');
+            return false;
+        } // Ctrl + P
+        if ((e.ctrlKey || e.metaKey) && (e.which == 68 || e.keyCode == 68)) { e.preventDefault(); if (!$('#deleteBtn').prop('disabled')) handleCancel(); return false; } // Ctrl + D
+        if ((e.ctrlKey || e.metaKey) && (e.which == 77 || e.keyCode == 77)) { e.preventDefault(); window.location.href = $('#newInvoiceBtn').attr('href'); return false; } // Ctrl + M
+        if ((e.ctrlKey || e.metaKey) && (e.which == 76 || e.keyCode == 76)) { e.preventDefault(); window.location.href = $('#listBtn').attr('href'); return false; } // Ctrl + L
+        if (e.which == 27 || e.keyCode == 27) { e.preventDefault(); window.location.href = $('#exitBtn').attr('href'); return false; } // Esc
     });
 });
+
+function handleCancel() {
+    let id = $('#receipt_id').val();
+    if (!id) {
+        window.location.href = "{{ route('all-adjustment-vochers') }}";
+        return;
+    }
+    Swal.fire({ title: 'Delete this draft?', icon: 'warning', showCancelButton: true }).then((res) => {
+        if(res.isConfirmed) {
+            let form = $('<form>', {action: '{{ route("adjustment.vochers.cancel", ":id") }}'.replace(':id', id), method: 'POST'})
+                .append($('<input>', {type: 'hidden', name: '_token', value: '{{ csrf_token() }}'}))
+                .append($('<input>', {type: 'hidden', name: '_method', value: 'DELETE'}));
+            $('body').append(form);
+            form.submit();
+        }
+    });
+}
 </script>
 @endsection

@@ -2,6 +2,7 @@
 
 @section('content')
 <style>
+    @include('admin_panel.vochers._compact_list_styles')
     /* Ultra-High Density Design System */
     .main-content-inner { background: #f4f7fa; min-height: 100vh; }
     
@@ -113,10 +114,10 @@
 
 <div class="main-content">
     <div class="main-content-inner">
-        <div class="container-fluid pt-1">
+        <div class="container-fluid stock-hold-page">
             
             <!-- Filters Section -->
-            <div class="row mb-3">
+            <div class="row mb-2">
                 <div class="col-12">
                     <div class="card border-0 shadow-sm">
                         <div class="card-body p-2" style="overflow: visible;">

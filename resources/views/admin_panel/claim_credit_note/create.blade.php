@@ -254,8 +254,8 @@
                 </div>
 
                 {{-- Footer Buttons --}}
-                <div class="card shadow-sm mt-3 border-0 bg-transparent">
-                    <div class="card-body p-0 text-end">
+                <div class="card shadow-sm mt-2 border-0 bg-transparent">
+                    <div class="card-footer bg-white border rounded text-end">
                         <button type="button" id="saveDraftBtn" class="btn btn-sm btn-warning rounded-pill px-4 shadow-sm fw-bold">
                             <i class="fa fa-floppy-o me-1"></i> Save Draft <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+S</kbd>
                         </button>

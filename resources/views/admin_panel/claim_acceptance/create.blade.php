@@ -91,7 +91,7 @@
             <input type="hidden" name="id" id="voucher_id" value="{{ $voucher->id ?? '' }}">
             <input type="hidden" name="action" id="formAction" value="save">
 
-            <div class="row g-3 mb-4">
+            <div class="row g-3 mb-2">
                 <div class="col-md-2">
                     <div class="card border-0 bg-light p-2 shadow-sm h-100">
                         <label class="form-label text-muted small fw-bold mb-1">Entry Date <span class="text-danger">*</span></label>
@@ -159,8 +159,8 @@
                 </div>
             </div>
 
-            <div class="card border shadow-sm mb-4">
-                <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+            <div class="card border shadow-sm mb-2">
+                <div class="card-header bg-white py-2 d-flex justify-content-between align-items-center">
                     <h6 class="mb-0 fw-bold text-dark"><i class="fa fa-list-ul me-2"></i>Claim Item Details</h6>
                     <button type="button" class="btn btn-sm btn-primary rounded-pill px-3" id="addItemBtn">
                         <i class="fa fa-plus me-1"></i> Add Row
@@ -209,8 +209,8 @@
                             </tbody>
                             <tfoot class="table-light">
                                 <tr class="fw-bold">
-                                    <td colspan="3" class="text-end py-3">GRAND TOTAL:</td>
-                                    <td class="text-center py-3 bg-primary bg-opacity-10">
+                                    <td colspan="3" class="text-end py-1">GRAND TOTAL:</td>
+                                    <td class="text-center py-1 bg-primary bg-opacity-10">
                                         <span id="grandTotalQty" class="fw-bold text-primary fs-6">0</span>
                                     </td>
                                     <td></td>
@@ -221,7 +221,7 @@
                 </div>
             </div>
 
-            <div class="row g-3 mb-4">
+            <div class="row g-3 mb-2">
                 <div class="col-md-12">
                     <div class="card border-0 bg-light p-2 shadow-sm">
                         <label class="form-label text-muted small fw-bold mb-1">Remarks</label>
@@ -230,7 +230,7 @@
                 </div>
             </div>
 
-            <div class="card-footer bg-white border-top mt-2">
+            <div class="card-footer bg-white border-top mt-1">
                 <div class="d-flex flex-wrap justify-content-center w-100 bottom-bar-btns">
                     <button type="button" id="saveDraftBtn" class="btn btn-primary px-3 fw-bold shadow-sm" {{ (isset($voucher) && $voucher->status == 'Posted') ? 'disabled' : '' }}>
                         <u>S</u>ave <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+S</kbd>

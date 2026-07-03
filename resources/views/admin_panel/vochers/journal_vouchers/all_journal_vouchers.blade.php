@@ -2,6 +2,7 @@
 
 @section('content')
 <style>
+    @include('admin_panel.vochers._compact_list_styles')
     /* Table Responsive & Scroll Enhancements */
     .table-responsive {
         width: 100%;
@@ -85,10 +86,10 @@
 
 <div class="main-content">
     <div class="main-content-inner">
-        <div class="container-fluid pt-3">
+        <div class="container-fluid stock-hold-page">
             
             <!-- Filters Section -->
-            <div class="row mb-3">
+            <div class="row mb-2">
                 <div class="col-12">
                     <div class="card border-0 shadow-sm">
                         <div class="card-body p-2">
