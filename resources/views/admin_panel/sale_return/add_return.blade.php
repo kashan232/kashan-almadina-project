@@ -1,17 +1,12 @@
 @extends('admin_panel.layout.app')
 <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 <style>
-    .select2-container .select2-selection--single { height: 31px !important; border: 1px solid #ced4da; }
-    .select2-container .select2-selection--single .select2-selection__rendered { line-height: 31px !important; padding-left: 8px; }
-    .select2-container .select2-selection--single .select2-selection__arrow { height: 31px !important; }
-    th { font-weight: 500 !important; font-size: 13px; }
-    .card { border-radius: 8px; }
     .manual-only { display: none; }
-    
-    /* Form Locking Styles - Aggressive Locking */
-    .form-locked input:not(.no-lock), 
-    .form-locked select, 
-    .form-locked textarea, 
+    .input-readonly { background: #f9fbff !important; }
+
+    .form-locked input:not(.no-lock),
+    .form-locked select,
+    .form-locked textarea,
     .form-locked .btn-group,
     .form-locked .select2-container,
     .form-locked .select2-selection,
@@ -26,65 +21,113 @@
         -moz-appearance: none;
         appearance: none;
     }
-    .form-locked .remove-row, 
-    .form-locked #saveDraftBtn,
-    .form-locked #addRowBtn {
+    .form-locked .remove-row,
+    .form-locked #saveDraftBtn {
         display: none !important;
     }
-    .form-locked #editInvoiceBtn, 
-    .form-locked #newInvoiceBtn, 
-    .form-locked #realPrintBtn, 
+    .form-locked #editInvoiceBtn,
+    .form-locked #newInvoiceBtn,
+    .form-locked #realPrintBtn,
     .form-locked #postBtn,
-    .form-locked #cancelBtn {
+    .form-locked #exitBtn,
+    .form-locked #deleteBtn {
         pointer-events: auto !important;
         opacity: 1 !important;
     }
+
+    .purchase-page .main-container { padding: .35rem !important; border-radius: .35rem !important; max-width: 99%; }
+    .purchase-page.container-fluid,
+    .purchase-page-inner.container-fluid { padding: .2rem .35rem !important; }
+    .purchase-page.main-content,
+    .purchase-page .main-content-inner { padding: 0 !important; }
+    .purchase-page .header-panel { padding: .4rem !important; min-width: 255px !important; max-width: 255px !important; font-size: .78rem; }
+    .purchase-page .section-block { padding: .4rem !important; }
+    .purchase-page .items-panel { padding-left: .35rem !important; padding-right: 0 !important; }
+    .purchase-page .items-table-wrap { min-height: 280px !important; border-radius: .35rem !important; overflow: auto; }
+    .purchase-page .main-row { gap: .35rem !important; padding: .25rem 0 !important; }
+    .purchase-page .field-gap { margin-bottom: .3rem !important; }
+    .purchase-page .panel-head { margin-bottom: .35rem !important; padding-bottom: .2rem !important; }
+    .purchase-page .panel-head h6 { font-size: .8rem !important; }
+    .purchase-page .form-label { margin-bottom: 0 !important; line-height: 1.1; font-size: .7rem !important; }
+    .purchase-page .form-control-sm,
+    .purchase-page .form-select-sm { padding: .1rem .35rem !important; font-size: .75rem !important; height: 24px !important; min-height: 24px !important; }
+    .purchase-page textarea.form-control-sm { height: auto !important; min-height: 38px !important; }
+    .purchase-page .table thead th { padding: 2px !important; font-size: .7rem !important; background: #f8f9fa !important; position: sticky; top: 0; z-index: 2; }
+    .purchase-page .table-sm td { padding: 1px !important; vertical-align: middle; }
+    .purchase-page .table-sm .form-control,
+    .purchase-page .table-sm .form-select { height: 24px !important; min-height: 24px !important; font-size: .75rem !important; padding: 2px 4px !important; }
+    .purchase-page .select2-container--default .select2-selection--single { height: 24px !important; font-size: .75rem !important; }
+    .purchase-page .select2-container--default .select2-selection--single .select2-selection__rendered { line-height: 22px !important; padding-left: 6px !important; }
+    .purchase-page .select2-container--default .select2-selection--single .select2-selection__arrow { height: 22px !important; }
+    .purchase-page .bottom-section { --bs-gutter-x: .5rem; --bs-gutter-y: .35rem; margin-top: .25rem !important; }
+    .purchase-page .totals-card .py-1 { padding-top: .15rem !important; padding-bottom: .15rem !important; }
+    .purchase-page #netAmount { font-size: 1rem !important; width: 140px !important; }
+    .purchase-page .bottom-bar { margin-top: .4rem !important; padding: .75rem !important; }
+    .purchase-page .mode-toggle .btn { font-size: .7rem !important; padding: .1rem .4rem !important; }
+    .purchase-page .btn-xs { padding: 1px 4px; font-size: .7rem; line-height: 1.2; }
 </style>
 
 @section('content')
-<div class="main-content bg-white">
+@php
+    $isPosted = isset($returnData) && $returnData->status == 'Posted';
+    $isDraft = isset($returnData) && $returnData->status != 'Posted';
+    $isNew = !isset($returnData);
+    $formLocked = $isPosted || (isset($returnData) && !$isNew);
+@endphp
+
+<div class="main-content bg-white purchase-page">
     <div class="main-content-inner">
-        <div class="container-fluid pt-3">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <div>
-                    <h6 class="page-title ml-4">Create Sale Return</h6>
-                    <span class="badge bg-danger ms-3" style="font-size:14px;" id="invoiceNoDisplay">Return No: {{ isset($returnData) ? $nextInvoice : 'Auto-Generated' }}</span>
-                </div>
-                <div class="d-flex gap-2">
-                    <div class="btn-group btn-group-sm shadow-sm" role="group">
-                        <input type="radio" class="btn-check" name="return_mode" id="mode_invoice" value="invoice" {{ !isset($returnData) || (isset($returnData) && $returnData->sale_id) ? 'checked' : '' }} autocomplete="off">
-                        <label class="btn btn-outline-primary fw-bold px-3" for="mode_invoice"><i class="fa fa-file-text-o me-1"></i> Invoice Return</label>
+        <div class="container-fluid purchase-page-inner">
+            <div class="main-container bg-white border shadow-sm mx-auto rounded-3">
 
-                        <input type="radio" class="btn-check" name="return_mode" id="mode_manual" value="manual" {{ isset($returnData) && !$returnData->sale_id ? 'checked' : '' }} autocomplete="off">
-                        <label class="btn btn-outline-primary fw-bold px-3" for="mode_manual"><i class="fa fa-pencil-square-o me-1"></i> Manual Return</label>
-                    </div>
-                    <a href="{{ route('sale.return.home') }}" class="btn btn-sm btn-dark px-3" id="returnListBtn">
-                         <i class="fa fa-list me-1"></i> Return List
-                         <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+L</kbd>
-                    </a>
-                </div>
-            </div>
+                <form id="returnForm" class="{{ $formLocked ? 'form-locked' : '' }}" action="{{ isset($returnData) ? route('sale.return.update', $returnData->id) : route('sale.return.store') }}" method="POST">
+                    @csrf
+                    <input type="hidden" name="sale_id" id="sale_id" value="{{ $returnData->sale_id ?? '' }}">
+                    <input type="hidden" name="current_date" id="current_date_hidden" value="{{ $returnData->current_date ?? date('Y-m-d') }}">
 
-            <div class="card shadow-sm border-0">
-                <div class="card-body">
-                    <form id="returnForm" action="{{ isset($returnData) ? route('sale.return.update', $returnData->id) : route('sale.return.store') }}" method="POST">
-                        @csrf
-                        <input type="hidden" name="sale_id" id="sale_id" value="{{ $returnData->sale_id ?? '' }}">
-                        
-                        <!-- Header Selection -->
-                        <div class="row g-3 mb-4 p-3 bg-light rounded shadow-sm">
-                            <div class="col-md-2">
-                                <label class="form-label small fw-bold text-muted">Entry Date</label>
-                                <input name="entry_date" value="{{ $returnData->entry_date ?? date('Y-m-d') }}" type="date" class="form-control form-control-sm" required>
-                            </div>
-                            <div class="col-md-2">
-                                <label class="form-label small fw-bold text-muted">Entry Time</label>
-                                <input name="entry_time" value="{{ $returnData->entry_time ?? date('H:i') }}" type="time" class="form-control form-control-sm" required>
+                    <div class="d-flex align-items-stretch border-bottom main-row">
+                        {{-- LEFT: Return Details --}}
+                        <div class="bg-light border rounded-3 header-panel shadow-sm">
+                            <div class="d-flex align-items-center justify-content-between panel-head border-bottom">
+                                <h6 class="mb-0 fw-bold text-danger d-flex align-items-center gap-1">
+                                    <i class="fa fa-undo"></i> Sale Return
+                                    @if($isPosted)
+                                        <span class="badge bg-success px-1 py-0 rounded" style="font-size:9px;">Posted</span>
+                                    @endif
+                                </h6>
+                                <a href="{{ route('sale.return.home') }}" id="listBtn" class="btn btn-xs btn-outline-secondary rounded-pill px-2 py-0" style="font-size:.7rem;">
+                                    <i class="fa fa-list"></i> List
+                                </a>
                             </div>
 
-                            <div class="col-md-2" id="vendor_type_col">
-                                <label class="form-label small fw-bold text-muted">Party Type</label>
-                                <select name="vendor_type" id="vendor_type_select" class="form-select form-select-sm">
+                            <div class="field-gap">
+                                <span class="badge bg-danger w-100 text-start py-1" style="font-size:.72rem;" id="invoiceNoDisplay">Return No: {{ isset($returnData) ? $nextInvoice : 'Auto-Generated' }}</span>
+                            </div>
+
+                            <div class="field-gap mode-toggle">
+                                <label class="form-label text-muted small">Return Mode</label>
+                                <div class="btn-group w-100" role="group">
+                                    <input type="radio" class="btn-check" name="return_mode" id="mode_invoice" value="invoice" {{ !isset($returnData) || (isset($returnData) && $returnData->sale_id) ? 'checked' : '' }} autocomplete="off">
+                                    <label class="btn btn-outline-primary btn-sm py-0" for="mode_invoice">Invoice</label>
+                                    <input type="radio" class="btn-check" name="return_mode" id="mode_manual" value="manual" {{ isset($returnData) && !$returnData->sale_id ? 'checked' : '' }} autocomplete="off">
+                                    <label class="btn btn-outline-primary btn-sm py-0" for="mode_manual">Manual</label>
+                                </div>
+                            </div>
+
+                            <div class="row g-1 field-gap">
+                                <div class="col-6">
+                                    <label class="form-label text-muted small">Entry Date</label>
+                                    <input name="entry_date" value="{{ $returnData->entry_date ?? date('Y-m-d') }}" type="date" class="form-control form-control-sm py-0" required>
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label text-muted small">Entry Time</label>
+                                    <input name="entry_time" value="{{ $returnData->entry_time ?? date('H:i') }}" type="time" class="form-control form-control-sm py-0" required>
+                                </div>
+                            </div>
+
+                            <div class="field-gap" id="vendor_type_col">
+                                <label class="form-label text-muted small">Party Type</label>
+                                <select name="vendor_type" id="vendor_type_select" class="form-select form-select-sm py-0">
                                     <option value="" disabled selected>Select</option>
                                     <option value="vendor" {{ isset($returnData) && $returnData->party_type == 'vendor' ? 'selected' : '' }}>Vendor</option>
                                     <option value="customer" {{ isset($returnData) && $returnData->party_type == 'customer' ? 'selected' : '' }}>Customer</option>
@@ -92,9 +135,9 @@
                                 </select>
                             </div>
 
-                            <div class="col-md-2" id="party_col">
-                                <label class="form-label small fw-bold text-muted">Select Party</label>
-                                <select name="party_id" id="party_select" class="form-select form-select-sm select2">
+                            <div class="field-gap" id="party_col">
+                                <label class="form-label text-muted small">Select Party</label>
+                                <select name="party_id" id="party_select" class="form-select form-select-sm py-0 select2">
                                     <option value="">Select Party</option>
                                     @if(isset($returnData))
                                         <option value="{{ $returnData->customer_id }}" selected>Selected Party (ID: {{ $returnData->customer_id }})</option>
@@ -102,9 +145,9 @@
                                 </select>
                             </div>
 
-                            <div class="col-md-2 invoice-only" id="invoice_col" style="{{ isset($returnData) && !$returnData->sale_id ? 'display:none;' : '' }}">
-                                <label class="form-label small fw-bold text-muted">Select Sale Invoice</label>
-                                <select id="sale_invoice_select" class="form-select form-select-sm select2">
+                            <div class="field-gap invoice-only" id="invoice_col" style="{{ isset($returnData) && !$returnData->sale_id ? 'display:none;' : '' }}">
+                                <label class="form-label text-muted small">Sale Invoice</label>
+                                <select id="sale_invoice_select" class="form-select form-select-sm py-0 select2">
                                     <option value="">Select Invoice</option>
                                     @if(isset($returnData) && $returnData->sale)
                                         <option value="{{ $returnData->sale->invoice_no }}" selected>{{ $returnData->sale->invoice_no }}</option>
@@ -112,12 +155,12 @@
                                 </select>
                             </div>
 
-                            <div class="col-md-2">
-                                <label class="form-label small fw-bold text-muted">Warehouse</label>
-                                <select name="warehouse_id" id="warehouse_select" class="form-select form-select-sm select2" required>
-                                    <option value="">Select Warehouse/Shop</option>
+                            <div class="field-gap">
+                                <label class="form-label text-muted small">Warehouse</label>
+                                <select name="warehouse_id" id="warehouse_select" class="form-select form-select-sm py-0 select2" required>
+                                    <option value="">Select Warehouse</option>
                                     @if(auth()->user()->canAccessShop())
-                                        <option value="0" {{ isset($returnData) && optional($returnData->items->first())->warehouse_id == 0 ? 'selected' : '' }}>Shop Stock (Default)</option>
+                                        <option value="0" {{ isset($returnData) && optional($returnData->items->first())->warehouse_id == 0 ? 'selected' : '' }}>Shop Stock</option>
                                     @endif
                                     @foreach($warehouses as $w)
                                         <option value="{{ $w->id }}" {{ isset($returnData) && optional($returnData->items->first())->warehouse_id == $w->id ? 'selected' : '' }}>{{ $w->warehouse_name }}</option>
@@ -125,144 +168,136 @@
                                 </select>
                             </div>
 
-                            <div class="col-md-3 invoice-only" id="display_col" style="display:none;">
-                                <label class="form-label small fw-bold text-muted">Loaded Party</label>
-                                <input id="party_name_display" type="text" class="form-control form-control-sm bg-white" readonly placeholder="Auto-fill" value="">
+                            <div class="field-gap invoice-only" id="display_col" style="display:none;">
+                                <label class="form-label text-muted small">Loaded Party</label>
+                                <input id="party_name_display" type="text" class="form-control form-control-sm py-0 bg-white" readonly placeholder="Auto-fill" value="">
                             </div>
 
-                            <div class="col-md-2 manual-only mt-2" id="addRow_col" style="{{ isset($returnData) && !$returnData->sale_id ? 'display:block;' : 'display:none;' }}">
-                                <label class="form-label d-block">&nbsp;</label>
-                                <button type="button" id="addRowBtn" class="btn btn-sm btn-primary w-100 rounded-pill shadow-sm">
-                                    <i class="fa fa-plus me-1"></i> Add Row
-                                </button>
+                            <div class="mb-0">
+                                <label class="form-label text-muted small">Remarks</label>
+                                <textarea name="remarks" class="form-control form-control-sm py-0" rows="1" placeholder="Reason for return...">{{ $returnData->remarks ?? '' }}</textarea>
                             </div>
-                            <input type="hidden" name="current_date" id="current_date_hidden" value="{{ $returnData->current_date ?? date('Y-m-d') }}">
                         </div>
 
-                        <!-- Items Table -->
-                        <div class="table-responsive">
-                            <table class="table table-bordered table-sm text-center align-middle">
-                                <thead class="table-dark">
-                                    <tr>
-                                        <th style="width: 100px;">Item ID</th>
-                                        <th style="width: 250px;">Product</th>
-                                        <th>Sales Price</th>
-                                        <th>Retail Price</th>
-                                        <th>Disc (%)</th>
-                                        <th>Disc Amt</th>
-                                        <th class="invoice-only">Orig Qty</th>
-                                        <th><span class="invoice-only">Return </span>Qty</th>
-                                        <th>Rate</th>
-                                        <th>Amount</th>
-                                        <th>X</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="saleItems">
-                                    @if(isset($returnData))
-                                        @foreach($returnData->items as $item)
-                                            <tr>
-                                                <td>
-                                                    <input type="text" class="form-control form-control-sm item-id-input" value="{{ $item->product_id }}">
-                                                </td>
-                                                <td>
-                                                    <select name="product_id[]" class="form-control form-control-sm product-select" style="width: 100%;">
-                                                        <option value="{{ $item->product_id }}" selected>{{ $item->product->name }}</option>
-                                                    </select>
-                                                </td>
-                                                <td><input type="number" step="0.01" name="sales_price[]" class="form-control form-control-sm sales_price text-end" value="{{ $item->sales_price ?? 0 }}"></td>
-                                                <td><input type="number" step="0.01" name="retail_price[]" class="form-control form-control-sm retail_price text-end" value="{{ $item->retail_price }}"></td>
-                                                <td><input type="number" step="0.01" name="discount_percent[]" class="form-control form-control-sm discount_percent text-center" value="{{ $item->discount_percent }}"></td>
-                                                <td><input type="number" step="0.01" name="item_disc_amount[]" class="form-control form-control-sm disc_amount text-end" value="{{ $item->sales_qty > 0 ? ($item->discount_amount / $item->sales_qty) : 0 }}"></td>
-                                                <td class="invoice-only"><input type="text" class="form-control form-control-sm bg-light text-center" value="{{ $item->sales_qty }}" readonly></td>
-                                                <td><input type="number" name="qty[]" class="form-control form-control-sm quantity text-center" value="{{ $item->sales_qty }}" min="0"></td>
-                                                <td><input type="number" step="0.01" name="price[]" class="form-control form-control-sm price text-end" value="{{ $item->sales_price }}" readonly></td>
-                                                <td><input type="text" name="line_total[]" class="form-control form-control-sm row-total text-end bg-white" readonly value="0"></td>
-                                                <td><button type="button" class="btn btn-sm btn-danger remove-row"><i class="fa fa-trash"></i></button></td>
-                                            </tr>
-                                        @endforeach
-                                    @else
+                        {{-- RIGHT: Items --}}
+                        <div class="flex-grow-1 d-flex flex-column items-panel">
+                            <div class="table-responsive flex-grow-1 border shadow-sm items-table-wrap">
+                                <table class="table table-bordered table-sm mb-0 text-center align-middle" style="table-layout: fixed; width: 100%; font-size: .82rem;">
+                                    <thead class="table-light">
                                         <tr>
-                                            <td colspan="10" class="text-center text-muted py-4">No invoice selected yet.</td>
+                                            <th style="width:6%;">Item ID</th>
+                                            <th style="width:16%;">Product</th>
+                                            <th style="width:8%;" class="text-end">Sale</th>
+                                            <th style="width:8%;" class="text-end">Retail</th>
+                                            <th style="width:7%;">Disc %</th>
+                                            <th style="width:8%;" class="text-end">Disc Amt</th>
+                                            <th class="invoice-only text-center" style="width:6%;">Orig</th>
+                                            <th style="width:6%;" class="text-center">Qty</th>
+                                            <th style="width:8%;" class="text-end">Rate</th>
+                                            <th style="width:9%;" class="text-end">Total</th>
+                                            <th style="width:3%;" class="text-center"><span style="font-size:9px;font-weight:normal;color:#888;"><kbd style="font-size:8px;padding:0 2px;">Ctrl+I</kbd></span></th>
                                         </tr>
-                                    @endif
-                                </tbody>
-                            </table>
-                        </div>
-
-                        <!-- Bottom Section -->
-                        <div class="row mt-4">
-                            <div class="col-md-6">
-                                <div class="p-3 bg-light rounded h-100">
-                                    <label class="form-label fw-bold">Return Remarks</label>
-                                    <textarea name="remarks" class="form-control" rows="4" placeholder="Reason for return...">{{ $returnData->remarks ?? '' }}</textarea>
-                                </div>
+                                    </thead>
+                                    <tbody id="saleItems">
+                                        @if(isset($returnData))
+                                            @foreach($returnData->items as $item)
+                                                <tr>
+                                                    <td><input type="text" class="form-control form-control-sm item-id-input text-center" value="{{ $item->product_id }}"></td>
+                                                    <td>
+                                                        <select name="product_id[]" class="form-control form-control-sm product-select" style="width:100%;">
+                                                            <option value="{{ $item->product_id }}" selected>{{ $item->product->name }}</option>
+                                                        </select>
+                                                    </td>
+                                                    <td><input type="number" step="0.01" name="sales_price[]" class="form-control form-control-sm sales_price text-end" value="{{ $item->sales_price ?? 0 }}"></td>
+                                                    <td><input type="number" step="0.01" name="retail_price[]" class="form-control form-control-sm retail_price text-end" value="{{ $item->retail_price }}"></td>
+                                                    <td><input type="number" step="0.01" name="discount_percent[]" class="form-control form-control-sm discount_percent text-center" value="{{ $item->discount_percent }}"></td>
+                                                    <td><input type="number" step="0.01" name="item_disc_amount[]" class="form-control form-control-sm disc_amount text-end" value="{{ $item->sales_qty > 0 ? ($item->discount_amount / $item->sales_qty) : 0 }}"></td>
+                                                    <td class="invoice-only"><input type="text" class="form-control form-control-sm text-center input-readonly" value="{{ $item->sales_qty }}" readonly></td>
+                                                    <td><input type="number" name="qty[]" class="form-control form-control-sm quantity text-center" value="{{ $item->sales_qty }}" min="0"></td>
+                                                    <td><input type="number" step="0.01" name="price[]" class="form-control form-control-sm price text-end input-readonly" value="{{ $item->sales_price }}" readonly></td>
+                                                    <td><input type="text" name="line_total[]" class="form-control form-control-sm row-total text-end fw-bold input-readonly" readonly value="0"></td>
+                                                    <td class="text-center"><button type="button" class="btn btn-xs btn-outline-danger remove-row" title="Delete">&times;</button></td>
+                                                </tr>
+                                            @endforeach
+                                        @else
+                                            <tr><td colspan="11" class="text-center text-muted py-3">No invoice selected yet.</td></tr>
+                                        @endif
+                                    </tbody>
+                                </table>
                             </div>
-                            <div class="col-md-6">
-                                <div class="card border-0 bg-light">
-                                    <div class="card-body">
-                                        <table class="table table-sm table-borderless mb-0">
-                                            <tr>
-                                                <th class="text-secondary">Sub-Total (Net)</th>
-                                                <td><input type="text" id="subtotal" name="subtotal" class="form-control form-control-sm text-end bg-white" readonly value="{{ $returnData->sub_total2 ?? 0 }}"></td>
-                                            </tr>
-                                            <tr>
-                                                <th class="text-secondary">Order Discount</th>
-                                                <td>
-                                                    <div class="input-group input-group-sm">
-                                                        <input type="number" step="any" id="orderDiscountValue" name="order_discount_value" class="form-control text-end" value="{{ $returnData->discount_amount ?? 0 }}" placeholder="0">
-                                                        <input type="hidden" name="order_discount_mode" id="orderDiscountMode" value="pkr">
-                                                        <button type="button" class="btn btn-outline-secondary order-disc-btn active" data-mode="pkr">PKR</button>
-                                                        <button type="button" class="btn btn-outline-secondary order-disc-btn" data-mode="percent">%</button>
-                                                    </div>
-                                                    <input type="hidden" id="overallDiscount" name="discount" value="{{ $returnData->discount_amount ?? 0 }}">
-                                                </td>
-                                            </tr>
-                                            <tr>
-                                                <th class="text-secondary">Order Discount Rs</th>
-                                                <td><input type="text" id="tOrderDisc" class="form-control form-control-sm text-end bg-white text-danger fw-semibold" readonly value="{{ $returnData->discount_amount ?? 0 }}"></td>
-                                            </tr>
+                        </div>
+                    </div>
 
-                                            <tr class="border-top">
-                                                <th class="h5 fw-bold pt-3">Net Return Amount</th>
-                                                <td class="pt-3"><input type="text" id="netAmount" name="net_amount" class="form-control form-control-lg fw-bold text-end text-danger bg-white" readonly value="{{ $returnData->total_balance ?? 0 }}"></td>
-                                            </tr>
-                                        </table>
+                    {{-- Totals --}}
+                    <div class="row bottom-section">
+                        <div class="col-lg-5 ms-auto">
+                            <div class="bg-light border rounded-3 section-block shadow-sm">
+                                <div class="panel-head border-bottom">
+                                    <h6 class="mb-0 fw-bold text-info"><i class="fa fa-calculator me-1"></i>Return Totals</h6>
+                                </div>
+                                <div class="totals-card">
+                                    <div class="d-flex justify-content-between align-items-center py-1 border-bottom px-1">
+                                        <span class="text-dark small fw-bold">Subtotal</span>
+                                        <input type="text" id="subtotal" name="subtotal" class="form-control form-control-sm text-end bg-transparent border-0 fw-bold py-0" readonly value="{{ $returnData->sub_total2 ?? 0 }}" style="width:120px">
+                                    </div>
+                                    <div class="d-flex justify-content-between align-items-center py-1 border-bottom px-1">
+                                        <span class="text-dark small fw-bold">Order Discount</span>
+                                        <div class="d-flex align-items-center gap-1 flex-wrap justify-content-end">
+                                            <input type="number" step="any" id="orderDiscountValue" name="order_discount_value" class="form-control form-control-sm text-end py-0" value="{{ $returnData->discount_amount ?? 0 }}" placeholder="0" style="width:70px">
+                                            <input type="hidden" name="order_discount_mode" id="orderDiscountMode" value="pkr">
+                                            <button type="button" class="btn btn-outline-secondary btn-xs order-disc-btn active py-0 px-1" data-mode="pkr">PKR</button>
+                                            <button type="button" class="btn btn-outline-secondary btn-xs order-disc-btn py-0 px-1" data-mode="percent">%</button>
+                                            <input type="hidden" id="overallDiscount" name="discount" value="{{ $returnData->discount_amount ?? 0 }}">
+                                            <input type="text" id="tOrderDisc" class="form-control form-control-sm text-end input-readonly border-0 bg-transparent fw-bold py-0 text-danger" readonly value="{{ $returnData->discount_amount ?? 0 }}" style="width:70px">
+                                        </div>
+                                    </div>
+                                    <div class="d-flex justify-content-between align-items-center py-1 bg-light px-2 rounded mt-1">
+                                        <span class="fw-bold text-dark">Net Return</span>
+                                        <input type="text" id="netAmount" name="net_amount" class="form-control form-control-sm fw-bold text-end text-danger border-0 bg-transparent py-0" readonly value="{{ $returnData->total_balance ?? 0 }}">
                                     </div>
                                 </div>
                             </div>
                         </div>
+                    </div>
 
-                        <div class="d-flex gap-2 justify-content-end mt-4">
-                            <a href="{{ route('sale.return.add') }}" class="btn btn-sm btn-info rounded-pill px-4 shadow-sm" id="newInvoiceBtn" style="display:none;">
-                                <i class="fa fa-plus me-1"></i> New <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+M</kbd>
+                    {{-- BOTTOM BUTTONS --}}
+                    <div class="d-flex flex-wrap gap-2 justify-content-center bg-light bottom-bar rounded-2 border shadow-sm w-100">
+
+                        <button type="button" id="saveDraftBtn" class="btn btn-primary px-3 fw-bold shadow-sm" {{ $isPosted || $isDraft ? 'disabled' : '' }}>
+                            <u>S</u>ave <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+S</kbd>
+                        </button>
+
+                        <button type="button" id="editInvoiceBtn" class="btn btn-warning px-3 fw-bold text-dark shadow-sm" {{ $isNew || $isPosted ? 'disabled' : '' }}>
+                            <u>E</u>dit <kbd style="font-size:10px;opacity:.8;margin-left:4px;color:#fff;">Ctrl+E</kbd>
+                        </button>
+
+                        <button type="button" id="postBtn" class="btn btn-success px-3 fw-bold shadow-sm" {{ $isNew || $isPosted ? 'disabled' : '' }}>
+                            <u>P</u>ost <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+&crarr;</kbd>
+                        </button>
+
+                        <button type="button" id="deleteBtn" class="btn btn-danger px-3 fw-bold shadow-sm" {{ $isNew || $isPosted ? 'disabled' : '' }}>
+                            <u>D</u>elete <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+D</kbd>
+                        </button>
+
+                        @if(isset($returnData))
+                            <a href="{{ route('sale.return.print', $returnData->id) }}" target="_blank" id="realPrintBtn" class="btn btn-info px-3 fw-bold text-dark shadow-sm">
+                                <u>P</u>rint <kbd style="font-size:10px;opacity:.8;margin-left:4px;color:#fff;">Ctrl+P</kbd>
                             </a>
-                            <button type="button" class="btn btn-sm btn-warning rounded-pill px-4 shadow-sm" id="editInvoiceBtn" style="display:none;">
-                                <i class="fa fa-edit me-1"></i> Edit <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+E</kbd>
-                            </button>
-                            <button type="button" class="btn btn-sm btn-warning rounded-pill px-4 shadow-sm" id="saveDraftBtn" {{ isset($returnData) ? 'style=display:none;' : '' }}>
-                                <i class="fa fa-floppy-o me-1"></i> Save Draft
-                                <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+S</kbd>
-                            </button>
-                            @if(isset($returnData))
-                                <a href="{{ route('sale.return.print', $returnData->id) }}" target="_blank" id="realPrintBtn" class="btn btn-sm btn-dark rounded-pill px-4 shadow-sm">
-                                    <i class="fa fa-print me-1"></i> Print <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+P</kbd>
-                                </a>
-                            @else
-                                <button type="button" id="previewPrintBtn" class="btn btn-sm btn-dark rounded-pill px-4 shadow-sm" onclick="showPreviewModal()">
-                                    <i class="fa fa-print me-1"></i> Print Preview
-                                    <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+P</kbd>
-                                </button>
-                            @endif
-                            <button type="button" class="btn btn-sm btn-primary rounded-pill px-4 shadow-sm" id="postBtn" title="Post from list after saving">
-                                <i class="fa fa-send me-1"></i> Post
-                                <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+&#8629;</kbd>
-                            </button>
-                            <a href="{{ route('sale.return.home') }}" class="btn btn-sm btn-danger rounded-pill px-4 shadow-sm" id="cancelBtn">
-                                <i class="fa fa-times me-1"></i> Cancel <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Esc</kbd>
+                        @else
+                            <a href="javascript:void(0)" id="realPrintBtn" class="btn btn-info px-3 fw-bold text-dark shadow-sm" onclick="showPreviewModal(); return false;">
+                                <u>P</u>rint <kbd style="font-size:10px;opacity:.8;margin-left:4px;color:#fff;">Ctrl+P</kbd>
                             </a>
-                        </div>
-                    </form>
-                </div>
+                        @endif
+
+                        <a href="{{ route('sale.return.home') }}" id="exitBtn" class="btn btn-secondary px-3 fw-bold shadow-sm text-white">
+                            E<u>x</u>it <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Esc</kbd>
+                        </a>
+
+                        <a href="{{ route('sale.return.add') }}" id="newInvoiceBtn" class="btn btn-dark px-3 fw-bold shadow-sm text-white">
+                            <u>N</u>ew <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+M</kbd>
+                        </a>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
@@ -316,22 +351,31 @@ $(document).ready(function() {
     //  SAVED PURCHASE STATE (after AJAX save)
     // =============================================
     var _savedReturnId = @json(isset($returnData) ? $returnData->id : null);
+    var _saveInFlight = false;
+    var _postInFlight = false;
+
+    function setFormLocked(isLocked) {
+        if (isLocked) {
+            $('#returnForm').addClass('form-locked');
+            $('#returnForm input, #returnForm select, #returnForm textarea, #returnForm button')
+                .not('#editInvoiceBtn, #exitBtn, #realPrintBtn, #newInvoiceBtn, #postBtn, #deleteBtn')
+                .attr('tabindex', '-1');
+            $('#returnForm .select2').prop('disabled', true);
+        } else {
+            $('#returnForm').removeClass('form-locked');
+            $('#returnForm input, #returnForm select, #returnForm textarea, #returnForm button').removeAttr('tabindex');
+            $('#returnForm .select2').prop('disabled', false);
+        }
+    }
 
     if (_savedReturnId) {
-        // Form locked if already saved or in edit mode (initially locked unless User hits edit)
-        $('#returnForm').addClass('form-locked');
-        $('#newInvoiceBtn').show();
-        $('#editInvoiceBtn').show();
-        
-        // If it was already posted, hide edit
+        setFormLocked(true);
         @if(isset($returnData) && $returnData->status == 'Posted')
-             $('#editInvoiceBtn').hide();
-             $('#postBtn').hide();
-        @else
-             $('#postBtn').removeClass('btn-primary').addClass('btn-success');
+             $('#editInvoiceBtn').prop('disabled', true);
+             $('#postBtn').prop('disabled', true);
+             $('#deleteBtn').prop('disabled', true);
         @endif
-        
-        // Recalc all rows to fix unit amount column
+
         $('#saleItems tr').each(function() {
             recalcRow($(this));
         });
@@ -356,10 +400,20 @@ $(document).ready(function() {
     }
     
     function ajaxSaveDraft() {
+        if (_saveInFlight) return;
+        if(!$('#party_select').val()) {
+            showToast('⚠️ Please select a party', 'error');
+            return;
+        }
+        if($('#saleItems tr').length === 0 || $('#saleItems .text-muted').length > 0) {
+            showToast('⚠️ Please select an invoice or add products first', 'error');
+            return;
+        }
+
         $('.ajax-valid-error').remove();
-        $('#ajaxErrorSummary').hide().empty();
 
         var $form = $('#returnForm');
+        _saveInFlight = true;
         $('#saveDraftBtn').prop('disabled', true).html('<i class="fa fa-spinner fa-spin me-1"></i> Saving...');
 
         $.ajax({
@@ -375,29 +429,22 @@ $(document).ready(function() {
                         $('#invoiceNoDisplay').text('Return No: ' + res.invoice_no);
                     }
 
-                    $('#postBtn')
-                        .show()
-                        .prop('disabled', false)
-                        .removeClass('btn-primary')
-                        .addClass('btn-success')
-                        .html('<i class="fa fa-send me-1"></i> Post <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+↵</kbd>');
+                    $('#saveDraftBtn').prop('disabled', true).html('<u>S</u>ave');
+                    $('#editInvoiceBtn').prop('disabled', false);
+                    $('#postBtn').prop('disabled', false);
+                    $('#deleteBtn').prop('disabled', false);
 
-                    $('#newInvoiceBtn').show();
-                    $('#editInvoiceBtn').show();
-                    
-                    $('#returnForm').addClass('form-locked');
+                    setFormLocked(true);
+
                     $form.attr('action', '/sale-returns/' + res.id + '/update');
-                    
-                    var printUrl = '/sale-returns/print/' + res.id;
-                    if ($('#previewPrintBtn').length) {
-                        $('#previewPrintBtn').replaceWith(
-                            $('<a>').attr({href: printUrl, target:'_blank', id:'realPrintBtn', class:'btn btn-sm btn-dark rounded-pill px-4 shadow-sm'})
-                            .html('<i class="fa fa-print me-1"></i> Print <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+P</kbd>')
-                        );
-                    }
-                    $('#saveDraftBtn').hide();
+
+                    $('#realPrintBtn')
+                        .attr('href', '/sale-returns/print/' + res.id)
+                        .attr('target', '_blank')
+                        .removeAttr('onclick');
                 } else {
                     showToast('❌ ' + (res.message || 'Error saving draft.'), 'error');
+                    $('#saveDraftBtn').prop('disabled', false).html('<u>S</u>ave <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+S</kbd>');
                 }
             },
             error: function(xhr) {
@@ -409,7 +456,6 @@ $(document).ready(function() {
                     if(resp.errors) {
                         $.each(resp.errors, function(key, val) {
                             var fieldHtml = '<div class="alert alert-danger p-1 mb-1 ajax-valid-error" style="font-size:11px;"><i class="fa fa-exclamation-triangle"></i> ' + val[0] + '</div>';
-                            
                             if(key.indexOf('.') !== -1) {
                                 var parts = key.split('.');
                                 var fieldName = parts[0] + '[]';
@@ -419,7 +465,7 @@ $(document).ready(function() {
                             } else {
                                 var $target = $('[name="' + key + '"]');
                                 if(key === 'sale_id' || key === 'party_id') {
-                                     $target.closest('.col-md-3, .col-md-2').find('label').after(fieldHtml);
+                                     $target.closest('.field-gap').find('label').after(fieldHtml);
                                 } else if($target.length) {
                                     if($target.hasClass('select2-hidden-accessible')) {
                                         $target.next('.select2-container').before(fieldHtml);
@@ -432,25 +478,27 @@ $(document).ready(function() {
                     }
                 } catch(e){}
                 showToast('❌ ' + msg, 'error');
+                $('#saveDraftBtn').prop('disabled', false).html('<u>S</u>ave <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+S</kbd>');
             },
             complete: function() {
-                $('#saveDraftBtn').prop('disabled', false)
-                    .html('<i class="fa fa-floppy-o me-1"></i> Save Draft <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+S</kbd>');
+                _saveInFlight = false;
             }
         });
     }
 
     function doPost() {
+        if (_postInFlight) return;
         if(!_savedReturnId) {
             showToast('⚠️ Please save draft first before posting.', 'error');
             return;
         }
+        _postInFlight = true;
         $('#postBtn').prop('disabled', true).html('<i class="fa fa-spinner fa-spin me-1"></i> Posting...');
 
         $.ajax({
             url: '/sale-returns/post/' + _savedReturnId,
             type: 'POST',
-            headers: { 
+            headers: {
                 'X-Requested-With': 'XMLHttpRequest',
                 'X-CSRF-TOKEN': $('input[name="_token"]').val()
             },
@@ -467,91 +515,114 @@ $(document).ready(function() {
                     msg = r.message || r.error || msg;
                 } catch(e) {}
                 showToast('❌ ' + msg, 'error');
+                _postInFlight = false;
                 $('#postBtn').prop('disabled', false)
-                    .html('<i class="fa fa-send me-1"></i> Post <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+↵</kbd>');
+                    .html('<u>P</u>ost <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+&crarr;</kbd>');
             }
         });
     }
 
     $('#saveDraftBtn').on('click', function(e) { e.preventDefault(); ajaxSaveDraft(); });
     $('#postBtn').on('click', function(e) { e.preventDefault(); doPost(); });
-    
+
     $('#editInvoiceBtn').on('click', function() {
-        $('#returnForm').removeClass('form-locked');
-        $(this).hide();
-        $('#saveDraftBtn').show();
+        setFormLocked(false);
+        $('#saveDraftBtn').prop('disabled', false).html('<u>S</u>ave <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+S</kbd>');
+        $(this).prop('disabled', true);
+        $('#postBtn').prop('disabled', true);
+        $('#deleteBtn').prop('disabled', true);
     });
 
-    // --- BLOCK ENTER KEY (prevents accidental form submit on qty, price etc) ---
-    // --- KEYBOARD SHORTCUTS (Robust Layer) ---
+    $('#deleteBtn').on('click', function() {
+        if (!_savedReturnId) return;
+        if (confirm('Are you sure you want to delete this draft?')) {
+            $(this).prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i>...');
+            $.ajax({
+                url: '/sale-returns/' + _savedReturnId + '/destroy',
+                type: 'DELETE',
+                data: { _token: $('input[name="_token"]').val() },
+                success: function() {
+                    showToast('✅ Return deleted successfully!', 'success');
+                    setTimeout(function() { window.location.href = "{{ route('sale.return.add') }}"; }, 1500);
+                },
+                error: function() {
+                    showToast('❌ Failed to delete.', 'error');
+                    $('#deleteBtn').prop('disabled', false).html('<u>D</u>elete <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+D</kbd>');
+                }
+            });
+        }
+    });
+
+    $(document).on('keydown', '#returnForm input, #returnForm select, #saleItems input', function(e) {
+        if (e.key === 'Enter' && !$(e.target).is('textarea') && !e.ctrlKey) {
+            e.preventDefault();
+            return false;
+        }
+    });
+
     document.addEventListener('keydown', function(e) {
-        var key = (e.key || '').toLowerCase();
-        var keyCode = e.keyCode || e.which;
-
-        // Ctrl + S (Save Draft)
-        if (e.ctrlKey && (key === 's' || keyCode === 83)) {
-            e.preventDefault();
-            e.stopPropagation();
-            if(!$('#returnForm').hasClass('form-locked')) {
-                ajaxSaveDraft();
-            }
-        }
-
-        // Ctrl + Enter (Post)
-        if (e.ctrlKey && (key === 'enter' || keyCode === 13)) {
-            e.preventDefault();
-            e.stopPropagation();
-            if($('#postBtn').is(':visible') && !$('#postBtn').is(':disabled')) {
-                doPost();
-            }
-        }
-
-        // Ctrl + P (Print)
-        if (e.ctrlKey && (key === 'p' || keyCode === 80)) {
-            e.preventDefault();
-            e.stopPropagation();
-            if($('#realPrintBtn').is(':visible')) {
-                window.open($('#realPrintBtn').attr('href'), '_blank');
-            } else if($('#previewPrintBtn').is(':visible')) {
-                $('#previewPrintBtn').click();
-            }
-        }
-
-        // Ctrl + M (New)
-        if (e.ctrlKey && (key === 'm' || keyCode === 77)) {
-            e.preventDefault();
-            e.stopPropagation();
-            window.location.href = "{{ route('sale.return.add') }}";
-        }
-
-        // Ctrl + E (Edit)
-        if (e.ctrlKey && (key === 'e' || keyCode === 69)) {
-            e.preventDefault();
-            e.stopPropagation();
-            if($('#editInvoiceBtn').is(':visible')) {
-                $('#editInvoiceBtn').click();
-            }
-        }
-
-        // Esc (List / Cancel)
-        if (key === 'escape' || keyCode === 27) {
-            // Only if not in a modal
-            if($('.modal.show').length === 0) {
-                window.location.href = "{{ route('sale.return.home') }}";
-            }
-        }
-    }, true); // useCapture = true to intercept before browser/select2
-
-    // --- BLOCK ENTER KEY (separate simpler listener for normal enter) ---
-    $(document).on('keydown', function(e) {
         if (e.key === 'Enter' && !e.ctrlKey) {
-            var $t = $(e.target);
-            if (!$t.is('textarea') && !$t.is('button')) {
+            var t = e.target;
+            if (t && t.tagName !== 'TEXTAREA' && $(t).closest('#returnForm').length) {
                 e.preventDefault();
-                return false;
+                return;
             }
         }
-    });
+
+        if (e.ctrlKey && (e.key === 's' || e.key === 'S')) {
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            if (!_saveInFlight && !$('#saveDraftBtn').prop('disabled')) {
+                $('#saveDraftBtn').click();
+            }
+        }
+        if (e.ctrlKey && (e.key === 'e' || e.key === 'E')) {
+            e.preventDefault();
+            if (!$('#editInvoiceBtn').prop('disabled')) $('#editInvoiceBtn').click();
+        }
+        if (e.ctrlKey && e.key === 'Enter') {
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            if (!_postInFlight && !$('#postBtn').prop('disabled')) {
+                $('#postBtn').click();
+            }
+        }
+        if (e.ctrlKey && (e.key === 'd' || e.key === 'D')) {
+            e.preventDefault();
+            if (!$('#deleteBtn').prop('disabled')) $('#deleteBtn').click();
+        }
+        if (e.key === 'Escape') {
+            if($('.modal.show').length === 0) {
+                e.preventDefault();
+                window.location.href = $('#exitBtn').attr('href');
+            }
+        }
+        if (e.ctrlKey && (e.key === 'm' || e.key === 'M')) {
+            e.preventDefault();
+            window.location.href = $('#newInvoiceBtn').attr('href');
+        }
+        if (e.ctrlKey && (e.key === 'l' || e.key === 'L')) {
+            e.preventDefault();
+            window.location.href = $('#listBtn').attr('href');
+        }
+        if (e.ctrlKey && (e.key === 'i' || e.key === 'I')) {
+            e.preventDefault();
+            if ($('input[name="return_mode"]:checked').val() === 'manual' && typeof appendBlankRow === 'function') {
+                appendBlankRow(true);
+            }
+        }
+        if (e.ctrlKey && (e.key === 'p' || e.key === 'P')) {
+            e.preventDefault();
+            if ($('#realPrintBtn').length) {
+                var href = $('#realPrintBtn').attr('href');
+                if (href && href !== 'javascript:void(0)') {
+                    window.open(href, '_blank');
+                } else {
+                    showPreviewModal();
+                }
+            }
+        }
+    }, true);
 
     // Mode Switching
     $('input[name="return_mode"]').on('change', function() {
@@ -567,7 +638,7 @@ $(document).ready(function() {
             $('.manual-only').hide();
             $('.invoice-only').show();
             $('#invoice_col').show();
-            $('#saleItems').html('<tr><td colspan="11" class="text-center text-muted py-4">No invoice selected yet.</td></tr>');
+            $('#saleItems').html('<tr><td colspan="11" class="text-center text-muted py-3">No invoice selected yet.</td></tr>');
         }
         recalcSummary();
     });
@@ -752,9 +823,9 @@ $(document).ready(function() {
                 <td><input type="number" step="0.01" name="item_disc_amount[]" class="form-control form-control-sm disc_amount text-end"></td>
                 <td class="invoice-only"><input type="text" class="form-control form-control-sm bg-light text-center" value="-" readonly></td>
                 <td><input type="number" name="qty[]" class="form-control form-control-sm quantity text-center" value="1" min="0"></td>
-                <td><input type="number" step="0.01" name="price[]" class="form-control form-control-sm price text-end bg-white" readonly></td>
-                <td><input type="text" name="line_total[]" class="form-control form-control-sm row-total text-end bg-white" readonly value="0"></td>
-                <td><button type="button" class="btn btn-sm btn-danger remove-row"><i class="fa fa-trash"></i></button></td>
+                <td><input type="number" step="0.01" name="price[]" class="form-control form-control-sm price text-end input-readonly" readonly></td>
+                <td><input type="text" name="line_total[]" class="form-control form-control-sm row-total text-end input-readonly" readonly value="0"></td>
+                <td class="text-center"><button type="button" class="btn btn-xs btn-outline-danger remove-row" title="Delete">&times;</button></td>
             </tr>`;
         
         const $row = $(newRowHtml);
@@ -768,10 +839,6 @@ $(document).ready(function() {
             setTimeout(() => { $row.find('.item-id-input').focus(); }, 50);
         }
     };
-
-    $('#addRowBtn').on('click', function() {
-        appendBlankRow(true);
-    });
 
     // Invoice Selection
     $('#sale_invoice_select').on('change', function() {
@@ -812,9 +879,9 @@ $(document).ready(function() {
             <td><input type="number" step="0.01" name="item_disc_amount[]" class="form-control form-control-sm disc_amount text-end" value="${discAmt}"></td>
             <td class="invoice-only"><input type="text" class="form-control form-control-sm bg-light text-center" value="${item.qty}" readonly></td>
             <td><input type="number" name="qty[]" class="form-control form-control-sm quantity text-center" value="${item.qty}" max="${item.qty}" min="0" title="Edit return quantity"></td>
-            <td><input type="number" step="0.01" name="price[]" class="form-control form-control-sm price text-end bg-white" value="${item.price}" readonly></td>
-            <td><input type="text" name="line_total[]" class="form-control form-control-sm row-total text-end bg-white" readonly value="0"></td>
-            <td><button type="button" class="btn btn-sm btn-danger remove-row"><i class="fa fa-trash"></i></button></td>
+            <td><input type="number" step="0.01" name="price[]" class="form-control form-control-sm price text-end input-readonly" value="${item.price}" readonly></td>
+            <td><input type="text" name="line_total[]" class="form-control form-control-sm row-total text-end input-readonly" readonly value="0"></td>
+            <td class="text-center"><button type="button" class="btn btn-xs btn-outline-danger remove-row" title="Delete">&times;</button></td>
         </tr>`;
         $('#saleItems').append(html);
         recalcRow($('#saleItems tr:last'));

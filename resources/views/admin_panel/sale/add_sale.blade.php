@@ -75,7 +75,6 @@
   .form-locked .btn-group .btn,
   .form-locked .select2-container,
   .form-locked .del-row,
-  .form-locked #btnAdd,
   .form-locked #btnAddRV,
   .form-locked .btnRemRV,
   .form-locked .discount-value,
@@ -87,6 +86,17 @@
     pointer-events: none !important;
     opacity: 0.65 !important;
     cursor: not-allowed !important;
+  }
+
+  .form-locked #saveDraftBtn { display: none !important; }
+  .form-locked #editBtn,
+  .form-locked #newBtn,
+  .form-locked #previewPrintBtn,
+  .form-locked #postBtn,
+  .form-locked #exitBtn,
+  .form-locked #deleteBtn {
+    pointer-events: auto !important;
+    opacity: 1 !important;
   }
   
   /* GRAY BACKGROUND FOR LOCKED INPUTS */
@@ -163,6 +173,24 @@
     overflow: auto;
     border: 1px solid #eee;
     border-radius: .5rem;
+  }
+
+  /* Items table — stretch to bottom like Purchase */
+  .sale-page .sale-main-row { align-items: stretch !important; gap: .35rem !important; }
+  .sale-page .items-panel {
+    padding-left: .35rem !important;
+    padding-right: 0 !important;
+    min-height: 0;
+    flex: 1 1 auto;
+  }
+  .sale-page .items-toolbar { flex-shrink: 0; margin-bottom: .25rem !important; }
+  .sale-page .items-table-wrap {
+    flex: 1 1 auto !important;
+    min-height: 280px !important;
+    max-height: none !important;
+    overflow-y: auto !important;
+    border: 1px solid #dee2e6 !important;
+    border-radius: .35rem !important;
   }
 
   .minw-350 {
@@ -359,9 +387,11 @@
     border-color: #fdd835 !important;
     transition: background-color 0.3s ease;
   }
+
+  .sale-page .bottom-bar { margin-top: .4rem !important; padding: .75rem !important; }
 </style>
 
-<div class="container-fluid py-2">
+<div class="container-fluid py-2 sale-page">
   <div class="main-container bg-white border shadow-sm mx-auto p-2 rounded-3" style="max-width: 98%;">
 
     <div id="alertBox" class="alert d-none mb-2" role="alert"></div>
@@ -372,7 +402,7 @@
       <input type="hidden" id="sale_id" name="sale_id" value="{{ isset($sale) ? $sale->id : '' }}">
 
 
-      <div class="d-flex gap-2 align-items-stretch border-bottom py-2">
+      <div class="d-flex gap-2 align-items-stretch border-bottom py-2 sale-main-row">
         {{-- LEFT: Invoice & Customer --}}
         <div class="bg-light border rounded-3 p-2 shadow-sm d-flex flex-column" style="min-width: 280px; max-width: 280px; font-size: 0.8rem;">
           <div class="d-flex align-items-center justify-content-between mb-2 pb-1 border-bottom">
@@ -386,8 +416,9 @@
                 <span id="idBadge" class="badge bg-primary px-1 py-1 rounded shadow-sm" style="display:none;font-size:9px;">
                     <i class="fa fa-tag me-1"></i>ID
                 </span>
-                <a href="{{ route('sale.index') }}" id="listBtn" class="btn btn-sm btn-outline-secondary py-0 px-2" style="font-size: 0.75rem;" title="List (Ctrl+L)">
-                    <i class="fa fa-list me-1"></i> List
+                <a href="{{ route('sale.index') }}" id="listBtn" class="btn btn-xs btn-outline-secondary rounded-pill px-2 py-0" style="font-size:.7rem;">
+                    <i class="fa fa-list"></i> List
+                    <kbd style="font-size:8px;opacity:.8;margin-left:3px;">Ctrl+L</kbd>
                 </a>
             </div>
           </div>
@@ -525,12 +556,11 @@
         </div>
 
         {{-- RIGHT: Items --}}
-        <div class="flex-grow-1 d-flex flex-column">
-          <div class="d-flex justify-content-between align-items-center mb-2">
-            <div class="section-title mb-0">Items</div>
+        <div class="flex-grow-1 d-flex flex-column items-panel">
+          <div class="d-flex justify-content-end align-items-center items-toolbar">
             <div class="d-flex align-items-center gap-2 wh-bulk-container">
-                <label class="form-label text-muted small mb-0 fw-bold">Bulk Warehouse:</label>
-                <select class="form-select form-select-sm" id="globalWarehouse" style="width: 150px; font-size: 0.8rem;">
+                <label class="form-label text-muted small mb-0 fw-bold" style="font-size:.7rem;">Bulk Warehouse:</label>
+                <select class="form-select form-select-sm py-0" id="globalWarehouse" style="width: 140px; font-size: .75rem; height: 24px;">
                     @if(auth()->user()->canAccessShop())
                         <option value="0">🏠 Shop Stock</option>
                     @endif
@@ -538,11 +568,10 @@
                         <option value="{{ $wh->id }}">📦 {{ $wh->warehouse_name }}</option>
                     @endforeach
                 </select>
-                <button type="button" class="btn btn-sm btn-primary" id="btnAdd">Add Row</button>
             </div>
           </div>
 
-          <div class="table-responsive flex-grow-1 d-flex flex-column" style="min-height: 420px; overflow-y: auto;">
+          <div class="table-responsive flex-grow-1 items-table-wrap">
             <table class="table table-bordered table-sm mb-0" style="width: 100%; font-size: 0.9rem; table-layout: fixed;">
               <colgroup>
                 <col style="width:6%">
@@ -569,7 +598,7 @@
                   <th class="text-center">Discount (% | Amt)</th>
                   <th class="text-end">Rate</th>
                   <th class="text-end">Amount</th>
-                  <th class="text-center">—</th>
+                  <th class="text-center"><span style="font-size:9px;font-weight:normal;color:#888;"><kbd style="font-size:8px;padding:0 2px;">Ctrl+I</kbd></span></th>
                 </tr>
               </thead>
               <tbody id="salesTableBody">
@@ -907,34 +936,35 @@
         </div>
       </div>
 
-      {{-- BOTTOM BUTTONS --}}
-      <div class="d-flex gap-2 mt-2 justify-content-end border-top pt-2">
-        
-        <button type="button" id="saveDraftBtn" class="btn btn-sm btn-warning rounded-pill px-4 shadow-sm">
-          <i class="fa fa-floppy-o me-1"></i> Save Draft
-          <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+S</kbd>
+      {{-- BOTTOM BUTTONS (Purchase standard) --}}
+      <div class="d-flex flex-wrap gap-2 justify-content-center bg-light bottom-bar rounded-2 border shadow-sm w-100">
+
+        <button type="button" id="saveDraftBtn" class="btn btn-primary px-3 fw-bold shadow-sm">
+          <u>S</u>ave <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+S</kbd>
         </button>
 
-        <button type="button" id="previewPrintBtn" class="btn btn-sm btn-outline-dark rounded-pill px-4">
-          <i class="fa fa-print me-1"></i> Print Preview
-          <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+P</kbd>
+        <button type="button" id="editBtn" class="btn btn-warning px-3 fw-bold text-dark shadow-sm" disabled>
+          <u>E</u>dit <kbd style="font-size:10px;opacity:.8;margin-left:4px;color:#fff;">Ctrl+E</kbd>
         </button>
 
-        <button type="button" id="postBtn" class="btn btn-sm btn-primary rounded-pill px-4 shadow-sm">
-          <i class="fa fa-send me-1"></i> Save & Post
-          <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+&#8629;</kbd>
+        <button type="button" id="postBtn" class="btn btn-success px-3 fw-bold shadow-sm" disabled>
+          <u>P</u>ost <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+&crarr;</kbd>
         </button>
 
-        <button type="button" id="editBtn" class="btn btn-sm btn-warning rounded-pill px-4 shadow-sm" style="display:none;">
-          <i class="fa fa-pencil me-1"></i> Edit <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+E</kbd>
+        <button type="button" id="deleteBtn" class="btn btn-danger px-3 fw-bold shadow-sm" disabled>
+          <u>D</u>elete <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+D</kbd>
         </button>
 
-        <a href="{{ route('sale.add') }}" id="newBtn" class="btn btn-sm btn-info rounded-pill px-4 shadow-sm text-white" style="display:none;">
-          <i class="fa fa-plus me-1"></i> New <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+M</kbd>
+        <button type="button" id="previewPrintBtn" class="btn btn-info px-3 fw-bold text-dark shadow-sm">
+          <u>P</u>rint <kbd style="font-size:10px;opacity:.8;margin-left:4px;color:#fff;">Ctrl+P</kbd>
+        </button>
+
+        <a href="{{ route('sale.index') }}" id="exitBtn" class="btn btn-secondary px-3 fw-bold shadow-sm text-white">
+          E<u>x</u>it <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Esc</kbd>
         </a>
 
-        <a href="{{ route('sale.index') }}" id="cancelBtn" class="btn btn-sm btn-danger rounded-pill px-4 shadow-sm text-white">
-          <i class="fa fa-times me-1"></i> Cancel <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Esc</kbd>
+        <a href="{{ route('sale.add') }}" id="newBtn" class="btn btn-dark px-3 fw-bold shadow-sm text-white">
+          <u>N</u>ew <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+M</kbd>
         </a>
 
       </div>
@@ -1312,7 +1342,6 @@
   }
 
   /* ---------- Events top buttons ---------- */
-  $('#btnAdd').on('click', addNewRow);
   $('#btnEdit').on('click', () => alert('Edit mode activated'));
   $('#btnRevert').on('click', () => location.reload());
   $('#btnDelete').on('click', function() {
@@ -1329,6 +1358,18 @@
   /* ---------- AJAX Save, Post, Print, Keyboard Shortcuts (Purchase Style) ---------- */
   $(document).ready(function() {
       var _savedBookingId = null;
+      var _saveInFlight = false;
+      var _postInFlight = false;
+
+      var BTN_SAVE = '<u>S</u>ave <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+S</kbd>';
+      var BTN_POST = '<u>P</u>ost <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+&crarr;</kbd>';
+      var BTN_DELETE = '<u>D</u>elete <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+D</kbd>';
+
+      function setSaleButtonsAfterLock() {
+          $('#editBtn').prop('disabled', false);
+          $('#postBtn').prop('disabled', false);
+          $('#deleteBtn').prop('disabled', false);
+      }
 
       function showToast(msg, type) {
           type = type || 'success';
@@ -1348,6 +1389,7 @@
       }
 
       function ajaxSaveDraft(showMsg = true) {
+          if (_saveInFlight) return;
           // Remove empty rows before save
           $('#salesTableBody tr').each(function() {
               const pid = $(this).find('.product-select').val();
@@ -1358,6 +1400,7 @@
           updateGrandTotals();
 
           $('.ajax-valid-error').remove();
+          _saveInFlight = true;
           $('#saveDraftBtn').prop('disabled', true).html('<i class="fa fa-spinner fa-spin me-1"></i> Saving...');
           
           return $.ajax({
@@ -1374,9 +1417,8 @@
                       }
                       $('#idBadge').text('ID: ' + res.booking_id).show();
                       $('#saleForm').addClass('form-locked');
-                      $('#saveDraftBtn, #postBtn, #previewPrintBtn, #cancelBtn, #editBtn, #newBtn').show();
-                      $('#postBtn').removeClass('btn-primary').addClass('btn-success');
-                      $('#statusBadge').removeClass('bg-warning').addClass('bg-info text-white').html('<i class="fa fa-pencil"></i> Unposted');
+                      setSaleButtonsAfterLock();
+                      $('#statusBadge').removeClass('bg-warning').addClass('bg-info text-white').html('<i class="fa fa-pencil"></i> Unposted').show();
 
                       if (showMsg) {
                           showToast('Draft Saved', 'success');
@@ -1422,13 +1464,17 @@
                   showToast(msg, 'error');
               },
               complete: function() {
-                  $('#saveDraftBtn').prop('disabled', false).html('<i class="fa fa-floppy-o me-1"></i> Save Draft <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+S</kbd>');
+                  _saveInFlight = false;
+                  if (!$('#saleForm').hasClass('form-locked')) {
+                      $('#saveDraftBtn').prop('disabled', false).html(BTN_SAVE);
+                  }
               }
           });
       }
 
       // AJAX Post
       function doPost() {
+          if (_postInFlight) return;
           const bookingId = $('#booking_id').val();
           if (!bookingId) {
               Swal.fire({
@@ -1439,6 +1485,7 @@
               return;
           }
 
+          _postInFlight = true;
           $('#postBtn').prop('disabled', true).html('<i class="fa fa-spinner fa-spin me-1"></i> Posting...');
 
           $.ajax({
@@ -1462,6 +1509,7 @@
                           title: 'Error',
                           text: res.error || 'Post failed'
                       });
+                      $('#postBtn').prop('disabled', false).html(BTN_POST);
                   }
               },
               error: function(xhr) {
@@ -1474,9 +1522,10 @@
                       title: 'Post Failed',
                       text: msg
                   });
+                  $('#postBtn').prop('disabled', false).html(BTN_POST);
               },
               complete: function() {
-                   $('#postBtn').prop('disabled', false).html('<i class="fa fa-send me-1"></i> Post <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+&#8629;</kbd>');
+                   _postInFlight = false;
               }
           });
       }
@@ -1497,22 +1546,54 @@
       });
 
       $('#editBtn').on('click', function() {
+          if ($(this).prop('disabled')) return;
           const currentCust = $('#customerSelect').val();
           $('#saleForm').removeClass('form-locked');
+          $(this).prop('disabled', true);
+          $('#saveDraftBtn').prop('disabled', false).html(BTN_SAVE);
           if (currentCust) {
               $('#customerSelect').val(currentCust).trigger('change.select2');
           }
+          showToast('Form Unlocked for Editing', 'success');
       });
 
-      // KEYBOARD SHORTCUTS
-      $(document).on('keydown', function(e) {
+      $('#deleteBtn').on('click', function() {
+          const bookingId = $('#booking_id').val();
+          if (!bookingId || $(this).prop('disabled')) return;
+          if (confirm('Are you sure you want to delete this draft?')) {
+              $(this).prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i>...');
+              $.ajax({
+                  url: '/sale/' + bookingId,
+                  type: 'DELETE',
+                  data: { _token: '{{ csrf_token() }}' },
+                  headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                  success: function() {
+                      showToast('Draft deleted successfully!', 'success');
+                      setTimeout(function() { window.location.href = '{{ route("sale.add") }}'; }, 1200);
+                  },
+                  error: function() {
+                      showToast('Failed to delete draft.', 'error');
+                      $('#deleteBtn').prop('disabled', false).html(BTN_DELETE);
+                  }
+              });
+          }
+      });
+
+      // KEYBOARD SHORTCUTS (single handler)
+      document.addEventListener('keydown', function(e) {
           if (e.ctrlKey && (e.key === 's' || e.key === 'S')) {
               e.preventDefault();
-              ajaxSaveDraft();
+              e.stopImmediatePropagation();
+              if (!_saveInFlight && !$('#saveDraftBtn').prop('disabled') && $('#saveDraftBtn').is(':visible')) {
+                  $('#saveDraftBtn').click();
+              }
           }
           if (e.ctrlKey && e.key === 'Enter') {
               e.preventDefault();
-              doPost();
+              e.stopImmediatePropagation();
+              if (!_postInFlight && !$('#postBtn').prop('disabled')) {
+                  $('#postBtn').click();
+              }
           }
           if (e.ctrlKey && (e.key === 'p' || e.key === 'P')) {
               e.preventDefault();
@@ -1520,15 +1601,27 @@
           }
           if (e.ctrlKey && (e.key === 'e' || e.key === 'E')) {
               e.preventDefault();
-              e.stopPropagation();
-              $('#editBtn').click();
+              if (!$('#editBtn').prop('disabled')) $('#editBtn').click();
+          }
+          if (e.ctrlKey && (e.key === 'd' || e.key === 'D')) {
+              e.preventDefault();
+              if (!$('#deleteBtn').prop('disabled')) $('#deleteBtn').click();
           }
           if (e.ctrlKey && (e.key === 'm' || e.key === 'M')) {
               e.preventDefault();
               window.location.href = '{{ route("sale.add") }}';
           }
+          if (e.ctrlKey && (e.key === 'l' || e.key === 'L')) {
+              e.preventDefault();
+              window.location.href = $('#listBtn').attr('href');
+          }
+          if (e.ctrlKey && (e.key === 'i' || e.key === 'I')) {
+              e.preventDefault();
+              if (!$('#saleForm').hasClass('form-locked')) addNewRow();
+          }
           if (e.key === 'Escape') {
-              window.location.href = '{{ route("sale.index") }}';
+              if ($('.modal.show').length) { $('.modal.show').modal('hide'); }
+              else { e.preventDefault(); window.location.href = $('#exitBtn').attr('href'); }
           }
           if (e.ctrlKey && (e.key === 'x' || e.key === 'X')) {
               const $row = $(document.activeElement).closest('tr');
@@ -1537,24 +1630,21 @@
                   $row.find('.del-row').click();
               }
           }
-      });
-
-      // Ctrl+L overwrite
-      document.addEventListener('keydown', function(e) {
-          if (e.ctrlKey && (e.key === 'l' || e.key === 'L')) {
-              e.preventDefault();
-              window.location.href = $('#listBtn').attr('href');
-          }
       }, true);
 
       // On load, if booking_id exists, lock form
       if($('#booking_id').val()) {
           $('#saleForm').addClass('form-locked');
-          $('#saveDraftBtn, #postBtn, #previewPrintBtn, #cancelBtn, #editBtn, #newBtn').show();
-          $('#postBtn').removeClass('btn-primary').addClass('btn-success');
+          setSaleButtonsAfterLock();
           $('#idBadge').text('ID: ' + $('#booking_id').val()).show();
-          $('#statusBadge').removeClass('bg-warning').addClass('bg-info text-white').html('<i class="fa fa-pencil"></i> Unposted');
+          $('#statusBadge').removeClass('bg-warning').addClass('bg-info text-white').html('<i class="fa fa-pencil"></i> Unposted').show();
       }
+
+      @if(isset($sale))
+      $('#postBtn, #deleteBtn').prop('disabled', true);
+      $('#idBadge').text('ID: {{ $sale->id }}').show();
+      $('#statusBadge').removeClass('bg-warning').addClass('bg-success text-white').html('<i class="fa fa-check"></i> Posted').show();
+      @endif
   });
 
 
