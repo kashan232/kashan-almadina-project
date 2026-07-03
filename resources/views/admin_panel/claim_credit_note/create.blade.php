@@ -3,19 +3,48 @@
 @section('content')
 <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 <style>
-    .select2-container .select2-selection--single { height: 31px !important; border: 1px solid #ced4da; }
-    .select2-container .select2-selection--single .select2-selection__rendered { line-height: 31px !important; padding-left: 8px; }
-    .select2-container .select2-selection--single .select2-selection__arrow { height: 31px !important; }
-    .input-sm { height: 31px; padding: 2px 8px; font-size: 14px; }
-    .table td, .table th { vertical-align: middle !important; padding: 4px !important; }
-    
+    .stock-hold-page.container-fluid { padding: .15rem .3rem !important; }
+    .stock-hold-page .main-content-inner { padding: 0 !important; }
+    .stock-hold-page .page-top-bar { margin-bottom: .2rem !important; padding: .25rem .4rem !important; }
+    .stock-hold-page .page-top-bar .page-title { font-size: .85rem !important; }
+    .stock-hold-page .page-top-bar .badge { font-size: 10px !important; padding: .15rem .45rem !important; }
+    .stock-hold-page .mb-4, .stock-hold-page .mb-3 { margin-bottom: .25rem !important; }
+    .stock-hold-page .mb-2 { margin-bottom: .15rem !important; }
+    .stock-hold-page .mt-2, .stock-hold-page .mt-3 { margin-top: .15rem !important; }
+    .stock-hold-page .card { margin-bottom: .2rem !important; }
+    .stock-hold-page .card-body { padding: .35rem .45rem !important; }
+    .stock-hold-page .card-body.p-0, .stock-hold-page .card-body.p-3 { padding: .35rem .45rem !important; }
+    .stock-hold-page .card-body.p-0 { padding: 0 !important; }
+    .stock-hold-page .card-footer { padding: .35rem .45rem !important; }
+    .stock-hold-page .row.g-2, .stock-hold-page .row.g-3 { --bs-gutter-x: .3rem; --bs-gutter-y: .12rem; }
+    .stock-hold-page .form-label { margin-bottom: 0 !important; font-size: .7rem !important; line-height: 1.1; font-weight: 700; }
+    .stock-hold-page .form-label.mb-1, .stock-hold-page .form-label.small { margin-bottom: 0 !important; font-size: .7rem !important; }
+    .stock-hold-page .input-sm,
+    .stock-hold-page .form-control,
+    .stock-hold-page .form-select { height: 24px !important; min-height: 24px !important; padding: .05rem .35rem !important; font-size: .76rem !important; }
+    .stock-hold-page .select2-container .select2-selection--single { height: 24px !important; border: 1px solid #ced4da; }
+    .stock-hold-page .select2-container .select2-selection--single .select2-selection__rendered { line-height: 22px !important; padding-left: 5px !important; font-size: .76rem !important; }
+    .stock-hold-page .select2-container .select2-selection--single .select2-selection__arrow { height: 22px !important; }
+    .stock-hold-page .table td, .stock-hold-page .table th { vertical-align: middle !important; padding: 1px 3px !important; font-size: .76rem !important; }
+    .stock-hold-page .table .form-control, .stock-hold-page .table .input-sm { height: 22px !important; min-height: 22px !important; padding: 0 3px !important; font-size: .72rem !important; }
+    .stock-hold-page .bottom-bar-btns { gap: .3rem !important; }
+    .stock-hold-page .bottom-bar-btns .btn { padding: .2rem .55rem !important; font-size: .76rem !important; }
+    .stock-hold-page .btr-search-card { padding: .2rem .35rem !important; }
+    .stock-hold-page .btr-search-card .fa-barcode { font-size: 1rem !important; }
+    .stock-hold-page .btr-search-card #btr_search_btn { height: 22px; padding: 0 .45rem; font-size: .72rem; }
+    .stock-hold-page .summary-card .card-body { padding: .35rem .45rem !important; }
+    .stock-hold-page .summary-card hr { margin: .25rem 0 !important; }
+    .stock-hold-page .total-highlight { font-size: .95rem !important; }
+    .stock-hold-page .summary-card .fs-5 { font-size: .85rem !important; }
+    .stock-hold-page .input-group-sm .form-control { height: 22px !important; font-size: .72rem !important; }
+
     .form-locked { position: relative; opacity: 0.8; }
     .form-locked .card-body { pointer-events: none !important; }
-    .form-locked input, .form-locked .select2-container--default .select2-selection--single, .form-locked select, .form-locked textarea { 
-        background-color: #e9ecef !important; cursor: not-allowed !important; 
+    .form-locked input, .form-locked .select2-container--default .select2-selection--single, .form-locked select, .form-locked textarea {
+        background-color: #e9ecef !important; cursor: not-allowed !important;
     }
     .form-locked .remove-row, .form-locked #btr_search_btn { display: none !important; }
-    
+
     .posted-watermark {
         position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-30deg);
         font-size: 100px; color: rgba(0, 128, 0, 0.1); font-weight: bold; pointer-events: none; z-index: 1000;
@@ -23,16 +52,16 @@
     }
     .posted-watermark.show { display: block; }
 
-    .summary-card { background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.3); border-radius: 12px; }
-    .total-highlight { font-size: 18px; font-weight: 800; color: #2c3e50; }
+    .summary-card { background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.3); border-radius: 8px; }
+    .total-highlight { font-weight: 800; color: #2c3e50; }
 </style>
 
 <div class="main-content">
     <div class="main-content-inner">
-        <div class="container-fluid pt-3">
+        <div class="container-fluid stock-hold-page">
             
             {{-- TOP BAR --}}
-            <div class="d-flex justify-content-between align-items-center mb-3 bg-light p-2 rounded shadow-sm">
+            <div class="d-flex justify-content-between align-items-center page-top-bar bg-light rounded shadow-sm">
                 <div style="min-width:80px;"></div>
                 <div class="d-flex align-items-center gap-2 justify-content-center flex-grow-1">
                     <h6 class="page-title mb-0 fw-bold">Claim Credit Note Management</h6>
@@ -57,9 +86,9 @@
                 <div class="posted-watermark {{ (isset($voucher) && $voucher->status == 'Posted') ? 'show' : '' }}" id="postedWatermark">Posted</div>
 
                 {{-- Header Details --}}
-                <div class="card shadow-sm mb-3">
+                <div class="card shadow-sm">
                     <div class="card-body">
-                        <div class="row g-2 mb-3 align-items-end">
+                        <div class="row g-2 align-items-end">
                             <div class="col-md-2">
                                 <label class="form-label small fw-bold text-muted mb-1">Date</label>
                                 <input type="date" name="date" class="form-control input-sm" value="{{ $voucher->date ?? date('Y-m-d') }}" required>
@@ -121,7 +150,7 @@
                             </div>
                             
                             <div class="col-md-6">
-                                <div class="card border-primary border-opacity-25 bg-primary bg-opacity-10 p-1 px-3 rounded-pill h-100 shadow-sm">
+                                <div class="card border-primary border-opacity-25 bg-primary bg-opacity-10 btr-search-card rounded-pill h-100 shadow-sm">
                                     <div class="row g-2 align-items-center">
                                         <div class="col-auto"><i class="fa fa-barcode text-primary fs-4"></i></div>
                                         <div class="col">
@@ -140,7 +169,7 @@
                 </div>
 
                 {{-- Table for Items --}}
-                <div class="card shadow-sm mb-3">
+                <div class="card shadow-sm">
                     <div class="card-body p-0">
                         <div class="table-responsive">
                             <table class="table table-bordered table-striped mb-0" id="itemsTable">

@@ -3,19 +3,37 @@
 @section('content')
 <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 <style>
-    .select2-container .select2-selection--single { height: 31px !important; border: 1px solid #ced4da; }
-    .select2-container .select2-selection--single .select2-selection__rendered { line-height: 31px !important; padding-left: 8px; }
-    .select2-container .select2-selection--single .select2-selection__arrow { height: 31px !important; }
-    .input-sm { height: 31px; padding: 2px 8px; font-size: 14px; }
-    .table td, .table th { vertical-align: middle !important; padding: 4px !important; }
-    
+    .stock-hold-page.container-fluid { padding: .25rem .4rem !important; }
+    .stock-hold-page .main-content-inner { padding: 0 !important; }
+    .stock-hold-page .nav-pills { margin-bottom: .35rem !important; padding: .25rem !important; }
+    .stock-hold-page .nav-pills .nav-link { padding: .25rem .65rem !important; font-size: .78rem !important; }
+    .stock-hold-page .card { margin-bottom: .35rem !important; }
+    .stock-hold-page .card-body { padding: .45rem .55rem !important; }
+    .stock-hold-page .card-footer { padding: .45rem .55rem !important; }
+    .stock-hold-page .row.g-2 { --bs-gutter-x: .4rem; --bs-gutter-y: .25rem; }
+    .stock-hold-page .form-label { margin-bottom: .1rem !important; font-size: .72rem !important; }
+    .stock-hold-page .input-sm,
+    .stock-hold-page .form-control,
+    .stock-hold-page .form-select { height: 26px !important; min-height: 26px !important; padding: .1rem .4rem !important; font-size: .78rem !important; }
+    .stock-hold-page .select2-container .select2-selection--single { height: 26px !important; border: 1px solid #ced4da; }
+    .stock-hold-page .select2-container .select2-selection--single .select2-selection__rendered { line-height: 24px !important; padding-left: 6px !important; font-size: .78rem !important; }
+    .stock-hold-page .select2-container .select2-selection--single .select2-selection__arrow { height: 24px !important; }
+    .stock-hold-page .table td, .stock-hold-page .table th { vertical-align: middle !important; padding: 2px 4px !important; font-size: .78rem !important; }
+    .stock-hold-page .table .form-control { height: 24px !important; min-height: 24px !important; padding: 1px 4px !important; font-size: .75rem !important; }
+    .stock-hold-page .bottom-bar-btns { gap: .35rem !important; }
+    .stock-hold-page .bottom-bar-btns .btn { padding: .25rem .65rem !important; font-size: .78rem !important; }
+    .stock-hold-page .badge { font-size: 11px !important; padding: .2rem .55rem !important; }
+
     .form-locked { position: relative; opacity: 0.8; }
     .form-locked .card-body { pointer-events: none !important; }
-    .form-locked input, .form-locked .select2-container--default .select2-selection--single, .form-locked select, .form-locked textarea { 
-        background-color: #e9ecef !important; cursor: not-allowed !important; 
+    .form-locked input, .form-locked .select2-container--default .select2-selection--single, .form-locked select, .form-locked textarea {
+        background-color: #e9ecef !important; cursor: not-allowed !important;
     }
-    .form-locked .remove-row, .form-locked #addItemBtn, .form-locked #btr_search_btn { display: none !important; }
-    
+    .form-locked .remove-row, .form-locked .remove-receipt-row, .form-locked .remove-credit-row,
+    .form-locked #receipt_btr_search_btn, .form-locked #credit_btr_search_btn { display: none !important; }
+    .form-locked .receipt-save-btn, .form-locked .credit-save-btn { display: none !important; }
+    .form-locked .receipt-action-btn, .form-locked .credit-action-btn { pointer-events: auto !important; opacity: 1 !important; }
+
     .posted-watermark {
         position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-30deg);
         font-size: 100px; color: rgba(0, 128, 0, 0.1); font-weight: bold; pointer-events: none; z-index: 1000;
@@ -26,7 +44,7 @@
 
 <div class="main-content">
     <div class="main-content-inner">
-        <div class="container-fluid pt-2">
+        <div class="container-fluid stock-hold-page">
             
             {{-- TOP BAR --}}
 
@@ -197,30 +215,28 @@
                                     </table>
                                 </div>
                             </div>
-                            <div class="card-footer bg-white py-3">
-                                <div class="d-flex gap-2 justify-content-end">
-                                    <button type="button" id="receiptSaveDraftBtn" class="btn btn-sm btn-warning rounded-pill px-4 shadow-sm" style="{{ (isset($voucher) && $voucher->status == 'Posted') ? 'display:none;' : '' }}">
-                                        <i class="fa fa-floppy-o me-1"></i> Save Draft <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+S</kbd>
+                            <div class="card-footer bg-white">
+                                <div class="d-flex flex-wrap justify-content-center w-100 bottom-bar-btns">
+                                    <button type="button" id="receiptSaveDraftBtn" class="btn btn-primary px-3 fw-bold shadow-sm receipt-save-btn receipt-action-btn" {{ (isset($voucher) && $voucher->status == 'Posted') ? 'disabled' : '' }}>
+                                        <u>S</u>ave <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+S</kbd>
                                     </button>
-
-                                    <button type="button" id="receiptPreviewPrintBtn" class="btn btn-sm btn-outline-dark rounded-pill px-4" style="{{ isset($voucher) ? '' : 'display:none;' }}">
-                                        <i class="fa fa-print me-1"></i> Print Preview <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+P</kbd>
+                                    <button type="button" id="receiptEditBtn" class="btn btn-warning px-3 fw-bold text-dark shadow-sm receipt-action-btn" disabled>
+                                        <u>E</u>dit <kbd style="font-size:10px;opacity:.8;margin-left:4px;color:#fff;">Ctrl+E</kbd>
                                     </button>
-
-                                    <button type="button" id="receiptPostBtn" class="btn btn-sm btn-primary rounded-pill px-4 shadow-sm" style="{{ (isset($voucher) && $voucher->status == 'Posted') ? 'display:none;' : '' }}">
-                                        <i class="fa fa-send me-1"></i> Save & Post <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+&#8629;</kbd>
+                                    <button type="button" id="receiptPostBtn" class="btn btn-success px-3 fw-bold shadow-sm receipt-action-btn" {{ (isset($voucher) && $voucher->status == 'Posted') ? 'disabled' : '' }}>
+                                        <u>P</u>ost <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+&crarr;</kbd>
                                     </button>
-
-                                    <button type="button" id="receiptEditBtn" class="btn btn-sm btn-warning rounded-pill px-4 shadow-sm" style="{{ (isset($voucher) && $voucher->status == 'Posted') ? '' : 'display:none;' }}">
-                                        <i class="fa fa-pencil me-1"></i> Edit <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+E</kbd>
+                                    <button type="button" id="receiptDeleteBtn" class="btn btn-danger px-3 fw-bold shadow-sm receipt-action-btn" disabled title="Delete not available">
+                                        <u>D</u>elete <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+D</kbd>
                                     </button>
-
-                                    <a href="{{ route('claim-item-receipt.create') }}" id="receiptNewBtn" class="btn btn-sm btn-info rounded-pill px-4 shadow-sm text-white" style="{{ isset($voucher) ? '' : 'display:none;' }}">
-                                        <i class="fa fa-plus me-1"></i> New <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+M</kbd>
+                                    <a href="{{ isset($voucher) ? url('claim-item-receipt/print/'.$voucher->id) : 'javascript:void(0)' }}" id="receiptRealPrintBtn" target="_blank" class="btn btn-info px-3 fw-bold text-dark shadow-sm receipt-action-btn {{ !isset($voucher) ? 'pe-none opacity-50' : '' }}">
+                                        <u>P</u>rint <kbd style="font-size:10px;opacity:.8;margin-left:4px;color:#fff;">Ctrl+P</kbd>
                                     </a>
-
-                                    <a href="{{ route('claim-item-receipt.index') }}" id="receiptCancelBtn" class="btn btn-sm btn-danger rounded-pill px-4 shadow-sm text-white">
-                                        <i class="fa fa-times me-1"></i> Cancel <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Esc</kbd>
+                                    <a href="{{ route('claim-item-receipt.index') }}" id="receiptExitBtn" class="btn btn-secondary px-3 fw-bold shadow-sm text-white receipt-action-btn">
+                                        E<u>x</u>it <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Esc</kbd>
+                                    </a>
+                                    <a href="{{ route('claim-item-receipt.create') }}" id="receiptNewBtn" class="btn btn-dark px-3 fw-bold shadow-sm text-white receipt-action-btn">
+                                        <u>N</u>ew <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+M</kbd>
                                     </a>
                                 </div>
                             </div>
@@ -398,31 +414,29 @@
                             </div>
                         </div>
 
-                        <div class="card shadow-sm mt-3 border-0 bg-transparent">
-                            <div class="card-footer bg-white py-3 border rounded">
-                                <div class="d-flex gap-2 justify-content-end">
-                                    <button type="button" id="creditSaveDraftBtn" class="btn btn-sm btn-warning rounded-pill px-4 shadow-sm">
-                                        <i class="fa fa-floppy-o me-1"></i> Save Draft <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+S</kbd>
+                        <div class="card shadow-sm mt-2 border-0 bg-transparent">
+                            <div class="card-footer bg-white border rounded">
+                                <div class="d-flex flex-wrap justify-content-center w-100 bottom-bar-btns">
+                                    <button type="button" id="creditSaveDraftBtn" class="btn btn-primary px-3 fw-bold shadow-sm credit-save-btn credit-action-btn">
+                                        <u>S</u>ave <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+S</kbd>
                                     </button>
-
-                                    <button type="button" id="creditPreviewPrintBtn" class="btn btn-sm btn-outline-dark rounded-pill px-4" style="display:none;">
-                                        <i class="fa fa-print me-1"></i> Print Preview <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+P</kbd>
+                                    <button type="button" id="creditEditBtn" class="btn btn-warning px-3 fw-bold text-dark shadow-sm credit-action-btn" disabled>
+                                        <u>E</u>dit <kbd style="font-size:10px;opacity:.8;margin-left:4px;color:#fff;">Ctrl+E</kbd>
                                     </button>
-
-                                    <button type="button" id="creditPostBtn" class="btn btn-sm btn-primary rounded-pill px-4 shadow-sm">
-                                        <i class="fa fa-send me-1"></i> Save & Post <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+&#8629;</kbd>
+                                    <button type="button" id="creditPostBtn" class="btn btn-success px-3 fw-bold shadow-sm credit-action-btn">
+                                        <u>P</u>ost <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+&crarr;</kbd>
                                     </button>
-
-                                    <button type="button" id="creditEditBtn" class="btn btn-sm btn-warning rounded-pill px-4 shadow-sm" style="display:none;">
-                                        <i class="fa fa-pencil me-1"></i> Edit <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+E</kbd>
+                                    <button type="button" id="creditDeleteBtn" class="btn btn-danger px-3 fw-bold shadow-sm credit-action-btn" disabled title="Delete not available">
+                                        <u>D</u>elete <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+D</kbd>
                                     </button>
-
-                                    <a href="{{ route('claim-item-receipt.create') }}?tab=credit" id="creditNewBtn" class="btn btn-sm btn-info rounded-pill px-4 shadow-sm text-white" style="display:none;">
-                                        <i class="fa fa-plus me-1"></i> New <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+M</kbd>
+                                    <a href="javascript:void(0)" id="creditRealPrintBtn" class="btn btn-info px-3 fw-bold text-dark shadow-sm credit-action-btn">
+                                        <u>P</u>rint <kbd style="font-size:10px;opacity:.8;margin-left:4px;color:#fff;">Ctrl+P</kbd>
                                     </a>
-
-                                    <a href="{{ route('claim-credit-note.index') }}" id="creditCancelBtn" class="btn btn-sm btn-danger rounded-pill px-4 shadow-sm text-white">
-                                        <i class="fa fa-times me-1"></i> Cancel <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Esc</kbd>
+                                    <a href="{{ route('claim-credit-note.index') }}" id="creditExitBtn" class="btn btn-secondary px-3 fw-bold shadow-sm text-white credit-action-btn">
+                                        E<u>x</u>it <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Esc</kbd>
+                                    </a>
+                                    <a href="{{ route('claim-item-receipt.create') }}?tab=credit" id="creditNewBtn" class="btn btn-dark px-3 fw-bold shadow-sm text-white credit-action-btn">
+                                        <u>N</u>ew <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+M</kbd>
                                     </a>
                                 </div>
                             </div>
@@ -442,6 +456,14 @@ $(document).ready(function() {
     $('.select2').select2({ width: '100%' });
     var _savedReceiptId = "{{ $voucher->id ?? '' }}";
     var _savedCreditId = "";
+    var _receiptSaveInFlight = false;
+    var _receiptPostInFlight = false;
+    var _creditSaveInFlight = false;
+    var _creditPostInFlight = false;
+    var receiptSaveBtnHtml = '<u>S</u>ave <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+S</kbd>';
+    var receiptPostBtnHtml = '<u>P</u>ost <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+&crarr;</kbd>';
+    var creditSaveBtnHtml = '<u>S</u>ave <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+S</kbd>';
+    var creditPostBtnHtml = '<u>P</u>ost <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+&crarr;</kbd>';
 
     function showToast(msg, type = 'success') {
         var icon = type === 'success' ? 'fa-check-circle' : 'fa-times-circle';
@@ -508,48 +530,91 @@ $(document).ready(function() {
     updateReceiptTotal();
 
     function saveReceipt(act) {
+        if (_receiptSaveInFlight || _receiptPostInFlight) return;
         $('#receiptFormAction').val(act);
         if($('#receiptItemRows tr').length === 0) { showToast('Add items first', 'error'); return; }
         var $form = $('#receiptForm');
         if(!$form[0].checkValidity()) { $form[0].reportValidity(); return; }
         var btn = act === 'post' ? '#receiptPostBtn' : '#receiptSaveDraftBtn';
-        $(btn).prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i>');
+        if (act === 'post') _receiptPostInFlight = true; else _receiptSaveInFlight = true;
+        $(btn).prop('disabled', true).html('<i class="fa fa-spinner fa-spin me-1"></i>');
         $.ajax({
             url: $form.attr('action'), type: 'POST', data: $form.serialize(),
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
             success: function(res) {
                 if(res.success) {
                     _savedReceiptId = res.id;
                     $('[name="id"]', '#receiptForm').val(res.id);
-                    $('#receiptForm').addClass('form-locked');
-                    $('#receiptSaveDraftBtn').hide();
-                    $('#receiptPreviewPrintBtn, #receiptEditBtn, #receiptNewBtn').show();
+                    $('#receiptRealPrintBtn').attr('href', '/claim-item-receipt/print/' + res.id).removeClass('pe-none opacity-50');
                     $('#receiptIdBadge').text('ID: ' + res.id).show();
                     if(res.status === 'Posted') {
-                        $('#receiptPostBtn').hide();
                         $('#receiptStatusBadge').removeClass('bg-warning').addClass('bg-success text-white').html('<i class="fa fa-check"></i> Posted');
                         $('#receiptPostedWatermark').addClass('show');
+                        $('#receiptForm').addClass('form-locked');
+                        $('#receiptEditBtn, #receiptPostBtn, #receiptSaveDraftBtn').prop('disabled', true);
                         showToast('Receipt Posted Successfully!');
                     } else {
-                        $('#receiptPostBtn').show();
                         $('#receiptStatusBadge').removeClass('bg-warning').addClass('bg-info text-white').html('<i class="fa fa-pencil"></i> Draft');
-                        showToast('Receipt Draft Saved');
+                        $('#receiptForm').addClass('form-locked');
+                        $('#receiptEditBtn, #receiptPostBtn').prop('disabled', false);
+                        showToast('Draft Saved — Ctrl+E to edit');
                     }
                 } else { showToast(res.message, 'error'); }
             },
             error: () => showToast('Server Error', 'error'),
-            complete: () => $(btn).prop('disabled', false).html(act==='post'?'<i class="fa fa-send me-1"></i> Save & Post':'<i class="fa fa-floppy-o me-1"></i> Save Draft')
+            complete: function() {
+                if (act === 'post') _receiptPostInFlight = false; else _receiptSaveInFlight = false;
+                if (!$('#receiptForm').hasClass('form-locked') || act === 'post') {
+                    $(btn).prop('disabled', false).html(act === 'post' ? receiptPostBtnHtml : receiptSaveBtnHtml);
+                }
+            }
         });
     }
-    $('#receiptSaveDraftBtn').click(() => saveReceipt('save'));
-    $('#receiptPostBtn').click(() => saveReceipt('post'));
-    $('#receiptPreviewPrintBtn').click(() => {
-        if(!_savedReceiptId) return showToast('Save first', 'error');
-        window.open("/claim-item-receipt/print/" + _savedReceiptId, "_blank");
+
+    function doReceiptPost() {
+        if (_receiptPostInFlight || !_savedReceiptId) return;
+        _receiptPostInFlight = true;
+        $('#receiptPostBtn').prop('disabled', true).html('<i class="fa fa-spinner fa-spin me-1"></i>');
+        $.ajax({
+            url: "{{ url('claim-item-receipt/post') }}/" + _savedReceiptId,
+            type: 'POST',
+            data: { _token: $('input[name="_token"]', '#receiptForm').val() },
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+            success: function() {
+                $('#receiptStatusBadge').removeClass('bg-info').addClass('bg-success text-white').html('<i class="fa fa-check"></i> Posted');
+                $('#receiptPostedWatermark').addClass('show');
+                $('#receiptForm').addClass('form-locked');
+                $('#receiptEditBtn, #receiptPostBtn, #receiptSaveDraftBtn').prop('disabled', true);
+                showToast('Receipt Posted Successfully!');
+            },
+            error: function() {
+                showToast('Post failed', 'error');
+                _receiptPostInFlight = false;
+                $('#receiptPostBtn').prop('disabled', false).html(receiptPostBtnHtml);
+            }
+        });
+    }
+
+    $('#receiptSaveDraftBtn').on('click', function(e) { e.preventDefault(); if (!$(this).prop('disabled')) saveReceipt('save'); });
+    $('#receiptPostBtn').on('click', function(e) {
+        e.preventDefault();
+        if ($(this).prop('disabled')) return;
+        if ($('#receiptForm').hasClass('form-locked') && _savedReceiptId) doReceiptPost();
+        else saveReceipt('post');
     });
-    $('#receiptEditBtn').click(function() {
+    $('#receiptEditBtn').on('click', function() {
+        if ($(this).prop('disabled')) return;
         $('#receiptForm').removeClass('form-locked');
-        $('#receiptSaveDraftBtn, #receiptPostBtn').show();
-        $(this).hide();
+        $(this).prop('disabled', true);
+        $('#receiptPostBtn').prop('disabled', true);
+        $('#receiptSaveDraftBtn').prop('disabled', false).show().html(receiptSaveBtnHtml);
+    });
+    $('#receiptRealPrintBtn').on('click', function(e) {
+        var href = $(this).attr('href');
+        if (!href || href === 'javascript:void(0)') {
+            e.preventDefault();
+            showToast('Save first', 'error');
+        }
     });
 
     // --- CREDIT NOTE LOGIC ---
@@ -672,102 +737,106 @@ $(document).ready(function() {
     });
 
     function saveCredit(act) {
+        if (_creditSaveInFlight || _creditPostInFlight) return;
         $('#creditFormAction').val(act);
         if($('#creditItemRows tr').length === 0) { showToast('Add items first', 'error'); return; }
         var $form = $('#creditForm');
         if(!$form[0].checkValidity()) { $form[0].reportValidity(); return; }
         var btn = act === 'post' ? '#creditPostBtn' : '#creditSaveDraftBtn';
-        $(btn).prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i>');
+        if (act === 'post') _creditPostInFlight = true; else _creditSaveInFlight = true;
+        $(btn).prop('disabled', true).html('<i class="fa fa-spinner fa-spin me-1"></i>');
         $.ajax({
             url: $form.attr('action'), type: 'POST', data: $form.serialize(),
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
             success: function(res) {
                 if(res.success) {
                     _savedCreditId = res.id;
                     $('[name="id"]', '#creditForm').val(res.id);
-                    $('#creditForm').addClass('form-locked');
-                    $('#creditSaveDraftBtn').hide();
-                    $('#creditPreviewPrintBtn, #creditEditBtn, #creditNewBtn').show();
+                    $('#creditRealPrintBtn').attr('href', '/claim-credit-note/print/' + res.id);
                     $('#creditIdBadge').text('ID: ' + res.id).show();
                     if(res.status === 'Posted') {
-                        $('#creditPostBtn').hide();
                         $('#creditStatusBadge').removeClass('bg-warning').addClass('bg-success text-white').html('<i class="fa fa-check"></i> Posted');
                         $('#creditPostedWatermark').addClass('show');
+                        $('#creditForm').addClass('form-locked');
+                        $('#creditEditBtn, #creditPostBtn, #creditSaveDraftBtn').prop('disabled', true);
                         showToast('Credit Note Posted Successfully!');
                     } else {
-                        $('#creditPostBtn').show();
                         $('#creditStatusBadge').removeClass('bg-warning').addClass('bg-info text-white').html('<i class="fa fa-pencil"></i> Draft');
-                        showToast('Credit Note Draft Saved');
+                        $('#creditForm').addClass('form-locked');
+                        $('#creditEditBtn, #creditPostBtn').prop('disabled', false);
+                        showToast('Draft Saved — Ctrl+E to edit');
                     }
                 } else { showToast(res.message, 'error'); }
             },
             error: () => showToast('Server Error', 'error'),
-            complete: () => $(btn).prop('disabled', false).html(act==='post'?'<i class="fa fa-send me-1"></i> Save & Post':'<i class="fa fa-floppy-o me-1"></i> Save Draft')
+            complete: function() {
+                if (act === 'post') _creditPostInFlight = false; else _creditSaveInFlight = false;
+                if (!$('#creditForm').hasClass('form-locked') || act === 'post') {
+                    $(btn).prop('disabled', false).html(act === 'post' ? creditPostBtnHtml : creditSaveBtnHtml);
+                }
+            }
         });
     }
-    $('#creditSaveDraftBtn').click(() => saveCredit('save'));
-    $('#creditPostBtn').click(() => saveCredit('post'));
-    $('#creditPreviewPrintBtn').click(() => {
-        if(!_savedCreditId) return showToast('Save first', 'error');
-        window.open("/claim-credit-note/print/" + _savedCreditId, "_blank");
+    $('#creditSaveDraftBtn').on('click', function(e) { e.preventDefault(); if (!$(this).prop('disabled')) saveCredit('save'); });
+    $('#creditPostBtn').on('click', function(e) { e.preventDefault(); if (!$(this).prop('disabled')) saveCredit('post'); });
+    $('#creditRealPrintBtn').on('click', function(e) {
+        var href = $(this).attr('href');
+        if (!href || href === 'javascript:void(0)') {
+            e.preventDefault();
+            showToast('Save first', 'error');
+        }
     });
-    $('#creditEditBtn').click(function() {
+    $('#creditEditBtn').on('click', function() {
+        if ($(this).prop('disabled')) return;
         $('#creditForm').removeClass('form-locked');
-        $('#creditSaveDraftBtn, #creditPostBtn').show();
-        $(this).hide();
+        $(this).prop('disabled', true);
+        $('#creditPostBtn').prop('disabled', true);
+        $('#creditSaveDraftBtn').prop('disabled', false).show().html(creditSaveBtnHtml);
     });
+
+    @if(isset($voucher) && $voucher->status == 'Posted')
+    $('#receiptEditBtn, #receiptPostBtn, #receiptSaveDraftBtn').prop('disabled', true);
+    @endif
 
     // --- KEYBOARD SHORTCUTS ---
-    $(document).on('keydown', function(e) {
+    document.addEventListener('keydown', function(e) {
         var activeTab = $('.nav-link.active').attr('id');
-        
-        // Ctrl+S: Save Draft
-        if(e.ctrlKey && (e.key === 's' || e.key === 'S')) { 
-            e.preventDefault(); 
-            if(activeTab === 'receipt-tab') $('#receiptSaveDraftBtn:visible').click();
-            else $('#creditSaveDraftBtn:visible').click();
-        }
-        
-        // Ctrl+Enter: Post
-        if(e.ctrlKey && e.key === 'Enter') { 
-            e.preventDefault(); 
-            if(activeTab === 'receipt-tab') $('#receiptPostBtn:visible').click();
-            else $('#creditPostBtn:visible').click();
-        }
 
-        // Ctrl+P: Print
-        if(e.ctrlKey && (e.key === 'p' || e.key === 'P')) {
+        if (e.ctrlKey && (e.key === 's' || e.key === 'S')) {
+            e.preventDefault(); e.stopImmediatePropagation();
+            if(activeTab === 'receipt-tab' && !$('#receiptSaveDraftBtn').prop('disabled')) $('#receiptSaveDraftBtn').click();
+            else if(activeTab === 'credit-tab' && !$('#creditSaveDraftBtn').prop('disabled')) $('#creditSaveDraftBtn').click();
+        }
+        if (e.ctrlKey && e.key === 'Enter') {
+            e.preventDefault(); e.stopImmediatePropagation();
+            if(activeTab === 'receipt-tab' && !$('#receiptPostBtn').prop('disabled')) $('#receiptPostBtn').click();
+            else if(activeTab === 'credit-tab' && !$('#creditPostBtn').prop('disabled')) $('#creditPostBtn').click();
+        }
+        if (e.ctrlKey && (e.key === 'p' || e.key === 'P')) {
             e.preventDefault();
-            if(activeTab === 'receipt-tab') $('#receiptPreviewPrintBtn:visible').click();
-            else $('#creditPreviewPrintBtn:visible').click();
+            if(activeTab === 'receipt-tab') $('#receiptRealPrintBtn').click();
+            else $('#creditRealPrintBtn').click();
         }
-
-        // Ctrl+E: Edit
-        if(e.ctrlKey && (e.key === 'e' || e.key === 'E')) {
+        if (e.ctrlKey && (e.key === 'e' || e.key === 'E')) {
             e.preventDefault();
-            if(activeTab === 'receipt-tab') $('#receiptEditBtn:visible').click();
-            else $('#creditEditBtn:visible').click();
+            if(activeTab === 'receipt-tab' && !$('#receiptEditBtn').prop('disabled')) $('#receiptEditBtn').click();
+            else if(activeTab === 'credit-tab' && !$('#creditEditBtn').prop('disabled')) $('#creditEditBtn').click();
         }
-
-        // Ctrl+M: New
-        if(e.ctrlKey && (e.key === 'm' || e.key === 'M')) {
+        if (e.ctrlKey && (e.key === 'm' || e.key === 'M')) {
             e.preventDefault();
-            if(activeTab === 'receipt-tab') window.location.href = "{{ route('claim-item-receipt.create') }}";
-            else window.location.href = "{{ route('claim-item-receipt.create') }}?tab=credit";
+            if(activeTab === 'receipt-tab') window.location.href = $('#receiptNewBtn').attr('href');
+            else window.location.href = $('#creditNewBtn').attr('href');
         }
-
-        // Ctrl+L: List
-        if(e.ctrlKey && (e.key === 'l' || e.key === 'L')) {
+        if (e.ctrlKey && (e.key === 'l' || e.key === 'L')) {
             e.preventDefault();
-            if(activeTab === 'receipt-tab') window.location.href = "{{ route('claim-item-receipt.index') }}";
-            else window.location.href = "{{ route('claim-credit-note.index') }}";
+            window.location.href = $('#listBtn').attr('href');
         }
-
-        // Esc: Cancel
-        if(e.key === 'Escape') {
-            if(activeTab === 'receipt-tab') window.location.href = "{{ route('claim-item-receipt.index') }}";
-            else window.location.href = "{{ route('claim-credit-note.index') }}";
+        if (e.key === 'Escape') {
+            e.preventDefault();
+            if(activeTab === 'receipt-tab') window.location.href = $('#receiptExitBtn').attr('href');
+            else window.location.href = $('#creditExitBtn').attr('href');
         }
-    });
+    }, true);
 
     // Top List Button Behavior
     $('#listBtn').on('click', function(e) {

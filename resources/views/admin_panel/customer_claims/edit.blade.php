@@ -3,20 +3,37 @@
 @section('content')
 <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 <style>
-    .select2-container .select2-selection--single { height: 31px !important; border: 1px solid #ced4da; }
-    .select2-container .select2-selection--single .select2-selection__rendered { line-height: 31px !important; padding-left: 8px; font-size: 13px; }
-    .select2-container .select2-selection--single .select2-selection__arrow { height: 31px !important; }
-    .input-sm { height: 31px; padding: 2px 8px; font-size: 13px; }
-    .table td, .table th { vertical-align: middle !important; padding: 4px !important; font-size: 13px; }
-    
-    .form-label { font-size: 12px; font-weight: 700; margin-bottom: 2px; }
+    .stock-hold-page.container-fluid { padding: .25rem .4rem !important; }
+    .stock-hold-page .main-content-inner { padding: 0 !important; }
+    .stock-hold-page .page-top-bar { margin-bottom: .35rem !important; padding: .35rem .5rem !important; }
+    .stock-hold-page .page-top-bar .page-title { font-size: .9rem !important; }
+    .stock-hold-page .page-top-bar .badge { font-size: 11px !important; padding: .2rem .55rem !important; }
+    .stock-hold-page .card { margin-bottom: .35rem !important; }
+    .stock-hold-page .card-body { padding: .45rem .55rem !important; }
+    .stock-hold-page .card-footer { padding: .45rem .55rem !important; }
+    .stock-hold-page .row.g-2 { --bs-gutter-x: .4rem; --bs-gutter-y: .25rem; }
+    .stock-hold-page .form-label { margin-bottom: .1rem !important; font-size: .72rem !important; line-height: 1.1; font-weight: 700; }
+    .stock-hold-page .input-sm,
+    .stock-hold-page .form-control,
+    .stock-hold-page .form-select { height: 26px !important; min-height: 26px !important; padding: .1rem .4rem !important; font-size: .78rem !important; }
+    .stock-hold-page .select2-container .select2-selection--single { height: 26px !important; border: 1px solid #ced4da; }
+    .stock-hold-page .select2-container .select2-selection--single .select2-selection__rendered { line-height: 24px !important; padding-left: 6px !important; font-size: .78rem !important; }
+    .stock-hold-page .select2-container .select2-selection--single .select2-selection__arrow { height: 24px !important; }
+    .stock-hold-page .table td, .stock-hold-page .table th { vertical-align: middle !important; padding: 2px 4px !important; font-size: .78rem !important; }
+    .stock-hold-page .bottom-bar-btns { gap: .35rem !important; }
+    .stock-hold-page .bottom-bar-btns .btn { padding: .25rem .65rem !important; font-size: .78rem !important; }
 
     .form-locked { position: relative; opacity: 0.8; }
     .form-locked .card-body { pointer-events: none !important; }
-    .form-locked input, .form-locked .select2-container--default .select2-selection--single, .form-locked select, .form-locked textarea { 
-        background-color: #e9ecef !important; cursor: not-allowed !important; 
+    .form-locked input, .form-locked .select2-container--default .select2-selection--single, .form-locked select, .form-locked textarea {
+        background-color: #e9ecef !important; cursor: not-allowed !important;
     }
-    
+    .form-locked #saveDraftBtn { display: none !important; }
+    .form-locked #editInvoiceBtn, .form-locked #newInvoiceBtn, .form-locked #realPrintBtn,
+    .form-locked #postBtn, .form-locked #exitBtn, .form-locked #deleteBtn {
+        pointer-events: auto !important; opacity: 1 !important;
+    }
+
     .posted-watermark {
         position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-30deg);
         font-size: 100px; color: rgba(255, 0, 0, 0.1); font-weight: bold; pointer-events: none; z-index: 1000;
@@ -27,10 +44,10 @@
 
 <div class="main-content">
     <div class="main-content-inner">
-        <div class="container-fluid pt-3">
+        <div class="container-fluid stock-hold-page">
             
             {{-- TOP BAR --}}
-            <div class="d-flex justify-content-between align-items-center mb-3 bg-light p-2 rounded shadow-sm">
+            <div class="d-flex justify-content-between align-items-center page-top-bar bg-light rounded shadow-sm">
                 <div style="min-width:80px;"></div>
                 <div class="d-flex align-items-center gap-2 justify-content-center flex-grow-1">
                     <h6 class="page-title mb-0 fw-bold">Edit Customer Claim</h6>
@@ -54,7 +71,7 @@
                 <input type="hidden" name="action" id="formAction" value="save">
                 <div class="posted-watermark {{ $claim->status == 'Posted' ? 'show' : '' }}" id="postedWatermark">Posted</div>
 
-                <div class="card shadow-sm mb-3">
+                <div class="card shadow-sm">
                     <div class="card-body">
                         <div class="row g-2">
                             <!-- Main Row -->
@@ -222,25 +239,28 @@
 
                 <!-- Action Bar -->
                 <div class="card shadow-sm">
-                    <div class="card-footer bg-white py-3">
-                        <div class="d-flex justify-content-end gap-2">
-                            <button type="button" id="saveDraftBtn" class="btn btn-sm btn-warning rounded-pill px-4 shadow-sm" {!! $claim->status == 'Posted' ? 'style="display:none;"' : '' !!}>
-                                <i class="fa fa-floppy-o me-1"></i> Update Draft <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+S</kbd>
+                    <div class="card-footer bg-white">
+                        <div class="d-flex flex-wrap justify-content-center w-100 bottom-bar-btns">
+                            <button type="button" id="saveDraftBtn" class="btn btn-primary px-3 fw-bold shadow-sm" {{ $claim->status == 'Posted' ? 'disabled' : '' }}>
+                                <u>S</u>ave <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+S</kbd>
                             </button>
-                            <button type="button" id="previewPrintBtn" class="btn btn-sm btn-outline-dark rounded-pill px-4">
-                                <i class="fa fa-print me-1"></i> Print Preview <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+P</kbd>
+                            <button type="button" id="editInvoiceBtn" class="btn btn-warning px-3 fw-bold text-dark shadow-sm" disabled>
+                                <u>E</u>dit <kbd style="font-size:10px;opacity:.8;margin-left:4px;color:#fff;">Ctrl+E</kbd>
                             </button>
-                            <button type="button" id="postBtn" class="btn btn-sm btn-primary rounded-pill px-4 shadow-sm" {!! $claim->status == 'Posted' ? 'style="display:none;"' : '' !!}>
-                                <i class="fa fa-send me-1"></i> Save & Post <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+&#8629;</kbd>
+                            <button type="button" id="postBtn" class="btn btn-success px-3 fw-bold shadow-sm" {{ $claim->status == 'Posted' ? 'disabled' : '' }}>
+                                <u>P</u>ost <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+&crarr;</kbd>
                             </button>
-                            <button type="button" id="editBtn" class="btn btn-sm btn-warning rounded-pill px-4 shadow-sm" style="display:none;">
-                                <i class="fa fa-pencil me-1"></i> Edit <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+E</kbd>
+                            <button type="button" id="deleteBtn" class="btn btn-danger px-3 fw-bold shadow-sm" disabled title="Delete not available">
+                                <u>D</u>elete <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+D</kbd>
                             </button>
-                            <a href="{{ route('customer-claims.create') }}" id="newBtn" class="btn btn-sm btn-info rounded-pill px-4 shadow-sm text-white" {!! $claim->status != 'Posted' ? 'style="display:none;"' : '' !!}>
-                                <i class="fa fa-plus me-1"></i> New <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+M</kbd>
+                            <a href="javascript:void(0)" id="realPrintBtn" class="btn btn-info px-3 fw-bold text-dark shadow-sm">
+                                <u>P</u>rint <kbd style="font-size:10px;opacity:.8;margin-left:4px;color:#fff;">Ctrl+P</kbd>
                             </a>
-                            <a href="{{ route('customer-claims.index') }}" id="cancelBtn" class="btn btn-sm btn-danger rounded-pill px-4 shadow-sm text-white">
-                                <i class="fa fa-times me-1"></i> Cancel <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Esc</kbd>
+                            <a href="{{ route('customer-claims.index') }}" id="exitBtn" class="btn btn-secondary px-3 fw-bold shadow-sm text-white">
+                                E<u>x</u>it <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Esc</kbd>
+                            </a>
+                            <a href="{{ route('customer-claims.create') }}" id="newInvoiceBtn" class="btn btn-dark px-3 fw-bold shadow-sm text-white">
+                                <u>N</u>ew <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+M</kbd>
                             </a>
                         </div>
                     </div>
@@ -259,6 +279,10 @@ $(document).ready(function() {
     $('.select2').select2({ width: '100%' });
     var _savedId = "{{ $claim->id }}";
     var _isPosted = "{{ $claim->status == 'Posted' ? 'true' : 'false' }}" === 'true';
+    var _saveInFlight = false;
+    var _postInFlight = false;
+    var saveBtnHtml = '<u>S</u>ave <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+S</kbd>';
+    var postBtnHtml = '<u>P</u>ost <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+&crarr;</kbd>';
 
     function showToast(msg, type = 'success') {
         var icon = type === 'success' ? 'fa-check-circle' : 'fa-times-circle';
@@ -368,71 +392,127 @@ $(document).ready(function() {
     $('#party_type').trigger('change');
 
     function save(act) {
+        if (_saveInFlight || _postInFlight) return;
         $('#formAction').val(act);
         var $form = $('#claimForm');
         if(!$form[0].checkValidity()) { $form[0].reportValidity(); return; }
 
         var btn = act === 'post' ? '#postBtn' : '#saveDraftBtn';
-        var originalBtnHtml = $(btn).html();
-        $(btn).prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i>');
+        if (act === 'post') _postInFlight = true; else _saveInFlight = true;
+        $(btn).prop('disabled', true).html('<i class="fa fa-spinner fa-spin me-1"></i>');
 
         $.ajax({
             url: "{{ route('customer-claims.ajax-save') }}",
             type: "POST",
             data: $form.serialize(),
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
             success: function(res) {
-                $(btn).prop('disabled', false).html(originalBtnHtml);
                 if(res.ok) {
-                    showToast(res.msg, 'success');
+                    _savedId = res.id;
                     if(res.status === 'Posted') {
                         $('#statusBadge').removeClass('bg-warning bg-info').addClass('bg-success text-white').html('<i class="fa fa-check"></i> Posted');
                         $('#postedWatermark').addClass('show');
                         $('#claimForm').addClass('form-locked');
-                        $('#saveDraftBtn, #postBtn, #editBtn').hide();
-                        $('#newBtn').show();
-                        setTimeout(() => window.location.href = "{{ route('customer-claims.index') }}", 1500);
+                        $('#editInvoiceBtn, #postBtn, #saveDraftBtn').prop('disabled', true);
+                        showToast('Claim Posted! Redirecting...', 'success');
+                        setTimeout(function() { window.location.href = "{{ route('customer-claims.index') }}"; }, 1500);
                     } else {
+                        $('#statusBadge').removeClass('bg-warning bg-success').addClass('bg-info text-white').html('<i class="fa fa-pencil"></i> Unposted');
                         $('#claimForm').addClass('form-locked');
-                        $('#saveDraftBtn, #postBtn').hide();
-                        $('#editBtn').show();
-                        showToast('🔒 Form Locked — Ctrl+E to Edit', 'success');
+                        $('#editInvoiceBtn, #postBtn').prop('disabled', false);
+                        showToast('Draft Saved — Ctrl+E to edit');
                     }
                 } else {
                     showToast(res.msg, 'error');
                 }
             },
-            error: function() {
-                $(btn).prop('disabled', false).html(originalBtnHtml);
-                showToast('Save error occurred', 'error');
+            error: function() { showToast('Save error occurred', 'error'); },
+            complete: function() {
+                if (act === 'post') _postInFlight = false; else _saveInFlight = false;
+                if (!$('#claimForm').hasClass('form-locked') || act === 'post') {
+                    $(btn).prop('disabled', false).html(act === 'post' ? postBtnHtml : saveBtnHtml);
+                }
             }
         });
     }
 
-    $('#saveDraftBtn').on('click', () => save('save'));
-    $('#postBtn').on('click', () => save('post'));
-    $('#editBtn').on('click', function() { 
-        $('#claimForm').removeClass('form-locked'); 
-        $('#saveDraftBtn, #postBtn').show(); 
-        $(this).hide(); 
+    function doPost() {
+        if (_postInFlight || !_savedId) return;
+        _postInFlight = true;
+        $('#postBtn').prop('disabled', true).html('<i class="fa fa-spinner fa-spin me-1"></i>');
+        $.ajax({
+            url: "{{ url('customer-claims/post') }}/" + _savedId,
+            type: 'POST',
+            data: { _token: $('input[name="_token"]').val() },
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
+            success: function() {
+                $('#statusBadge').removeClass('bg-info').addClass('bg-success text-white').html('<i class="fa fa-check"></i> Posted');
+                $('#postedWatermark').addClass('show');
+                $('#claimForm').addClass('form-locked');
+                $('#editInvoiceBtn, #postBtn, #saveDraftBtn').prop('disabled', true);
+                showToast('Claim Posted! Redirecting...', 'success');
+                setTimeout(function() { window.location.href = "{{ route('customer-claims.index') }}"; }, 1500);
+            },
+            error: function() {
+                showToast('Post failed', 'error');
+                _postInFlight = false;
+                $('#postBtn').prop('disabled', false).html(postBtnHtml);
+            }
+        });
+    }
+
+    $('#saveDraftBtn').on('click', function(e) { e.preventDefault(); if (!$(this).prop('disabled')) save('save'); });
+    $('#postBtn').on('click', function(e) {
+        e.preventDefault();
+        if ($(this).prop('disabled')) return;
+        if ($('#claimForm').hasClass('form-locked') && _savedId) doPost();
+        else save('post');
+    });
+    $('#editInvoiceBtn').on('click', function() {
+        if ($(this).prop('disabled') || _isPosted) return;
+        $('#claimForm').removeClass('form-locked');
+        $(this).prop('disabled', true);
+        $('#postBtn').prop('disabled', true);
+        $('#saveDraftBtn').prop('disabled', false).show().html(saveBtnHtml);
+    });
+    $('#realPrintBtn').on('click', function(e) {
+        e.preventDefault();
+        showToast('Print not available', 'error');
     });
 
-    $(document).on('keydown', function(e) {
-        if(e.ctrlKey) {
-            var key = e.key.toLowerCase();
-            if(key === 's') { e.preventDefault(); $('#saveDraftBtn:visible').click(); }
-            if(key === 'enter') { e.preventDefault(); $('#postBtn:visible').click(); }
-            if(key === 'p') { e.preventDefault(); $('#previewPrintBtn:visible').click(); }
-            if(key === 'e') { e.preventDefault(); $('#editBtn:visible').click(); }
-            if(key === 'm') { e.preventDefault(); window.location.href = "{{ route('customer-claims.create') }}"; }
-            if(key === 'l') { e.preventDefault(); window.location.href = "{{ route('customer-claims.index') }}"; }
+    document.addEventListener('keydown', function(e) {
+        if (e.ctrlKey && (e.key === 's' || e.key === 'S')) {
+            e.preventDefault(); e.stopImmediatePropagation();
+            if (!_saveInFlight && !$('#saveDraftBtn').prop('disabled')) $('#saveDraftBtn').click();
         }
-        if(e.key === 'Escape') { window.location.href = "{{ route('customer-claims.index') }}"; }
-    });
+        if (e.ctrlKey && e.key === 'Enter') {
+            e.preventDefault(); e.stopImmediatePropagation();
+            if (!_postInFlight && !$('#postBtn').prop('disabled')) $('#postBtn').click();
+        }
+        if (e.ctrlKey && (e.key === 'p' || e.key === 'P')) {
+            e.preventDefault();
+            $('#realPrintBtn').click();
+        }
+        if (e.ctrlKey && (e.key === 'e' || e.key === 'E')) {
+            e.preventDefault();
+            if (!$('#editInvoiceBtn').prop('disabled')) $('#editInvoiceBtn').click();
+        }
+        if (e.ctrlKey && (e.key === 'm' || e.key === 'M')) {
+            e.preventDefault();
+            window.location.href = $('#newInvoiceBtn').attr('href');
+        }
+        if (e.ctrlKey && (e.key === 'l' || e.key === 'L')) {
+            e.preventDefault();
+            window.location.href = $('#listBtn').attr('href');
+        }
+        if (e.key === 'Escape') {
+            e.preventDefault();
+            window.location.href = $('#exitBtn').attr('href');
+        }
+    }, true);
 
     if(_isPosted) {
-        $('#claimForm').addClass('form-locked');
-        $('#saveDraftBtn, #postBtn, #editBtn').hide();
-        $('#newBtn').show();
+        $('#editInvoiceBtn, #postBtn, #saveDraftBtn').prop('disabled', true);
     }
 });
 </script>

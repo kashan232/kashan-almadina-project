@@ -3,39 +3,74 @@
 @section('content')
 <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 <style>
-    .select2-container--default .select2-selection--single {
-        height: 31px !important; padding: 2px 5px !important; font-size: 0.85rem !important; border: 1px solid #dee2e6 !important;
-    }
-    .select2-container--default .select2-selection--single .select2-selection__rendered { line-height: 25px !important; }
-    .select2-container--default .select2-selection--single .select2-selection__arrow { height: 30px !important; }
-
-    .main-container { font-size: .85rem; max-width: 1400px; }
-    .form-control, .form-select, .btn { font-size: .85rem; padding: .4rem .6rem; }
-    .table thead th { background: #f8f9fa !important; text-align: center; font-size: 0.75rem; padding: 8px !important; white-space: nowrap; }
-    .table td { vertical-align: middle; padding: 4px !important; }
+    .stock-hold-page.container-fluid { padding: .15rem .3rem !important; }
+    .stock-hold-page .main-content-inner { padding: 0 !important; }
+    .stock-hold-page .main-container { padding: .3rem .4rem !important; font-size: .82rem; max-width: 98%; }
+    .stock-hold-page .page-top-bar { margin-bottom: .2rem !important; padding: .25rem .4rem !important; }
+    .stock-hold-page .page-top-bar .page-title { font-size: .85rem !important; }
+    .stock-hold-page .page-top-bar .badge { font-size: 10px !important; padding: .15rem .45rem !important; }
+    .stock-hold-page .page-top-bar .gap-3 { gap: .3rem !important; }
+    .stock-hold-page .mb-4, .stock-hold-page .mb-3 { margin-bottom: .25rem !important; }
+    .stock-hold-page .mb-2 { margin-bottom: .15rem !important; }
+    .stock-hold-page .mt-2, .stock-hold-page .mt-3 { margin-top: .15rem !important; }
+    .stock-hold-page .row.g-3, .stock-hold-page .row.g-2 { --bs-gutter-x: .3rem; --bs-gutter-y: .12rem; }
+    .stock-hold-page .card { margin-bottom: .2rem !important; }
+    .stock-hold-page .card-body { padding: .35rem .45rem !important; }
+    .stock-hold-page .card-body.p-0 { padding: 0 !important; }
+    .stock-hold-page .card-header { padding: .2rem .45rem !important; }
+    .stock-hold-page .card-header.py-3 { padding-top: .2rem !important; padding-bottom: .2rem !important; }
+    .stock-hold-page .card-header h6 { font-size: .78rem !important; margin: 0 !important; }
+    .stock-hold-page .card.border-0.bg-light { padding: .25rem .35rem !important; margin-bottom: .12rem !important; }
+    .stock-hold-page .card-footer { padding: .35rem .45rem !important; }
+    .stock-hold-page .form-label { margin-bottom: 0 !important; font-size: .7rem !important; line-height: 1.1; }
+    .stock-hold-page .form-label.mb-1 { margin-bottom: 0 !important; }
+    .stock-hold-page .form-control, .stock-hold-page .form-select { height: 24px !important; min-height: 24px !important; padding: .05rem .35rem !important; font-size: .76rem !important; }
+    .stock-hold-page .select2-container--default .select2-selection--single { height: 24px !important; padding: 0 4px !important; font-size: .76rem !important; border: 1px solid #dee2e6 !important; }
+    .stock-hold-page .select2-container--default .select2-selection--single .select2-selection__rendered { line-height: 22px !important; }
+    .stock-hold-page .select2-container--default .select2-selection--single .select2-selection__arrow { height: 22px !important; }
+    .stock-hold-page .table thead th { background: #f8f9fa !important; text-align: center; font-size: .7rem; padding: 1px 3px !important; white-space: nowrap; }
+    .stock-hold-page .table td { vertical-align: middle; padding: 1px 3px !important; font-size: .76rem; }
+    .stock-hold-page .table .form-control { height: 22px !important; min-height: 22px !important; padding: 0 3px !important; font-size: .72rem !important; }
+    .stock-hold-page .table tfoot td.py-3 { padding: .15rem .3rem !important; }
+    .stock-hold-page #addItemBtn { height: 22px; padding: 0 .45rem; font-size: .72rem; line-height: 1.1; }
+    .stock-hold-page .bottom-bar-btns { gap: .3rem !important; }
+    .stock-hold-page .bottom-bar-btns .btn { padding: .2rem .55rem !important; font-size: .76rem !important; }
+    .stock-hold-page .alert.mb-2 { margin-bottom: .12rem !important; padding: .3rem .45rem; font-size: .78rem; }
+    .stock-hold-page .btr-search-card { padding: .2rem .35rem !important; }
+    .stock-hold-page .btr-search-card .fa-barcode { font-size: 1rem !important; }
+    .stock-hold-page .summary-card .card-body { padding: .35rem .45rem !important; }
+    .stock-hold-page .summary-card hr { margin: .25rem 0 !important; }
+    .stock-hold-page .total-highlight { font-size: .95rem !important; }
+    .stock-hold-page .summary-card .fs-5 { font-size: .85rem !important; }
 
     .posted-watermark {
         position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-30deg);
         font-size: 8rem; color: rgba(220, 53, 69, 0.1); font-weight: 900; text-transform: uppercase;
         pointer-events: none; z-index: 1000; display: none; border: 10px solid rgba(220, 53, 69, 0.1); padding: 20px 50px; border-radius: 20px;
     }
+    .posted-watermark.show { display: block; }
 
-    .form-locked input, .form-locked select, .form-locked textarea, .form-locked #addItemBtn, .form-locked .remove-row, .form-locked .select2-container,
-    .form-locked .btn:not(#editBtn):not(#previewPrintBtn):not(#newBtn):not(#listBtn) {
-        pointer-events: none !important; opacity: 0.8 !important; background-color: #f8f9fa !important;
+    .form-locked { position: relative; opacity: 0.8; }
+    .form-locked input, .form-locked select, .form-locked textarea, .form-locked #addItemBtn, .form-locked .remove-row, .form-locked .select2-container {
+        pointer-events: none !important; background-color: #e9ecef !important; cursor: not-allowed !important;
+    }
+    .form-locked #saveDraftBtn { display: none !important; }
+    .form-locked #editInvoiceBtn, .form-locked #newInvoiceBtn, .form-locked #realPrintBtn,
+    .form-locked #postBtn, .form-locked #exitBtn, .form-locked #deleteBtn {
+        pointer-events: auto !important; opacity: 1 !important;
     }
 
     .ajax-valid-error { color: #dc3545; font-size: 0.75rem; font-weight: 700; margin-bottom: 2px; display: block; }
 </style>
 
-<div class="container-fluid py-4">
-    <div class="main-container bg-white border shadow-sm mx-auto p-4 rounded-3 position-relative" style="max-width: 98%;">
+<div class="container-fluid stock-hold-page">
+    <div class="main-container bg-white border shadow-sm mx-auto rounded-3 position-relative">
         
-        <div id="alertBox" class="alert d-none mb-3" role="alert"></div>
+        <div id="alertBox" class="alert d-none mb-2" role="alert"></div>
 
-        <div class="d-flex justify-content-between align-items-center mb-4 bg-light p-3 rounded shadow-sm border">
+        <div class="d-flex justify-content-between align-items-center page-top-bar bg-light rounded shadow-sm border">
             <div class="d-flex align-items-center gap-3">
-                <h5 class="page-title mb-0 fw-bold text-primary"><i class="fa fa-check-square-o me-2"></i>Claim Acceptance</h5>
+                <h6 class="page-title mb-0 fw-bold text-primary"><i class="fa fa-check-square-o me-2"></i>Claim Acceptance</h6>
                 <span id="statusBadge" class="badge {{ isset($voucher) && $voucher->status == 'Posted' ? 'bg-success' : 'bg-warning text-dark' }} px-3 py-2 rounded-pill shadow-sm">
                     <i class="fa {{ isset($voucher) && $voucher->status == 'Posted' ? 'fa-check-circle' : 'fa-pencil' }} me-1"></i> 
                     {{ strtoupper(isset($voucher) ? $voucher->status : 'DRAFT') }}
@@ -195,40 +230,40 @@
                 </div>
             </div>
 
-            <div class="d-flex gap-2 justify-content-end mt-4 pt-4 border-top">
-                @if(!isset($voucher) || $voucher->status != 'Posted')
-                    <button type="button" id="saveDraftBtn" class="btn btn-sm btn-warning text-dark fw-bold rounded-pill px-4 shadow-sm btn-action">
-                        <i class="fa fa-save me-1"></i> Save Draft <kbd class="ms-1 small opacity-75">Ctrl+S</kbd>
+            <div class="card-footer bg-white border-top mt-2">
+                <div class="d-flex flex-wrap justify-content-center w-100 bottom-bar-btns">
+                    <button type="button" id="saveDraftBtn" class="btn btn-primary px-3 fw-bold shadow-sm" {{ (isset($voucher) && $voucher->status == 'Posted') ? 'disabled' : '' }}>
+                        <u>S</u>ave <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+S</kbd>
                     </button>
-                    <button type="button" id="postBtn" class="btn btn-sm btn-primary text-dark fw-bold rounded-pill px-4 shadow-sm btn-action">
-                        <i class="fa fa-send me-1"></i> Save Post <kbd class="ms-1 small opacity-75">Ctrl+&#8629;</kbd>
+                    <button type="button" id="editInvoiceBtn" class="btn btn-warning px-3 fw-bold text-dark shadow-sm" {{ (isset($voucher) && $voucher->status != 'Posted') ? '' : 'disabled' }}>
+                        <u>E</u>dit <kbd style="font-size:10px;opacity:.8;margin-left:4px;color:#fff;">Ctrl+E</kbd>
                     </button>
-                @endif
-
-                <button type="button" id="editBtn" class="btn btn-sm btn-warning text-dark fw-bold rounded-pill px-4 shadow-sm" style="{{ (isset($voucher) && $voucher->status != 'Posted') ? 'display:block' : 'display:none' }}">
-                    <i class="fa fa-pencil me-1"></i> Edit <kbd class="ms-1 small opacity-75">Ctrl+E</kbd>
-                </button>
-
-                <a href="{{ isset($voucher) ? route('claim-acceptance.print', $voucher->id) : 'javascript:void(0)' }}" id="previewPrintBtn" target="_blank" class="btn btn-sm btn-outline-dark rounded-pill px-4 shadow-sm {{ !isset($voucher) ? 'disabled' : '' }}">
-                    <i class="fa fa-print me-1"></i> Print Preview <kbd class="ms-1 small opacity-75">Ctrl+P</kbd>
-                </a>
-                <a href="{{ route('claim-acceptance.create') }}" id="newBtn" class="btn btn-sm btn-info text-dark fw-bold rounded-pill px-4 shadow-sm">
-                    <i class="fa fa-plus me-1"></i> New <kbd class="ms-1 small opacity-75">Ctrl+M</kbd>
-                </a>
-
-                @if(isset($voucher) && $voucher->status != 'Posted')
-                    <button type="button" id="deleteBtn" class="btn btn-sm btn-danger text-dark fw-bold rounded-pill px-4 shadow-sm">
-                        <i class="fa fa-trash me-1"></i> Delete
+                    <button type="button" id="postBtn" class="btn btn-success px-3 fw-bold shadow-sm" {{ (isset($voucher) && $voucher->status == 'Posted') ? 'disabled' : '' }}>
+                        <u>P</u>ost <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+&crarr;</kbd>
                     </button>
-                @endif
-                
-                <a href="{{ route('claim-acceptance.index') }}" id="cancelBtn" class="btn btn-sm btn-outline-secondary rounded-pill px-4 shadow-sm">
-                    <i class="fa fa-times me-1"></i> Cancel <kbd class="ms-1 small opacity-75">Esc</kbd>
-                </a>
+                    <button type="button" id="deleteBtn" class="btn btn-danger px-3 fw-bold shadow-sm" {{ (!isset($voucher) || $voucher->status == 'Posted') ? 'disabled' : '' }}>
+                        <u>D</u>elete <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+D</kbd>
+                    </button>
+                    <a href="{{ isset($voucher) ? route('claim-acceptance.print', $voucher->id) : 'javascript:void(0)' }}" id="realPrintBtn" target="_blank" class="btn btn-info px-3 fw-bold text-dark shadow-sm {{ !isset($voucher) ? 'pe-none opacity-50' : '' }}">
+                        <u>P</u>rint <kbd style="font-size:10px;opacity:.8;margin-left:4px;color:#fff;">Ctrl+P</kbd>
+                    </a>
+                    <a href="{{ route('claim-acceptance.index') }}" id="exitBtn" class="btn btn-secondary px-3 fw-bold shadow-sm text-white">
+                        E<u>x</u>it <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Esc</kbd>
+                    </a>
+                    <a href="{{ route('claim-acceptance.create') }}" id="newInvoiceBtn" class="btn btn-dark px-3 fw-bold shadow-sm text-white">
+                        <u>N</u>ew <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+M</kbd>
+                    </a>
+                </div>
             </div>
         </form>
 
-        <div class="posted-watermark" id="postedWatermark" style="{{ (isset($voucher) && $voucher->status == 'Posted') ? 'display: block;' : '' }}">Posted</div>
+        @if(isset($voucher))
+        <form id="deleteForm" action="{{ route('claim-acceptance.destroy', $voucher->id) }}" method="POST" class="d-none">
+            @csrf @method('DELETE')
+        </form>
+        @endif
+
+        <div class="posted-watermark {{ (isset($voucher) && $voucher->status == 'Posted') ? 'show' : '' }}" id="postedWatermark">Posted</div>
     </div>
 </div>
 
@@ -238,6 +273,11 @@
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script>
 $(document).ready(function() {
+    var _saveInFlight = false;
+    var _postInFlight = false;
+    var saveBtnHtml = '<u>S</u>ave <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+S</kbd>';
+    var postBtnHtml = '<u>P</u>ost <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+&crarr;</kbd>';
+
     // Initialization functions
     function initProductSelect($row) {
         $row.find('.product-select').select2({
@@ -355,23 +395,23 @@ $(document).ready(function() {
 
     function lockForm() {
         $('#acceptanceForm').addClass('form-locked');
-        $('.btn-action').hide();
-        $('#editBtn').show();
-        $('#previewPrintBtn').removeClass('disabled');
+        $('#editInvoiceBtn, #postBtn, #deleteBtn').prop('disabled', false);
+        $('#saveDraftBtn').prop('disabled', true);
         $('#statusBadge').html('<i class="fa fa-pencil"></i> DRAFT');
     }
 
     function unlockForm() {
         if ("{{ isset($voucher) && $voucher->status == 'Posted' }}") return;
         $('#acceptanceForm').removeClass('form-locked');
-        $('.btn-action').show();
-        $('#editBtn').hide();
+        $('#editInvoiceBtn').prop('disabled', true);
+        $('#postBtn, #deleteBtn').prop('disabled', false);
+        $('#saveDraftBtn').prop('disabled', false);
     }
 
     if ("{{ isset($voucher) && $voucher->status != 'Posted' }}") lockForm();
 
     function save(act) {
-        // Clean empty rows
+        if (_saveInFlight || _postInFlight) return;
         $('#itemRows tr').each(function() {
             if (!$(this).find('.product-select').val()) $(this).remove();
         });
@@ -384,12 +424,14 @@ $(document).ready(function() {
 
         $('#formAction').val(act);
         var btn = act === 'post' ? '#postBtn' : '#saveDraftBtn';
-        $(btn).prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i>');
+        if (act === 'post') _postInFlight = true; else _saveInFlight = true;
+        $(btn).prop('disabled', true).html('<i class="fa fa-spinner fa-spin me-1"></i>');
 
         $.ajax({
             url: $('#acceptanceForm').attr('action'),
             type: 'POST',
             data: $('#acceptanceForm').serialize(),
+            headers: { 'X-Requested-With': 'XMLHttpRequest' },
             success: function(res) {
                 if (res.success) {
                     if (act === 'post') {
@@ -400,38 +442,84 @@ $(document).ready(function() {
                     } else {
                         $('#voucher_id').val(res.id);
                         window.history.replaceState(null, null, "{{ url('claim-acceptance/edit') }}/" + res.id);
-                        $('#previewPrintBtn').attr('href', "{{ url('claim-acceptance/print') }}/" + res.id).removeClass('disabled');
+                        $('#realPrintBtn').attr('href', "{{ url('claim-acceptance/print') }}/" + res.id).removeClass('pe-none opacity-50');
+                        if (!$('#deleteForm').length) {
+                            $('body').append('<form id="deleteForm" action="{{ url('claim-acceptance/destroy') }}/' + res.id + '" method="POST" class="d-none"><input type="hidden" name="_token" value="{{ csrf_token() }}"><input type="hidden" name="_method" value="DELETE"></form>');
+                        } else {
+                            $('#deleteForm').attr('action', "{{ url('claim-acceptance/destroy') }}/" + res.id);
+                        }
+                        $('#deleteBtn').prop('disabled', false);
                         lockForm();
                         showAlert('Draft saved successfully!');
-                        $(btn).prop('disabled', false).html(act === 'post' ? '<i class="fa fa-send"></i> Save Post' : '<i class="fa fa-save"></i> Save Draft');
                     }
                 }
             },
             error: function(xhr) {
                 showAlert(xhr.responseJSON ? xhr.responseJSON.message : 'Error saving', 'danger');
-                $(btn).prop('disabled', false).html(act === 'post' ? '<i class="fa fa-send"></i> Save Post' : '<i class="fa fa-save"></i> Save Draft');
+            },
+            complete: function() {
+                if (act === 'post') _postInFlight = false; else _saveInFlight = false;
+                if (!$('#acceptanceForm').hasClass('form-locked') || act === 'post') {
+                    $(btn).prop('disabled', false).html(act === 'post' ? postBtnHtml : saveBtnHtml);
+                }
             }
         });
     }
 
-    $('#saveDraftBtn').click(() => save('save'));
-    $('#postBtn').click(() => save('post'));
-    $('#editBtn').click(() => unlockForm());
+    $('#saveDraftBtn').on('click', function(e) { e.preventDefault(); if (!$(this).prop('disabled')) save('save'); });
+    $('#postBtn').on('click', function(e) { e.preventDefault(); if (!$(this).prop('disabled')) save('post'); });
+    $('#editInvoiceBtn').on('click', function() { if (!$(this).prop('disabled')) unlockForm(); });
 
-    $('#deleteBtn').click(function() {
+    $('#deleteBtn').on('click', function() {
+        if ($(this).prop('disabled') || !$('#deleteForm').length) return;
         if(!confirm('Delete this Claim Acceptance permanently?')) return;
         $('#deleteForm').submit();
     });
 
-    // Keyboard Shortcuts
-    $(window).on('keydown', function(e) {
-        if ((e.ctrlKey || e.metaKey) && (e.which == 83 || e.keyCode == 83)) { e.preventDefault(); $('#saveDraftBtn').click(); }
-        if ((e.ctrlKey || e.metaKey) && (e.which == 13 || e.keyCode == 13)) { e.preventDefault(); $('#postBtn').click(); }
-        if ((e.ctrlKey || e.metaKey) && (e.which == 69 || e.keyCode == 69)) { e.preventDefault(); $('#editBtn').click(); }
-        if ((e.ctrlKey || e.metaKey) && (e.which == 76 || e.keyCode == 76)) { e.preventDefault(); window.location.href = "{{ route('claim-acceptance.index') }}"; }
-        if ((e.ctrlKey || e.metaKey) && (e.which == 77 || e.keyCode == 77)) { e.preventDefault(); window.location.href = "{{ route('claim-acceptance.create') }}"; }
-        if (e.key === 'Escape') { e.preventDefault(); window.location.href = "{{ route('claim-acceptance.index') }}"; }
+    $('#realPrintBtn').on('click', function(e) {
+        var href = $(this).attr('href');
+        if (!href || href === 'javascript:void(0)') {
+            e.preventDefault();
+            showAlert('Save first', 'danger');
+        }
     });
+
+    document.addEventListener('keydown', function(e) {
+        if (e.ctrlKey && (e.key === 's' || e.key === 'S')) {
+            e.preventDefault(); e.stopImmediatePropagation();
+            if (!_saveInFlight && !$('#saveDraftBtn').prop('disabled')) $('#saveDraftBtn').click();
+        }
+        if (e.ctrlKey && e.key === 'Enter') {
+            e.preventDefault(); e.stopImmediatePropagation();
+            if (!_postInFlight && !$('#postBtn').prop('disabled')) $('#postBtn').click();
+        }
+        if (e.ctrlKey && (e.key === 'p' || e.key === 'P')) {
+            e.preventDefault();
+            var href = $('#realPrintBtn').attr('href');
+            if (href && href !== 'javascript:void(0)') window.open(href, '_blank');
+            else showAlert('Save first', 'danger');
+        }
+        if (e.ctrlKey && (e.key === 'e' || e.key === 'E')) {
+            e.preventDefault();
+            if (!$('#editInvoiceBtn').prop('disabled')) $('#editInvoiceBtn').click();
+        }
+        if (e.ctrlKey && (e.key === 'd' || e.key === 'D')) {
+            e.preventDefault();
+            if (!$('#deleteBtn').prop('disabled')) $('#deleteBtn').click();
+        }
+        if (e.ctrlKey && (e.key === 'm' || e.key === 'M')) {
+            e.preventDefault();
+            window.location.href = $('#newInvoiceBtn').attr('href');
+        }
+        if (e.ctrlKey && (e.key === 'l' || e.key === 'L')) {
+            e.preventDefault();
+            window.location.href = $('#listBtn').attr('href');
+        }
+        if (e.key === 'Escape') {
+            e.preventDefault();
+            window.location.href = $('#exitBtn').attr('href');
+        }
+    }, true);
 
     // Auto-focus
     setTimeout(() => $('#itemRows tr:first input[name="btr_no[]"]').focus(), 500);
