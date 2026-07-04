@@ -475,7 +475,7 @@ $(document).ready(function() {
 
     function serializeForm() {
         var data = $('#stockReleaseForm').serializeArray();
-        ['vendor_id', 'warehouse_id', 'vendor_type'].forEach(function(name) {
+        ['vendor_id', 'warehouse_id', 'vendor_type', 'hold_voucher_id', 'claim_id', 'action'].forEach(function(name) {
             var val = $('[name="' + name + '"]').val() || '';
             var found = false;
             for (var i = 0; i < data.length; i++) {

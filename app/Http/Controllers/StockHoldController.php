@@ -561,8 +561,9 @@ class StockHoldController extends Controller
             return response()->json(['success' => false, 'message' => 'Unauthorized access to Shop Stock.'], 403);
         }
 
-        $status = $request->action === 'post' ? 'Posted' : 'Unposted';
-        $releaseType = $request->claim_id ? 'claim' : 'stock';
+        $isPosting = strtolower(trim((string) ($request->input('action') ?? ''))) === 'post';
+        $status = $isPosting ? 'Posted' : 'Unposted';
+        $releaseType = $request->filled('claim_id') ? 'claim' : 'stock';
 
         try {
             DB::beginTransaction();
@@ -570,7 +571,7 @@ class StockHoldController extends Controller
             $holdVoucherId = $request->filled('hold_voucher_id') ? $request->hold_voucher_id : null;
             $claimId = $request->filled('claim_id') ? $request->claim_id : null;
             
-            // Create Release Voucher
+            // Create as Unposted first — apply stock impact only when posting (same as update/post)
             $voucher = \App\Models\StockReleaseVoucher::create([
                 'voucher_no'      => \App\Models\StockReleaseVoucher::generateVoucherNo(),
                 'date'            => $request->entry_date,
@@ -582,7 +583,7 @@ class StockHoldController extends Controller
                 'party_id'        => $request->vendor_id,
                 'warehouse_id'    => $request->warehouse_id,
                 'remarks'         => $request->remarks,
-                'status'          => $status
+                'status'          => 'Unposted',
             ]);
 
             foreach ($request->product_id as $index => $pid) {
@@ -599,23 +600,18 @@ class StockHoldController extends Controller
                     $holdId
                 );
 
-                if ($status === 'Posted') {
-                    $linkedHold = $this->applyReleaseEffects(
-                        (int) $request->warehouse_id,
-                        (int) $pid,
-                        $releaseQty,
-                        $holdId,
-                        $holdVoucherId ? (int) $holdVoucherId : null,
-                        $claimId ? (int) $claimId : null,
-                        $request->vendor_type,
-                        (int) $request->vendor_id
-                    ) ?? $linkedHold;
+                if (!$holdVoucherId && ($linkedHold?->stock_hold_voucher_id || $holdId)) {
+                    $fromHold = $linkedHold ?? StockHold::withoutGlobalScopes()->find($holdId);
+                    if ($fromHold?->stock_hold_voucher_id) {
+                        $holdVoucherId = (int) $fromHold->stock_hold_voucher_id;
+                        $voucher->update(['hold_voucher_id' => $holdVoucherId]);
+                    }
                 }
 
                 \App\Models\StockRelease::create([
                     'stock_release_voucher_id' => $voucher->id,
                     'release_no'  => $voucher->voucher_no,
-                    'hold_id'     => $linkedHold?->id,
+                    'hold_id'     => $linkedHold?->id ?? $holdId,
                     'sale_id'     => $linkedHold?->sale_id,
                     'party_type'  => $linkedHold?->party_type ?? $request->vendor_type,
                     'party_id'    => $linkedHold?->party_id ?? $request->vendor_id,
@@ -624,8 +620,15 @@ class StockHoldController extends Controller
                     'sale_qty'    => $linkedHold?->sale_qty ?? ($request->sale_qty[$index] ?? 0),
                     'release_qty' => $releaseQty,
                     'remarks'     => $request->remarks,
-                    'status'      => $status
+                    'status'      => 'Unposted',
                 ]);
+            }
+
+            if ($isPosting) {
+                $voucher->refresh();
+                $this->applyReleaseVoucherPosting($voucher);
+                $voucher->update(['status' => 'Posted']);
+                $status = 'Posted';
             }
 
             DB::commit();
@@ -707,7 +710,7 @@ class StockHoldController extends Controller
         );
     }
 
-    /** Deduct physical stock and reduce reserved (stock_holds.hold_qty). */
+    /** Opposite of applyHoldEffects: deduct physical stock, then reduce reserved (signed math). */
     private function applyReleaseEffects(
         int $warehouseId,
         int $productId,
@@ -722,7 +725,9 @@ class StockHoldController extends Controller
             return null;
         }
 
-        $primaryHold = $this->reduceReservedForRelease(
+        $this->adjustStock($warehouseId, $productId, -$releaseQty);
+
+        return $this->reduceReservedForRelease(
             $productId,
             $releaseQty,
             $explicitHoldId,
@@ -731,10 +736,40 @@ class StockHoldController extends Controller
             $partyType,
             $partyId
         );
+    }
 
-        $this->adjustStock($warehouseId, $productId, -$releaseQty);
+    private function resolveReleaseWarehouseId(\App\Models\StockReleaseVoucher $voucher, \App\Models\StockRelease $item): int
+    {
+        return (int) ($item->warehouse_id ?: $voucher->warehouse_id);
+    }
 
-        return $primaryHold;
+    /** Apply stock impact for all lines on a release voucher (mirror of hold post). */
+    private function applyReleaseVoucherPosting(\App\Models\StockReleaseVoucher $voucher): void
+    {
+        $items = \App\Models\StockRelease::withoutGlobalScopes()
+            ->where('stock_release_voucher_id', $voucher->id)
+            ->get();
+
+        foreach ($items as $item) {
+            $releaseQty = (float) $item->release_qty;
+            if ($releaseQty <= 0) {
+                $item->delete();
+                continue;
+            }
+
+            $this->applyReleaseEffects(
+                $this->resolveReleaseWarehouseId($voucher, $item),
+                (int) $item->product_id,
+                $releaseQty,
+                $item->hold_id ? (int) $item->hold_id : null,
+                $voucher->hold_voucher_id ? (int) $voucher->hold_voucher_id : null,
+                $voucher->claim_id ? (int) $voucher->claim_id : null,
+                $voucher->party_type,
+                $voucher->party_id ? (int) $voucher->party_id : null
+            );
+
+            $item->update(['status' => 'Posted']);
+        }
     }
 
     private function reduceReservedForRelease(
@@ -1021,7 +1056,8 @@ class StockHoldController extends Controller
             return response()->json(['success' => false, 'message' => 'Unauthorized access to Shop Stock.'], 403);
         }
 
-        $status = $request->action === 'post' ? 'Posted' : 'Unposted';
+        $isPosting = strtolower(trim((string) ($request->input('action') ?? ''))) === 'post';
+        $status = $isPosting ? 'Posted' : 'Unposted';
 
         try {
             DB::beginTransaction();
@@ -1044,7 +1080,7 @@ class StockHoldController extends Controller
                 'hold_voucher_id' => $holdVoucherId,
                 'claim_id'        => $claimId,
                 'remarks'         => $request->remarks,
-                'status'          => $status,
+                'status'          => 'Unposted',
             ]);
 
             $voucher->load('items');
@@ -1066,23 +1102,18 @@ class StockHoldController extends Controller
                     $holdId
                 );
 
-                if ($status === 'Posted') {
-                    $linkedHold = $this->applyReleaseEffects(
-                        (int) $request->warehouse_id,
-                        (int) $pid,
-                        $releaseQty,
-                        $holdId,
-                        $holdVoucherId ? (int) $holdVoucherId : null,
-                        $claimId ? (int) $claimId : null,
-                        $request->vendor_type,
-                        (int) $request->vendor_id
-                    ) ?? $linkedHold;
+                if (!$holdVoucherId && ($linkedHold?->stock_hold_voucher_id || $holdId)) {
+                    $fromHold = $linkedHold ?? StockHold::withoutGlobalScopes()->find($holdId);
+                    if ($fromHold?->stock_hold_voucher_id) {
+                        $holdVoucherId = (int) $fromHold->stock_hold_voucher_id;
+                        $voucher->update(['hold_voucher_id' => $holdVoucherId]);
+                    }
                 }
 
                 \App\Models\StockRelease::create([
                     'stock_release_voucher_id' => $voucher->id,
                     'release_no'  => $voucher->voucher_no,
-                    'hold_id'     => $linkedHold?->id,
+                    'hold_id'     => $linkedHold?->id ?? $holdId,
                     'sale_id'     => $linkedHold?->sale_id,
                     'party_type'  => $request->vendor_type,
                     'party_id'    => $request->vendor_id,
@@ -1091,8 +1122,15 @@ class StockHoldController extends Controller
                     'sale_qty'    => $linkedHold?->sale_qty ?? ($request->sale_qty[$index] ?? 0),
                     'release_qty' => $releaseQty,
                     'remarks'     => $request->remarks,
-                    'status'      => $status
+                    'status'      => 'Unposted',
                 ]);
+            }
+
+            if ($isPosting) {
+                $voucher->refresh();
+                $this->applyReleaseVoucherPosting($voucher);
+                $voucher->update(['status' => 'Posted']);
+                $status = 'Posted';
             }
 
             DB::commit();
@@ -1113,25 +1151,21 @@ class StockHoldController extends Controller
     {
         try {
             DB::beginTransaction();
-            $voucher = \App\Models\StockReleaseVoucher::with('items.hold')->findOrFail($id);
-            if ($voucher->status === 'Posted') return response()->json(['success' => false, 'message' => 'Already posted']);
 
-            $voucher->update(['status' => 'Posted']);
-            foreach ($voucher->items as $item) {
-                $item->update(['status' => 'Posted']);
-                $this->applyReleaseEffects(
-                    (int) $voucher->warehouse_id,
-                    (int) $item->product_id,
-                    (float) $item->release_qty,
-                    $item->hold_id ? (int) $item->hold_id : null,
-                    $voucher->hold_voucher_id ? (int) $voucher->hold_voucher_id : null,
-                    $voucher->claim_id ? (int) $voucher->claim_id : null,
-                    $voucher->party_type,
-                    $voucher->party_id ? (int) $voucher->party_id : null
-                );
+            $voucher = \App\Models\StockReleaseVoucher::withoutGlobalScopes()->findOrFail($id);
+            if ($voucher->status === 'Posted') {
+                if (request()->ajax() || request()->wantsJson()) {
+                    return response()->json(['success' => false, 'message' => 'Already posted']);
+                }
+                return back()->with('error', 'Already posted.');
             }
+
+            $this->applyReleaseVoucherPosting($voucher);
+            $voucher->update(['status' => 'Posted']);
+
             DB::commit();
-            if (request()->ajax()) {
+
+            if (request()->ajax() || request()->wantsJson()) {
                 return response()->json([
                     'success' => true,
                     'message' => 'Posted successfully',
@@ -1139,9 +1173,9 @@ class StockHoldController extends Controller
                 ]);
             }
             return redirect()->back()->with('success', 'Stock Release Posted successfully.');
-        } catch (\Exception $e) { 
-            DB::rollBack(); 
-            if (request()->ajax()) {
+        } catch (\Exception $e) {
+            DB::rollBack();
+            if (request()->ajax() || request()->wantsJson()) {
                 return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
             }
             return redirect()->back()->with('error', $e->getMessage());
