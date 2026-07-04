@@ -3,26 +3,33 @@
 namespace App\Traits;
 
 use App\Scopes\GroupIsolationScope;
+use App\Support\GroupContext;
 
 trait GroupIsolation
 {
-    /**
-     * The "booted" method of the model.
-     *
-     * @return void
-     */
     protected static function booted()
     {
         static::addGlobalScope(new GroupIsolationScope);
 
         static::creating(function ($model) {
-            if (auth()->check()) {
-                if (!isset($model->created_by) || empty($model->created_by)) {
-                    $model->created_by = auth()->id();
-                }
-                if (!isset($model->user_group_ids) || empty($model->user_group_ids)) {
-                    $model->user_group_ids = auth()->user()->userGroups()->pluck('user_groups.id')->toArray();
-                }
+            if (!auth()->check()) {
+                return;
+            }
+
+            if (!isset($model->created_by) || empty($model->created_by)) {
+                $model->created_by = auth()->id();
+            }
+
+            GroupContext::applyToModel($model);
+        });
+
+        static::updating(function ($model) {
+            if (!auth()->check() || GroupContext::shouldSkipAutoResolve($model)) {
+                return;
+            }
+
+            if (GroupContext::hasPartyFieldChanges($model)) {
+                GroupContext::applyToModel($model);
             }
         });
     }
