@@ -5,7 +5,7 @@
     <div class="container-fluid p-3">
         <div class="card border-0 shadow-sm">
             <div class="card-header bg-white py-3 border-bottom-0 d-flex justify-content-between align-items-center">
-                <h4 class="mb-0 fw-bold" style="color: #0d47a1;">Stock Report Filters (Qty Only)</h4>
+                <h4 class="mb-0 fw-bold" style="color: #0d47a1;">{{ $pageTitle ?? 'Stock Report Filters' }}</h4>
                 <div class="form-check">
                     <input class="form-check-input" type="checkbox" id="globalSelectAll">
                     <label class="form-check-label fw-bold text-danger" for="globalSelectAll" style="cursor:pointer;">
@@ -14,7 +14,7 @@
                 </div>
             </div>
             <div class="card-body pt-0">
-                <form action="{{ route('reports.stock.preview') }}" method="POST" id="reportForm">
+                <form action="{{ $previewRoute ?? route('reports.stock.preview') }}" method="POST" id="reportForm">
                     @csrf
 
                     <div class="filter-grid-container">
@@ -71,6 +71,21 @@
                             <div class="col-md-1" style="min-width: 100px;">
                                 <div class="filter-column">
                                     <div class="filter-header">
+                                        <input type="checkbox" class="select-all" data-target="subcat-list"> Sub Category
+                                    </div>
+                                    <div class="filter-list" id="subcat-list">
+                                        @foreach($subcategories as $sub)
+                                            <div class="filter-item" data-category="{{ $sub->category_id }}">
+                                                <input type="checkbox" name="subcategory[]" value="{{ $sub->id }}">
+                                                <span>{{ $sub->name }}</span>
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-1" style="min-width: 100px;">
+                                <div class="filter-column">
+                                    <div class="filter-header">
                                         <input type="checkbox" class="select-all" data-target="brand-list"> Brand
                                     </div>
                                     <div class="filter-list" id="brand-list">
@@ -96,7 +111,8 @@
                                             <div class="filter-item"
                                                  data-search="{{ strtolower($prod->name) }}"
                                                  data-brand="{{ $prod->brand_id }}"
-                                                 data-category="{{ $prod->category_id }}">
+                                                 data-category="{{ $prod->category_id }}"
+                                                 data-subcategory="{{ $prod->sub_category_id }}">
                                                 <input type="checkbox" name="item[]" value="{{ $prod->id }}">
                                                 <span>{{ $prod->name }}</span>
                                             </div>
@@ -113,6 +129,25 @@
                         </div>
                         <div class="card-body p-2">
                             <div class="row g-2 align-items-end">
+                                @if(!empty($fixedReportType))
+                                    <input type="hidden" name="report_type" value="{{ $fixedReportType }}">
+                                    @if($fixedReportType === 'ledger')
+                                    <div class="col-md-3">
+                                        <label class="fw-bold mb-1" style="font-size: 11px;">Report Type</label>
+                                        <div class="form-control form-control-sm bg-light fw-bold" style="height: 30px; font-size: 12px; line-height: 18px;">
+                                            Item Stock Ledger
+                                        </div>
+                                    </div>
+                                    @endif
+                                @else
+                                <div class="col-md-3">
+                                    <label class="fw-bold mb-1" style="font-size: 11px;">Report Type</label>
+                                    <select name="report_type" class="form-select form-select-sm" required style="height: 30px; font-size: 12px;">
+                                        <option value="summary" selected>Stock Report (Summary)</option>
+                                        <option value="ledger">Item Stock Ledger</option>
+                                    </select>
+                                </div>
+                                @endif
                                 <div class="col-md-2">
                                     <label class="fw-bold mb-1" style="font-size: 11px;">From Date</label>
                                     <input type="date" name="from_date" class="form-control form-control-sm" value="{{ date('Y-m-01') }}" required style="height: 30px; font-size: 12px;">
@@ -204,6 +239,11 @@
             const $cb = $(this).find('input[type="checkbox"]');
             $cb.prop('checked', !$cb.prop('checked'));
             $(this).toggleClass('selected', $cb.prop('checked'));
+
+            const listId = $(this).closest('.filter-list').attr('id');
+            if (['category-list', 'subcat-list', 'brand-list'].includes(listId)) {
+                setTimeout(applyItemFilters, 50);
+            }
         });
 
         $('.select-all').on('change', function() {
@@ -213,6 +253,9 @@
                 $(this).find('input[type="checkbox"]').prop('checked', checked);
                 $(this).toggleClass('selected', checked);
             });
+            if (['category-list', 'subcat-list', 'brand-list'].includes(target)) {
+                applyItemFilters();
+            }
         });
 
         $('#globalSelectAll').on('change', function() {
@@ -221,31 +264,38 @@
         });
 
         $('#itemSearch').on('keyup', function() {
-            const term = $(this).val().toLowerCase();
-            $('#item-list .filter-item').each(function() {
-                const match = ($(this).data('search') || '').includes(term);
-                $(this).toggle(match);
-                if (!match) uncheckItem($(this));
-            });
+            applyItemFilters();
         });
 
-        function filterItemsByBrandCategory() {
+        function applyItemFilters() {
             const brands = getCheckedValues('brand-list', 'brand[]');
             const categories = getCheckedValues('category-list', 'category[]');
+            const subcategories = getCheckedValues('subcat-list', 'subcategory[]');
+            const term = ($('#itemSearch').val() || '').toLowerCase();
+
+            $('#subcat-list .filter-item').each(function() {
+                const $item = $(this);
+                const catId = String($item.data('category') || '');
+                const show = !categories.length || categories.includes(catId);
+                $item.toggle(show);
+                if (!show) uncheckItem($item);
+            });
+
             $('#item-list .filter-item').each(function() {
-                const brandId = String($(this).data('brand') || '');
-                const catId = String($(this).data('category') || '');
+                const $item = $(this);
+                const brandId = String($item.data('brand') || '');
+                const catId = String($item.data('category') || '');
+                const subcatId = String($item.data('subcategory') || '');
+                const searchText = String($item.data('search') || '');
                 const brandMatch = !brands.length || brands.includes(brandId);
                 const catMatch = !categories.length || categories.includes(catId);
-                const show = brandMatch && catMatch;
-                $(this).toggle(show);
-                if (!show) uncheckItem($(this));
+                const subcatMatch = !subcategories.length || subcategories.includes(subcatId);
+                const searchMatch = !term || searchText.includes(term);
+                const show = brandMatch && catMatch && subcatMatch && searchMatch;
+                $item.toggle(show);
+                if (!show) uncheckItem($item);
             });
         }
-
-        $('#brand-list .filter-item, #category-list .filter-item').on('click', function() {
-            setTimeout(filterItemsByBrandCategory, 50);
-        });
 
         function filterByGroup() {
             const selectedGroups = getCheckedValues('group-list', 'user_group[]');
@@ -264,6 +314,15 @@
         $('#group-list .filter-item').on('click', function() {
             setTimeout(filterByGroup, 50);
         });
+
+        @if(!empty($fixedReportType) && $fixedReportType === 'ledger')
+        $('#reportForm').on('submit', function(e) {
+            if ($('#item-list input[name="item[]"]:checked').length === 0) {
+                e.preventDefault();
+                alert('Please select at least one Item for Item Stock Ledger.');
+            }
+        });
+        @endif
     });
 </script>
 @endsection

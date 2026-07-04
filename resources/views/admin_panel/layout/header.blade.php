@@ -48,6 +48,11 @@
         .page-navigation .nav-item.show-submenu .submenu {
             display: block !important;
         }
+        .page-navigation .nav-item .submenu.submenu-scroll {
+            max-height: 280px;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
         .page-navigation .nav-item .submenu .submenu-item {
             padding-left: 20px !important;
         }
@@ -219,6 +224,108 @@
         }
         .page-navigation .nav-item .submenu .submenu-item li a:hover i {
             color: #0d6efd !important;
+        }
+
+        /* Scrollable dropdown for long menus (Reports, etc.) */
+        .page-navigation .nav-item .submenu.submenu-scroll {
+            max-height: min(420px, calc(100vh - 120px));
+            overflow-y: auto;
+            overflow-x: hidden;
+            overscroll-behavior: contain;
+            -webkit-overflow-scrolling: touch;
+        }
+        .page-navigation .nav-item .submenu.submenu-scroll::-webkit-scrollbar {
+            width: 6px;
+        }
+        .page-navigation .nav-item .submenu.submenu-scroll::-webkit-scrollbar-track {
+            background: #f1f3f5;
+            border-radius: 3px;
+        }
+        .page-navigation .nav-item .submenu.submenu-scroll::-webkit-scrollbar-thumb {
+            background: #adb5bd;
+            border-radius: 3px;
+        }
+        .page-navigation .nav-item .submenu.submenu-scroll::-webkit-scrollbar-thumb:hover {
+            background: #868e96;
+        }
+
+        /* Nested submenu inside Reports dropdown (inline accordion) */
+        .submenu-item > li.has-nested-submenu {
+            position: relative;
+            list-style: none;
+        }
+        .submenu-item > li.has-nested-submenu > .nav-link.nested-toggle {
+            display: flex !important;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            user-select: none;
+        }
+        .submenu-item > li.has-nested-submenu > .nav-link.nested-toggle .nested-arrow {
+            font-size: 10px;
+            margin-left: 8px;
+            flex-shrink: 0;
+            transition: transform 0.2s ease;
+            color: #6c757d !important;
+        }
+        .submenu-item > li.has-nested-submenu.show-nested > .nav-link.nested-toggle {
+            background: #f4f6f9 !important;
+            color: #0d6efd !important;
+        }
+        .submenu-item > li.has-nested-submenu.show-nested > .nav-link.nested-toggle .nested-arrow {
+            color: #0d6efd !important;
+            transform: rotate(90deg);
+        }
+        .submenu-item .nested-submenu {
+            display: none;
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            background: #f8f9fb;
+            border-left: 3px solid #0d6efd;
+        }
+        .submenu-item > li.has-nested-submenu.show-nested > .nested-submenu {
+            display: block;
+        }
+        .submenu-item .nested-submenu li a {
+            display: flex !important;
+            align-items: center;
+            padding: 6px 15px 6px 28px !important;
+            color: #333 !important;
+            font-size: 12px !important;
+            text-decoration: none;
+        }
+        .submenu-item .nested-submenu li a:hover {
+            background: #eef2f7 !important;
+            color: #0d6efd !important;
+        }
+        .submenu-item .nested-submenu li a i {
+            margin-right: 8px !important;
+            color: #6c757d !important;
+            width: 16px;
+            text-align: center;
+        }
+        @media (max-width: 991px) {
+            .submenu-item > li.has-nested-submenu > .nav-link.nested-toggle {
+                color: #d1d5db !important;
+                padding: 10px 0 !important;
+            }
+            .submenu-item > li.has-nested-submenu.show-nested > .nav-link.nested-toggle {
+                color: #ffffff !important;
+            }
+            .submenu-item .nested-submenu {
+                background: rgba(255,255,255,0.04);
+                border-left-color: rgba(255,255,255,0.35);
+            }
+            .submenu-item .nested-submenu li a {
+                color: #d1d5db !important;
+                padding: 8px 0 8px 24px !important;
+            }
+            .submenu-item .nested-submenu li a:hover,
+            .submenu-item .nested-submenu li a:hover span,
+            .submenu-item .nested-submenu li a:hover i {
+                color: #ffffff !important;
+            }
         }
         
         .menu-arrow {
@@ -589,7 +696,7 @@
                               <span class="menu-title">Reports</span>
                               <i class="menu-arrow"></i>
                           </a>
-                          <div class="submenu">
+                          <div class="submenu submenu-scroll">
                               <ul class="submenu-item">
                                   @can('Reports Dashboard')
                                   <li class="nav-item">
@@ -615,100 +722,137 @@
                                       </a>
                                   </li>
                                   @endcan
-                                  @can('Claim Report')
-                                  <li class="nav-item">
-                                      <a class="nav-link" href="{{ route('reports.claim.index') }}">
-                                          <i class="fa-solid fa-handshake mr-2"></i>
-                                          <span>Claim Report</span>
+
+                                  @canany(['Claim Report', 'Claim Acceptance Report', 'Claim Receipt Report'])
+                                  <li class="nav-item has-nested-submenu">
+                                      <a href="javascript:void(0)" class="nav-link nested-toggle">
+                                          <span><i class="fa-solid fa-handshake mr-2"></i> Claim Reports</span>
+                                          <i class="fa-solid fa-chevron-right nested-arrow"></i>
                                       </a>
+                                      <ul class="nested-submenu">
+                                          @can('Claim Report')
+                                          <li>
+                                              <a href="{{ route('reports.claim.index') }}">
+                                                  <i class="fa-solid fa-handshake"></i>
+                                                  <span>Claim Report</span>
+                                              </a>
+                                          </li>
+                                          @endcan
+                                          @can('Claim Acceptance Report')
+                                          <li>
+                                              <a href="{{ route('reports.claim-acceptance.index') }}">
+                                                  <i class="fa-solid fa-check-double"></i>
+                                                  <span>Claim Acceptance Report</span>
+                                              </a>
+                                          </li>
+                                          @endcan
+                                          @can('Claim Receipt Report')
+                                          <li>
+                                              <a href="{{ route('reports.claim-item-receipt.index') }}">
+                                                  <i class="fa-solid fa-file-invoice-dollar"></i>
+                                                  <span>Claim Receipt Report</span>
+                                              </a>
+                                          </li>
+                                          @endcan
+                                      </ul>
                                   </li>
-                                  @endcan
-                                  @can('Claim Acceptance Report')
-                                  <li class="nav-item">
-                                      <a class="nav-link" href="{{ route('reports.claim-acceptance.index') }}">
-                                          <i class="fa-solid fa-check-double mr-2"></i>
-                                          <span>Claim Acceptance Report</span>
+                                  @endcanany
+
+                                  <li class="nav-item has-nested-submenu">
+                                      <a href="javascript:void(0)" class="nav-link nested-toggle">
+                                          <span><i class="fa-solid fa-boxes-stacked mr-2"></i> Stock Reports</span>
+                                          <i class="fa-solid fa-chevron-right nested-arrow"></i>
                                       </a>
+                                      <ul class="nested-submenu">
+                                          <li>
+                                              <a href="{{ route('reports.stock.index') }}">
+                                                  <i class="fa-solid fa-boxes-stacked"></i>
+                                                  <span>Stock Report</span>
+                                              </a>
+                                          </li>
+                                          <li>
+                                              <a href="{{ route('reports.stock-ledger.index') }}">
+                                                  <i class="fa-solid fa-book"></i>
+                                                  <span>Item Stock Ledger</span>
+                                              </a>
+                                          </li>
+                                          @can('Stock Wastage Report')
+                                          <li>
+                                              <a href="{{ route('reports.stock-wastage.index') }}">
+                                                  <i class="fa-solid fa-trash"></i>
+                                                  <span>Stock Wastage Report</span>
+                                              </a>
+                                          </li>
+                                          @endcan
+                                          @can('Stock Transfer Report')
+                                          <li>
+                                              <a href="{{ route('reports.stock-transfer.index') }}">
+                                                  <i class="fa-solid fa-exchange-alt"></i>
+                                                  <span>Stock Transfer Report</span>
+                                              </a>
+                                          </li>
+                                          @endcan
+                                      </ul>
                                   </li>
-                                  @endcan
-                                  @can('Claim Receipt Report')
-                                  <li class="nav-item">
-                                      <a class="nav-link" href="{{ route('reports.claim-item-receipt.index') }}">
-                                          <i class="fa-solid fa-file-invoice-dollar mr-2"></i>
-                                          <span>Claim Receipt Report</span>
+
+                                  @canany(['Receipt Voucher Report', 'Payment Voucher Report', 'Expense Voucher Report', 'Income Voucher Report', 'Journal Voucher Report', 'Adjustment Voucher Report'])
+                                  <li class="nav-item has-nested-submenu">
+                                      <a href="javascript:void(0)" class="nav-link nested-toggle">
+                                          <span><i class="fa-solid fa-receipt mr-2"></i> Voucher Reports</span>
+                                          <i class="fa-solid fa-chevron-right nested-arrow"></i>
                                       </a>
+                                      <ul class="nested-submenu">
+                                          @can('Receipt Voucher Report')
+                                          <li>
+                                              <a href="{{ route('reports.receipt-voucher.index') }}">
+                                                  <i class="fa-solid fa-receipt"></i>
+                                                  <span>Receipt Voucher Report</span>
+                                              </a>
+                                          </li>
+                                          @endcan
+                                          @can('Payment Voucher Report')
+                                          <li>
+                                              <a href="{{ route('reports.payment-voucher.index') }}">
+                                                  <i class="fa-solid fa-money-bill-transfer"></i>
+                                                  <span>Payment Voucher Report</span>
+                                              </a>
+                                          </li>
+                                          @endcan
+                                          @can('Expense Voucher Report')
+                                          <li>
+                                              <a href="{{ route('reports.expense-voucher.index') }}">
+                                                  <i class="fa-solid fa-file-invoice"></i>
+                                                  <span>Expense Voucher Report</span>
+                                              </a>
+                                          </li>
+                                          @endcan
+                                          @can('Income Voucher Report')
+                                          <li>
+                                              <a href="{{ route('reports.income-voucher.index') }}">
+                                                  <i class="fa-solid fa-hand-holding-dollar"></i>
+                                                  <span>Income Voucher Report</span>
+                                              </a>
+                                          </li>
+                                          @endcan
+                                          @can('Journal Voucher Report')
+                                          <li>
+                                              <a href="{{ route('reports.journal-voucher.index') }}">
+                                                  <i class="fa-solid fa-book"></i>
+                                                  <span>Journal Voucher Report</span>
+                                              </a>
+                                          </li>
+                                          @endcan
+                                          @can('Adjustment Voucher Report')
+                                          <li>
+                                              <a href="{{ route('reports.adjustment-voucher.index') }}">
+                                                  <i class="fa-solid fa-sliders"></i>
+                                                  <span>Adjustment Voucher Report</span>
+                                              </a>
+                                          </li>
+                                          @endcan
+                                      </ul>
                                   </li>
-                                  @endcan
-                                  @can('Stock Wastage Report')
-                                  <li class="nav-item">
-                                      <a class="nav-link" href="{{ route('reports.stock-wastage.index') }}">
-                                          <i class="fa-solid fa-trash mr-2"></i>
-                                          <span>Stock Wastage Report</span>
-                                      </a>
-                                  </li>
-                                  @endcan
-                                  @can('Stock Transfer Report')
-                                  <li class="nav-item">
-                                      <a class="nav-link" href="{{ route('reports.stock-transfer.index') }}">
-                                          <i class="fa-solid fa-exchange-alt mr-2"></i>
-                                          <span>Stock Transfer Report</span>
-                                      </a>
-                                  </li>
-                                  @endcan
-                                  <li class="nav-item">
-                                      <a class="nav-link" href="{{ route('reports.stock.index') }}">
-                                          <i class="fa-solid fa-boxes-stacked mr-2"></i>
-                                          <span>Stock Report</span>
-                                      </a>
-                                  </li>
-                                  @can('Receipt Voucher Report')
-                                  <li class="nav-item">
-                                      <a class="nav-link" href="{{ route('reports.receipt-voucher.index') }}">
-                                          <i class="fa-solid fa-receipt mr-2"></i>
-                                          <span>Receipt Voucher Report</span>
-                                      </a>
-                                  </li>
-                                  @endcan
-                                  @can('Payment Voucher Report')
-                                  <li class="nav-item">
-                                      <a class="nav-link" href="{{ route('reports.payment-voucher.index') }}">
-                                          <i class="fa-solid fa-money-bill-transfer mr-2"></i>
-                                          <span>Payment Voucher Report</span>
-                                      </a>
-                                  </li>
-                                  @endcan
-                                  @can('Expense Voucher Report')
-                                  <li class="nav-item">
-                                      <a class="nav-link" href="{{ route('reports.expense-voucher.index') }}">
-                                          <i class="fa-solid fa-file-invoice mr-2"></i>
-                                          <span>Expense Voucher Report</span>
-                                      </a>
-                                  </li>
-                                  @endcan
-                                  @can('Income Voucher Report')
-                                  <li class="nav-item">
-                                      <a class="nav-link" href="{{ route('reports.income-voucher.index') }}">
-                                          <i class="fa-solid fa-hand-holding-dollar mr-2"></i>
-                                          <span>Income Voucher Report</span>
-                                      </a>
-                                  </li>
-                                  @endcan
-                                  @can('Journal Voucher Report')
-                                  <li class="nav-item">
-                                      <a class="nav-link" href="{{ route('reports.journal-voucher.index') }}">
-                                          <i class="fa-solid fa-book mr-2"></i>
-                                          <span>Journal Voucher Report</span>
-                                      </a>
-                                  </li>
-                                  @endcan
-                                  @can('Adjustment Voucher Report')
-                                  <li class="nav-item">
-                                      <a class="nav-link" href="{{ route('reports.adjustment-voucher.index') }}">
-                                          <i class="fa-solid fa-sliders mr-2"></i>
-                                          <span>Adjustment Voucher Report</span>
-                                      </a>
-                                  </li>
-                                  @endcan
+                                  @endcanany
                               </ul>
                           </div>
                       </li>
@@ -779,6 +923,38 @@
                           }
                       }, true); // Use capture phase to intercept before template scripts
                   }
+              });
+
+              // Nested report submenus (Claim, Stock, Voucher) — click to expand inline
+              document.querySelectorAll('.submenu.submenu-scroll').forEach(submenuEl => {
+                  submenuEl.addEventListener('click', function(e) {
+                      const toggle = e.target.closest('.has-nested-submenu > .nested-toggle');
+                      if (!toggle) {
+                          return;
+                      }
+                      e.preventDefault();
+                      e.stopPropagation();
+
+                      const parent = toggle.closest('.has-nested-submenu');
+                      const willOpen = !parent.classList.contains('show-nested');
+
+                      document.querySelectorAll('.has-nested-submenu').forEach(item => {
+                          item.classList.remove('show-nested');
+                      });
+
+                      if (willOpen) {
+                          parent.classList.add('show-nested');
+                      }
+                  });
+              });
+
+              document.addEventListener('click', function(e) {
+                  if (e.target.closest('.has-nested-submenu') || e.target.closest('.submenu.submenu-scroll')) {
+                      return;
+                  }
+                  document.querySelectorAll('.has-nested-submenu').forEach(item => {
+                      item.classList.remove('show-nested');
+                  });
               });
           });
       </script>

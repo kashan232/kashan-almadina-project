@@ -38,6 +38,44 @@ class StockReportBuilder
         'waste', 'hold', 'release',
     ];
 
+    public function buildLedger(Request $request): array
+    {
+        $this->filters = $this->extractFilters($request);
+        $fromDate = $request->from_date;
+        $toDate = $request->to_date;
+        $this->movements = collect();
+
+        $this->collectPurchases();
+        $this->collectPurchaseReturns();
+        $this->collectSales();
+        $this->collectSaleReturns();
+        $this->collectCustomerClaims();
+        $this->collectClaimAcceptances();
+        $this->collectClaimItemReceipts();
+        $this->collectClaimCreditNotes();
+        $this->collectTransfers();
+        $this->collectWastage();
+        $this->collectHolds();
+        $this->collectReleases();
+        $this->collectAdjustments();
+
+        $ledgers = [];
+        foreach ($this->filteredProductIds() as $productId) {
+            foreach ($this->resolvedWarehouseIds() as $warehouseId) {
+                $ledger = $this->compileLedger((int) $productId, (int) $warehouseId, $fromDate, $toDate);
+                if ($ledger !== null) {
+                    $ledgers[] = $ledger;
+                }
+            }
+        }
+
+        return [
+            'ledgers' => $ledgers,
+            'from_date' => $fromDate,
+            'to_date' => $toDate,
+        ];
+    }
+
     public function build(Request $request): array
     {
         $this->filters = $this->extractFilters($request);
@@ -96,6 +134,7 @@ class StockReportBuilder
             'user_groups' => $request->user_group ?? [],
             'warehouses' => $request->warehouse ?? [],
             'categories' => $request->category ?? [],
+            'subcategories' => $request->subcategory ?? [],
             'brands' => $request->brand ?? [],
             'items' => $request->item ?? [],
             'from_date' => $request->from_date,
@@ -103,6 +142,7 @@ class StockReportBuilder
             'totalGroups' => UserGroup::count(),
             'totalWarehouses' => Warehouse::withoutGlobalScopes()->count() + 1,
             'totalCategories' => \App\Models\Category::count(),
+            'totalSubcategories' => \App\Models\Subcategory::count(),
             'totalBrands' => \App\Models\Brand::count(),
             'totalProducts' => Product::count(),
         ];
@@ -118,8 +158,20 @@ class StockReportBuilder
         return $productId . '|' . $warehouseId;
     }
 
-    private function addMovement(int $productId, int $warehouseId, string $date, string $column, float $qty, float $balanceEffect): void
-    {
+    private function addMovement(
+        int $productId,
+        int $warehouseId,
+        string $date,
+        string $column,
+        float $qty,
+        float $balanceEffect,
+        string $refId = '',
+        string $typeCode = '',
+        string $partyName = '',
+        float $price = 0,
+        float $amount = 0,
+        int $txnId = 0
+    ): void {
         if ($qty == 0.0 && $balanceEffect == 0.0) {
             return;
         }
@@ -139,6 +191,12 @@ class StockReportBuilder
             'column' => $column,
             'qty' => abs($qty),
             'balance_effect' => $balanceEffect,
+            'ref_id' => $txnId > 0 ? (string) $txnId : $refId,
+            'txn_id' => $txnId,
+            'type_code' => $typeCode,
+            'party_name' => $partyName,
+            'price' => $price,
+            'amount' => $amount,
         ]);
     }
 
@@ -179,6 +237,9 @@ class StockReportBuilder
         }
         if ($this->shouldApplyFilter($this->filters['categories'], $this->filters['totalCategories'])) {
             $query->whereIn('category_id', $this->filters['categories']);
+        }
+        if ($this->shouldApplyFilter($this->filters['subcategories'], $this->filters['totalSubcategories'])) {
+            $query->whereIn('sub_category_id', $this->filters['subcategories']);
         }
 
         return $query->pluck('id');
@@ -234,7 +295,7 @@ class StockReportBuilder
 
     private function collectPurchases(): void
     {
-        PurchaseItem::with(['purchase' => fn ($q) => $q->withoutGlobalScopes()])
+        PurchaseItem::with(['purchase' => fn ($q) => $q->withoutGlobalScopes()->with(['vendor', 'purchasable'])])
             ->whereHas('purchase', function ($q) {
                 $q->withoutGlobalScopes()->where('status', 'Posted');
                 $this->applyUserGroupFilter($q);
@@ -248,14 +309,29 @@ class StockReportBuilder
                     $wh = (int) ($purchase->warehouse_id ?? 0);
                     $date = $this->pickDate($purchase, ['current_date', 'entry_date']);
                     $qty = (float) $item->qty;
-                    $this->addMovement((int) $item->product_id, $wh, $date, 'pur', $qty, $qty);
+                    $price = (float) ($item->price ?? 0);
+                    $party = $purchase->vendor->name ?? $purchase->purchasable->name ?? '';
+                    $this->addMovement(
+                        (int) $item->product_id,
+                        $wh,
+                        $date,
+                        'pur',
+                        $qty,
+                        $qty,
+                        (string) ($purchase->invoice_no ?? ''),
+                        'PI',
+                        $party,
+                        $price,
+                        (float) ($item->form_line_total ?? ($price * $qty)),
+                        (int) ($purchase->id ?? 0)
+                    );
                 }
             });
     }
 
     private function collectPurchaseReturns(): void
     {
-        PurchaseReturnItem::with(['purchaseReturn' => fn ($q) => $q->withoutGlobalScopes()])
+        PurchaseReturnItem::with(['purchaseReturn' => fn ($q) => $q->withoutGlobalScopes()->with('purchasable')])
             ->whereHas('purchaseReturn', function ($q) {
                 $q->withoutGlobalScopes()->where('status', 'Posted');
                 $this->applyUserGroupFilter($q);
@@ -269,14 +345,29 @@ class StockReportBuilder
                     $wh = (int) ($ret->warehouse_id ?? 0);
                     $date = $this->pickDate($ret, ['current_date', 'entry_date']);
                     $qty = (float) $item->qty;
-                    $this->addMovement((int) $item->product_id, $wh, $date, 'pur_ret', $qty, -$qty);
+                    $price = (float) ($item->price ?? 0);
+                    $party = $ret->purchasable->name ?? $ret->purchasable->customer_name ?? '';
+                    $this->addMovement(
+                        (int) $item->product_id,
+                        $wh,
+                        $date,
+                        'pur_ret',
+                        $qty,
+                        -$qty,
+                        (string) ($ret->invoice_no ?? ''),
+                        'PR',
+                        $party,
+                        $price,
+                        (float) ($item->line_total ?? ($price * $qty)),
+                        (int) ($ret->id ?? 0)
+                    );
                 }
             });
     }
 
     private function collectSales(): void
     {
-        SaleItem::with(['sale' => fn ($q) => $q->withoutGlobalScopes()])
+        SaleItem::with(['sale' => fn ($q) => $q->withoutGlobalScopes()->with('customer')])
             ->whereHas('sale', function ($q) {
                 $q->withoutGlobalScopes()->where('is_sale_order', 0);
                 $this->applyUserGroupFilter($q);
@@ -290,14 +381,29 @@ class StockReportBuilder
                     $wh = (int) ($item->warehouse_id ?? 0);
                     $date = $this->pickDate($sale, ['entry_date']);
                     $qty = (float) $item->sales_qty;
-                    $this->addMovement((int) $item->product_id, $wh, $date, 'sales', $qty, -$qty);
+                    $price = (float) ($item->sales_rate ?: $item->sales_price ?: 0);
+                    $party = $sale->customer->customer_name ?? 'WALK IN CUSTOMER';
+                    $this->addMovement(
+                        (int) $item->product_id,
+                        $wh,
+                        $date,
+                        'sales',
+                        $qty,
+                        -$qty,
+                        (string) ($sale->invoice_no ?? ''),
+                        'SI',
+                        $party,
+                        $price,
+                        (float) ($item->amount ?? ($price * $qty)),
+                        (int) ($sale->id ?? 0)
+                    );
                 }
             });
     }
 
     private function collectSaleReturns(): void
     {
-        SaleReturnItem::with(['saleReturn' => fn ($q) => $q->withoutGlobalScopes()])
+        SaleReturnItem::with(['saleReturn' => fn ($q) => $q->withoutGlobalScopes()->with('customer')])
             ->whereHas('saleReturn', function ($q) {
                 $q->withoutGlobalScopes()->where('status', 'Posted');
                 $this->applyUserGroupFilter($q);
@@ -311,7 +417,22 @@ class StockReportBuilder
                     $wh = (int) ($item->warehouse_id ?? 0);
                     $date = $this->pickDate($ret, ['current_date', 'entry_date']);
                     $qty = (float) $item->sales_qty;
-                    $this->addMovement((int) $item->product_id, $wh, $date, 'sales_ret', $qty, $qty);
+                    $price = (float) ($item->sales_price ?? 0);
+                    $party = $ret->customer->customer_name ?? 'WALK IN CUSTOMER';
+                    $this->addMovement(
+                        (int) $item->product_id,
+                        $wh,
+                        $date,
+                        'sales_ret',
+                        $qty,
+                        $qty,
+                        (string) ($ret->invoice_no ?? ''),
+                        'SR',
+                        $party,
+                        $price,
+                        (float) ($item->amount ?? ($price * $qty)),
+                        (int) ($ret->id ?? 0)
+                    );
                 }
             });
     }
@@ -319,11 +440,16 @@ class StockReportBuilder
     private function collectCustomerClaims(): void
     {
         CustomerClaim::withoutGlobalScopes()
+            ->with('party')
             ->where('status', 'Posted')
             ->when(true, fn ($q) => $this->applyUserGroupFilter($q))
             ->chunkById(200, function ($claims) {
                 foreach ($claims as $claim) {
                     $date = $this->pickDate($claim, ['claim_date', 'entry_date']);
+                    $party = $claim->party_name;
+                    $price = (float) ($claim->sales_price ?: $claim->replacement_sales_price ?: 0);
+                    $ref = (string) ($claim->claim_no ?? '');
+                    $claimId = (int) ($claim->id ?? 0);
 
                     $this->addMovement(
                         (int) $claim->product_id,
@@ -331,7 +457,13 @@ class StockReportBuilder
                         $date,
                         'claim_in',
                         1,
-                        1
+                        1,
+                        $ref,
+                        'CLM',
+                        $party,
+                        $price,
+                        $price,
+                        $claimId
                     );
 
                     if ($claim->claim_type === 'item_return' && $claim->original_warehouse_id) {
@@ -341,7 +473,13 @@ class StockReportBuilder
                             $date,
                             'claim_out',
                             1,
-                            -1
+                            -1,
+                            $ref,
+                            'CLM',
+                            $party,
+                            $price,
+                            $price,
+                            $claimId
                         );
                     }
 
@@ -352,7 +490,13 @@ class StockReportBuilder
                             $date,
                             'claim_out',
                             1,
-                            -1
+                            -1,
+                            $ref,
+                            'CLM',
+                            $party,
+                            (float) ($claim->replacement_sales_price ?? $price),
+                            (float) ($claim->replacement_sales_price ?? $price),
+                            $claimId
                         );
                     }
 
@@ -363,7 +507,13 @@ class StockReportBuilder
                             $date,
                             'hold',
                             1,
-                            0
+                            0,
+                            $ref,
+                            'HD',
+                            $party,
+                            $price,
+                            $price,
+                            $claimId
                         );
                     }
                 }
@@ -386,8 +536,10 @@ class StockReportBuilder
                     $date = $this->pickDate($v, ['date', 'entry_date']);
                     $qty = (float) $item->quantity;
                     $pid = (int) $item->product_id;
-                    $this->addMovement($pid, (int) $v->from_warehouse_id, $date, 'claim_out', $qty, -$qty);
-                    $this->addMovement($pid, (int) $v->to_warehouse_id, $date, 'claim_in', $qty, $qty);
+                    $ref = (string) ($v->voucher_no ?? $v->id ?? '');
+                    $party = method_exists($v, 'partyName') ? $v->partyName() : '';
+                    $this->addMovement($pid, (int) $v->from_warehouse_id, $date, 'claim_out', $qty, -$qty, $ref, 'CA', $party, 0, 0);
+                    $this->addMovement($pid, (int) $v->to_warehouse_id, $date, 'claim_in', $qty, $qty, $ref, 'CA', $party, 0, 0);
                 }
             });
     }
@@ -408,8 +560,10 @@ class StockReportBuilder
                     $date = $this->pickDate($v, ['date', 'entry_date']);
                     $qty = (float) $item->quantity;
                     $pid = (int) $item->product_id;
-                    $this->addMovement($pid, (int) $v->from_warehouse_id, $date, 'claim_out', $qty, -$qty);
-                    $this->addMovement($pid, (int) $v->to_warehouse_id, $date, 'claim_in', $qty, $qty);
+                    $ref = (string) ($v->voucher_no ?? $v->id ?? '');
+                    $party = method_exists($v, 'partyName') ? $v->partyName() : '';
+                    $this->addMovement($pid, (int) $v->from_warehouse_id, $date, 'claim_out', $qty, -$qty, $ref, 'CIR', $party, 0, 0);
+                    $this->addMovement($pid, (int) $v->to_warehouse_id, $date, 'claim_in', $qty, $qty, $ref, 'CIR', $party, 0, 0);
                 }
             });
     }
@@ -430,8 +584,11 @@ class StockReportBuilder
                     $date = $this->pickDate($note, ['date', 'entry_date']);
                     $qty = (float) $item->quantity;
                     $pid = (int) $item->product_id;
-                    $this->addMovement($pid, (int) $note->from_warehouse_id, $date, 'claim_out', $qty, -$qty);
-                    $this->addMovement($pid, (int) $note->to_warehouse_id, $date, 'claim_in', $qty, $qty);
+                    $ref = (string) ($note->voucher_no ?? $note->id ?? '');
+                    $party = method_exists($note, 'partyName') ? $note->partyName() : '';
+                    $price = (float) ($item->price ?? 0);
+                    $this->addMovement($pid, (int) $note->from_warehouse_id, $date, 'claim_out', $qty, -$qty, $ref, 'CCN', $party, $price, $price * $qty);
+                    $this->addMovement($pid, (int) $note->to_warehouse_id, $date, 'claim_in', $qty, $qty, $ref, 'CCN', $party, $price, $price * $qty);
                 }
             });
     }
@@ -454,8 +611,10 @@ class StockReportBuilder
                     $pid = (int) $item->product_id;
                     $fromWh = $tr->from_shop ? 0 : (int) $tr->from_warehouse_id;
                     $toWh = $tr->to_shop ? 0 : (int) $tr->to_warehouse_id;
-                    $this->addMovement($pid, $fromWh, $date, 'trf_out', $qty, -$qty);
-                    $this->addMovement($pid, $toWh, $date, 'trf_in', $qty, $qty);
+                    $ref = (string) ($tr->transfer_no ?? $tr->id ?? '');
+                    $price = (float) ($item->price ?? 0);
+                    $this->addMovement($pid, $fromWh, $date, 'trf_out', $qty, -$qty, $ref, 'TR', 'Transfer Out', $price, $price * $qty);
+                    $this->addMovement($pid, $toWh, $date, 'trf_in', $qty, $qty, $ref, 'TR', 'Transfer In', $price, $price * $qty);
                 }
             });
     }
@@ -476,7 +635,8 @@ class StockReportBuilder
                     $wh = (int) ($w->warehouse_id ?? 0);
                     $date = $this->pickDate($w, ['date', 'entry_date']);
                     $qty = (float) $item->qty;
-                    $this->addMovement((int) $item->product_id, $wh, $date, 'waste', $qty, -$qty);
+                    $ref = (string) ($w->gwn_id ?? $w->id ?? '');
+                    $this->addMovement((int) $item->product_id, $wh, $date, 'waste', $qty, -$qty, $ref, 'WS', 'Wastage', 0, 0);
                 }
             });
     }
@@ -484,6 +644,7 @@ class StockReportBuilder
     private function collectHolds(): void
     {
         StockHold::withoutGlobalScopes()
+            ->with('voucher')
             ->whereHas('voucher', function ($q) {
                 $q->withoutGlobalScopes()->where('status', 'Posted');
             })
@@ -493,7 +654,8 @@ class StockReportBuilder
                     $date = $this->pickDate($item, ['entry_date']);
                     $qty = (float) $item->hold_qty;
                     $wh = (int) ($item->warehouse_id ?? 0);
-                    $this->addMovement((int) $item->product_id, $wh, $date, 'hold', $qty, 0);
+                    $ref = (string) ($item->voucher->hold_id ?? $item->id ?? '');
+                    $this->addMovement((int) $item->product_id, $wh, $date, 'hold', $qty, 0, $ref, 'HD', 'Hold', 0, 0);
                 }
             });
     }
@@ -501,6 +663,7 @@ class StockReportBuilder
     private function collectReleases(): void
     {
         StockRelease::withoutGlobalScopes()
+            ->with('voucher')
             ->whereHas('voucher', function ($q) {
                 $q->withoutGlobalScopes()->where('status', 'Posted');
             })
@@ -511,7 +674,8 @@ class StockReportBuilder
                     $date = $this->pickDate($voucher ?? $item, ['date', 'entry_date']);
                     $qty = (float) $item->release_qty;
                     $wh = (int) ($voucher->warehouse_id ?? $item->warehouse_id ?? 0);
-                    $this->addMovement((int) $item->product_id, $wh, $date, 'release', $qty, -$qty);
+                    $ref = (string) ($voucher->release_id ?? $item->id ?? '');
+                    $this->addMovement((int) $item->product_id, $wh, $date, 'release', $qty, -$qty, $ref, 'RL', 'Release', 0, 0);
                 }
             });
     }
@@ -529,7 +693,8 @@ class StockReportBuilder
                     $wh = (int) ($adj->warehouse_id ?? 0);
                     $date = $this->pickDate($adj, ['date', 'entry_date']);
                     $qty = (float) $item->qty;
-                    $this->addMovement((int) $item->product_id, $wh, $date, 'adj', $qty, $qty);
+                    $ref = (string) ($adj->adj_id ?? $adj->id ?? '');
+                    $this->addMovement((int) $item->product_id, $wh, $date, 'adj', $qty, $qty, $ref, 'AD', 'Adjustment', 0, 0);
                 }
             });
     }
@@ -641,6 +806,96 @@ class StockReportBuilder
         }
 
         return true;
+    }
+
+    private function compileLedger(int $productId, int $warehouseId, ?string $fromDate, ?string $toDate): ?array
+    {
+        $txns = $this->movements->filter(function ($m) use ($productId, $warehouseId) {
+            return (int) $m['product_id'] === $productId && (int) $m['warehouse_id'] === $warehouseId;
+        });
+
+        $current = $this->getCurrentStock($productId, $warehouseId);
+        $effectAfterFrom = $txns->filter(fn ($m) => $fromDate && $m['date'] >= $fromDate)->sum('balance_effect');
+        $opening = $current - $effectAfterFrom;
+
+        $periodTxns = $txns->filter(fn ($m) => $this->dateInPeriod($m['date'], $fromDate, $toDate))
+            ->sortBy(fn ($m) => sprintf(
+                '%s|%010d|%s',
+                $m['date'],
+                (int) ($m['txn_id'] ?? 0),
+                $m['type_code'] ?? ''
+            ));
+
+        if ($periodTxns->isEmpty() && abs($opening) < 0.0001 && abs($current) < 0.0001) {
+            return null;
+        }
+
+        static $productNames = null;
+        if ($productNames === null) {
+            $productNames = Product::pluck('name', 'id')->all();
+        }
+
+        $rows = [];
+        $balance = $opening;
+        $totals = array_merge(
+            ['amount' => 0.0, 'opn_balance' => $opening],
+            array_fill_keys(self::COLS, 0.0)
+        );
+
+        $rows[] = [
+            'ref_id' => '0',
+            'date' => $fromDate ? Carbon::parse($fromDate)->format('d-m-y') : '',
+            'type_code' => 'B/F',
+            'party_name' => '',
+            'price' => null,
+            'amount' => null,
+            'opn_balance' => $opening,
+            'cols' => array_fill_keys(self::COLS, 0.0),
+            'balance' => $opening,
+            'is_bf' => true,
+        ];
+
+        foreach ($periodTxns as $txn) {
+            $balance += (float) $txn['balance_effect'];
+            $cols = array_fill_keys(self::COLS, 0.0);
+            $col = $txn['column'];
+            if ($col !== 'adj' && isset($cols[$col])) {
+                $cols[$col] = (float) $txn['qty'];
+                $totals[$col] += (float) $txn['qty'];
+            }
+
+            $amount = (float) ($txn['amount'] ?? 0);
+            $totals['amount'] += $amount;
+
+            $rows[] = [
+                'ref_id' => $txn['ref_id'] ?? '',
+                'date' => Carbon::parse($txn['date'])->format('d-m-y'),
+                'type_code' => $txn['type_code'] ?? strtoupper($col),
+                'party_name' => $txn['party_name'] ?? '',
+                'price' => (float) ($txn['price'] ?? 0),
+                'amount' => $amount,
+                'opn_balance' => null,
+                'cols' => $cols,
+                'balance' => $balance,
+                'is_bf' => false,
+            ];
+        }
+
+        $holdQty = (float) StockHold::withoutGlobalScopes()
+            ->where('product_id', $productId)
+            ->where('warehouse_id', $warehouseId)
+            ->where('hold_qty', '>', 0)
+            ->sum('hold_qty');
+
+        return [
+            'product_id' => $productId,
+            'product_name' => $productNames[$productId] ?? ('Item #' . $productId),
+            'warehouse_id' => $warehouseId,
+            'warehouse_label' => $this->warehouseLabel($warehouseId),
+            'rows' => $rows,
+            'totals' => array_merge($totals, ['balance' => $balance]),
+            'hold_qty' => $holdQty,
+        ];
     }
 
     private function sumRows(array $rows): array
