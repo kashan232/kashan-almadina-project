@@ -4,79 +4,94 @@
     <meta charset="UTF-8">
     <title>Stock Report — Without Values</title>
     <style>
-        @page { size: A4 landscape; margin: 5mm; }
+        @page { size: A4 landscape; margin: 2mm; }
         * { box-sizing: border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
         body {
             font-family: Arial, Helvetica, sans-serif;
-            font-size: 10px;
+            font-size: 7px;
             color: #000;
             margin: 0;
-            padding: 6mm;
+            padding: 1mm;
             background: #fff;
         }
         .no-print {
-            padding: 10px;
+            padding: 8px;
             background: #f8f9fa;
             border-bottom: 1px solid #ddd;
             text-align: center;
-            margin-bottom: 12px;
+            margin-bottom: 8px;
+        }
+        .report-sheet {
+            width: 100%;
+            max-width: 143mm;
         }
         .company-name {
             text-align: center;
             color: #8e24aa;
-            font-size: 16px;
+            font-size: 9px;
             font-weight: bold;
-            margin-bottom: 2px;
+            margin-bottom: 1px;
+            line-height: 1.1;
         }
         .report-header {
             text-align: center;
             position: relative;
-            margin-bottom: 10px;
+            margin-bottom: 2px;
+            line-height: 1.15;
         }
         .report-title {
             color: #0d47a1;
-            font-size: 16px;
+            font-size: 9px;
             font-weight: bold;
-            margin: 0 0 2px 0;
+            margin: 0;
         }
         .report-type {
-            color: #333;
-            font-size: 12px;
+            font-size: 7px;
             font-weight: bold;
             text-decoration: underline;
-            margin-bottom: 4px;
         }
-        .date-range { font-size: 11px; font-weight: bold; }
+        .date-range { font-size: 7px; font-weight: bold; }
         .date-range span { text-decoration: underline; }
         .generated-date {
             position: absolute;
             right: 0;
             top: 0;
-            font-size: 10px;
+            font-size: 6px;
             color: #333;
         }
         table {
             width: 100%;
             border-collapse: collapse;
             border: 1px solid #000;
+            table-layout: fixed;
         }
         th {
             background: #cfd8dc;
             border: 1px solid #000;
-            padding: 4px 2px;
-            font-size: 9px;
+            padding: 1px;
+            font-size: 6px;
             font-weight: bold;
             text-align: center;
+            line-height: 1.1;
+            word-wrap: break-word;
         }
         th.col-out { background: #e65100 !important; color: #fff !important; }
         th.col-hold { background: #e65100 !important; color: #fff !important; }
         td {
             border: 1px solid #666;
-            padding: 3px 4px;
+            padding: 1px 2px;
             vertical-align: middle;
-            font-size: 9px;
+            font-size: 6.5px;
+            line-height: 1.15;
+            overflow: hidden;
         }
-        .item-name { text-align: left; font-weight: 600; }
+        .item-name {
+            text-align: left;
+            font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
         .num { text-align: center; }
         .col-out-cell {
             background: #fff3e0 !important;
@@ -90,27 +105,31 @@
             font-weight: 600;
             text-align: center;
         }
-        .opening-col, .closing-col { font-weight: bold; text-align: center; }
+        .opening-col, .closing-col { font-weight: bold; text-align: center; font-size: 6px; }
         .wh-title td {
             background: #eceff1 !important;
             font-weight: bold;
             text-align: left;
-            padding: 5px 8px;
-            border-top: 2px solid #000;
+            padding: 1px 3px;
+            font-size: 6.5px;
+            border-top: 1px solid #000;
         }
         .subtotal-row td {
-            background: #f5f5f5 !important;
+            background: #e3f2fd !important;
             font-weight: bold;
             border-top: 1px solid #000;
+            font-size: 6.5px;
         }
         .grand-total-row td {
             background: #cfd8dc !important;
             font-weight: bold;
-            border-top: 2px solid #000;
+            border-top: 1px solid #000;
+            font-size: 6.5px;
         }
         @media print {
-            body { padding: 4mm; }
+            body { padding: 1mm; }
             .no-print { display: none !important; }
+            .report-sheet { max-width: 143mm; }
         }
     </style>
 </head>
@@ -118,17 +137,6 @@
     <div class="no-print">
         <button onclick="window.print()" style="padding:8px 20px;font-weight:bold;cursor:pointer;">Print Report</button>
         <button onclick="window.close()" style="padding:8px 20px;margin-left:8px;cursor:pointer;">Close</button>
-    </div>
-
-    <div class="company-name">AL-MADINA TRADERS</div>
-    <div class="report-header">
-        <div class="generated-date">{{ now()->format('d-m-y g:i A') }}</div>
-        <h1 class="report-title">Stock Report</h1>
-        <div class="report-type">Without Values (Qty Movement)</div>
-        <div class="date-range">
-            From: <span>{{ $from_date ? \Carbon\Carbon::parse($from_date)->format('d-m-y') : '' }}</span>
-            &nbsp;&nbsp;To: <span>{{ $to_date ? \Carbon\Carbon::parse($to_date)->format('d-m-y') : '' }}</span>
-        </div>
     </div>
 
     @php
@@ -147,74 +155,78 @@
             return 'num';
         };
         $cols = [
-            ['key' => 'opening', 'head' => $opening_label, 'th' => ''],
-            ['key' => 'closing', 'head' => $closing_label, 'th' => ''],
-            ['key' => 'pur', 'head' => 'PJ', 'th' => ''],
-            ['key' => 'pur_ret', 'head' => 'PRJ', 'th' => 'col-out'],
-            ['key' => 'sales', 'head' => 'SJ', 'th' => 'col-out'],
-            ['key' => 'sales_ret', 'head' => 'SRJ', 'th' => ''],
-            ['key' => 'claim_in', 'head' => 'CLIN', 'th' => ''],
-            ['key' => 'claim_out', 'head' => 'CLO', 'th' => 'col-out'],
-            ['key' => 'trf_in', 'head' => 'TIN', 'th' => ''],
-            ['key' => 'trf_out', 'head' => 'TOUT', 'th' => 'col-out'],
-            ['key' => 'waste', 'head' => 'WST', 'th' => 'col-out'],
-            ['key' => 'hold', 'head' => 'Hold Qty', 'th' => 'col-hold'],
-            ['key' => 'release', 'head' => 'REL', 'th' => 'col-out'],
+            ['key' => 'opening', 'head' => $opening_label, 'th' => '', 'w' => '7%'],
+            ['key' => 'closing', 'head' => $closing_label, 'th' => '', 'w' => '7%'],
+            ['key' => 'pur', 'head' => 'PJ', 'th' => '', 'w' => '5%'],
+            ['key' => 'pur_ret', 'head' => 'PRJ', 'th' => 'col-out', 'w' => '5%'],
+            ['key' => 'sales', 'head' => 'SJ', 'th' => 'col-out', 'w' => '5%'],
+            ['key' => 'sales_ret', 'head' => 'SRJ', 'th' => '', 'w' => '5%'],
+            ['key' => 'claim_in', 'head' => 'CLM IN', 'th' => '', 'w' => '5%'],
+            ['key' => 'claim_out', 'head' => 'CLM Out', 'th' => 'col-out', 'w' => '5%'],
+            ['key' => 'trf_in', 'head' => 'TOG In', 'th' => '', 'w' => '5%'],
+            ['key' => 'trf_out', 'head' => 'TOG Out', 'th' => 'col-out', 'w' => '5%'],
+            ['key' => 'waste', 'head' => 'WOG', 'th' => 'col-out', 'w' => '5%'],
+            ['key' => 'hold', 'head' => 'SH', 'th' => 'col-hold', 'w' => '5%'],
+            ['key' => 'release', 'head' => 'SR', 'th' => 'col-out', 'w' => '5%'],
         ];
     @endphp
 
-    <table>
-        <thead>
-            <tr>
-                <th style="width:14%;">Item</th>
-                @foreach($cols as $col)
-                <th class="{{ $col['th'] }}">{{ $col['head'] }}</th>
-                @endforeach
-            </tr>
-        </thead>
-        <tbody>
-            @forelse($grouped as $warehouseId => $rows)
-                @php $whTotal = array_fill_keys(array_column($cols, 'key'), 0.0); @endphp
-                <tr class="wh-title">
-                    <td colspan="{{ count($cols) + 1 }}">{{ $rows->first()['warehouse_label'] ?? ('Location #' . $warehouseId) }}</td>
-                </tr>
-                @foreach($rows as $row)
-                    @php
-                        foreach ($whTotal as $k => $_) {
-                            $whTotal[$k] += $row[$k] ?? 0;
-                        }
-                    @endphp
+    <div class="report-sheet">
+            <div class="company-name">AL-MADINA TRADERS</div>
+            <div class="report-header">
+                <div class="generated-date">{{ now()->format('l, M j, Y') }}</div>
+                <div class="report-title">Stock Report</div>
+                <div class="report-type">Without Values</div>
+                <div class="date-range">
+                    From: <span>{{ $from_date ? \Carbon\Carbon::parse($from_date)->format('d-m-y') : '' }}</span>
+                    To: <span>{{ $to_date ? \Carbon\Carbon::parse($to_date)->format('d-m-y') : '' }}</span>
+                </div>
+            </div>
+            <table>
+                <thead>
                     <tr>
-                        <td class="item-name">{{ $row['product_name'] }}</td>
+                        <th style="width:18%;">Item</th>
                         @foreach($cols as $col)
-                        <td class="{{ $cellClass($col['key'], $row[$col['key']] ?? 0) }} {{ in_array($col['key'], ['opening','closing']) ? 'opening-col' : '' }}">
-                            {{ $fmt($row[$col['key']] ?? 0) }}
-                        </td>
+                        <th class="{{ $col['th'] }}" style="width:{{ $col['w'] }};">{{ $col['head'] }}</th>
                         @endforeach
                     </tr>
-                @endforeach
-                <tr class="subtotal-row">
-                    <td style="text-align:right;">Total:</td>
-                    @foreach($cols as $col)
-                    <td class="{{ $cellClass($col['key'], $whTotal[$col['key']]) }}">{{ $fmt($whTotal[$col['key']]) }}</td>
-                    @endforeach
-                </tr>
-                <tr style="height:8px;"><td colspan="{{ count($cols) + 1 }}" style="border:none;"></td></tr>
-            @empty
-                <tr>
-                    <td colspan="{{ count($cols) + 1 }}" style="text-align:center;padding:20px;">No stock movement found for selected filters.</td>
-                </tr>
-            @endforelse
-
-            @if($grouped->isNotEmpty())
-            <tr class="grand-total-row">
-                <td style="text-align:right;">Grand Total:</td>
-                @foreach($cols as $col)
-                <td class="{{ $cellClass($col['key'], $grand[$col['key']] ?? 0) }}">{{ $fmt($grand[$col['key']] ?? 0) }}</td>
-                @endforeach
-            </tr>
-            @endif
-        </tbody>
-    </table>
+                </thead>
+                <tbody>
+                    @forelse($grouped as $warehouseId => $rows)
+                        @php $whTotal = array_fill_keys(array_column($cols, 'key'), 0.0); @endphp
+                        <tr class="wh-title">
+                            <td colspan="{{ count($cols) + 1 }}">{{ $rows->first()['warehouse_label'] ?? ('WH #' . $warehouseId) }}</td>
+                        </tr>
+                        @foreach($rows as $row)
+                            @php foreach ($whTotal as $k => $_) { $whTotal[$k] += $row[$k] ?? 0; } @endphp
+                            <tr>
+                                <td class="item-name" title="{{ $row['product_name'] }}">{{ $row['product_name'] }}</td>
+                                @foreach($cols as $col)
+                                <td class="{{ $cellClass($col['key'], $row[$col['key']] ?? 0) }} {{ in_array($col['key'], ['opening','closing']) ? 'opening-col' : '' }}">
+                                    {{ $fmt($row[$col['key']] ?? 0) }}
+                                </td>
+                                @endforeach
+                            </tr>
+                        @endforeach
+                        <tr class="subtotal-row">
+                            <td style="text-align:right;">{{ $warehouseId }} Total:</td>
+                            @foreach($cols as $col)
+                            <td class="{{ $cellClass($col['key'], $whTotal[$col['key']]) }}">{{ $fmt($whTotal[$col['key']]) }}</td>
+                            @endforeach
+                        </tr>
+                    @empty
+                        <tr><td colspan="{{ count($cols) + 1 }}" style="text-align:center;padding:8px;">No data.</td></tr>
+                    @endforelse
+                    @if($grouped->isNotEmpty())
+                    <tr class="grand-total-row">
+                        <td style="text-align:right;">Grand Total:</td>
+                        @foreach($cols as $col)
+                        <td class="{{ $cellClass($col['key'], $grand[$col['key']] ?? 0) }}">{{ $fmt($grand[$col['key']] ?? 0) }}</td>
+                        @endforeach
+                    </tr>
+                    @endif
+                </tbody>
+            </table>
+    </div>
 </body>
 </html>
