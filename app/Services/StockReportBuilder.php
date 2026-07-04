@@ -13,7 +13,9 @@ use App\Models\SaleItem;
 use App\Models\SaleReturnItem;
 use App\Models\StockAdjustmentItem;
 use App\Models\StockHold;
+use App\Models\StockHoldVoucher;
 use App\Models\StockRelease;
+use App\Models\StockReleaseVoucher;
 use App\Models\StockTransferProduct;
 use App\Models\StockWastageDetail;
 use App\Models\UserGroup;
@@ -641,6 +643,35 @@ class StockReportBuilder
             });
     }
 
+    private function resolveHoldWarehouseId(StockHold $item): int
+    {
+        $voucher = $item->voucher;
+
+        return (int) ($item->warehouse_id ?? ($voucher->warehouse_id ?? 0));
+    }
+
+    /** Same warehouse resolution as StockHoldController::resolveReleaseWarehouseId. */
+    private function resolveReleaseWarehouseId(StockReleaseVoucher $voucher, StockRelease $item): int
+    {
+        if ($item->hold_id) {
+            $hold = $item->relationLoaded('hold')
+                ? $item->hold
+                : StockHold::withoutGlobalScopes()->find($item->hold_id);
+            if ($hold && $hold->warehouse_id !== null && $hold->warehouse_id !== '') {
+                return (int) $hold->warehouse_id;
+            }
+        }
+
+        if ($voucher->hold_voucher_id) {
+            $holdVoucher = StockHoldVoucher::withoutGlobalScopes()->find($voucher->hold_voucher_id);
+            if ($holdVoucher && $holdVoucher->warehouse_id !== null && $holdVoucher->warehouse_id !== '') {
+                return (int) $holdVoucher->warehouse_id;
+            }
+        }
+
+        return (int) ($item->warehouse_id ?: $voucher->warehouse_id);
+    }
+
     private function collectHolds(): void
     {
         StockHold::withoutGlobalScopes()
@@ -653,9 +684,13 @@ class StockReportBuilder
                 foreach ($items as $item) {
                     $date = $this->pickDate($item, ['entry_date']);
                     $qty = (float) $item->hold_qty;
-                    $wh = (int) ($item->warehouse_id ?? 0);
+                    if ($qty <= 0) {
+                        continue;
+                    }
+                    $wh = $this->resolveHoldWarehouseId($item);
                     $ref = (string) ($item->voucher->hold_id ?? $item->id ?? '');
-                    $this->addMovement((int) $item->product_id, $wh, $date, 'hold', $qty, 0, $ref, 'HD', 'Hold', 0, 0);
+                    // Hold adds physical stock (+qty), same as warehouse_stocks on post.
+                    $this->addMovement((int) $item->product_id, $wh, $date, 'hold', $qty, $qty, $ref, 'SH', 'Stock Hold', 0, 0);
                 }
             });
     }
@@ -663,7 +698,7 @@ class StockReportBuilder
     private function collectReleases(): void
     {
         StockRelease::withoutGlobalScopes()
-            ->with('voucher')
+            ->with(['voucher', 'hold'])
             ->whereHas('voucher', function ($q) {
                 $q->withoutGlobalScopes()->where('status', 'Posted');
             })
@@ -671,11 +706,18 @@ class StockReportBuilder
             ->chunkById(500, function ($items) {
                 foreach ($items as $item) {
                     $voucher = $item->voucher;
-                    $date = $this->pickDate($voucher ?? $item, ['date', 'entry_date']);
+                    if (!$voucher) {
+                        continue;
+                    }
+                    $date = $this->pickDate($voucher, ['date', 'entry_date']);
                     $qty = (float) $item->release_qty;
-                    $wh = (int) ($voucher->warehouse_id ?? $item->warehouse_id ?? 0);
+                    if ($qty <= 0) {
+                        continue;
+                    }
+                    $wh = $this->resolveReleaseWarehouseId($voucher, $item);
                     $ref = (string) ($voucher->release_id ?? $item->id ?? '');
-                    $this->addMovement((int) $item->product_id, $wh, $date, 'release', $qty, -$qty, $ref, 'RL', 'Release', 0, 0);
+                    // Release deducts physical stock (-qty), same as warehouse_stocks on post.
+                    $this->addMovement((int) $item->product_id, $wh, $date, 'release', $qty, -$qty, $ref, 'SR', 'Stock Release', 0, 0);
                 }
             });
     }
