@@ -936,16 +936,17 @@ class StockReportBuilder
             'physical_amount' => 0.0,
             'hold_qty' => 0.0,
             'hold_amount' => 0.0,
+            'retail_amount' => 0.0,
         ];
 
         foreach ($this->resolvedWarehouseIds() as $warehouseId) {
-            $physicalRows = [];
-            $holdRows = [];
+            $rows = [];
             $whTotal = [
                 'physical_qty' => 0.0,
                 'physical_amount' => 0.0,
                 'hold_qty' => 0.0,
                 'hold_amount' => 0.0,
+                'retail_amount' => 0.0,
             ];
 
             foreach ($products as $product) {
@@ -959,50 +960,46 @@ class StockReportBuilder
 
                 $physicalAmount = $physicalQty * $retailPrice;
                 $holdAmount = $holdQty * $retailPrice;
+                $retailAmount = $physicalAmount + $holdAmount;
 
-                if (abs($physicalQty) >= 0.0001) {
-                    $physicalRows[] = [
-                        'product_name' => $product->name,
-                        'qty' => $physicalQty,
-                        'retail_price' => $retailPrice,
-                        'retail_amount' => $physicalAmount,
-                    ];
-                    $whTotal['physical_qty'] += $physicalQty;
-                    $whTotal['physical_amount'] += $physicalAmount;
-                }
+                $rows[] = [
+                    'product_name' => $product->name,
+                    'physical_qty' => $physicalQty,
+                    'hold_qty' => $holdQty,
+                    'retail_price' => $retailPrice,
+                    'retail_amount' => $retailAmount,
+                ];
 
-                if (abs($holdQty) >= 0.0001) {
-                    $holdRows[] = [
-                        'product_name' => $product->name,
-                        'qty' => $holdQty,
-                        'retail_price' => $retailPrice,
-                        'retail_amount' => $holdAmount,
-                    ];
-                    $whTotal['hold_qty'] += $holdQty;
-                    $whTotal['hold_amount'] += $holdAmount;
-                }
+                $whTotal['physical_qty'] += $physicalQty;
+                $whTotal['physical_amount'] += $physicalAmount;
+                $whTotal['hold_qty'] += $holdQty;
+                $whTotal['hold_amount'] += $holdAmount;
+                $whTotal['retail_amount'] += $retailAmount;
             }
 
-            if (empty($physicalRows) && empty($holdRows)) {
+            if (empty($rows)) {
                 continue;
             }
 
             $groups[] = [
                 'warehouse_id' => (int) $warehouseId,
                 'warehouse_label' => $this->warehouseLabel((int) $warehouseId),
-                'physical' => $physicalRows,
-                'hold' => $holdRows,
+                'rows' => $rows,
                 'totals' => $whTotal,
             ];
 
-            foreach ($grand as $key => $_) {
-                $grand[$key] += $whTotal[$key] ?? 0;
-            }
+            $grand['physical_qty'] += $whTotal['physical_qty'];
+            $grand['physical_amount'] += $whTotal['physical_amount'];
+            $grand['hold_qty'] += $whTotal['hold_qty'];
+            $grand['hold_amount'] += $whTotal['hold_amount'];
+            $grand['retail_amount'] = ($grand['retail_amount'] ?? 0) + $whTotal['retail_amount'];
         }
 
         return [
             'groups' => $groups,
             'grand' => $grand,
+            'from_date' => $request->from_date,
+            'to_date' => $request->to_date,
             'generated_at' => now(),
         ];
     }

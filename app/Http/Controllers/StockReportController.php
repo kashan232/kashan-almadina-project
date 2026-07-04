@@ -34,8 +34,8 @@ class StockReportController extends Controller
     public function preview(Request $request, StockReportBuilder $builder)
     {
         $request->validate([
-            'from_date' => 'required_unless:report_type,retail|nullable|date',
-            'to_date' => 'required_unless:report_type,retail|nullable|date|after_or_equal:from_date',
+            'from_date' => 'required|date',
+            'to_date' => 'required|date|after_or_equal:from_date',
             'report_type' => 'required|in:summary,retail',
         ]);
 

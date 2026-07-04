@@ -156,13 +156,13 @@
                                     </select>
                                 </div>
                                 @endif
-                                <div class="col-md-2 stock-date-field">
-                                    <label class="fw-bold mb-1" style="font-size: 11px;">From Date</label>
-                                    <input type="date" name="from_date" class="form-control form-control-sm stock-date-input" value="{{ date('Y-m-01') }}" style="height: 30px; font-size: 12px;">
+                                <div class="col-md-2">
+                                    <label class="fw-bold mb-1" style="font-size: 11px;">Start Date</label>
+                                    <input type="date" name="from_date" class="form-control form-control-sm" value="{{ date('Y-m-01') }}" required style="height: 30px; font-size: 12px;">
                                 </div>
-                                <div class="col-md-2 stock-date-field">
-                                    <label class="fw-bold mb-1" style="font-size: 11px;">To Date</label>
-                                    <input type="date" name="to_date" class="form-control form-control-sm stock-date-input" value="{{ date('Y-m-d') }}" style="height: 30px; font-size: 12px;">
+                                <div class="col-md-2">
+                                    <label class="fw-bold mb-1" style="font-size: 11px;">End Date</label>
+                                    <input type="date" name="to_date" class="form-control form-control-sm" value="{{ date('Y-m-d') }}" required style="height: 30px; font-size: 12px;">
                                 </div>
                             </div>
                         </div>
@@ -330,15 +330,6 @@
                 alert('Please select at least one Item for Item Stock Ledger.');
             }
         });
-        @else
-        function toggleStockDateFields() {
-            const isRetail = $('#stockReportType').val() === 'retail';
-            $('.stock-date-field').toggle(!isRetail);
-            $('.stock-date-input').prop('required', !isRetail);
-        }
-
-        $('#stockReportType').on('change', toggleStockDateFields);
-        toggleStockDateFields();
         @endif
     });
 </script>
