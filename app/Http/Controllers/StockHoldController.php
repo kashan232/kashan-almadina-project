@@ -284,7 +284,7 @@ class StockHoldController extends Controller
                 }
 
                 $effectiveQty = $this->applyHoldEffects(
-                    (int) $voucher->warehouse_id,
+                    (int) ($item->warehouse_id ?? $voucher->warehouse_id),
                     (int) $item->product_id,
                     $grossQty,
                     $voucher->party_type,
@@ -740,6 +740,20 @@ class StockHoldController extends Controller
 
     private function resolveReleaseWarehouseId(\App\Models\StockReleaseVoucher $voucher, \App\Models\StockRelease $item): int
     {
+        if ($item->hold_id) {
+            $hold = StockHold::withoutGlobalScopes()->find($item->hold_id);
+            if ($hold && $hold->warehouse_id !== null && $hold->warehouse_id !== '') {
+                return (int) $hold->warehouse_id;
+            }
+        }
+
+        if ($voucher->hold_voucher_id) {
+            $holdVoucher = StockHoldVoucher::withoutGlobalScopes()->find($voucher->hold_voucher_id);
+            if ($holdVoucher && $holdVoucher->warehouse_id !== null && $holdVoucher->warehouse_id !== '') {
+                return (int) $holdVoucher->warehouse_id;
+            }
+        }
+
         return (int) ($item->warehouse_id ?: $voucher->warehouse_id);
     }
 
@@ -987,21 +1001,32 @@ class StockHoldController extends Controller
 
     private function adjustStock($warehouseId, $productId, $qty)
     {
-        if ($warehouseId == 0) {
+        if ((int) $warehouseId === 0) {
             $product = Product::find($productId);
             if ($product) {
                 $product->stock = ($product->stock ?? 0) + $qty;
                 $product->save();
             }
-        } else {
-            $stock = \App\Models\WarehouseStock::firstOrNew([
-                'warehouse_id' => $warehouseId,
-                'product_id'   => $productId
-            ]);
-            $stock->quantity = ($stock->quantity ?? 0) + $qty;
-            if (!$stock->exists) $stock->status = 'Posted';
-            $stock->save();
+            return;
         }
+
+        $stock = \App\Models\WarehouseStock::where('warehouse_id', $warehouseId)
+            ->where('product_id', $productId)
+            ->orderByRaw("CASE WHEN status = 'Posted' THEN 0 WHEN status IS NULL THEN 1 ELSE 2 END")
+            ->orderByDesc('id')
+            ->first();
+
+        if (!$stock) {
+            $stock = new \App\Models\WarehouseStock([
+                'warehouse_id' => $warehouseId,
+                'product_id'   => $productId,
+                'quantity'     => 0,
+            ]);
+        }
+
+        $stock->quantity = ($stock->quantity ?? 0) + $qty;
+        $stock->status = 'Posted';
+        $stock->save();
     }
 
     public function editRelease($id)

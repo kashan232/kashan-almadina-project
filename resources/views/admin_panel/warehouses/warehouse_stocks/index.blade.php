@@ -290,8 +290,9 @@
                                             {{-- Warehouse Columns --}}
                                             @foreach($warehouses as $wh)
                                                 @php
-                                                    $whStockObj = $product->warehouseStocks->where('warehouse_id', $wh->id)->first();
-                                                    $physicalQty = $whStockObj ? (float)$whStockObj->quantity : 0;
+                                                    $physicalQty = (float) $product->warehouseStocks
+                                                        ->where('warehouse_id', $wh->id)
+                                                        ->sum('quantity');
                                                     
                                                     $whHoldSum = (float) $product->stockHolds->where('warehouse_id', $wh->id)->sum('hold_qty');
                                                     $availableQty = $physicalQty - $whHoldSum;
