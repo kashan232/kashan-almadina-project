@@ -187,7 +187,8 @@ class StockHoldController extends Controller
                 if ($qty <= 0) continue;
 
                 if ($status === 'Posted') {
-                    $qty = $this->applyHoldReservedIncrease(
+                    $qty = $this->applyHoldEffects(
+                        (int) $request->warehouse_id,
                         (int) $productId,
                         $qty,
                         $request->vendor_type,
@@ -282,7 +283,8 @@ class StockHoldController extends Controller
                     continue;
                 }
 
-                $effectiveQty = $this->applyHoldReservedIncrease(
+                $effectiveQty = $this->applyHoldEffects(
+                    (int) $voucher->warehouse_id,
                     (int) $item->product_id,
                     $grossQty,
                     $voucher->party_type,
@@ -852,6 +854,30 @@ class StockHoldController extends Controller
         return $query->orderByRaw('CASE WHEN hold_qty <= 0 THEN 0 ELSE 1 END')
             ->orderByDesc('id')
             ->first();
+    }
+
+    /** Increase physical stock and reserved — pay off negative (over-release) balance first, same signed math as release. */
+    private function applyHoldEffects(
+        int $warehouseId,
+        int $productId,
+        float $holdQty,
+        ?string $partyType = null,
+        ?int $partyId = null,
+        ?int $excludeVoucherId = null
+    ): float {
+        if ($holdQty <= 0) {
+            return 0;
+        }
+
+        $this->adjustStock($warehouseId, $productId, $holdQty);
+
+        return $this->applyHoldReservedIncrease(
+            $productId,
+            $holdQty,
+            $partyType,
+            $partyId,
+            $excludeVoucherId
+        );
     }
 
     /** Increase reserved on hold — pay off negative (over-release) balance first, same signed math as release. */
