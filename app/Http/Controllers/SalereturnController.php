@@ -36,40 +36,12 @@ class SaleReturnController extends Controller
 
     public function create()
     {
-        $nextInvoice = $this->generateReturnNo();
+        $nextInvoice = SaleReturn::generateReturnNo();
         $sales = Sale::orderBy('id', 'desc')->get(['id', 'invoice_no', 'partyType', 'customer_id']);
         $vendors = \App\Models\Vendor::all();
         $customers = \App\Models\Customer::all();
         $warehouses = \App\Models\Warehouse::all();
         return view('admin_panel.sale_return.add_return', compact('nextInvoice', 'sales', 'vendors', 'customers', 'warehouses'));
-    }
-
-    private function generateReturnNo()
-    {
-        // Get all invoice numbers that start with SR-
-        $invoices = DB::table('sale_returns')
-            ->where('invoice_no', 'LIKE', 'SR-%')
-            ->pluck('invoice_no');
-            
-        $maxNum = 0;
-        foreach ($invoices as $inv) {
-            $num = (int) preg_replace('/[^0-9]/', '', $inv);
-            if ($num > $maxNum) {
-                $maxNum = $num;
-            }
-        }
-
-        // If no SR- invoices exist, we start from 1, otherwise increment max
-        $maxNum++;
-        $nextInvoice = 'SR-' . $maxNum;
-        
-        // Final safety check to ensure absolute uniqueness
-        while (DB::table('sale_returns')->where('invoice_no', $nextInvoice)->exists()) {
-            $maxNum++;
-            $nextInvoice = 'SR-' . $maxNum;
-        }
-
-        return $nextInvoice;
     }
 
     public function getSaleDetails($invoice)
@@ -148,80 +120,95 @@ class SaleReturnController extends Controller
             'warehouse_id.required' => 'Please select a Warehouse.',
         ]);
 
-        try {
-            $result = DB::transaction(function () use ($request) {
-                $saleId = $request->sale_id;
-                $invoiceNo = $this->generateReturnNo();
-                
-                $party_type = $request->vendor_type;
-                $customer_id = $request->party_id;
+        $maxAttempts = 3;
+        $lastException = null;
 
-                if ($saleId) {
-                    $sale = Sale::findOrFail($saleId);
-                    $party_type = $sale->partyType;
-                    $customer_id = $sale->customer_id;
-                }
+        for ($attempt = 1; $attempt <= $maxAttempts; $attempt++) {
+            try {
+                $result = DB::transaction(function () use ($request) {
+                    $saleId = $request->sale_id;
+                    $invoiceNo = SaleReturn::generateReturnNo(true);
 
-                $saleReturn = SaleReturn::create([
-                    'invoice_no'       => $invoiceNo,
-                    'sale_id'          => $saleId,
-                    'party_type'       => $party_type,
-                    'customer_id'      => $customer_id,
-                    'entry_date'       => $request->entry_date ?? date('Y-m-d'),
-                    'entry_time'       => $request->entry_time ?? date('H:i'),
-                    'current_date'     => $request->entry_date ?? date('Y-m-d'),
-                    'remarks'          => $request->remarks,
-                    'sub_total2'       => $request->subtotal, // Use sub_total2 as net matching
-                    'discount_amount'  => $request->discount,
-                    'total_balance'    => $request->net_amount,
-                    'status'           => 'Unposted',
-                ]);
+                    $party_type = $request->vendor_type;
+                    $customer_id = $request->party_id;
 
-                foreach ($request->product_id as $index => $productId) {
-                    $qty = $request->qty[$index];
-                    if ($qty <= 0) continue;
+                    if ($saleId) {
+                        $sale = Sale::findOrFail($saleId);
+                        $party_type = $sale->partyType;
+                        $customer_id = $sale->customer_id;
+                    }
 
-                    $price = $request->sales_price[$index];
-                    $retail = $request->retail_price[$index] ?? 0;
-                    $disc_percent = $request->discount_percent[$index] ?? 0;
-                    $disc_amount = ($request->item_disc_amount[$index] ?? 0) * $qty;
-                    $lineTotal = ($price * $qty) - $disc_amount;
-                    $whId = $request->warehouse_id;
+                    $saleReturn = SaleReturn::create([
+                        'invoice_no'       => $invoiceNo,
+                        'sale_id'          => $saleId,
+                        'party_type'       => $party_type,
+                        'customer_id'      => $customer_id,
+                        'entry_date'       => $request->entry_date ?? date('Y-m-d'),
+                        'entry_time'       => $request->entry_time ?? date('H:i'),
+                        'current_date'     => $request->entry_date ?? date('Y-m-d'),
+                        'remarks'          => $request->remarks,
+                        'sub_total2'       => $request->subtotal,
+                        'discount_amount'  => $request->discount,
+                        'total_balance'    => $request->net_amount,
+                        'status'           => 'Unposted',
+                    ]);
 
-                    SaleReturnItem::create([
-                        'sale_return_id'    => $saleReturn->id,
-                        'warehouse_id'      => $whId,
-                        'product_id'        => $productId,
-                        'sales_price'       => $price,
-                        'retail_price'      => $retail,
-                        'discount_percent'  => $disc_percent,
-                        'discount_amount'   => $disc_amount,
-                        'sales_qty'         => $qty,
-                        'amount'            => $lineTotal,
+                    foreach ($request->product_id as $index => $productId) {
+                        $qty = $request->qty[$index];
+                        if ($qty <= 0) continue;
+
+                        $price = $request->sales_price[$index];
+                        $retail = $request->retail_price[$index] ?? 0;
+                        $disc_percent = $request->discount_percent[$index] ?? 0;
+                        $disc_amount = ($request->item_disc_amount[$index] ?? 0) * $qty;
+                        $lineTotal = ($price * $qty) - $disc_amount;
+                        $whId = $request->warehouse_id;
+
+                        SaleReturnItem::create([
+                            'sale_return_id'    => $saleReturn->id,
+                            'warehouse_id'      => $whId,
+                            'product_id'        => $productId,
+                            'sales_price'       => $price,
+                            'retail_price'      => $retail,
+                            'discount_percent'  => $disc_percent,
+                            'discount_amount'   => $disc_amount,
+                            'sales_qty'         => $qty,
+                            'amount'            => $lineTotal,
+                        ]);
+                    }
+
+                    return $saleReturn;
+                });
+
+                if ($request->ajax() || $request->wantsJson()) {
+                    return response()->json([
+                        'success' => true,
+                        'message' => 'Sale Return saved as Unposted!',
+                        'id' => $result->id,
+                        'invoice_no' => $result->invoice_no
                     ]);
                 }
 
-                return $saleReturn;
-            });
-
-            if ($request->ajax() || $request->wantsJson()) {
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Sale Return saved as Unposted!',
-                    'id' => $result->id,
-                    'invoice_no' => $result->invoice_no
-                ]);
+                return redirect()->route('sale.return.home')->with('success', 'Sale Return saved as Unposted!');
+            } catch (\Illuminate\Database\QueryException $e) {
+                $lastException = $e;
+                if ($attempt < $maxAttempts && isset($e->errorInfo[1]) && (int) $e->errorInfo[1] === 1062) {
+                    continue;
+                }
+                break;
+            } catch (\Exception $e) {
+                $lastException = $e;
+                break;
             }
-
-            return redirect()->route('sale.return.home')->with('success', 'Sale Return saved as Unposted!');
-        } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error('Sale Return Error: ' . $e->getMessage());
-            
-            if ($request->ajax() || $request->wantsJson()) {
-                return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
-            }
-            return redirect()->back()->with('error', 'Error: ' . $e->getMessage())->withInput();
         }
+
+        $e = $lastException ?? new \RuntimeException('Failed to save sale return.');
+        \Illuminate\Support\Facades\Log::error('Sale Return Error: ' . $e->getMessage());
+
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
+        }
+        return redirect()->back()->with('error', 'Error: ' . $e->getMessage())->withInput();
     }
 
     public function edit($id)

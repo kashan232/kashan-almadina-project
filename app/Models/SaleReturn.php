@@ -55,4 +55,31 @@ class SaleReturn extends Model
     {
         return $this->belongsTo(User::class, 'created_by');
     }
+
+    /**
+     * Next SR- invoice number across ALL groups (admin + user portals share one sequence).
+     */
+    public static function generateReturnNo(bool $forUpdate = false): string
+    {
+        $query = self::withoutGlobalScopes()->where('invoice_no', 'LIKE', 'SR-%');
+        if ($forUpdate) {
+            $query->lockForUpdate();
+        }
+
+        $maxNum = 0;
+        foreach ($query->pluck('invoice_no') as $inv) {
+            $num = (int) preg_replace('/[^0-9]/', '', (string) $inv);
+            if ($num > $maxNum) {
+                $maxNum = $num;
+            }
+        }
+
+        do {
+            $maxNum++;
+            $nextInvoice = 'SR-' . $maxNum;
+            $exists = self::withoutGlobalScopes()->where('invoice_no', $nextInvoice)->exists();
+        } while ($exists);
+
+        return $nextInvoice;
+    }
 }

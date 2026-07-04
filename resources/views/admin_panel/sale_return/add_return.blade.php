@@ -155,7 +155,7 @@
                             </div>
 
                             <div class="field-gap">
-                                <span class="badge bg-danger w-100 text-start py-1" style="font-size:.72rem;" id="invoiceNoDisplay">Return No: {{ isset($returnData) ? $nextInvoice : 'Auto-Generated' }}</span>
+                                <span class="badge bg-danger w-100 text-start py-1" style="font-size:.72rem;" id="invoiceNoDisplay">Return No: {{ isset($returnData) ? $nextInvoice : ($nextInvoice ?? 'Auto-Generated') }}</span>
                             </div>
 
                             <div class="field-gap mode-toggle">
