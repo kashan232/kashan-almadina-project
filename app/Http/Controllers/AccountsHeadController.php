@@ -7,6 +7,7 @@ use App\Models\AccountHead;
 use App\Models\PurchaseAccountAllocaations;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use App\Models\UserGroup;
 use App\Models\User;
 
@@ -54,16 +55,9 @@ class AccountsHeadController extends Controller
 
     public function getNextAccountCode($headId)
     {
-        $lastAccount = Account::where('head_id', $headId)->orderBy('id', 'desc')->first();
-
-        if ($lastAccount && is_numeric($lastAccount->account_code)) {
-            $nextCode = $lastAccount->account_code + 1;
-        } else {
-            // Default format: HeadID + 001
-            $nextCode = $headId . '001';
-        }
-
-        return response()->json(['code' => $nextCode]);
+        return response()->json([
+            'code' => Account::generateAccountCode((int) $headId),
+        ]);
     }
 
     public function purcahse_account_allocation(Request $request)
@@ -121,15 +115,24 @@ class AccountsHeadController extends Controller
         
         $status = $request->status === 'on' ? 1 : 0;
 
+        $existingInScope = Account::where('account_code', $request->account_code)->first();
+        $accountCode = $request->account_code;
+
+        if (!$existingInScope) {
+            $accountCode = Account::generateAccountCode((int) $request->head_id);
+        } elseif (DB::table('accounts')->where('account_code', $accountCode)->where('id', '!=', $existingInScope->id)->exists()) {
+            return redirect()->back()->with('error', 'Account code already exists. Please refresh and try again.');
+        }
+
         Account::updateOrCreate(
-            ['account_code' => $request->account_code],
+            ['account_code' => $accountCode],
             [
                 'head_id'         => $request->head_id,
                 'title'           => $request->title,
                 'opening_balance' => $request->opening_balance ?? 0,
                 'status'          => $status,
                 'user_group_ids'  => $request->user_group_ids,
-                'created_by'      => Auth::id(),
+                'created_by'      => $existingInScope ? $existingInScope->created_by : Auth::id(),
             ]
         );
 

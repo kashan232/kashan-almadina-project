@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
 
 class Account extends Model
 {
@@ -31,5 +32,33 @@ class Account extends Model
     {
         return $this->belongsTo(AccountHead::class, 'head_id');
     }
-    
+
+    /**
+     * Next account code for a head — global sequence (ignores group scopes).
+     */
+    public static function generateAccountCode(int $headId): string
+    {
+        $lastRow = DB::table('accounts')
+            ->where('head_id', $headId)
+            ->orderByDesc('id')
+            ->first();
+
+        if ($lastRow && is_numeric($lastRow->account_code)) {
+            $nextCode = (string) ((int) $lastRow->account_code + 1);
+        } else {
+            $nextCode = $headId . '001';
+        }
+
+        while (DB::table('accounts')->where('account_code', $nextCode)->exists()) {
+            if (is_numeric($nextCode)) {
+                $nextCode = (string) ((int) $nextCode + 1);
+            } else {
+                $prefix = (string) $headId;
+                $suffix = max(1, (int) substr($nextCode, strlen($prefix)) + 1);
+                $nextCode = $prefix . str_pad((string) $suffix, 3, '0', STR_PAD_LEFT);
+            }
+        }
+
+        return $nextCode;
+    }
 }
