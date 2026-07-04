@@ -141,8 +141,8 @@
         .page-navigation .nav-item {
             border: none !important;
             position: relative !important;
-            padding-bottom: 5px; /* Extend hover area to bridge any micro-gaps */
-            margin-bottom: -5px; /* Offset the padding */
+            padding-bottom: 12px; /* bridge hover gap below nav link */
+            margin-bottom: -12px;
         }
         .page-navigation .nav-item .nav-link {
             color: #ffffff !important;
@@ -170,7 +170,7 @@
             border-radius: 6px;
             box-shadow: 0 10px 25px rgba(0,0,0,0.1) !important;
             border: 1px solid rgba(0,0,0,0.05);
-            margin-top: 0px !important; /* Fixes mouse hover dead zone */
+            margin-top: 10px !important;
             padding: 5px 0 !important;
             position: absolute !important;
             top: 100% !important;
@@ -180,7 +180,7 @@
             /* Smooth fade in */
             opacity: 0;
             visibility: hidden;
-            transform: translateY(10px);
+            transform: translateY(6px);
             transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
         }
         /* Show on hover */
