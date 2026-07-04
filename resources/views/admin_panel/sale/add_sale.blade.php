@@ -440,11 +440,11 @@
 
 
       <div class="d-flex gap-2 align-items-stretch border-bottom py-2 sale-main-row">
-        {{-- LEFT: Invoice & Customer --}}
+        {{-- LEFT: Invoice --}}
         <div class="bg-light border rounded-3 p-2 shadow-sm d-flex flex-column" style="min-width: 280px; max-width: 280px; font-size: 0.8rem;">
           <div class="d-flex align-items-center justify-content-between mb-2 pb-1 border-bottom">
-            <h6 class="mb-0 fw-bold text-primary">
-              <i class="bi bi-receipt me-1"></i>Invoice & Customer
+            <h6 class="mb-0 fw-bold bg-success text-white px-2 py-1 rounded">
+              <i class="bi bi-receipt me-1"></i>Invoice
               @if($isViewMode)
                 <span class="badge bg-info px-1 py-0 rounded ms-1" style="font-size:9px;">
                   <i class="fa fa-eye"></i> View Only

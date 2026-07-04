@@ -59,11 +59,14 @@ class CustomerClaim extends Model
 
     public function getReportAmountAttribute(): float
     {
+        $sales = (float) ($this->sales_price ?? 0);
+
         if ($this->claim_type === 'credit_note') {
-            return (float) ($this->replacement_sales_price ?? 0);
+            $replacement = (float) ($this->replacement_sales_price ?? 0);
+            return $sales > 0 ? $sales : $replacement;
         }
 
-        return (float) ($this->sales_price ?? 0);
+        return $sales;
     }
 
     public function getPartyNameAttribute(): string
