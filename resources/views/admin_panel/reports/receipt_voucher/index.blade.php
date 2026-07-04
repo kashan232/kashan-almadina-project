@@ -52,39 +52,6 @@
                             <div class="col-md-1" style="min-width: 110px;">
                                 <div class="filter-column">
                                     <div class="filter-header">
-                                        <input type="checkbox" class="select-all" data-target="main-head-list"> Main Head
-                                    </div>
-                                    <div class="filter-list" id="main-head-list">
-                                        @foreach($accountHeads as $head)
-                                            <div class="filter-item">
-                                                <input type="checkbox" name="main_head[]" value="{{ $head->id }}">
-                                                <span>{{ $head->name }}</span>
-                                            </div>
-                                        @endforeach
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-2" style="min-width: 130px;">
-                                <div class="filter-column">
-                                    <div class="filter-header">
-                                        <input type="checkbox" class="select-all" data-target="account-list"> Account
-                                    </div>
-                                    <div class="p-1 bg-light border-bottom">
-                                        <input type="text" class="form-control form-control-sm" id="accountSearch" placeholder="Search account..." style="height: 24px; font-size: 11px;">
-                                    </div>
-                                    <div class="filter-list" id="account-list">
-                                        @foreach($accounts as $acc)
-                                            <div class="filter-item" data-head-id="{{ $acc->head_id }}" data-search="{{ strtolower($acc->title) }}">
-                                                <input type="checkbox" name="account[]" value="{{ $acc->id }}">
-                                                <span>{{ $acc->title }}</span>
-                                            </div>
-                                        @endforeach
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-1" style="min-width: 110px;">
-                                <div class="filter-column">
-                                    <div class="filter-header">
                                         <input type="checkbox" class="select-all" data-target="party-type-list"> Party Type
                                     </div>
                                     <div class="filter-list" id="party-type-list">
@@ -125,6 +92,39 @@
                                             <div class="filter-item" data-party-type="vendor" data-search="{{ strtolower($vendor->name) }}">
                                                 <input type="checkbox" name="party[]" value="vendor:{{ $vendor->id }}">
                                                 <span>{{ $vendor->name }}</span>
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-1" style="min-width: 110px;">
+                                <div class="filter-column">
+                                    <div class="filter-header">
+                                        <input type="checkbox" class="select-all" data-target="main-head-list"> Main Head
+                                    </div>
+                                    <div class="filter-list" id="main-head-list">
+                                        @foreach($accountHeads as $head)
+                                            <div class="filter-item">
+                                                <input type="checkbox" name="main_head[]" value="{{ $head->id }}">
+                                                <span>{{ $head->name }}</span>
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-2" style="min-width: 130px;">
+                                <div class="filter-column">
+                                    <div class="filter-header">
+                                        <input type="checkbox" class="select-all" data-target="account-list"> Account
+                                    </div>
+                                    <div class="p-1 bg-light border-bottom">
+                                        <input type="text" class="form-control form-control-sm" id="accountSearch" placeholder="Search account..." style="height: 24px; font-size: 11px;">
+                                    </div>
+                                    <div class="filter-list" id="account-list">
+                                        @foreach($accounts as $acc)
+                                            <div class="filter-item" data-head-id="{{ $acc->head_id }}" data-search="{{ strtolower($acc->title) }}">
+                                                <input type="checkbox" name="account[]" value="{{ $acc->id }}">
+                                                <span>{{ $acc->title }}</span>
                                             </div>
                                         @endforeach
                                     </div>
