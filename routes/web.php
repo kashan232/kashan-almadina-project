@@ -369,6 +369,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/purchase-returns/get-purchase/{invoice_no}', [PurchaseReturnController::class, 'getPurchaseDetails']);
     Route::post('/purchase-returns/post/{id}', [PurchaseReturnController::class, 'post'])->name('purchase.return.post');
     Route::get('/purchase-returns/print/{id}', [PurchaseReturnController::class, 'print'])->name('purchase.return.print');
+    Route::get('/purchase-returns/{id}/view', [PurchaseReturnController::class, 'show'])->name('purchase.return.view');
     /* Added routes for edit and update */
     Route::get('/purchase-returns/{id}/edit', [PurchaseReturnController::class, 'edit'])->name('purchase.return.edit');
     Route::post('/purchase-returns/{id}/update', [PurchaseReturnController::class, 'update'])->name('purchase.return.update');

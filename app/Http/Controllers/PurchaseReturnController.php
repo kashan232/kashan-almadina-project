@@ -221,6 +221,29 @@ class PurchaseReturnController extends Controller
         return view('admin_panel.purchase_return.add_return', compact('returnData', 'nextInvoice', 'purchases', 'vendors', 'customers', 'warehouses', 'AccountHeads'));
     }
 
+    public function show($id)
+    {
+        $returnData = PurchaseReturn::with(['items.product.latestPrice', 'purchasable', 'warehouse', 'purchase.items.product', 'whtAccount'])->findOrFail($id);
+        $nextInvoice = $returnData->invoice_no;
+        $purchases = Purchase::where('status', 'Posted')->get(['id', 'invoice_no', 'purchasable_type', 'purchasable_id']);
+        $vendors = \App\Models\Vendor::all();
+        $customers = \App\Models\Customer::all();
+        $warehouses = \App\Models\Warehouse::all();
+        $AccountHeads = \App\Models\AccountHead::all();
+        $viewMode = true;
+
+        return view('admin_panel.purchase_return.add_return', compact(
+            'returnData',
+            'nextInvoice',
+            'purchases',
+            'vendors',
+            'customers',
+            'warehouses',
+            'AccountHeads',
+            'viewMode'
+        ));
+    }
+
     public function update(Request $request, $id)
     {
         $request->validate([
@@ -427,7 +450,12 @@ class PurchaseReturnController extends Controller
             });
 
             if (request()->ajax() || request()->wantsJson()) {
-                return response()->json(['success' => true, 'message' => 'Purchase Return Posted successfully and impacts applied!']);
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Purchase Return Posted successfully and impacts applied!',
+                    'return_id' => (int) $id,
+                    'print_url' => route('purchase.return.print', $id),
+                ]);
             }
             return redirect()->back()->with('success', 'Purchase Return Posted successfully and impacts applied!');
         } catch (\Exception $e) {

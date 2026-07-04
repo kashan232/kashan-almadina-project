@@ -56,6 +56,24 @@
         pointer-events: auto !important;
         opacity: 1 !important;
     }
+
+    .form-locked.view-mode #saveDraftBtn,
+    .form-locked.view-mode #editInvoiceBtn,
+    .form-locked.view-mode #postBtn,
+    .form-locked.view-mode #deleteBtn {
+        display: inline-block !important;
+        pointer-events: none !important;
+        opacity: 0.55 !important;
+        cursor: not-allowed !important;
+    }
+
+    .form-locked.view-mode #realPrintBtn,
+    .form-locked.view-mode #exitBtn,
+    .form-locked.view-mode #newInvoiceBtn {
+        pointer-events: auto !important;
+        opacity: 1 !important;
+        display: inline-block !important;
+    }
 </style>
 
 @section('content')
@@ -90,7 +108,7 @@
 
             <form action="{{ route('stock-wastage.store') }}" method="POST" id="wastageForm" class="position-relative">
                 @csrf
-                <div class="posted-watermark">Posted</div>
+                <div class="posted-watermark" id="postedWatermark">Posted</div>
 
                 <div class="card shadow-sm mb-2">
                     <div class="card-header bg-white">
@@ -261,6 +279,22 @@
         var _savedWastageId = null;
         var _saveInFlight = false;
         var _postInFlight = false;
+        var postBtnHtml = '<u>P</u>ost <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+&crarr;</kbd>';
+
+        function isWastagePostedView() {
+            return $('#wastageForm').hasClass('view-mode');
+        }
+
+        function setWastageFormPostedState(wastageId, printUrl) {
+            _savedWastageId = wastageId;
+            $('#wastageForm').addClass('form-locked view-mode');
+            $('#postedWatermark').addClass('show');
+            $('#saveDraftBtn, #editInvoiceBtn, #postBtn, #deleteBtn').prop('disabled', true);
+            $('#postBtn').html(postBtnHtml);
+            $('#wastageForm input, #wastageForm select, #wastageForm textarea').attr('tabindex', '-1');
+            $('#wastageForm .select2').prop('disabled', true);
+            $('#realPrintBtn').attr('href', printUrl || ('{{ url("stock-wastage") }}/' + wastageId + '/print')).attr('target', '_blank');
+        }
 
         function setFormLocked(isLocked) {
             if (isLocked) {
@@ -385,10 +419,9 @@
                 data: { _token: '{{ csrf_token() }}' },
                 headers: { 'X-Requested-With': 'XMLHttpRequest' },
                 success: function(res) {
-                    showToast('✅ Posted successfully! نئی انٹری شروع کریں...');
-                    setTimeout(function() {
-                        window.location.href = '{{ route("stock-wastage.create") }}';
-                    }, 1500);
+                    _postInFlight = false;
+                    showToast('✅ Posted successfully!', 'success');
+                    setWastageFormPostedState(_savedWastageId, res.print_url);
                 },
                 error: function(xhr) {
                     var msg = 'Post failed.';
@@ -398,8 +431,7 @@
                     } catch(e) {}
                     showToast('❌ ' + msg, 'error');
                     _postInFlight = false;
-                    $('#postBtn').prop('disabled', false)
-                        .html('<u>P</u>ost <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+&crarr;</kbd>');
+                    $('#postBtn').prop('disabled', false).html(postBtnHtml);
                 }
             });
         }
@@ -447,6 +479,25 @@
         });
 
         document.addEventListener('keydown', function(e) {
+            if (isWastagePostedView()) {
+                if (e.key === 'Escape') {
+                    e.preventDefault();
+                    window.location.href = $('#exitBtn').attr('href');
+                }
+                if (e.ctrlKey && (e.key === 'm' || e.key === 'M')) {
+                    e.preventDefault();
+                    window.location.href = $('#newInvoiceBtn').attr('href');
+                }
+                if (e.ctrlKey && (e.key === 'p' || e.key === 'P')) {
+                    e.preventDefault();
+                    var href = $('#realPrintBtn').attr('href');
+                    if (href && href.indexOf('stock-wastage') !== -1) {
+                        window.open(href, '_blank');
+                    }
+                }
+                return;
+            }
+
             if (e.ctrlKey && (e.key === 's' || e.key === 'S')) {
                 e.preventDefault();
                 e.stopImmediatePropagation();

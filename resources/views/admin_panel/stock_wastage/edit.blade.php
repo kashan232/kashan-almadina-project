@@ -56,9 +56,31 @@
         pointer-events: auto !important;
         opacity: 1 !important;
     }
+
+    .form-locked.view-mode #saveDraftBtn,
+    .form-locked.view-mode #editInvoiceBtn,
+    .form-locked.view-mode #postBtn,
+    .form-locked.view-mode #deleteBtn {
+        display: inline-block !important;
+        pointer-events: none !important;
+        opacity: 0.55 !important;
+        cursor: not-allowed !important;
+    }
+
+    .form-locked.view-mode #realPrintBtn,
+    .form-locked.view-mode #exitBtn,
+    .form-locked.view-mode #newInvoiceBtn {
+        pointer-events: auto !important;
+        opacity: 1 !important;
+        display: inline-block !important;
+    }
 </style>
 
 @section('content')
+@php
+    $isViewMode = isset($viewMode) && $viewMode;
+    $isPosted = $stock_wastage->status === 'Posted';
+@endphp
 <div class="main-content purchase-page">
     <div class="main-content-inner">
         <div class="container-fluid purchase-page-inner">
@@ -78,8 +100,12 @@
 
             <div class="d-flex justify-content-between align-items-center page-head bg-light rounded border shadow-sm">
                 <div class="d-flex align-items-center gap-2">
-                    <h6 class="mb-0 fw-bold" style="font-size:.85rem;">Edit Stock Wastage</h6>
-                    <span class="badge bg-warning text-dark px-2 py-0" style="font-size:10px;">{{ $stock_wastage->status ?? 'Draft' }}</span>
+                    <h6 class="mb-0 fw-bold" style="font-size:.85rem;">{{ $isViewMode ? 'View Stock Wastage' : 'Edit Stock Wastage' }}</h6>
+                    @if($isViewMode)
+                        <span class="badge bg-info px-2 py-0" style="font-size:10px;"><i class="fa fa-eye"></i> View Only</span>
+                    @else
+                        <span class="badge bg-warning text-dark px-2 py-0" style="font-size:10px;">{{ $stock_wastage->status ?? 'Draft' }}</span>
+                    @endif
                     <span class="badge bg-primary px-2 py-0" style="font-size:10px;">GWN: {{ $gwnId }}</span>
                 </div>
                 <a href="{{ route('stock-wastage.index') }}" id="listBtn" class="btn btn-xs btn-outline-secondary rounded-pill px-2 py-0" style="font-size:.7rem;">
@@ -88,10 +114,12 @@
                 </a>
             </div>
 
-            <form action="{{ route('stock-wastage.update', $stock_wastage->id) }}" method="POST" id="wastageForm" class="position-relative">
+            <form action="{{ $isViewMode ? '#' : route('stock-wastage.update', $stock_wastage->id) }}" method="POST" id="wastageForm" class="position-relative{{ $isViewMode ? ' form-locked view-mode' : '' }}">
                 @csrf
-                @method('PUT')
-                <div class="posted-watermark">Posted</div>
+                @if(!$isViewMode)
+                    @method('PUT')
+                @endif
+                <div class="posted-watermark {{ ($isViewMode || $isPosted) ? 'show' : '' }}" id="postedWatermark">Posted</div>
 
                 <div class="card shadow-sm mb-2">
                     <div class="card-header bg-white">
@@ -207,19 +235,19 @@
                 </div>
 
                 <div class="d-flex flex-wrap gap-2 justify-content-center bg-light bottom-bar rounded-2 border shadow-sm w-100">
-                    <button type="button" id="saveDraftBtn" class="btn btn-primary px-3 fw-bold shadow-sm">
+                    <button type="button" id="saveDraftBtn" class="btn btn-primary px-3 fw-bold shadow-sm" {{ $isViewMode || $isPosted ? 'disabled' : '' }}>
                         <u>S</u>ave <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+S</kbd>
                     </button>
 
-                    <button type="button" id="editInvoiceBtn" class="btn btn-warning px-3 fw-bold text-dark shadow-sm" disabled>
+                    <button type="button" id="editInvoiceBtn" class="btn btn-warning px-3 fw-bold text-dark shadow-sm" {{ $isViewMode || $isPosted ? 'disabled' : '' }}>
                         <u>E</u>dit <kbd style="font-size:10px;opacity:.8;margin-left:4px;color:#fff;">Ctrl+E</kbd>
                     </button>
 
-                    <button type="button" id="postBtn" class="btn btn-success px-3 fw-bold shadow-sm">
+                    <button type="button" id="postBtn" class="btn btn-success px-3 fw-bold shadow-sm" {{ $isViewMode || $isPosted ? 'disabled' : '' }}>
                         <u>P</u>ost <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+&crarr;</kbd>
                     </button>
 
-                    <button type="button" id="deleteBtn" class="btn btn-danger px-3 fw-bold shadow-sm">
+                    <button type="button" id="deleteBtn" class="btn btn-danger px-3 fw-bold shadow-sm" {{ $isViewMode || $isPosted ? 'disabled' : '' }}>
                         <u>D</u>elete <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+D</kbd>
                     </button>
 
@@ -280,6 +308,27 @@
         var _savedWastageId = {{ $stock_wastage->id }};
         var _saveInFlight = false;
         var _postInFlight = false;
+        var isViewMode = @json($isViewMode);
+        var postBtnHtml = '<u>P</u>ost <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+&crarr;</kbd>';
+
+        function isWastagePostedView() {
+            return isViewMode || $('#wastageForm').hasClass('view-mode');
+        }
+
+        function setWastageFormPostedState(wastageId, printUrl) {
+            _savedWastageId = wastageId;
+            $('#wastageForm').addClass('form-locked view-mode');
+            $('#postedWatermark').addClass('show');
+            $('#saveDraftBtn, #editInvoiceBtn, #postBtn, #deleteBtn').prop('disabled', true);
+            $('#postBtn').html(postBtnHtml);
+            $('#wastageForm input, #wastageForm select, #wastageForm textarea').attr('tabindex', '-1');
+            $('#wastageForm .select2').prop('disabled', true);
+            $('#realPrintBtn').attr('href', printUrl || ('{{ url("stock-wastage") }}/' + wastageId + '/print')).attr('target', '_blank');
+        }
+
+        if (isViewMode) {
+            setWastageFormPostedState(_savedWastageId, '{{ route("stock-wastage.print", $stock_wastage->id) }}');
+        }
 
         function setFormLocked(isLocked) {
             if (isLocked) {
@@ -388,11 +437,10 @@
                 type: 'POST',
                 data: { _token: '{{ csrf_token() }}' },
                 headers: { 'X-Requested-With': 'XMLHttpRequest' },
-                success: function() {
-                    showToast('✅ Posted successfully! نئی انٹری شروع کریں...');
-                    setTimeout(function() {
-                        window.location.href = '{{ route("stock-wastage.create") }}';
-                    }, 1500);
+                success: function(res) {
+                    _postInFlight = false;
+                    showToast('✅ Posted successfully!', 'success');
+                    setWastageFormPostedState(_savedWastageId, res.print_url);
                 },
                 error: function(xhr) {
                     var msg = 'Post failed.';
@@ -402,8 +450,7 @@
                     } catch(e) {}
                     showToast('❌ ' + msg, 'error');
                     _postInFlight = false;
-                    $('#postBtn').prop('disabled', false)
-                        .html('<u>P</u>ost <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+&crarr;</kbd>');
+                    $('#postBtn').prop('disabled', false).html(postBtnHtml);
                 }
             });
         }
@@ -451,6 +498,25 @@
         });
 
         document.addEventListener('keydown', function(e) {
+            if (isWastagePostedView()) {
+                if (e.key === 'Escape') {
+                    e.preventDefault();
+                    window.location.href = $('#exitBtn').attr('href');
+                }
+                if (e.ctrlKey && (e.key === 'm' || e.key === 'M')) {
+                    e.preventDefault();
+                    window.location.href = $('#newInvoiceBtn').attr('href');
+                }
+                if (e.ctrlKey && (e.key === 'p' || e.key === 'P')) {
+                    e.preventDefault();
+                    var href = $('#realPrintBtn').attr('href');
+                    if (href && href.indexOf('stock-wastage') !== -1) {
+                        window.open(href, '_blank');
+                    }
+                }
+                return;
+            }
+
             if (e.ctrlKey && (e.key === 's' || e.key === 'S')) {
                 e.preventDefault();
                 e.stopImmediatePropagation();

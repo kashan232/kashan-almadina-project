@@ -265,11 +265,11 @@
                                                         <i class="fa fa-trash"></i>
                                                     </button>
                                                 </form>
+                                            @else
+                                                <a href="{{ route('purchase.return.view', $ret->id) }}" class="btn btn-outline-info btn-mini" title="View Return">
+                                                    <i class="fa fa-eye"></i>
+                                                </a>
                                             @endif
-                                            
-                                            <a href="{{ route('purchase.return.print', $ret->id) }}" target="_blank" class="btn btn-outline-dark btn-mini" title="Print">
-                                                <i class="fa fa-print"></i>
-                                            </a>
                                         </div>
                                     </td>
                                 </tr>

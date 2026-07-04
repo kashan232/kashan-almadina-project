@@ -260,11 +260,11 @@
                                                         <i class="fa fa-trash"></i>
                                                     </button>
                                                 </form>
+                                            @else
+                                                <a href="{{ route('stock-wastage.show', $wastage->id) }}" class="btn btn-outline-info btn-mini" title="View Wastage">
+                                                    <i class="fa fa-eye"></i>
+                                                </a>
                                             @endif
-                                            
-                                            <a href="{{ route('stock-wastage.print', $wastage->id) }}" target="_blank" class="btn btn-outline-dark btn-mini" title="Print">
-                                                <i class="fa fa-print"></i>
-                                            </a>
                                         </div>
                                     </td>
                                 </tr>

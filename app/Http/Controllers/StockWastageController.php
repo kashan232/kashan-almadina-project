@@ -197,7 +197,14 @@ class StockWastageController extends Controller
 
     public function show($id)
     {
-         // Optional: Show details
+        $stock_wastage = StockWastage::findOrFail($id);
+        $warehouses = Warehouse::all();
+        $accountHeads = AccountHead::with('accounts')->get();
+        $stock_wastage->load('items.product');
+        $gwnId = $stock_wastage->gwn_id;
+        $viewMode = true;
+
+        return view('admin_panel.stock_wastage.edit', compact('stock_wastage', 'warehouses', 'accountHeads', 'gwnId', 'viewMode'));
     }
 
     public function edit(StockWastage $stock_wastage)
@@ -375,7 +382,12 @@ class StockWastageController extends Controller
             });
             $msg = 'Stock Wastage Posted successfully.';
             if ($request->ajax() || $request->wantsJson()) {
-                return response()->json(['success' => true, 'message' => $msg]);
+                return response()->json([
+                    'success' => true,
+                    'message' => $msg,
+                    'id' => (int) $id,
+                    'print_url' => route('stock-wastage.print', $id),
+                ]);
             }
             return redirect()->back()->with('success', $msg);
         } catch (\Exception $e) {

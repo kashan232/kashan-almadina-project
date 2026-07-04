@@ -311,19 +311,16 @@
                                     </td>
                                     <td class="text-center">
                                         <div class="d-flex gap-1 justify-content-center">
-                                            <a href="{{ route('purchase.view', $purchase->id) }}" class="btn btn-outline-info btn-xs px-1 py-0" title="View Purchase" style="height: 20px;">
-                                                <i class="fa fa-eye"></i>
-                                            </a>
                                             @if($purchase->status === 'Unposted')
-                                                <a href="{{ route('purchase.edit', $purchase->id) }}" class="btn btn-outline-warning btn-xs px-1 py-0" title="Edit" style="height: 20px;">
-                                                    <i class="fa fa-edit text-dark"></i>
-                                                </a>
                                                 <form action="{{ route('purchase.post', $purchase->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Post this purchase?')">
                                                     @csrf
                                                     <button type="submit" class="btn btn-primary btn-xs px-2 py-0" title="Post now" style="font-size: 10px;">
                                                         <i class="fa fa-send"></i>
                                                     </button>
                                                 </form>
+                                                <a href="{{ route('purchase.edit', $purchase->id) }}" class="btn btn-outline-warning btn-xs px-1 py-0" title="Edit" style="height: 20px;">
+                                                    <i class="fa fa-edit text-dark"></i>
+                                                </a>
                                                 <form action="{{ route('purchase.destroy', $purchase->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Delete this purchase?')">
                                                     @csrf
                                                     @method('DELETE')
@@ -331,10 +328,11 @@
                                                         <i class="fa fa-trash"></i>
                                                     </button>
                                                 </form>
+                                            @else
+                                                <a href="{{ route('purchase.view', $purchase->id) }}" class="btn btn-outline-info btn-xs px-1 py-0" title="View Purchase" style="height: 20px;">
+                                                    <i class="fa fa-eye"></i>
+                                                </a>
                                             @endif
-                                            <a href="{{ route('purchase.invoice', $purchase->id) }}" target="_blank" class="btn btn-outline-dark btn-xs px-1 py-0" title="Print" style="height: 20px;">
-                                                <i class="fa fa-print"></i>
-                                            </a>
                                         </div>
                                     </td>
                                 </tr>

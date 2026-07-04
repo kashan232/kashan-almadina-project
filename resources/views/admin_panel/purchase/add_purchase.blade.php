@@ -65,10 +65,31 @@
     .form-locked .remove-row, .form-locked .removeAccountRow, .form-locked #addAccountRow, .form-locked #saveDraftBtn { display: none !important; }
     .form-locked #exitBtn,
     .form-locked #newInvoiceBtn,
-    .form-locked #realPrintBtn {
+    .form-locked #realPrintBtn,
+    .form-locked #editInvoiceBtn,
+    .form-locked #postBtn,
+    .form-locked #deleteBtn {
         pointer-events: auto !important;
         opacity: 1 !important;
         cursor: pointer !important;
+    }
+
+    .form-locked.view-mode #saveDraftBtn,
+    .form-locked.view-mode #editInvoiceBtn,
+    .form-locked.view-mode #postBtn,
+    .form-locked.view-mode #deleteBtn {
+        display: inline-block !important;
+        pointer-events: none !important;
+        opacity: 0.55 !important;
+        cursor: not-allowed !important;
+    }
+
+    .form-locked.view-mode #realPrintBtn,
+    .form-locked.view-mode #exitBtn,
+    .form-locked.view-mode #newInvoiceBtn {
+        pointer-events: auto !important;
+        opacity: 1 !important;
+        display: inline-block !important;
     }
     
 </style>
@@ -310,14 +331,14 @@
         $formLocked = $isViewMode || $isPosted;
     @endphp
 
-    <form id="purchaseForm" class="{{ $formLocked ? 'form-locked' : '' }}" autocomplete="off" action="{{ $isViewMode ? '#' : (isset($purchase) ? route('purchase.update', $purchase->id) : route('store.Purchase')) }}" method="POST">
+    <form id="purchaseForm" class="{{ $formLocked ? 'form-locked' : '' }}{{ $isViewMode ? ' view-mode' : '' }}" autocomplete="off" action="{{ $isViewMode ? '#' : (isset($purchase) ? route('purchase.update', $purchase->id) : route('store.Purchase')) }}" method="POST">
       @csrf
       @if(isset($purchase) && !$isViewMode)
           @method('PUT')
       @endif
       <input type="hidden" id="purchase_id" name="purchase_id" value="{{ isset($purchase) ? $purchase->id : '' }}">
 
-      <div class="posted-watermark {{ $isPosted ? 'show' : '' }}" id="postedWatermark">Posted</div>
+      <div class="posted-watermark {{ ($isPosted || $isViewMode) ? 'show' : '' }}" id="postedWatermark">Posted</div>
 
       <div class="d-flex align-items-stretch border-bottom main-row">
         {{-- LEFT: Header & Vendor --}}
@@ -1763,7 +1784,9 @@ $(document).ready(function() {
     }
 
     if (isViewMode) {
-        $('#purchaseForm').addClass('form-locked');
+        $('#purchaseForm').addClass('form-locked view-mode');
+        $('#postedWatermark').addClass('show');
+        $('#saveDraftBtn, #editInvoiceBtn, #postBtn, #deleteBtn').prop('disabled', true);
         $('#purchaseForm input, #purchaseForm select, #purchaseForm textarea, #purchaseForm button')
             .not('#exitBtn, #newInvoiceBtn, #realPrintBtn')
             .attr('tabindex', '-1');
@@ -1771,6 +1794,26 @@ $(document).ready(function() {
         if ($.fn.select2) {
             $('#purchaseForm .select2').prop('disabled', true);
         }
+    }
+
+    var BTN_POST = '<u>P</u>ost <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+&crarr;</kbd>';
+
+    function isPurchasePostedView() {
+        return isViewMode || $('#purchaseForm').hasClass('view-mode');
+    }
+
+    function setPurchaseFormPostedState(purchaseId, printUrl) {
+        switchFormToUpdateMode(purchaseId);
+        $('#purchaseForm').addClass('form-locked view-mode');
+        $('#postedWatermark').addClass('show');
+        $('#saveDraftBtn, #editInvoiceBtn, #postBtn, #deleteBtn').prop('disabled', true);
+        $('#postBtn').html(BTN_POST);
+        $('#purchaseForm input, #purchaseForm select, #purchaseForm textarea').attr('tabindex', '-1');
+        $('#purchaseForm select').prop('disabled', true);
+        if ($.fn.select2) {
+            $('#purchaseForm .select2').prop('disabled', true);
+        }
+        $('#realPrintBtn').attr('href', printUrl || ('{{ url("purchase") }}/' + purchaseId + '/invoice')).attr('target', '_blank').prop('disabled', false);
     }
 
     // =============================================
@@ -1936,12 +1979,8 @@ $(document).ready(function() {
             data: { _token: $('input[name="_token"]').first().val() },
             headers: { 'X-Requested-With': 'XMLHttpRequest' },
             success: function(res) {
-                showToast('✅ Purchase posted successfully! Redirecting...', 'success');
-                $('#postedWatermark').addClass('show');
-                $('#statusBadge').removeClass('bg-warning').addClass('bg-success text-white').html('<i class="fa fa-check"></i> Posted');
-                setTimeout(function() {
-                    window.location.href = '/add/Purchase';
-                }, 2000);
+                showToast('✅ Purchase posted successfully!', 'success');
+                setPurchaseFormPostedState(_savedPurchaseId, res.print_url);
             },
             error: function(xhr) {
                 var msg = 'Post failed.';
@@ -1951,7 +1990,7 @@ $(document).ready(function() {
                 } catch(e) {}
                 showToast('❌ ' + msg, 'error');
                 $('#postBtn').prop('disabled', false)
-                    .html('<i class="fa fa-send me-1"></i> Post <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+↵</kbd>');
+                    .html(BTN_POST);
             },
             complete: function() {
                 _postInFlight = false;
@@ -2007,7 +2046,7 @@ $(document).ready(function() {
 
     // Keyboard Shortcuts Capture (single handler — duplicate removed to prevent double save/post)
     document.addEventListener('keydown', function(e) {
-        if (isViewMode) {
+        if (isPurchasePostedView()) {
             if (e.key === 'Escape') {
                 e.preventDefault();
                 window.location.href = $('#exitBtn').attr('href');

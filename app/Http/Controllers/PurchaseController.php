@@ -755,7 +755,12 @@ class PurchaseController extends Controller
 
             $msg = 'Purchase posted successfully!';
             if ($request->ajax() || $request->wantsJson()) {
-                return response()->json(['success' => true, 'message' => $msg]);
+                return response()->json([
+                    'success' => true,
+                    'message' => $msg,
+                    'purchase_id' => (int) $id,
+                    'print_url' => route('purchase.invoice', $id),
+                ]);
             }
             return redirect()->back()->with('success', $msg);
         } catch (\Throwable $e) {
