@@ -64,21 +64,6 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-md-1" style="min-width: 110px;">
-                                <div class="filter-column">
-                                    <div class="filter-header">
-                                        <input type="checkbox" class="select-all" data-target="sub-head-list"> Sub Head
-                                    </div>
-                                    <div class="filter-list" id="sub-head-list">
-                                        @foreach($accountHeads as $head)
-                                            <div class="filter-item" data-head-id="{{ $head->id }}">
-                                                <input type="checkbox" name="sub_head[]" value="{{ $head->id }}">
-                                                <span>{{ $head->name }}</span>
-                                            </div>
-                                        @endforeach
-                                    </div>
-                                </div>
-                            </div>
                             <div class="col-md-2" style="min-width: 130px;">
                                 <div class="filter-column">
                                     <div class="filter-header">
@@ -97,6 +82,27 @@
                                     </div>
                                 </div>
                             </div>
+                            <div class="col-md-1" style="min-width: 110px;">
+                                <div class="filter-column">
+                                    <div class="filter-header">
+                                        <input type="checkbox" class="select-all" data-target="party-type-list"> Party Type
+                                    </div>
+                                    <div class="filter-list" id="party-type-list">
+                                        <div class="filter-item">
+                                            <input type="checkbox" name="party_type[]" value="vendor">
+                                            <span>Vendor</span>
+                                        </div>
+                                        <div class="filter-item">
+                                            <input type="checkbox" name="party_type[]" value="customer">
+                                            <span>Customer</span>
+                                        </div>
+                                        <div class="filter-item">
+                                            <input type="checkbox" name="party_type[]" value="walkin">
+                                            <span>Walking Customer</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                             <div class="col-md-2" style="min-width: 130px;">
                                 <div class="filter-column">
                                     <div class="filter-header">
@@ -107,13 +113,16 @@
                                     </div>
                                     <div class="filter-list" id="party-list">
                                         @foreach($customers as $cust)
-                                            <div class="filter-item" data-search="{{ strtolower($cust->customer_name) }}">
-                                                <input type="checkbox" name="party[]" value="{{ $cust->customer_type === 'Walking Customer' ? 'walkin' : 'customer' }}:{{ $cust->id }}">
+                                            @php
+                                                $partyTypeKey = $cust->customer_type === 'Walking Customer' ? 'walkin' : 'customer';
+                                            @endphp
+                                            <div class="filter-item" data-party-type="{{ $partyTypeKey }}" data-search="{{ strtolower($cust->customer_name) }}">
+                                                <input type="checkbox" name="party[]" value="{{ $partyTypeKey }}:{{ $cust->id }}">
                                                 <span>{{ $cust->customer_name }}</span>
                                             </div>
                                         @endforeach
                                         @foreach($vendors as $vendor)
-                                            <div class="filter-item" data-search="{{ strtolower($vendor->name) }}">
+                                            <div class="filter-item" data-party-type="vendor" data-search="{{ strtolower($vendor->name) }}">
                                                 <input type="checkbox" name="party[]" value="vendor:{{ $vendor->id }}">
                                                 <span>{{ $vendor->name }}</span>
                                             </div>
@@ -134,7 +143,7 @@
                                     <label class="report-field-label">Report Type</label>
                                     <select name="report_type" class="form-select form-select-sm report-field-input" required>
                                         <option value="source_party" selected>Source Party Name</option>
-                                        <option value="sub_head">Sub Head</option>
+                                        <option value="main_head">Main Head</option>
                                     </select>
                                 </div>
                                 <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6">
@@ -146,22 +155,22 @@
                                 </div>
                                 <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6">
                                     <label class="report-field-label">From</label>
-                                    <input type="date" name="receipt_from" class="form-control form-control-sm report-field-input" value="{{ date('Y-01-01') }}">
+                                    <input type="date" name="receipt_from" class="form-control form-control-sm report-field-input">
                                 </div>
                                 <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6">
                                     <label class="report-field-label">To</label>
-                                    <input type="date" name="receipt_to" class="form-control form-control-sm report-field-input" value="{{ date('Y-m-d') }}">
+                                    <input type="date" name="receipt_to" class="form-control form-control-sm report-field-input">
                                 </div>
                                 <div class="col-12 mt-1">
                                     <span class="report-date-group-label">Entry Date</span>
                                 </div>
                                 <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6">
                                     <label class="report-field-label">From</label>
-                                    <input type="date" name="entry_from" class="form-control form-control-sm report-field-input" value="{{ date('Y-01-01') }}">
+                                    <input type="date" name="entry_from" class="form-control form-control-sm report-field-input">
                                 </div>
                                 <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6">
                                     <label class="report-field-label">To</label>
-                                    <input type="date" name="entry_to" class="form-control form-control-sm report-field-input" value="{{ date('Y-m-d') }}">
+                                    <input type="date" name="entry_to" class="form-control form-control-sm report-field-input">
                                 </div>
                             </div>
                         </div>
@@ -281,7 +290,23 @@
             const $cb = $(this).find('input[type="checkbox"]');
             $cb.prop('checked', !$cb.prop('checked'));
             $(this).toggleClass('selected', $cb.prop('checked'));
+
+            if ($(this).closest('#account-list').length && $cb.prop('checked')) {
+                autoSelectMainHeadForAccount($(this));
+            }
         });
+
+        function autoSelectMainHeadForAccount($accountItem) {
+            const headId = String($accountItem.data('head-id') || '');
+            if (!headId) return;
+            $('#main-head-list .filter-item').each(function() {
+                const $headCb = $(this).find('input[name="main_head[]"]');
+                if (String($headCb.val()) === headId) {
+                    $headCb.prop('checked', true);
+                    $(this).addClass('selected');
+                }
+            });
+        }
 
         $('.select-all').on('change', function() {
             const target = $(this).data('target');
@@ -298,12 +323,25 @@
         });
 
         $('#partySearch').on('keyup', function() {
-            const term = $(this).val().toLowerCase();
+            filterByPartyType();
+        });
+
+        function filterByPartyType() {
+            const selectedTypes = getCheckedValues('party-type-list', 'party_type[]');
+            const searchTerm = ($('#partySearch').val() || '').toLowerCase();
+
             $('#party-list .filter-item').each(function() {
-                const match = ($(this).data('search') || '').includes(term);
-                $(this).toggle(match);
-                if (!match) uncheckItem($(this));
+                const partyType = String($(this).data('party-type') || '');
+                const matchesType = selectedTypes.length === 0 || selectedTypes.includes(partyType);
+                const matchesSearch = !searchTerm || ($(this).data('search') || '').includes(searchTerm);
+                const visible = matchesType && matchesSearch;
+                $(this).toggle(visible);
+                if (!visible) uncheckItem($(this));
             });
+        }
+
+        $('#party-type-list .filter-item').on('click', function() {
+            setTimeout(filterByPartyType, 50);
         });
 
         $('#accountSearch').on('keyup', function() {
@@ -312,21 +350,11 @@
 
         function filterByMainHead() {
             const selectedMainHeads = getCheckedValues('main-head-list', 'main_head[]');
-            const selectedSubHeads = getCheckedValues('sub-head-list', 'sub_head[]');
-
-            $('#sub-head-list .filter-item').each(function() {
-                const headId = String($(this).data('head-id') || '');
-                const visible = selectedMainHeads.length === 0 || selectedMainHeads.includes(headId);
-                $(this).toggle(visible);
-                if (!visible) uncheckItem($(this));
-            });
-
-            const activeHeads = selectedSubHeads.length > 0 ? selectedSubHeads : selectedMainHeads;
+            const searchTerm = ($('#accountSearch').val() || '').toLowerCase();
 
             $('#account-list .filter-item').each(function() {
                 const headId = String($(this).data('head-id') || '');
-                const searchTerm = ($('#accountSearch').val() || '').toLowerCase();
-                const matchesHead = activeHeads.length === 0 || activeHeads.includes(headId);
+                const matchesHead = selectedMainHeads.length === 0 || selectedMainHeads.includes(headId);
                 const matchesSearch = !searchTerm || ($(this).data('search') || '').includes(searchTerm);
                 const visible = matchesHead && matchesSearch;
                 $(this).toggle(visible);
@@ -335,10 +363,6 @@
         }
 
         $('#main-head-list .filter-item').on('click', function() {
-            setTimeout(filterByMainHead, 50);
-        });
-
-        $('#sub-head-list .filter-item').on('click', function() {
             setTimeout(filterByMainHead, 50);
         });
 

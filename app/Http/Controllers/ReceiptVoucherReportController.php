@@ -30,6 +30,16 @@ class ReceiptVoucherReportController extends Controller
         }
     }
 
+    private function applyIndependentDateFilters($query, ?string $receiptFrom, ?string $receiptTo, ?string $entryFrom, ?string $entryTo): void
+    {
+        if (!empty($receiptFrom) || !empty($receiptTo)) {
+            $this->applyDateFilter($query, $receiptFrom, $receiptTo, 'receipt_date');
+        }
+        if (!empty($entryFrom) || !empty($entryTo)) {
+            $this->applyDateFilter($query, $entryFrom, $entryTo, 'entry_date');
+        }
+    }
+
     private function resolvePartyName(ReceiptsVoucher $voucher): string
     {
         if (is_numeric($voucher->type)) {
@@ -98,9 +108,9 @@ class ReceiptVoucherReportController extends Controller
     {
         $user_groups = $request->user_group ?? [];
         $officers = $request->sales_officer ?? [];
+        $partyTypes = $request->party_type ?? [];
         $parties = $request->party ?? [];
         $mainHeads = $request->main_head ?? [];
-        $subHeads = $request->sub_head ?? $request->account_head ?? [];
         $accounts = $request->account ?? [];
         $voucherId = $request->voucher_id;
         $report_type = $request->input('report_type', 'source_party');
@@ -117,8 +127,7 @@ class ReceiptVoucherReportController extends Controller
 
         $query = ReceiptsVoucher::query()->withoutGlobalScopes()->whereIn('status', ['posted', 'Posted']);
 
-        $this->applyDateFilter($query, $receipt_from, $receipt_to, 'receipt_date');
-        $this->applyDateFilter($query, $entry_from, $entry_to, 'entry_date');
+        $this->applyIndependentDateFilters($query, $receipt_from, $receipt_to, $entry_from, $entry_to);
 
         if (!empty($voucherId)) {
             $query->where(function ($sub) use ($voucherId) {
@@ -137,6 +146,20 @@ class ReceiptVoucherReportController extends Controller
                 foreach ($user_groups as $gid) {
                     $sub->orWhereJsonContains('user_group_ids', (string) $gid)
                         ->orWhereJsonContains('user_group_ids', (int) $gid);
+                }
+            });
+        }
+
+        if (!empty($partyTypes) && count($partyTypes) < 3) {
+            $query->where(function ($sub) use ($partyTypes) {
+                foreach ($partyTypes as $partyType) {
+                    if ($partyType === 'vendor') {
+                        $sub->orWhere('type', 'vendor');
+                    } elseif ($partyType === 'customer') {
+                        $sub->orWhere('type', 'customer');
+                    } elseif ($partyType === 'walkin') {
+                        $sub->orWhere('type', 'walkin');
+                    }
                 }
             });
         }
@@ -163,7 +186,6 @@ class ReceiptVoucherReportController extends Controller
                 $voucher,
                 $report_type,
                 $mainHeads,
-                $subHeads,
                 $accounts,
                 $totalAccountHeads,
                 $totalAccounts
@@ -182,7 +204,6 @@ class ReceiptVoucherReportController extends Controller
         ReceiptsVoucher $voucher,
         string $reportType,
         array $mainHeads,
-        array $subHeads,
         array $selectedAccounts,
         int $totalAccountHeads,
         int $totalAccounts
@@ -200,7 +221,7 @@ class ReceiptVoucherReportController extends Controller
             $headId = $rowHeads[$index] ?? null;
             $headName = $headId ? (AccountHead::find($headId)?->name ?? 'N/A') : 'N/A';
 
-            $activeHeadFilter = !empty($subHeads) ? $subHeads : $mainHeads;
+            $activeHeadFilter = $mainHeads;
             if ($this->shouldApplyFilter($activeHeadFilter, $totalAccountHeads) && !in_array((string) $headId, array_map('strval', $activeHeadFilter), true)) {
                 continue;
             }
@@ -226,11 +247,11 @@ class ReceiptVoucherReportController extends Controller
                 continue;
             }
 
-            $groupKey = $reportType === 'sub_head'
+            $groupKey = in_array($reportType, ['sub_head', 'main_head'], true)
                 ? 'head_' . ($headId ?: '0')
                 : 'party_' . $voucher->type . '_' . $voucher->party_id;
 
-            $groupLabel = $reportType === 'sub_head' ? strtoupper($headName) : $partyName;
+            $groupLabel = in_array($reportType, ['sub_head', 'main_head'], true) ? strtoupper($headName) : $partyName;
 
             $lines->push((object) [
                 'group_key' => $groupKey,
