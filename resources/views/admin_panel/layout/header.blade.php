@@ -858,6 +858,12 @@
                       </li>
                       @endcanany
 
+                      <li class="nav-item">
+                          <a href="{{ route('reports.unpost-entries.index') }}" class="nav-link">
+                              <span class="menu-title">Un Post Entries</span>
+                          </a>
+                      </li>
+
                   </ul>
                       </div>
                   </div>
