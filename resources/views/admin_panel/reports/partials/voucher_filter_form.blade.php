@@ -1,11 +1,19 @@
-@extends('admin_panel.layout.app')
+@php
+    $filterTitle = $filterTitle ?? 'Voucher Report Filters';
+    $previewRoute = $previewRoute ?? '#';
+    $showReceiptDates = $showReceiptDates ?? false;
+    $reportTypeOptions = $reportTypeOptions ?? [
+        'source_party' => 'Source Party Name',
+        'sub_head' => 'Sub Head',
+    ];
+    $defaultReportType = $defaultReportType ?? array_key_first($reportTypeOptions);
+@endphp
 
-@section('content')
 <div class="main-content">
     <div class="container-fluid p-3">
         <div class="card border-0 shadow-sm">
             <div class="card-header bg-white py-3 border-bottom-0 d-flex justify-content-between align-items-center">
-                <h4 class="mb-0 fw-bold" style="color: #0d47a1;">Receipt Voucher Report Filters</h4>
+                <h4 class="mb-0 fw-bold" style="color: #0d47a1;">{{ $filterTitle }}</h4>
                 <div class="form-check">
                     <input class="form-check-input" type="checkbox" id="globalSelectAll">
                     <label class="form-check-label fw-bold text-danger" for="globalSelectAll" style="cursor:pointer;">
@@ -14,7 +22,7 @@
                 </div>
             </div>
             <div class="card-body pt-0">
-                <form action="{{ route('reports.receipt-voucher.preview') }}" method="POST" id="reportForm">
+                <form action="{{ route($previewRoute) }}" method="POST" id="reportForm">
                     @csrf
 
                     <div class="filter-grid-container">
@@ -130,17 +138,25 @@
                         </div>
                         <div class="card-body p-3">
                             <div class="row g-3 align-items-end">
+                                @if(count($reportTypeOptions) > 1)
                                 <div class="col-xl-3 col-lg-4 col-md-6">
                                     <label class="report-field-label">Report Type</label>
                                     <select name="report_type" class="form-select form-select-sm report-field-input" required>
-                                        <option value="source_party" selected>Source Party Name</option>
-                                        <option value="sub_head">Sub Head</option>
+                                        @foreach($reportTypeOptions as $value => $label)
+                                            <option value="{{ $value }}" @selected($value === $defaultReportType)>{{ $label }}</option>
+                                        @endforeach
                                     </select>
                                 </div>
+                                @else
+                                    <input type="hidden" name="report_type" value="{{ $defaultReportType }}">
+                                @endif
+
                                 <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6">
                                     <label class="report-field-label">Vouc. ID</label>
                                     <input type="text" name="voucher_id" class="form-control form-control-sm report-field-input" placeholder="Search voucher no...">
                                 </div>
+
+                                @if($showReceiptDates)
                                 <div class="col-12 mt-1">
                                     <span class="report-date-group-label">Receipt Date</span>
                                 </div>
@@ -152,6 +168,8 @@
                                     <label class="report-field-label">To</label>
                                     <input type="date" name="receipt_to" class="form-control form-control-sm report-field-input" value="{{ date('Y-m-d') }}">
                                 </div>
+                                @endif
+
                                 <div class="col-12 mt-1">
                                     <span class="report-date-group-label">Entry Date</span>
                                 </div>
@@ -258,107 +276,3 @@
         border-left: 3px solid #0d47a1;
     }
 </style>
-@endsection
-
-@section('scripts')
-<script>
-    $(document).ready(function() {
-        function uncheckItem($item) {
-            $item.find('input[type="checkbox"]').prop('checked', false);
-            $item.removeClass('selected');
-        }
-
-        function getCheckedValues(listId, inputName) {
-            const values = [];
-            $('#' + listId + ' .filter-item:visible input[name="' + inputName + '"]:checked').each(function() {
-                values.push(String($(this).val()));
-            });
-            return values;
-        }
-
-        $('.filter-item').on('click', function(e) {
-            if ($(e.target).is('input')) return;
-            const $cb = $(this).find('input[type="checkbox"]');
-            $cb.prop('checked', !$cb.prop('checked'));
-            $(this).toggleClass('selected', $cb.prop('checked'));
-        });
-
-        $('.select-all').on('change', function() {
-            const target = $(this).data('target');
-            const checked = $(this).is(':checked');
-            $('#' + target + ' .filter-item:visible').each(function() {
-                $(this).find('input[type="checkbox"]').prop('checked', checked);
-                $(this).toggleClass('selected', checked);
-            });
-        });
-
-        $('#globalSelectAll').on('change', function() {
-            const checked = $(this).is(':checked');
-            $('.select-all').prop('checked', checked).trigger('change');
-        });
-
-        $('#partySearch').on('keyup', function() {
-            const term = $(this).val().toLowerCase();
-            $('#party-list .filter-item').each(function() {
-                const match = ($(this).data('search') || '').includes(term);
-                $(this).toggle(match);
-                if (!match) uncheckItem($(this));
-            });
-        });
-
-        $('#accountSearch').on('keyup', function() {
-            filterByMainHead();
-        });
-
-        function filterByMainHead() {
-            const selectedMainHeads = getCheckedValues('main-head-list', 'main_head[]');
-            const selectedSubHeads = getCheckedValues('sub-head-list', 'sub_head[]');
-
-            $('#sub-head-list .filter-item').each(function() {
-                const headId = String($(this).data('head-id') || '');
-                const visible = selectedMainHeads.length === 0 || selectedMainHeads.includes(headId);
-                $(this).toggle(visible);
-                if (!visible) uncheckItem($(this));
-            });
-
-            const activeHeads = selectedSubHeads.length > 0 ? selectedSubHeads : selectedMainHeads;
-
-            $('#account-list .filter-item').each(function() {
-                const headId = String($(this).data('head-id') || '');
-                const searchTerm = ($('#accountSearch').val() || '').toLowerCase();
-                const matchesHead = activeHeads.length === 0 || activeHeads.includes(headId);
-                const matchesSearch = !searchTerm || ($(this).data('search') || '').includes(searchTerm);
-                const visible = matchesHead && matchesSearch;
-                $(this).toggle(visible);
-                if (!visible) uncheckItem($(this));
-            });
-        }
-
-        $('#main-head-list .filter-item').on('click', function() {
-            setTimeout(filterByMainHead, 50);
-        });
-
-        $('#sub-head-list .filter-item').on('click', function() {
-            setTimeout(filterByMainHead, 50);
-        });
-
-        function filterByGroup() {
-            const selectedGroups = getCheckedValues('group-list', 'user_group[]');
-            if (selectedGroups.length === 0) {
-                $('#officer-list .filter-item').show();
-                return;
-            }
-            $('#officer-list .filter-item').each(function() {
-                const groups = String($(this).data('groups') || '').split(',').filter(Boolean);
-                const visible = groups.length === 0 || groups.some(g => selectedGroups.includes(g));
-                $(this).toggle(visible);
-                if (!visible) uncheckItem($(this));
-            });
-        }
-
-        $('#group-list .filter-item').on('click', function() {
-            setTimeout(filterByGroup, 50);
-        });
-    });
-</script>
-@endsection

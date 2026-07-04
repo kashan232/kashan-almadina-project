@@ -115,7 +115,7 @@ class ReceiptVoucherReportController extends Controller
         $totalAccountHeads = AccountHead::count();
         $totalAccounts = Account::count();
 
-        $query = ReceiptsVoucher::query()->withoutGlobalScopes()->where('status', 'posted');
+        $query = ReceiptsVoucher::query()->withoutGlobalScopes()->whereIn('status', ['posted', 'Posted']);
 
         $this->applyDateFilter($query, $receipt_from, $receipt_to, 'receipt_date');
         $this->applyDateFilter($query, $entry_from, $entry_to, 'entry_date');

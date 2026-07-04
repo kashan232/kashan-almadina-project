@@ -540,6 +540,16 @@ Route::middleware('auth')->group(function () {
     Route::post('/reports/stock-transfer/preview', [\App\Http\Controllers\StockTransferReportController::class, 'preview'])->name('reports.stock-transfer.preview');
     Route::get('/reports/receipt-voucher', [\App\Http\Controllers\ReceiptVoucherReportController::class, 'index'])->name('reports.receipt-voucher.index');
     Route::post('/reports/receipt-voucher/preview', [\App\Http\Controllers\ReceiptVoucherReportController::class, 'preview'])->name('reports.receipt-voucher.preview');
+    Route::get('/reports/payment-voucher', [\App\Http\Controllers\PaymentVoucherReportController::class, 'index'])->name('reports.payment-voucher.index');
+    Route::post('/reports/payment-voucher/preview', [\App\Http\Controllers\PaymentVoucherReportController::class, 'preview'])->name('reports.payment-voucher.preview');
+    Route::get('/reports/expense-voucher', [\App\Http\Controllers\ExpenseVoucherReportController::class, 'index'])->name('reports.expense-voucher.index');
+    Route::post('/reports/expense-voucher/preview', [\App\Http\Controllers\ExpenseVoucherReportController::class, 'preview'])->name('reports.expense-voucher.preview');
+    Route::get('/reports/income-voucher', [\App\Http\Controllers\IncomeVoucherReportController::class, 'index'])->name('reports.income-voucher.index');
+    Route::post('/reports/income-voucher/preview', [\App\Http\Controllers\IncomeVoucherReportController::class, 'preview'])->name('reports.income-voucher.preview');
+    Route::get('/reports/journal-voucher', [\App\Http\Controllers\JournalVoucherReportController::class, 'index'])->name('reports.journal-voucher.index');
+    Route::post('/reports/journal-voucher/preview', [\App\Http\Controllers\JournalVoucherReportController::class, 'preview'])->name('reports.journal-voucher.preview');
+    Route::get('/reports/adjustment-voucher', [\App\Http\Controllers\AdjustmentVoucherReportController::class, 'index'])->name('reports.adjustment-voucher.index');
+    Route::post('/reports/adjustment-voucher/preview', [\App\Http\Controllers\AdjustmentVoucherReportController::class, 'preview'])->name('reports.adjustment-voucher.preview');
 
 
 });

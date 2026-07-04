@@ -581,7 +581,7 @@
                       @endcanany
 
                       {{-- Reports Section --}}
-                      @canany(['Reports Dashboard', 'Sales Report', 'Purchase Report', 'Claim Report', 'Claim Acceptance Report', 'Claim Receipt Report', 'Stock Wastage Report', 'Stock Transfer Report', 'Receipt Voucher Report'])
+                      @canany(['Reports Dashboard', 'Sales Report', 'Purchase Report', 'Claim Report', 'Claim Acceptance Report', 'Claim Receipt Report', 'Stock Wastage Report', 'Stock Transfer Report', 'Receipt Voucher Report', 'Payment Voucher Report', 'Expense Voucher Report', 'Income Voucher Report', 'Journal Voucher Report', 'Adjustment Voucher Report'])
                       <li class="nav-item">
                           <a href="#" class="nav-link">
                               <span class="menu-title">Reports</span>
@@ -658,6 +658,46 @@
                                       <a class="nav-link" href="{{ route('reports.receipt-voucher.index') }}">
                                           <i class="fa-solid fa-receipt mr-2"></i>
                                           <span>Receipt Voucher Report</span>
+                                      </a>
+                                  </li>
+                                  @endcan
+                                  @can('Payment Voucher Report')
+                                  <li class="nav-item">
+                                      <a class="nav-link" href="{{ route('reports.payment-voucher.index') }}">
+                                          <i class="fa-solid fa-money-bill-transfer mr-2"></i>
+                                          <span>Payment Voucher Report</span>
+                                      </a>
+                                  </li>
+                                  @endcan
+                                  @can('Expense Voucher Report')
+                                  <li class="nav-item">
+                                      <a class="nav-link" href="{{ route('reports.expense-voucher.index') }}">
+                                          <i class="fa-solid fa-file-invoice mr-2"></i>
+                                          <span>Expense Voucher Report</span>
+                                      </a>
+                                  </li>
+                                  @endcan
+                                  @can('Income Voucher Report')
+                                  <li class="nav-item">
+                                      <a class="nav-link" href="{{ route('reports.income-voucher.index') }}">
+                                          <i class="fa-solid fa-hand-holding-dollar mr-2"></i>
+                                          <span>Income Voucher Report</span>
+                                      </a>
+                                  </li>
+                                  @endcan
+                                  @can('Journal Voucher Report')
+                                  <li class="nav-item">
+                                      <a class="nav-link" href="{{ route('reports.journal-voucher.index') }}">
+                                          <i class="fa-solid fa-book mr-2"></i>
+                                          <span>Journal Voucher Report</span>
+                                      </a>
+                                  </li>
+                                  @endcan
+                                  @can('Adjustment Voucher Report')
+                                  <li class="nav-item">
+                                      <a class="nav-link" href="{{ route('reports.adjustment-voucher.index') }}">
+                                          <i class="fa-solid fa-sliders mr-2"></i>
+                                          <span>Adjustment Voucher Report</span>
                                       </a>
                                   </li>
                                   @endcan
