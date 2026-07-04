@@ -539,6 +539,8 @@ Route::middleware('auth')->group(function () {
     Route::post('/reports/stock-wastage/preview', [\App\Http\Controllers\StockWastageReportController::class, 'preview'])->name('reports.stock-wastage.preview');
     Route::get('/reports/stock-transfer', [\App\Http\Controllers\StockTransferReportController::class, 'index'])->name('reports.stock-transfer.index');
     Route::post('/reports/stock-transfer/preview', [\App\Http\Controllers\StockTransferReportController::class, 'preview'])->name('reports.stock-transfer.preview');
+    Route::get('/reports/stock', [\App\Http\Controllers\StockReportController::class, 'index'])->name('reports.stock.index');
+    Route::post('/reports/stock/preview', [\App\Http\Controllers\StockReportController::class, 'preview'])->name('reports.stock.preview');
     Route::get('/reports/receipt-voucher', [\App\Http\Controllers\ReceiptVoucherReportController::class, 'index'])->name('reports.receipt-voucher.index');
     Route::post('/reports/receipt-voucher/preview', [\App\Http\Controllers\ReceiptVoucherReportController::class, 'preview'])->name('reports.receipt-voucher.preview');
     Route::get('/reports/payment-voucher', [\App\Http\Controllers\PaymentVoucherReportController::class, 'index'])->name('reports.payment-voucher.index');

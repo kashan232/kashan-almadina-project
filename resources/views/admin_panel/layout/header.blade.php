@@ -655,6 +655,12 @@
                                       </a>
                                   </li>
                                   @endcan
+                                  <li class="nav-item">
+                                      <a class="nav-link" href="{{ route('reports.stock.index') }}">
+                                          <i class="fa-solid fa-boxes-stacked mr-2"></i>
+                                          <span>Stock Report</span>
+                                      </a>
+                                  </li>
                                   @can('Receipt Voucher Report')
                                   <li class="nav-item">
                                       <a class="nav-link" href="{{ route('reports.receipt-voucher.index') }}">
