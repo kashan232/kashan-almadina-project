@@ -153,7 +153,7 @@
 <div class="main-content p-0">
     <div class="welcome-container">
         <div class="welcome-card">
-            <img src="{{ asset('assets/images/WIJDAN-removebg-preview.png') }}" alt="Logo">
+            <x-amt-logo width="180px" style="margin-bottom: 20px;" alt="Al Madina Traders Logo" />
             
             <h1 class="welcome-heading">Welcome to</h1>
             <h2 class="welcome-heading" style="color: #007bff; margin-top: 0;">AL MADINA TRADERS</h2>

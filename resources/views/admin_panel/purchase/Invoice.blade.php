@@ -160,11 +160,8 @@
 
             <div class="voucher-container" id="printable-voucher">
                 <!-- Header -->
-                <div class="voucher-header">
-                    <div>
-                        <h1 class="company-name">Al-Madina Traders</h1>
-                        <div class="voucher-title">Purchase Transaction Voucher</div>
-                    </div>
+                <div class="voucher-header" style="align-items:flex-start;">
+                    <x-amt-print-brand doc-subtitle="Purchase Transaction Voucher" />
                     <div class="voucher-meta">
                         <div class="meta-item"><span class="meta-label">INV ID:</span> {{ $purchase->invoice_no }}</div>
                         <div class="meta-item"><span class="meta-label">STATUS:</span> <span class="fw-bold">{{ strtoupper($purchase->status) }}</span></div>

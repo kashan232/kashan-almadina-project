@@ -73,7 +73,7 @@
  <meta name="description" content="Zare Bootstrap 4 Admin Template">
  <title>{{ ucwords(str_replace(['-', '_'], ' ', (in_array(request()->segment(1), ['add', 'edit', 'create', 'view']) && request()->segment(2)) ? request()->segment(1) . ' ' . request()->segment(2) : (request()->segment(1) ?: 'Home'))) }} | Al-Madina</title>
 
- <link rel="shortcut icon" type="image/x-icon" href="{{ asset('assets/images/favicon.png') }}">
+ <link rel="shortcut icon" type="image/png" href="{{ asset('amt-logo.png') }}">
  <link rel="stylesheet" href="{{ asset('assets/css/bootstrap.min.css') }}">
  <link rel="stylesheet" href="{{ asset('assets/css/style.css') }}">
  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">

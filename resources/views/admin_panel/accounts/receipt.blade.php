@@ -35,19 +35,7 @@ th { background:#f2f2f2; font-weight:bold; }
 
 <div class="challan-container">
   <div class="header">
-    <div class="company-info">
-      <h1>Al-Madina Traders</h1>
-      <div class="contact-details">
-        Shop# 2, United Hotel, Qazi Qayoom Road, Hyderabad.<br>
-        Mob / Whatsapp: 0312-0252899, Tel: 022-2780942
-      </div>
-    </div>
-    <div class="logo-section">
-      <img src="https://i.imgur.com/BL8PyRT.png" alt="AMT Logo" class="logo">
-      <div class="challan-box">
-        Receipt Voucher
-      </div>
-    </div>
+    <x-amt-print-brand doc-title="Receipt Voucher" :show-contact="true" />
   </div>
 
   <div class="line"></div>

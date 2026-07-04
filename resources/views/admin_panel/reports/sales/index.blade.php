@@ -200,7 +200,8 @@
                                     <select name="transaction_type" class="form-select form-select-sm" required style="height: 30px; font-size: 12px;">
                                         <option value="sale" selected>Sale</option>
                                         <option value="sale_return">Sale Return</option>
-                                        <option value="both">Both (Return Minus)</option>
+                                        <option value="customer_credit_note">Credit Note</option>
+                                        <option value="both">All (Return Minus &amp; Credit Plus)</option>
                                     </select>
                                 </div>
                                 <div class="col-md-2">

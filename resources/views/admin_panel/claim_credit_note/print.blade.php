@@ -31,12 +31,9 @@
 </head>
 <body onload="window.print()">
     <div class="container">
-        <div class="header">
-            <div>
-                <h1>Al-Madina Traders</h1>
-                <p style="margin:0; font-weight: bold; color: #555;">CLAIM CREDIT NOTE VOUCHER</p>
-            </div>
-            <div style="text-align: right;">
+        <div class="header" style="align-items:flex-start;">
+            <x-amt-print-brand doc-subtitle="CLAIM CREDIT NOTE VOUCHER" />
+            <div style="text-align: right; flex-shrink:0;">
                 <p style="margin:0;"><strong>Voucher:</strong> {{ $voucher->voucher_no }}</p>
                 <p style="margin:0;"><strong>Status:</strong> {{ strtoupper($voucher->status) }}</p>
             </div>

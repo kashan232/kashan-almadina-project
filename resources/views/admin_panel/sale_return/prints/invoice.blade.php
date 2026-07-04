@@ -43,16 +43,16 @@
 @endphp
 <button class="print-btn no-print" onclick="window.print()">Print Invoice</button>
 <div class="page">
-    <img id="watermark" src="{{ asset('amt-watermark.png') }}" alt="" onerror="this.style.display='none'">
+    <x-amt-watermark />
     <div class="content">
         <header>
             <div class="brand">
-                <h1>Al-Madina Traders</h1>
+                <div class="brand-name" style="font-family:'Times New Roman',serif;font-size:28px;font-weight:700;">Al-Madina Traders</div>
                 <p>Shop#2, United Hotel, Qazi Qayoom Road, Hyderabad</p>
                 <p>Mob / Whatsapp: 0312-0252899, Tel: 022-2780942</p>
             </div>
             <div style="text-align:right;">
-                <img src="{{ asset('amt-logo.png') }}" alt="AMT Logo" style="max-width:170px;" onerror="this.style.display='none'">
+                <x-amt-logo width="170px" style="display:block;margin-left:auto;" />
                 <div class="doc-box">
                     Sale Return
                     <small>Credit Note</small>

@@ -297,8 +297,8 @@
               <div class="container-fluid px-2 d-flex flex-row h-100 align-items-center justify-content-between">
                   <!-- BRAND NAME -->
                   <div class="d-flex align-items-center me-2">
-                      <a class="nav_logo rt_logo text-decoration-none" href="{{ url('/home') }}">
-                          <h4 class="text-white m-0 fw-bold" style="letter-spacing: 0.5px; font-size: 1rem;">AL MADINA TRADERS</h4>
+                      <a class="nav_logo rt_logo text-decoration-none d-flex align-items-center" href="{{ url('/home') }}">
+                          <x-amt-logo height="42px" style="background:#fff;border-radius:4px;padding:2px 6px;" />
                       </a>
                   </div>
 

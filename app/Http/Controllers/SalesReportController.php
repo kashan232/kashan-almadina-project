@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\SaleItem;
 use App\Models\SaleReturnItem;
+use App\Models\CustomerClaim;
 use App\Models\User;
 use App\Models\UserGroup;
 use App\Models\Warehouse;
@@ -85,6 +86,13 @@ class SalesReportController extends Controller
             $sign = $transactionType === 'both' ? -1 : 1;
             $lines = $lines->merge(
                 $this->fetchReturnLines($request)->map(fn ($item) => $this->wrapReturnLine($item, $sign))
+            );
+        }
+
+        if (in_array($transactionType, ['customer_credit_note', 'both'], true)) {
+            $lines = $lines->merge(
+                $this->fetchCustomerClaimCreditNoteLines($request)
+                    ->map(fn ($claim) => $this->wrapCustomerClaimLine($claim, 1))
             );
         }
 
@@ -351,6 +359,175 @@ class SalesReportController extends Controller
             'amount' => $sign * $amount,
             'entry_type' => 'sale_return',
             'entry_type_label' => 'Sale Return',
+        ];
+    }
+
+    private function applyCustomerClaimHeaderFilters($query, array $filters): void
+    {
+        $query->where('status', 'Posted')->where('claim_type', 'credit_note');
+
+        if (!empty($filters['from_date'])) {
+            $query->whereDate('claim_date', '>=', $filters['from_date']);
+        }
+        if (!empty($filters['to_date'])) {
+            $query->whereDate('claim_date', '<=', $filters['to_date']);
+        }
+        if (!empty($filters['invoice_no'])) {
+            $claimNo = $filters['invoice_no'];
+            $query->where(function ($sub) use ($claimNo) {
+                $sub->where('claim_no', 'like', "%{$claimNo}%")
+                    ->orWhere('claim_no', 'like', '%' . ltrim($claimNo, '0') . '%');
+            });
+        }
+        if ($this->shouldApplyFilter($filters['parties'], $filters['totalParties'])) {
+            $query->whereIn('party_id', $filters['parties']);
+        }
+        if ($this->shouldApplyFilter($filters['sales_officers'], $filters['totalUsers'])) {
+            $query->whereIn('created_by', $filters['sales_officers']);
+        }
+        if ($this->shouldApplyFilter($filters['user_groups'], $filters['totalGroups'])) {
+            $query->where(function ($sub) use ($filters) {
+                foreach ($filters['user_groups'] as $gid) {
+                    $sub->orWhereJsonContains('user_group_ids', (string) $gid)
+                        ->orWhereJsonContains('user_group_ids', (int) $gid);
+                }
+            });
+        }
+        if ($this->shouldApplyFilter($filters['warehouses'], $filters['totalWarehouses'])) {
+            $query->where(function ($sub) use ($filters) {
+                $sub->whereIn('claim_warehouse_id', $filters['warehouses'])
+                    ->orWhereIn('replacement_from_warehouse_id', $filters['warehouses']);
+            });
+        }
+        if ($this->shouldApplyFilter($filters['party_types'], $filters['totalPartyTypes'])) {
+            $query->where(function ($pt) use ($filters) {
+                if (in_array('Vendor', $filters['party_types'])) {
+                    $pt->orWhere('party_type', 'vendor');
+                }
+                if (in_array('Main Customer', $filters['party_types'])) {
+                    $pt->orWhere(function ($sq) {
+                        $sq->where('party_type', 'customer')
+                            ->whereHas('party', fn ($c) => $c->where('customer_type', 'Main Customer'));
+                    });
+                }
+                if (in_array('Walking Customer', $filters['party_types'])) {
+                    $pt->orWhere('party_type', 'walkin')
+                        ->orWhere(function ($sq) {
+                            $sq->where('party_type', 'customer')
+                                ->whereHas('party', fn ($c) => $c->where('customer_type', 'Walking Customer'));
+                        });
+                }
+            });
+        }
+    }
+
+    private function applyCustomerClaimProductFilters($query, array $filters): void
+    {
+        if ($this->shouldApplyFilter($filters['items'], $filters['totalProducts'])) {
+            $query->where(function ($sub) use ($filters) {
+                $sub->whereIn('product_id', $filters['items'])
+                    ->orWhereIn('replacement_product_id', $filters['items']);
+            });
+        }
+
+        if (
+            $this->shouldApplyFilter($filters['brands'], $filters['totalBrands'])
+            || $this->shouldApplyFilter($filters['categories'], $filters['totalCategories'])
+            || $this->shouldApplyFilter($filters['subcategories'], $filters['totalSubcategories'])
+        ) {
+            $query->where(function ($outer) use ($filters) {
+                $outer->whereHas('product', function ($p) use ($filters) {
+                    if ($this->shouldApplyFilter($filters['brands'], $filters['totalBrands'])) {
+                        $p->whereIn('brand_id', $filters['brands']);
+                    }
+                    if ($this->shouldApplyFilter($filters['categories'], $filters['totalCategories'])) {
+                        $p->whereIn('category_id', $filters['categories']);
+                    }
+                    if ($this->shouldApplyFilter($filters['subcategories'], $filters['totalSubcategories'])) {
+                        $p->whereIn('sub_category_id', $filters['subcategories']);
+                    }
+                })->orWhereHas('replacementProduct', function ($p) use ($filters) {
+                    if ($this->shouldApplyFilter($filters['brands'], $filters['totalBrands'])) {
+                        $p->whereIn('brand_id', $filters['brands']);
+                    }
+                    if ($this->shouldApplyFilter($filters['categories'], $filters['totalCategories'])) {
+                        $p->whereIn('category_id', $filters['categories']);
+                    }
+                    if ($this->shouldApplyFilter($filters['subcategories'], $filters['totalSubcategories'])) {
+                        $p->whereIn('sub_category_id', $filters['subcategories']);
+                    }
+                });
+            });
+        }
+    }
+
+    private function fetchCustomerClaimCreditNoteLines(Request $request): Collection
+    {
+        $filters = $this->extractFilters($request);
+
+        $query = CustomerClaim::with([
+            'product.brandRelation',
+            'product.sub_category_relation',
+            'product.latestPrice',
+            'replacementProduct.brandRelation',
+            'warehouse',
+            'party',
+        ]);
+
+        $this->applyCustomerClaimHeaderFilters($query, $filters);
+        $this->applyCustomerClaimProductFilters($query, $filters);
+
+        return $query->orderBy('claim_date')->orderBy('id')->get();
+    }
+
+    private function wrapCustomerClaimLine(CustomerClaim $claim, int $sign): object
+    {
+        $amount = (float) $claim->report_amount;
+        $salesPrice = (float) ($claim->sales_price ?? 0);
+        if ($salesPrice <= 0) {
+            $salesPrice = (float) ($claim->replacement_sales_price ?? 0);
+        }
+        if ($salesPrice <= 0 && $amount > 0) {
+            $salesPrice = $amount;
+        }
+
+        $retailPrice = (float) ($claim->product?->latestPrice?->retail_price ?? $claim->product?->retail_price ?? 0);
+        $party = $claim->party;
+        $reportCustomer = $party;
+        if ($claim->party_type === 'vendor' && $party) {
+            $reportCustomer = (object) [
+                'customer_name' => $party->name ?? 'N/A',
+                'cnic' => $party->cnic ?? '',
+                'filer_type' => 'Non Filer',
+            ];
+        }
+
+        $claimDate = $claim->claim_date ?? $claim->entry_date ?? now();
+
+        $pseudoSale = (object) [
+            'customer_id' => $claim->party_type !== 'vendor' ? $claim->party_id : null,
+            'invoice_no' => $claim->claim_no,
+            'created_at' => $claimDate,
+            'customer' => $reportCustomer,
+            'partyType' => $claim->party_type,
+        ];
+
+        return (object) [
+            'sale' => $pseudoSale,
+            'product_id' => $claim->product_id,
+            'product' => $claim->product,
+            'warehouse_id' => $claim->claim_warehouse_id,
+            'warehouse' => $claim->warehouse,
+            'sales_qty' => $sign * 1,
+            'retail_price' => $retailPrice,
+            'sales_rate' => $salesPrice,
+            'sales_price' => $salesPrice,
+            'discount_amount' => 0,
+            'amount' => $sign * $amount,
+            'entry_type' => 'customer_credit_note',
+            'entry_type_label' => 'Credit Note',
+            'replacement_product' => $claim->replacementProduct,
+            'replacement_sales_price' => $claim->replacement_sales_price,
         ];
     }
 

@@ -116,6 +116,7 @@
 
 <div class="report-header">
     <div class="gen-date">{{ now()->format('l, F d, Y') }}</div>
+    <div style="text-align:center;margin-bottom:6px;"><x-amt-logo width="110px" style="margin:0 auto;" /></div>
     <div class="company-name">Al-Madina Traders</div>
     <h1 class="report-title">Claim Entry Report</h1>
     <div class="date-range">

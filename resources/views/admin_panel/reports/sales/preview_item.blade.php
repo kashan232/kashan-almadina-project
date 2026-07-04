@@ -241,13 +241,13 @@
                         $item_sales_amt += $sales_a;
                         $item_invoice_amt += $invoice_a;
                     @endphp
-                    <tr class="data-row {{ ($item->entry_type ?? 'sale') === 'sale_return' ? 'return-row' : '' }}">
+                    <tr class="data-row @include('admin_panel.reports.sales.partials.data_row_class', ['item' => $item])">
                         @include('admin_panel.reports.sales.partials.customer_cell', ['item' => $item])
                         @include('admin_panel.reports.sales.partials.type_cell', ['item' => $item])
                         <td class="text-center">{{ number_format($qty) }}</td>
                         <td class="text-right">{{ number_format($retail_p, 0) }}</td>
                         <td class="text-right bold-val">{{ number_format($retail_a, 0) }}</td>
-                        <td class="text-right">{{ number_format($sales_p, 0) }}</td>
+                        <td class="text-right">@include('admin_panel.reports.sales.partials.sales_price_cell', ['item' => $item, 'value' => $sales_p])</td>
                         <td class="text-right bold-val">{{ number_format($sales_a, 0) }}</td>
                     </tr>
                 @endforeach

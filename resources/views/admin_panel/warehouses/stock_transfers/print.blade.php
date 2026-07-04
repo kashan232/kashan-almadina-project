@@ -36,12 +36,9 @@
 </head>
 <body onload="window.print()">
     <div class="container">
-        <div class="header">
-            <div>
-                <h1>Al-Madina Traders</h1>
-                <p style="margin:2px 0; color:#555;">Stock Transfer Voucher</p>
-            </div>
-            <div style="text-align:right;">
+        <div class="header" style="align-items:flex-start;">
+            <x-amt-print-brand doc-subtitle="Stock Transfer Voucher" />
+            <div style="text-align:right; flex-shrink:0;">
                 <p style="margin:0;"><strong>Transfer #:</strong> {{ $transfer->id }}</p>
                 <p style="margin:4px 0;"><span class="status-badge">{{ strtoupper($transfer->status) }}</span></p>
                 <p style="margin:0; font-size:11px; color:#666;">{{ \Carbon\Carbon::parse($transfer->created_at)->format('d-M-Y') }}</p>

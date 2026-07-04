@@ -131,7 +131,9 @@
     <button onclick="window.print()" style="padding: 10px 25px; background: #0d47a1; color: #fff; border: none; cursor: pointer; font-weight: bold; border-radius: 4px;">Print Report</button>
 </div>
 
-<div class="company-name">Al-Madina Battery Traders</div>
+<div style="text-align:center;margin-bottom:6px;"><x-amt-logo width="110px" style="margin:0 auto;" /></div>
+
+<div class="company-name">Al-Madina Traders</div>
 
 <div class="report-header">
     <div class="generated-date">{{ now()->format('l, F d, Y') }}</div>

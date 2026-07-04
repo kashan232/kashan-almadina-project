@@ -825,19 +825,19 @@ class SaleController extends Controller
     /* -------- Prints -------- */
     public function invoice(Sale $sale)
     {
-        $sale->load(['items.product', 'items.warehouse', 'customer', 'vendor']);
+        $sale->load(['items.product.brandRelation', 'items.warehouse', 'customer', 'vendor']);
 
         return view('admin_panel.sale.prints.invoice', compact('sale'));
     }
     public function print2(Sale $sale)
     {
-        $sale->load(['items.product', 'items.warehouse', 'customer', 'vendor']);
+        $sale->load(['items.product.brandRelation', 'items.warehouse', 'customer', 'vendor']);
 
         return view('admin_panel.sale.prints.print2', compact('sale'));
     }
     public function dc(Sale $sale)
     {
-        $sale->load(['items.product', 'items.warehouse', 'customer', 'vendor']);
+        $sale->load(['items.product.brandRelation', 'items.warehouse', 'customer', 'vendor']);
 
         return view('admin_panel.sale.prints.dc', compact('sale'));
     }

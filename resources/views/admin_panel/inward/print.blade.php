@@ -83,12 +83,9 @@
 </head>
 <body onload="window.print()">
     <div class="container half-page">
-        <div class="header">
-            <div>
-                <h1>Al-Madina Traders</h1>
-                <p style="margin:2px 0; color:#555;">Inward Gatepass Voucher</p>
-            </div>
-            <div style="text-align: right;">
+        <div class="header" style="align-items:flex-start;">
+            <x-amt-print-brand doc-subtitle="Inward Gatepass Voucher" />
+            <div style="text-align: right; flex-shrink:0;">
                 <p style="margin:0;"><strong>Invoice#:</strong> {{ $gatepass->invoice_no }}</p>
                 <p style="margin:4px 0;"><span class="status-badge">{{ strtoupper($gatepass->status) }}</span></p>
             </div>

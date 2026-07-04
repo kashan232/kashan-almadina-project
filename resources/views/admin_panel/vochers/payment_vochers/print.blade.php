@@ -152,7 +152,7 @@
                 <p>Mobile / Whatsapp: 0312-0252899; Tel: 022-2780942</p>
             </div>
             <div class="logo" style="text-align:right;">
-                <img src="{{ asset('amt-logo.png') }}" alt="AMT Logo" style="max-width:200px;" onerror="this.style.display='none'">
+                <x-amt-logo width="200px" />
                 <div style="margin-top:8px;">
                     <span class="receipt-badge">PAYMENT VOUCHER</span>
                 </div>

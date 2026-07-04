@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AL Madina Traders - Premium Battery Solutions</title>
+    <link rel="shortcut icon" type="image/png" href="{{ asset('amt-logo.png') }}">
     
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -287,7 +288,7 @@
         <div class="hero-card">
             <!-- Logo/Icon -->
             <div class="logo-icon">
-                <i class="bi bi-lightning-charge-fill"></i>
+                <x-amt-logo width="140px" alt="Al Madina Traders Logo" />
             </div>
             
             <!-- Company Name -->

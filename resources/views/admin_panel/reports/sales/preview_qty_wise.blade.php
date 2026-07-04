@@ -175,7 +175,7 @@
                         $b_qty += $qty;
                         $b_retail_val += $value;
                     @endphp
-                    <tr class="item-row {{ ($item->entry_type ?? 'sale') === 'sale_return' ? 'return-row' : '' }}">
+                    <tr class="item-row @include('admin_panel.reports.sales.partials.data_row_class', ['item' => $item])">
                         @include('admin_panel.reports.sales.partials.type_cell', ['item' => $item])
                         <td class="text-left">{{ $item->product ? $item->product->name : 'N/A' }}</td>
                         <td class="text-center">{{ number_format($qty) }}</td>
