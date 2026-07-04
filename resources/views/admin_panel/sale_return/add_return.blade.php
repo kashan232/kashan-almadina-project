@@ -405,6 +405,14 @@
 $(document).ready(function() {
     $('.select2').select2({ width: '100%' });
 
+    @if(!isset($returnData))
+    $.get("{{ route('sale.return.next-number') }}", function(res) {
+        if (res && res.next) {
+            $('#invoiceNoDisplay').text('Return No: ' + res.next);
+        }
+    });
+    @endif
+
     const vendors = @json($vendors);
     const customers = @json($customers);
 

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
 
 class SaleReturn extends Model
 {
@@ -14,22 +15,6 @@ class SaleReturn extends Model
     protected $casts = [
         'user_group_ids' => 'array',
     ];
-    // protected $fillable = [
-    //     'invoice_no',
-    //     'date',
-    //     'customer_id',
-    //     'warehouse_id',
-    //     'total_qty',
-    //     'total_discount',
-    //     'total_tax',
-    //     'total_price',
-    //     'note',
-    //     'created_by',
-    // ];
-    // protected $fillable = [
-    //     'sale_return_id','warehouse_id','product_id','stock','price_level',
-    //     'sales_price','sales_qty','discount_percent','discount_amount','amount',
-    // ];
 
     public function items(){ return $this->hasMany(SaleReturnItem::class, 'sale_return_id'); }
     public function sale(){ return $this->belongsTo(Sale::class, 'sale_id'); }
@@ -57,27 +42,32 @@ class SaleReturn extends Model
     }
 
     /**
-     * Next SR- invoice number across ALL groups (admin + user portals share one sequence).
+     * Next SR- invoice number — global sequence across all users/groups.
+     * Uses DB::table (never Eloquent scopes).
      */
     public static function generateReturnNo(bool $forUpdate = false): string
     {
-        $query = self::withoutGlobalScopes()->where('invoice_no', 'LIKE', 'SR-%');
         if ($forUpdate) {
-            $query->lockForUpdate();
+            DB::table('sale_returns')->lockForUpdate()->select('id')->get();
         }
 
+        $invoices = DB::table('sale_returns')->pluck('invoice_no');
+
         $maxNum = 0;
-        foreach ($query->pluck('invoice_no') as $inv) {
-            $num = (int) preg_replace('/[^0-9]/', '', (string) $inv);
-            if ($num > $maxNum) {
-                $maxNum = $num;
+        foreach ($invoices as $inv) {
+            $inv = trim((string) $inv);
+            if ($inv === '') {
+                continue;
+            }
+            if (preg_match('/^SR-(\d+)$/i', $inv, $m)) {
+                $maxNum = max($maxNum, (int) $m[1]);
             }
         }
 
         do {
             $maxNum++;
             $nextInvoice = 'SR-' . $maxNum;
-            $exists = self::withoutGlobalScopes()->where('invoice_no', $nextInvoice)->exists();
+            $exists = DB::table('sale_returns')->where('invoice_no', $nextInvoice)->exists();
         } while ($exists);
 
         return $nextInvoice;

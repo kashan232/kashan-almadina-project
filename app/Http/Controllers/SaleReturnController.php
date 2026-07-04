@@ -44,6 +44,13 @@ class SaleReturnController extends Controller
         return view('admin_panel.sale_return.add_return', compact('nextInvoice', 'sales', 'vendors', 'customers', 'warehouses'));
     }
 
+    public function nextNumber()
+    {
+        return response()->json([
+            'next' => SaleReturn::generateReturnNo(),
+        ]);
+    }
+
     public function getSaleDetails($invoice)
     {
         try {

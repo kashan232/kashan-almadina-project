@@ -376,6 +376,7 @@ Route::middleware('auth')->group(function () {
 
     // Sale Returns
     Route::get('/sale-returns', [SaleReturnController::class, 'index'])->name('sale.return.home');
+    Route::get('/sale-returns/next-number', [SaleReturnController::class, 'nextNumber'])->name('sale.return.next-number');
     Route::get('/sale-returns/add', [SaleReturnController::class, 'create'])->name('sale.return.add');
     Route::post('/sale-returns', [SaleReturnController::class, 'store'])->name('sale.return.store');
     Route::get('/sale-returns/get-sale/{invoice_no}', [SaleReturnController::class, 'getSaleDetails']);
