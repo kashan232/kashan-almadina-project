@@ -223,15 +223,15 @@
                                                                 <i class="fa fa-trash"></i>
                                                             </button>
                                                         </form>
-                                                    @endif
-                                                    
-                                                    <a href="{{ route('sale.return.print', $ret->id) }}" target="_blank" class="btn btn-outline-dark btn-xs px-1 py-0" title="Print Return" style="height: 20px;">
-                                                        <i class="fa fa-print"></i>
-                                                    </a>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                        @endforeach
+                                            @else
+                                                <a href="{{ route('sale.return.view', $ret->id) }}" class="btn btn-outline-info btn-xs px-1 py-0" title="View Return" style="height: 20px;">
+                                                    <i class="fa fa-eye"></i>
+                                                </a>
+                                            @endif
+                                        </div>
+                                    </td>
+                                </tr>
+                                @endforeach
                                     </tbody>
                                 </table>
                             </div>

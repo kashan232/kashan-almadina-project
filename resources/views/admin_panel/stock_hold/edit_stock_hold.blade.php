@@ -35,6 +35,24 @@
     .form-locked #postBtn, .form-locked #exitBtn, .form-locked #deleteBtn {
         pointer-events: auto !important; opacity: 1 !important;
     }
+
+    .form-locked.view-mode #saveDraftBtn,
+    .form-locked.view-mode #editInvoiceBtn,
+    .form-locked.view-mode #postBtn,
+    .form-locked.view-mode #deleteBtn {
+        display: inline-block !important;
+        pointer-events: none !important;
+        opacity: 0.55 !important;
+        cursor: not-allowed !important;
+    }
+
+    .form-locked.view-mode #realPrintBtn,
+    .form-locked.view-mode #exitBtn,
+    .form-locked.view-mode #newInvoiceBtn {
+        pointer-events: auto !important;
+        opacity: 1 !important;
+        display: inline-block !important;
+    }
     
     .posted-watermark {
         position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-30deg);
@@ -45,6 +63,10 @@
 </style>
 
 @section('content')
+@php
+    $isViewMode = isset($viewMode) && $viewMode;
+    $isPosted = $voucher->status == 'Posted';
+@endphp
 <div class="main-content">
     <div class="main-content-inner">
         <div class="container-fluid stock-hold-page">
@@ -53,9 +75,9 @@
             <div class="d-flex justify-content-between align-items-center page-top-bar bg-light rounded shadow-sm">
                 <div style="min-width:105px;"></div>
                 <div class="d-flex align-items-center gap-2 justify-content-center flex-grow-1">
-                    <h6 class="page-title mb-0 fw-bold">Edit Stock Hold</h6>
-                    <span id="statusBadge" class="badge @if($voucher->status == 'Posted') bg-success @else bg-info @endif text-white px-3 py-2 rounded-pill shadow-sm" style="font-size:12px;">
-                        <i class="fa fa-pencil me-1"></i> {{ $voucher->status }}
+                    <h6 class="page-title mb-0 fw-bold">{{ $isViewMode ? 'View Stock Hold' : 'Edit Stock Hold' }}</h6>
+                    <span id="statusBadge" class="badge @if($isPosted || $isViewMode) bg-success @else bg-info @endif text-white px-3 py-2 rounded-pill shadow-sm" style="font-size:12px;">
+                        <i class="fa @if($isPosted || $isViewMode) fa-check @else fa-pencil @endif me-1"></i> {{ $isViewMode ? 'Posted' : $voucher->status }}
                     </span>
                     <span id="idBadge" class="badge bg-primary px-3 py-2 rounded-pill shadow-sm" style="font-size:12px;">
                         <i class="fa fa-tag me-1"></i> ID: {{ $voucher->id }}
@@ -68,12 +90,12 @@
                 </div>
             </div>
 
-            <form action="{{ route('stock-holds.update', $voucher->id) }}" method="POST" id="stockHoldForm" class="position-relative form-locked">
+            <form action="{{ $isViewMode ? '#' : route('stock-holds.update', $voucher->id) }}" method="POST" id="stockHoldForm" class="position-relative form-locked{{ $isViewMode ? ' view-mode' : '' }}">
                 @csrf
                 <input type="hidden" name="id" value="{{ $voucher->id }}">
                 <input type="hidden" name="action" id="formAction" value="save">
                 <input type="hidden" name="sale_id" id="sale_id" value="{{ $voucher->sale_id }}">
-                <div class="posted-watermark @if($voucher->status == 'Posted') show @endif" id="postedWatermark">Posted</div>
+                <div class="posted-watermark @if($isPosted || $isViewMode) show @endif" id="postedWatermark">Posted</div>
 
                 {{-- Header Details --}}
                 <div class="card shadow-sm">
@@ -179,13 +201,13 @@
                     </div>
                     <div class="card-footer bg-white">
                         <div class="d-flex flex-wrap justify-content-center w-100 bottom-bar-btns">
-                            <button type="button" id="saveDraftBtn" class="btn btn-primary px-3 fw-bold shadow-sm" disabled>
+                            <button type="button" id="saveDraftBtn" class="btn btn-primary px-3 fw-bold shadow-sm" {{ ($isViewMode || $isPosted) ? 'disabled' : 'disabled' }}>
                                 <u>S</u>ave <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+S</kbd>
                             </button>
-                            <button type="button" id="editInvoiceBtn" class="btn btn-warning px-3 fw-bold text-dark shadow-sm">
+                            <button type="button" id="editInvoiceBtn" class="btn btn-warning px-3 fw-bold text-dark shadow-sm" {{ ($isViewMode || $isPosted) ? 'disabled' : '' }}>
                                 <u>E</u>dit <kbd style="font-size:10px;opacity:.8;margin-left:4px;color:#fff;">Ctrl+E</kbd>
                             </button>
-                            <button type="button" id="postBtn" class="btn btn-success px-3 fw-bold shadow-sm">
+                            <button type="button" id="postBtn" class="btn btn-success px-3 fw-bold shadow-sm" {{ ($isViewMode || $isPosted) ? 'disabled' : '' }}>
                                 <u>P</u>ost <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+&crarr;</kbd>
                             </button>
                             <button type="button" id="deleteBtn" class="btn btn-danger px-3 fw-bold shadow-sm" disabled title="Delete not available">
@@ -220,6 +242,25 @@ $(document).ready(function() {
     var _selectedPartyId = "{{ $voucher->party_id }}";
     var saveBtnHtml = '<u>S</u>ave <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+S</kbd>';
     var postBtnHtml = '<u>P</u>ost <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+&crarr;</kbd>';
+    var isViewMode = @json($isViewMode);
+
+    function setHoldFormPostedState(voucherId, printUrl) {
+        $('#stockHoldForm').addClass('form-locked view-mode');
+        $('#postedWatermark').addClass('show');
+        $('#statusBadge').removeClass('bg-info').addClass('bg-success text-white').html('<i class="fa fa-check"></i> Posted');
+        $('#saveDraftBtn, #editInvoiceBtn, #postBtn, #deleteBtn').prop('disabled', true);
+        $('#postBtn').html(postBtnHtml);
+        $('#realPrintBtn').attr('href', printUrl || ('/stock-holds/print/' + voucherId)).attr('target', '_blank');
+    }
+
+    function isHoldPostedView() {
+        return isViewMode || $('#stockHoldForm').hasClass('view-mode');
+    }
+
+    if (isViewMode) {
+        $('#saveDraftBtn, #editInvoiceBtn, #postBtn, #deleteBtn').prop('disabled', true);
+        $('#stockHoldForm select').prop('disabled', true);
+    }
 
     function loadParties(type, selectId) {
         $.get("{{ route('stock-holds.party.list') }}", { type: type }, function(res) {
@@ -315,9 +356,8 @@ $(document).ready(function() {
             success: function(res) {
                 if(res.success) {
                     if(res.status === 'Posted') {
-                        $('#editInvoiceBtn, #postBtn').prop('disabled', true);
-                        showToast('Stock Hold Posted! Redirecting...', 'success');
-                        setTimeout(function() { window.location.href = "{{ route('stock-hold-list') }}"; }, 1200);
+                        setHoldFormPostedState(_savedVoucherId, '/stock-holds/print/' + _savedVoucherId);
+                        showToast('Stock Hold Posted!', 'success');
                     } else {
                         showToast('All changes saved successfully', 'success');
                         $('#stockHoldForm').addClass('form-locked');
@@ -350,9 +390,10 @@ $(document).ready(function() {
             type: 'POST',
             data: { _token: $('input[name="_token"]').val() },
             headers: { 'X-Requested-With': 'XMLHttpRequest' },
-            success: function() {
-                showToast('Stock Hold Posted! Redirecting...', 'success');
-                setTimeout(function() { window.location.href = "{{ route('stock-hold-list') }}"; }, 1200);
+            success: function(res) {
+                var printUrl = (res && res.print_url) ? res.print_url : ('/stock-holds/print/' + _savedVoucherId);
+                setHoldFormPostedState(_savedVoucherId, printUrl);
+                showToast('Stock Hold Posted!', 'success');
             },
             error: function() {
                 showToast('Post failed', 'error');
@@ -378,6 +419,15 @@ $(document).ready(function() {
     });
 
     document.addEventListener('keydown', function(e) {
+        if (isHoldPostedView()) {
+            if (e.key === 'Escape') { e.preventDefault(); window.location.href = $('#exitBtn').attr('href'); }
+            if (e.ctrlKey && (e.key === 'm' || e.key === 'M')) { e.preventDefault(); window.location.href = $('#newInvoiceBtn').attr('href'); }
+            if (e.ctrlKey && (e.key === 'p' || e.key === 'P')) {
+                e.preventDefault();
+                window.open($('#realPrintBtn').attr('href'), '_blank');
+            }
+            return;
+        }
         if (e.ctrlKey && (e.key === 's' || e.key === 'S')) {
             e.preventDefault(); e.stopImmediatePropagation();
             if (!_saveInFlight && !$('#saveDraftBtn').prop('disabled')) $('#saveDraftBtn').click();

@@ -35,6 +35,52 @@
         opacity: 1 !important;
     }
 
+    .form-locked.view-mode #saveDraftBtn,
+    .form-locked.view-mode #editInvoiceBtn,
+    .form-locked.view-mode #postBtn,
+    .form-locked.view-mode #deleteBtn {
+        display: inline-block !important;
+        pointer-events: none !important;
+        opacity: 0.55 !important;
+        cursor: not-allowed !important;
+    }
+
+    .form-locked.view-mode #realPrintBtn {
+        display: none !important;
+    }
+
+    .form-locked.view-mode #invPrintBtn,
+    .form-locked.view-mode #dcPrintBtn,
+    .form-locked.view-mode #exitBtn,
+    .form-locked.view-mode #newInvoiceBtn {
+        pointer-events: auto !important;
+        opacity: 1 !important;
+        display: inline-block !important;
+    }
+
+    #returnForm { position: relative; overflow: visible; }
+
+    .posted-watermark {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%) rotate(-30deg);
+        font-size: 8rem;
+        color: rgba(220, 53, 69, 0.14);
+        font-weight: 900;
+        text-transform: uppercase;
+        pointer-events: none;
+        z-index: 1000;
+        display: none;
+        border: 10px solid rgba(220, 53, 69, 0.14);
+        padding: 20px 50px;
+        border-radius: 20px;
+        white-space: nowrap;
+        user-select: none;
+    }
+
+    .posted-watermark.show { display: block; }
+
     .purchase-page .main-container { padding: .35rem !important; border-radius: .35rem !important; max-width: 99%; }
     .purchase-page.container-fluid,
     .purchase-page-inner.container-fluid { padding: .2rem .35rem !important; }
@@ -69,10 +115,11 @@
 
 @section('content')
 @php
+    $isViewMode = isset($viewMode) && $viewMode;
     $isPosted = isset($returnData) && $returnData->status == 'Posted';
     $isDraft = isset($returnData) && $returnData->status != 'Posted';
     $isNew = !isset($returnData);
-    $formLocked = $isPosted || (isset($returnData) && !$isNew);
+    $formLocked = $isViewMode || $isPosted || (isset($returnData) && !$isNew);
 @endphp
 
 <div class="main-content bg-white purchase-page">
@@ -80,10 +127,13 @@
         <div class="container-fluid purchase-page-inner">
             <div class="main-container bg-white border shadow-sm mx-auto rounded-3">
 
-                <form id="returnForm" class="{{ $formLocked ? 'form-locked' : '' }}" action="{{ isset($returnData) ? route('sale.return.update', $returnData->id) : route('sale.return.store') }}" method="POST">
+                <form id="returnForm" class="{{ $formLocked ? 'form-locked' : '' }}{{ $isViewMode ? ' view-mode' : '' }}" action="{{ $isViewMode ? '#' : (isset($returnData) ? route('sale.return.update', $returnData->id) : route('sale.return.store')) }}" method="POST">
                     @csrf
+                    <input type="hidden" name="return_id" id="return_id" value="{{ $returnData->id ?? '' }}">
                     <input type="hidden" name="sale_id" id="sale_id" value="{{ $returnData->sale_id ?? '' }}">
                     <input type="hidden" name="current_date" id="current_date_hidden" value="{{ $returnData->current_date ?? date('Y-m-d') }}">
+
+                    <div class="posted-watermark {{ ($isViewMode || $isPosted) ? 'show' : '' }}" id="postedWatermark">Posted</div>
 
                     <div class="d-flex align-items-stretch border-bottom main-row">
                         {{-- LEFT: Return Details --}}
@@ -91,7 +141,11 @@
                             <div class="d-flex align-items-center justify-content-between panel-head border-bottom">
                                 <h6 class="mb-0 fw-bold text-danger d-flex align-items-center gap-1">
                                     <i class="fa fa-undo"></i> Sale Return
-                                    @if($isPosted)
+                                    @if($isViewMode)
+                                        <span class="badge bg-info px-1 py-0 rounded" style="font-size:9px;">
+                                            <i class="fa fa-eye"></i> View Only
+                                        </span>
+                                    @elseif($isPosted)
                                         <span class="badge bg-success px-1 py-0 rounded" style="font-size:9px;">Posted</span>
                                     @endif
                                 </h6>
@@ -263,30 +317,39 @@
                     {{-- BOTTOM BUTTONS --}}
                     <div class="d-flex flex-wrap gap-2 justify-content-center bg-light bottom-bar rounded-2 border shadow-sm w-100">
 
-                        <button type="button" id="saveDraftBtn" class="btn btn-primary px-3 fw-bold shadow-sm" {{ $isPosted || $isDraft ? 'disabled' : '' }}>
+                        <button type="button" id="saveDraftBtn" class="btn btn-primary px-3 fw-bold shadow-sm" {{ ($isPosted || $isDraft || $isViewMode) ? 'disabled' : '' }}>
                             <u>S</u>ave <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+S</kbd>
                         </button>
 
-                        <button type="button" id="editInvoiceBtn" class="btn btn-warning px-3 fw-bold text-dark shadow-sm" {{ $isNew || $isPosted ? 'disabled' : '' }}>
+                        <button type="button" id="editInvoiceBtn" class="btn btn-warning px-3 fw-bold text-dark shadow-sm" {{ ($isNew || $isPosted || $isViewMode) ? 'disabled' : '' }}>
                             <u>E</u>dit <kbd style="font-size:10px;opacity:.8;margin-left:4px;color:#fff;">Ctrl+E</kbd>
                         </button>
 
-                        <button type="button" id="postBtn" class="btn btn-success px-3 fw-bold shadow-sm" {{ $isNew || $isPosted ? 'disabled' : '' }}>
+                        <button type="button" id="postBtn" class="btn btn-success px-3 fw-bold shadow-sm" {{ ($isNew || $isPosted || $isViewMode) ? 'disabled' : '' }}>
                             <u>P</u>ost <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+&crarr;</kbd>
                         </button>
 
-                        <button type="button" id="deleteBtn" class="btn btn-danger px-3 fw-bold shadow-sm" {{ $isNew || $isPosted ? 'disabled' : '' }}>
+                        <button type="button" id="deleteBtn" class="btn btn-danger px-3 fw-bold shadow-sm" {{ ($isNew || $isPosted || $isViewMode) ? 'disabled' : '' }}>
                             <u>D</u>elete <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+D</kbd>
                         </button>
 
-                        @if(isset($returnData))
-                            <a href="{{ route('sale.return.print', $returnData->id) }}" target="_blank" id="realPrintBtn" class="btn btn-info px-3 fw-bold text-dark shadow-sm">
-                                <u>P</u>rint <kbd style="font-size:10px;opacity:.8;margin-left:4px;color:#fff;">Ctrl+P</kbd>
-                            </a>
+                        @if(($isViewMode || $isPosted) && isset($returnData))
+                        <a href="{{ route('sale.return.invoice', $returnData->id) }}" target="_blank" id="invPrintBtn" class="btn btn-info px-3 fw-bold text-dark shadow-sm">
+                            <i class="fa fa-file-text-o me-1"></i><u>I</u>nv Print <kbd style="font-size:10px;opacity:.8;margin-left:4px;color:#fff;">Ctrl+P</kbd>
+                        </a>
+                        <a href="{{ route('sale.return.dc', $returnData->id) }}" target="_blank" id="dcPrintBtn" class="btn btn-outline-info px-3 fw-bold shadow-sm">
+                            <i class="fa fa-truck me-1"></i><u>D</u>C Print <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+Shift+D</kbd>
+                        </a>
                         @else
-                            <a href="javascript:void(0)" id="realPrintBtn" class="btn btn-info px-3 fw-bold text-dark shadow-sm" onclick="showPreviewModal(); return false;">
-                                <u>P</u>rint <kbd style="font-size:10px;opacity:.8;margin-left:4px;color:#fff;">Ctrl+P</kbd>
-                            </a>
+                        <a href="#" target="_blank" id="invPrintBtn" class="btn btn-info px-3 fw-bold text-dark shadow-sm d-none">
+                            <i class="fa fa-file-text-o me-1"></i><u>I</u>nv Print <kbd style="font-size:10px;opacity:.8;margin-left:4px;color:#fff;">Ctrl+P</kbd>
+                        </a>
+                        <a href="#" target="_blank" id="dcPrintBtn" class="btn btn-outline-info px-3 fw-bold shadow-sm d-none">
+                            <i class="fa fa-truck me-1"></i><u>D</u>C Print <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+Shift+D</kbd>
+                        </a>
+                        <a href="javascript:void(0)" id="realPrintBtn" class="btn btn-info px-3 fw-bold text-dark shadow-sm" onclick="showPreviewModal(); return false;">
+                            <u>P</u>rint <kbd style="font-size:10px;opacity:.8;margin-left:4px;color:#fff;">Ctrl+P</kbd>
+                        </a>
                         @endif
 
                         <a href="{{ route('sale.return.home') }}" id="exitBtn" class="btn btn-secondary px-3 fw-bold shadow-sm text-white">
@@ -353,6 +416,32 @@ $(document).ready(function() {
     var _savedReturnId = @json(isset($returnData) ? $returnData->id : null);
     var _saveInFlight = false;
     var _postInFlight = false;
+    var isViewMode = @json($isViewMode);
+
+    function isReturnPostedView() {
+        return isViewMode || $('#returnForm').hasClass('view-mode');
+    }
+
+    function setReturnFormPostedState(returnId, invUrl, dcUrl) {
+        _savedReturnId = returnId;
+        $('#return_id').val(returnId);
+
+        $('#returnForm').addClass('form-locked view-mode');
+        $('#postedWatermark').addClass('show');
+
+        $('#saveDraftBtn, #editInvoiceBtn, #postBtn, #deleteBtn').prop('disabled', true);
+        $('#postBtn').html('<u>P</u>ost <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+&crarr;</kbd>');
+
+        $('#returnForm input, #returnForm select, #returnForm textarea').attr('tabindex', '-1');
+        $('#returnForm select').prop('disabled', true);
+        if ($.fn.select2) {
+            $('#returnForm .select2').prop('disabled', true);
+        }
+
+        $('#realPrintBtn').addClass('d-none').hide();
+        $('#invPrintBtn').attr('href', invUrl || ('{{ url("sale-returns/invoice") }}/' + returnId)).removeClass('d-none').show();
+        $('#dcPrintBtn').attr('href', dcUrl || ('{{ url("sale-returns/dc") }}/' + returnId)).removeClass('d-none').show();
+    }
 
     function setFormLocked(isLocked) {
         if (isLocked) {
@@ -370,10 +459,16 @@ $(document).ready(function() {
 
     if (_savedReturnId) {
         setFormLocked(true);
-        @if(isset($returnData) && $returnData->status == 'Posted')
+        @if(isset($returnData) && ($returnData->status == 'Posted' || $isViewMode))
              $('#editInvoiceBtn').prop('disabled', true);
              $('#postBtn').prop('disabled', true);
              $('#deleteBtn').prop('disabled', true);
+             $('#saveDraftBtn').prop('disabled', true);
+        @endif
+
+        @if($isViewMode)
+        $('#returnForm').addClass('view-mode');
+        $('#postedWatermark').addClass('show');
         @endif
 
         $('#saleItems tr').each(function() {
@@ -503,10 +598,14 @@ $(document).ready(function() {
                 'X-CSRF-TOKEN': $('input[name="_token"]').val()
             },
             success: function(res) {
-                showToast('✅ Return posted successfully! Redirecting...', 'success');
-                setTimeout(function() {
-                    window.location.href = "{{ route('sale.return.add') }}";
-                }, 2000);
+                if (res.success) {
+                    setReturnFormPostedState(res.return_id || _savedReturnId, res.invoice_url, res.dc_url);
+                    showToast('✅ Return posted successfully!', 'success');
+                } else {
+                    showToast('❌ ' + (res.message || 'Post failed'), 'error');
+                    $('#postBtn').prop('disabled', false)
+                        .html('<u>P</u>ost <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+&crarr;</kbd>');
+                }
             },
             error: function(xhr) {
                 var msg = 'Post failed.';
@@ -515,9 +614,11 @@ $(document).ready(function() {
                     msg = r.message || r.error || msg;
                 } catch(e) {}
                 showToast('❌ ' + msg, 'error');
-                _postInFlight = false;
                 $('#postBtn').prop('disabled', false)
                     .html('<u>P</u>ost <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+&crarr;</kbd>');
+            },
+            complete: function() {
+                _postInFlight = false;
             }
         });
     }
@@ -561,6 +662,32 @@ $(document).ready(function() {
     });
 
     document.addEventListener('keydown', function(e) {
+        if (isReturnPostedView()) {
+            if (e.key === 'Escape') {
+                e.preventDefault();
+                window.location.href = $('#exitBtn').attr('href');
+            }
+            if (e.ctrlKey && (e.key === 'm' || e.key === 'M')) {
+                e.preventDefault();
+                window.location.href = $('#newInvoiceBtn').attr('href');
+            }
+            if (e.ctrlKey && (e.key === 'p' || e.key === 'P')) {
+                e.preventDefault();
+                var $inv = $('#invPrintBtn');
+                if ($inv.length && $inv.attr('href') && $inv.attr('href') !== '#') {
+                    window.open($inv.attr('href'), '_blank');
+                }
+            }
+            if (e.ctrlKey && (e.key === 'd' || e.key === 'D') && e.shiftKey) {
+                e.preventDefault();
+                var $dc = $('#dcPrintBtn');
+                if ($dc.length && $dc.attr('href') && $dc.attr('href') !== '#') {
+                    window.open($dc.attr('href'), '_blank');
+                }
+            }
+            return;
+        }
+
         if (e.key === 'Enter' && !e.ctrlKey) {
             var t = e.target;
             if (t && t.tagName !== 'TEXTAREA' && $(t).closest('#returnForm').length) {

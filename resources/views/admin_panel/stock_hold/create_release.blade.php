@@ -38,6 +38,24 @@
     .form-locked #postBtn, .form-locked #exitBtn, .form-locked #deleteBtn {
         pointer-events: auto !important; opacity: 1 !important;
     }
+
+    .form-locked.view-mode #saveDraftBtn,
+    .form-locked.view-mode #editInvoiceBtn,
+    .form-locked.view-mode #postBtn,
+    .form-locked.view-mode #deleteBtn {
+        display: inline-block !important;
+        pointer-events: none !important;
+        opacity: 0.55 !important;
+        cursor: not-allowed !important;
+    }
+
+    .form-locked.view-mode #realPrintBtn,
+    .form-locked.view-mode #exitBtn,
+    .form-locked.view-mode #newInvoiceBtn {
+        pointer-events: auto !important;
+        opacity: 1 !important;
+        display: inline-block !important;
+    }
     
     .posted-watermark {
         position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-30deg);
@@ -409,6 +427,20 @@ $(document).ready(function() {
     var saveBtnHtml = '<u>S</u>ave <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+S</kbd>';
     var postBtnHtml = '<u>P</u>ost <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+&crarr;</kbd>';
 
+    function setReleaseFormPostedState(voucherId, printUrl) {
+        _savedVoucherId = voucherId;
+        $('#stockReleaseForm').addClass('form-locked view-mode');
+        $('#postedWatermark').addClass('show');
+        $('#statusBadge').removeClass('bg-warning bg-info').addClass('bg-success text-white').html('<i class="fa fa-check"></i> Posted');
+        $('#saveDraftBtn, #editInvoiceBtn, #postBtn, #deleteBtn').prop('disabled', true);
+        $('#postBtn').html(postBtnHtml);
+        $('#realPrintBtn').attr('href', printUrl || ('/stock-release/print/' + voucherId)).attr('target', '_blank');
+    }
+
+    function isReleasePostedView() {
+        return $('#stockReleaseForm').hasClass('view-mode');
+    }
+
     function serializeForm() {
         var data = $('#stockReleaseForm').serializeArray();
         ['vendor_id', 'warehouse_id', 'vendor_type'].forEach(function(name) {
@@ -449,11 +481,8 @@ $(document).ready(function() {
                     $form.attr('action', '/stock-release/update/' + res.id);
 
                     if(res.status === 'Posted') {
-                        $('#statusBadge').removeClass('bg-warning').addClass('bg-success text-white').html('<i class="fa fa-check"></i> Posted');
-                        $('#postedWatermark').addClass('show');
-                        $('#editInvoiceBtn, #postBtn').prop('disabled', true);
+                        setReleaseFormPostedState(res.id, '/stock-release/print/' + res.id);
                         showToast('Stock Released Successfully!', 'success');
-                        setTimeout(function() { window.location.href = "{{ route('stock-relase-list') }}"; }, 1500);
                     } else {
                         $('#statusBadge').removeClass('bg-warning').addClass('bg-info text-white').html('<i class="fa fa-pencil"></i> Draft Saved');
                         $('#stockReleaseForm').addClass('form-locked');
@@ -485,12 +514,10 @@ $(document).ready(function() {
             type: 'POST',
             data: { _token: $('input[name="_token"]').val() },
             headers: { 'X-Requested-With': 'XMLHttpRequest' },
-            success: function() {
-                $('#statusBadge').removeClass('bg-info').addClass('bg-success text-white').html('<i class="fa fa-check"></i> Posted');
-                $('#postedWatermark').addClass('show');
-                $('#editInvoiceBtn, #postBtn').prop('disabled', true);
+            success: function(res) {
+                var printUrl = (res && res.print_url) ? res.print_url : ('/stock-release/print/' + _savedVoucherId);
+                setReleaseFormPostedState(_savedVoucherId, printUrl);
                 showToast('Stock Released Successfully!', 'success');
-                setTimeout(function() { window.location.href = "{{ route('stock-relase-list') }}"; }, 1500);
             },
             error: function(xhr) {
                 var msg = 'Post failed';
@@ -526,6 +553,16 @@ $(document).ready(function() {
     });
 
     document.addEventListener('keydown', function(e) {
+        if (isReleasePostedView()) {
+            if (e.key === 'Escape') { e.preventDefault(); window.location.href = $('#exitBtn').attr('href'); }
+            if (e.ctrlKey && (e.key === 'm' || e.key === 'M')) { e.preventDefault(); window.location.href = $('#newInvoiceBtn').attr('href'); }
+            if (e.ctrlKey && (e.key === 'p' || e.key === 'P')) {
+                e.preventDefault();
+                var href = $('#realPrintBtn').attr('href');
+                if (href && href !== 'javascript:void(0)') window.open(href, '_blank');
+            }
+            return;
+        }
         if (e.ctrlKey && (e.key === 's' || e.key === 'S')) {
             e.preventDefault(); e.stopImmediatePropagation();
             if (!_saveInFlight && !$('#saveDraftBtn').prop('disabled')) $('#saveDraftBtn').click();

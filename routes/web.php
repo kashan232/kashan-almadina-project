@@ -381,6 +381,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/sale-returns/get-sale/{invoice_no}', [SaleReturnController::class, 'getSaleDetails']);
     Route::post('/sale-returns/post/{id}', [SaleReturnController::class, 'post'])->name('sale.return.post');
     Route::get('/sale-returns/print/{id}', [SaleReturnController::class, 'print'])->name('sale.return.print');
+    Route::get('/sale-returns/invoice/{id}', [SaleReturnController::class, 'invoice'])->name('sale.return.invoice');
+    Route::get('/sale-returns/dc/{id}', [SaleReturnController::class, 'dc'])->name('sale.return.dc');
+    Route::get('/sale-returns/{id}/view', [SaleReturnController::class, 'show'])->name('sale.return.view');
     Route::get('/sale-returns/{id}/edit', [SaleReturnController::class, 'edit'])->name('sale.return.edit');
     Route::post('/sale-returns/{id}/update', [SaleReturnController::class, 'update'])->name('sale.return.update');
     Route::delete('/sale-returns/{id}/destroy', [SaleReturnController::class, 'destroy'])->name('sale.return.destroy');
@@ -419,6 +422,7 @@ Route::middleware('auth')->group(function () {
     // Sales list & screens
     Route::get('/sale', [SaleController::class, 'index'])->name('sale.index');
     Route::get('/sale/add', [SaleController::class, 'add_sale'])->name('sale.add');
+    Route::get('/sale/{id}/view', [SaleController::class, 'show'])->name('sale.view');
     Route::get('/sale/edit/{id}', [SaleController::class, 'edit'])->name('sale.edit');
     Route::post('/sale/update/{id}', [SaleController::class, 'update'])->name('sale.update');
 
@@ -441,6 +445,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/stock-holds/{id}/release', [StockHoldController::class, 'createFromHold'])->name('stock-holds.release');
     Route::post('/stock-holds/{id}/release', [StockHoldController::class, 'storeFromHold'])->name('stock-holds.release.store');
     Route::get('/stock-holds/print/{id}', [StockHoldController::class, 'print'])->name('stock-holds.print');
+    Route::get('/stock-holds/{id}/view', [StockHoldController::class, 'showHold'])->name('stock-holds.view');
     // Legacy form submit (optional)
     Route::post('/sale/data', [SaleController::class, 'store'])->name('sale.store');
 
@@ -450,6 +455,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/stock-release/update/{id}', [StockHoldController::class, 'updateRelease'])->name('stock-holds.release.update');
     Route::post('/stock-release/post/{id}', [StockHoldController::class, 'postRelease'])->name('stock-holds.release.post');
     Route::get('/stock-release/print/{id}', [StockHoldController::class, 'printRelease'])->name('stock-holds.release.print');
+    Route::get('/stock-release/{id}/view', [StockHoldController::class, 'showRelease'])->name('stock-holds.release.view');
     Route::get('/stock-holds/voucher/{id}/details', [StockHoldController::class, 'voucherDetails'])->name('stock-holds.voucher.details');
     Route::get('stock-holds/list/json', [StockHoldController::class, 'holdVoucherList'])->name('stock-holds.list.json');
     Route::get('/stock-relase-list', [StockHoldController::class, 'stockrelaselist'])->name('stock-relase-list');

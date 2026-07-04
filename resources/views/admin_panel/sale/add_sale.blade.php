@@ -3,6 +3,7 @@
 @section('content')
 
 @php
+  $isViewMode = isset($viewMode) && $viewMode;
   $isEdit = isset($booking) || isset($sale);
   $editData = isset($booking) ? $booking : (isset($sale) ? $sale : null);
   $eDate = $editData ? $editData->entry_date : date('Y-m-d');
@@ -98,6 +99,29 @@
     pointer-events: auto !important;
     opacity: 1 !important;
   }
+
+  .form-locked.view-mode #saveDraftBtn,
+  .form-locked.view-mode #editBtn,
+  .form-locked.view-mode #postBtn,
+  .form-locked.view-mode #deleteBtn {
+    display: inline-block !important;
+    pointer-events: none !important;
+    opacity: 0.55 !important;
+    cursor: not-allowed !important;
+  }
+
+  .form-locked.view-mode #previewPrintBtn {
+    display: none !important;
+  }
+
+  .form-locked.view-mode #invPrintBtn,
+  .form-locked.view-mode #dcPrintBtn,
+  .form-locked.view-mode #exitBtn,
+  .form-locked.view-mode #newBtn {
+    pointer-events: auto !important;
+    opacity: 1 !important;
+    display: inline-block !important;
+  }
   
   /* GRAY BACKGROUND FOR LOCKED INPUTS */
   .form-locked input:not([type="hidden"]), 
@@ -108,21 +132,32 @@
   }
 
   /* WATERMARK FOR POSTED STATE */
+  #saleForm {
+    position: relative;
+    overflow: visible;
+  }
+
   .posted-watermark {
     position: absolute;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%) rotate(-30deg);
     font-size: 8rem;
-    color: rgba(220, 53, 69, 0.1);
+    color: rgba(220, 53, 69, 0.14);
     font-weight: 900;
     text-transform: uppercase;
     pointer-events: none;
     z-index: 1000;
     display: none;
-    border: 10px solid rgba(220, 53, 69, 0.1);
+    border: 10px solid rgba(220, 53, 69, 0.14);
     padding: 20px 50px;
     border-radius: 20px;
+    white-space: nowrap;
+    user-select: none;
+  }
+
+  .posted-watermark.show {
+    display: block;
   }
 
   .table {
@@ -396,10 +431,12 @@
 
     <div id="alertBox" class="alert d-none mb-2" role="alert"></div>
 
-    <form id="saleForm" autocomplete="off" action="{{ route('sale.ajax.save') }}" method="POST">
+    <form id="saleForm" autocomplete="off" action="{{ $isViewMode ? '#' : route('sale.ajax.save') }}" method="POST" class="{{ $isViewMode ? 'form-locked view-mode' : '' }}">
       @csrf
       <input type="hidden" id="booking_id" name="booking_id" value="{{ isset($booking) ? $booking->id : '' }}">
       <input type="hidden" id="sale_id" name="sale_id" value="{{ isset($sale) ? $sale->id : '' }}">
+
+      <div class="posted-watermark {{ $isViewMode ? 'show' : '' }}" id="postedWatermark">Posted</div>
 
 
       <div class="d-flex gap-2 align-items-stretch border-bottom py-2 sale-main-row">
@@ -408,6 +445,15 @@
           <div class="d-flex align-items-center justify-content-between mb-2 pb-1 border-bottom">
             <h6 class="mb-0 fw-bold text-primary">
               <i class="bi bi-receipt me-1"></i>Invoice & Customer
+              @if($isViewMode)
+                <span class="badge bg-info px-1 py-0 rounded ms-1" style="font-size:9px;">
+                  <i class="fa fa-eye"></i> View Only
+                </span>
+              @elseif(isset($sale))
+                <span class="badge bg-success px-1 py-0 rounded ms-1" style="font-size:9px;">
+                  <i class="fa fa-check"></i> Posted
+                </span>
+              @endif
             </h6>
             <div class="d-flex align-items-center gap-1">
                 <span id="statusBadge" class="badge bg-warning text-dark px-1 py-1 rounded shadow-sm" style="font-size:9px; display:none;">
@@ -939,25 +985,40 @@
       {{-- BOTTOM BUTTONS (Purchase standard) --}}
       <div class="d-flex flex-wrap gap-2 justify-content-center bg-light bottom-bar rounded-2 border shadow-sm w-100">
 
-        <button type="button" id="saveDraftBtn" class="btn btn-primary px-3 fw-bold shadow-sm">
+        <button type="button" id="saveDraftBtn" class="btn btn-primary px-3 fw-bold shadow-sm" {{ $isViewMode ? 'disabled' : '' }}>
           <u>S</u>ave <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+S</kbd>
         </button>
 
-        <button type="button" id="editBtn" class="btn btn-warning px-3 fw-bold text-dark shadow-sm" disabled>
+        <button type="button" id="editBtn" class="btn btn-warning px-3 fw-bold text-dark shadow-sm" {{ $isViewMode ? 'disabled' : 'disabled' }}>
           <u>E</u>dit <kbd style="font-size:10px;opacity:.8;margin-left:4px;color:#fff;">Ctrl+E</kbd>
         </button>
 
-        <button type="button" id="postBtn" class="btn btn-success px-3 fw-bold shadow-sm" disabled>
+        <button type="button" id="postBtn" class="btn btn-success px-3 fw-bold shadow-sm" {{ $isViewMode ? 'disabled' : '' }}>
           <u>P</u>ost <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+&crarr;</kbd>
         </button>
 
-        <button type="button" id="deleteBtn" class="btn btn-danger px-3 fw-bold shadow-sm" disabled>
+        <button type="button" id="deleteBtn" class="btn btn-danger px-3 fw-bold shadow-sm" {{ $isViewMode ? 'disabled' : '' }}>
           <u>D</u>elete <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+D</kbd>
         </button>
 
+        @if($isViewMode && isset($sale))
+        <a href="{{ route('sale.invoice', $sale->id) }}" target="_blank" id="invPrintBtn" class="btn btn-info px-3 fw-bold text-dark shadow-sm">
+          <i class="fa fa-file-text-o me-1"></i><u>I</u>nv Print <kbd style="font-size:10px;opacity:.8;margin-left:4px;color:#fff;">Ctrl+P</kbd>
+        </a>
+        <a href="{{ route('sale.dc', $sale->id) }}" target="_blank" id="dcPrintBtn" class="btn btn-outline-info px-3 fw-bold shadow-sm">
+          <i class="fa fa-truck me-1"></i><u>D</u>C Print <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+Shift+D</kbd>
+        </a>
+        @else
+        <a href="#" target="_blank" id="invPrintBtn" class="btn btn-info px-3 fw-bold text-dark shadow-sm d-none">
+          <i class="fa fa-file-text-o me-1"></i><u>I</u>nv Print <kbd style="font-size:10px;opacity:.8;margin-left:4px;color:#fff;">Ctrl+P</kbd>
+        </a>
+        <a href="#" target="_blank" id="dcPrintBtn" class="btn btn-outline-info px-3 fw-bold shadow-sm d-none">
+          <i class="fa fa-truck me-1"></i><u>D</u>C Print <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+Shift+D</kbd>
+        </a>
         <button type="button" id="previewPrintBtn" class="btn btn-info px-3 fw-bold text-dark shadow-sm">
           <u>P</u>rint <kbd style="font-size:10px;opacity:.8;margin-left:4px;color:#fff;">Ctrl+P</kbd>
         </button>
+        @endif
 
         <a href="{{ route('sale.index') }}" id="exitBtn" class="btn btn-secondary px-3 fw-bold shadow-sm text-white">
           E<u>x</u>it <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Esc</kbd>
@@ -969,7 +1030,6 @@
 
       </div>
     </form>
-    <div class="posted-watermark" id="postedWatermark">Posted</div>
   </div>
 </div>
 
@@ -1360,6 +1420,7 @@
       var _savedBookingId = null;
       var _saveInFlight = false;
       var _postInFlight = false;
+      var isViewMode = @json($isViewMode);
 
       var BTN_SAVE = '<u>S</u>ave <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+S</kbd>';
       var BTN_POST = '<u>P</u>ost <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+&crarr;</kbd>';
@@ -1369,6 +1430,38 @@
           $('#editBtn').prop('disabled', false);
           $('#postBtn').prop('disabled', false);
           $('#deleteBtn').prop('disabled', false);
+      }
+
+      function isSalePostedView() {
+          return isViewMode || $('#saleForm').hasClass('view-mode');
+      }
+
+      function setSaleFormPostedState(saleId, invUrl, dcUrl) {
+          $('#sale_id').val(saleId);
+          $('#booking_id').val('');
+          _savedBookingId = null;
+
+          $('#saleForm').addClass('form-locked view-mode');
+          $('#postedWatermark').addClass('show');
+
+          $('#saveDraftBtn, #editBtn, #postBtn, #deleteBtn').prop('disabled', true);
+          $('#postBtn').html(BTN_POST);
+
+          $('#saleForm input, #saleForm select, #saleForm textarea').attr('tabindex', '-1');
+          $('#saleForm select').prop('disabled', true);
+          if ($.fn.select2) {
+              $('#saleForm .select2').prop('disabled', true);
+          }
+
+          $('#idBadge').text('ID: ' + saleId).show();
+          $('#statusBadge').removeClass('bg-warning bg-info').addClass('bg-success text-white')
+              .html('<i class="fa fa-check"></i> Posted').show();
+
+          $('#previewPrintBtn').addClass('d-none').hide();
+          $('#invPrintBtn').attr('href', invUrl || ('{{ url("sale/invoice") }}/' + saleId)).removeClass('d-none').show();
+          $('#dcPrintBtn').attr('href', dcUrl || ('{{ url("sale/dc") }}/' + saleId)).removeClass('d-none').show();
+
+          if (typeof clearFormState === 'function') clearFormState();
       }
 
       function showToast(msg, type) {
@@ -1494,15 +1587,8 @@
               data: { _token: '{{ csrf_token() }}', booking_id: bookingId },
               success: function(res) {
                   if (res.ok) {
-                      Swal.fire({ 
-                          icon: 'success', 
-                          title: 'Posted!', 
-                          text: 'Sale posted successfully. Redirecting to new sale.', 
-                          timer: 2000, 
-                          showConfirmButton: false 
-                      }).then(() => { 
-                          window.location.href = '{{ route("sale.add") }}'; 
-                      });
+                      setSaleFormPostedState(res.sale_id, res.invoice_url, res.dc_url);
+                      showToast('Sale posted successfully!', 'success');
                   } else {
                       Swal.fire({
                           icon: 'error',
@@ -1581,6 +1667,27 @@
 
       // KEYBOARD SHORTCUTS (single handler)
       document.addEventListener('keydown', function(e) {
+          if (isSalePostedView()) {
+              if (e.key === 'Escape') {
+                  e.preventDefault();
+                  window.location.href = $('#exitBtn').attr('href');
+              }
+              if (e.ctrlKey && (e.key === 'm' || e.key === 'M')) {
+                  e.preventDefault();
+                  window.location.href = $('#newBtn').attr('href');
+              }
+              if (e.ctrlKey && (e.key === 'p' || e.key === 'P')) {
+                  e.preventDefault();
+                  var $inv = $('#invPrintBtn');
+                  if ($inv.length) window.open($inv.attr('href'), '_blank');
+              }
+              if (e.ctrlKey && (e.key === 'd' || e.key === 'D') && e.shiftKey) {
+                  e.preventDefault();
+                  var $dc = $('#dcPrintBtn');
+                  if ($dc.length) window.open($dc.attr('href'), '_blank');
+              }
+              return;
+          }
           if (e.ctrlKey && (e.key === 's' || e.key === 'S')) {
               e.preventDefault();
               e.stopImmediatePropagation();
@@ -1632,15 +1739,30 @@
           }
       }, true);
 
-      // On load, if booking_id exists, lock form
-      if($('#booking_id').val()) {
+      // On load, if booking_id exists, lock form (draft edit — not view mode)
+      if (!isViewMode && $('#booking_id').val()) {
           $('#saleForm').addClass('form-locked');
           setSaleButtonsAfterLock();
           $('#idBadge').text('ID: ' + $('#booking_id').val()).show();
           $('#statusBadge').removeClass('bg-warning').addClass('bg-info text-white').html('<i class="fa fa-pencil"></i> Unposted').show();
       }
 
-      @if(isset($sale))
+      if (isViewMode) {
+          $('#saleForm').addClass('form-locked view-mode');
+          $('#postedWatermark').addClass('show');
+          $('#saveDraftBtn, #editBtn, #postBtn, #deleteBtn').prop('disabled', true);
+          $('#saleForm input, #saleForm select, #saleForm textarea').attr('tabindex', '-1');
+          $('#saleForm select').prop('disabled', true);
+          if ($.fn.select2) {
+              $('#saleForm .select2').prop('disabled', true);
+          }
+          @if(isset($sale))
+          $('#idBadge').text('ID: {{ $sale->id }}').show();
+          $('#statusBadge').removeClass('bg-warning').addClass('bg-success text-white').html('<i class="fa fa-check"></i> Posted').show();
+          @endif
+      }
+
+      @if(isset($sale) && !$isViewMode)
       $('#postBtn, #deleteBtn').prop('disabled', true);
       $('#idBadge').text('ID: {{ $sale->id }}').show();
       $('#statusBadge').removeClass('bg-warning').addClass('bg-success text-white').html('<i class="fa fa-check"></i> Posted').show();
@@ -2612,6 +2734,10 @@
 
   // Save IMMEDIATELY (no delay)
   function saveFormState() {
+    if ($('#saleForm').hasClass('view-mode')) return;
+    @if($isViewMode)
+    return;
+    @endif
     try {
       const formData = $('#saleForm').serializeArray();
       localStorage.setItem(FORM_STATE_KEY, JSON.stringify(formData));
@@ -2627,6 +2753,10 @@
 
   // Restore on page load - SIMPLE VERSION
   function restoreFormState() {
+    if ($('#saleForm').hasClass('view-mode')) return false;
+    @if($isViewMode)
+    return false;
+    @endif
     try {
       const saved = localStorage.getItem(FORM_STATE_KEY);
       if (!saved) return false;

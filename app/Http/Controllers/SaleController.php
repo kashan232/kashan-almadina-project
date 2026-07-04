@@ -120,6 +120,27 @@ class SaleController extends Controller
         return view('admin_panel.sale.add_sale', compact('sale', 'warehouses', 'customers', 'nextInvoiceNumber', 'accountHeads', 'accounts'));
     }
 
+    public function show($id)
+    {
+        $sale = Sale::with(['items.product', 'items.warehouse', 'customer', 'vendor'])->findOrFail($id);
+        $warehouses = Warehouse::all();
+        $customers = Customer::all();
+        $accountHeads = AccountHead::all();
+        $accounts = Account::all();
+        $nextInvoiceNumber = $sale->invoice_no;
+        $viewMode = true;
+
+        return view('admin_panel.sale.add_sale', compact(
+            'sale',
+            'warehouses',
+            'customers',
+            'nextInvoiceNumber',
+            'accountHeads',
+            'accounts',
+            'viewMode'
+        ));
+    }
+
     public function update(Request $request, $id)
     {
         $sale = Sale::findOrFail($id);
@@ -650,6 +671,7 @@ class SaleController extends Controller
                     'ok' => true,
                     'sale_id' => $sale->id,
                     'invoice_url' => route('sale.invoice', $sale->id),
+                    'dc_url' => route('sale.dc', $sale->id),
                 ]);
             }
 
@@ -662,6 +684,7 @@ class SaleController extends Controller
                 'ok' => true,
                 'sale_id' => $sale->id,
                 'invoice_url' => route('sale.invoice', $sale->id),
+                'dc_url' => route('sale.dc', $sale->id),
             ]);
         });
     }
@@ -802,14 +825,20 @@ class SaleController extends Controller
     /* -------- Prints -------- */
     public function invoice(Sale $sale)
     {
-        return view('admin_panel.sale.invoice', compact('sale'));
+        $sale->load(['items.product', 'items.warehouse', 'customer', 'vendor']);
+
+        return view('admin_panel.sale.prints.invoice', compact('sale'));
     }
     public function print2(Sale $sale)
     {
+        $sale->load(['items.product', 'items.warehouse', 'customer', 'vendor']);
+
         return view('admin_panel.sale.prints.print2', compact('sale'));
     }
     public function dc(Sale $sale)
     {
+        $sale->load(['items.product', 'items.warehouse', 'customer', 'vendor']);
+
         return view('admin_panel.sale.prints.dc', compact('sale'));
     }
 

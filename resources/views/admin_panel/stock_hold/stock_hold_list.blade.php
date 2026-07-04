@@ -219,11 +219,11 @@
                                                         <a href="{{ route('stock-holds.edit', $v->id) }}" class="btn btn-outline-warning btn-xs px-1 py-0" title="Edit" style="height: 20px;">
                                                             <i class="fa fa-pencil text-dark"></i>
                                                         </a>
+                                                    @else
+                                                        <a href="{{ route('stock-holds.view', $v->id) }}" class="btn btn-outline-info btn-xs px-1 py-0" title="View Hold" style="height: 20px;">
+                                                            <i class="fa fa-eye"></i>
+                                                        </a>
                                                     @endif
-
-                                                    <a href="{{ route('stock-holds.print', $v->id) }}" target="_blank" class="btn btn-outline-dark btn-xs px-1 py-0" title="Print" style="height: 20px;">
-                                                        <i class="fa fa-print"></i>
-                                                    </a>
                                                 </div>
                                             </td>
                                         </tr>

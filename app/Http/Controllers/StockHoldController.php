@@ -248,6 +248,16 @@ class StockHoldController extends Controller
         return view('admin_panel.stock_hold.edit_stock_hold', compact('voucher', 'warehouses', 'products'));
     }
 
+    public function showHold($id)
+    {
+        $voucher = StockHoldVoucher::with('items.product')->findOrFail($id);
+        $warehouses = Warehouse::orderBy('warehouse_name')->get();
+        $products = Product::select('id', 'name')->orderBy('name')->get();
+        $viewMode = true;
+
+        return view('admin_panel.stock_hold.edit_stock_hold', compact('voucher', 'warehouses', 'products', 'viewMode'));
+    }
+
     public function update(Request $request, $id)
     {
         $request->merge(['id' => $id]);
@@ -295,7 +305,18 @@ class StockHoldController extends Controller
             DB::commit();
         } catch (\Exception $e) {
             DB::rollBack();
+            if (request()->ajax() || request()->wantsJson()) {
+                return response()->json(['success' => false, 'message' => 'Failed to post hold: ' . $e->getMessage()], 500);
+            }
             return back()->with('error', 'Failed to post hold: ' . $e->getMessage());
+        }
+
+        if (request()->ajax() || request()->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Stock Hold Posted successfully.',
+                'print_url' => route('stock-holds.print', $id),
+            ]);
         }
 
         return back()->with('success', 'Stock Hold Posted successfully.');
@@ -942,6 +963,23 @@ class StockHoldController extends Controller
         return view('admin_panel.stock_hold.edit_release', compact('voucher', 'warehouses'));
     }
 
+    public function showRelease($id)
+    {
+        $voucher = \App\Models\StockReleaseVoucher::with([
+            'items.product',
+            'items.hold',
+            'warehouse',
+            'holdVoucher',
+            'partyCustomer',
+            'partyVendor',
+        ])->findOrFail($id);
+
+        $warehouses = Warehouse::orderBy('warehouse_name')->get();
+        $viewMode = true;
+
+        return view('admin_panel.stock_hold.edit_release', compact('voucher', 'warehouses', 'viewMode'));
+    }
+
     public function updateRelease(Request $request, $id)
     {
         $request->validate([
@@ -1068,7 +1106,11 @@ class StockHoldController extends Controller
             }
             DB::commit();
             if (request()->ajax()) {
-                return response()->json(['success' => true, 'message' => 'Posted successfully']);
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Posted successfully',
+                    'print_url' => route('stock-holds.release.print', $id),
+                ]);
             }
             return redirect()->back()->with('success', 'Stock Release Posted successfully.');
         } catch (\Exception $e) { 

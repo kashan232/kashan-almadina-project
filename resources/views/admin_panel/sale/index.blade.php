@@ -350,19 +350,9 @@
                                                         <i class="fa fa-trash"></i>
                                                     </button>
                                                 </form>
-
-                                                <a class="btn btn-outline-dark btn-xs px-1 py-0" href="{{ route('booking.print', $sale->id) }}" title="Print Invoice" style="height: 20px;">
-                                                   <i class="fa fa-file-text-o"></i> Inv
-                                               </a>
-                                                <a class="btn btn-outline-dark btn-xs px-1 py-0" href="{{ route('booking.dc', $sale->id) }}" title="Print DC" style="height: 20px;">
-                                                   <i class="fa fa-truck"></i> DC
-                                               </a>
                                             @else
-                                                <a class="btn btn-outline-dark btn-xs px-1 py-0" href="{{ route('sale.invoice', $sale->id) }}" title="Print Invoice" style="height: 20px;">
-                                                    <i class="fa fa-print"></i> Inv
-                                                </a>
-                                                <a class="btn btn-outline-dark btn-xs px-1 py-0" href="{{ route('sale.dc', $sale->id) }}" title="Print DC" style="height: 20px;">
-                                                    <i class="fa fa-truck"></i> DC
+                                                <a href="{{ route('sale.view', $sale->id) }}" class="btn btn-outline-info btn-xs px-1 py-0" title="View Sale" style="height: 20px;">
+                                                    <i class="fa fa-eye"></i>
                                                 </a>
                                             @endif
                                          </div>

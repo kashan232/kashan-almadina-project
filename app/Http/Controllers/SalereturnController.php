@@ -226,7 +226,7 @@ class SaleReturnController extends Controller
 
     public function edit($id)
     {
-        $returnData = SaleReturn::with(['items.product.latestPrice'])->findOrFail($id);
+        $returnData = SaleReturn::with(['items.product.latestPrice', 'sale'])->findOrFail($id);
         $nextInvoice = $returnData->invoice_no;
         $sales = Sale::orderBy('id', 'desc')->get(['id', 'invoice_no', 'partyType', 'customer_id']);
         $vendors = \App\Models\Vendor::all();
@@ -234,6 +234,27 @@ class SaleReturnController extends Controller
         $warehouses = \App\Models\Warehouse::all();
         
         return view('admin_panel.sale_return.add_return', compact('returnData', 'nextInvoice', 'sales', 'vendors', 'customers', 'warehouses'));
+    }
+
+    public function show($id)
+    {
+        $returnData = SaleReturn::with(['items.product.latestPrice', 'sale'])->findOrFail($id);
+        $nextInvoice = $returnData->invoice_no;
+        $sales = Sale::orderBy('id', 'desc')->get(['id', 'invoice_no', 'partyType', 'customer_id']);
+        $vendors = \App\Models\Vendor::all();
+        $customers = \App\Models\Customer::all();
+        $warehouses = \App\Models\Warehouse::all();
+        $viewMode = true;
+
+        return view('admin_panel.sale_return.add_return', compact(
+            'returnData',
+            'nextInvoice',
+            'sales',
+            'vendors',
+            'customers',
+            'warehouses',
+            'viewMode'
+        ));
     }
 
     public function update(Request $request, $id)
@@ -426,7 +447,13 @@ class SaleReturnController extends Controller
             });
 
             if (request()->ajax() || request()->wantsJson()) {
-                return response()->json(['success' => true, 'message' => 'Sale Return Posted successfully and impacts applied!']);
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Sale Return Posted successfully and impacts applied!',
+                    'return_id' => (int) $id,
+                    'invoice_url' => route('sale.return.invoice', $id),
+                    'dc_url' => route('sale.return.dc', $id),
+                ]);
             }
             return redirect()->back()->with('success', 'Sale Return Posted successfully and impacts applied!');
         } catch (\Exception $e) {
@@ -439,8 +466,20 @@ class SaleReturnController extends Controller
 
     public function print($id)
     {
-        $ret = SaleReturn::with(['items.product'])->findOrFail($id);
+        $ret = SaleReturn::with(['items.product', 'sale'])->findOrFail($id);
         return view('admin_panel.sale_return.print_return', compact('ret'));
+    }
+
+    public function invoice($id)
+    {
+        $ret = SaleReturn::with(['items.product', 'sale'])->findOrFail($id);
+        return view('admin_panel.sale_return.prints.invoice', compact('ret'));
+    }
+
+    public function dc($id)
+    {
+        $ret = SaleReturn::with(['items.product', 'sale'])->findOrFail($id);
+        return view('admin_panel.sale_return.prints.dc', compact('ret'));
     }
 
     public function destroy($id)
