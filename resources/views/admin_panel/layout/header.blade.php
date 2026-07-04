@@ -141,8 +141,8 @@
         .page-navigation .nav-item {
             border: none !important;
             position: relative !important;
-            padding-bottom: 12px; /* bridge hover gap below nav link */
-            margin-bottom: -12px;
+            padding-bottom: 8px;
+            margin-bottom: -8px;
         }
         .page-navigation .nav-item .nav-link {
             color: #ffffff !important;
@@ -165,25 +165,27 @@
         }
 
           /* Style dropdown menus for desktop */
+        .rt_nav_header.horizontal-layout .nav-bottom .page-navigation > .nav-item:not(.mega-menu) .submenu,
         .page-navigation .nav-item .submenu {
             background: #ffffff !important;
             border-radius: 6px;
             box-shadow: 0 10px 25px rgba(0,0,0,0.1) !important;
             border: 1px solid rgba(0,0,0,0.05);
-            margin-top: 10px !important;
+            margin-top: 0 !important;
             padding: 5px 0 !important;
             position: absolute !important;
             top: 100% !important;
             left: 0;
             min-width: 220px;
             z-index: 9999;
-            /* Smooth fade in */
             opacity: 0;
             visibility: hidden;
-            transform: translateY(6px);
-            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            transform: translateY(0);
+            animation: none !important;
+            transition: opacity 0.2s ease, visibility 0.2s ease;
         }
         /* Show on hover */
+        .rt_nav_header.horizontal-layout .nav-bottom .page-navigation > .nav-item:not(.mega-menu):hover .submenu,
         .page-navigation .nav-item:hover .submenu {
             opacity: 1;
             visibility: visible;
