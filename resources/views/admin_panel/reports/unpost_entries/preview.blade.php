@@ -72,6 +72,20 @@
         }
         .center { text-align: center; }
         .left { text-align: left; }
+        .view-btn {
+            display: inline-block;
+            padding: 4px 12px;
+            background: #0d6efd;
+            color: #fff !important;
+            text-decoration: none;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: bold;
+        }
+        .view-btn:hover { background: #0b5ed7; }
+        @media print {
+            .no-print-col { display: none !important; }
+        }
     </style>
 </head>
 <body>
@@ -91,10 +105,11 @@
         <thead>
             <tr>
                 <th style="width:8%;">S.No.</th>
-                <th style="width:22%;">Definitions</th>
-                <th style="width:14%;">ID on Form</th>
-                <th style="width:14%;">Date</th>
-                <th style="width:42%;">Record Add User Name</th>
+                <th style="width:20%;">Definitions</th>
+                <th style="width:12%;">ID on Form</th>
+                <th style="width:12%;">Date</th>
+                <th style="width:36%;">Record Add User Name</th>
+                <th class="no-print-col center" style="width:12%;">Action</th>
             </tr>
         </thead>
         <tbody>
@@ -105,10 +120,15 @@
                 <td class="center">{{ $row['record_id'] }}</td>
                 <td class="center">{{ $row['date'] }}</td>
                 <td class="left">{{ $row['user_name'] }}</td>
+                <td class="no-print-col center">
+                    @if(!empty($row['view_url']))
+                    <a href="{{ $row['view_url'] }}" class="view-btn">View</a>
+                    @endif
+                </td>
             </tr>
             @empty
             <tr>
-                <td colspan="5" class="center" style="padding:24px;">No unposted entries found in the system.</td>
+                <td colspan="6" class="center" style="padding:24px;">No unposted entries found in the system.</td>
             </tr>
             @endforelse
         </tbody>

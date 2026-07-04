@@ -106,6 +106,7 @@ class UnpostEntriesReportBuilder
                     'date' => $date ? Carbon::parse($date)->format('d-m-y') : '',
                     'date_sort' => $date ?: '0000-00-00',
                     'user_name' => $this->userName($record->created_by ?? null),
+                    'view_url' => $this->viewUrl($source['definition'], (string) ($record->id ?? '')),
                 ]);
             }
         });
@@ -169,5 +170,37 @@ class UnpostEntriesReportBuilder
         }
 
         return $this->userNames[$userId] ?? '';
+    }
+
+    private function viewUrl(string $definition, string $recordId): ?string
+    {
+        if ($recordId === '') {
+            return null;
+        }
+
+        return match ($definition) {
+            'Purchase' => route('purchase.edit', $recordId),
+            'Purchase Return' => route('purchase.return.edit', $recordId),
+            'Sales' => route('editBooking.index', $recordId),
+            'Sale Return' => route('sale.return.edit', $recordId),
+            'Inward Gatepass' => route('InwardGatepass.edit', $recordId),
+            'Stock Hold' => route('stock-holds.edit', $recordId),
+            'Stock Release' => route('stock-holds.release.edit', $recordId),
+            'Stock Transfer' => route('stock_transfers.edit', $recordId),
+            'Stock Wastage' => route('stock-wastage.edit', $recordId),
+            'Warehouse Stock' => route('warehouse_stocks.index', ['view' => 'history']),
+            'Customer Claim' => route('customer-claims.edit', $recordId),
+            'Claim Acceptance' => route('claim-acceptance.edit', $recordId),
+            'Claim Item Receipt' => route('claim-item-receipt.edit', $recordId),
+            'Claim Credit Note' => route('claim-credit-note.edit', $recordId),
+            'Receipt Voucher' => route('recepit-vochers', $recordId),
+            'Payment Voucher' => route('Payment-vochers', $recordId),
+            'Expense Voucher' => route('expense-vochers', $recordId),
+            'Income Voucher' => route('income-vochers', $recordId),
+            'Journal Voucher' => route('journal-vochers', $recordId),
+            'Adjustment Voucher' => route('adjustment-vochers', $recordId),
+            'Stock Adjustment' => route('warehouse_stocks.edit', $recordId),
+            default => null,
+        };
     }
 }
