@@ -404,6 +404,7 @@
 <button class="no-print" onclick="window.print()">Print Invoice</button>
 
 <div class="print-sheet">
+    <div class="invoice-blank"></div>
     <div class="invoice-copy">
         <img class="wm" src="{{ asset('amt-watermark.png') }}" alt="">
         <div class="inv-body">
@@ -554,7 +555,6 @@
             </div>
         </div>
     </div>
-    <div class="invoice-blank"></div>
 </div>
 
 <script>

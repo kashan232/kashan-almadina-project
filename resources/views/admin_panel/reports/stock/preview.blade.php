@@ -21,9 +21,18 @@
             text-align: center;
             margin-bottom: 8px;
         }
+        .print-sheet {
+            width: 297mm;
+            max-width: 100%;
+            margin: 0 auto;
+            display: flex;
+        }
+        .sheet-blank { width: 50%; flex: 0 0 50%; }
         .report-sheet {
-            width: 100%;
-            max-width: 143mm;
+            width: 50%;
+            flex: 0 0 50%;
+            padding: 0 0.5mm;
+            overflow: hidden;
         }
         .company-name {
             text-align: center;
@@ -129,7 +138,14 @@
         @media print {
             body { padding: 1mm; }
             .no-print { display: none !important; }
-            .report-sheet { max-width: 143mm; }
+            .print-sheet { width: 100%; margin: 0; }
+            .sheet-blank { width: 50%; }
+            .report-sheet { width: 50%; padding: 0 0.5mm; }
+        }
+        @media screen and (max-width: 900px) {
+            .print-sheet { flex-direction: column; width: 100%; }
+            .sheet-blank { display: none; }
+            .report-sheet { width: 100%; flex: none; }
         }
     </style>
 </head>
@@ -171,7 +187,9 @@
         ];
     @endphp
 
-    <div class="report-sheet">
+    <div class="print-sheet">
+        <div class="sheet-blank"></div>
+        <div class="report-sheet">
             <div class="company-name">AL-MADINA TRADERS</div>
             <div class="report-header">
                 <div class="generated-date">{{ now()->format('l, M j, Y') }}</div>
@@ -227,6 +245,7 @@
                     @endif
                 </tbody>
             </table>
+        </div>
     </div>
 </body>
 </html>
