@@ -909,4 +909,101 @@ class StockReportBuilder
 
         return $totals;
     }
+
+    public function buildRetail(Request $request): array
+    {
+        $this->filters = $this->extractFilters($request);
+
+        $products = Product::query()
+            ->with('latestPrice')
+            ->when($this->shouldApplyFilter($this->filters['items'], $this->filters['totalProducts']), fn ($q) => $q->whereIn('id', $this->filters['items']))
+            ->when($this->shouldApplyFilter($this->filters['brands'], $this->filters['totalBrands']), fn ($q) => $q->whereIn('brand_id', $this->filters['brands']))
+            ->when($this->shouldApplyFilter($this->filters['categories'], $this->filters['totalCategories']), fn ($q) => $q->whereIn('category_id', $this->filters['categories']))
+            ->when($this->shouldApplyFilter($this->filters['subcategories'], $this->filters['totalSubcategories']), fn ($q) => $q->whereIn('sub_category_id', $this->filters['subcategories']))
+            ->orderBy('name')
+            ->get();
+
+        $holdMap = StockHold::withoutGlobalScopes()
+            ->where('hold_qty', '>', 0)
+            ->selectRaw('product_id, warehouse_id, SUM(hold_qty) as total_hold')
+            ->groupBy('product_id', 'warehouse_id')
+            ->get()
+            ->mapWithKeys(fn ($row) => [$row->product_id . '|' . $row->warehouse_id => (float) $row->total_hold]);
+
+        $groups = [];
+        $grand = [
+            'physical_qty' => 0.0,
+            'physical_amount' => 0.0,
+            'hold_qty' => 0.0,
+            'hold_amount' => 0.0,
+        ];
+
+        foreach ($this->resolvedWarehouseIds() as $warehouseId) {
+            $physicalRows = [];
+            $holdRows = [];
+            $whTotal = [
+                'physical_qty' => 0.0,
+                'physical_amount' => 0.0,
+                'hold_qty' => 0.0,
+                'hold_amount' => 0.0,
+            ];
+
+            foreach ($products as $product) {
+                $retailPrice = (float) ($product->latestPrice->sale_retail_price ?? 0);
+                $physicalQty = $this->getCurrentStock((int) $product->id, (int) $warehouseId);
+                $holdQty = (float) ($holdMap[$product->id . '|' . $warehouseId] ?? 0);
+
+                if (abs($physicalQty) < 0.0001 && abs($holdQty) < 0.0001) {
+                    continue;
+                }
+
+                $physicalAmount = $physicalQty * $retailPrice;
+                $holdAmount = $holdQty * $retailPrice;
+
+                if (abs($physicalQty) >= 0.0001) {
+                    $physicalRows[] = [
+                        'product_name' => $product->name,
+                        'qty' => $physicalQty,
+                        'retail_price' => $retailPrice,
+                        'retail_amount' => $physicalAmount,
+                    ];
+                    $whTotal['physical_qty'] += $physicalQty;
+                    $whTotal['physical_amount'] += $physicalAmount;
+                }
+
+                if (abs($holdQty) >= 0.0001) {
+                    $holdRows[] = [
+                        'product_name' => $product->name,
+                        'qty' => $holdQty,
+                        'retail_price' => $retailPrice,
+                        'retail_amount' => $holdAmount,
+                    ];
+                    $whTotal['hold_qty'] += $holdQty;
+                    $whTotal['hold_amount'] += $holdAmount;
+                }
+            }
+
+            if (empty($physicalRows) && empty($holdRows)) {
+                continue;
+            }
+
+            $groups[] = [
+                'warehouse_id' => (int) $warehouseId,
+                'warehouse_label' => $this->warehouseLabel((int) $warehouseId),
+                'physical' => $physicalRows,
+                'hold' => $holdRows,
+                'totals' => $whTotal,
+            ];
+
+            foreach ($grand as $key => $_) {
+                $grand[$key] += $whTotal[$key] ?? 0;
+            }
+        }
+
+        return [
+            'groups' => $groups,
+            'grand' => $grand,
+            'generated_at' => now(),
+        ];
+    }
 }

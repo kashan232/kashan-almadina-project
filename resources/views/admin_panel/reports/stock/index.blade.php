@@ -130,31 +130,39 @@
                         <div class="card-body p-2">
                             <div class="row g-2 align-items-end">
                                 @if(!empty($fixedReportType))
-                                    <input type="hidden" name="report_type" value="{{ $fixedReportType }}">
                                     @if($fixedReportType === 'ledger')
+                                    <input type="hidden" name="report_type" value="ledger">
                                     <div class="col-md-3">
                                         <label class="fw-bold mb-1" style="font-size: 11px;">Report Type</label>
                                         <div class="form-control form-control-sm bg-light fw-bold" style="height: 30px; font-size: 12px; line-height: 18px;">
                                             Item Stock Ledger
                                         </div>
                                     </div>
+                                    @else
+                                    <div class="col-md-3">
+                                        <label class="fw-bold mb-1" style="font-size: 11px;">Report Type</label>
+                                        <select name="report_type" id="stockReportType" class="form-select form-select-sm" required style="height: 30px; font-size: 12px;">
+                                            <option value="summary" selected>Without Values (Qty Movement)</option>
+                                            <option value="retail">With Retail (Physical &amp; Hold)</option>
+                                        </select>
+                                    </div>
                                     @endif
                                 @else
                                 <div class="col-md-3">
                                     <label class="fw-bold mb-1" style="font-size: 11px;">Report Type</label>
-                                    <select name="report_type" class="form-select form-select-sm" required style="height: 30px; font-size: 12px;">
-                                        <option value="summary" selected>Stock Report (Summary)</option>
-                                        <option value="ledger">Item Stock Ledger</option>
+                                    <select name="report_type" id="stockReportType" class="form-select form-select-sm" required style="height: 30px; font-size: 12px;">
+                                        <option value="summary" selected>Without Values (Qty Movement)</option>
+                                        <option value="retail">With Retail (Physical &amp; Hold)</option>
                                     </select>
                                 </div>
                                 @endif
-                                <div class="col-md-2">
+                                <div class="col-md-2 stock-date-field">
                                     <label class="fw-bold mb-1" style="font-size: 11px;">From Date</label>
-                                    <input type="date" name="from_date" class="form-control form-control-sm" value="{{ date('Y-m-01') }}" required style="height: 30px; font-size: 12px;">
+                                    <input type="date" name="from_date" class="form-control form-control-sm stock-date-input" value="{{ date('Y-m-01') }}" style="height: 30px; font-size: 12px;">
                                 </div>
-                                <div class="col-md-2">
+                                <div class="col-md-2 stock-date-field">
                                     <label class="fw-bold mb-1" style="font-size: 11px;">To Date</label>
-                                    <input type="date" name="to_date" class="form-control form-control-sm" value="{{ date('Y-m-d') }}" required style="height: 30px; font-size: 12px;">
+                                    <input type="date" name="to_date" class="form-control form-control-sm stock-date-input" value="{{ date('Y-m-d') }}" style="height: 30px; font-size: 12px;">
                                 </div>
                             </div>
                         </div>
@@ -322,6 +330,15 @@
                 alert('Please select at least one Item for Item Stock Ledger.');
             }
         });
+        @else
+        function toggleStockDateFields() {
+            const isRetail = $('#stockReportType').val() === 'retail';
+            $('.stock-date-field').toggle(!isRetail);
+            $('.stock-date-input').prop('required', !isRetail);
+        }
+
+        $('#stockReportType').on('change', toggleStockDateFields);
+        toggleStockDateFields();
         @endif
     });
 </script>

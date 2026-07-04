@@ -98,7 +98,7 @@
     <div class="company-name">AL-MADINA TRADERS</div>
     <div class="report-header">
         <div class="generated-date">{{ now()->format('d-M-Y') }}</div>
-        <h1 class="report-title">Stock Report (Qty Only)</h1>
+        <h1 class="report-title">Stock Report (Without Values)</h1>
         <div class="date-range">
             From: <span>{{ $from_date ? \Carbon\Carbon::parse($from_date)->format('d-m-y') : '' }}</span>
             &nbsp;&nbsp;To: <span>{{ $to_date ? \Carbon\Carbon::parse($to_date)->format('d-m-y') : '' }}</span>
