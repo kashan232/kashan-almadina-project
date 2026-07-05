@@ -713,6 +713,12 @@
                                           <span>Sales Report</span>
                                       </a>
                                   </li>
+                                  <li class="nav-item">
+                                      <a class="nav-link" href="{{ route('reports.customer-outstanding.index') }}">
+                                          <i class="fa-solid fa-users mr-2"></i>
+                                          <span>Customer Outstanding Balance</span>
+                                      </a>
+                                  </li>
                                   @endcan
                                   @can('Purchase Report')
                                   <li class="nav-item">

@@ -144,6 +144,7 @@
                                         <select name="report_type" id="stockReportType" class="form-select form-select-sm" required style="height: 30px; font-size: 12px;">
                                             <option value="summary" selected>Without Values (Qty Movement)</option>
                                             <option value="retail">With Retail (Physical &amp; Hold)</option>
+                                            <option value="hold">Hold Qty Only</option>
                                         </select>
                                     </div>
                                     @endif
@@ -153,6 +154,7 @@
                                     <select name="report_type" id="stockReportType" class="form-select form-select-sm" required style="height: 30px; font-size: 12px;">
                                         <option value="summary" selected>Without Values (Qty Movement)</option>
                                         <option value="retail">With Retail (Physical &amp; Hold)</option>
+                                        <option value="hold">Hold Qty Only</option>
                                     </select>
                                 </div>
                                 @endif

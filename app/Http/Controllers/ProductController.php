@@ -40,45 +40,33 @@ class ProductController extends Controller
         $request->validate([
             'name' => [
                 'required',
-                // Check karein ki name unique ho, lekin current product ID ko ignore karein
                 Rule::unique('products')->ignore($product->id),
             ],
-            'category' => 'required', // This should likely be 'category_id' in request
+            'category' => 'required',
             'sub_category' => 'required',
             'brand' => 'required',
-            'stock' => 'required|integer',
-            'status' => 'required|boolean',
-            'weight' => 'required|numeric',
-            'alert_qty' => 'required|integer',
-            'purchase_retail_price' => 'required|numeric',
-            'purchase_tax_percent' => 'required|numeric',
-            'purchase_tax_amount' => 'required|numeric',
-            'purchase_discount_percent' => 'required|numeric',
-            'purchase_discount_amount' => 'required|numeric',
-            'purchase_net_amount' => 'required|numeric',
-            'sale_retail_price' => 'required|numeric',
-            'sale_tax_percent' => 'required|numeric',
-            'sale_tax_amount' => 'required|numeric',
-            'sale_wht_percent' => 'required|numeric',
-            'sale_discount_percent' => 'required|numeric',
-            'sale_discount_amount' => 'required|numeric',
-            'sale_net_amount' => 'required|numeric',
         ]);
 
-        // 1. Product Table Update
+        $totalOpeningStock = (float) ($request->stock ?? 0);
+        $warehouseTotal = 0;
+        if ($request->has('warehouse_stocks')) {
+            foreach ($request->warehouse_stocks as $qty) {
+                $warehouseTotal += (float) $qty;
+            }
+        }
+        $shopStock = $totalOpeningStock - $warehouseTotal;
+
         $product->update([
             'name' => $request->name,
             'category_id' => $request->category,
             'sub_category_id' => $request->sub_category,
             'brand_id' => $request->brand,
-            'stock' => $request->stock,
+            'stock' => $shopStock,
             'alert_qty' => $request->alert_qty,
-            'status' => $request->status,
+            'status' => $request->status ?? $product->status,
             'weight' => $request->weight,
         ]);
 
-        // 2. Prices Table Update Logic
-        // Latest price record fetch karo
         $latestPrice = $product->latestPrice;
 
         $newPriceData = [
@@ -97,36 +85,32 @@ class ProductController extends Controller
             'sale_net_amount' => $request->sale_net_amount,
         ];
 
-        // Check karte hain agar koi price detail change hui hai ya nahi.
         $priceChanged = false;
         if ($latestPrice) {
             foreach ($newPriceData as $key => $value) {
-                // Comparing values (may need more robust float comparison if precision is an issue)
-                if ((string)$latestPrice->$key !== (string)$value) {
+                if ((string) $latestPrice->$key !== (string) $value) {
                     $priceChanged = true;
                     break;
                 }
             }
         } else {
-            // Agar latestPrice nahi mila, toh naya record banayenge.
             $priceChanged = true;
         }
 
         if ($priceChanged) {
-            // Agar price change hua hai toh current (latest) price record ko expire kar do
             if ($latestPrice) {
                 $latestPrice->update([
                     'end_date' => now()->setTimezone('Asia/Karachi')->toDateString(),
                 ]);
             }
 
-            // Aur naya price record create karo
-            // Yahan $product->prices()->create() hi Product ID set karta hai.
             $product->prices()->create(array_merge($newPriceData, [
                 'start_date' => now()->setTimezone('Asia/Karachi')->toDateString(),
                 'end_date' => null,
             ]));
         }
+
+        $this->syncWarehouseStocksFromForm($product, $request);
 
         return redirect()->route('products.index')->with('success', 'Product Updated');
     }
@@ -191,55 +175,97 @@ class ProductController extends Controller
         ]);
 
         // Save Warehouse Stocks & Create Stock Adjustments
-        if ($request->has('warehouse_ids')) {
-            foreach ($request->warehouse_ids as $index => $warehouse_id) {
-                $qty = (float)($request->warehouse_stocks[$index] ?? 0);
-                if ($qty != 0) {
-                    // 1. Create Stock Adjustment Head
-                    $adjustment = StockAdjustment::create([
-                        'adj_id' => StockAdjustment::generateAdjID(),
-                        'date' => now()->toDateString(),
-                        'warehouse_id' => $warehouse_id,
-                        'remarks' => 'Opening Stock Distribution for Product: ' . $product->name,
-                        'status' => 'Posted'
-                    ]);
-
-                    // 2. Create Stock Adjustment Detail
-                    StockAdjustmentItem::create([
-                        'stock_adjustment_id' => $adjustment->id,
-                        'product_id' => $product->id,
-                        'qty' => $qty
-                    ]);
-
-                    // 3. Create/Update Warehouse Stock (Directly Posted)
-                    WarehouseStock::create([
-                        'warehouse_id' => $warehouse_id,
-                        'product_id' => $product->id,
-                        'quantity' => $qty,
-                        'remarks' => 'Opening Stock Distribution',
-                        'status' => 'Posted'
-                    ]);
-                }
-            }
-        }
+        $this->syncWarehouseStocksFromForm($product, $request);
 
         return redirect()->route('products.index')->with('success', 'Product Created and Stock Distributed with Adjustments');
     }
 
-    public function edit(Product $product)
+    private function syncWarehouseStocksFromForm(Product $product, Request $request): void
     {
-        $product->load(['latestPrice']); // keep existing
-
-        $categories = \App\Models\Category::all();
-        $brands = \App\Models\Brand::all();
-
-        // Ensure we always pass subCategories for the product's category (empty collection if none)
-        $subCategories = collect();
-        if (!empty($product->category_id)) {
-            $subCategories = \App\Models\Subcategory::where('category_id', $product->category_id)->get();
+        if (!$request->has('warehouse_ids')) {
+            return;
         }
 
-        return view('admin_panel.product.edit', compact('product', 'categories', 'brands', 'subCategories'));
+        foreach ($request->warehouse_ids as $index => $warehouseId) {
+            $qty = (float) ($request->warehouse_stocks[$index] ?? 0);
+
+            $stock = WarehouseStock::where('warehouse_id', $warehouseId)
+                ->where('product_id', $product->id)
+                ->orderByRaw("CASE WHEN status = 'Posted' THEN 0 WHEN status IS NULL THEN 1 ELSE 2 END")
+                ->orderByDesc('id')
+                ->first();
+
+            if ($qty == 0) {
+                if ($stock) {
+                    $stock->update(['quantity' => 0, 'status' => 'Posted']);
+                }
+                continue;
+            }
+
+            if (!$stock) {
+                $adjustment = StockAdjustment::create([
+                    'adj_id' => StockAdjustment::generateAdjID(),
+                    'date' => now()->toDateString(),
+                    'warehouse_id' => $warehouseId,
+                    'remarks' => 'Opening Stock Distribution for Product: ' . $product->name,
+                    'status' => 'Posted',
+                ]);
+
+                StockAdjustmentItem::create([
+                    'stock_adjustment_id' => $adjustment->id,
+                    'product_id' => $product->id,
+                    'qty' => $qty,
+                ]);
+
+                WarehouseStock::create([
+                    'warehouse_id' => $warehouseId,
+                    'product_id' => $product->id,
+                    'quantity' => $qty,
+                    'remarks' => 'Opening Stock Distribution',
+                    'status' => 'Posted',
+                ]);
+
+                continue;
+            }
+
+            if ((float) $stock->quantity !== $qty) {
+                $stock->update([
+                    'quantity' => $qty,
+                    'status' => 'Posted',
+                ]);
+            }
+        }
+    }
+
+    public function edit(Product $product)
+    {
+        $product->load(['latestPrice']);
+
+        $categories = Category::get();
+        $brands = Brand::get();
+        $warehouses = Warehouse::all();
+
+        $subCategories = collect();
+        if (!empty($product->category_id)) {
+            $subCategories = Subcategory::where('category_id', $product->category_id)->get();
+        }
+
+        $warehouseStockMap = WarehouseStock::where('product_id', $product->id)
+            ->where('status', 'Posted')
+            ->selectRaw('warehouse_id, SUM(quantity) as qty')
+            ->groupBy('warehouse_id')
+            ->pluck('qty', 'warehouse_id')
+            ->map(fn ($qty) => (float) $qty)
+            ->all();
+
+        return view('admin_panel.product.edit', compact(
+            'product',
+            'categories',
+            'brands',
+            'warehouses',
+            'subCategories',
+            'warehouseStockMap'
+        ));
     }
 
     public function updatePrice(Request $request, Product $product)

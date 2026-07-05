@@ -36,13 +36,19 @@ class StockReportController extends Controller
         $request->validate([
             'from_date' => 'required|date',
             'to_date' => 'required|date|after_or_equal:from_date',
-            'report_type' => 'required|in:summary,retail',
+            'report_type' => 'required|in:summary,retail,hold',
         ]);
 
         if ($request->report_type === 'retail') {
             $data = $builder->buildRetail($request);
 
             return view('admin_panel.reports.stock.preview_retail', $data);
+        }
+
+        if ($request->report_type === 'hold') {
+            $data = $builder->buildHold($request);
+
+            return view('admin_panel.reports.stock.preview_hold', $data);
         }
 
         $data = $builder->build($request);

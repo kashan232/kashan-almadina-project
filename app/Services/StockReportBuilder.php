@@ -1045,4 +1045,70 @@ class StockReportBuilder
             'generated_at' => now(),
         ];
     }
+
+    public function buildHold(Request $request): array
+    {
+        $this->filters = $this->extractFilters($request);
+
+        $products = Product::query()
+            ->with('brandRelation')
+            ->when($this->shouldApplyFilter($this->filters['items'], $this->filters['totalProducts']), fn ($q) => $q->whereIn('id', $this->filters['items']))
+            ->when($this->shouldApplyFilter($this->filters['brands'], $this->filters['totalBrands']), fn ($q) => $q->whereIn('brand_id', $this->filters['brands']))
+            ->when($this->shouldApplyFilter($this->filters['categories'], $this->filters['totalCategories']), fn ($q) => $q->whereIn('category_id', $this->filters['categories']))
+            ->when($this->shouldApplyFilter($this->filters['subcategories'], $this->filters['totalSubcategories']), fn ($q) => $q->whereIn('sub_category_id', $this->filters['subcategories']))
+            ->orderBy('name')
+            ->get();
+
+        $warehouseIds = $this->resolvedWarehouseIds();
+
+        $holdMap = StockHold::withoutGlobalScopes()
+            ->where('hold_qty', '>', 0)
+            ->whereIn('warehouse_id', $warehouseIds)
+            ->selectRaw('product_id, SUM(hold_qty) as total_hold')
+            ->groupBy('product_id')
+            ->pluck('total_hold', 'product_id')
+            ->map(fn ($v) => (float) $v);
+
+        $brandBuckets = [];
+        $grand = ['hold_qty' => 0.0];
+
+        foreach ($products as $product) {
+            $holdQty = (float) ($holdMap[$product->id] ?? 0);
+            if (abs($holdQty) < 0.0001) {
+                continue;
+            }
+
+            $brandId = (int) ($product->brand_id ?? 0);
+            $brandName = $product->brandRelation->name ?? 'No Brand';
+
+            if (!isset($brandBuckets[$brandId])) {
+                $brandBuckets[$brandId] = [
+                    'brand_id' => $brandId,
+                    'brand_name' => $brandName,
+                    'rows' => [],
+                    'totals' => ['hold_qty' => 0.0],
+                ];
+            }
+
+            $brandBuckets[$brandId]['rows'][] = [
+                'product_name' => $product->name,
+                'hold_qty' => $holdQty,
+            ];
+            $brandBuckets[$brandId]['totals']['hold_qty'] += $holdQty;
+            $grand['hold_qty'] += $holdQty;
+        }
+
+        $groups = collect($brandBuckets)
+            ->sortBy('brand_name', SORT_NATURAL | SORT_FLAG_CASE)
+            ->values()
+            ->all();
+
+        return [
+            'groups' => $groups,
+            'grand' => $grand,
+            'from_date' => $request->from_date,
+            'to_date' => $request->to_date,
+            'generated_at' => now(),
+        ];
+    }
 }

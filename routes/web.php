@@ -527,6 +527,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/reports/dashboard', [HomeController::class, 'dashboardReport'])->name('reports.dashboard');
     Route::get('/reports/sales', [\App\Http\Controllers\SalesReportController::class, 'index'])->name('reports.sales.index');
     Route::post('/reports/sales/preview', [\App\Http\Controllers\SalesReportController::class, 'preview'])->name('reports.sales.preview');
+    Route::get('/reports/customer-outstanding', [\App\Http\Controllers\CustomerOutstandingBalanceReportController::class, 'index'])->name('reports.customer-outstanding.index');
+    Route::post('/reports/customer-outstanding/preview', [\App\Http\Controllers\CustomerOutstandingBalanceReportController::class, 'preview'])->name('reports.customer-outstanding.preview');
     Route::get('/reports/purchase', [\App\Http\Controllers\PurchaseReportController::class, 'index'])->name('reports.purchase.index');
     Route::post('/reports/purchase/preview', [\App\Http\Controllers\PurchaseReportController::class, 'preview'])->name('reports.purchase.preview');
     Route::get('/reports/claim', [\App\Http\Controllers\ClaimReportController::class, 'index'])->name('reports.claim.index');
