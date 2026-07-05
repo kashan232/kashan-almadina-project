@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\ClaimAcceptanceItem;
 use App\Models\ClaimCreditNoteItem;
 use App\Models\ClaimItemReceiptItem;
+use App\Models\Customer;
 use App\Models\CustomerClaim;
 use App\Models\Product;
 use App\Models\PurchaseItem;
@@ -19,6 +20,7 @@ use App\Models\StockReleaseVoucher;
 use App\Models\StockTransferProduct;
 use App\Models\StockWastageDetail;
 use App\Models\UserGroup;
+use App\Models\Vendor;
 use App\Models\Warehouse;
 use App\Models\WarehouseStock;
 use Carbon\Carbon;
@@ -193,7 +195,7 @@ class StockReportBuilder
             'column' => $column,
             'qty' => abs($qty),
             'balance_effect' => $balanceEffect,
-            'ref_id' => $txnId > 0 ? (string) $txnId : $refId,
+            'ref_id' => $this->formatLedgerRef($refId !== '' ? $refId : ($txnId > 0 ? (string) $txnId : '')),
             'txn_id' => $txnId,
             'type_code' => $typeCode,
             'party_name' => $partyName,
@@ -295,6 +297,45 @@ class StockReportBuilder
         return Carbon::parse($model->created_at ?? now())->toDateString();
     }
 
+    private function formatLedgerRef(string $ref): string
+    {
+        $digits = preg_replace('/[^0-9]/', '', $ref);
+
+        return $digits !== '' ? $digits : $ref;
+    }
+
+    private function resolveStockPartyLabel(
+        ?string $partyType,
+        ?int $partyId,
+        $voucher = null,
+        ?StockHold $holdLine = null
+    ): string {
+        $partyType = strtolower((string) ($partyType ?: $voucher?->party_type ?: $holdLine?->party_type ?: ''));
+        $partyId = (int) ($partyId ?: $voucher?->party_id ?: $holdLine?->party_id ?: 0);
+
+        if (in_array($partyType, ['walkin', 'walking', 'walk-in'], true)) {
+            return 'WALK IN CUSTOMER';
+        }
+
+        $name = '';
+        $code = $partyId;
+
+        if ($partyType === 'vendor' && $partyId) {
+            $vendor = $holdLine?->partyVendor ?? $voucher?->partyVendor ?? Vendor::find($partyId);
+            $name = strtoupper($vendor?->name ?? 'VENDOR');
+        } elseif ($partyType === 'customer' && $partyId) {
+            $customer = $holdLine?->partyCustomer ?? $voucher?->partyCustomer ?? Customer::find($partyId);
+            $name = strtoupper($customer?->customer_name ?? 'CUSTOMER');
+            $code = $customer?->customer_id ?? $partyId;
+        }
+
+        if ($name === '') {
+            return strtoupper($partyType ?: 'UNKNOWN PARTY');
+        }
+
+        return $code ? $name . ' (' . $code . ')' : $name;
+    }
+
     private function collectPurchases(): void
     {
         PurchaseItem::with(['purchase' => fn ($q) => $q->withoutGlobalScopes()->with(['vendor', 'purchasable'])])
@@ -321,7 +362,7 @@ class StockReportBuilder
                         $qty,
                         $qty,
                         (string) ($purchase->invoice_no ?? ''),
-                        'PI',
+                        'PJ',
                         $party,
                         $price,
                         (float) ($item->form_line_total ?? ($price * $qty)),
@@ -357,7 +398,7 @@ class StockReportBuilder
                         $qty,
                         -$qty,
                         (string) ($ret->invoice_no ?? ''),
-                        'PR',
+                        'PRJ',
                         $party,
                         $price,
                         (float) ($item->line_total ?? ($price * $qty)),
@@ -384,7 +425,10 @@ class StockReportBuilder
                     $date = $this->pickDate($sale, ['entry_date']);
                     $qty = (float) $item->sales_qty;
                     $price = (float) ($item->sales_rate ?: $item->sales_price ?: 0);
-                    $party = $sale->customer->customer_name ?? 'WALK IN CUSTOMER';
+                    $customer = $sale->customer;
+                    $party = $customer
+                        ? strtoupper($customer->customer_name ?? 'CUSTOMER') . ' (' . ($customer->customer_id ?? $customer->id) . ')'
+                        : 'WALK IN CUSTOMER';
                     $this->addMovement(
                         (int) $item->product_id,
                         $wh,
@@ -393,7 +437,7 @@ class StockReportBuilder
                         $qty,
                         -$qty,
                         (string) ($sale->invoice_no ?? ''),
-                        'SI',
+                        'SJ',
                         $party,
                         $price,
                         (float) ($item->amount ?? ($price * $qty)),
@@ -420,7 +464,10 @@ class StockReportBuilder
                     $date = $this->pickDate($ret, ['current_date', 'entry_date']);
                     $qty = (float) $item->sales_qty;
                     $price = (float) ($item->sales_price ?? 0);
-                    $party = $ret->customer->customer_name ?? 'WALK IN CUSTOMER';
+                    $customer = $ret->customer;
+                    $party = $customer
+                        ? strtoupper($customer->customer_name ?? 'CUSTOMER') . ' (' . ($customer->customer_id ?? $customer->id) . ')'
+                        : 'WALK IN CUSTOMER';
                     $this->addMovement(
                         (int) $item->product_id,
                         $wh,
@@ -429,7 +476,7 @@ class StockReportBuilder
                         $qty,
                         $qty,
                         (string) ($ret->invoice_no ?? ''),
-                        'SR',
+                        'SRJ',
                         $party,
                         $price,
                         (float) ($item->amount ?? ($price * $qty)),
@@ -511,7 +558,7 @@ class StockReportBuilder
                             1,
                             0,
                             $ref,
-                            'HD',
+                            'SH',
                             $party,
                             $price,
                             $price,
@@ -540,8 +587,8 @@ class StockReportBuilder
                     $pid = (int) $item->product_id;
                     $ref = (string) ($v->voucher_no ?? $v->id ?? '');
                     $party = method_exists($v, 'partyName') ? $v->partyName() : '';
-                    $this->addMovement($pid, (int) $v->from_warehouse_id, $date, 'claim_out', $qty, -$qty, $ref, 'CA', $party, 0, 0);
-                    $this->addMovement($pid, (int) $v->to_warehouse_id, $date, 'claim_in', $qty, $qty, $ref, 'CA', $party, 0, 0);
+                    $this->addMovement($pid, (int) $v->from_warehouse_id, $date, 'claim_out', $qty, -$qty, $ref, 'CLA', $party, 0, 0);
+                    $this->addMovement($pid, (int) $v->to_warehouse_id, $date, 'claim_in', $qty, $qty, $ref, 'CLA', $party, 0, 0);
                 }
             });
     }
@@ -564,8 +611,8 @@ class StockReportBuilder
                     $pid = (int) $item->product_id;
                     $ref = (string) ($v->voucher_no ?? $v->id ?? '');
                     $party = method_exists($v, 'partyName') ? $v->partyName() : '';
-                    $this->addMovement($pid, (int) $v->from_warehouse_id, $date, 'claim_out', $qty, -$qty, $ref, 'CIR', $party, 0, 0);
-                    $this->addMovement($pid, (int) $v->to_warehouse_id, $date, 'claim_in', $qty, $qty, $ref, 'CIR', $party, 0, 0);
+                    $this->addMovement($pid, (int) $v->from_warehouse_id, $date, 'claim_out', $qty, -$qty, $ref, 'CLI', $party, 0, 0);
+                    $this->addMovement($pid, (int) $v->to_warehouse_id, $date, 'claim_in', $qty, $qty, $ref, 'CLI', $party, 0, 0);
                 }
             });
     }
@@ -589,8 +636,8 @@ class StockReportBuilder
                     $ref = (string) ($note->voucher_no ?? $note->id ?? '');
                     $party = method_exists($note, 'partyName') ? $note->partyName() : '';
                     $price = (float) ($item->price ?? 0);
-                    $this->addMovement($pid, (int) $note->from_warehouse_id, $date, 'claim_out', $qty, -$qty, $ref, 'CCN', $party, $price, $price * $qty);
-                    $this->addMovement($pid, (int) $note->to_warehouse_id, $date, 'claim_in', $qty, $qty, $ref, 'CCN', $party, $price, $price * $qty);
+                    $this->addMovement($pid, (int) $note->from_warehouse_id, $date, 'claim_out', $qty, -$qty, $ref, 'CLM', $party, $price, $price * $qty);
+                    $this->addMovement($pid, (int) $note->to_warehouse_id, $date, 'claim_in', $qty, $qty, $ref, 'CLM', $party, $price, $price * $qty);
                 }
             });
     }
@@ -615,8 +662,8 @@ class StockReportBuilder
                     $toWh = $tr->to_shop ? 0 : (int) $tr->to_warehouse_id;
                     $ref = (string) ($tr->transfer_no ?? $tr->id ?? '');
                     $price = (float) ($item->price ?? 0);
-                    $this->addMovement($pid, $fromWh, $date, 'trf_out', $qty, -$qty, $ref, 'TR', 'Transfer Out', $price, $price * $qty);
-                    $this->addMovement($pid, $toWh, $date, 'trf_in', $qty, $qty, $ref, 'TR', 'Transfer In', $price, $price * $qty);
+                    $this->addMovement($pid, $fromWh, $date, 'trf_out', $qty, -$qty, $ref, 'TOG', 'Transfer Out', $price, $price * $qty);
+                    $this->addMovement($pid, $toWh, $date, 'trf_in', $qty, $qty, $ref, 'TOG', 'Transfer In', $price, $price * $qty);
                 }
             });
     }
@@ -638,7 +685,7 @@ class StockReportBuilder
                     $date = $this->pickDate($w, ['date', 'entry_date']);
                     $qty = (float) $item->qty;
                     $ref = (string) ($w->gwn_id ?? $w->id ?? '');
-                    $this->addMovement((int) $item->product_id, $wh, $date, 'waste', $qty, -$qty, $ref, 'WS', 'Wastage', 0, 0);
+                    $this->addMovement((int) $item->product_id, $wh, $date, 'waste', $qty, -$qty, $ref, 'WOG', 'Wastage', 0, 0);
                 }
             });
     }
@@ -717,7 +764,12 @@ class StockReportBuilder
     private function collectHolds(): void
     {
         $this->stockHoldReportQuery()
-            ->with('voucher')
+            ->with([
+                'voucher.partyCustomer',
+                'voucher.partyVendor',
+                'partyCustomer',
+                'partyVendor',
+            ])
             ->withSum(StockHold::postedReleasesWithSum(), 'release_qty')
             ->whereHas('voucher', function ($q) {
                 $q->withoutGlobalScopes()->where('status', 'Posted');
@@ -738,8 +790,14 @@ class StockReportBuilder
 
                     $date = $this->pickDate($voucher, ['date', 'entry_date']);
                     $wh = $this->resolveHoldWarehouseId($item);
-                    $ref = (string) ($voucher->voucher_no ?? $voucher->hold_id ?? $item->id ?? '');
-                    $this->addMovement((int) $item->product_id, $wh, $date, 'hold', $qty, $qty, $ref, 'SH', 'Stock Hold', 0, 0);
+                    $ref = (string) ($voucher->voucher_no ?? '');
+                    $party = $this->resolveStockPartyLabel(
+                        $item->party_type,
+                        $item->party_id ? (int) $item->party_id : null,
+                        $voucher,
+                        $item
+                    );
+                    $this->addMovement((int) $item->product_id, $wh, $date, 'hold', $qty, $qty, $ref, 'SH', $party, 0, 0, (int) ($voucher->id ?? 0));
                 }
             });
     }
@@ -747,7 +805,12 @@ class StockReportBuilder
     private function collectReleases(): void
     {
         StockRelease::withoutGlobalScopes()
-            ->with(['voucher', 'hold'])
+            ->with([
+                'voucher.partyCustomer',
+                'voucher.partyVendor',
+                'hold.partyCustomer',
+                'hold.partyVendor',
+            ])
             ->where(function ($q) {
                 $q->whereHas('voucher', function ($v) {
                     $v->withoutGlobalScopes()->where('status', 'Posted');
@@ -772,10 +835,16 @@ class StockReportBuilder
                         ? $this->resolveReleaseWarehouseId($voucher, $item)
                         : (int) ($item->warehouse_id ?? $item->hold?->warehouse_id ?? 0);
                     $ref = $voucher
-                        ? (string) ($voucher->release_id ?? $item->id ?? '')
+                        ? (string) ($voucher->voucher_no ?? '')
                         : (string) ($item->id ?? '');
+                    $party = $this->resolveStockPartyLabel(
+                        $item->party_type ?: $item->hold?->party_type,
+                        (int) ($item->party_id ?: $item->hold?->party_id ?: 0) ?: null,
+                        $voucher,
+                        $item->hold
+                    );
                     // Release deducts physical stock (-qty), separate from hold qty.
-                    $this->addMovement((int) $item->product_id, $wh, $date, 'release', $qty, -$qty, $ref, 'SR', 'Stock Release', 0, 0);
+                    $this->addMovement((int) $item->product_id, $wh, $date, 'release', $qty, -$qty, $ref, 'SR', $party, 0, 0, (int) ($voucher?->id ?? $item->id ?? 0));
                 }
             });
     }
@@ -797,7 +866,7 @@ class StockReportBuilder
                     $date = $this->pickDate($adj, ['date', 'entry_date']);
                     $qty = (float) $item->qty;
                     $ref = (string) ($adj->adj_id ?? $adj->id ?? '');
-                    $this->addMovement((int) $item->product_id, $wh, $date, 'adj', $qty, $qty, $ref, 'AD', 'Adjustment', 0, 0);
+                    $this->addMovement((int) $item->product_id, $wh, $date, 'adj', $qty, $qty, $ref, 'AV', 'Adjustment', 0, 0);
                 }
             });
     }
