@@ -57,7 +57,7 @@
                                     @endforeach
                                 </ul>
                                 <p class="small text-muted mt-3 mb-0">
-                                    <strong>Note:</strong> Customer ID is auto-generated. Opening balance creates ledger entry same as manual create.
+                                    <strong>Note:</strong> Template includes 2 sample rows — Row 2 (Main Customer) and Row 3 (Walking Customer). Delete them before import.
                                 </p>
                             </div>
                         </div>

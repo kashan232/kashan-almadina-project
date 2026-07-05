@@ -33,6 +33,51 @@ class VoucherController extends Controller
         return $cache[$table];
     }
 
+    private function sumVoucherDiscounts(object $voucher): float
+    {
+        $discountList = json_decode($voucher->discount_value, true);
+        $total = 0;
+        if (is_array($discountList)) {
+            foreach ($discountList as $disc) {
+                $total += (float) $disc;
+            }
+        }
+
+        return $total;
+    }
+
+    private function adjustVoucherDiscountAccounts(object $voucher, bool $isReceipt, bool $reverse = false): void
+    {
+        $discAccIds = json_decode($voucher->discount_account_id, true) ?? [];
+        $discValues = json_decode($voucher->discount_value, true) ?? [];
+        $sign = $reverse ? -1 : 1;
+        if (!$isReceipt) {
+            $sign *= -1;
+        }
+
+        foreach ($discAccIds as $idx => $accId) {
+            $disc = (float) ($discValues[$idx] ?? 0);
+            if ($disc <= 0 || !$accId) {
+                continue;
+            }
+
+            $acc = Account::find($accId);
+            if ($acc) {
+                $acc->opening_balance = (float) ($acc->opening_balance ?? 0) + ($sign * $disc);
+                $acc->save();
+            }
+        }
+    }
+
+    private function voucherDiscountFieldsFromRequest(Request $request): array
+    {
+        return [
+            'discount_value' => json_encode($request->input('discount_value', [])),
+            'discount_head' => json_encode($request->input('discount_head', [])),
+            'discount_account_id' => json_encode($request->input('discount_account_id', [])),
+        ];
+    }
+
     public function index($type)
     {
 
@@ -369,6 +414,8 @@ class VoucherController extends Controller
                 'row_account_head' => json_encode($request->input('row_account_head', [])),
                 'row_account_id'   => json_encode($request->input('row_account_id', [])),
                 'discount_value'   => json_encode($request->input('discount_value', [])),
+                'discount_head'    => json_encode($request->input('discount_head', [])),
+                'discount_account_id' => json_encode($request->input('discount_account_id', [])),
                 'kg'               => json_encode($request->input('kg', [])),
                 'rate'               => json_encode($request->input('rate', [])),
                 'amount'           => json_encode($request->input('amount', [])),
@@ -400,12 +447,7 @@ class VoucherController extends Controller
             $rvid = $voucher->rvid;
 
             $discountList = json_decode($voucher->discount_value, true);
-            $totalDiscount = 0;
-            if (is_array($discountList)) {
-                foreach ($discountList as $disc) {
-                    $totalDiscount += (float)$disc;
-                }
-            }
+            $totalDiscount = $this->sumVoucherDiscounts($voucher);
             $totalCreditAmount = $amount + $totalDiscount;
 
             if ($voucher->type === 'vendor') {
@@ -485,6 +527,8 @@ class VoucherController extends Controller
                 }
             }
 
+            $this->adjustVoucherDiscountAccounts($voucher, true, false);
+
             $voucher->status = 'posted';
             $voucher->save();
 
@@ -506,31 +550,31 @@ class VoucherController extends Controller
             }
 
             $amount = (float)$voucher->total_amount;
+            $totalDiscount = $this->sumVoucherDiscounts($voucher);
+            $totalCreditAmount = $amount + $totalDiscount;
             
             // 1. Reverse Header Party (Destination) -> Add back
             if ($voucher->type === 'vendor') {
                 $ledger = VendorLedger::where('vendor_id', $voucher->party_id)->latest()->first();
                 if ($ledger) {
-                    $ledger->closing_balance = (float)$ledger->closing_balance + $amount;
+                    $ledger->closing_balance = (float)$ledger->closing_balance + $totalCreditAmount;
                     $ledger->save();
                 }
             } elseif ($voucher->type === 'customer' || $voucher->type === 'walkin') {
-                // Reverse: add amount back to latest ledger (same as vendor)
                 $ledger = CustomerLedger::where('customer_id', $voucher->party_id)->latest()->first();
                 if ($ledger) {
-                    $ledger->closing_balance = (float)$ledger->closing_balance + $amount;
+                    $ledger->closing_balance = (float)$ledger->closing_balance + $totalCreditAmount;
                     $ledger->save();
                 }
-                // Reverse customer's own opening_balance
                 $cust = \App\Models\Customer::find($voucher->party_id);
                 if ($cust) {
-                    $cust->opening_balance = (float)($cust->opening_balance ?? 0) + $amount;
+                    $cust->opening_balance = (float)($cust->opening_balance ?? 0) + $totalCreditAmount;
                     $cust->save();
                 }
             } else {
                 $account = Account::find($voucher->party_id);
                 if ($account) {
-                    $account->opening_balance = (float)($account->opening_balance ?? 0) + $amount;
+                    $account->opening_balance = (float)($account->opening_balance ?? 0) + $totalCreditAmount;
                     $account->save();
                 }
             }
@@ -550,6 +594,8 @@ class VoucherController extends Controller
                     }
                 }
             }
+
+            $this->adjustVoucherDiscountAccounts($voucher, true, true);
 
             $voucher->status = 'draft';
             $voucher->save();
@@ -634,6 +680,8 @@ class VoucherController extends Controller
             'row_account_head' => json_encode($request->row_account_head), // JSON from Rows
             'row_account_id'   => json_encode($request->row_account_id),   // JSON from Rows
             'discount_value'   => json_encode($request->discount_value),
+            'discount_head'    => json_encode($request->input('discount_head', [])),
+            'discount_account_id' => json_encode($request->input('discount_account_id', [])),
             'kg'               => json_encode($request->kg),
             'rate'             => json_encode($request->rate),
             'amount'           => json_encode($request->amount),
@@ -664,6 +712,7 @@ class VoucherController extends Controller
 
             $totalAmount = (float)$voucher->total_amount;
             $pvid = $voucher->pvid;
+            $discountList = json_decode($voucher->discount_value, true) ?? [];
 
             // Multiple Accounts (Sources) -> MINUS
             $accIds = json_decode($voucher->row_account_id, true);
@@ -682,14 +731,18 @@ class VoucherController extends Controller
                 }
             }
 
-            // One Party (Destination) -> PLUS
+            $this->adjustVoucherDiscountAccounts($voucher, false, false);
+
+            // One Party (Destination) -> PLUS (amount + discount per row)
             $partyId = $voucher->party_id;
             $pType = $voucher->type;
 
             if ($partyId && $pType && is_array($rowAmounts)) {
                 foreach ($rowAmounts as $index => $rowAmount) {
                     $rowAmount = (float)$rowAmount;
-                    if ($rowAmount <= 0) continue;
+                    $rowDiscount = (float)($discountList[$index] ?? 0);
+                    $partyImpact = $rowAmount + $rowDiscount;
+                    if ($partyImpact <= 0) continue;
 
                     if ($pType === 'vendor') {
                         $ledger = VendorLedger::where('vendor_id', $partyId)->latest()->first();
@@ -700,10 +753,10 @@ class VoucherController extends Controller
                             'date' => now(),
                             'description' => "Payment Voucher #$pvid",
                             'opening_balance' => $prev,
-                            'debit' => $rowAmount,
+                            'debit' => $partyImpact,
                             'credit' => 0,
                             'previous_balance' => $prev,
-                            'closing_balance' => $prev + $rowAmount,
+                            'closing_balance' => $prev + $partyImpact,
                         ]);
                     } elseif ($pType === 'customer' || $pType === 'walkin') {
                         $ledger = CustomerLedger::where('customer_id', $partyId)->latest()->first();
@@ -714,16 +767,15 @@ class VoucherController extends Controller
                             'date' => now(),
                             'description' => "Payment Voucher #$pvid",
                             'opening_balance' => $prev,
-                            'debit' => $rowAmount,
+                            'debit' => $partyImpact,
                             'credit' => 0,
                             'previous_balance' => $prev,
-                            'closing_balance' => $prev + $rowAmount,
+                            'closing_balance' => $prev + $partyImpact,
                         ]);
                     } else {
-                        // Numeric head or other account
                         $partyAcc = Account::find($partyId);
                         if ($partyAcc) {
-                            $partyAcc->opening_balance += $rowAmount;
+                            $partyAcc->opening_balance += $partyImpact;
                             $partyAcc->save();
                         }
                     }
@@ -749,7 +801,9 @@ class VoucherController extends Controller
             $voucher->save();
 
             $totalAmount = (float)$voucher->total_amount;
+            $totalDiscount = $this->sumVoucherDiscounts($voucher);
             $rowAmounts = json_decode($voucher->amount, true);
+            $discountList = json_decode($voucher->discount_value, true) ?? [];
             $partyId = $voucher->party_id;
             $pType = $voucher->type;
 
@@ -768,11 +822,32 @@ class VoucherController extends Controller
                 }
             }
 
-            // 2. Reverse Party (Destination) -> Subtract back
-            if ($partyId && !in_array($pType, ['vendor', 'customer', 'walkin'])) {
+            $this->adjustVoucherDiscountAccounts($voucher, false, true);
+
+            // 2. Reverse Party ledger impacts
+            if ($partyId && in_array($pType, ['vendor', 'customer', 'walkin']) && is_array($rowAmounts)) {
+                foreach ($rowAmounts as $index => $rowAmount) {
+                    $partyImpact = (float)$rowAmount + (float)($discountList[$index] ?? 0);
+                    if ($partyImpact <= 0) continue;
+
+                    if ($pType === 'vendor') {
+                        $ledger = VendorLedger::where('vendor_id', $partyId)->latest()->first();
+                        if ($ledger) {
+                            $ledger->closing_balance = (float)$ledger->closing_balance - $partyImpact;
+                            $ledger->save();
+                        }
+                    } else {
+                        $ledger = CustomerLedger::where('customer_id', $partyId)->latest()->first();
+                        if ($ledger) {
+                            $ledger->closing_balance = (float)$ledger->closing_balance - $partyImpact;
+                            $ledger->save();
+                        }
+                    }
+                }
+            } elseif ($partyId && !in_array($pType, ['vendor', 'customer', 'walkin'])) {
                 $partyAcc = Account::find($partyId);
                 if ($partyAcc) {
-                    $partyAcc->opening_balance -= $totalAmount;
+                    $partyAcc->opening_balance -= ($totalAmount + $totalDiscount);
                     $partyAcc->save();
                 }
             }
@@ -848,9 +923,11 @@ class VoucherController extends Controller
                 'remarks'          => $request->remarks,
                 'narration_id' => json_encode($narrationIds),
                 'reference_no'     => json_encode($request->reference_no),
-                'row_account_head' => json_encode($request->row_account_head),
-                'row_account_id'   => json_encode($request->row_account_id),
-                'discount_value'   => json_encode($request->discount_value),
+            'row_account_head' => json_encode($request->row_account_head),
+            'row_account_id'   => json_encode($request->row_account_id),
+            'discount_value'   => json_encode($request->discount_value),
+            'discount_head'    => json_encode($request->input('discount_head', [])),
+            'discount_account_id' => json_encode($request->input('discount_account_id', [])),
                 'kg'               => json_encode($request->kg),
                 'rate'             => json_encode($request->rate),
                 'amount'           => json_encode($request->amount),

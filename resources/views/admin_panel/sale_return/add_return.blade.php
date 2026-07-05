@@ -294,15 +294,32 @@
                                         <span class="text-dark small fw-bold">Subtotal</span>
                                         <input type="text" id="subtotal" name="subtotal" class="form-control form-control-sm text-end bg-transparent border-0 fw-bold py-0" readonly value="{{ $returnData->sub_total2 ?? 0 }}" style="width:120px">
                                     </div>
-                                    <div class="d-flex justify-content-between align-items-center py-1 border-bottom px-1">
+                                    <div class="d-flex justify-content-between align-items-center py-1 border-bottom px-1 flex-wrap gap-1">
                                         <span class="text-dark small fw-bold">Order Discount</span>
                                         <div class="d-flex align-items-center gap-1 flex-wrap justify-content-end">
-                                            <input type="number" step="any" id="orderDiscountValue" name="order_discount_value" class="form-control form-control-sm text-end py-0" value="{{ $returnData->discount_amount ?? 0 }}" placeholder="0" style="width:70px">
+                                            <select id="discount_head" name="discount_head" class="form-select form-select-sm py-0" style="width:95px;">
+                                                <option value="">Head</option>
+                                                @foreach($accountHeads as $head)
+                                                    <option value="{{ $head->id }}" {{ (isset($returnData) && $returnData->discount_head == $head->id) ? 'selected' : '' }}>
+                                                        {{ $head->name }}
+                                                    </option>
+                                                @endforeach
+                                            </select>
+                                            <select name="discount_account_id" id="discount_account_id" class="form-select form-select-sm py-0" style="width:120px;">
+                                                <option value="">Sub Head</option>
+                                                @if(isset($returnData) && $returnData->discount_account_id)
+                                                    @php $discAcc = \App\Models\Account::find($returnData->discount_account_id); @endphp
+                                                    @if($discAcc)
+                                                        <option value="{{ $returnData->discount_account_id }}" selected>{{ $discAcc->title }}</option>
+                                                    @endif
+                                                @endif
+                                            </select>
+                                            <input type="number" step="any" id="orderDiscountValue" name="order_discount_value" class="form-control form-control-sm text-end py-0" value="{{ isset($returnData) ? $returnData->discount_amount : 0 }}" placeholder="0" style="width:70px">
                                             <input type="hidden" name="order_discount_mode" id="orderDiscountMode" value="pkr">
                                             <button type="button" class="btn btn-outline-secondary btn-xs order-disc-btn active py-0 px-1" data-mode="pkr">PKR</button>
                                             <button type="button" class="btn btn-outline-secondary btn-xs order-disc-btn py-0 px-1" data-mode="percent">%</button>
-                                            <input type="hidden" id="overallDiscount" name="discount" value="{{ $returnData->discount_amount ?? 0 }}">
-                                            <input type="text" id="tOrderDisc" class="form-control form-control-sm text-end input-readonly border-0 bg-transparent fw-bold py-0 text-danger" readonly value="{{ $returnData->discount_amount ?? 0 }}" style="width:70px">
+                                            <input type="hidden" id="overallDiscount" name="discount" value="{{ isset($returnData) ? $returnData->discount_amount : 0 }}">
+                                            <input type="text" id="tOrderDisc" class="form-control form-control-sm text-end input-readonly border-0 bg-transparent fw-bold py-0 text-danger" readonly value="{{ isset($returnData) ? $returnData->discount_amount : 0 }}" style="width:70px">
                                         </div>
                                     </div>
                                     <div class="d-flex justify-content-between align-items-center py-1 bg-light px-2 rounded mt-1">
@@ -993,9 +1010,53 @@ $(document).ready(function() {
                     appendInvoiceRow(item);
                 });
             }
+
+            if (res.discount_head) {
+                $('#discount_head').val(res.discount_head).trigger('change');
+                setTimeout(function() {
+                    if (res.discount_account_id) {
+                        $('#discount_account_id').val(res.discount_account_id);
+                    }
+                }, 400);
+            }
+
+            if (parseFloat(res.discount_amount || 0) > 0) {
+                $('#orderDiscountValue').val(res.discount_amount);
+                $('#orderDiscountMode').val('pkr');
+                $('.order-disc-btn').removeClass('active');
+                $('.order-disc-btn[data-mode="pkr"]').addClass('active');
+            }
+
             recalcSummary();
         });
     });
+
+    function loadDiscountAccounts(headId, selectedAccountId) {
+        var $accSelect = $('#discount_account_id');
+        if (!headId) {
+            $accSelect.html('<option value="">Sub Head</option>');
+            return;
+        }
+
+        $.get("{{ url('/get-accounts-by-head') }}/" + headId, function(res) {
+            var html = '<option value="">Sub Head</option>';
+            if (res && res.length) {
+                res.forEach(function(acc) {
+                    var selected = selectedAccountId && String(selectedAccountId) === String(acc.id) ? ' selected' : '';
+                    html += '<option value="' + acc.id + '"' + selected + '>' + acc.title + '</option>';
+                });
+            }
+            $accSelect.html(html);
+        });
+    }
+
+    $(document).on('change', '#discount_head', function() {
+        loadDiscountAccounts($(this).val(), null);
+    });
+
+    @if(isset($returnData) && $returnData->discount_head)
+        loadDiscountAccounts(@json($returnData->discount_head), @json($returnData->discount_account_id));
+    @endif
 
     function appendInvoiceRow(item) {
         let discAmt = item.qty > 0 ? (item.item_discount / item.qty).toFixed(2) : 0;

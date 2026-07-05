@@ -328,6 +328,16 @@ class RollbackController extends Controller
         }
 
         $this->adjustLedger($ret->party_type, $ret->customer_id, $ret->total_balance, 'add');
+
+        Voucher::where('narration', 'LIKE', '%Discount on Sale Return Posted: ' . $ret->invoice_no . '%')->delete();
+        $discountJVs = \App\Models\JournalVoucher::where('jvid', 'SR-DISC-' . $ret->invoice_no)->get();
+        foreach ($discountJVs as $jv) {
+            if ($ret->discount_account_id) {
+                $this->adjustAccount($ret->discount_account_id, $ret->discount_amount, 'add');
+            }
+            $jv->delete();
+        }
+
         $ret->update(['status' => 'Unposted']);
         return back()->with('success', "Sale Return #$invoiceNo set to Unposted.");
     }

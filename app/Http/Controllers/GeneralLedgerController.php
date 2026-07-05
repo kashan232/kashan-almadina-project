@@ -39,6 +39,17 @@ class GeneralLedgerController extends Controller
         return $modelClass::withoutGlobalScopes();
     }
 
+    private function voucherDiscountDescription($discAccId, string $fallback = 'Discount'): string
+    {
+        if (!$discAccId) {
+            return $fallback;
+        }
+
+        $acc = $this->ledgerQuery(Account::class)->find($discAccId);
+
+        return $acc ? ('Discount ; ' . $acc->title) : $fallback;
+    }
+
     public function index()
     {
         $heads = AccountHead::orderBy('name')->get();
@@ -357,6 +368,8 @@ class GeneralLedgerController extends Controller
                         continue;
                     }
 
+                    $ref = 'JV';
+                    $inv = $jv->jvid;
                     $desc = $jv->remarks ?? 'Journal Voucher';
                     
                     // Cleanup for Purchase-related JVs (if they somehow pass)
@@ -378,6 +391,33 @@ class GeneralLedgerController extends Controller
                                 $partyName = \Illuminate\Support\Facades\DB::table('customers')->where('id', $oppId)->value('customer_name');
                                 $desc = ucfirst($oppType) . ': ' . ($partyName ?: 'Unknown');
                             }
+                        }
+                    } elseif (str_starts_with($inv, 'SJ-DISC-')) {
+                        $ref = 'SJ';
+                        $inv = preg_replace('/^SJ-DISC-/', '', $inv);
+                        $otherIdx = $idx == 0 ? 1 : 0;
+                        $accId = $pIds[$otherIdx] ?? null;
+                        if ($accId) {
+                            $acc = $this->ledgerQuery(\App\Models\Account::class)->with('head')->find($accId);
+                            if ($acc) {
+                                $desc = 'Discount ; ' . $acc->title;
+                            }
+                        } else {
+                            $desc = 'Discount ; Sale';
+                        }
+                    } elseif (str_starts_with($inv, 'SR-DISC-')) {
+                        $ref = 'SRJ';
+                        $invRaw = preg_replace('/^SR-DISC-/', '', $inv);
+                        $inv = preg_replace('/[^0-9]/', '', substr($invRaw, strlen('SR-'))) ?: $invRaw;
+                        $otherIdx = $idx == 0 ? 1 : 0;
+                        $accId = $pIds[$otherIdx] ?? null;
+                        if ($accId) {
+                            $acc = $this->ledgerQuery(\App\Models\Account::class)->with('head')->find($accId);
+                            if ($acc) {
+                                $desc = 'Discount ; ' . $acc->title;
+                            }
+                        } else {
+                            $desc = 'Discount ; Sale Return';
                         }
                     }
 
@@ -443,7 +483,7 @@ class GeneralLedgerController extends Controller
                 'credit' => (float)$sr->sub_total2,
                 'priority' => 20
             ];
-            if ((float)$sr->discount_amount > 0) {
+            if ((float)$sr->discount_amount > 0 && !$sr->discount_account_id) {
                 $descDisc = 'Discount';
                 if ($sr->sale) {
                     $descDisc .= ' (SR ' . $sr->sale->invoice_no . ')';
@@ -472,6 +512,7 @@ class GeneralLedgerController extends Controller
             $amounts = json_decode($rv->amount, true) ?? [];
             $narrIds = json_decode($rv->narration_id, true) ?? [];
             $discounts = json_decode($rv->discount_value, true) ?? [];
+            $discAccIds = json_decode($rv->discount_account_id, true) ?? [];
 
             foreach ($accIds as $idx => $aid) {
                 $rowAmount = (float)($amounts[$idx] ?? 0);
@@ -523,7 +564,7 @@ class GeneralLedgerController extends Controller
                         'date' => $rv->entry_date ?: $rv->created_at,
                         'ref' => $ref,
                         'inv' => $inv,
-                        'desc' => "Discount",
+                        'desc' => $this->voucherDiscountDescription($discAccIds[$idx] ?? null),
                         'qty' => 0, 'debit' => 0, 'credit' => $rowDiscount,
                         'priority' => str_contains($rv->remarks ?? '', 'Auto-generated from Sale:') ? 12 : 61,
                         'sort_inv' => str_contains($rv->remarks ?? '', 'Auto-generated from Sale:') ? preg_replace('/[^0-9]/', '', $rv->remarks) : preg_replace('/[^0-9]/', '', $rv->rvid ?? '')
@@ -632,16 +673,25 @@ class GeneralLedgerController extends Controller
             $rvDateCol = $this->getDateColumn('receipts_vouchers', 'receipt_date');
             $rvs = $this->ledgerQuery(ReceiptsVoucher::class)->where(function($q) use ($id) {
                     $q->whereJsonContains('row_account_id', (string)$id)
-                      ->orWhereJsonContains('row_account_id', (int)$id);
+                      ->orWhereJsonContains('row_account_id', (int)$id)
+                      ->orWhereJsonContains('discount_account_id', (string)$id)
+                      ->orWhereJsonContains('discount_account_id', (int)$id);
                 })
                 ->where(DB::raw($rvDateCol), '>=', $date)->get();
             $rvSum = 0;
             foreach ($rvs as $rv) {
                 $accIds = json_decode($rv->row_account_id, true) ?? [];
                 $amounts = json_decode($rv->amount, true) ?? [];
+                $discAccIds = json_decode($rv->discount_account_id, true) ?? [];
+                $discounts = json_decode($rv->discount_value, true) ?? [];
                 foreach ($accIds as $idx => $aid) {
                     if ($aid == $id) {
                         $rvSum += (float)($amounts[$idx] ?? 0);
+                    }
+                }
+                foreach ($discAccIds as $idx => $daid) {
+                    if ($daid == $id) {
+                        $rvSum += (float)($discounts[$idx] ?? 0);
                     }
                 }
             }
@@ -650,16 +700,25 @@ class GeneralLedgerController extends Controller
             $pvDateCol = $this->getDateColumn('payment_vouchers', 'receipt_date');
             $pvs = $this->ledgerQuery(PaymentVoucher::class)->where(function($q) use ($id) {
                     $q->whereJsonContains('row_account_id', (string)$id)
-                      ->orWhereJsonContains('row_account_id', (int)$id);
+                      ->orWhereJsonContains('row_account_id', (int)$id)
+                      ->orWhereJsonContains('discount_account_id', (string)$id)
+                      ->orWhereJsonContains('discount_account_id', (int)$id);
                 })
                 ->where(DB::raw($pvDateCol), '>=', $date)->get();
             $pvSum = 0;
             foreach ($pvs as $pv) {
                 $accIds = json_decode($pv->row_account_id, true) ?? [];
                 $amounts = json_decode($pv->amount, true) ?? [];
+                $discAccIds = json_decode($pv->discount_account_id, true) ?? [];
+                $discounts = json_decode($pv->discount_value, true) ?? [];
                 foreach ($accIds as $idx => $aid) {
                     if ($aid == $id) {
                         $pvSum += (float)($amounts[$idx] ?? 0);
+                    }
+                }
+                foreach ($discAccIds as $idx => $daid) {
+                    if ($daid == $id) {
+                        $pvSum += (float)($discounts[$idx] ?? 0);
                     }
                 }
             }
@@ -958,7 +1017,9 @@ class GeneralLedgerController extends Controller
             $rvDateCol = $this->getDateColumn('receipts_vouchers', 'receipt_date');
             $rvs = $this->ledgerQuery(ReceiptsVoucher::class)->where(function($q) use ($id) {
                     $q->whereJsonContains('row_account_id', (string)$id)
-                      ->orWhereJsonContains('row_account_id', (int)$id);
+                      ->orWhereJsonContains('row_account_id', (int)$id)
+                      ->orWhereJsonContains('discount_account_id', (string)$id)
+                      ->orWhereJsonContains('discount_account_id', (int)$id);
                 })
                 ->whereIn('status', ['posted', 'Posted'])->whereBetween(DB::raw($rvDateCol), [$start, $end])->get();
             
@@ -966,6 +1027,8 @@ class GeneralLedgerController extends Controller
                 $accIds = json_decode($rv->row_account_id, true) ?? [];
                 $amounts = json_decode($rv->amount, true) ?? [];
                 $narrIds = json_decode($rv->narration_id, true) ?? [];
+                $discAccIds = json_decode($rv->discount_account_id, true) ?? [];
+                $discounts = json_decode($rv->discount_value, true) ?? [];
                 
                 // Get party name
                 $partyName = '';
@@ -1018,18 +1081,53 @@ class GeneralLedgerController extends Controller
                         ];
                     }
                 }
+
+                foreach ($discAccIds as $idx => $daid) {
+                    if ($daid != $id) {
+                        continue;
+                    }
+                    $rowDiscount = (float)($discounts[$idx] ?? 0);
+                    if ($rowDiscount <= 0) {
+                        continue;
+                    }
+
+                    $ref = 'RV';
+                    $inv = $rv->rvid;
+                    if (str_starts_with($rv->remarks ?? '', 'Auto-generated from Sale:')) {
+                        $ref = 'SJ';
+                        $inv = trim(str_replace('Auto-generated from Sale:', '', $rv->remarks));
+                    }
+
+                    $desc = $this->voucherDiscountDescription($daid);
+                    $desc = $partyName ? $desc . ' : ' . $partyName : $desc;
+
+                    $transactions[] = [
+                        'created_at' => $rv->created_at,
+                        'id' => $rv->id . '_discacc_' . $idx,
+                        'date' => $rv->entry_date ?: $rv->created_at,
+                        'ref' => $ref,
+                        'inv' => $inv,
+                        'desc' => $desc,
+                        'price' => 0, 'qty' => 0, 'debit' => $rowDiscount, 'credit' => 0,
+                        'priority' => 61
+                    ];
+                }
             }
             // Payments
             $pvDateCol = $this->getDateColumn('payment_vouchers', 'receipt_date');
             $pvs = $this->ledgerQuery(PaymentVoucher::class)->where(function($q) use ($id) {
                     $q->whereJsonContains('row_account_id', (string)$id)
-                      ->orWhereJsonContains('row_account_id', (int)$id);
+                      ->orWhereJsonContains('row_account_id', (int)$id)
+                      ->orWhereJsonContains('discount_account_id', (string)$id)
+                      ->orWhereJsonContains('discount_account_id', (int)$id);
                 })
                 ->whereIn('status', ['posted', 'Posted'])->whereBetween(DB::raw($pvDateCol), [$start, $end])->get();
             foreach($pvs as $pv) {
                 $accIds = json_decode($pv->row_account_id, true) ?? [];
                 $amounts = json_decode($pv->amount, true) ?? [];
                 $narrIds = json_decode($pv->narration_id, true) ?? [];
+                $discAccIds = json_decode($pv->discount_account_id, true) ?? [];
+                $discounts = json_decode($pv->discount_value, true) ?? [];
                 
                 // Get party name
                 $partyName = '';
@@ -1069,6 +1167,30 @@ class GeneralLedgerController extends Controller
                             'priority' => 60
                         ];
                     }
+                }
+
+                foreach ($discAccIds as $idx => $daid) {
+                    if ($daid != $id) {
+                        continue;
+                    }
+                    $rowDiscount = (float)($discounts[$idx] ?? 0);
+                    if ($rowDiscount <= 0) {
+                        continue;
+                    }
+
+                    $desc = $this->voucherDiscountDescription($daid);
+                    $desc = $partyName ? $desc . ' : ' . $partyName : $desc;
+
+                    $transactions[] = [
+                        'created_at' => $pv->created_at,
+                        'id' => $pv->id . '_discacc_' . $idx,
+                        'date' => $pv->entry_date ?: $pv->created_at,
+                        'ref' => 'PV',
+                        'inv' => $pv->pvid,
+                        'desc' => $desc,
+                        'price' => 0, 'qty' => 0, 'debit' => 0, 'credit' => $rowDiscount,
+                        'priority' => 61
+                    ];
                 }
             }
             // Incomes
@@ -1272,6 +1394,20 @@ class GeneralLedgerController extends Controller
                                 }
                             } else {
                                 $desc = 'Discount ; Sale';
+                            }
+                        } elseif (str_starts_with($inv, 'SR-DISC-')) {
+                            $ref = 'SRJ';
+                            $invRaw = preg_replace('/^SR-DISC-/', '', $inv);
+                            $inv = preg_replace('/[^0-9]/', '', substr($invRaw, strlen('SR-'))) ?: $invRaw;
+                            $otherIdx = $idx == 0 ? 1 : 0;
+                            $accId = $pIds[$otherIdx] ?? null;
+                            if ($accId) {
+                                $acc = $this->ledgerQuery(\App\Models\Account::class)->with('head')->find($accId);
+                                if ($acc) {
+                                    $desc = 'Discount ; ' . $acc->title;
+                                }
+                            } else {
+                                $desc = 'Discount ; Sale Return';
                             }
                         }
 
@@ -1556,6 +1692,7 @@ class GeneralLedgerController extends Controller
             $amounts = json_decode($pv->amount, true) ?? [];
             $narrIds = json_decode($pv->narration_id, true) ?? [];
             $discounts = json_decode($pv->discount_value, true) ?? [];
+            $discAccIds = json_decode($pv->discount_account_id, true) ?? [];
 
             foreach ($accIds as $idx => $aid) {
                 $rowAmount = (float)($amounts[$idx] ?? 0);
@@ -1593,7 +1730,7 @@ class GeneralLedgerController extends Controller
                         'date' => $pv->entry_date ?: $pv->created_at,
                         'ref' => 'PV',
                         'inv' => $pv->pvid,
-                        'desc' => 'Discount',
+                        'desc' => $this->voucherDiscountDescription($discAccIds[$idx] ?? null),
                         'price' => 0, 'qty' => 0, 'debit' => $rowDiscount, 'credit' => 0,
                         'priority' => 51
                     ];
@@ -1723,6 +1860,12 @@ class GeneralLedgerController extends Controller
                         $inv = preg_replace('/^SJ-DISC-/', '', $jv->jvid);
                         $priority = 12;
                     }
+                    if (str_starts_with($jv->jvid, 'SR-DISC-')) {
+                        $ref = 'SRJ';
+                        $invRaw = preg_replace('/^SR-DISC-/', '', $jv->jvid);
+                        $inv = preg_replace('/[^0-9]/', '', substr($invRaw, strlen('SR-'))) ?: $invRaw;
+                        $priority = 21;
+                    }
 
                     $priority = $priority ?? 60; // General JV
                     if (str_contains($jv->jvid, 'WHT')) $priority = 31;
@@ -1755,6 +1898,18 @@ class GeneralLedgerController extends Controller
                             $desc = 'Discount ; Sale';
                         }
                     }
+                    if (str_starts_with($jv->jvid, 'SR-DISC-')) {
+                        $otherIdx = $idx == 0 ? 1 : 0;
+                        $accId = $pIds[$otherIdx] ?? null;
+                        if ($accId) {
+                            $acc = $this->ledgerQuery(\App\Models\Account::class)->with('head')->find($accId);
+                            if ($acc) {
+                                $desc = 'Discount ; ' . $acc->title;
+                            }
+                        } else {
+                            $desc = 'Discount ; Sale Return';
+                        }
+                    }
 
                     $transactions[] = [
                         'created_at' => $jv->created_at,
@@ -1767,7 +1922,7 @@ class GeneralLedgerController extends Controller
                         'debit' => (float)($debits[$idx] ?? 0), 
                         'credit' => (float)($credits[$idx] ?? 0),
                         'priority' => $priority,
-                        'sort_inv' => ($ref === 'SJ') ? preg_replace('/[^0-9]/', '', (string) $inv) : null,
+                        'sort_inv' => ($ref === 'SJ' || $ref === 'SRJ') ? preg_replace('/[^0-9]/', '', (string) $inv) : null,
                     ];
                 }
             }
@@ -1970,7 +2125,7 @@ class GeneralLedgerController extends Controller
                     'priority' => 20 // SRJ after SJ
                 ];
             }
-            if ((float)$sr->discount_amount > 0) {
+            if ((float)$sr->discount_amount > 0 && !$sr->discount_account_id) {
                 $descDisc = 'Discount';
                 if ($originalInv) {
                     $descDisc .= ' (SR ' . $originalInv . ')';
@@ -2000,6 +2155,7 @@ class GeneralLedgerController extends Controller
             $amounts = json_decode($rv->amount, true) ?? [];
             $narrIds = json_decode($rv->narration_id, true) ?? [];
             $discounts = json_decode($rv->discount_value, true) ?? [];
+            $discAccIds = json_decode($rv->discount_account_id, true) ?? [];
 
             foreach ($accIds as $idx => $aid) {
                 $rowAmount = (float)($amounts[$idx] ?? 0);
@@ -2052,7 +2208,7 @@ class GeneralLedgerController extends Controller
                         'date' => $rv->entry_date ?: $rv->created_at,
                         'ref' => $ref,
                         'inv' => $inv,
-                        'desc' => "Discount",
+                        'desc' => $this->voucherDiscountDescription($discAccIds[$idx] ?? null),
                         'price' => 0, 'qty' => 0, 'debit' => 0, 'credit' => $rowDiscount,
                         'priority' => str_contains($rv->remarks ?? '', 'Auto-generated from Sale:') ? 12 : 61,
                         'sort_inv' => str_contains($rv->remarks ?? '', 'Auto-generated from Sale:') ? preg_replace('/[^0-9]/', '', $rv->remarks) : preg_replace('/[^0-9]/', '', $rv->rvid ?? '')

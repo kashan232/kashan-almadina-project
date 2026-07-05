@@ -10,6 +10,8 @@ use App\Models\VendorLedger;
 use App\Models\CustomerLedger;
 use App\Models\Account;
 use App\Models\Voucher;
+use App\Models\AccountHead;
+use App\Models\JournalVoucher;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -41,7 +43,8 @@ class SaleReturnController extends Controller
         $vendors = \App\Models\Vendor::all();
         $customers = \App\Models\Customer::all();
         $warehouses = \App\Models\Warehouse::all();
-        return view('admin_panel.sale_return.add_return', compact('nextInvoice', 'sales', 'vendors', 'customers', 'warehouses'));
+        $accountHeads = AccountHead::all();
+        return view('admin_panel.sale_return.add_return', compact('nextInvoice', 'sales', 'vendors', 'customers', 'warehouses', 'accountHeads'));
     }
 
     public function nextNumber()
@@ -103,6 +106,10 @@ class SaleReturnController extends Controller
                 'party_type' => $sale->partyType,
                 'customer_id' => $sale->customer_id,
                 'warehouse_id' => $warehouse_id,
+                'discount_head' => $sale->discount_head,
+                'discount_account_id' => $sale->discount_account_id,
+                'discount_amount' => $sale->discount_amount,
+                'discount_percent' => $sale->discount_percent,
             ]);
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 500);
@@ -156,6 +163,8 @@ class SaleReturnController extends Controller
                         'remarks'          => $request->remarks,
                         'sub_total2'       => $request->subtotal,
                         'discount_amount'  => $request->discount,
+                        'discount_head'    => $request->discount_head,
+                        'discount_account_id' => $request->discount_account_id,
                         'total_balance'    => $request->net_amount,
                         'status'           => 'Unposted',
                     ]);
@@ -226,8 +235,9 @@ class SaleReturnController extends Controller
         $vendors = \App\Models\Vendor::all();
         $customers = \App\Models\Customer::all();
         $warehouses = \App\Models\Warehouse::all();
+        $accountHeads = AccountHead::all();
         
-        return view('admin_panel.sale_return.add_return', compact('returnData', 'nextInvoice', 'sales', 'vendors', 'customers', 'warehouses'));
+        return view('admin_panel.sale_return.add_return', compact('returnData', 'nextInvoice', 'sales', 'vendors', 'customers', 'warehouses', 'accountHeads'));
     }
 
     public function show($id)
@@ -238,6 +248,7 @@ class SaleReturnController extends Controller
         $vendors = \App\Models\Vendor::all();
         $customers = \App\Models\Customer::all();
         $warehouses = \App\Models\Warehouse::all();
+        $accountHeads = AccountHead::all();
         $viewMode = true;
 
         return view('admin_panel.sale_return.add_return', compact(
@@ -247,6 +258,7 @@ class SaleReturnController extends Controller
             'vendors',
             'customers',
             'warehouses',
+            'accountHeads',
             'viewMode'
         ));
     }
@@ -296,6 +308,8 @@ class SaleReturnController extends Controller
                     'remarks'          => $request->remarks,
                     'sub_total2'       => $request->subtotal,
                     'discount_amount'  => $request->discount,
+                    'discount_head'    => $request->discount_head,
+                    'discount_account_id' => $request->discount_account_id,
                     'total_balance'    => $request->net_amount,
                 ]);
 
@@ -422,18 +436,39 @@ class SaleReturnController extends Controller
                     }
                 }
 
-                // 3. Vouchers for Discount if any
+                // 3. Order discount — same account heads as sale (JournalVoucher for GL)
                 if ($ret->discount_amount > 0) {
-                    Voucher::create([
-                        'voucher_type'  => 'Sale Return Discount',
-                        'date'          => now(),
-                        'sales_officer' => auth()->user()->name ?? 'Admin',
-                        'type'          => 'Credit',
-                        'person'        => $ret->customer_id,
-                        'sub_head'      => 'Sale Return Discount',
-                        'narration'     => 'Discount on Sale Return Posted: ' . $ret->invoice_no,
-                        'amount'        => $ret->discount_amount,
-                    ]);
+                    if ($ret->discount_account_id) {
+                        $discountAccount = Account::with('head')->find($ret->discount_account_id);
+                        if ($discountAccount) {
+                            $discountAccount->opening_balance = ($discountAccount->opening_balance ?? 0) - $ret->discount_amount;
+                            $discountAccount->save();
+
+                            JournalVoucher::create([
+                                'jvid' => 'SR-DISC-' . $ret->invoice_no,
+                                'entry_date' => $ret->entry_date ?: $ret->current_date,
+                                'status' => 'posted',
+                                'total_debit' => $ret->discount_amount,
+                                'total_credit' => $ret->discount_amount,
+                                'party_type' => json_encode([$pType, (string) $discountAccount->head_id]),
+                                'party_id' => json_encode([$pId, $discountAccount->id]),
+                                'debit' => json_encode([$ret->discount_amount, 0]),
+                                'credit' => json_encode([0, $ret->discount_amount]),
+                                'remarks' => 'Discount on Sale Return: ' . $ret->invoice_no . ' ; ' . ($discountAccount->head->name ?? 'Head') . ' ; ' . ($discountAccount->title ?? 'Subhead'),
+                            ]);
+                        }
+                    } else {
+                        Voucher::create([
+                            'voucher_type'  => 'Sale Return Discount',
+                            'date'          => now(),
+                            'sales_officer' => auth()->user()->name ?? 'Admin',
+                            'type'          => 'Credit',
+                            'person'        => $ret->customer_id,
+                            'sub_head'      => 'Sale Return Discount',
+                            'narration'     => 'Discount on Sale Return Posted: ' . $ret->invoice_no,
+                            'amount'        => $ret->discount_amount,
+                        ]);
+                    }
                 }
 
                 $ret->status = 'Posted';
