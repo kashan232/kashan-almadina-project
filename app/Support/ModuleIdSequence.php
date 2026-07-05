@@ -67,11 +67,50 @@ class ModuleIdSequence
 
     public static function peekNextSubHeadCode(): string
     {
-        return (string) self::peekNextId('accounts', self::SUB_HEAD_MIN, self::SUB_HEAD_MAX);
+        return (string) self::resolveNextSubHeadCode(false);
     }
 
     public static function nextSubHeadCode(): string
     {
-        return (string) self::nextId('accounts', self::SUB_HEAD_MIN, self::SUB_HEAD_MAX);
+        return (string) self::resolveNextSubHeadCode(true);
+    }
+
+    public static function resolveNextSubHeadCode(bool $lock = false): int
+    {
+        $resolver = function () {
+            $maxId = DB::table('accounts')
+                ->whereBetween('id', [self::SUB_HEAD_MIN, self::SUB_HEAD_MAX])
+                ->max('id');
+
+            $maxCode = DB::table('accounts')
+                ->whereRaw('account_code REGEXP "^[0-9]+$"')
+                ->whereRaw('CAST(account_code AS UNSIGNED) >= ?', [self::SUB_HEAD_MIN])
+                ->max(DB::raw('CAST(account_code AS UNSIGNED)'));
+
+            $next = self::SUB_HEAD_MIN;
+            if ($maxId) {
+                $next = max($next, (int) $maxId + 1);
+            }
+            if ($maxCode) {
+                $next = max($next, (int) $maxCode + 1);
+            }
+
+            while (
+                DB::table('accounts')->where('account_code', (string) $next)->exists()
+                || DB::table('accounts')->where('id', $next)->exists()
+            ) {
+                $next++;
+            }
+
+            if ($next > self::SUB_HEAD_MAX) {
+                throw new RuntimeException('No sub head codes left in configured range.');
+            }
+
+            return $next;
+        };
+
+        return $lock
+            ? DB::transaction(fn () => $resolver())
+            : $resolver();
     }
 }

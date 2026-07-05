@@ -2,6 +2,7 @@
 
 namespace App\Traits;
 
+use App\Models\Account;
 use App\Support\ModuleIdSequence;
 use Illuminate\Database\Eloquent\Model;
 
@@ -11,6 +12,16 @@ trait HasModuleIdSequence
     {
         static::creating(function (Model $model) {
             if ($model->getKey()) {
+                return;
+            }
+
+            if ($model instanceof Account && $model->shouldUseSubHeadCodeRange()) {
+                $nextId = \App\Support\ModuleIdSequence::resolveNextSubHeadCode(true);
+                $model->setAttribute($model->getKeyName(), $nextId);
+                if (empty($model->account_code)) {
+                    $model->account_code = (string) $nextId;
+                }
+
                 return;
             }
 

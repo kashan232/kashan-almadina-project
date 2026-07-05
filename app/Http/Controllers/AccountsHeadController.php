@@ -44,8 +44,7 @@ class AccountsHeadController extends Controller
             }
         }
 
-        $accounts = $query->get();
-        $heads = AccountHead::all();
+        $heads = AccountHead::orderBy('id')->get();
         $userGroups = UserGroup::all();
         $users = User::all();
         $nextHeadId = \App\Support\ModuleIdSequence::peekNextId(
@@ -54,7 +53,28 @@ class AccountsHeadController extends Controller
             \App\Support\ModuleIdSequence::ACCOUNT_HEAD_MAX
         );
 
-        return view('admin_panel.chart_of_accounts', compact('accounts', 'heads', 'nextHeadId', 'isAdmin', 'userGroups', 'users'));
+        $selectedHeadId = request('head_id');
+        if ($selectedHeadId === null && $heads->isNotEmpty()) {
+            $selectedHeadId = (string) $heads->first()->id;
+        }
+
+        if ($selectedHeadId !== null && $selectedHeadId !== '') {
+            $query->where('head_id', $selectedHeadId);
+        }
+
+        $accounts = $query->orderBy('account_code')->get();
+        $selectedHead = $heads->firstWhere('id', (int) $selectedHeadId);
+
+        return view('admin_panel.chart_of_accounts', compact(
+            'accounts',
+            'heads',
+            'nextHeadId',
+            'isAdmin',
+            'userGroups',
+            'users',
+            'selectedHeadId',
+            'selectedHead'
+        ));
     }
 
     public function getNextAccountCode($headId)
