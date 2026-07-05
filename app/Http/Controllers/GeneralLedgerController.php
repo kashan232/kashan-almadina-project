@@ -33,6 +33,12 @@ class GeneralLedgerController extends Controller
         return $cache[$table];
     }
 
+    /** Ledger report shows complete history; group scope must not hide rows or account labels. */
+    private function ledgerQuery(string $modelClass)
+    {
+        return $modelClass::withoutGlobalScopes();
+    }
+
     public function index()
     {
         $heads = AccountHead::orderBy('name')->get();
@@ -170,11 +176,11 @@ class GeneralLedgerController extends Controller
         }
 
         if ($type == 'account') {
-            $account_info = Account::with('head')->findOrFail($id);
+            $account_info = $this->ledgerQuery(Account::class)->with('head')->findOrFail($id);
         } elseif ($type == 'customer') {
-            $account_info = Customer::findOrFail($id);
+            $account_info = $this->ledgerQuery(Customer::class)->findOrFail($id);
         } else {
-            $account_info = Vendor::findOrFail($id);
+            $account_info = $this->ledgerQuery(Vendor::class)->findOrFail($id);
         }
 
         $openingBalance = $this->calculateOpeningBalance($type, $id, $startDate);
@@ -200,7 +206,7 @@ class GeneralLedgerController extends Controller
 
         // 1. Sales (SJ) - Aggregate
         $salesDateCol = $this->getDateColumn('sales');
-        $sales = Sale::where('customer_id', $id)->whereIn('partyType', $typeArray)
+        $sales = $this->ledgerQuery(Sale::class)->where('customer_id', $id)->whereIn('partyType', $typeArray)
             ->whereBetween(DB::raw($salesDateCol), [$start, $end])
             ->get();
         foreach ($sales as $sale) {
@@ -221,7 +227,7 @@ class GeneralLedgerController extends Controller
 
         // 2. Purchase Returns (PRJ) - Aggregate
         $prDateCol = $this->getDateColumn('purchase_returns', 'current_date');
-        $pReturns = PurchaseReturn::where(function($q) use ($id, $type, $class) {
+        $pReturns = $this->ledgerQuery(PurchaseReturn::class)->where(function($q) use ($id, $type, $class) {
                 $q->where('vendor_id', $id)->orWhere(function($q2) use ($id, $class) {
                     $q2->where('purchasable_id', $id)->where('purchasable_type', $class);
                 });
@@ -244,7 +250,7 @@ class GeneralLedgerController extends Controller
 
         // 3. Payments (PV)
         $pvDateCol = $this->getDateColumn('payment_vouchers', 'receipt_date');
-        $payments = PaymentVoucher::where('party_id', $id)->whereIn('type', $typeArray)
+        $payments = $this->ledgerQuery(PaymentVoucher::class)->where('party_id', $id)->whereIn('type', $typeArray)
             ->whereIn('status', ['posted', 'Posted'])->whereBetween(DB::raw($pvDateCol), [$start, $end])->get();
         foreach ($payments as $pv) {
             $transactions[] = [
@@ -260,7 +266,7 @@ class GeneralLedgerController extends Controller
 
         // 3.1 Expenses (EV) - Credit
         $evDateCol = $this->getDateColumn('expense_vouchers');
-        $expenses = \App\Models\ExpenseVoucher::where('party_id', $id)->whereIn('type', $typeArray)
+        $expenses = $this->ledgerQuery(\App\Models\ExpenseVoucher::class)->where('party_id', $id)->whereIn('type', $typeArray)
             ->whereIn('status', ['posted', 'Posted'])->whereBetween(DB::raw($evDateCol), [$start, $end])->get();
         foreach ($expenses as $ev) {
             $accIds = json_decode($ev->row_account_id, true) ?? [];
@@ -333,7 +339,7 @@ class GeneralLedgerController extends Controller
 
         // 4. JV
         $jvDateCol = $this->getDateColumn('journal_vouchers');
-        $jvs = JournalVoucher::where(function($q) use ($id) {
+        $jvs = $this->ledgerQuery(JournalVoucher::class)->where(function($q) use ($id) {
                 $q->whereJsonContains('party_id', (string)$id)
                   ->orWhereJsonContains('party_id', (int)$id);
             })
@@ -393,7 +399,7 @@ class GeneralLedgerController extends Controller
 
         // 5. Purchases (PJ) - Aggregate
         $pjDateCol = $this->getDateColumn('purchases', 'current_date');
-        $purchases = Purchase::where(function($q) use ($id, $type, $class) {
+        $purchases = $this->ledgerQuery(Purchase::class)->where(function($q) use ($id, $type, $class) {
                 $q->where('vendor_id', $id)->orWhere(function($q2) use ($id, $class) {
                     $q2->where('purchasable_id', $id)->where('purchasable_type', $class);
                 });
@@ -417,7 +423,7 @@ class GeneralLedgerController extends Controller
 
         // 6. Sale Returns (SRJ) - Aggregate
         $srDateCol = $this->getDateColumn('sale_returns', 'current_date');
-        $sReturns = SaleReturn::with('sale')->where('customer_id', $id)->whereIn('party_type', $typeArray)
+        $sReturns = $this->ledgerQuery(SaleReturn::class)->with('sale')->where('customer_id', $id)->whereIn('party_type', $typeArray)
             ->whereIn('status', ['posted', 'Posted'])->whereBetween(DB::raw($srDateCol), [$start, $end])
             ->get();
         foreach ($sReturns as $sr) {
@@ -459,7 +465,7 @@ class GeneralLedgerController extends Controller
 
         // 7. Receipts (RV)
         $rvDateCol = $this->getDateColumn('receipts_vouchers', 'receipt_date');
-        $receipts = ReceiptsVoucher::where('party_id', $id)->whereIn('type', $typeArray)
+        $receipts = $this->ledgerQuery(ReceiptsVoucher::class)->where('party_id', $id)->whereIn('type', $typeArray)
             ->whereIn('status', ['posted', 'Posted'])->whereBetween(DB::raw($rvDateCol), [$start, $end])->get();
         foreach ($receipts as $rv) {
             $accIds = json_decode($rv->row_account_id, true) ?? [];
@@ -482,6 +488,8 @@ class GeneralLedgerController extends Controller
                     }
                 }
                 $descParts = [];
+                if ($accName) $descParts[] = $accName;
+                if ($narrText) $descParts[] = $narrText;
                 if (!empty($rv->remarks) && !str_starts_with($rv->remarks, 'Auto-generated from Sale:')) {
                     $descParts[] = $rv->remarks;
                 }
@@ -526,7 +534,7 @@ class GeneralLedgerController extends Controller
 
         // 7.1 Incomes (IV)
         $ivDateCol = $this->getDateColumn('income_vouchers');
-        $incomes = \App\Models\IncomeVoucher::where(function($q) use ($id) {
+        $incomes = $this->ledgerQuery(\App\Models\IncomeVoucher::class)->where(function($q) use ($id) {
                 $q->whereJsonContains('party_id', (string)$id)
                   ->orWhereJsonContains('party_id', (int)$id);
             })
@@ -613,7 +621,7 @@ class GeneralLedgerController extends Controller
         $balance = 0;
         
         if ($type == 'account') {
-            $account = Account::find($id);
+            $account = $this->ledgerQuery(Account::class)->find($id);
             if (!$account) return 0;
             $balance = (float)($account->opening_balance ?? 0);
             
@@ -622,7 +630,7 @@ class GeneralLedgerController extends Controller
             
             // RVs (Debit increases balance)
             $rvDateCol = $this->getDateColumn('receipts_vouchers', 'receipt_date');
-            $rvs = ReceiptsVoucher::where(function($q) use ($id) {
+            $rvs = $this->ledgerQuery(ReceiptsVoucher::class)->where(function($q) use ($id) {
                     $q->whereJsonContains('row_account_id', (string)$id)
                       ->orWhereJsonContains('row_account_id', (int)$id);
                 })
@@ -640,7 +648,7 @@ class GeneralLedgerController extends Controller
             
             // PVs (Credit decreases balance)
             $pvDateCol = $this->getDateColumn('payment_vouchers', 'receipt_date');
-            $pvs = PaymentVoucher::where(function($q) use ($id) {
+            $pvs = $this->ledgerQuery(PaymentVoucher::class)->where(function($q) use ($id) {
                     $q->whereJsonContains('row_account_id', (string)$id)
                       ->orWhereJsonContains('row_account_id', (int)$id);
                 })
@@ -658,7 +666,7 @@ class GeneralLedgerController extends Controller
                 
             // IVs
             $ivDateCol = $this->getDateColumn('income_vouchers');
-            $ivs = \App\Models\IncomeVoucher::where(function($q) use ($id) {
+            $ivs = $this->ledgerQuery(\App\Models\IncomeVoucher::class)->where(function($q) use ($id) {
                     $q->where('account_id', $id)
                       ->orWhereJsonContains('party_id', (string)$id)
                       ->orWhereJsonContains('party_id', (int)$id);
@@ -681,7 +689,7 @@ class GeneralLedgerController extends Controller
 
             // EVs
             $evDateCol = $this->getDateColumn('expense_vouchers');
-            $evs = \App\Models\ExpenseVoucher::where(function($q) use ($id) {
+            $evs = $this->ledgerQuery(\App\Models\ExpenseVoucher::class)->where(function($q) use ($id) {
                     $q->where('party_id', $id)
                       ->orWhereJsonContains('row_account_id', (string)$id)
                       ->orWhereJsonContains('row_account_id', (int)$id);
@@ -703,7 +711,7 @@ class GeneralLedgerController extends Controller
 
             // JVs
             $jvDateCol = $this->getDateColumn('journal_vouchers');
-            $jvs = JournalVoucher::where(function($q) use ($id) {
+            $jvs = $this->ledgerQuery(JournalVoucher::class)->where(function($q) use ($id) {
                     $q->whereJsonContains('party_id', (string)$id)
                       ->orWhereJsonContains('party_id', (int)$id);
                 })
@@ -724,7 +732,9 @@ class GeneralLedgerController extends Controller
         }
 
         // For Party (Customer/Vendor)
-        $party = ($type == 'customer') ? Customer::find($id) : Vendor::find($id);
+        $party = ($type == 'customer')
+            ? $this->ledgerQuery(Customer::class)->find($id)
+            : $this->ledgerQuery(Vendor::class)->find($id);
         if (!$party) return 0;
         
         $balance = (float)($party->opening_balance ?? 0);
@@ -732,12 +742,12 @@ class GeneralLedgerController extends Controller
 
         // 1. Sales (Debit) - Use sub_total2 (Gross net of line discounts)
         $salesDateCol = $this->getDateColumn('sales');
-        $sales = (float)Sale::where('customer_id', $id)->whereIn('partyType', $typeArray)
+        $sales = (float)$this->ledgerQuery(Sale::class)->where('customer_id', $id)->whereIn('partyType', $typeArray)
             ->where(DB::raw($salesDateCol), '<', $date)->sum('sub_total2');
         
         // 2. Purchase Returns (Debit)
         $prDateCol = $this->getDateColumn('purchase_returns', 'current_date');
-        $pReturns = (float)PurchaseReturn::where(function($q) use ($id, $type, $class) {
+        $pReturns = (float)$this->ledgerQuery(PurchaseReturn::class)->where(function($q) use ($id, $type, $class) {
                 if ($type == 'vendor') {
                     $q->where(function($q3) use ($id) {
                         $q3->where('vendor_id', $id)->where(function($q4) {
@@ -754,7 +764,7 @@ class GeneralLedgerController extends Controller
 
         // 3. Payments (Debit)
         $pvDateCol = $this->getDateColumn('payment_vouchers', 'receipt_date');
-        $payments = (float)PaymentVoucher::where('party_id', $id)->whereIn('type', $typeArray)
+        $payments = (float)$this->ledgerQuery(PaymentVoucher::class)->where('party_id', $id)->whereIn('type', $typeArray)
             ->whereIn('status', ['posted', 'Posted'])
             ->where(DB::raw($pvDateCol), '<', $date)->sum('total_amount');
 
@@ -768,7 +778,7 @@ class GeneralLedgerController extends Controller
 
         // 4. JV Debits
         $jvDateCol = $this->getDateColumn('journal_vouchers');
-        $jvs = JournalVoucher::where(function($q) use ($id) {
+        $jvs = $this->ledgerQuery(JournalVoucher::class)->where(function($q) use ($id) {
                 $q->whereJsonContains('party_id', (string)$id)
                   ->orWhereJsonContains('party_id', (int)$id);
             })
@@ -791,7 +801,7 @@ class GeneralLedgerController extends Controller
 
         // 4.5 AV Debits
         $avDateCol = $this->getDateColumn('adjustment_vouchers');
-        $avsDebitList = \App\Models\AdjustmentVoucher::where('party_id', $id)
+        $avsDebitList = $this->ledgerQuery(\App\Models\AdjustmentVoucher::class)->where('party_id', $id)
             ->whereIn('party_type', $typeArray)
             ->whereIn('status', ['posted', 'Posted'])
             ->where(DB::raw($avDateCol), '<', $date)->get();
@@ -802,7 +812,7 @@ class GeneralLedgerController extends Controller
 
         // 5. Purchases (Credit)
         $pjDateCol = $this->getDateColumn('purchases', 'current_date');
-        $purchases = (float)Purchase::where(function($q) use ($id, $type, $class) {
+        $purchases = (float)$this->ledgerQuery(Purchase::class)->where(function($q) use ($id, $type, $class) {
                 if ($type == 'vendor') {
                     $q->where(function($q3) use ($id) {
                         $q3->where('vendor_id', $id)->where(function($q4) {
@@ -819,13 +829,13 @@ class GeneralLedgerController extends Controller
 
         // 6. Sale Returns (Credit)
         $srDateCol = $this->getDateColumn('sale_returns', 'current_date');
-        $sReturns = (float)SaleReturn::where('customer_id', $id)->whereIn('party_type', $typeArray)
+        $sReturns = (float)$this->ledgerQuery(SaleReturn::class)->where('customer_id', $id)->whereIn('party_type', $typeArray)
             ->whereIn('status', ['posted', 'Posted'])
             ->where(DB::raw($srDateCol), '<', $date)->sum('total_balance');
 
         // 7. Receipts (Credit)
         $rvDateCol = $this->getDateColumn('receipts_vouchers', 'receipt_date');
-        $rvsList = ReceiptsVoucher::where('party_id', $id)->whereIn('type', $typeArray)
+        $rvsList = $this->ledgerQuery(ReceiptsVoucher::class)->where('party_id', $id)->whereIn('type', $typeArray)
             ->whereIn('status', ['posted', 'Posted'])
             ->where(DB::raw($rvDateCol), '<', $date)->get();
         $receipts = 0;
@@ -841,7 +851,7 @@ class GeneralLedgerController extends Controller
         
         // 7.1 Income (Debit)
         $ivDateCol = $this->getDateColumn('income_vouchers');
-        $ivList = \App\Models\IncomeVoucher::where(function($q) use ($id) {
+        $ivList = $this->ledgerQuery(\App\Models\IncomeVoucher::class)->where(function($q) use ($id) {
                 $q->whereJsonContains('party_id', (string)$id)
                   ->orWhereJsonContains('party_id', (int)$id);
             })
@@ -866,7 +876,7 @@ class GeneralLedgerController extends Controller
 
         // 8. JV Credits
         $jvDateCol = $this->getDateColumn('journal_vouchers');
-        $jvs = JournalVoucher::where(function($q) use ($id) {
+        $jvs = $this->ledgerQuery(JournalVoucher::class)->where(function($q) use ($id) {
                 $q->whereJsonContains('party_id', (string)$id)
                   ->orWhereJsonContains('party_id', (int)$id);
             })
@@ -889,7 +899,7 @@ class GeneralLedgerController extends Controller
 
         // 8.5 AV Credits
         $avDateCol = $this->getDateColumn('adjustment_vouchers');
-        $avsCreditList = \App\Models\AdjustmentVoucher::where(function($q) use ($id) {
+        $avsCreditList = $this->ledgerQuery(\App\Models\AdjustmentVoucher::class)->where(function($q) use ($id) {
                 $q->whereJsonContains('account_id', (string)$id)
                   ->orWhereJsonContains('account_id', (int)$id);
             })->whereIn('status', ['posted', 'Posted'])->where(DB::raw($avDateCol), '<', $date)->get();
@@ -907,13 +917,13 @@ class GeneralLedgerController extends Controller
 
         // 9. Expenses (Credit)
         $evDateCol = $this->getDateColumn('expense_vouchers');
-        $expenses = (float)\App\Models\ExpenseVoucher::where('party_id', $id)->whereIn('type', $typeArray)
+        $expenses = (float)$this->ledgerQuery(\App\Models\ExpenseVoucher::class)->where('party_id', $id)->whereIn('type', $typeArray)
             ->whereIn('status', ['posted', 'Posted'])
             ->where(DB::raw($evDateCol), '<', $date)->sum('total_amount');
 
         // 10. Customer Claims
         $claimDateCol = $this->getDateColumn('customer_claims');
-        $claims = \App\Models\CustomerClaim::where('party_id', $id)
+        $claims = $this->ledgerQuery(\App\Models\CustomerClaim::class)->where('party_id', $id)
             ->whereIn('party_type', $typeArray)
             ->where('status', 'Posted')
             ->where(DB::raw($claimDateCol), '<', $date)->get();
@@ -929,7 +939,7 @@ class GeneralLedgerController extends Controller
 
         // 11. Claim Credit Notes (CIR)
         $crnDateCol = $this->getDateColumn('claim_credit_notes');
-        $crNotes = (float)\App\Models\ClaimCreditNote::where('party_id', $id)
+        $crNotes = (float)$this->ledgerQuery(\App\Models\ClaimCreditNote::class)->where('party_id', $id)
             ->where('party_type', $type == 'customer' ? 'customer' : 'vendor')
             ->where('status', 'Posted')
             ->where(DB::raw($crnDateCol), '<', $date)->sum('net_total');
@@ -946,7 +956,7 @@ class GeneralLedgerController extends Controller
         if ($type == 'account') {
             // Receipts
             $rvDateCol = $this->getDateColumn('receipts_vouchers', 'receipt_date');
-            $rvs = ReceiptsVoucher::where(function($q) use ($id) {
+            $rvs = $this->ledgerQuery(ReceiptsVoucher::class)->where(function($q) use ($id) {
                     $q->whereJsonContains('row_account_id', (string)$id)
                       ->orWhereJsonContains('row_account_id', (int)$id);
                 })
@@ -1011,7 +1021,7 @@ class GeneralLedgerController extends Controller
             }
             // Payments
             $pvDateCol = $this->getDateColumn('payment_vouchers', 'receipt_date');
-            $pvs = PaymentVoucher::where(function($q) use ($id) {
+            $pvs = $this->ledgerQuery(PaymentVoucher::class)->where(function($q) use ($id) {
                     $q->whereJsonContains('row_account_id', (string)$id)
                       ->orWhereJsonContains('row_account_id', (int)$id);
                 })
@@ -1063,7 +1073,7 @@ class GeneralLedgerController extends Controller
             }
             // Incomes
             $ivDateCol = $this->getDateColumn('income_vouchers');
-            $ivs = \App\Models\IncomeVoucher::where(function($q) use ($id) {
+            $ivs = $this->ledgerQuery(\App\Models\IncomeVoucher::class)->where(function($q) use ($id) {
                     $q->where('account_id', $id)
                       ->orWhereJsonContains('party_id', (string)$id)
                       ->orWhereJsonContains('party_id', (int)$id);
@@ -1155,7 +1165,7 @@ class GeneralLedgerController extends Controller
 
             // Expenses
             $evDateCol = $this->getDateColumn('expense_vouchers');
-            $evs = \App\Models\ExpenseVoucher::where(function($q) use ($id) {
+            $evs = $this->ledgerQuery(\App\Models\ExpenseVoucher::class)->where(function($q) use ($id) {
                     $q->where('party_id', $id)
                       ->orWhereJsonContains('row_account_id', (string)$id)
                       ->orWhereJsonContains('row_account_id', (int)$id);
@@ -1215,7 +1225,7 @@ class GeneralLedgerController extends Controller
             }
             // JVs
             $jvDateCol = $this->getDateColumn('journal_vouchers');
-            $jvs = JournalVoucher::where(function($q) use ($id) {
+            $jvs = $this->ledgerQuery(JournalVoucher::class)->where(function($q) use ($id) {
                     $q->whereJsonContains('party_id', (string)$id)
                       ->orWhereJsonContains('party_id', (int)$id);
                 })
@@ -1250,6 +1260,19 @@ class GeneralLedgerController extends Controller
                                     $desc = ucfirst($oppType) . ': ' . ($partyName ?: 'Unknown');
                                 }
                             }
+                        } elseif (str_starts_with($inv, 'SJ-DISC-')) {
+                            $ref = 'SJ';
+                            $inv = preg_replace('/^SJ-DISC-/', '', $inv);
+                            $otherIdx = $idx == 0 ? 1 : 0;
+                            $accId = $pIds[$otherIdx] ?? null;
+                            if ($accId) {
+                                $acc = $this->ledgerQuery(\App\Models\Account::class)->with('head')->find($accId);
+                                if ($acc) {
+                                    $desc = 'Discount ; ' . $acc->title;
+                                }
+                            } else {
+                                $desc = 'Discount ; Sale';
+                            }
                         }
 
                         $transactions[] = [
@@ -1270,7 +1293,7 @@ class GeneralLedgerController extends Controller
 
             // AVs
             $avDateCol = $this->getDateColumn('adjustment_vouchers');
-            $avs = \App\Models\AdjustmentVoucher::whereIn('status', ['posted', 'Posted'])->whereBetween(DB::raw($avDateCol), [$start, $end])
+            $avs = $this->ledgerQuery(\App\Models\AdjustmentVoucher::class)->whereIn('status', ['posted', 'Posted'])->whereBetween(DB::raw($avDateCol), [$start, $end])
                 ->where(function($q) use ($id) {
                     $q->where('party_id', $id)
                       ->orWhereJsonContains('account_id', (string)$id)
@@ -1410,7 +1433,7 @@ class GeneralLedgerController extends Controller
 
         // 1. Sales (SJ) - Debit
         $salesDateCol = $this->getDateColumn('sales');
-        $sales = Sale::where('customer_id', $id)->whereIn('partyType', $typeArray)
+        $sales = $this->ledgerQuery(Sale::class)->where('customer_id', $id)->whereIn('partyType', $typeArray)
             ->whereBetween(DB::raw($salesDateCol), [$start, $end])
             ->with('items.product.brandRelation')->get();
         foreach ($sales as $sale) {
@@ -1442,7 +1465,7 @@ class GeneralLedgerController extends Controller
 
         // 2. Purchase Returns (PRJ) - Debit
         $prDateCol = $this->getDateColumn('purchase_returns', 'current_date');
-        $pReturns = PurchaseReturn::where(function($q) use ($id, $type, $class) {
+        $pReturns = $this->ledgerQuery(PurchaseReturn::class)->where(function($q) use ($id, $type, $class) {
                 if ($type == 'vendor') {
                     $q->where(function($q3) use ($id) {
                         $q3->where('vendor_id', $id)->where(function($q4) {
@@ -1483,12 +1506,12 @@ class GeneralLedgerController extends Controller
             if ($pr->wht > 0) {
                 $whtHeadName = 'WHT Deduction (Tax)';
                 if ($pr->wht_account_id) {
-                    $whtAcc = \App\Models\Account::find($pr->wht_account_id);
+                    $whtAcc = $this->ledgerQuery(\App\Models\Account::class)->find($pr->wht_account_id);
                     if ($whtAcc) $whtHeadName = $whtAcc->title;
                 } elseif ($pr->purchase_id) {
-                    $purchase = \App\Models\Purchase::find($pr->purchase_id);
+                    $purchase = $this->ledgerQuery(\App\Models\Purchase::class)->find($pr->purchase_id);
                     if ($purchase && $purchase->wht_account_id) {
-                        $whtAcc = \App\Models\Account::find($purchase->wht_account_id);
+                        $whtAcc = $this->ledgerQuery(\App\Models\Account::class)->find($purchase->wht_account_id);
                         if ($whtAcc) $whtHeadName = $whtAcc->title;
                     }
                 }
@@ -1526,7 +1549,7 @@ class GeneralLedgerController extends Controller
 
         // 3. Payments (PV) - Debit
         $pvDateCol = $this->getDateColumn('payment_vouchers', 'receipt_date');
-        $payments = PaymentVoucher::where('party_id', $id)->whereIn('type', $typeArray)
+        $payments = $this->ledgerQuery(PaymentVoucher::class)->where('party_id', $id)->whereIn('type', $typeArray)
             ->whereIn('status', ['posted', 'Posted'])->whereBetween(DB::raw($pvDateCol), [$start, $end])->get();
         foreach ($payments as $pv) {
             $accIds = json_decode($pv->row_account_id, true) ?? [];
@@ -1580,7 +1603,7 @@ class GeneralLedgerController extends Controller
 
         // 3.1 Expenses (EV) - Credit
         $evDateCol = $this->getDateColumn('expense_vouchers');
-        $expenses = \App\Models\ExpenseVoucher::where('party_id', $id)->whereIn('type', $typeArray)
+        $expenses = $this->ledgerQuery(\App\Models\ExpenseVoucher::class)->where('party_id', $id)->whereIn('type', $typeArray)
             ->whereIn('status', ['posted', 'Posted'])->whereBetween(DB::raw($evDateCol), [$start, $end])->get();
         foreach ($expenses as $ev) {
             $accIds = json_decode($ev->row_account_id, true) ?? [];
@@ -1637,11 +1660,11 @@ class GeneralLedgerController extends Controller
                 $ref = 'SJ';
                 $inv = trim(str_replace('Discount on Sale:', '', $v->narration));
                 
-                $sale = \App\Models\Sale::where('invoice_no', $inv)->first();
+                $sale = $this->ledgerQuery(\App\Models\Sale::class)->where('invoice_no', $inv)->first();
                 if ($sale && $sale->discount_account_id) {
-                    $acc = \App\Models\Account::with('head')->find($sale->discount_account_id);
+                    $acc = $this->ledgerQuery(\App\Models\Account::class)->with('head')->find($sale->discount_account_id);
                     if ($acc) {
-                        $desc = 'Discount ; ' . ($acc->head->name ?? '') . ' ; ' . $acc->title;
+                        $desc = 'Discount ; ' . $acc->title;
                     }
                 } else {
                     $desc = 'Discount ; Sale';
@@ -1665,7 +1688,7 @@ class GeneralLedgerController extends Controller
 
         // 4. JV (JV) - Debit/Credit
         $jvDateCol = $this->getDateColumn('journal_vouchers');
-        $jvs = JournalVoucher::where(function($q) use ($id) {
+        $jvs = $this->ledgerQuery(JournalVoucher::class)->where(function($q) use ($id) {
                 $q->whereJsonContains('party_id', (string)$id)
                   ->orWhereJsonContains('party_id', (int)$id);
             })
@@ -1694,7 +1717,14 @@ class GeneralLedgerController extends Controller
                         $inv = preg_replace('/^PJ-[A-Z]+-/', '', $inv);
                     }
 
-                    $priority = 60; // General JV
+                    // Sale discount JV (e.g. SJ-DISC-101 -> SJ 101), same as allocation display
+                    if (str_starts_with($jv->jvid, 'SJ-DISC-')) {
+                        $ref = 'SJ';
+                        $inv = preg_replace('/^SJ-DISC-/', '', $jv->jvid);
+                        $priority = 12;
+                    }
+
+                    $priority = $priority ?? 60; // General JV
                     if (str_contains($jv->jvid, 'WHT')) $priority = 31;
                     if (str_contains($jv->jvid, 'ALLOC')) $priority = 32;
 
@@ -1717,9 +1747,9 @@ class GeneralLedgerController extends Controller
                         $otherIdx = $idx == 0 ? 1 : 0;
                         $accId = $pIds[$otherIdx] ?? null;
                         if ($accId) {
-                            $acc = \App\Models\Account::with('head')->find($accId);
+                            $acc = $this->ledgerQuery(\App\Models\Account::class)->with('head')->find($accId);
                             if ($acc) {
-                                $desc = 'Discount ; ' . ($acc->head->name ?? '') . ' ; ' . $acc->title;
+                                $desc = 'Discount ; ' . $acc->title;
                             }
                         } else {
                             $desc = 'Discount ; Sale';
@@ -1736,7 +1766,8 @@ class GeneralLedgerController extends Controller
                         'price' => 0, 'qty' => 0, 
                         'debit' => (float)($debits[$idx] ?? 0), 
                         'credit' => (float)($credits[$idx] ?? 0),
-                        'priority' => $priority
+                        'priority' => $priority,
+                        'sort_inv' => ($ref === 'SJ') ? preg_replace('/[^0-9]/', '', (string) $inv) : null,
                     ];
                 }
             }
@@ -1744,7 +1775,7 @@ class GeneralLedgerController extends Controller
 
         // 4.5 AV (Adjustment Voucher)
         $avDateCol = $this->getDateColumn('adjustment_vouchers');
-        $avs = \App\Models\AdjustmentVoucher::whereIn('status', ['posted', 'Posted'])
+        $avs = $this->ledgerQuery(\App\Models\AdjustmentVoucher::class)->whereIn('status', ['posted', 'Posted'])
             ->whereBetween(DB::raw($avDateCol), [$start, $end])
             ->where(function($q) use ($id, $typeArray) {
                 $q->where(function($q1) use ($id, $typeArray) {
@@ -1862,7 +1893,7 @@ class GeneralLedgerController extends Controller
 
         // 5. Purchases (PJ) - Credit
         $pjDateCol = $this->getDateColumn('purchases', 'current_date');
-        $purchases = Purchase::where(function($q) use ($id, $type, $class) {
+        $purchases = $this->ledgerQuery(Purchase::class)->where(function($q) use ($id, $type, $class) {
                 if ($type == 'vendor') {
                     $q->where(function($q3) use ($id) {
                         $q3->where('vendor_id', $id)->where(function($q4) {
@@ -1909,7 +1940,7 @@ class GeneralLedgerController extends Controller
 
         // 6. Sale Returns (SRJ) - Details
         $srDateCol = $this->getDateColumn('sale_returns', 'current_date');
-        $sReturns = SaleReturn::with(['items.product.brandRelation', 'sale'])->where('customer_id', $id)->whereIn('party_type', $typeArray)
+        $sReturns = $this->ledgerQuery(SaleReturn::class)->with(['items.product.brandRelation', 'sale'])->where('customer_id', $id)->whereIn('party_type', $typeArray)
             ->whereIn('status', ['posted', 'Posted'])->whereBetween(DB::raw($srDateCol), [$start, $end])
             ->get();
         foreach ($sReturns as $sr) {
@@ -1962,7 +1993,7 @@ class GeneralLedgerController extends Controller
 
         // 7. Receipts (RV) - Credit
         $rvDateCol = $this->getDateColumn('receipts_vouchers', 'receipt_date');
-        $receipts = ReceiptsVoucher::where('party_id', $id)->whereIn('type', $typeArray)
+        $receipts = $this->ledgerQuery(ReceiptsVoucher::class)->where('party_id', $id)->whereIn('type', $typeArray)
             ->whereIn('status', ['posted', 'Posted'])->whereBetween(DB::raw($rvDateCol), [$start, $end])->get();
         foreach ($receipts as $rv) {
             $accIds = json_decode($rv->row_account_id, true) ?? [];
@@ -1986,11 +2017,12 @@ class GeneralLedgerController extends Controller
                 }
                 
                 $descParts = [];
+                if ($accName) $descParts[] = $accName;
                 if ($narrText) $descParts[] = $narrText;
                 if (!empty($rv->remarks) && !str_starts_with($rv->remarks, 'Auto-generated from Sale:')) {
                     $descParts[] = $rv->remarks;
                 }
-                $desc = !empty($descParts) ? implode(' : ', $descParts) : 'Receipt Voucher';
+                $desc = !empty($descParts) ? implode(' ; ', $descParts) : 'Receipt Voucher';
 
                 $ref = 'RV';
                 $inv = $rv->rvid;
@@ -2031,7 +2063,7 @@ class GeneralLedgerController extends Controller
 
         // 7.1 Incomes (IV) - Debit
         $ivDateCol = $this->getDateColumn('income_vouchers');
-        $incomes = \App\Models\IncomeVoucher::where(function($q) use ($id, $typeArray) {
+        $incomes = $this->ledgerQuery(\App\Models\IncomeVoucher::class)->where(function($q) use ($id, $typeArray) {
                 $q->where(function($q2) use ($id, $typeArray) {
                     $q2->where('account_id', $id)
                        ->whereIn('account_head', $typeArray);
@@ -2137,7 +2169,7 @@ class GeneralLedgerController extends Controller
 
         // 8. Customer Claims
         $claimDateCol = $this->getDateColumn('customer_claims');
-        $claims = \App\Models\CustomerClaim::with(['product', 'replacementProduct'])
+        $claims = $this->ledgerQuery(\App\Models\CustomerClaim::class)->with(['product', 'replacementProduct'])
             ->where('party_id', $id)
             ->whereIn('party_type', $typeArray)
             ->where('status', 'Posted')
@@ -2172,7 +2204,7 @@ class GeneralLedgerController extends Controller
         }
         // 12. Claim Credit Notes (CIR)
         $crnDateCol = $this->getDateColumn('claim_credit_notes');
-        $crNotes = \App\Models\ClaimCreditNote::where('party_id', $id)
+        $crNotes = $this->ledgerQuery(\App\Models\ClaimCreditNote::class)->where('party_id', $id)
             ->where('party_type', $type == 'customer' ? 'customer' : 'vendor')
             ->where('status', 'Posted')
             ->whereBetween(DB::raw($crnDateCol), [$start, $end])

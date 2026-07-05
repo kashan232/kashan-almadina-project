@@ -139,7 +139,7 @@ class VoucherController extends Controller
 
     public function all_recepit_vochers(Request $request)
     {
-        $query = \App\Models\ReceiptsVoucher::query();
+        $query = \App\Models\ReceiptsVoucher::query()->standalone();
 
         $dateCol = $this->getDateColumn('receipts_vouchers', 'receipt_date');
         if ($request->filled('start_date')) {
@@ -286,6 +286,10 @@ class VoucherController extends Controller
             ]);
         } else {
             $receipt = ReceiptsVoucher::findOrFail($id);
+            if ($receipt->isSaleLinked()) {
+                return redirect()->route('all-recepit-vochers')
+                    ->with('error', 'This receipt belongs to a Sale and is managed from the Sale screen.');
+            }
         }
 
         $narrations = \App\Models\Narration::where('expense_head', 'Receipts Voucher')

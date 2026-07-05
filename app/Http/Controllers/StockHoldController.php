@@ -28,8 +28,13 @@ class StockHoldController extends Controller
             'warehouse:id,warehouse_name',
             'partyCustomer:id,customer_name',
             'partyVendor:id,name',
-            'items.product'
-        ]);
+            'items' => function ($q) {
+                $q->where('hold_qty', '>', 0);
+            },
+            'items.product',
+        ])->whereHas('items', function ($q) {
+            $q->where('hold_qty', '>', 0);
+        });
 
         if ($request->start_date) {
             $query->whereDate('date', '>=', $request->start_date);
@@ -486,6 +491,9 @@ class StockHoldController extends Controller
         $partyId = $request->party_id;
 
         $query = StockHoldVoucher::where('status', 'Posted')
+            ->whereHas('items', function ($q) {
+                $q->where('hold_qty', '>', 0);
+            })
             ->when($partyType, function($query) use ($partyType) {
                 $query->where('party_type', $partyType);
             })
@@ -533,7 +541,9 @@ class StockHoldController extends Controller
             'party_name' => $partyName,
             'warehouse_id' => $voucher->warehouse_id,
             'warehouse_name' => ($voucher->warehouse_id == 0) ? 'Shop' : ($voucher->warehouse->warehouse_name ?? '-'),
-            'items' => $voucher->items->map(function($it) {
+            'items' => $voucher->items
+                ->filter(fn ($it) => (float) $it->hold_qty > 0)
+                ->map(function($it) {
                 return [
                     'hold_id'    => $it->id,
                     'product_id' => $it->product_id,
@@ -541,7 +551,7 @@ class StockHoldController extends Controller
                     'sale_qty'   => (float)$it->sale_qty,
                     'hold_qty'   => (float)$it->hold_qty,
                 ];
-            })
+            })->values()
         ]);
     }
 
@@ -696,7 +706,7 @@ class StockHoldController extends Controller
     ): ?StockHold {
         if ($explicitHoldId) {
             $hold = StockHold::withoutGlobalScopes()->find($explicitHoldId);
-            if ($hold && (int) $hold->product_id === $productId) {
+            if ($hold && (int) $hold->product_id === $productId && (float) $hold->hold_qty > 0) {
                 return $hold;
             }
         }

@@ -70,4 +70,18 @@ class ReceiptsVoucher extends Model
     {
         return $this->belongsTo(User::class, 'created_by');
     }
+
+    /** Receipt rows created from Sale posting — not standalone voucher module. */
+    public function scopeStandalone($query)
+    {
+        return $query->where(function ($q) {
+            $q->whereNull('remarks')
+                ->orWhere('remarks', 'not like', 'Auto-generated from Sale:%');
+        });
+    }
+
+    public function isSaleLinked(): bool
+    {
+        return str_starts_with((string) ($this->remarks ?? ''), 'Auto-generated from Sale:');
+    }
 }
