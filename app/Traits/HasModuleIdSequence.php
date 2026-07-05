@@ -16,10 +16,13 @@ trait HasModuleIdSequence
 
             $range = $model->resolveModuleIdRange();
 
-            $model->setAttribute(
-                $model->getKeyName(),
-                ModuleIdSequence::nextId($model->getTable(), $range['min'], $range['max'])
-            );
+            $nextId = ModuleIdSequence::nextId($model->getTable(), $range['min'], $range['max']);
+
+            $model->setAttribute($model->getKeyName(), $nextId);
+
+            if (method_exists($model, 'syncModuleCodeFromId')) {
+                $model->syncModuleCodeFromId();
+            }
         });
     }
 

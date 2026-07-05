@@ -16,17 +16,6 @@ class Customer extends Model
 
     use HasFactory, \App\Traits\GroupIsolation, \App\Traits\HasModuleIdSequence;
 
-    protected static function boot()
-    {
-        parent::boot();
-
-        static::created(function (self $customer) {
-            if (empty($customer->customer_id)) {
-                $customer->forceFill(['customer_id' => (string) $customer->id])->saveQuietly();
-            }
-        });
-    }
-
     protected function resolveModuleIdRange(): array
     {
         return \App\Support\ModuleIdSequence::customerRange($this->customer_type);
@@ -38,6 +27,14 @@ class Customer extends Model
             'min' => \App\Support\ModuleIdSequence::CUSTOMER_MAIN_MIN,
             'max' => \App\Support\ModuleIdSequence::CUSTOMER_MAIN_MAX,
         ];
+    }
+
+    /** Set customer_id before insert (DB column is NOT NULL). */
+    public function syncModuleCodeFromId(): void
+    {
+        if (empty($this->customer_id) && $this->getKey()) {
+            $this->customer_id = (string) $this->getKey();
+        }
     }
 
     public function customerLedger()
