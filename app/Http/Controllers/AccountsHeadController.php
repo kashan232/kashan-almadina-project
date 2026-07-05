@@ -10,9 +10,33 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use App\Models\UserGroup;
 use App\Models\User;
+use App\Support\ModuleIdSequence;
 
 class AccountsHeadController extends Controller
 {
+    private function resolveSelectedHeadId($heads): ?string
+    {
+        $requested = request('head_id');
+        if ($requested !== null && $requested !== '') {
+            return (string) $requested;
+        }
+
+        $moduleHeadId = AccountHead::query()
+            ->where('id', '>=', ModuleIdSequence::ACCOUNT_HEAD_MIN)
+            ->whereRaw('MOD(id, ?) = 0', [ModuleIdSequence::ACCOUNT_HEAD_STEP])
+            ->orderByDesc('id')
+            ->value('id');
+
+        if ($moduleHeadId) {
+            return (string) $moduleHeadId;
+        }
+
+        if ($heads->isNotEmpty()) {
+            return (string) $heads->first()->id;
+        }
+
+        return null;
+    }
     // public function index (){
     //     return view('admin_panel.chart_of_accounts',);
     // }
@@ -44,18 +68,18 @@ class AccountsHeadController extends Controller
             }
         }
 
-        $heads = AccountHead::orderBy('id')->get();
+        $heads = AccountHead::query()
+            ->orderByRaw('CASE WHEN id >= ? THEN 0 ELSE 1 END', [ModuleIdSequence::ACCOUNT_HEAD_MIN])
+            ->orderBy('id')
+            ->get();
         $userGroups = UserGroup::all();
         $users = User::all();
-        $nextHeadId = \App\Support\ModuleIdSequence::peekNextMainHeadId();
+        $nextHeadId = ModuleIdSequence::peekNextMainHeadId();
 
-        $selectedHeadId = request('head_id');
-        if ($selectedHeadId === null && $heads->isNotEmpty()) {
-            $selectedHeadId = (string) $heads->first()->id;
-        }
+        $selectedHeadId = $this->resolveSelectedHeadId($heads);
 
         if ($selectedHeadId !== null && $selectedHeadId !== '') {
-            $query->where('head_id', $selectedHeadId);
+            $query->where('head_id', (int) $selectedHeadId);
         }
 
         $accounts = $query->orderBy('account_code')->get();

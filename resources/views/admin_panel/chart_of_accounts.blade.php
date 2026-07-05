@@ -179,6 +179,9 @@
                             @if($isAdmin)
                             <div class="d-flex gap-1 align-items-center">
                                 <form action="{{ route('view_all') }}" method="GET" class="d-flex gap-1 align-items-center">
+                                    @if($selectedHeadId)
+                                        <input type="hidden" name="head_id" value="{{ $selectedHeadId }}">
+                                    @endif
                                     <select name="created_by" class="form-select form-select-sm select2" style="min-width: 150px;">
                                         <option value="">All Creators</option>
                                         @foreach($users as $user)
@@ -189,7 +192,7 @@
                                     </select>
                                     <button type="submit" class="btn btn-primary btn-sm rounded-pill px-3">Filter</button>
                                     @if(request('created_by'))
-                                        <a href="{{ route('view_all') }}" class="btn btn-outline-secondary btn-sm rounded-pill px-2" title="Reset"><i class="fa fa-refresh"></i></a>
+                                        <a href="{{ route('view_all', array_filter(['head_id' => $selectedHeadId])) }}" class="btn btn-outline-secondary btn-sm rounded-pill px-2" title="Reset"><i class="fa fa-refresh"></i></a>
                                     @endif
                                 </form>
                                 <a href="{{ route('purcahse-account-allocation') }}" class="btn btn-outline-danger btn-sm rounded-pill px-3 ms-2">
@@ -256,7 +259,7 @@
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        @foreach($accounts as $account)
+                                        @forelse($accounts as $account)
                                         @php
                                             $opening = (float) ($account->opening_balance ?? 0);
                                             $openingDr = $opening > 0 ? $opening : 0;
@@ -286,7 +289,16 @@
                                                 </button>
                                             </td>
                                         </tr>
-                                        @endforeach
+                                        @empty
+                                        <tr class="no-data-row">
+                                            <td colspan="7" class="text-center text-muted py-4">
+                                                No sub head accounts found for this main head.
+                                                @if($selectedHead)
+                                                    <span class="d-block small mt-1">Selected: {{ $selectedHead->id }} — {{ $selectedHead->name }}</span>
+                                                @endif
+                                            </td>
+                                        </tr>
+                                        @endforelse
                                     </tbody>
                                 </table>
                             </div>
@@ -476,7 +488,7 @@
         });
 
         const storageKey = 'coa_table_columns_v3';
-        const hasRows = $('#accountsTable tbody tr').length > 0;
+        const hasRows = $('#accountsTable tbody tr').not('.no-data-row').length > 0;
 
         var dt = hasRows ? $('#accountsTable').DataTable({
             scrollX: true,
