@@ -256,7 +256,7 @@
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        @forelse($accounts as $account)
+                                        @foreach($accounts as $account)
                                         @php
                                             $opening = (float) ($account->opening_balance ?? 0);
                                             $openingDr = $opening > 0 ? $opening : 0;
@@ -286,7 +286,7 @@
                                                 </button>
                                             </td>
                                         </tr>
-                                        @endforelse
+                                        @endforeach
                                     </tbody>
                                 </table>
                             </div>
