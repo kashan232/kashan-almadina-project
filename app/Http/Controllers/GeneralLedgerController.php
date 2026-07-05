@@ -993,6 +993,8 @@ class GeneralLedgerController extends Controller
             $claimCredits += (float)$claim->sales_price;
             if ($claim->claim_type === 'credit_note') {
                 $claimDebits += (float)$claim->replacement_sales_price;
+            } elseif ($claim->claim_type === 'item_return') {
+                $claimDebits += (float)$claim->sales_price;
             }
         }
 
@@ -2333,15 +2335,38 @@ class GeneralLedgerController extends Controller
             ->get();
             
         foreach ($claims as $claim) {
-            if ((float)$claim->sales_price > 0) {
+            $productName = $claim->product->name ?? 'Battery';
+            $salesPrice = (float) $claim->sales_price;
+            $claimDate = $claim->entry_date ?: substr((string) $claim->created_at, 0, 10);
+            $claimInv = preg_replace('/[^0-9]/', '', $claim->claim_no ?? '0');
+
+            if ($claim->claim_type === 'item_return' && $salesPrice > 0) {
+                $transactions[] = [
+                    'created_at' => $claim->created_at,
+                    'id' => 'clm_' . $claim->id,
+                    'date' => $claimDate,
+                    'ref' => 'CLM',
+                    'inv' => $claimInv,
+                    'desc' => 'Item Return: ' . $productName . ' (Battery Exchanged)',
+                    'price' => $salesPrice,
+                    'qty' => 1,
+                    'debit' => $salesPrice,
+                    'credit' => $salesPrice,
+                    'priority' => 30,
+                ];
+
+                continue;
+            }
+
+            if ($salesPrice > 0) {
                 $transactions[] = [
                     'created_at' => $claim->created_at,
                     'id' => 'clm_' . $claim->id . '_f',
-                    'date' => $claim->entry_date ?: substr((string)$claim->created_at, 0, 10),
+                    'date' => $claimDate,
                     'ref' => 'CLM',
-                    'inv' => preg_replace('/[^0-9]/', '', $claim->claim_no ?? '0'),
-                    'desc' => 'Claim Received: ' . ($claim->product->name ?? 'Battery') . ' (' . $claim->claim_no . ')',
-                    'price' => 0, 'qty' => 1, 'debit' => 0, 'credit' => (float)$claim->sales_price,
+                    'inv' => $claimInv,
+                    'desc' => 'Claim Received: ' . $productName . ' (' . $claim->claim_no . ')',
+                    'price' => 0, 'qty' => 1, 'debit' => 0, 'credit' => $salesPrice,
                     'priority' => 30
                 ];
             }
@@ -2349,9 +2374,9 @@ class GeneralLedgerController extends Controller
                 $transactions[] = [
                     'created_at' => $claim->created_at,
                     'id' => 'clm_' . $claim->id . '_r',
-                    'date' => $claim->entry_date ?: substr((string)$claim->created_at, 0, 10),
+                    'date' => $claimDate,
                     'ref' => 'CLM',
-                    'inv' => preg_replace('/[^0-9]/', '', $claim->claim_no ?? '0'),
+                    'inv' => $claimInv,
                     'desc' => 'Claim Replacement: ' . ($claim->replacementProduct->name ?? 'Battery') . ' (' . $claim->claim_no . ')',
                     'price' => 0, 'qty' => 1, 'debit' => (float)$claim->replacement_sales_price, 'credit' => 0,
                     'priority' => 31
