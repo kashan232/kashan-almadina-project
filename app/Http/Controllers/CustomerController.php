@@ -225,6 +225,9 @@ class CustomerController extends Controller
     public function edit($id)
     {
         $customer = Customer::findOrFail($id);
+        $customer->persistOpeningBalanceFromLedgerIfMissing();
+        $customer->refresh();
+
         $zones = Zone::all();
         $SalesOfficer = SalesOfficer::all();
         $userGroups = UserGroup::all();
@@ -259,27 +262,22 @@ class CustomerController extends Controller
             'user_group_ids' => 'nullable|array',
         ]);
 
-        // Update model
+        // Update model (includes opening_balance on customers table)
         $customer->update($data);
 
-        // Update ledger if opening balance changed
         $openingBalance = floatval($request->opening_balance ?? 0);
-        
-        // Find the first ledger entry (usually the opening balance)
+
+        // Keep first ledger row in sync with defined opening balance
         $firstLedger = CustomerLedger::where('customer_id', $customer->id)
             ->orderBy('id', 'asc')
             ->first();
 
         if ($firstLedger) {
-            // If it's a pure opening balance entry (no transactions yet or marked as such)
-            // For now, let's just update the opening/closing if it's the first record.
-            // Note: In a real system, you'd want to recalculate all subsequent entries.
             $firstLedger->update([
                 'opening_balance' => $openingBalance,
-                'closing_balance' => $openingBalance + ($firstLedger->debit ?? 0) - ($firstLedger->credit ?? 0) // Basic sync
+                'closing_balance' => $openingBalance + (float) ($firstLedger->debit ?? 0) - (float) ($firstLedger->credit ?? 0),
             ]);
-        } else if ($openingBalance > 0) {
-            // Create first entry if none exists
+        } elseif ($openingBalance != 0.0) {
             CustomerLedger::create([
                 'customer_id' => $customer->id,
                 'admin_or_user_id' => Auth::id(),

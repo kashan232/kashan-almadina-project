@@ -302,7 +302,7 @@ class CustomerImportService
     public function createCustomer(array $data, int $userId, ?array $userGroupIds = null): Customer
     {
         $openingBalance = floatval($data['opening_balance'] ?? 0);
-        unset($data['opening_balance']);
+        $data['opening_balance'] = $openingBalance;
 
         $data['created_by'] = $userId;
         unset($data['customer_id']);
@@ -313,7 +313,7 @@ class CustomerImportService
 
         $customer = Customer::create($data);
 
-        if ($openingBalance > 0) {
+        if ($openingBalance != 0.0) {
             CustomerLedger::create([
                 'customer_id' => $customer->id,
                 'admin_or_user_id' => $userId,

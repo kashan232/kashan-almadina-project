@@ -216,7 +216,7 @@
                                     <td class="small">{{ $customer->mobile }}</td>
                                     <td class="small">{{ $customer->zone }}</td>
                                     <td class="text-end text-success fw-bold">
-                                        {{ $customer->customerLedger ? number_format($customer->customerLedger->opening_balance, 0) : '0' }}
+                                        {{ number_format($customer->resolvedOpeningBalance(), 0) }}
                                     </td>
                                     <td class="text-end text-primary fw-bold">
                                         {{ $customer->customerLedger ? number_format($customer->customerLedger->closing_balance, 0) : '0' }}

@@ -12,6 +12,7 @@ class Customer extends Model
 
     protected $casts = [
         'user_group_ids' => 'array',
+        'opening_balance' => 'float',
     ];
 
     use HasFactory, \App\Traits\GroupIsolation, \App\Traits\HasModuleIdSequence;
@@ -51,5 +52,33 @@ class Customer extends Model
     public function creator()
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function resolvedOpeningBalance(): float
+    {
+        $stored = (float) ($this->attributes['opening_balance'] ?? 0);
+        if ($stored != 0.0) {
+            return $stored;
+        }
+
+        return (float) (CustomerLedger::where('customer_id', $this->id)
+            ->orderBy('id')
+            ->value('opening_balance') ?? 0);
+    }
+
+    /** Backfill customers.opening_balance from first ledger row (older records). */
+    public function persistOpeningBalanceFromLedgerIfMissing(): void
+    {
+        if ((float) ($this->attributes['opening_balance'] ?? 0) != 0.0) {
+            return;
+        }
+
+        $opening = CustomerLedger::where('customer_id', $this->id)
+            ->orderBy('id')
+            ->value('opening_balance');
+
+        if ($opening !== null && (float) $opening != 0.0) {
+            $this->forceFill(['opening_balance' => (float) $opening])->save();
+        }
     }
 }
