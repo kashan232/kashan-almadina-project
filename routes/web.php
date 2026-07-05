@@ -335,6 +335,7 @@ Route::middleware('auth')->group(function () {
         ->only(['index', 'store']);
     Route::get('/users/delete/{id}', [UserController::class, 'delete'])->name('users.delete');
     Route::post('/admin/users/update-roles', [UserController::class, 'updateRoles'])->name('users.update.roles');
+    Route::post('/admin/users/toggle-login-lockdown', [UserController::class, 'toggleLoginLockdown'])->name('users.toggle-login-lockdown');
     // Route::put('/users/{id}/roles', [UserController::class, 'updateRoles'])->name('users.update.roles');
 
     // User Groups

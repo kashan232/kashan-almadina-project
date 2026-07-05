@@ -6,12 +6,45 @@
         <div class="container">
             <div class="row">
                 <div class="col-lg-12">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h3>Users</h3>
-                        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#exampleModal"
-                            id="reset-form">Create</button>
+                    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+                        <h3 class="mb-0 fw-bold text-dark">Users</h3>
+                        <button type="button" class="btn btn-primary shadow-sm px-4" data-bs-toggle="modal" data-bs-target="#exampleModal"
+                            id="reset-form"><i class="fa-solid fa-user-plus me-1"></i> Create User</button>
                     </div>
-        <div class="border mt-1 shadow rounded " style="background-color: white;">
+
+                    @if($canManageLockdown ?? false)
+                    @php $lockdownOn = (bool) ($loginLockdownActive ?? false); @endphp
+                    <div id="loginLockdownCard" class="lockdown-panel {{ $lockdownOn ? 'is-active' : 'is-inactive' }}">
+                        <div class="lockdown-panel-left">
+                            <div class="lockdown-icon-wrap" id="lockdownIconWrap">
+                                <i class="fa-solid {{ $lockdownOn ? 'fa-shield-halved' : 'fa-unlock-keyhole' }}" id="lockdownIcon"></i>
+                            </div>
+                            <div class="lockdown-text">
+                                <div class="d-flex align-items-center gap-2 flex-wrap">
+                                    <h5 class="lockdown-title mb-0">Login Lockdown</h5>
+                                    <span class="lockdown-status-pill" id="lockdownStatusPill">
+                                        <span class="lockdown-pulse-dot"></span>
+                                        <span id="lockdownStatusLabel">{{ $lockdownOn ? 'ACTIVE' : 'INACTIVE' }}</span>
+                                    </span>
+                                </div>
+                                <p class="lockdown-desc mb-0" id="lockdownStatusText">
+                                    {{ $lockdownOn
+                                        ? 'All users are blocked from login. Only admin can access the system (e.g. price update).'
+                                        : 'All users can login normally. Turn ON before price update to block logins.' }}
+                                </p>
+                            </div>
+                        </div>
+                        <div class="lockdown-panel-right">
+                            <span class="lockdown-toggle-label" id="lockdownToggleLabel">{{ $lockdownOn ? 'ON' : 'OFF' }}</span>
+                            <label class="lockdown-switch" for="loginLockdownToggle" title="Toggle login lockdown">
+                                <input type="checkbox" id="loginLockdownToggle" {{ $lockdownOn ? 'checked' : '' }}>
+                                <span class="lockdown-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                    @endif
+
+        <div class="border mt-1 shadow rounded users-table-wrap">
             <div class="col-lg-12 m-auto">
    <div class="table-responsive mt-5 mb-5 ">
     <table id="default-datatable" class="table">
@@ -103,6 +136,191 @@
     </div>
 
     <style>
+        /* Login Lockdown Panel */
+        .lockdown-panel {
+            border-radius: 14px;
+            padding: 18px 22px;
+            margin-bottom: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 20px;
+            flex-wrap: wrap;
+            border: 1px solid transparent;
+            box-shadow: 0 4px 18px rgba(15, 23, 42, 0.08);
+            transition: all 0.35s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        .lockdown-panel::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 5px;
+            border-radius: 14px 0 0 14px;
+        }
+        .lockdown-panel.is-inactive {
+            background: linear-gradient(135deg, #f0fdf4 0%, #ffffff 55%, #f8fafc 100%);
+            border-color: #bbf7d0;
+        }
+        .lockdown-panel.is-inactive::before {
+            background: linear-gradient(180deg, #22c55e, #16a34a);
+        }
+        .lockdown-panel.is-active {
+            background: linear-gradient(135deg, #fff7ed 0%, #ffffff 55%, #fef2f2 100%);
+            border-color: #fed7aa;
+            box-shadow: 0 4px 22px rgba(234, 88, 12, 0.12);
+        }
+        .lockdown-panel.is-active::before {
+            background: linear-gradient(180deg, #f97316, #dc2626);
+        }
+        .lockdown-panel-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            flex: 1;
+            min-width: 260px;
+        }
+        .lockdown-icon-wrap {
+            width: 52px;
+            height: 52px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            flex-shrink: 0;
+            transition: all 0.3s ease;
+        }
+        .lockdown-panel.is-inactive .lockdown-icon-wrap {
+            background: rgba(34, 197, 94, 0.12);
+            color: #16a34a;
+            box-shadow: inset 0 0 0 1px rgba(34, 197, 94, 0.2);
+        }
+        .lockdown-panel.is-active .lockdown-icon-wrap {
+            background: rgba(249, 115, 22, 0.14);
+            color: #ea580c;
+            box-shadow: inset 0 0 0 1px rgba(249, 115, 22, 0.25);
+        }
+        .lockdown-title {
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: #0f172a;
+            letter-spacing: -0.02em;
+        }
+        .lockdown-desc {
+            font-size: 0.82rem;
+            color: #64748b;
+            margin-top: 4px;
+            line-height: 1.45;
+            max-width: 620px;
+        }
+        .lockdown-status-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            padding: 4px 10px;
+            border-radius: 999px;
+            transition: all 0.3s ease;
+        }
+        .lockdown-panel.is-inactive .lockdown-status-pill {
+            background: #dcfce7;
+            color: #15803d;
+            border: 1px solid #bbf7d0;
+        }
+        .lockdown-panel.is-active .lockdown-status-pill {
+            background: #ffedd5;
+            color: #c2410c;
+            border: 1px solid #fdba74;
+        }
+        .lockdown-pulse-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            flex-shrink: 0;
+        }
+        .lockdown-panel.is-inactive .lockdown-pulse-dot {
+            background: #22c55e;
+        }
+        .lockdown-panel.is-active .lockdown-pulse-dot {
+            background: #f97316;
+            animation: lockdownPulse 1.4s ease-in-out infinite;
+        }
+        @keyframes lockdownPulse {
+            0%, 100% { opacity: 1; transform: scale(1); box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.5); }
+            50% { opacity: 0.7; transform: scale(1.15); box-shadow: 0 0 0 6px rgba(249, 115, 22, 0); }
+        }
+        .lockdown-panel-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-shrink: 0;
+        }
+        .lockdown-toggle-label {
+            font-size: 0.75rem;
+            font-weight: 800;
+            letter-spacing: 0.08em;
+            min-width: 28px;
+            text-align: center;
+            transition: color 0.3s ease;
+        }
+        .lockdown-panel.is-inactive .lockdown-toggle-label { color: #16a34a; }
+        .lockdown-panel.is-active .lockdown-toggle-label { color: #ea580c; }
+        .lockdown-switch {
+            position: relative;
+            display: inline-block;
+            width: 58px;
+            height: 32px;
+            margin: 0;
+            cursor: pointer;
+        }
+        .lockdown-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+            position: absolute;
+        }
+        .lockdown-slider {
+            position: absolute;
+            inset: 0;
+            border-radius: 999px;
+            transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.12);
+        }
+        .lockdown-panel.is-inactive .lockdown-slider {
+            background: linear-gradient(180deg, #86efac, #22c55e);
+        }
+        .lockdown-panel.is-active .lockdown-slider {
+            background: linear-gradient(180deg, #fdba74, #ea580c);
+        }
+        .lockdown-slider::before {
+            content: '';
+            position: absolute;
+            height: 26px;
+            width: 26px;
+            left: 3px;
+            bottom: 3px;
+            background: #fff;
+            border-radius: 50%;
+            transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+        .lockdown-switch input:checked + .lockdown-slider::before {
+            transform: translateX(26px);
+        }
+        .lockdown-switch input:disabled + .lockdown-slider {
+            opacity: 0.65;
+            cursor: not-allowed;
+        }
+        .users-table-wrap {
+            background-color: white;
+        }
+
         /* Custom Checkbox Design */
         .role-selection-grid {
             display: grid;
@@ -364,6 +582,75 @@
                 "lengthMenu": "Show _MENU_ entries"
             }
         });
+
+        $('#loginLockdownToggle').on('change', function () {
+            var toggle = $(this);
+            var active = toggle.is(':checked');
+            var actionText = active ? 'activate login lockdown' : 'deactivate login lockdown';
+            var detailText = active
+                ? 'All non-admin users will be logged out and cannot login until you turn this off.'
+                : 'All users will be able to login again.';
+
+            Swal.fire({
+                title: active ? 'Activate Login Lockdown?' : 'Deactivate Login Lockdown?',
+                html: 'Are you sure you want to <strong>' + actionText + '</strong>?<br><br>' + detailText,
+                icon: active ? 'warning' : 'question',
+                showCancelButton: true,
+                confirmButtonText: active ? 'Yes, activate' : 'Yes, deactivate',
+                cancelButtonText: 'Cancel',
+                confirmButtonColor: active ? '#ea580c' : '#16a34a',
+            }).then(function (result) {
+                if (!result.isConfirmed) {
+                    toggle.prop('checked', !active);
+                    return;
+                }
+
+                toggle.prop('disabled', true);
+
+                $.ajax({
+                    url: @json(route('users.toggle-login-lockdown')),
+                    method: 'POST',
+                    data: {
+                        _token: @json(csrf_token()),
+                        active: active ? 1 : 0
+                    },
+                    success: function (res) {
+                        updateLockdownUI(!!res.active);
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Updated',
+                            text: res.message,
+                            timer: 2500,
+                            showConfirmButton: false
+                        });
+                    },
+                    error: function (xhr) {
+                        toggle.prop('checked', !active);
+                        var msg = xhr.responseJSON && xhr.responseJSON.message
+                            ? xhr.responseJSON.message
+                            : 'Could not update login lockdown.';
+                        Swal.fire({ icon: 'error', title: 'Error', text: msg });
+                    },
+                    complete: function () {
+                        toggle.prop('disabled', false);
+                    }
+                });
+            });
+        });
+
+        function updateLockdownUI(isActive) {
+            var $card = $('#loginLockdownCard');
+            $card.toggleClass('is-active', isActive).toggleClass('is-inactive', !isActive);
+            $('#loginLockdownToggle').prop('checked', isActive);
+            $('#lockdownStatusLabel').text(isActive ? 'ACTIVE' : 'INACTIVE');
+            $('#lockdownToggleLabel').text(isActive ? 'ON' : 'OFF');
+            $('#lockdownIcon')
+                .removeClass('fa-shield-halved fa-unlock-keyhole')
+                .addClass(isActive ? 'fa-shield-halved' : 'fa-unlock-keyhole');
+            $('#lockdownStatusText').text(isActive
+                ? 'All users are blocked from login. Only admin can access the system (e.g. price update).'
+                : 'All users can login normally. Turn ON before price update to block logins.');
+        }
     });
 </script>
 

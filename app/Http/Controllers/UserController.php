@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\User;
+use App\Services\LoginLockdown;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Hash;
 use Spatie\Permission\Models\Role;
@@ -12,10 +13,12 @@ class UserController extends Controller
 {
     public function index()
     {
-        // dd("ok");
         $users = User::where('email', '!=', 'admin@admin.com')->get();
         $allRoles  = Role::all();
-        return view('admin_panel.users.users', compact(['users', 'allRoles']));
+        $loginLockdownActive = LoginLockdown::isActive();
+        $canManageLockdown = LoginLockdown::canBypass(auth()->user());
+
+        return view('admin_panel.users.users', compact('users', 'allRoles', 'loginLockdownActive', 'canManageLockdown'));
     }
 
     public function store(Request $request)
@@ -97,5 +100,23 @@ class UserController extends Controller
         $user->syncRoles($request->roles ?? []);
 
         return back()->with('success', 'User roles updated successfully!');
+    }
+
+    public function toggleLoginLockdown(Request $request)
+    {
+        if (!LoginLockdown::canBypass(auth()->user())) {
+            abort(403, 'Only admin can manage login lockdown.');
+        }
+
+        $active = $request->boolean('active');
+        LoginLockdown::setActive($active);
+
+        return response()->json([
+            'success' => true,
+            'active' => LoginLockdown::isActive(),
+            'message' => $active
+                ? 'Login lockdown activated. All users are logged out except admin. Only admin can login now.'
+                : 'Login lockdown deactivated. All users can login now.',
+        ]);
     }
 }

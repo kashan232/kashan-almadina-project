@@ -281,6 +281,16 @@
             </div>
             
             <!-- Login Form -->
+            @if(session('lockdown'))
+                <div style="background:#fff3cd;border:1px solid #ffc107;color:#856404;padding:12px 14px;border-radius:8px;margin-bottom:16px;font-size:13px;">
+                    <strong>Login Disabled:</strong> {{ session('lockdown') }}
+                </div>
+            @elseif(!empty($loginLockdownActive))
+                <div style="background:#fff3cd;border:1px solid #ffc107;color:#856404;padding:12px 14px;border-radius:8px;margin-bottom:16px;font-size:13px;">
+                    <strong>Maintenance Mode:</strong> Login is temporarily disabled for system maintenance. Please contact admin.
+                </div>
+            @endif
+
             <form method="POST" action="{{ route('login') }}">
                 @csrf
                 

@@ -53,8 +53,24 @@ class StockHoldController extends Controller
         return view("admin_panel.stock_hold.stock_hold_list", compact('vouchers'));
     }
 
-
-
+    /** Load hold voucher with released qty sum so display_hold_qty matches the list page. */
+    private function loadHoldVoucherWithDisplayQty(int $id): StockHoldVoucher
+    {
+        return StockHoldVoucher::with([
+            'warehouse',
+            'partyCustomer',
+            'partyVendor',
+            'sale',
+            'items' => function ($q) {
+                $q->withSum([
+                    'releases as released_qty' => function ($rq) {
+                        $rq->withoutGlobalScopes()->whereIn('status', ['Posted', 'posted']);
+                    },
+                ], 'release_qty');
+            },
+            'items.product',
+        ])->findOrFail($id);
+    }
 
     public function create()
     {
@@ -258,7 +274,7 @@ class StockHoldController extends Controller
 
     public function showHold($id)
     {
-        $voucher = StockHoldVoucher::with('items.product')->findOrFail($id);
+        $voucher = $this->loadHoldVoucherWithDisplayQty($id);
         $warehouses = Warehouse::orderBy('warehouse_name')->get();
         $products = Product::select('id', 'name')->orderBy('name')->get();
         $viewMode = true;
@@ -457,7 +473,7 @@ class StockHoldController extends Controller
 
     public function print($id)
     {
-        $voucher = StockHoldVoucher::with(['items.product', 'warehouse', 'partyCustomer', 'partyVendor'])->findOrFail($id);
+        $voucher = $this->loadHoldVoucherWithDisplayQty($id);
         return view('admin_panel.stock_hold.print', compact('voucher'));
     }
 
@@ -491,6 +507,7 @@ class StockHoldController extends Controller
         $q = $request->q;
         $partyType = $request->party_type;
         $partyId = $request->party_id;
+        $includeHoldId = $request->include_hold_id;
 
         $query = StockHoldVoucher::where('status', 'Posted')
             ->whereHas('items', function ($q) {
@@ -508,6 +525,19 @@ class StockHoldController extends Controller
             ->latest()
             ->get()
             ->map(fn($v) => ['id' => 'hold:' . $v->id, 'text' => 'Hold: ' . $v->voucher_no . ' (Date: ' . $v->date . ')']);
+
+        if ($includeHoldId) {
+            $linked = StockHoldVoucher::find($includeHoldId);
+            if ($linked) {
+                $entry = [
+                    'id' => 'hold:' . $linked->id,
+                    'text' => 'Hold: ' . $linked->voucher_no . ' (Date: ' . $linked->date . ')',
+                ];
+                if (!$query->firstWhere('id', $entry['id'])) {
+                    $query->prepend($entry);
+                }
+            }
+        }
 
         if($request->include_claims) {
             $claims = \App\Models\CustomerClaim::where('status', 'Posted')
@@ -530,12 +560,22 @@ class StockHoldController extends Controller
         return $query;
     }
 
-    public function voucherDetails($id)
+    public function voucherDetails(Request $request, $id)
     {
         $voucher = StockHoldVoucher::with(['items.product', 'warehouse', 'partyCustomer', 'partyVendor'])->findOrFail($id);
-        
+
+        $releaseVoucherId = $request->query('release_voucher_id');
+        $releaseByHoldId = collect();
+        if ($releaseVoucherId) {
+            $releaseByHoldId = \App\Models\StockRelease::withoutGlobalScopes()
+                ->where('stock_release_voucher_id', $releaseVoucherId)
+                ->whereNotNull('hold_id')
+                ->get()
+                ->keyBy('hold_id');
+        }
+
         $partyName = $voucher->party_type == 'vendor' ? ($voucher->partyVendor->name ?? '-') : ($voucher->partyCustomer->customer_name ?? '-');
-        
+
         return response()->json([
             'id' => $voucher->id,
             'party_type' => $voucher->party_type,
@@ -544,16 +584,29 @@ class StockHoldController extends Controller
             'warehouse_id' => $voucher->warehouse_id,
             'warehouse_name' => ($voucher->warehouse_id == 0) ? 'Shop' : ($voucher->warehouse->warehouse_name ?? '-'),
             'items' => $voucher->items
-                ->filter(fn ($it) => (float) $it->hold_qty > 0)
-                ->map(function($it) {
-                return [
-                    'hold_id'    => $it->id,
-                    'product_id' => $it->product_id,
-                    'item_name'  => $it->product->name ?? 'Product',
-                    'sale_qty'   => (float)$it->sale_qty,
-                    'hold_qty'   => (float)$it->hold_qty,
-                ];
-            })->values()
+                ->filter(function ($it) use ($releaseByHoldId) {
+                    if ((float) $it->hold_qty > 0) {
+                        return true;
+                    }
+
+                    return $releaseByHoldId->has($it->id);
+                })
+                ->map(function ($it) use ($releaseByHoldId) {
+                    $holdQty = (float) $it->hold_qty;
+                    $releaseLine = $releaseByHoldId->get($it->id);
+                    if ($releaseLine) {
+                        $holdQty += (float) $releaseLine->release_qty;
+                    }
+
+                    return [
+                        'hold_id'    => $it->id,
+                        'product_id' => $it->product_id,
+                        'item_name'  => $it->product->name ?? 'Product',
+                        'sale_qty'   => (float) $it->sale_qty,
+                        'hold_qty'   => $holdQty,
+                        'release_qty' => $releaseLine ? (float) $releaseLine->release_qty : $holdQty,
+                    ];
+                })->values()
         ]);
     }
 

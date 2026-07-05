@@ -76,8 +76,10 @@
         ? 'claim:' . $voucher->claim_id
         : ($voucher->hold_voucher_id ? 'hold:' . $voucher->hold_voucher_id : '');
     $holdSelectText = $voucher->claim_id
-        ? 'Claim: #' . $voucher->claim_id
-        : ($voucher->holdVoucher ? 'Hold: ' . $voucher->holdVoucher->voucher_no : '');
+        ? 'Claim: ' . ($voucher->claim_id) . ' (Date: ' . ($voucher->date ?? '') . ')'
+        : ($voucher->holdVoucher
+            ? 'Hold: ' . $voucher->holdVoucher->voucher_no . ' (Date: ' . ($voucher->holdVoucher->date ?? '') . ')'
+            : '');
 @endphp
 <div class="main-content">
     <div class="main-content-inner">
@@ -284,6 +286,8 @@ $(document).ready(function() {
     var _selectedPartyId = "{{ $voucher->party_id }}";
     var _saveInFlight = false;
     var _postInFlight = false;
+    var _suppressHoldChange = true;
+    var _initialHoldValue = @json($holdSelectValue);
     var saveBtnHtml = '<u>S</u>ave <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+S</kbd>';
     var postBtnHtml = '<u>P</u>ost <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+&crarr;</kbd>';
     var _selectedPartyName = @json($partyName);
@@ -319,7 +323,7 @@ $(document).ready(function() {
         setTimeout(function() { $toast.fadeOut(400, function(){ $(this).remove(); }); }, 3000);
     }
 
-    function loadParties(type, selectId, selectText) {
+    function loadParties(type, selectId, selectText, onDone) {
         $.get('{{ route("party.list") }}?type=' + type, function(data) {
             var $partySelect = $('#vendor_id');
             $partySelect.html('<option value="">Select Party...</option>');
@@ -332,20 +336,136 @@ $(document).ready(function() {
                 }
                 $partySelect.val(String(selectId));
             }
-            $partySelect.trigger('change');
+            $partySelect.trigger('change.select2');
+            if (typeof onDone === 'function') onDone();
         });
     }
 
     $('#vendor_id').select2({ width: '100%', placeholder: 'Select Party...' });
-    $('#hold_select').select2({ width: '100%', placeholder: 'Search Hold / Claim Record...' });
+
+    function resetHoldSelect() {
+        _suppressHoldChange = true;
+        $('#hold_voucher_id').val('');
+        $('#form_claim_id').val('');
+        $('#hold_select').html('<option value="">Select Record...</option>');
+        initHoldSelect();
+        _suppressHoldChange = false;
+    }
+
+    function initHoldSelect() {
+        if ($('#hold_select').hasClass('select2-hidden-accessible')) {
+            $('#hold_select').off('change');
+            $('#hold_select').select2('destroy');
+        }
+
+        var presetVal = $('#hold_select').val() || _initialHoldValue;
+        var presetText = $('#hold_select option:selected').text();
+
+        $('#hold_select').select2({
+            width: '100%',
+            placeholder: 'Search Hold / Claim Record...',
+            ajax: {
+                url: "{{ route('stock-holds.list.json') }}",
+                dataType: 'json', delay: 250,
+                data: function(params) {
+                    return {
+                        q: params.term,
+                        party_type: $('#vendor_type').val(),
+                        party_id: $('#vendor_id').val(),
+                        include_claims: 1,
+                        include_hold_id: $('#hold_voucher_id').val() || ''
+                    };
+                },
+                processResults: function(data) { return { results: data }; }
+            }
+        });
+
+        if (presetVal && presetText) {
+            if ($('#hold_select option[value="' + presetVal + '"]').length === 0) {
+                var opt = new Option(presetText, presetVal, true, true);
+                $('#hold_select').append(opt);
+            }
+            $('#hold_select').val(presetVal).trigger('change.select2');
+        }
+
+        $('#hold_select').on('change', function() {
+            if (_suppressHoldChange) return;
+            loadHoldSelection($(this).val(), true);
+        });
+    }
+
+    function getExistingReleaseRows() {
+        var map = {};
+        $('#itemRows tr').each(function() {
+            var pid = $(this).find('[name="product_id[]"]').val();
+            map[pid] = {
+                release_qty: $(this).find('[name="release_qty[]"]').val(),
+                hold_id: $(this).find('[name="hold_id[]"]').val() || ''
+            };
+        });
+        return map;
+    }
+
+    function loadHoldSelection(val, replaceRows) {
+        if (!val) return;
+
+        var parts = val.split(':');
+        var type = parts[0];
+        var id = parts[1];
+        var existing = replaceRows ? {} : getExistingReleaseRows();
+
+        if (type === 'claim') {
+            $('#hold_voucher_id').val('');
+            $('#form_claim_id').val(id);
+            $.get("{{ url('customer-claims-release/details') }}/" + id, function(res) {
+                $('#warehouse_id').val(res.warehouse_id);
+                if (replaceRows) $('#itemRows').empty();
+                var rq = existing[res.product_id] ? existing[res.product_id].release_qty : res.hold_qty;
+                if (!$('#itemRows tr').length || replaceRows || !existing[res.product_id]) {
+                    addRow(res.product_id, res.product_name, res.hold_qty, res.hold_qty, rq, res.hold_id || '');
+                }
+                updateCount();
+            });
+        } else {
+            $('#hold_voucher_id').val(id);
+            $('#form_claim_id').val('');
+            $.get("{{ url('stock-holds/voucher') }}/" + id + "/details", { release_voucher_id: _savedVoucherId }, function(res) {
+                $('#warehouse_id').val(res.warehouse_id);
+                if (replaceRows) $('#itemRows').empty();
+
+                res.items.forEach(function(item) {
+                    var prev = existing[item.product_id];
+                    var releaseQty = prev ? prev.release_qty : (item.release_qty !== undefined ? item.release_qty : item.hold_qty);
+                    var holdId = prev && prev.hold_id ? prev.hold_id : (item.hold_id || '');
+
+                    if (replaceRows || !prev) {
+                        addRow(item.product_id, item.item_name, item.sale_qty, item.hold_qty, releaseQty, holdId);
+                    }
+                });
+                updateCount();
+            });
+        }
+    }
 
     if ($('#vendor_type').val()) {
-        loadParties($('#vendor_type').val(), _selectedPartyId, _selectedPartyName);
+        loadParties($('#vendor_type').val(), _selectedPartyId, _selectedPartyName, function() {
+            initHoldSelect();
+            if (_initialHoldValue && $('#hold_voucher_id').val()) {
+                loadHoldSelection(_initialHoldValue, false);
+            }
+            _suppressHoldChange = false;
+        });
+    } else {
+        initHoldSelect();
+        _suppressHoldChange = false;
     }
 
     $('#vendor_type').on('change', function() {
-        loadParties($(this).val(), null, null);
-        resetHoldSelect();
+        loadParties($(this).val(), null, null, function() {
+            resetHoldSelect();
+            $('#itemRows').empty();
+            updateCount();
+        });
     });
 
     $('#party_code_input').on('keydown', function(e) {
@@ -366,61 +486,6 @@ $(document).ready(function() {
     $('#vendor_id').on('change', function() {
         var val = $(this).val();
         $('#party_code_input').val(val || '');
-    });
-
-    function resetHoldSelect() {
-        $('#hold_voucher_id').val('');
-        $('#form_claim_id').val('');
-        $('#hold_select').html('<option value="">Select Record...</option>').trigger('change');
-    }
-
-    function initHoldSelect() {
-        $('#hold_select').select2({
-            width: '100%',
-            placeholder: 'Search Hold / Claim Record...',
-            ajax: {
-                url: "{{ route('stock-holds.list.json') }}",
-                dataType: 'json', delay: 250,
-                data: function(params) {
-                    return {
-                        q: params.term,
-                        party_type: $('#vendor_type').val(),
-                        party_id: $('#vendor_id').val(),
-                        include_claims: 1
-                    };
-                },
-                processResults: function(data) { return { results: data }; }
-            }
-        });
-    }
-
-    $('#hold_select').on('change', function() {
-        var val = $(this).val();
-        if (!val) return;
-
-        var parts = val.split(':');
-        var type = parts[0];
-        var id = parts[1];
-
-        if (type === 'claim') {
-            $('#hold_voucher_id').val('');
-            $('#form_claim_id').val(id);
-            $.get("{{ url('customer-claims-release/details') }}/" + id, function(res) {
-                $('#warehouse_id').val(res.warehouse_id);
-                $('#itemRows').empty();
-                addRow(res.product_id, res.product_name, res.hold_qty, res.hold_qty, res.hold_qty, res.hold_id || '');
-            });
-        } else {
-            $('#hold_voucher_id').val(id);
-            $('#form_claim_id').val('');
-            $.get("{{ url('stock-holds/voucher') }}/" + id + "/details", function(res) {
-                $('#warehouse_id').val(res.warehouse_id);
-                $('#itemRows').empty();
-                res.items.forEach(function(item) {
-                    addRow(item.product_id, item.item_name, item.sale_qty, item.hold_qty, item.hold_qty, item.hold_id || '');
-                });
-            });
-        }
     });
 
     $('#manual_product_search').select2({
@@ -458,6 +523,9 @@ $(document).ready(function() {
 
     function addRow(pid, name, saleQty, holdQty, releaseQty, holdId) {
         holdId = holdId || '';
+        if ($('#itemRows tr').find('[name="product_id[]"][value="' + pid + '"]').length) {
+            return;
+        }
         var row = '<tr>' +
             '<td class="text-center font-weight-bold text-primary">' + pid + ' <input type="hidden" name="product_id[]" value="' + pid + '"><input type="hidden" name="hold_id[]" value="' + holdId + '"></td>' +
             '<td>' + name + '</td>' +

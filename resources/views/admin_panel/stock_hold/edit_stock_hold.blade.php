@@ -184,7 +184,7 @@
                                             <td>{{ $item->product_id }} <input type="hidden" name="product_id[]" value="{{ $item->product_id }}"></td>
                                             <td>{{ $item->product->name ?? 'Product' }}</td>
                                             <td><input type="number" name="sale_qty[]" class="form-control input-sm text-center" value="{{ (float)$item->sale_qty }}" readonly></td>
-                                            <td><input type="number" name="hold_qty[]" class="form-control input-sm text-center hold-qty-input" value="{{ (float)$item->hold_qty }}" step="any"></td>
+                                            <td><input type="number" name="hold_qty[]" class="form-control input-sm text-center hold-qty-input" value="{{ $isViewMode ? (float) $item->display_hold_qty : (float) $item->hold_qty }}" step="any"></td>
                                             <td class="text-center"><button type="button" class="btn btn-sm btn-danger remove-row">X</button></td>
                                         </tr>
                                     @endforeach

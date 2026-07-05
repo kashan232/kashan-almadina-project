@@ -154,9 +154,9 @@
                     <td style="text-align: center;">{{ $index + 1 }}</td>
                     <td>{{ $item->product_id }}</td>
                     <td>{{ $item->product->name ?? 'N/A' }}</td>
-                    <td style="text-align: center;">{{ number_format($item->hold_qty, 2) }}</td>
+                    <td style="text-align: center;">{{ number_format($item->display_hold_qty, 2) }}</td>
                 </tr>
-                @php $totalHold += $item->hold_qty; @endphp
+                @php $totalHold += $item->display_hold_qty; @endphp
                 @endforeach
                 <tr style="font-weight: bold; background: #f9f9f9;">
                     <td colspan="3" style="text-align: right;">Total Items Hold:</td>
