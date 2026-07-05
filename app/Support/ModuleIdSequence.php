@@ -15,12 +15,13 @@ class ModuleIdSequence
     public const VENDOR_MAX = 39999;
     public const PRODUCT_MIN = 40001;
     public const PRODUCT_MAX = 49999;
-    /** Main Head (AccountHead) — shown as Head Code on /view_all */
+    /** Main Head (AccountHead) — 50000, 60000, 70000 … (step 10000) */
     public const ACCOUNT_HEAD_MIN = 50000;
-    public const ACCOUNT_HEAD_MAX = 59999;
-    /** Sub Head (Account) — account_code and primary key, starts after Main Head 50000 */
+    public const ACCOUNT_HEAD_STEP = 10000;
+    public const ACCOUNT_HEAD_MAX = 990000;
+    /** Sub Head (Account) — under head H: H+1, H+2 … up to H+9999 */
     public const SUB_HEAD_MIN = 50001;
-    public const SUB_HEAD_MAX = 599999;
+    public const SUB_HEAD_MAX = 999999;
 
     /** @deprecated use SUB_HEAD_MIN */
     public const ACCOUNT_MIN = self::SUB_HEAD_MIN;
@@ -65,29 +66,89 @@ class ModuleIdSequence
             : ['min' => self::CUSTOMER_MAIN_MIN, 'max' => self::CUSTOMER_MAIN_MAX];
     }
 
-    public static function peekNextSubHeadCode(): string
+    public static function peekNextMainHeadId(): int
     {
-        return (string) self::resolveNextSubHeadCode(false);
+        return self::resolveNextMainHeadId(false);
     }
 
-    public static function nextSubHeadCode(): string
+    public static function nextMainHeadId(): int
     {
-        return (string) self::resolveNextSubHeadCode(true);
+        return self::resolveNextMainHeadId(true);
     }
 
-    public static function resolveNextSubHeadCode(bool $lock = false): int
+    public static function resolveNextMainHeadId(bool $lock = false): int
     {
         $resolver = function () {
+            $blockMax = DB::table('account_heads')
+                ->where('id', '>=', self::ACCOUNT_HEAD_MIN)
+                ->whereRaw('MOD(id, ?) = 0', [self::ACCOUNT_HEAD_STEP])
+                ->max('id');
+
+            if (!$blockMax) {
+                return self::ACCOUNT_HEAD_MIN;
+            }
+
+            $next = (int) $blockMax + self::ACCOUNT_HEAD_STEP;
+
+            if ($next > self::ACCOUNT_HEAD_MAX) {
+                throw new RuntimeException('No main head IDs left in configured range.');
+            }
+
+            while (DB::table('account_heads')->where('id', $next)->exists()) {
+                $next += self::ACCOUNT_HEAD_STEP;
+                if ($next > self::ACCOUNT_HEAD_MAX) {
+                    throw new RuntimeException('No main head IDs left in configured range.');
+                }
+            }
+
+            return $next;
+        };
+
+        return $lock
+            ? DB::transaction(fn () => $resolver())
+            : $resolver();
+    }
+
+    public static function subHeadRangeForMainHead(int $headId): array
+    {
+        $headId = (int) $headId;
+
+        return [
+            'min' => $headId + 1,
+            'max' => $headId + self::ACCOUNT_HEAD_STEP - 1,
+        ];
+    }
+
+    public static function peekNextSubHeadCodeForHead(int $headId): string
+    {
+        return (string) self::resolveNextSubHeadCodeForHead($headId, false);
+    }
+
+    public static function nextSubHeadCodeForHead(int $headId): string
+    {
+        return (string) self::resolveNextSubHeadCodeForHead($headId, true);
+    }
+
+    public static function resolveNextSubHeadCodeForHead(int $headId, bool $lock = false): int
+    {
+        $headId = (int) $headId;
+        $range = self::subHeadRangeForMainHead($headId);
+        $min = $range['min'];
+        $max = $range['max'];
+
+        $resolver = function () use ($headId, $min, $max) {
             $maxId = DB::table('accounts')
-                ->whereBetween('id', [self::SUB_HEAD_MIN, self::SUB_HEAD_MAX])
+                ->where('head_id', $headId)
+                ->whereBetween('id', [$min, $max])
                 ->max('id');
 
             $maxCode = DB::table('accounts')
+                ->where('head_id', $headId)
                 ->whereRaw('account_code REGEXP "^[0-9]+$"')
-                ->whereRaw('CAST(account_code AS UNSIGNED) >= ?', [self::SUB_HEAD_MIN])
+                ->whereRaw('CAST(account_code AS UNSIGNED) BETWEEN ? AND ?', [$min, $max])
                 ->max(DB::raw('CAST(account_code AS UNSIGNED)'));
 
-            $next = self::SUB_HEAD_MIN;
+            $next = $min;
             if ($maxId) {
                 $next = max($next, (int) $maxId + 1);
             }
@@ -102,8 +163,8 @@ class ModuleIdSequence
                 $next++;
             }
 
-            if ($next > self::SUB_HEAD_MAX) {
-                throw new RuntimeException('No sub head codes left in configured range.');
+            if ($next > $max) {
+                throw new RuntimeException("No sub head codes left for main head {$headId}.");
             }
 
             return $next;

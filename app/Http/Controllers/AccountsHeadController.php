@@ -47,11 +47,7 @@ class AccountsHeadController extends Controller
         $heads = AccountHead::orderBy('id')->get();
         $userGroups = UserGroup::all();
         $users = User::all();
-        $nextHeadId = \App\Support\ModuleIdSequence::peekNextId(
-            'account_heads',
-            \App\Support\ModuleIdSequence::ACCOUNT_HEAD_MIN,
-            \App\Support\ModuleIdSequence::ACCOUNT_HEAD_MAX
-        );
+        $nextHeadId = \App\Support\ModuleIdSequence::peekNextMainHeadId();
 
         $selectedHeadId = request('head_id');
         if ($selectedHeadId === null && $heads->isNotEmpty()) {

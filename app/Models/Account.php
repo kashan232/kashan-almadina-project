@@ -68,7 +68,7 @@ class Account extends Model
         $headCode = (int) (AccountHead::where('id', $headId)->value('id') ?: $headId);
 
         if ($headCode >= \App\Support\ModuleIdSequence::ACCOUNT_HEAD_MIN) {
-            return \App\Support\ModuleIdSequence::peekNextSubHeadCode();
+            return \App\Support\ModuleIdSequence::peekNextSubHeadCodeForHead($headId);
         }
 
         $lastRow = DB::table('accounts')
