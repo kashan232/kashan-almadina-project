@@ -13,16 +13,20 @@
 
                         <div class="row mb-3">
                             <div class="col-md-6">
-                                <label><strong>Vendor Name:</strong></label>
-                                <input type="text" class="form-control" name="name" value="{{ old('name', $vendor->name) }}" required>
+                                <label><strong>Vendor ID:</strong></label>
+                                <input type="text" class="form-control bg-light" readonly value="{{ $vendor->id }}">
                             </div>
                             <div class="col-md-6">
-                                <label><strong>Phone Number:</strong></label>
-                                <input type="text" class="form-control" name="phone" value="{{ old('phone', $vendor->phone) }}">
+                                <label><strong>Vendor Name:</strong></label>
+                                <input type="text" class="form-control" name="name" value="{{ old('name', $vendor->name) }}" required>
                             </div>
                         </div>
 
                         <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label><strong>Phone Number:</strong></label>
+                                <input type="text" class="form-control" name="phone" value="{{ old('phone', $vendor->phone) }}">
+                            </div>
                             <div class="col-md-6">
                                 <label><strong>Opening Balance:</strong></label>
                                 <input type="number" class="form-control" name="opening_balance" value="{{ old('opening_balance', $vendor->opening_balance) }}" step="0.01">

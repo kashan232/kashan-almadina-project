@@ -13,20 +13,27 @@
 
                         <div class="row mb-3">
                             <div class="col-md-6">
-                                <label><strong>Vendor Name:</strong></label>
-                                <input type="text" class="form-control" name="name" value="{{ old('name') }}" required>
+                                <label><strong>Vendor ID:</strong></label>
+                                <input type="text" class="form-control bg-light" readonly value="{{ $nextVendorId ?? '' }}">
                             </div>
                             <div class="col-md-6">
-                                <label><strong>Phone Number:</strong></label>
-                                <input type="text" class="form-control" name="phone" value="{{ old('phone') }}">
+                                <label><strong>Vendor Name:</strong></label>
+                                <input type="text" class="form-control" name="name" value="{{ old('name') }}" required>
                             </div>
                         </div>
 
                         <div class="row mb-3">
                             <div class="col-md-6">
+                                <label><strong>Phone Number:</strong></label>
+                                <input type="text" class="form-control" name="phone" value="{{ old('phone') }}">
+                            </div>
+                            <div class="col-md-6">
                                 <label><strong>Opening Balance:</strong></label>
                                 <input type="number" class="form-control" name="opening_balance" value="{{ old('opening_balance', 0) }}" step="0.01">
                             </div>
+                        </div>
+
+                        <div class="row mb-3">
                             <div class="col-md-6">
                                 <label><strong>Assigned User Groups:</strong></label>
                                 @if($isAdmin)

@@ -54,7 +54,13 @@ class VendorController extends Controller
     {
         $userGroups = UserGroup::all();
         $isAdmin = Auth::user()->roles->pluck('name')->contains('Admin') || Auth::id() == 1;
-        return view('admin_panel.vendors.create', compact('userGroups', 'isAdmin'));
+        $nextVendorId = \App\Support\ModuleIdSequence::peekNextId(
+            'vendors',
+            \App\Support\ModuleIdSequence::VENDOR_MIN,
+            \App\Support\ModuleIdSequence::VENDOR_MAX
+        );
+
+        return view('admin_panel.vendors.create', compact('userGroups', 'isAdmin', 'nextVendorId'));
     }
 
     public function store(Request $request)

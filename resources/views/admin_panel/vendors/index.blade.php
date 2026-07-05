@@ -155,7 +155,7 @@
                                 </button>
                                 <div class="column-picker-menu shadow" id="columnPickerMenu">
                                     <div class="p-2 border-bottom fw-bold small text-muted">Show/Hide Columns</div>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="1" checked> #</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="1" checked> Vendor ID</label>
                                     <label class="column-picker-item"><input type="checkbox" data-column="2" checked> Name</label>
                                     <label class="column-picker-item"><input type="checkbox" data-column="3" checked> Groups</label>
                                     @if($isAdmin)<label class="column-picker-item"><input type="checkbox" data-column="4" checked> Created By</label>@endif
@@ -171,7 +171,7 @@
                                 <table id="vendorTable" class="table table-sm table-striped table-bordered w-100 mb-0">
                                     <thead>
                                         <tr>
-                                            <th>#</th>
+                                            <th>Vendor ID</th>
                                             <th>Name</th>
                                             <th>Groups</th>
                                             @if($isAdmin)
@@ -188,7 +188,7 @@
                                         @php $userGroupsKeyed = $userGroups->keyBy('id'); @endphp
                                         @foreach($vendors as $key => $v)
                                         <tr>
-                                            <td>{{ $key+1 }}</td>
+                                            <td class="fw-bold text-primary">{{ $v->id }}</td>
                                             <td class="fw-bold text-primary">{{ $v->name }}</td>
                                             <td>
                                                 @if(!empty($v->user_group_ids))
