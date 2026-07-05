@@ -116,15 +116,17 @@ class AccountsHeadController extends Controller
                 'status' => $status,
             ]);
             $message = 'Head updated successfully.';
-        } else {
-            AccountHead::create([
-                'name' => $request->name,
-                'status' => $status,
-            ]);
-            $message = 'Head added successfully.';
+
+            return redirect()->route('view_all', ['head_id' => $request->head_id])->with('success', $message);
         }
 
-        return redirect()->back()->with('success', $message);
+        $head = AccountHead::create([
+            'name' => $request->name,
+            'status' => $status,
+        ]);
+        $message = 'Head added successfully.';
+
+        return redirect()->route('view_all', ['head_id' => $head->id])->with('success', $message);
     }
 
 
@@ -150,7 +152,9 @@ class AccountsHeadController extends Controller
         if (!$existingInScope) {
             $accountCode = Account::generateAccountCode((int) $request->head_id);
         } elseif (DB::table('accounts')->where('account_code', $accountCode)->where('id', '!=', $existingInScope->id)->exists()) {
-            return redirect()->back()->with('error', 'Account code already exists. Please refresh and try again.');
+            return redirect()
+                ->route('view_all', ['head_id' => $request->head_id])
+                ->with('error', 'Account code already exists. Please refresh and try again.');
         }
 
         Account::updateOrCreate(
@@ -158,6 +162,7 @@ class AccountsHeadController extends Controller
             [
                 'head_id'         => $request->head_id,
                 'title'           => $request->title,
+                'type'            => $existingInScope->type ?? 'Debit',
                 'opening_balance' => $request->opening_balance ?? 0,
                 'status'          => $status,
                 'user_group_ids'  => $request->user_group_ids,
@@ -165,7 +170,9 @@ class AccountsHeadController extends Controller
             ]
         );
 
-        return redirect()->back()->with('success', 'Account saved successfully.');
+        return redirect()
+            ->route('view_all', ['head_id' => $request->head_id])
+            ->with('success', 'Account saved successfully.');
     }
 
     

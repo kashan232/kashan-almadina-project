@@ -139,6 +139,22 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             @endif
+            @if(session('error'))
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <i class="fa fa-times-circle me-2"></i> {{ session('error') }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            @endif
+            @if($errors->any())
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <ul class="mb-0 ps-3">
+                    @foreach($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+            @endif
 
             <!-- Header and Filters -->
             <div class="row mb-3">
@@ -269,10 +285,6 @@
                                                     <i class="fa fa-edit text-dark"></i>
                                                 </button>
                                             </td>
-                                        </tr>
-                                        @empty
-                                        <tr>
-                                            <td colspan="7" class="text-center py-4 text-muted">No sub head accounts found for this main head.</td>
                                         </tr>
                                         @endforelse
                                     </tbody>
@@ -463,18 +475,20 @@
             }
         });
 
-        const storageKey = 'coa_table_columns_v2';
-        
-        var dt = $('#accountsTable').DataTable({
+        const storageKey = 'coa_table_columns_v3';
+        const hasRows = $('#accountsTable tbody tr').length > 0;
+
+        var dt = hasRows ? $('#accountsTable').DataTable({
             scrollX: true,
             autoWidth: false,
             pageLength: 25,
             order: [[1, 'asc']],
             language: {
                 search: "_INPUT_",
-                searchPlaceholder: "Search accounts..."
+                searchPlaceholder: "Search accounts...",
+                emptyTable: "No sub head accounts found for this main head."
             }
-        });
+        }) : null;
 
         $('#headFilterSelect').on('change', function () {
             $('#selectedHeadCode').val($(this).val());
@@ -488,22 +502,33 @@
 
         $('#addAccountModal').on('shown.bs.modal', function() {
             const selectedHead = $('#headFilterSelect').val();
-            if (selectedHead && !$('#accountHeadSelect').val()) {
-                $('#accountHeadSelect').val(selectedHead).trigger('change');
+            if (selectedHead) {
+                $('#accountHeadSelect').val(selectedHead);
             }
-        });
+            loadNextAccountCode();
 
-        // Initialize Select2 in modal
-        $('#addAccountModal').on('shown.bs.modal', function() {
             $('.select2-groups').select2({
                 dropdownParent: $('#addAccountModal'),
                 width: '100%'
             });
         });
 
+        function loadNextAccountCode() {
+            const headId = $('#accountHeadSelect').val();
+            if (!headId) {
+                $('input[name="account_code"]').val('');
+                return;
+            }
+            $.get("{{ route('coa.account.next_code', ['headId' => '__HEAD__']) }}".replace('__HEAD__', headId), function(data) {
+                $('input[name="account_code"]').val(data.code);
+            }).fail(function() {
+                $('input[name="account_code"]').val('');
+            });
+        }
+
         // Apply saved column visibility
         const savedState = localStorage.getItem(storageKey);
-        if (savedState) {
+        if (savedState && dt) {
             const columns = JSON.parse(savedState);
             $('#columnPickerMenu input').each(function() {
                 const colIdx = parseInt($(this).data('column'));
@@ -516,6 +541,7 @@
 
         // Handle Checkbox Change
         $('#columnPickerMenu input').on('change', function() {
+            if (!dt) return;
             const colIdx = $(this).data('column');
             const isChecked = $(this).is(':checked');
             dt.column(parseInt(colIdx) - 1).visible(isChecked);
@@ -536,22 +562,7 @@
         });
 
         // Auto-generate Account Code on Head selection
-        $('select[name="head_id"]#accountHeadSelect').on('change', function() {
-            const headId = $(this).val();
-            if (headId) {
-                $.get("{{ url('/coa/next-account-code') }}/" + headId, function(data) {
-                    $('input[name="account_code"]').val(data.code);
-                });
-            } else {
-                $('input[name="account_code"]').val('');
-            }
-        });
-
-        @if($selectedHeadId)
-        if ($('#accountHeadSelect').val()) {
-            $('#accountHeadSelect').trigger('change');
-        }
-        @endif
+        $('#accountHeadSelect').on('change', loadNextAccountCode);
 
         // Edit Account functionality
         $(document).on('click', '.edit-account-btn', function() {
