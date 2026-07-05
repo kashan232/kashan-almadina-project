@@ -557,7 +557,7 @@ class PurchaseController extends Controller
 
         try {
             \Illuminate\Support\Facades\DB::transaction(function () use ($request, $id, $cleanProductIds, $cleanQtys, $cleanPrices, $cleanItemDiscs, $cleanDiscAmounts, $cleanPurchaseRetail, $cleanPurchaseNet, $cleanAmounts) {
-                $purchase = Purchase::findOrFail($id);
+                $purchase = Purchase::with(['items', 'accountAllocations.account'])->findOrFail($id);
                 
                 $typeMap = [
                     'Vendor'       => \App\Models\Vendor::class,
@@ -745,7 +745,7 @@ class PurchaseController extends Controller
     {
         try {
             DB::transaction(function () use ($id) {
-                $purchase = Purchase::findOrFail($id);
+                $purchase = Purchase::with(['items', 'accountAllocations.account'])->findOrFail($id);
                 if ($purchase->status === 'Posted') {
                     throw new \Exception('This purchase is already posted.');
                 }
@@ -797,11 +797,10 @@ class PurchaseController extends Controller
             }
         }
 
-        // 2. Ledger Impact (CONSOLIDATED UPDATE)
-        // We post the GROSS amount (Subtotal) first, then deductions follow.
-        $grossAmount = $purchase->subtotal;
-        $type        = strtolower(class_basename($purchase->purchasable_type));
-        $party_id    = $purchase->purchasable_id;
+        // 2. Ledger Impact — PJ credits party by Net Amount (balance decreases / goes negative).
+        $type = strtolower(class_basename($purchase->purchasable_type));
+        $party_id = (int) $purchase->purchasable_id;
+        $netAmount = (float) ($purchase->net_amount ?? 0);
 
         $ledgerModel = null;
         $partyCol = '';
@@ -816,34 +815,15 @@ class PurchaseController extends Controller
             $partyCol = 'sub_customer_id';
         }
 
-        if ($ledgerModel) {
-            // Find existing ledger record (ONLY ONE PER PARTY)
-            $ledger = $ledgerModel::where($partyCol, $party_id)->first();
-            
-            // The user requires the NET AMOUNT to be the impact on the ledger.
-            // Net Amount = Subtotal - Discount/Allocations + WHT
-            $impact = (float)($purchase->net_amount ?? 0);
-
-            if ($ledger) {
-                $ledger->update([
-                    'previous_balance' => $ledger->closing_balance,
-                    'closing_balance'  => $ledger->closing_balance + $impact,
-                    'date'             => $purchase->current_date,
-                    'description'      => 'Purchase: ' . $purchase->invoice_no . ' (Consolidated Update)',
-                ]);
-            } else {
-                $ledgerModel::create([
-                    $partyCol => $party_id,
-                    'admin_or_user_id' => auth()->id(),
-                    'date' => $purchase->current_date,
-                    'description' => 'Purchase: ' . $purchase->invoice_no,
-                    'opening_balance' => 0,
-                    'previous_balance' => 0,
-                    'debit' => 0,
-                    'credit' => $impact,
-                    'closing_balance' => $impact,
-                ]);
-            }
+        if ($ledgerModel && $netAmount > 0) {
+            $this->postPartyLedgerCredit(
+                $ledgerModel,
+                $partyCol,
+                $party_id,
+                $netAmount,
+                $purchase->current_date,
+                'Purchase: ' . $purchase->invoice_no
+            );
 
             // --- Secondary Impacts (JV & Account Balances) ---
             
@@ -933,10 +913,10 @@ class PurchaseController extends Controller
             }
         }
 
-        // 2. Reverse Ledger Impact
-        $impact = (float)($purchase->net_amount ?? 0);
+        // 2. Reverse Ledger Impact (restore party balance)
+        $netAmount = (float) ($purchase->net_amount ?? 0);
         $type = strtolower(class_basename($purchase->purchasable_type));
-        $party_id = $purchase->purchasable_id;
+        $party_id = (int) $purchase->purchasable_id;
 
         $ledgerModel = null;
         $partyCol = '';
@@ -951,13 +931,15 @@ class PurchaseController extends Controller
             $partyCol = 'sub_customer_id';
         }
 
-        if ($ledgerModel) {
-            $ledger = $ledgerModel::where($partyCol, $party_id)->first();
-            if ($ledger) {
-                $ledger->update([
-                    'closing_balance'  => $ledger->closing_balance - $impact,
-                ]);
-            }
+        if ($ledgerModel && $netAmount > 0) {
+            $this->postPartyLedgerDebit(
+                $ledgerModel,
+                $partyCol,
+                $party_id,
+                $netAmount,
+                $purchase->current_date,
+                'Purchase Reversal: ' . $purchase->invoice_no
+            );
         }
 
         // 3. Reverse WHT Account Impact
@@ -986,5 +968,63 @@ class PurchaseController extends Controller
         if ($purchase->inward_id) {
             InwardGatepass::where('id', $purchase->inward_id)->update(['status' => 'pending']);
         }
+    }
+
+    /** Credit party ledger — closing balance decreases (e.g. PJ Net Amount). */
+    private function postPartyLedgerCredit(
+        string $ledgerModel,
+        string $partyCol,
+        int $partyId,
+        float $amount,
+        string $date,
+        string $description
+    ): void {
+        if ($amount <= 0) {
+            return;
+        }
+
+        $ledger = $ledgerModel::where($partyCol, $partyId)->latest('id')->first();
+        $prev = $ledger ? (float) $ledger->closing_balance : 0;
+
+        $ledgerModel::create([
+            $partyCol => $partyId,
+            'admin_or_user_id' => auth()->id(),
+            'date' => $date,
+            'description' => $description,
+            'opening_balance' => 0,
+            'previous_balance' => $prev,
+            'debit' => 0,
+            'credit' => $amount,
+            'closing_balance' => $prev - $amount,
+        ]);
+    }
+
+    /** Debit party ledger — closing balance increases (e.g. purchase reversal). */
+    private function postPartyLedgerDebit(
+        string $ledgerModel,
+        string $partyCol,
+        int $partyId,
+        float $amount,
+        string $date,
+        string $description
+    ): void {
+        if ($amount <= 0) {
+            return;
+        }
+
+        $ledger = $ledgerModel::where($partyCol, $partyId)->latest('id')->first();
+        $prev = $ledger ? (float) $ledger->closing_balance : 0;
+
+        $ledgerModel::create([
+            $partyCol => $partyId,
+            'admin_or_user_id' => auth()->id(),
+            'date' => $date,
+            'description' => $description,
+            'opening_balance' => 0,
+            'previous_balance' => $prev,
+            'debit' => $amount,
+            'credit' => 0,
+            'closing_balance' => $prev + $amount,
+        ]);
     }
 }
