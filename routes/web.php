@@ -141,6 +141,7 @@ Route::get('/expense-voucher/print/{id}', [VoucherController::class, 'expensepri
 
 // Income Voucher Routes
 Route::get('/income-vochers/{id?}', [VoucherController::class, 'income_vochers'])->name('income-vochers');
+Route::get('/income-voucher/{id}/view', [VoucherController::class, 'showIncome'])->name('income-vouchers.view');
 Route::post('/income/vochers/ajax-save', [VoucherController::class, 'ajax_save_income'])->name('income.vochers.ajax-save');
 Route::post('/income/vochers/post/{id}', [VoucherController::class, 'post_income'])->name('income.vochers.post');
 Route::post('/income/vochers/unpost/{id}', [VoucherController::class, 'unpost_income'])->name('income.vochers.unpost');
@@ -254,6 +255,9 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/customers', [CustomerController::class, 'index'])->name('customers.index');
     Route::get('/customers/create', [CustomerController::class, 'create'])->name('customers.create');
+    Route::get('/customers/import', [CustomerController::class, 'importForm'])->name('customers.import');
+    Route::get('/customers/import/template', [CustomerController::class, 'downloadImportTemplate'])->name('customers.import.template');
+    Route::post('/customers/import', [CustomerController::class, 'processImport'])->name('customers.import.store');
     Route::post('/customers/store', [CustomerController::class, 'store'])->name('customers.store');
     Route::get('/customers/edit/{id}', [CustomerController::class, 'edit'])->name('customers.edit');
     Route::post('/customers/update/{id}', [CustomerController::class, 'update'])->name('customers.update');

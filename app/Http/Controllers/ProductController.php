@@ -111,6 +111,7 @@ class ProductController extends Controller
         }
 
         $this->syncWarehouseStocksFromForm($product, $request);
+        $this->saveOpeningStockFromForm($product, $request);
 
         return redirect()->route('products.index')->with('success', 'Product Updated');
     }
@@ -176,6 +177,7 @@ class ProductController extends Controller
 
         // Save Warehouse Stocks & Create Stock Adjustments
         $this->syncWarehouseStocksFromForm($product, $request);
+        $this->saveOpeningStockFromForm($product, $request);
 
         return redirect()->route('products.index')->with('success', 'Product Created and Stock Distributed with Adjustments');
     }
@@ -250,13 +252,8 @@ class ProductController extends Controller
             $subCategories = Subcategory::where('category_id', $product->category_id)->get();
         }
 
-        $warehouseStockMap = WarehouseStock::where('product_id', $product->id)
-            ->where('status', 'Posted')
-            ->selectRaw('warehouse_id, SUM(quantity) as qty')
-            ->groupBy('warehouse_id')
-            ->pluck('qty', 'warehouse_id')
-            ->map(fn ($qty) => (float) $qty)
-            ->all();
+        $warehouseStockMap = $this->resolveOpeningWarehouseStockMap($product);
+        $openingTotalStock = $this->resolveOpeningTotalStock($product, $warehouseStockMap);
 
         return view('admin_panel.product.edit', compact(
             'product',
@@ -264,7 +261,8 @@ class ProductController extends Controller
             'brands',
             'warehouses',
             'subCategories',
-            'warehouseStockMap'
+            'warehouseStockMap',
+            'openingTotalStock'
         ));
     }
 
@@ -531,5 +529,78 @@ class ProductController extends Controller
             'name' => $product->name,
             'price' => $product->latestPrice->sale_net_amount ?? 0
         ]);
+    }
+
+    private function saveOpeningStockFromForm(Product $product, Request $request): void
+    {
+        $totalOpeningStock = (float) ($request->stock ?? 0);
+        $warehouseMap = [];
+        $warehouseTotal = 0;
+
+        if ($request->has('warehouse_ids')) {
+            foreach ($request->warehouse_ids as $index => $warehouseId) {
+                $qty = (float) ($request->warehouse_stocks[$index] ?? 0);
+                $warehouseMap[(string) $warehouseId] = $qty;
+                $warehouseTotal += $qty;
+            }
+        }
+
+        $product->update([
+            'opening_total_stock' => $totalOpeningStock,
+            'opening_shop_stock' => $totalOpeningStock - $warehouseTotal,
+            'opening_warehouse_stocks' => $warehouseMap,
+        ]);
+    }
+
+    private function resolveOpeningWarehouseStockMap(Product $product): array
+    {
+        $stored = $product->opening_warehouse_stocks;
+        if (is_array($stored) && !empty($stored)) {
+            $map = [];
+            foreach ($stored as $warehouseId => $qty) {
+                $map[(int) $warehouseId] = (float) $qty;
+            }
+
+            return $map;
+        }
+
+        $fromAdjustments = StockAdjustmentItem::query()
+            ->join('stock_adjustments as sa', 'sa.id', '=', 'stock_adjustment_details.stock_adjustment_id')
+            ->where('stock_adjustment_details.product_id', $product->id)
+            ->where('sa.remarks', 'like', 'Opening Stock Distribution for Product:%')
+            ->pluck('stock_adjustment_details.qty', 'sa.warehouse_id')
+            ->map(fn ($qty) => (float) $qty)
+            ->all();
+
+        if (!empty($fromAdjustments)) {
+            return collect($fromAdjustments)
+                ->mapWithKeys(fn ($qty, $warehouseId) => [(int) $warehouseId => (float) $qty])
+                ->all();
+        }
+
+        return WarehouseStock::where('product_id', $product->id)
+            ->where('status', 'Posted')
+            ->selectRaw('warehouse_id, SUM(quantity) as qty')
+            ->groupBy('warehouse_id')
+            ->pluck('qty', 'warehouse_id')
+            ->map(fn ($qty) => (float) $qty)
+            ->all();
+    }
+
+    private function resolveOpeningTotalStock(Product $product, array $warehouseStockMap): float
+    {
+        if ($product->opening_total_stock !== null && $product->opening_total_stock !== '') {
+            return (float) $product->opening_total_stock;
+        }
+
+        if ($product->opening_shop_stock !== null && $product->opening_shop_stock !== '') {
+            return (float) $product->opening_shop_stock + (float) collect($warehouseStockMap)->sum();
+        }
+
+        if (!empty($warehouseStockMap)) {
+            return (float) collect($warehouseStockMap)->sum() + (float) ($product->opening_shop_stock ?? $product->stock ?? 0);
+        }
+
+        return (float) ($product->stock ?? 0);
     }
 }

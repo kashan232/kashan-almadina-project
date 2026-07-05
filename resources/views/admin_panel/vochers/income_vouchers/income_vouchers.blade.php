@@ -5,6 +5,10 @@
 <style>
 @include('admin_panel.vochers._compact_voucher_styles', ['accentColor' => '#10b981'])
 </style>
+@php
+    $isViewMode = isset($viewMode) && $viewMode;
+    $isPosted = ($receipt->status ?? '') === 'posted';
+@endphp
 
 <div class="main-content">
     <div class="main-content-inner">
@@ -18,10 +22,13 @@
                     <div class="d-flex justify-content-between align-items-center">
                         <div class="d-flex align-items-center gap-3">
                             <div class="header-info-box">
-                                <h6 class="mb-0 fw-bold text-dark"><i class="fa fa-line-chart me-2 text-success"></i>Income Voucher</h6>
+                                <h6 class="mb-0 fw-bold text-dark">
+                                    <i class="fa fa-line-chart me-2 text-success"></i>
+                                    {{ $isViewMode ? 'View Income Voucher' : 'Income Voucher' }}
+                                </h6>
                             </div>
-                            <span id="statusBadge" class="badge {{ $receipt->status == 'posted' ? 'bg-success' : 'bg-warning text-dark' }} rounded-pill px-3 py-1" style="font-size: 10px;">
-                                {{ strtoupper($receipt->status ?: 'DRAFT') }}
+                            <span id="statusBadge" class="badge {{ ($isPosted || $isViewMode) ? 'bg-success' : 'bg-warning text-dark' }} rounded-pill px-3 py-1" style="font-size: 10px;">
+                                {{ $isViewMode ? 'POSTED' : strtoupper($receipt->status ?: 'DRAFT') }}
                             </span>
                             <span class="badge bg-light text-primary border rounded-pill px-3 py-1" style="font-size: 10px;">
                                 <i class="fa fa-hashtag me-1"></i> <span id="ividBadgeText">{{ $receipt->id ? $receipt->ivid : 'Auto-Generated' }}</span>
@@ -36,7 +43,7 @@
                 </div>
             </div>
 
-            <form id="incomeForm" autocomplete="off" class="{{ ($receipt->id && $receipt->status == 'posted') ? 'form-locked' : '' }}">
+            <form id="incomeForm" autocomplete="off" class="{{ ($isViewMode || ($receipt->id && $isPosted)) ? 'form-locked' : '' }}{{ $isViewMode ? ' view-mode' : '' }}">
                 @csrf
                 <input type="hidden" name="id" id="receipt_id" value="{{ $receipt->id }}">
 
@@ -78,7 +85,7 @@
                 <div class="card form-card mb-2">
                     <div class="card-header bg-white py-1 d-flex justify-content-between align-items-center border-bottom">
                         <span class="fw-bold text-muted small text-uppercase"><i class="fa fa-list-ul me-1"></i> Income Details</span>
-                        <button type="button" class="btn btn-primary btn-xs px-3 rounded-pill" id="btnAddRow" {{ $receipt->status == 'posted' ? 'disabled' : '' }}>
+                        <button type="button" class="btn btn-primary btn-xs px-3 rounded-pill" id="btnAddRow" {{ ($isPosted || $isViewMode) ? 'disabled' : '' }}>
                             <i class="fa fa-plus me-1"></i> Add Line
                         </button>
                     </div>
@@ -166,11 +173,11 @@
                     'printRoute' => 'incomeVoucher.print',
                     'listRoute' => 'all-income-vochers',
                     'newRoute' => 'income-vochers',
-                    'showUnpost' => true,
+                    'showUnpost' => !$isViewMode,
                 ])
             </form>
 
-            @if($receipt->status == 'posted')
+            @if($isPosted || $isViewMode)
                 <div class="posted-watermark" id="postedWatermark">Posted</div>
             @endif
         </div>
@@ -183,6 +190,14 @@
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script>
 $(document).ready(function() {
+    var isViewMode = @json($isViewMode);
+
+    if (isViewMode) {
+        $('#saveDraftBtn, #editInvoiceBtn, #postBtn, #deleteBtn, #unpostBtn').prop('disabled', true);
+        $('#incomeForm select, #incomeForm input, #incomeForm textarea').prop('disabled', true);
+        $('#btnAddRow').prop('disabled', true);
+    }
+
     function initSelectors($container = $('body')) {
         $container.find('.select2').select2({ width: '100%' });
         $container.find('.narrationSelect').select2({ placeholder: "Narration...", tags: true, width: '100%' });

@@ -86,6 +86,11 @@
                 </div>
             </div>
 
+            <div id="formErrorAlert" class="alert alert-danger alert-dismissible py-2 px-3 mb-2 d-none" role="alert">
+                <i class="fa fa-exclamation-triangle me-2"></i><span id="formErrorText"></span>
+                <button type="button" class="btn-close btn-close-sm" id="formErrorDismiss" aria-label="Close"></button>
+            </div>
+
             <form action="{{ route('stock-holds.store') }}" method="POST" id="stockHoldForm" class="position-relative">
                 @csrf
                 <input type="hidden" name="action" id="formAction" value="save">
@@ -257,14 +262,40 @@ $(document).ready(function() {
     function showToast(msg, type = 'success') {
         var icon = type === 'success' ? 'fa-check-circle' : 'fa-times-circle';
         var color = type === 'success' ? '#28a745' : '#dc3545';
+        var duration = type === 'success' ? 3000 : 6000;
         var $toast = $('<div>').css({
             position: 'fixed', top: '20px', right: '20px', zIndex: 9999,
             background: color, color: '#fff', padding: '12px 20px', borderRadius: '8px',
-            boxShadow: '0 4px 15px rgba(0,0,0,.2)', display: 'flex', alignItems: 'center', gap: '8px'
-        }).html('<i class="fa ' + icon + '"></i> ' + msg);
+            boxShadow: '0 4px 15px rgba(0,0,0,.2)', display: 'flex', alignItems: 'center', gap: '8px',
+            maxWidth: '420px', lineHeight: '1.35'
+        }).html('<i class="fa ' + icon + '"></i> <span>' + $('<div>').text(msg).html() + '</span>');
         $('body').append($toast);
-        setTimeout(function() { $toast.fadeOut(400, function(){ $(this).remove(); }); }, 3000);
+        setTimeout(function() { $toast.fadeOut(400, function(){ $(this).remove(); }); }, duration);
     }
+
+    function extractAjaxError(xhr) {
+        if (xhr.responseJSON) {
+            if (xhr.responseJSON.message) return xhr.responseJSON.message;
+            if (xhr.responseJSON.errors) {
+                return Object.values(xhr.responseJSON.errors).flat().join(', ');
+            }
+        }
+        return 'Server Error';
+    }
+
+    function showFormError(msg) {
+        $('#formErrorText').text(msg);
+        $('#formErrorAlert').removeClass('d-none');
+        showToast(msg, 'error');
+        $('html, body').animate({ scrollTop: $('#formErrorAlert').offset().top - 80 }, 200);
+    }
+
+    function clearFormError() {
+        $('#formErrorAlert').addClass('d-none');
+        $('#formErrorText').text('');
+    }
+
+    $('#formErrorDismiss').on('click', function() { clearFormError(); });
 
     // Party List Loading
     $('#vendor_type').on('change', function() {
@@ -341,6 +372,7 @@ $(document).ready(function() {
 
         var btn = act === 'post' ? '#postBtn' : '#saveDraftBtn';
         if (act === 'post') _postInFlight = true; else _saveInFlight = true;
+        clearFormError();
         $(btn).prop('disabled', true).html('<i class="fa fa-spinner fa-spin me-1"></i>');
 
         $.ajax({
@@ -348,6 +380,7 @@ $(document).ready(function() {
             headers: { 'X-Requested-With': 'XMLHttpRequest' },
             success: function(res) {
                 if(res.success) {
+                    clearFormError();
                     _savedVoucherId = res.id;
                     $('#voucher_id').val(res.id);
                     if (res.voucher_no) $('#voucher_no').val(res.voucher_no);
@@ -364,9 +397,9 @@ $(document).ready(function() {
                         $('#editInvoiceBtn, #postBtn').prop('disabled', false);
                         showToast('Draft Saved — Ctrl+E to edit');
                     }
-                } else { showToast(res.message, 'error'); }
+                } else { showFormError(res.message || 'Unable to save stock hold.'); }
             },
-            error: function() { showToast('Server Error', 'error'); },
+            error: function(xhr) { showFormError(extractAjaxError(xhr)); },
             complete: function() {
                 if (act === 'post') _postInFlight = false; else _saveInFlight = false;
                 if (!$('#stockHoldForm').hasClass('form-locked') || act === 'post') {
@@ -390,8 +423,8 @@ $(document).ready(function() {
                 setHoldFormPostedState(_savedVoucherId, printUrl);
                 showToast('Stock Hold Posted!', 'success');
             },
-            error: function() {
-                showToast('Post failed', 'error');
+            error: function(xhr) {
+                showFormError(extractAjaxError(xhr));
                 _postInFlight = false;
                 $('#postBtn').prop('disabled', false).html(postBtnHtml);
             }

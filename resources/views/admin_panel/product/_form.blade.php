@@ -2,11 +2,10 @@
     $isEdit = isset($product) && $product;
     $price = $isEdit ? ($product->latestPrice ?? null) : null;
     $warehouseStockMap = $warehouseStockMap ?? [];
+    $openingTotalStock = $openingTotalStock ?? 0;
     $totalOpeningStock = old(
         'stock',
-        $isEdit
-            ? ((float) $product->stock + (float) collect($warehouseStockMap)->sum())
-            : 0
+        $isEdit ? (float) $openingTotalStock : 0
     );
     $initialCategory = old('category', $isEdit ? $product->category_id : null);
     $initialSubCategory = old('sub_category', $isEdit ? $product->sub_category_id : null);

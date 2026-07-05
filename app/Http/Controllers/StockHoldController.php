@@ -29,12 +29,14 @@ class StockHoldController extends Controller
             'partyCustomer:id,customer_name',
             'partyVendor:id,name',
             'items' => function ($q) {
-                $q->where('hold_qty', '>', 0);
+                $q->withSum([
+                    'releases as released_qty' => function ($rq) {
+                        $rq->withoutGlobalScopes()->whereIn('status', ['Posted', 'posted']);
+                    },
+                ], 'release_qty');
             },
             'items.product',
-        ])->whereHas('items', function ($q) {
-            $q->where('hold_qty', '>', 0);
-        });
+        ]);
 
         if ($request->start_date) {
             $query->whereDate('date', '>=', $request->start_date);

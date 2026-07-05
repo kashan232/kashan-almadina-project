@@ -188,7 +188,7 @@
                                                 @foreach($v->items as $item)
                                                     <div class="item-detail-row">
                                                         {{ $item->product->name ?? 'Product' }}
-                                                        <span class="text-primary fw-bold ms-1">({{ (float)$item->hold_qty }})</span>
+                                                        <span class="text-primary fw-bold ms-1">({{ (float) $item->display_hold_qty }})</span>
                                                     </div>
                                                 @endforeach
                                             </td>

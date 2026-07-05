@@ -13,6 +13,7 @@ use App\Models\CustomerPayment;
 use Illuminate\Support\Facades\DB;
 use App\Models\UserGroup;
 use App\Models\User;
+use App\Services\CustomerImportService;
 
 class CustomerController extends Controller
 {
@@ -157,30 +158,58 @@ class CustomerController extends Controller
             'user_group_ids' => 'nullable|array',
         ]);
 
-        $data['created_by'] = Auth::id();
-        $data['customer_id'] = 'CUST-' . str_pad(Customer::withoutGlobalScopes()->max('id') + 1, 1, STR_PAD_LEFT);
+        $userGroupIds = $data['user_group_ids'] ?? null;
+        unset($data['user_group_ids']);
 
-        $customer = Customer::create($data);
-
-        $openingBalance = floatval($request->opening_balance ?? 0);
-        $userId = Auth::id();
-
-        try {
-            if ($openingBalance > 0) {
-                CustomerLedger::create([
-                    'customer_id' => $customer->id,
-                    'admin_or_user_id' => $userId,
-                    'opening_balance' => $openingBalance,
-                    'previous_balance' => 0,
-                    'closing_balance' => $openingBalance,
-                ]);
-            }
-        } catch (\Exception $e) {
-            \Log::error('Failed to create customer ledger entry: ' . $e->getMessage());
-        }
+        app(CustomerImportService::class)->createCustomer(
+            $data,
+            Auth::id(),
+            $userGroupIds
+        );
 
         return redirect()->route('customers.index')
             ->with('success', 'Customer created successfully.');
+    }
+
+    public function importForm()
+    {
+        $isAdmin = Auth::user()->roles->pluck('name')->contains('Admin') || Auth::id() == 1;
+
+        return view('admin_panel.customers.import', compact('isAdmin'));
+    }
+
+    public function downloadImportTemplate()
+    {
+        $filename = 'customer_import_template_' . date('Y-m-d') . '.xlsx';
+
+        return response()->streamDownload(function () {
+            app(CustomerImportService::class)->downloadTemplate();
+        }, $filename, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        ]);
+    }
+
+    public function processImport(Request $request, CustomerImportService $importService)
+    {
+        $request->validate([
+            'import_file' => 'required|file|mimes:xlsx,xls,csv|max:10240',
+        ]);
+
+        $isAdmin = Auth::user()->roles->pluck('name')->contains('Admin') || Auth::id() == 1;
+        $defaultUserGroupIds = Auth::user()->userGroups()->pluck('user_groups.id')->map(fn ($id) => (int) $id)->all();
+
+        $path = $request->file('import_file')->getRealPath();
+        $result = $importService->importFromPath($path, Auth::id(), $isAdmin, $defaultUserGroupIds);
+
+        $message = $result['imported'] . ' customer(s) imported successfully.';
+        if ($result['skipped'] > 0) {
+            $message .= ' ' . $result['skipped'] . ' row(s) skipped.';
+        }
+
+        return redirect()
+            ->route('customers.import')
+            ->with('import_success', $message)
+            ->with('import_errors', $result['errors']);
     }
 
 

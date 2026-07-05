@@ -36,6 +36,25 @@ class StockHold extends Model
         return $this->belongsTo(\App\Models\Product::class, 'product_id');
     }
 
+    public function releases()
+    {
+        return $this->hasMany(StockRelease::class, 'hold_id');
+    }
+
+    /** Original held qty for list/history — remaining + already released. */
+    public function getDisplayHoldQtyAttribute(): float
+    {
+        $released = (float) ($this->released_qty ?? 0);
+
+        if ($released <= 0 && $this->relationLoaded('releases')) {
+            $released = (float) $this->releases
+                ->whereIn('status', ['Posted', 'posted'])
+                ->sum('release_qty');
+        }
+
+        return (float) $this->hold_qty + $released;
+    }
+
     public function warehouse()
     {
         return $this->belongsTo(\App\Models\Warehouse::class, 'warehouse_id')->withoutGlobalScopes();

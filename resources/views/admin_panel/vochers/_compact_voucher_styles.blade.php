@@ -50,4 +50,18 @@
     .form-locked #postBtn, .form-locked #exitBtn, .form-locked #deleteBtn, .form-locked #unpostBtn {
         pointer-events: auto !important; opacity: 1 !important;
     }
+    .form-locked.view-mode #saveDraftBtn,
+    .form-locked.view-mode #editInvoiceBtn,
+    .form-locked.view-mode #postBtn,
+    .form-locked.view-mode #deleteBtn,
+    .form-locked.view-mode #unpostBtn {
+        display: none !important;
+    }
+    .form-locked.view-mode #realPrintBtn,
+    .form-locked.view-mode #exitBtn,
+    .form-locked.view-mode #newInvoiceBtn {
+        pointer-events: auto !important;
+        opacity: 1 !important;
+        display: inline-block !important;
+    }
     .ajax-valid-error { color: #dc3545; font-size: 9px; font-weight: 700; margin-top: 1px; display: block; }

@@ -13,6 +13,12 @@ class Product extends Model
 {
     use HasFactory;
     protected $guarded = [];
+
+    protected $casts = [
+        'opening_warehouse_stocks' => 'array',
+        'opening_total_stock' => 'float',
+        'opening_shop_stock' => 'float',
+    ];
     // protected $fillable = [
     //     'creater_id', 'category_id', 'sub_category_id', 'item_code', 'item_name', 'size',
     //     'opening_carton_quantity', 'carton_quantity', 'loose_pieces', 'pcs_in_carton',

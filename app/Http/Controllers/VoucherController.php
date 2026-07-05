@@ -1383,6 +1383,16 @@ class VoucherController extends Controller
         return view('admin_panel.vochers.income_vouchers.income_vouchers', compact('receipt', 'AccountHeads', 'narrationsList', 'nextIvid'));
     }
 
+    public function showIncome($id)
+    {
+        $receipt = IncomeVoucher::findOrFail($id);
+        $AccountHeads = DB::table('account_heads')->get();
+        $narrationsList = DB::table('narrations')->where('expense_head', 'Income voucher')->pluck('narration', 'id');
+        $viewMode = true;
+
+        return view('admin_panel.vochers.income_vouchers.income_vouchers', compact('receipt', 'AccountHeads', 'narrationsList', 'viewMode'));
+    }
+
     public function ajax_save_income(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -1623,7 +1633,7 @@ class VoucherController extends Controller
         if ($request->filled('end_date')) $query->whereDate(DB::raw($dateCol), '<=', $request->end_date);
         if ($request->filled('status')) $query->where('status', $request->status);
 
-        $incomes = $query->orderBy('id', 'DESC')->get();
+        $incomes = $query->with('creator')->orderBy('id', 'DESC')->get();
 
         foreach ($incomes as $v) {
             $pNames = [];

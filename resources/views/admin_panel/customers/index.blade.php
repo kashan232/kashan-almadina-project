@@ -126,6 +126,9 @@
                                         <a href="{{ route('customers.inactive') }}" class="btn btn-outline-secondary btn-sm rounded-pill px-3 ms-2">Inactive</a>
                                         <a href="{{ route('customers.ledger') }}" class="btn btn-info btn-sm rounded-pill px-3 text-white">Ledger</a>
                                         <a href="{{ route('customer.payments') }}" class="btn btn-primary btn-sm rounded-pill px-3">Payments</a>
+                                        <a href="{{ route('customers.import') }}" class="btn btn-outline-success btn-sm rounded-pill px-3">
+                                            <i class="fa fa-file-excel-o me-1"></i> Import Excel
+                                        </a>
                                         <a href="{{ route('customers.create') }}" class="btn btn-success btn-sm rounded-pill px-3 ms-2 shadow-sm">+ Add Customer</a>
                                     </div>
                                 </div>

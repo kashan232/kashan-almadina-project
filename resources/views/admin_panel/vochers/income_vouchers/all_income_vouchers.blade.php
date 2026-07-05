@@ -148,7 +148,8 @@
                                     <label class="column-picker-item"><input type="checkbox" data-column="9" checked> Remarks</label>
                                     <label class="column-picker-item"><input type="checkbox" data-column="10" checked> Discount</label>
                                     <label class="column-picker-item"><input type="checkbox" data-column="11" checked> Total Amount</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="12" checked> Status</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="12" checked> Created By</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="13" checked> Status</label>
                                 </div>
                             </div>
                         </div>
@@ -181,17 +182,10 @@
                                             $reference = is_array($refs) ? implode(', ', array_filter($refs)) : $item->reference_no;
                                         @endphp
                                         <tr>
-                                            <td>
-                                        @if($item->creator)
-                                            <span class="text-dark small">{{ $item->creator->name }}</span>
-                                        @else
-                                            <span class="text-muted small">System</span>
-                                        @endif
-                                    </td>
-                                    <td class="text-center text-muted small">{{ $item->id }}</td>
+                                            <td class="text-muted small">{{ $item->id }}</td>
                                             <td class="text-center small">IV</td>
                                             <td class="fw-bold text-success">{{ $item->ivid ?? '-' }}</td>
-                                            <td class="small">{{ $item->receipt_date ? \Carbon\Carbon::parse($item->receipt_date)->format('d-M-Y') : '-' }}</td>
+                                            <td class="small">{{ $item->entry_date ? \Carbon\Carbon::parse($item->entry_date)->format('d-M-Y') : '-' }}</td>
                                             <td class="small">{{ $item->entry_date ? \Carbon\Carbon::parse($item->entry_date)->format('d-M-Y') : '-' }}</td>
                                             <td class="text-center">
                                                 <span class="badge bg-light text-success border-0 rounded-pill px-2" style="font-size: 9px;">{{ $item->type_label ?? '-' }}</span>
@@ -201,6 +195,13 @@
                                             <td class="small text-muted">{{ Str::limit($item->remarks, 15) }}</td>
                                             <td class="text-end fw-bold text-danger">{{ number_format((float)$item->total_discount, 0) }}</td>
                                             <td class="text-end fw-bold">{{ number_format((float)$item->total_amount, 0) }}</td>
+                                            <td>
+                                                @if($item->creator)
+                                                    <span class="text-dark small">{{ $item->creator->name }}</span>
+                                                @else
+                                                    <span class="text-muted small">System</span>
+                                                @endif
+                                            </td>
                                             <td class="text-center">
                                                 @if($item->status === 'posted')
                                                     <span class="badge bg-success rounded-pill px-3">Posted</span>
@@ -228,6 +229,10 @@
                                                                 <i class="fa fa-trash"></i>
                                                             </button>
                                                         </form>
+                                                    @else
+                                                        <a href="{{ route('income-vouchers.view', $item->id) }}" class="btn btn-outline-info btn-xs px-1 py-0" title="View Income Voucher" style="height: 20px;">
+                                                            <i class="fa fa-eye"></i>
+                                                        </a>
                                                     @endif
                                                     
                                                     <a href="{{ route('incomeVoucher.print', $item->id) }}" target="_blank" class="btn btn-outline-dark btn-xs px-1 py-0" title="Print" style="height: 20px;">
@@ -266,7 +271,7 @@
             }
         });
 
-        const storageKey = 'income_voucher_table_columns_v3';
+        const storageKey = 'income_voucher_table_columns_v4';
         
         var dt = $('#incomeTable').DataTable({
             scrollX: true,
