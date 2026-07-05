@@ -179,9 +179,6 @@
                             @if($isAdmin)
                             <div class="d-flex gap-1 align-items-center">
                                 <form action="{{ route('view_all') }}" method="GET" class="d-flex gap-1 align-items-center">
-                                    @if($selectedHeadId)
-                                        <input type="hidden" name="head_id" value="{{ $selectedHeadId }}">
-                                    @endif
                                     <select name="created_by" class="form-select form-select-sm select2" style="min-width: 150px;">
                                         <option value="">All Creators</option>
                                         @foreach($users as $user)
@@ -192,7 +189,7 @@
                                     </select>
                                     <button type="submit" class="btn btn-primary btn-sm rounded-pill px-3">Filter</button>
                                     @if(request('created_by'))
-                                        <a href="{{ route('view_all', array_filter(['head_id' => $selectedHeadId])) }}" class="btn btn-outline-secondary btn-sm rounded-pill px-2" title="Reset"><i class="fa fa-refresh"></i></a>
+                                        <a href="{{ route('view_all') }}" class="btn btn-outline-secondary btn-sm rounded-pill px-2" title="Reset"><i class="fa fa-refresh"></i></a>
                                     @endif
                                 </form>
                                 <a href="{{ route('purcahse-account-allocation') }}" class="btn btn-outline-danger btn-sm rounded-pill px-3 ms-2">
@@ -208,26 +205,8 @@
             <div class="row">
                 <div class="col-12">
                     <div class="card border-0 shadow-sm">
-                        <div class="card-body p-2">
-                            <form action="{{ route('view_all') }}" method="GET" id="natureFilterForm" class="nature-bar mb-0">
-                                @if($isAdmin && request('created_by'))
-                                    <input type="hidden" name="created_by" value="{{ request('created_by') }}">
-                                @endif
-                                <label>Nature of Account:</label>
-                                <input type="text" class="form-control form-control-sm head-code-box" id="selectedHeadCode"
-                                    value="{{ $selectedHead->id ?? '' }}" readonly>
-                                <select name="head_id" id="headFilterSelect" class="form-control form-control-sm head-name-box" required>
-                                    @foreach($heads as $head)
-                                        <option value="{{ $head->id }}" @selected((string) $selectedHeadId === (string) $head->id)>
-                                            {{ $head->name }}
-                                        </option>
-                                    @endforeach
-                                </select>
-                                <button type="submit" class="btn btn-sm btn-dark px-3">Show</button>
-                            </form>
-                        </div>
                         <div class="card-header bg-white d-flex justify-content-between align-items-center py-2 border-bottom">
-                            <span class="fw-bold text-muted small text-uppercase">Sub Head Accounts</span>
+                            <span class="fw-bold text-muted small text-uppercase">All Accounts</span>
                             <div class="column-picker-dropdown">
                                 <button class="btn btn-outline-secondary btn-sm px-3 rounded-pill" type="button" id="columnPickerBtn">
                                     <i class="fa fa-columns me-1"></i> Columns
@@ -235,11 +214,13 @@
                                 <div class="column-picker-menu shadow" id="columnPickerMenu">
                                     <div class="p-2 border-bottom fw-bold small text-muted">Show/Hide Columns</div>
                                     <label class="column-picker-item"><input type="checkbox" data-column="1" checked> ID</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="2" checked> Account Code</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="3" checked> Account Title</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="4" checked> Opening Dr.</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="5" checked> Opening Cr.</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="6" checked> Inactive</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="2" checked> Head Code</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="3" checked> Head Name</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="4" checked> Account Code</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="5" checked> Account Title</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="6" checked> Opening Dr.</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="7" checked> Opening Cr.</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="8" checked> Inactive</label>
                                 </div>
                             </div>
                         </div>
@@ -250,6 +231,8 @@
                                     <thead>
                                         <tr>
                                             <th>ID</th>
+                                            <th>Head Code</th>
+                                            <th>Head Name</th>
                                             <th>Account Code</th>
                                             <th>Account Title</th>
                                             <th class="text-end">Opening Dr.</th>
@@ -267,6 +250,8 @@
                                         @endphp
                                         <tr>
                                             <td class="text-center">{{ $account->id }}</td>
+                                            <td class="text-center fw-bold text-muted">{{ $account->head_id }}</td>
+                                            <td class="fw-bold">{{ $account->head->name ?? '—' }}</td>
                                             <td class="fw-bold text-primary">{{ $account->account_code }}</td>
                                             <td class="fw-bold text-dark">{{ $account->title }}</td>
                                             <td class="text-end">{{ $openingDr > 0 ? number_format($openingDr, 2) : '0.00' }}</td>
@@ -291,11 +276,8 @@
                                         </tr>
                                         @empty
                                         <tr class="no-data-row">
-                                            <td colspan="7" class="text-center text-muted py-4">
-                                                No sub head accounts found for this main head.
-                                                @if($selectedHead)
-                                                    <span class="d-block small mt-1">Selected: {{ $selectedHead->id }} — {{ $selectedHead->name }}</span>
-                                                @endif
+                                            <td colspan="9" class="text-center text-muted py-4">
+                                                No accounts found.
                                             </td>
                                         </tr>
                                         @endforelse
@@ -327,9 +309,7 @@
                     <select name="head_id" class="form-select form-select-sm" id="accountHeadSelect" required>
                         <option value="">Select Head</option>
                         @foreach($heads as $head)
-                        <option value="{{ $head->id }}" @selected((string) ($selectedHeadId ?? '') === (string) $head->id)>
-                            {{ $head->id }} — {{ $head->name }}
-                        </option>
+                        <option value="{{ $head->id }}">{{ $head->id }} — {{ $head->name }}</option>
                         @endforeach
                     </select>
                 </div>
@@ -487,25 +467,20 @@
             }
         });
 
-        const storageKey = 'coa_table_columns_v3';
+        const storageKey = 'coa_table_columns_v4';
         const hasRows = $('#accountsTable tbody tr').not('.no-data-row').length > 0;
 
         var dt = hasRows ? $('#accountsTable').DataTable({
             scrollX: true,
             autoWidth: false,
             pageLength: 25,
-            order: [[1, 'asc']],
+            order: [[3, 'asc']],
             language: {
                 search: "_INPUT_",
                 searchPlaceholder: "Search accounts...",
-                emptyTable: "No sub head accounts found for this main head."
+                emptyTable: "No accounts found."
             }
         }) : null;
-
-        $('#headFilterSelect').on('change', function () {
-            $('#selectedHeadCode').val($(this).val());
-            $('#natureFilterForm').trigger('submit');
-        });
 
         $('#accountsTable tbody').on('click', 'tr', function () {
             $('#accountsTable tbody tr').removeClass('selected-row');
@@ -513,10 +488,6 @@
         });
 
         $('#addAccountModal').on('shown.bs.modal', function() {
-            const selectedHead = $('#headFilterSelect').val();
-            if (selectedHead) {
-                $('#accountHeadSelect').val(selectedHead);
-            }
             loadNextAccountCode();
 
             $('.select2-groups').select2({

@@ -14,36 +14,6 @@ use App\Support\ModuleIdSequence;
 
 class AccountsHeadController extends Controller
 {
-    private function resolveSelectedHeadId($heads): ?string
-    {
-        $requested = request('head_id');
-        if ($requested !== null && $requested !== '') {
-            return (string) $requested;
-        }
-
-        $moduleHeadId = AccountHead::query()
-            ->where('id', '>=', ModuleIdSequence::ACCOUNT_HEAD_MIN)
-            ->whereRaw('MOD(id, ?) = 0', [ModuleIdSequence::ACCOUNT_HEAD_STEP])
-            ->orderByDesc('id')
-            ->value('id');
-
-        if ($moduleHeadId) {
-            return (string) $moduleHeadId;
-        }
-
-        if ($heads->isNotEmpty()) {
-            return (string) $heads->first()->id;
-        }
-
-        return null;
-    }
-    // public function index (){
-    //     return view('admin_panel.chart_of_accounts',);
-    // }
-    // public function narration (){
-    //     return view('admin_panel.accounts.narration',);
-    // }
-
     public function index()
     {
         $query = Account::with('head');
@@ -62,7 +32,6 @@ class AccountsHeadController extends Controller
                 }
              });
         } else {
-            // Admin can filter by user
             if (request('created_by')) {
                 $query->where('created_by', request('created_by'));
             }
@@ -76,14 +45,7 @@ class AccountsHeadController extends Controller
         $users = User::all();
         $nextHeadId = ModuleIdSequence::peekNextMainHeadId();
 
-        $selectedHeadId = $this->resolveSelectedHeadId($heads);
-
-        if ($selectedHeadId !== null && $selectedHeadId !== '') {
-            $query->where('head_id', (int) $selectedHeadId);
-        }
-
-        $accounts = $query->orderBy('account_code')->get();
-        $selectedHead = $heads->firstWhere('id', (int) $selectedHeadId);
+        $accounts = $query->orderBy('head_id')->orderBy('account_code')->get();
 
         return view('admin_panel.chart_of_accounts', compact(
             'accounts',
@@ -91,9 +53,7 @@ class AccountsHeadController extends Controller
             'nextHeadId',
             'isAdmin',
             'userGroups',
-            'users',
-            'selectedHeadId',
-            'selectedHead'
+            'users'
         ));
     }
 
@@ -137,7 +97,7 @@ class AccountsHeadController extends Controller
             ]);
             $message = 'Head updated successfully.';
 
-            return redirect()->route('view_all', ['head_id' => $request->head_id])->with('success', $message);
+            return redirect()->route('view_all')->with('success', $message);
         }
 
         $head = AccountHead::create([
@@ -146,7 +106,7 @@ class AccountsHeadController extends Controller
         ]);
         $message = 'Head added successfully.';
 
-        return redirect()->route('view_all', ['head_id' => $head->id])->with('success', $message);
+        return redirect()->route('view_all')->with('success', $message);
     }
 
 
@@ -173,7 +133,7 @@ class AccountsHeadController extends Controller
             $accountCode = Account::generateAccountCode((int) $request->head_id);
         } elseif (DB::table('accounts')->where('account_code', $accountCode)->where('id', '!=', $existingInScope->id)->exists()) {
             return redirect()
-                ->route('view_all', ['head_id' => $request->head_id])
+                ->route('view_all')
                 ->with('error', 'Account code already exists. Please refresh and try again.');
         }
 
@@ -191,7 +151,7 @@ class AccountsHeadController extends Controller
         );
 
         return redirect()
-            ->route('view_all', ['head_id' => $request->head_id])
+            ->route('view_all')
             ->with('success', 'Account saved successfully.');
     }
 
