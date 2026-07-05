@@ -220,7 +220,8 @@
                                     <label class="column-picker-item"><input type="checkbox" data-column="5" checked> Account Title</label>
                                     <label class="column-picker-item"><input type="checkbox" data-column="6" checked> Opening Dr.</label>
                                     <label class="column-picker-item"><input type="checkbox" data-column="7" checked> Opening Cr.</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="8" checked> Inactive</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="8" checked> Assigned User Groups</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="9" checked> Inactive</label>
                                 </div>
                             </div>
                         </div>
@@ -237,6 +238,7 @@
                                             <th>Account Title</th>
                                             <th class="text-end">Opening Dr.</th>
                                             <th class="text-end">Opening Cr.</th>
+                                            <th>Assigned User Groups</th>
                                             <th class="text-center">Inactive</th>
                                             <th class="text-center" style="width: 80px;">Action</th>
                                         </tr>
@@ -256,6 +258,17 @@
                                             <td class="fw-bold text-dark">{{ $account->title }}</td>
                                             <td class="text-end">{{ $openingDr > 0 ? number_format($openingDr, 2) : '0.00' }}</td>
                                             <td class="text-end">{{ $openingCr > 0 ? number_format($openingCr, 2) : '0.00' }}</td>
+                                            <td>
+                                                @if(!empty($account->user_group_ids))
+                                                    @foreach($account->user_group_ids as $groupId)
+                                                        <span class="badge bg-light text-dark border px-1 me-1" style="font-size: 9px;">
+                                                            {{ $userGroups->get((int) $groupId)?->group_name ?? 'N/A' }}
+                                                        </span>
+                                                    @endforeach
+                                                @else
+                                                    <span class="text-muted small">—</span>
+                                                @endif
+                                            </td>
                                             <td class="text-center">
                                                 <input type="checkbox" disabled {{ $account->status ? '' : 'checked' }}>
                                             </td>
@@ -276,7 +289,7 @@
                                         </tr>
                                         @empty
                                         <tr class="no-data-row">
-                                            <td colspan="9" class="text-center text-muted py-4">
+                                            <td colspan="10" class="text-center text-muted py-4">
                                                 No accounts found.
                                             </td>
                                         </tr>
@@ -467,7 +480,7 @@
             }
         });
 
-        const storageKey = 'coa_table_columns_v4';
+        const storageKey = 'coa_table_columns_v5';
         const hasRows = $('#accountsTable tbody tr').not('.no-data-row').length > 0;
 
         var dt = hasRows ? $('#accountsTable').DataTable({

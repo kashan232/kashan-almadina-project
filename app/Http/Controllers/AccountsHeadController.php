@@ -41,7 +41,7 @@ class AccountsHeadController extends Controller
             ->orderByRaw('CASE WHEN id >= ? THEN 0 ELSE 1 END', [ModuleIdSequence::ACCOUNT_HEAD_MIN])
             ->orderBy('id')
             ->get();
-        $userGroups = UserGroup::all();
+        $userGroups = UserGroup::all()->keyBy('id');
         $users = User::all();
         $nextHeadId = ModuleIdSequence::peekNextMainHeadId();
 
