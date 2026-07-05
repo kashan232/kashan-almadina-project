@@ -767,7 +767,10 @@ class StockReportBuilder
     private function collectAdjustments(): void
     {
         StockAdjustmentItem::with(['adjustment'])
-            ->whereHas('adjustment', fn ($q) => $q->where('status', 'Posted'))
+            ->whereHas('adjustment', function ($q) {
+                $q->where('status', 'Posted')
+                    ->where('remarks', 'not like', 'Opening Stock Distribution for Product:%');
+            })
             ->chunkById(500, function ($items) {
                 foreach ($items as $item) {
                     $adj = $item->adjustment;
@@ -819,6 +822,77 @@ class StockReportBuilder
         return (float) (WarehouseStock::where('product_id', $productId)
             ->where('warehouse_id', $warehouseId)
             ->value('quantity') ?? 0);
+    }
+
+    /** @var array<int, Product>|null */
+    private ?array $productOpeningCache = null;
+
+    private function productOpeningProduct(int $productId): ?Product
+    {
+        if ($this->productOpeningCache === null) {
+            $this->productOpeningCache = Product::query()
+                ->whereIn('id', $this->filteredProductIds())
+                ->get(['id', 'opening_total_stock', 'opening_shop_stock', 'opening_warehouse_stocks', 'stock'])
+                ->keyBy('id')
+                ->all();
+        }
+
+        return $this->productOpeningCache[$productId] ?? null;
+    }
+
+    private function productHasOpeningStock(Product $product): bool
+    {
+        if ($product->opening_total_stock !== null && $product->opening_total_stock !== '') {
+            return true;
+        }
+
+        if ($product->opening_shop_stock !== null && $product->opening_shop_stock !== '') {
+            return true;
+        }
+
+        $warehouseStocks = $product->opening_warehouse_stocks;
+
+        return is_array($warehouseStocks) && !empty($warehouseStocks);
+    }
+
+    private function resolveProductOpeningQty(int $productId, int $warehouseId): ?float
+    {
+        $product = $this->productOpeningProduct($productId);
+        if (!$product || !$this->productHasOpeningStock($product)) {
+            return null;
+        }
+
+        if ($warehouseId === 0) {
+            return (float) ($product->opening_shop_stock ?? 0);
+        }
+
+        $warehouseStocks = is_array($product->opening_warehouse_stocks)
+            ? $product->opening_warehouse_stocks
+            : [];
+
+        foreach ($warehouseStocks as $whId => $qty) {
+            if ((int) $whId === $warehouseId) {
+                return (float) $qty;
+            }
+        }
+
+        return 0.0;
+    }
+
+    private function resolveLedgerOpening(Collection $txns, int $productId, int $warehouseId, ?string $fromDate, float $current): float
+    {
+        $baseOpening = $this->resolveProductOpeningQty($productId, $warehouseId);
+        if ($baseOpening === null) {
+            $effectAfterFrom = $txns->filter(fn ($m) => $fromDate && $m['date'] >= $fromDate)->sum('balance_effect');
+
+            return $current - $effectAfterFrom;
+        }
+
+        $prePeriodEffect = $fromDate
+            ? $txns->filter(fn ($m) => $m['date'] < $fromDate)->sum('balance_effect')
+            : 0.0;
+
+        return $baseOpening + $prePeriodEffect;
     }
 
     private function buildRow(int $productId, int $warehouseId, ?string $fromDate, ?string $toDate): ?array
@@ -899,8 +973,7 @@ class StockReportBuilder
         });
 
         $current = $this->getCurrentStock($productId, $warehouseId);
-        $effectAfterFrom = $txns->filter(fn ($m) => $fromDate && $m['date'] >= $fromDate)->sum('balance_effect');
-        $opening = $current - $effectAfterFrom;
+        $opening = $this->resolveLedgerOpening($txns, $productId, $warehouseId, $fromDate, $current);
 
         $periodTxns = $txns->filter(fn ($m) => $this->dateInPeriod($m['date'], $fromDate, $toDate))
             ->sortBy(fn ($m) => sprintf(

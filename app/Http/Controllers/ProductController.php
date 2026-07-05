@@ -179,7 +179,7 @@ class ProductController extends Controller
         $this->syncWarehouseStocksFromForm($product, $request);
         $this->saveOpeningStockFromForm($product, $request);
 
-        return redirect()->route('products.index')->with('success', 'Product Created and Stock Distributed with Adjustments');
+        return redirect()->route('products.index')->with('success', 'Product Created and Stock Distributed');
     }
 
     private function syncWarehouseStocksFromForm(Product $product, Request $request): void
@@ -205,20 +205,6 @@ class ProductController extends Controller
             }
 
             if (!$stock) {
-                $adjustment = StockAdjustment::create([
-                    'adj_id' => StockAdjustment::generateAdjID(),
-                    'date' => now()->toDateString(),
-                    'warehouse_id' => $warehouseId,
-                    'remarks' => 'Opening Stock Distribution for Product: ' . $product->name,
-                    'status' => 'Posted',
-                ]);
-
-                StockAdjustmentItem::create([
-                    'stock_adjustment_id' => $adjustment->id,
-                    'product_id' => $product->id,
-                    'qty' => $qty,
-                ]);
-
                 WarehouseStock::create([
                     'warehouse_id' => $warehouseId,
                     'product_id' => $product->id,
