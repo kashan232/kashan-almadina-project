@@ -43,9 +43,14 @@ class UnpostEntriesReportBuilder
             $rows = $rows->merge($this->collectSource($source, $fromDate, $toDate));
         }
 
+        $definitionOrder = collect($this->sources())
+            ->pluck('definition')
+            ->flip()
+            ->all();
+
         $rows = $rows->sortBy([
+            fn ($row) => $definitionOrder[$row['definition']] ?? 999,
             fn ($row) => $row['date_sort'],
-            fn ($row) => $row['definition'],
             fn ($row) => (int) $row['record_id'],
         ])->values();
 
