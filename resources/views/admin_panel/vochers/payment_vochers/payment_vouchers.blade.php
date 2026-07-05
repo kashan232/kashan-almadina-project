@@ -222,6 +222,7 @@
 
 @section('scripts')
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+@include('admin_panel.vochers._voucher_validation_js')
 <script>
 $(document).ready(function() {
     function initSelectors($container = $('body')) {
@@ -402,7 +403,7 @@ $(document).ready(function() {
     }
 
     function saveDraft(silent = false) {
-        $('.ajax-valid-error').remove();
+        VoucherFieldValidation.clearErrors($('#paymentForm'));
         return $.post('{{ route("Payment.vochers.ajax-save") }}', $('#paymentForm').serialize())
             .done(res => {
                 if(res.success) {
@@ -412,6 +413,13 @@ $(document).ready(function() {
                     $('#realPrintBtn').attr('href', '{{ route("PaymentVoucher.print", ":id") }}'.replace(':id', res.id)).removeClass('pe-none opacity-50');
                     $('#deleteBtn').prop('disabled', false);
                     if(!silent) showAlert('<i class="fa fa-check-circle me-1"></i> Draft saved successfully!');
+                }
+            })
+            .fail(xhr => {
+                if (xhr.status === 422 && xhr.responseJSON && xhr.responseJSON.errors) {
+                    VoucherFieldValidation.applyErrors($('#paymentForm'), xhr.responseJSON.errors);
+                } else {
+                    showAlert((xhr.responseJSON && xhr.responseJSON.message) || 'Save failed.', 'danger');
                 }
             });
     }
@@ -429,7 +437,7 @@ $(document).ready(function() {
         Swal.fire({ title: 'Post Voucher?', icon: 'question', showCancelButton: true }).then((res) => {
             if(res.isConfirmed) {
                 saveDraft(true).done(res => {
-                    if(res.success) {
+                    if(res && res.success) {
                         let f = $('<form>', {action: '{{ route("Payment.vochers.post", ":id") }}'.replace(':id', res.id), method: 'POST'}).append($('<input>', {type: 'hidden', name: '_token', value: '{{ csrf_token() }}'}));
                         $('body').append(f); f.submit();
                     }

@@ -186,7 +186,7 @@ class StockHoldController extends Controller
             $voucher->save();
 
             if ($voucherId) {
-                $voucher->items()->delete();
+                $voucher->items()->forceDelete();
             }
 
             foreach ($request->product_id as $index => $productId) {

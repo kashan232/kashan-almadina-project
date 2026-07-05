@@ -222,6 +222,7 @@
 
 @section('scripts')
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+@include('admin_panel.vochers._voucher_validation_js')
 <script>
 $(document).ready(function() {
     function initSelectors($container = $('body')) {
@@ -390,8 +391,9 @@ $(document).ready(function() {
     }
 
     function saveDraft(silent = false) {
-        $('.ajax-valid-error').remove();
-        return $.post('{{ route("recepit.vochers.ajax-save") }}', $('#receiptForm').serialize(), function(res) {
+        VoucherFieldValidation.clearErrors($('#receiptForm'));
+        return $.post('{{ route("recepit.vochers.ajax-save") }}', $('#receiptForm').serialize())
+            .done(function(res) {
             if(res.success) {
                 if (!$('#receipt_id').val()) { $('#receipt_id').val(res.id); $('#rvidBadgeText').text(res.rvid); }
                 if(!silent) showAlert(res.message, 'success');
@@ -400,7 +402,14 @@ $(document).ready(function() {
                 $('#realPrintBtn').attr('href', '{{ route("receiptVoucher.print", ":id") }}'.replace(':id', res.id)).removeClass('pe-none opacity-50');
                 $('#deleteBtn').prop('disabled', false);
             }
-        });
+        })
+            .fail(function(xhr) {
+                if (xhr.status === 422 && xhr.responseJSON && xhr.responseJSON.errors) {
+                    VoucherFieldValidation.applyErrors($('#receiptForm'), xhr.responseJSON.errors);
+                } else {
+                    showAlert((xhr.responseJSON && xhr.responseJSON.message) || 'Save failed.', 'danger');
+                }
+            });
     }
 
     $('#saveDraftBtn').on('click', function(e) { e.preventDefault(); if (!$(this).prop('disabled')) saveDraft(); });

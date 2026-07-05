@@ -175,6 +175,7 @@
 
 @section('scripts')
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+@include('admin_panel.vochers._voucher_validation_js')
 <script>
 $(document).ready(function() {
     function initSelectors($container = $('body')) {
@@ -305,7 +306,7 @@ $(document).ready(function() {
     }
 
     $('#saveDraftBtn').click(function() {
-        $('.ajax-valid-error').remove();
+        VoucherFieldValidation.clearErrors($('#expenseForm'));
         
         let formData = $('#expenseForm').serializeArray();
         formData.forEach(item => {
@@ -314,7 +315,8 @@ $(document).ready(function() {
             }
         });
         
-        $.post('{{ route("Expense.vochers.ajax-save") }}', $.param(formData), function(res) {
+        $.post('{{ route("Expense.vochers.ajax-save") }}', $.param(formData))
+            .done(function(res) {
             if(res.success) {
                 $('#receipt_id').val(res.id); $('#evidBadgeText').text(res.evid);
                 showAlert('Draft saved successfully!', 'success');
@@ -323,34 +325,38 @@ $(document).ready(function() {
                 $('#realPrintBtn').attr('href', '{{ route("ExpenseVoucher.print", ":id") }}'.replace(':id', res.id)).removeClass('pe-none opacity-50');
                 $('#deleteBtn').prop('disabled', false);
             }
-        }).fail(function(xhr) {
-            if (xhr.status === 422) {
-                let errs = xhr.responseJSON.errors;
-                for (let field in errs) {
-                    let $el = $('[name="' + field + '"], [name="' + field + '[]"]').first();
-                    if ($el.length) {
-                        $el.after('<span class="ajax-valid-error text-danger" style="font-size:9px;">' + errs[field][0] + '</span>');
-                    }
-                }
-                showAlert('Please fill required fields (Party, Amount).', 'danger');
+        })
+            .fail(function(xhr) {
+            if (xhr.status === 422 && xhr.responseJSON && xhr.responseJSON.errors) {
+                VoucherFieldValidation.applyErrors($('#expenseForm'), xhr.responseJSON.errors);
             } else {
-                showAlert('An error occurred while saving.', 'danger');
+                showAlert((xhr.responseJSON && xhr.responseJSON.message) || 'An error occurred while saving.', 'danger');
             }
         });
     });
 
     $('#postBtn').click(function() {
-        $('#saveDraftBtn').click();
-        let checkSave = setInterval(() => {
-            let id = $('#receipt_id').val();
-            let hasErrors = $('.ajax-valid-error').length > 0;
-            if (hasErrors) { clearInterval(checkSave); return; }
-            if(id) {
-                clearInterval(checkSave);
-                let form = $('<form>', {action: '{{ route("Expense.vochers.post", ":id") }}'.replace(':id', id), method: 'POST'}).append($('<input>', {type: 'hidden', name: '_token', value: '{{ csrf_token() }}'}));
-                $('body').append(form); form.submit();
+        VoucherFieldValidation.clearErrors($('#expenseForm'));
+        let formData = $('#expenseForm').serializeArray();
+        formData.forEach(item => {
+            if (item.name === 'total_amount' || item.name === 'amount[]') {
+                item.value = item.value.replace(/,/g, '');
             }
-        }, 300);
+        });
+        $.post('{{ route("Expense.vochers.ajax-save") }}', $.param(formData))
+            .done(function(res) {
+                if (!res.success) return;
+                let id = res.id || $('#receipt_id').val();
+                if (!id) return;
+                let form = $('<form>', {action: '{{ route("Expense.vochers.post", ":id") }}'.replace(':id', id), method: 'POST'})
+                    .append($('<input>', {type: 'hidden', name: '_token', value: '{{ csrf_token() }}'}));
+                $('body').append(form); form.submit();
+            })
+            .fail(function(xhr) {
+                if (xhr.status === 422 && xhr.responseJSON && xhr.responseJSON.errors) {
+                    VoucherFieldValidation.applyErrors($('#expenseForm'), xhr.responseJSON.errors);
+                }
+            });
     });
 
     $('#unpostBtn').click(function() {

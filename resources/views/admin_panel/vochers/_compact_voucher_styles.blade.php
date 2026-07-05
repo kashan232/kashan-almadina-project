@@ -33,6 +33,15 @@
     .stock-hold-page .badge { font-size: 10px !important; padding: .15rem .45rem !important; }
     .stock-hold-page .gap-3 { gap: .3rem !important; }
     .stock-hold-page .alert { padding: .3rem .45rem !important; margin-bottom: .2rem !important; font-size: .78rem !important; }
+    .stock-hold-page .ajax-valid-error {
+        display: block; color: #dc3545 !important; font-size: 9px !important; font-weight: 700;
+        line-height: 1.2; margin-bottom: 1px; white-space: normal;
+    }
+    .stock-hold-page .is-field-invalid,
+    .stock-hold-page .select2-container.is-field-invalid .select2-selection--single {
+        border-color: #dc3545 !important;
+        box-shadow: 0 0 0 1px rgba(220, 53, 69, 0.25) !important;
+    }
     .stock-hold-page .btn-xs { padding: 0 4px; font-size: 9px; line-height: 1.2; }
     .stock-hold-page .btn-mini { padding: 0 4px; font-size: 9px; height: 18px; display: inline-flex; align-items: center; justify-content: center; }
     .posted-watermark {

@@ -650,6 +650,32 @@ class StockReportBuilder
         return (int) ($item->warehouse_id ?? ($voucher->warehouse_id ?? 0));
     }
 
+    /** Report queries bypass group scope but must ignore soft-deleted hold lines. */
+    private function stockHoldReportQuery()
+    {
+        return StockHold::withoutGlobalScopes()->whereNull('deleted_at');
+    }
+
+    /** Net reserved qty — same rules as /warehouse_stocks (posted voucher or overflow row). */
+    private function currentHoldQty(int $productId, ?int $warehouseId = null): float
+    {
+        $query = $this->stockHoldReportQuery()
+            ->where('product_id', $productId)
+            ->where('hold_qty', '!=', 0)
+            ->where(function ($q) {
+                $q->whereNull('stock_hold_voucher_id')
+                    ->orWhereHas('voucher', function ($v) {
+                        $v->withoutGlobalScopes()->where('status', 'Posted');
+                    });
+            });
+
+        if ($warehouseId !== null) {
+            $query->where('warehouse_id', $warehouseId);
+        }
+
+        return (float) $query->sum('hold_qty');
+    }
+
     /** Same warehouse resolution as StockHoldController::resolveReleaseWarehouseId. */
     private function resolveReleaseWarehouseId(StockReleaseVoucher $voucher, StockRelease $item): int
     {
@@ -674,7 +700,7 @@ class StockReportBuilder
 
     private function collectHolds(): void
     {
-        StockHold::withoutGlobalScopes()
+        $this->stockHoldReportQuery()
             ->with('voucher')
             ->whereHas('voucher', function ($q) {
                 $q->withoutGlobalScopes()->where('status', 'Posted');
@@ -923,11 +949,8 @@ class StockReportBuilder
             ];
         }
 
-        $holdQty = (float) StockHold::withoutGlobalScopes()
-            ->where('product_id', $productId)
-            ->where('warehouse_id', $warehouseId)
-            ->where('hold_qty', '>', 0)
-            ->sum('hold_qty');
+        $holdQty = $this->currentHoldQty($productId, $warehouseId);
+        $totals['hold'] = $holdQty;
 
         return [
             'product_id' => $productId,
@@ -965,8 +988,14 @@ class StockReportBuilder
             ->orderBy('name')
             ->get();
 
-        $holdMap = StockHold::withoutGlobalScopes()
-            ->where('hold_qty', '>', 0)
+        $holdMap = $this->stockHoldReportQuery()
+            ->where('hold_qty', '!=', 0)
+            ->where(function ($q) {
+                $q->whereNull('stock_hold_voucher_id')
+                    ->orWhereHas('voucher', function ($v) {
+                        $v->withoutGlobalScopes()->where('status', 'Posted');
+                    });
+            })
             ->selectRaw('product_id, warehouse_id, SUM(hold_qty) as total_hold')
             ->groupBy('product_id', 'warehouse_id')
             ->get()
@@ -1061,8 +1090,14 @@ class StockReportBuilder
 
         $warehouseIds = $this->resolvedWarehouseIds();
 
-        $holdMap = StockHold::withoutGlobalScopes()
-            ->where('hold_qty', '>', 0)
+        $holdMap = $this->stockHoldReportQuery()
+            ->where('hold_qty', '!=', 0)
+            ->where(function ($q) {
+                $q->whereNull('stock_hold_voucher_id')
+                    ->orWhereHas('voucher', function ($v) {
+                        $v->withoutGlobalScopes()->where('status', 'Posted');
+                    });
+            })
             ->whereIn('warehouse_id', $warehouseIds)
             ->selectRaw('product_id, SUM(hold_qty) as total_hold')
             ->groupBy('product_id')

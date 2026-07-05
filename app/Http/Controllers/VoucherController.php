@@ -78,6 +78,158 @@ class VoucherController extends Controller
         ];
     }
 
+    private function validateReceiptPaymentRequest(Request $request, string $partyTypeField, string $partyIdField, bool $withDiscount = true): void
+    {
+        $rules = [
+            'entry_date'   => 'required|date',
+            'entry_time'   => 'required',
+            $partyTypeField => 'required',
+            $partyIdField   => 'required',
+        ];
+
+        $messages = [
+            'entry_date.required' => 'Entry Date is required.',
+            'entry_time.required' => 'Entry Time is required.',
+            $partyTypeField . '.required' => 'Party Type is required.',
+            $partyIdField . '.required'   => 'Party is required.',
+        ];
+
+        $validator = Validator::make($request->all(), $rules, $messages);
+
+        $validator->after(function ($v) use ($request, $withDiscount) {
+            $amounts = $request->input('amount', []);
+            if (!is_array($amounts)) {
+                $amounts = [];
+            }
+
+            $hasValidRow = false;
+
+            foreach ($amounts as $idx => $rawAmt) {
+                $amt = (float) str_replace(',', '', (string) $rawAmt);
+                $disc = (float) ($request->input('discount_value', [])[$idx] ?? 0);
+
+                if ($amt <= 0 && $disc <= 0) {
+                    continue;
+                }
+
+                $hasValidRow = true;
+
+                if (empty($request->input('row_account_head', [])[$idx] ?? null)) {
+                    $v->errors()->add("row_account_head.$idx", 'Account Head is required.');
+                }
+                if (empty($request->input('row_account_id', [])[$idx] ?? null)) {
+                    $v->errors()->add("row_account_id.$idx", 'Destination Account is required.');
+                }
+                if ($amt <= 0 && $disc <= 0) {
+                    $v->errors()->add("amount.$idx", 'Amount is required.');
+                }
+
+                if ($withDiscount && $disc > 0) {
+                    if (empty($request->input('discount_head', [])[$idx] ?? null)) {
+                        $v->errors()->add("discount_head.$idx", 'Discount Head is required.');
+                    }
+                    if (empty($request->input('discount_account_id', [])[$idx] ?? null)) {
+                        $v->errors()->add("discount_account_id.$idx", 'Discount Sub Head is required.');
+                    }
+                }
+            }
+
+            if (!$hasValidRow) {
+                $v->errors()->add('amount.0', 'At least one line with amount or discount is required.');
+            }
+        });
+
+        $validator->validate();
+    }
+
+    private function validateExpenseRequest(Request $request): void
+    {
+        $validator = Validator::make($request->all(), [
+            'entry_date'  => 'required|date',
+            'vendor_type' => 'required',
+            'vendor_id'   => 'required',
+        ], [
+            'entry_date.required'  => 'Entry Date is required.',
+            'vendor_type.required' => 'Party Type is required.',
+            'vendor_id.required'   => 'Party is required.',
+        ]);
+
+        $validator->after(function ($v) use ($request) {
+            $amounts = $request->input('amount', []);
+            if (!is_array($amounts)) {
+                $amounts = [];
+            }
+
+            $hasValidRow = false;
+
+            foreach ($amounts as $idx => $rawAmt) {
+                $amt = (float) str_replace(',', '', (string) $rawAmt);
+                if ($amt <= 0) {
+                    continue;
+                }
+
+                $hasValidRow = true;
+
+                if (empty($request->input('row_account_head', [])[$idx] ?? null)) {
+                    $v->errors()->add("row_account_head.$idx", 'Account Head is required.');
+                }
+                if (empty($request->input('row_account_id', [])[$idx] ?? null)) {
+                    $v->errors()->add("row_account_id.$idx", 'Destination Account is required.');
+                }
+            }
+
+            if (!$hasValidRow) {
+                $v->errors()->add('amount.0', 'At least one line with amount is required.');
+            }
+        });
+
+        $validator->validate();
+    }
+
+    private function validateIncomeRequest(Request $request): void
+    {
+        $validator = Validator::make($request->all(), [
+            'entry_date'   => 'required|date',
+            'account_head' => 'required',
+            'account_id'   => 'required',
+        ], [
+            'entry_date.required'   => 'Entry Date is required.',
+            'account_head.required' => 'Main Account Head is required.',
+            'account_id.required'   => 'Account is required.',
+        ]);
+
+        $validator->after(function ($v) use ($request) {
+            $amounts = $request->input('amount', []);
+            if (!is_array($amounts)) {
+                $amounts = [];
+            }
+
+            $hasValidRow = false;
+
+            foreach ($amounts as $idx => $rawAmt) {
+                $amt = (float) str_replace(',', '', (string) $rawAmt);
+                if ($amt <= 0) {
+                    continue;
+                }
+
+                $hasValidRow = true;
+
+                if (empty($request->input('party_type', [])[$idx] ?? null)) {
+                    $v->errors()->add("party_type.$idx", 'Party Type is required.');
+                }
+                if (empty($request->input('party_id', [])[$idx] ?? null)) {
+                    $v->errors()->add("party_id.$idx", 'Party is required.');
+                }
+            }
+
+            if (!$hasValidRow) {
+                $v->errors()->add('amount.0', 'At least one line with amount is required.');
+            }
+        });
+
+        $validator->validate();
+    }
+
     public function index($type)
     {
 
@@ -346,14 +498,7 @@ class VoucherController extends Controller
 
     public function ajax_save_receipt(Request $request)
     {
-        // 🧩 Standard Validation
-        $request->validate([
-            'vendor_type' => 'required',
-            'vendor_id'   => 'required',
-        ], [
-            'vendor_type.required' => 'Please select a Party Type',
-            'vendor_id.required'   => 'Please select a Party',
-        ]);
+        $this->validateReceiptPaymentRequest($request, 'vendor_type', 'vendor_id', true);
 
         try {
             $id = $request->input('id');
@@ -648,6 +793,8 @@ class VoucherController extends Controller
 
     public function ajax_save_payment(Request $request)
     {
+        $this->validateReceiptPaymentRequest($request, 'party_type', 'party_id', true);
+
         $id = $request->id;
         $narrationIds = [];
         $nIds = $request->input('narration_id', []);
@@ -1156,10 +1303,7 @@ class VoucherController extends Controller
 
     public function ajax_save_expense(Request $request)
     {
-        $request->validate([
-            'vendor_id'    => 'required',
-            'total_amount' => 'required|numeric|min:0.01',
-        ]);
+        $this->validateExpenseRequest($request);
 
         $narrationIds = [];
         $nIds = $request->input('narration_id', []);
@@ -1472,18 +1616,7 @@ class VoucherController extends Controller
 
     public function ajax_save_income(Request $request)
     {
-        $validator = Validator::make($request->all(), [
-            'account_head' => 'required',
-            'account_id'   => 'required',
-            'entry_date'   => 'required|date',
-            'narration_id' => 'required|array',
-            'amount'       => 'required|array',
-            'amount.*'     => 'required|numeric|min:0.01',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
-        }
+        $this->validateIncomeRequest($request);
 
         try {
             $id = $request->id;

@@ -188,6 +188,7 @@
 
 @section('scripts')
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+@include('admin_panel.vochers._voucher_validation_js')
 <script>
 $(document).ready(function() {
     var isViewMode = @json($isViewMode);
@@ -328,7 +329,7 @@ $(document).ready(function() {
     }
 
     $('#saveDraftBtn').click(function() {
-        $('.ajax-valid-error').remove();
+        VoucherFieldValidation.clearErrors($('#incomeForm'));
         $.post('{{ route("income.vochers.ajax-save") }}', $('#incomeForm').serialize())
             .done(res => {
                 if(res.success) {
@@ -341,14 +342,10 @@ $(document).ready(function() {
                 }
             })
             .fail(xhr => {
-                if(xhr.status == 422) {
-                    let errs = xhr.responseJSON.errors;
-                    Object.keys(errs).forEach(k => {
-                        let $el = $(`[name="${k}"], #${k}`);
-                        if(k.includes('.')) { let p = k.split('.'); $el = $(`[name="${p[0]}[]"]`).eq(p[1]); }
-                        $el.after(`<div class="ajax-valid-error"><i class="fa fa-exclamation-circle"></i> ${errs[k][0]}</div>`);
-                    });
-                    showAlert('Please fix errors.', 'danger');
+                if (xhr.status === 422 && xhr.responseJSON && xhr.responseJSON.errors) {
+                    VoucherFieldValidation.applyErrors($('#incomeForm'), xhr.responseJSON.errors);
+                } else {
+                    showAlert((xhr.responseJSON && xhr.responseJSON.message) || 'Please fix errors.', 'danger');
                 }
             });
     });
@@ -362,15 +359,21 @@ $(document).ready(function() {
     });
 
     $('#postBtn').click(function() {
-        $('#saveDraftBtn').click();
-        setTimeout(() => {
-            let id = $('#receipt_id').val();
-            if(id) {
+        VoucherFieldValidation.clearErrors($('#incomeForm'));
+        $.post('{{ route("income.vochers.ajax-save") }}', $('#incomeForm').serialize())
+            .done(res => {
+                if (!res.success) return;
+                let id = res.id || $('#receipt_id').val();
+                if (!id) return;
                 let f = $('<form>', {action: '{{ route("income.vochers.post", ":id") }}'.replace(':id', id), method: 'POST'});
                 f.append($('<input>', {type: 'hidden', name: '_token', value: '{{ csrf_token() }}'}));
                 $('body').append(f); f.submit();
-            }
-        }, 1000);
+            })
+            .fail(xhr => {
+                if (xhr.status === 422 && xhr.responseJSON && xhr.responseJSON.errors) {
+                    VoucherFieldValidation.applyErrors($('#incomeForm'), xhr.responseJSON.errors);
+                }
+            });
     });
 
     $('#realPrintBtn').on('click', function(e) {
