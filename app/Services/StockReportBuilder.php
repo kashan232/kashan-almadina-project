@@ -748,24 +748,33 @@ class StockReportBuilder
     {
         StockRelease::withoutGlobalScopes()
             ->with(['voucher', 'hold'])
-            ->whereHas('voucher', function ($q) {
-                $q->withoutGlobalScopes()->where('status', 'Posted');
+            ->where(function ($q) {
+                $q->whereHas('voucher', function ($v) {
+                    $v->withoutGlobalScopes()->where('status', 'Posted');
+                })->orWhere(function ($sub) {
+                    $sub->whereNull('stock_release_voucher_id')
+                        ->whereIn('status', ['Posted', 'posted']);
+                });
             })
             ->when(true, fn ($q) => $this->applyUserGroupFilter($q))
             ->chunkById(500, function ($items) {
                 foreach ($items as $item) {
                     $voucher = $item->voucher;
-                    if (!$voucher) {
-                        continue;
-                    }
-                    $date = $this->pickDate($voucher, ['date', 'entry_date']);
                     $qty = (float) $item->release_qty;
                     if ($qty <= 0) {
                         continue;
                     }
-                    $wh = $this->resolveReleaseWarehouseId($voucher, $item);
-                    $ref = (string) ($voucher->release_id ?? $item->id ?? '');
-                    // Release deducts physical stock (-qty), same as warehouse_stocks on post.
+
+                    $date = $voucher
+                        ? $this->pickDate($voucher, ['date', 'entry_date'])
+                        : $this->pickDate($item, ['entry_date']);
+                    $wh = $voucher
+                        ? $this->resolveReleaseWarehouseId($voucher, $item)
+                        : (int) ($item->warehouse_id ?? $item->hold?->warehouse_id ?? 0);
+                    $ref = $voucher
+                        ? (string) ($voucher->release_id ?? $item->id ?? '')
+                        : (string) ($item->id ?? '');
+                    // Release deducts physical stock (-qty), separate from hold qty.
                     $this->addMovement((int) $item->product_id, $wh, $date, 'release', $qty, -$qty, $ref, 'SR', 'Stock Release', 0, 0);
                 }
             });
@@ -908,14 +917,14 @@ class StockReportBuilder
         $current = $this->getCurrentStock($productId, $warehouseId);
         $byDate = $this->ledger[$k]['by_date'] ?? [];
 
-        $effectAfterFrom = 0.0;
+        $txns = $this->movements->filter(function ($m) use ($productId, $warehouseId) {
+            return (int) $m['product_id'] === $productId && (int) $m['warehouse_id'] === $warehouseId;
+        });
+
         $periodCols = array_fill_keys(self::COLS, 0.0);
         $periodBalance = 0.0;
 
         foreach ($byDate as $date => $data) {
-            if ($fromDate && $date >= $fromDate) {
-                $effectAfterFrom += $data['balance_effect'];
-            }
             if ($this->dateInPeriod($date, $fromDate, $toDate)) {
                 $periodBalance += $data['balance_effect'];
                 foreach (self::COLS as $col) {
@@ -924,7 +933,8 @@ class StockReportBuilder
             }
         }
 
-        $opening = $current - $effectAfterFrom;
+        // Same opening rules as Item Stock Ledger (product opening + pre-period movements).
+        $opening = $this->resolveLedgerOpening($txns, $productId, $warehouseId, $fromDate, $current);
         $closing = $opening + $periodBalance;
 
         if ($this->isZeroRow($opening, $closing, $periodCols)) {
