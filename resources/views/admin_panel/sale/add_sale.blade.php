@@ -662,6 +662,9 @@
                       $dPct = old('discount-percent')[$index] ?? 0;
                       $dAmt = old('discount-amount')[$index] ?? 0;
                       $sAmount = old('sales-amount')[$index] ?? 0;
+                      $dAmtDisplay = ($dMode === 'amount')
+                          ? (float) $dAmt
+                          : ((float) $rPrice * (float) $dPct / 100);
                       $displayValue = ($dMode == 'amount') ? $dAmt : $dPct;
                     @endphp
                     <tr data-row-id="{{ $rowId }}">
@@ -692,7 +695,7 @@
                         <div class="input-group input-group-sm">
                           <input type="text" class="form-control text-end discount-value" placeholder="%" value="{{ number_format((float)$dPct, 2) }}" style="max-width: 65px;" onblur="this.value=toNum(this.value).toLocaleString('en-US', {maximumFractionDigits: 2})">
                           <span class="input-group-text px-1" style="font-size: 0.7rem;">%</span>
-                          <input type="text" class="form-control text-end discount-amount-display input-readonly" value="{{ number_format((float)$dAmt, 2) }}" readonly style="background: #f8f9fa;">
+                          <input type="text" class="form-control text-end discount-amount-display input-readonly" value="{{ number_format((float)$dAmtDisplay, 2) }}" readonly style="background: #f8f9fa;">
                         </div>
                         <input type="hidden" class="discount-mode" name="discount_mode[]" value="percent">
                         <input type="hidden" class="discount-percent" name="discount-percent[]" value="{{ $dPct }}">
@@ -719,6 +722,9 @@
                       $dAmt = $item->discount_amount;
                       $sAmount = $item->amount;
                       $sRate = $item->sales_rate;
+                      $dAmtDisplay = ($dMode === 'amount')
+                          ? (float) $dAmt
+                          : ((float) $rPrice * (float) $dPct / 100);
                     @endphp
                     <tr data-row-id="{{ $rowId }}">
                       <td style="width: 70px;">
@@ -748,7 +754,7 @@
                         <div class="input-group input-group-sm">
                           <input type="text" class="form-control text-end discount-value" placeholder="%" value="{{ number_format((float)$dPct, 2) }}" style="max-width: 65px;" onblur="this.value=toNum(this.value).toLocaleString('en-US', {maximumFractionDigits: 2})">
                           <span class="input-group-text px-1" style="font-size: 0.7rem;">%</span>
-                          <input type="text" class="form-control text-end discount-amount-display input-readonly" value="{{ number_format((float)$dAmt, 2) }}" readonly style="background: #f8f9fa;">
+                          <input type="text" class="form-control text-end discount-amount-display input-readonly" value="{{ number_format((float)$dAmtDisplay, 2) }}" readonly style="background: #f8f9fa;">
                         </div>
                         <input type="hidden" class="discount-mode" name="discount_mode[]" value="{{ $dMode }}">
                         <input type="hidden" class="discount-percent" name="discount-percent[]" value="{{ $dPct }}">
@@ -2050,29 +2056,30 @@
     const qty = toNum($row.find('.sales-qty').val());
     const value = toNum($row.find('.discount-value').val());
 
-    // Percentage mode: value % on (Retail Price * Qty)
+    // Percentage mode: value % on retail price (display = per unit, hidden = line total)
     let discPct = value;
-    let discAmt = ((rp * qty) * value) / 100.0;
+    const discAmtUnit = (rp * value) / 100.0;
+    const discAmtTotal = discAmtUnit * qty;
 
-    // Update hidden fields
+    // Update hidden fields (line total for save/calculation)
     $row.find('.discount-percent').val(discPct.toFixed(2));
-    $row.find('.discount-amount').val(discAmt.toFixed(2));
+    $row.find('.discount-amount').val(discAmtTotal.toFixed(2));
     
-    // Update visible discount amount display
-    $row.find('.discount-amount-display').val(discAmt.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}));
+    // Visible amount = single qty discount only
+    $row.find('.discount-amount-display').val(discAmtUnit.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}));
 
     // Calculate Rate per Unit (Sales Price minus unit discount)
     let rate = 0;
     if (qty > 0) {
-        rate = sp - (discAmt / qty);
+        rate = sp - discAmtUnit;
     } else {
         rate = sp;
     }
     $row.find('.sales-rate').val(rate.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}));
 
-    // Calculate Net Amount for the row (Sales Price * Qty - Discount)
+    // Calculate Net Amount for the row (Sales Price * Qty - line discount)
     const lineGross = sp * qty;
-    const netAmount = Math.max(0, lineGross - discAmt);
+    const netAmount = Math.max(0, lineGross - discAmtTotal);
     $row.find('.sales-amount').val(netAmount.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}));
   }
 
@@ -2861,9 +2868,9 @@
           grouped['discount-amount[]']?.forEach(function(val, i) {
             const $row = $('#salesTableBody tr').eq(i);
             $row.find('.discount-amount').val(val);
-            $row.find('.discount-amount-display').val(val);
             const mode = $row.find('.discount-mode').val();
             $row.find('.discount-value').val(mode === 'amount' ? val : grouped['discount-percent[]'][i]);
+            computeRow($row);
           });
           
           // Sales Rate
@@ -2921,6 +2928,7 @@
     // Init existing Select2
     $('#salesTableBody tr').each(function() {
         if(window.initProductSelect) window.initProductSelect($(this));
+        computeRow($(this));
     });
 
     if ($('#salesTableBody tr').length === 0) {

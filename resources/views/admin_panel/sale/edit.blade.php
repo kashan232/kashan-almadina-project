@@ -284,9 +284,14 @@
   $(document).on('click', '.del-rv-row', function() { $(this).closest('.rv-row').remove(); updateGrandTotals(); });
 
   function computeRow($row) {
+    const sp = toNum($row.find('.sales-price').val());
     const rp = toNum($row.find('.retail-price').val()), q = toNum($row.find('.sales-qty').val()), v = toNum($row.find('.discount-value').val());
-    const amt = (rp * q * v) / 100; $row.find('.discount-percent').val(v.toFixed(2)); $row.find('.discount-amount').val(amt.toFixed(2));
-    const rate = q > 0 ? (rp - (amt / q)) : rp; $row.find('.sales-rate').val(rate.toFixed(2));
+    const discAmtUnit = (rp * v) / 100.0;
+    const discAmtTotal = discAmtUnit * q;
+    $row.find('.discount-percent').val(v.toFixed(2));
+    $row.find('.discount-amount').val(discAmtTotal.toFixed(2));
+    const rate = q > 0 ? (sp - discAmtUnit) : sp;
+    $row.find('.sales-rate').val(rate.toFixed(2));
     updateGrandTotals();
   }
   function initProductSelect($row) {
