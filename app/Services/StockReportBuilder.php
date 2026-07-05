@@ -656,10 +656,16 @@ class StockReportBuilder
         return StockHold::withoutGlobalScopes()->whereNull('deleted_at');
     }
 
+    /** Live hold rows — same scope as /warehouse_stocks (group + soft-delete). */
+    private function activeHoldQuery()
+    {
+        return StockHold::query();
+    }
+
     /** Net reserved qty — same rules as /warehouse_stocks (posted voucher or overflow row). */
     private function currentHoldQty(int $productId, ?int $warehouseId = null): float
     {
-        $query = $this->stockHoldReportQuery()
+        $query = $this->activeHoldQuery()
             ->where('product_id', $productId)
             ->where('hold_qty', '!=', 0)
             ->where(function ($q) {
@@ -674,6 +680,16 @@ class StockReportBuilder
         }
 
         return (float) $query->sum('hold_qty');
+    }
+
+    private function currentHoldQtyForWarehouses(int $productId, array $warehouseIds): float
+    {
+        $total = 0.0;
+        foreach ($warehouseIds as $warehouseId) {
+            $total += $this->currentHoldQty($productId, (int) $warehouseId);
+        }
+
+        return $total;
     }
 
     /** Same warehouse resolution as StockHoldController::resolveReleaseWarehouseId. */
@@ -988,19 +1004,6 @@ class StockReportBuilder
             ->orderBy('name')
             ->get();
 
-        $holdMap = $this->stockHoldReportQuery()
-            ->where('hold_qty', '!=', 0)
-            ->where(function ($q) {
-                $q->whereNull('stock_hold_voucher_id')
-                    ->orWhereHas('voucher', function ($v) {
-                        $v->withoutGlobalScopes()->where('status', 'Posted');
-                    });
-            })
-            ->selectRaw('product_id, warehouse_id, SUM(hold_qty) as total_hold')
-            ->groupBy('product_id', 'warehouse_id')
-            ->get()
-            ->mapWithKeys(fn ($row) => [$row->product_id . '|' . $row->warehouse_id => (float) $row->total_hold]);
-
         $groups = [];
         $grand = [
             'physical_qty' => 0.0,
@@ -1023,7 +1026,7 @@ class StockReportBuilder
             foreach ($products as $product) {
                 $retailPrice = (float) ($product->latestPrice->sale_retail_price ?? 0);
                 $physicalQty = $this->getCurrentStock((int) $product->id, (int) $warehouseId);
-                $holdQty = (float) ($holdMap[$product->id . '|' . $warehouseId] ?? 0);
+                $holdQty = $this->currentHoldQty((int) $product->id, (int) $warehouseId);
 
                 if (abs($physicalQty) < 0.0001 && abs($holdQty) < 0.0001) {
                     continue;
@@ -1090,25 +1093,11 @@ class StockReportBuilder
 
         $warehouseIds = $this->resolvedWarehouseIds();
 
-        $holdMap = $this->stockHoldReportQuery()
-            ->where('hold_qty', '!=', 0)
-            ->where(function ($q) {
-                $q->whereNull('stock_hold_voucher_id')
-                    ->orWhereHas('voucher', function ($v) {
-                        $v->withoutGlobalScopes()->where('status', 'Posted');
-                    });
-            })
-            ->whereIn('warehouse_id', $warehouseIds)
-            ->selectRaw('product_id, SUM(hold_qty) as total_hold')
-            ->groupBy('product_id')
-            ->pluck('total_hold', 'product_id')
-            ->map(fn ($v) => (float) $v);
-
         $brandBuckets = [];
         $grand = ['hold_qty' => 0.0];
 
         foreach ($products as $product) {
-            $holdQty = (float) ($holdMap[$product->id] ?? 0);
+            $holdQty = $this->currentHoldQtyForWarehouses((int) $product->id, $warehouseIds);
             if (abs($holdQty) < 0.0001) {
                 continue;
             }

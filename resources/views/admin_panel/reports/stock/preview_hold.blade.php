@@ -153,7 +153,7 @@
             <div class="report-header">
                 <div class="generated-date">{{ $generated_at->format('l, M j, Y') }}</div>
                 <div class="report-title">Stock Report</div>
-                <div class="report-type">Hold Qty Only (Brand Wise)</div>
+                <div class="report-type">Hold Qty Only — Current Net Reserved (Brand Wise)</div>
                 <div class="date-range">
                     From: <span>{{ $from_date ? \Carbon\Carbon::parse($from_date)->format('d-m-y') : '' }}</span>
                     To: <span>{{ $to_date ? \Carbon\Carbon::parse($to_date)->format('d-m-y') : '' }}</span>
