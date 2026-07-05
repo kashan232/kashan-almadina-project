@@ -14,7 +14,31 @@ class Customer extends Model
         'user_group_ids' => 'array',
     ];
 
-    use HasFactory, \App\Traits\GroupIsolation;
+    use HasFactory, \App\Traits\GroupIsolation, \App\Traits\HasModuleIdSequence;
+
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::created(function (self $customer) {
+            if (empty($customer->customer_id)) {
+                $customer->forceFill(['customer_id' => (string) $customer->id])->saveQuietly();
+            }
+        });
+    }
+
+    protected function resolveModuleIdRange(): array
+    {
+        return \App\Support\ModuleIdSequence::customerRange($this->customer_type);
+    }
+
+    protected static function defaultModuleIdRange(): array
+    {
+        return [
+            'min' => \App\Support\ModuleIdSequence::CUSTOMER_MAIN_MIN,
+            'max' => \App\Support\ModuleIdSequence::CUSTOMER_MAIN_MAX,
+        ];
+    }
 
     public function customerLedger()
     {

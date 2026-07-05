@@ -23,11 +23,11 @@
                         <div class="row mb-3">
                             <div class="col-md-3">
                                 <label><strong>Customer ID:</strong></label>
-                                <input type="text" class="form-control" name="customer_id" readonly value="{{ $latestId }}">
+                                <input type="text" class="form-control" id="customerIdPreview" readonly value="{{ $latestId }}">
                             </div>
                             <div class="col-md-3">
                                 <label><strong>Customer Type :</strong></label>
-                                <select class="form-control" name="customer_type">
+                                <select class="form-control" name="customer_type" id="customerTypeSelect">
                                     <option value="Main Customer">Main Customer</option>
                                     <option value="Walking Customer">Walking Customer</option>
                                 </select>
@@ -169,4 +169,16 @@
         </div>
     </div>
 </div>
+<script>
+    (function () {
+        var mainId = @json($latestId);
+        var walkinId = @json($nextWalkinId ?? $latestId);
+        var preview = document.getElementById('customerIdPreview');
+        var typeSelect = document.getElementById('customerTypeSelect');
+        if (!preview || !typeSelect) return;
+        typeSelect.addEventListener('change', function () {
+            preview.value = this.value === 'Walking Customer' ? walkinId : mainId;
+        });
+    })();
+</script>
 @endsection

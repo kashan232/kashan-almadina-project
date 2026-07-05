@@ -105,9 +105,18 @@ class CustomerController extends Controller
         $zones = Zone::all();
         $SalesOfficer = SalesOfficer::all();
         $userGroups = UserGroup::all();
-        $latestId = 'CUST-' . str_pad(Customer::withoutGlobalScopes()->max('id') + 1, 1, STR_PAD_LEFT);
+        $latestId = (string) \App\Support\ModuleIdSequence::peekNextId(
+            'customers',
+            \App\Support\ModuleIdSequence::CUSTOMER_MAIN_MIN,
+            \App\Support\ModuleIdSequence::CUSTOMER_MAIN_MAX
+        );
+        $nextWalkinId = (string) \App\Support\ModuleIdSequence::peekNextId(
+            'customers',
+            \App\Support\ModuleIdSequence::CUSTOMER_WALKIN_MIN,
+            \App\Support\ModuleIdSequence::CUSTOMER_WALKIN_MAX
+        );
         $isAdmin = Auth::user()->roles->pluck('name')->contains('Admin') || Auth::id() == 1;
-        return view('admin_panel.customers.create', compact('latestId', 'SalesOfficer', 'zones', 'userGroups', 'isAdmin'));
+        return view('admin_panel.customers.create', compact('latestId', 'nextWalkinId', 'SalesOfficer', 'zones', 'userGroups', 'isAdmin'));
     }
 
     // public function store(Request $request)

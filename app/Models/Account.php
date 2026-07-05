@@ -8,7 +8,15 @@ use Illuminate\Support\Facades\DB;
 
 class Account extends Model
 {
-    use HasFactory, \App\Traits\GroupIsolation;
+    use HasFactory, \App\Traits\GroupIsolation, \App\Traits\HasModuleIdSequence;
+
+    protected static function defaultModuleIdRange(): array
+    {
+        return [
+            'min' => \App\Support\ModuleIdSequence::ACCOUNT_MIN,
+            'max' => \App\Support\ModuleIdSequence::ACCOUNT_MAX,
+        ];
+    }
 
     protected $fillable = [
         'head_id',       // foreign key: account head

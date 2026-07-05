@@ -14,7 +14,16 @@ class Vendor extends Model
         'user_group_ids' => 'array',
     ];
 
-    use HasFactory, \App\Traits\GroupIsolation;
+    use HasFactory, \App\Traits\GroupIsolation, \App\Traits\HasModuleIdSequence;
+
+    protected static function defaultModuleIdRange(): array
+    {
+        return [
+            'min' => \App\Support\ModuleIdSequence::VENDOR_MIN,
+            'max' => \App\Support\ModuleIdSequence::VENDOR_MAX,
+        ];
+    }
+
     // app/Models/Vendor.php
 
     public function creator()

@@ -305,7 +305,7 @@ class CustomerImportService
         unset($data['opening_balance']);
 
         $data['created_by'] = $userId;
-        $data['customer_id'] = 'CUST-' . str_pad(Customer::withoutGlobalScopes()->max('id') + 1, 1, STR_PAD_LEFT);
+        unset($data['customer_id']);
 
         if ($userGroupIds !== null) {
             $data['user_group_ids'] = $userGroupIds;
