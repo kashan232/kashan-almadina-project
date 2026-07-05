@@ -13,9 +13,17 @@ class Account extends Model
     protected static function defaultModuleIdRange(): array
     {
         return [
-            'min' => \App\Support\ModuleIdSequence::ACCOUNT_MIN,
-            'max' => \App\Support\ModuleIdSequence::ACCOUNT_MAX,
+            'min' => \App\Support\ModuleIdSequence::SUB_HEAD_MIN,
+            'max' => \App\Support\ModuleIdSequence::SUB_HEAD_MAX,
         ];
+    }
+
+    /** Keep account_code in sync with sub head id (50001+). */
+    public function syncModuleCodeFromId(): void
+    {
+        if (empty($this->account_code) && $this->getKey()) {
+            $this->account_code = (string) $this->getKey();
+        }
     }
 
     protected $fillable = [
@@ -42,31 +50,18 @@ class Account extends Model
     }
 
     /**
-     * Next account code for a head — global sequence (ignores group scopes).
+     * Next sub head code — global sequence from 50001.
      */
-    public static function generateAccountCode(int $headId): string
+    public static function generateAccountCode(int $headId = 0): string
     {
-        $lastRow = DB::table('accounts')
-            ->where('head_id', $headId)
-            ->orderByDesc('id')
-            ->first();
+        unset($headId);
 
-        if ($lastRow && is_numeric($lastRow->account_code)) {
-            $nextCode = (string) ((int) $lastRow->account_code + 1);
-        } else {
-            $nextCode = $headId . '001';
+        $next = (int) \App\Support\ModuleIdSequence::peekNextSubHeadCode();
+
+        while (DB::table('accounts')->where('account_code', (string) $next)->exists()) {
+            $next++;
         }
 
-        while (DB::table('accounts')->where('account_code', $nextCode)->exists()) {
-            if (is_numeric($nextCode)) {
-                $nextCode = (string) ((int) $nextCode + 1);
-            } else {
-                $prefix = (string) $headId;
-                $suffix = max(1, (int) substr($nextCode, strlen($prefix)) + 1);
-                $nextCode = $prefix . str_pad((string) $suffix, 3, '0', STR_PAD_LEFT);
-            }
-        }
-
-        return $nextCode;
+        return (string) $next;
     }
 }

@@ -7,14 +7,21 @@ use Illuminate\Database\Eloquent\Model;
 
 class AccountHead extends Model
 {
-    use HasFactory;
+    use HasFactory, \App\Traits\HasModuleIdSequence;
 
     protected $fillable = [
-        'name',     // head ka name, jaise Bank, Expense, etc.
-        'status',   // active/inactive
+        'name',
+        'status',
     ];
 
-    // Relation with Accounts
+    protected static function defaultModuleIdRange(): array
+    {
+        return [
+            'min' => \App\Support\ModuleIdSequence::ACCOUNT_HEAD_MIN,
+            'max' => \App\Support\ModuleIdSequence::ACCOUNT_HEAD_MAX,
+        ];
+    }
+
     public function accounts()
     {
         return $this->hasMany(Account::class, 'head_id');

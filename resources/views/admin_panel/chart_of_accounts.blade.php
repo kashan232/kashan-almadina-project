@@ -360,7 +360,7 @@
                     <table id="headsTable" class="table table-sm table-hover table-bordered w-100">
                         <thead class="bg-light">
                             <tr>
-                                <th style="width: 10%;" class="text-center">ID</th>
+                                <th style="width: 10%;" class="text-center">Head Code</th>
                                 <th>Head Name</th>
                                 <th style="width: 20%;" class="text-center">Status</th>
                                 <th style="width: 20%;" class="text-center">Created At</th>

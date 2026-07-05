@@ -47,9 +47,13 @@ class AccountsHeadController extends Controller
         $accounts = $query->get();
         $heads = AccountHead::all();
         $userGroups = UserGroup::all();
-        $users = User::all(); // To populate filter for Admin
-        // Calculate next Head Code (ID)
-        $nextHeadId = AccountHead::max('id') + 1;
+        $users = User::all();
+        $nextHeadId = \App\Support\ModuleIdSequence::peekNextId(
+            'account_heads',
+            \App\Support\ModuleIdSequence::ACCOUNT_HEAD_MIN,
+            \App\Support\ModuleIdSequence::ACCOUNT_HEAD_MAX
+        );
+
         return view('admin_panel.chart_of_accounts', compact('accounts', 'heads', 'nextHeadId', 'isAdmin', 'userGroups', 'users'));
     }
 
@@ -86,15 +90,20 @@ class AccountsHeadController extends Controller
 
         $status = $request->status === 'on' ? 1 : 0;
 
-        AccountHead::updateOrCreate(
-            ['id' => $request->head_id],
-            [
+        if ($request->filled('head_id')) {
+            AccountHead::where('id', $request->head_id)->update([
                 'name' => $request->name,
                 'status' => $status,
-            ]
-        );
+            ]);
+            $message = 'Head updated successfully.';
+        } else {
+            AccountHead::create([
+                'name' => $request->name,
+                'status' => $status,
+            ]);
+            $message = 'Head added successfully.';
+        }
 
-        $message = $request->head_id ? 'Head updated successfully.' : 'Head added successfully.';
         return redirect()->back()->with('success', $message);
     }
 

@@ -13,7 +13,8 @@ return new class extends Migration
             'customers' => ModuleIdSequence::CUSTOMER_MAIN_MIN,
             'vendors' => ModuleIdSequence::VENDOR_MIN,
             'products' => ModuleIdSequence::PRODUCT_MIN,
-            'accounts' => ModuleIdSequence::ACCOUNT_MIN,
+            'account_heads' => ModuleIdSequence::ACCOUNT_HEAD_MIN,
+            'accounts' => ModuleIdSequence::SUB_HEAD_MIN,
         ];
 
         foreach ($tables as $table => $floor) {
