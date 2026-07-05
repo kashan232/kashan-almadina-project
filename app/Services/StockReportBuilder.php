@@ -718,20 +718,22 @@ class StockReportBuilder
     {
         $this->stockHoldReportQuery()
             ->with('voucher')
+            ->withSum(StockHold::postedReleasesWithSum(), 'release_qty')
             ->whereHas('voucher', function ($q) {
                 $q->withoutGlobalScopes()->where('status', 'Posted');
             })
             ->when(true, fn ($q) => $this->applyUserGroupFilter($q))
             ->chunkById(500, function ($items) {
                 foreach ($items as $item) {
-                    $date = $this->pickDate($item, ['entry_date']);
-                    $qty = (float) $item->hold_qty;
+                    $voucher = $item->voucher;
+                    $date = $this->pickDate($voucher ?: $item, ['date', 'entry_date']);
+                    $qty = $item->grossHoldQty();
                     if ($qty <= 0) {
                         continue;
                     }
                     $wh = $this->resolveHoldWarehouseId($item);
-                    $ref = (string) ($item->voucher->hold_id ?? $item->id ?? '');
-                    // Hold adds physical stock (+qty), same as warehouse_stocks on post.
+                    $ref = (string) ($voucher->voucher_no ?? $item->id ?? '');
+                    // Hold adds physical stock (+qty) using original posted hold qty.
                     $this->addMovement((int) $item->product_id, $wh, $date, 'hold', $qty, $qty, $ref, 'SH', 'Stock Hold', 0, 0);
                 }
             });

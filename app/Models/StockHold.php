@@ -41,18 +41,62 @@ class StockHold extends Model
         return $this->hasMany(StockRelease::class, 'hold_id');
     }
 
-    /** Original held qty for list/history — remaining + already released. */
-    public function getDisplayHoldQtyAttribute(): float
+    public static function postedReleasesWithSum(): array
     {
-        $released = (float) ($this->released_qty ?? 0);
+        return [
+            'releases as released_qty' => function ($q) {
+                $q->withoutGlobalScopes()->where(function ($sub) {
+                    $sub->whereHas('voucher', function ($v) {
+                        $v->withoutGlobalScopes()->where('status', 'Posted');
+                    })->orWhereIn('status', ['Posted', 'posted']);
+                });
+            },
+        ];
+    }
 
-        if ($released <= 0 && $this->relationLoaded('releases')) {
-            $released = (float) $this->releases
-                ->whereIn('status', ['Posted', 'posted'])
+    public function postedReleaseQty(): float
+    {
+        if (array_key_exists('released_qty', $this->attributes)) {
+            return (float) ($this->attributes['released_qty'] ?? 0);
+        }
+
+        if ($this->relationLoaded('releases')) {
+            return (float) $this->releases
+                ->filter(fn ($release) => self::isPostedRelease($release))
                 ->sum('release_qty');
         }
 
-        return (float) $this->hold_qty + $released;
+        return (float) $this->releases()
+            ->withoutGlobalScopes()
+            ->where(function ($q) {
+                $q->whereHas('voucher', function ($v) {
+                    $v->withoutGlobalScopes()->where('status', 'Posted');
+                })->orWhereIn('status', ['Posted', 'posted']);
+            })
+            ->sum('release_qty');
+    }
+
+    public function grossHoldQty(): float
+    {
+        return (float) $this->hold_qty + $this->postedReleaseQty();
+    }
+
+    public static function isPostedRelease(StockRelease $release): bool
+    {
+        $status = strtolower((string) ($release->status ?? ''));
+        if (in_array($status, ['posted'], true)) {
+            return true;
+        }
+
+        $voucher = $release->relationLoaded('voucher') ? $release->voucher : null;
+
+        return $voucher && strtolower((string) ($voucher->status ?? '')) === 'posted';
+    }
+
+    /** Original held qty for list/history — remaining + already released. */
+    public function getDisplayHoldQtyAttribute(): float
+    {
+        return $this->grossHoldQty();
     }
 
     public function warehouse()

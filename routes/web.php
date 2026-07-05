@@ -550,6 +550,8 @@ Route::middleware('auth')->group(function () {
     Route::post('/reports/stock/preview', [\App\Http\Controllers\StockReportController::class, 'preview'])->name('reports.stock.preview');
     Route::get('/reports/stock-ledger', [\App\Http\Controllers\StockReportController::class, 'ledgerIndex'])->name('reports.stock-ledger.index');
     Route::post('/reports/stock-ledger/preview', [\App\Http\Controllers\StockReportController::class, 'ledgerPreview'])->name('reports.stock-ledger.preview');
+    Route::get('/reports/stock-hold-release', [\App\Http\Controllers\StockHoldReleaseReportController::class, 'index'])->name('reports.stock-hold-release.index');
+    Route::post('/reports/stock-hold-release/preview', [\App\Http\Controllers\StockHoldReleaseReportController::class, 'preview'])->name('reports.stock-hold-release.preview');
     Route::get('/reports/unpost-entries', [\App\Http\Controllers\UnpostEntriesReportController::class, 'index'])->name('reports.unpost-entries.index');
     Route::get('/reports/receipt-voucher', [\App\Http\Controllers\ReceiptVoucherReportController::class, 'index'])->name('reports.receipt-voucher.index');
     Route::post('/reports/receipt-voucher/preview', [\App\Http\Controllers\ReceiptVoucherReportController::class, 'preview'])->name('reports.receipt-voucher.preview');

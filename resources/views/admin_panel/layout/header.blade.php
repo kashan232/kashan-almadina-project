@@ -782,6 +782,12 @@
                                                   <span>Item Stock Ledger</span>
                                               </a>
                                           </li>
+                                          <li>
+                                              <a href="{{ route('reports.stock-hold-release.index') }}">
+                                                  <i class="fa-solid fa-pause-circle"></i>
+                                                  <span>Hold &amp; Release Summary</span>
+                                              </a>
+                                          </li>
                                           @can('Stock Wastage Report')
                                           <li>
                                               <a href="{{ route('reports.stock-wastage.index') }}">
