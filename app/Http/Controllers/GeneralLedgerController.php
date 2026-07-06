@@ -50,6 +50,173 @@ class GeneralLedgerController extends Controller
         return $acc ? ('Discount ; ' . $acc->title) : $fallback;
     }
 
+    /** Date → priority → invoice group → created_at → id (keeps SJ/PJ lines together). */
+    private function sortLedgerTransactions(array &$transactions): void
+    {
+        usort($transactions, function ($a, $b) {
+            $dateA = strtotime(substr((string)($a['date'] ?? ''), 0, 10)) ?: 0;
+            $dateB = strtotime(substr((string)($b['date'] ?? ''), 0, 10)) ?: 0;
+            if ($dateA !== $dateB) {
+                return $dateA <=> $dateB;
+            }
+
+            $prioA = (int)($a['priority'] ?? 60);
+            $prioB = (int)($b['priority'] ?? 60);
+            if ($prioA !== $prioB) {
+                return $prioA <=> $prioB;
+            }
+
+            $invA = (string)($a['sort_inv'] ?? '');
+            $invB = (string)($b['sort_inv'] ?? '');
+            if ($invA !== '' && $invB !== '' && $invA !== $invB) {
+                return strnatcmp($invA, $invB);
+            }
+
+            $timeA = isset($a['created_at']) ? strtotime((string)$a['created_at']) : 0;
+            $timeB = isset($b['created_at']) ? strtotime((string)$b['created_at']) : 0;
+            if ($timeA !== $timeB) {
+                return $timeA <=> $timeB;
+            }
+
+            $idA = $a['id'] ?? 0;
+            $idB = $b['id'] ?? 0;
+            if (is_numeric($idA) && is_numeric($idB)) {
+                return $idA <=> $idB;
+            }
+
+            return strcmp((string)$idA, (string)$idB);
+        });
+    }
+
+    private function saleDiscountJvExists(string $invoiceNo): bool
+    {
+        return $this->ledgerQuery(JournalVoucher::class)
+            ->where('jvid', 'SJ-DISC-' . $invoiceNo)
+            ->whereIn('status', ['posted', 'Posted'])
+            ->exists();
+    }
+
+    /** Reconcile detailed SJ item lines with sub_total2 (party-ledger debit). */
+    private function appendSaleSubTotalReconciliation($sale, array &$transactions, float $itemSum): void
+    {
+        $subTotal2 = round((float)($sale->sub_total2 ?? 0), 2);
+        if ($subTotal2 <= 0) {
+            return;
+        }
+
+        $sortInv = preg_replace('/[^0-9]/', '', $sale->invoice_no);
+        $saleDate = $sale->entry_date ?: $sale->created_at;
+        $base = [
+            'created_at' => $sale->created_at,
+            'date' => $saleDate,
+            'ref' => 'SJ',
+            'inv' => $sale->invoice_no,
+            'price' => 0,
+            'qty' => 0,
+            'priority' => 10,
+            'sort_inv' => $sortInv,
+        ];
+
+        if ($sale->items->isEmpty()) {
+            $transactions[] = array_merge($base, [
+                'id' => $sale->id . '_sub2',
+                'desc' => 'Sales',
+                'debit' => $subTotal2,
+                'credit' => 0,
+            ]);
+            return;
+        }
+
+        $diff = round($subTotal2 - $itemSum, 2);
+        if (abs($diff) < 0.01) {
+            return;
+        }
+
+        $transactions[] = array_merge($base, [
+            'id' => $sale->id . '_sub2_adj',
+            'desc' => $diff > 0 ? 'Sale Amount' : 'Sale Adjustment',
+            'debit' => $diff > 0 ? $diff : 0,
+            'credit' => $diff < 0 ? abs($diff) : 0,
+        ]);
+    }
+
+    /** Reconcile detailed SRJ item lines with sub_total2 (party-ledger credit). */
+    private function appendSaleReturnSubTotalReconciliation($sr, array &$transactions, float $itemSum): void
+    {
+        $subTotal2 = round((float)($sr->sub_total2 ?? 0), 2);
+        if ($subTotal2 <= 0) {
+            return;
+        }
+
+        $inv = preg_replace('/[^0-9]/', '', substr($sr->invoice_no, strlen('SR-'))) ?: $sr->invoice_no;
+        $srDate = $sr->entry_date ?: $sr->current_date;
+        $base = [
+            'created_at' => $sr->created_at,
+            'date' => $srDate,
+            'ref' => 'SRJ',
+            'inv' => $inv,
+            'price' => 0,
+            'qty' => 0,
+            'priority' => 20,
+            'sort_inv' => $inv,
+        ];
+
+        if ($sr->items->isEmpty()) {
+            $transactions[] = array_merge($base, [
+                'id' => $sr->id . '_sub2',
+                'desc' => 'Sale Return',
+                'debit' => 0,
+                'credit' => $subTotal2,
+            ]);
+            return;
+        }
+
+        $diff = round($subTotal2 - $itemSum, 2);
+        if (abs($diff) < 0.01) {
+            return;
+        }
+
+        $transactions[] = array_merge($base, [
+            'id' => $sr->id . '_sub2_adj',
+            'desc' => $diff > 0 ? 'Sale Return Amount' : 'Sale Return Adjustment',
+            'debit' => $diff < 0 ? abs($diff) : 0,
+            'credit' => $diff > 0 ? $diff : 0,
+        ]);
+    }
+
+    /** Reconcile detailed PJ lines with net_amount (party-ledger credit). */
+    private function appendPurchaseNetReconciliation($purchase, array &$transactions, float $lineCredit, float $allocDebit, float $whtCredit): void
+    {
+        $netAmount = round((float)($purchase->net_amount ?? 0), 2);
+        if ($netAmount <= 0) {
+            return;
+        }
+
+        $currentNet = round($lineCredit + $whtCredit - $allocDebit, 2);
+        $diff = round($netAmount - $currentNet, 2);
+        if (abs($diff) < 0.01) {
+            return;
+        }
+
+        $pjInv = preg_replace('/[^0-9]/', '', substr($purchase->invoice_no, strlen('PUR-'))) ?: $purchase->invoice_no;
+        $pjDate = $purchase->entry_date ?: $purchase->current_date ?: $purchase->created_at;
+
+        $transactions[] = [
+            'created_at' => $purchase->created_at,
+            'id' => $purchase->id . '_net_adj',
+            'date' => $pjDate,
+            'ref' => 'PJ',
+            'inv' => $pjInv,
+            'desc' => $diff > 0 ? 'Purchase Net Amount' : 'Purchase Adjustment',
+            'price' => 0,
+            'qty' => 0,
+            'debit' => $diff < 0 ? abs($diff) : 0,
+            'credit' => $diff > 0 ? $diff : 0,
+            'priority' => 33,
+            'sort_inv' => $pjInv,
+        ];
+    }
+
     public function index()
     {
         $heads = AccountHead::orderBy('name')->get();
@@ -221,6 +388,8 @@ class GeneralLedgerController extends Controller
             ->whereBetween(DB::raw($salesDateCol), [$start, $end])
             ->get();
         foreach ($sales as $sale) {
+            $orderDisc = (float)($sale->discount_amount ?? 0);
+            $receiptAmt = (float)($sale->receipt1 ?? 0) + (float)($sale->receipt2 ?? 0);
             $transactions[] = [
                 'created_at' => $sale->created_at,
                 'id' => $sale->id,
@@ -229,8 +398,8 @@ class GeneralLedgerController extends Controller
                 'inv' => $sale->invoice_no,
                 'desc' => 'Sales',
                 'qty' => (float)$sale->quantity,
-                'debit' => (float)$sale->total_balance,
-                'credit' => 0,
+                'debit' => (float)($sale->sub_total2 ?? 0),
+                'credit' => round($orderDisc + $receiptAmt, 2),
                 'priority' => 10,
                 'sort_inv' => preg_replace('/[^0-9]/', '', $sale->invoice_no)
             ];
@@ -325,6 +494,9 @@ class GeneralLedgerController extends Controller
             if (str_contains($v->narration ?? '', 'Discount on Sale Return Posted:')) {
                 continue;
             }
+            if (str_contains($v->narration ?? '', 'Discount on Sale:')) {
+                continue;
+            }
 
             $ref = 'VO';
             $inv = $v->voucher_type;
@@ -365,6 +537,9 @@ class GeneralLedgerController extends Controller
                     // For Summary Mode, we skip JVs linked to Purchases and Purchase Returns because the 'PJ'/'PRJ' line shows the Net Amount.
                     // Showing both would double-count the discount/tax impact.
                     if (str_starts_with($jv->jvid, 'PJ-') || str_starts_with($jv->jvid, 'PRJ-')) {
+                        continue;
+                    }
+                    if (str_starts_with($jv->jvid, 'SJ-DISC-')) {
                         continue;
                     }
 
@@ -508,6 +683,10 @@ class GeneralLedgerController extends Controller
         $receipts = $this->ledgerQuery(ReceiptsVoucher::class)->where('party_id', $id)->whereIn('type', $typeArray)
             ->whereIn('status', ['posted', 'Posted'])->whereBetween(DB::raw($rvDateCol), [$start, $end])->get();
         foreach ($receipts as $rv) {
+            if (str_contains($rv->remarks ?? '', 'Auto-generated from Sale:')) {
+                continue;
+            }
+
             $accIds = json_decode($rv->row_account_id, true) ?? [];
             $amounts = json_decode($rv->amount, true) ?? [];
             $narrIds = json_decode($rv->narration_id, true) ?? [];
@@ -625,33 +804,7 @@ class GeneralLedgerController extends Controller
             }
         }
 
-        usort($transactions, function ($a, $b) {
-            $timeA = (string)($a['created_at'] ?? '');
-            $timeB = (string)($b['created_at'] ?? '');
-            
-            if ($timeA !== '' && $timeB !== '' && $timeA !== $timeB) {
-                return $timeA <=> $timeB;
-            }
-
-            // Fallback to Date if created_at is missing entirely
-            $dateA = (string)($a['date'] ?? '');
-            $dateB = (string)($b['date'] ?? '');
-            if ($dateA !== $dateB) {
-                return $dateA <=> $dateB;
-            }
-
-            // Fallback to priority (for vouchers created at the exact same identical second)
-            $prioA = (int)($a['priority'] ?? 60);
-            $prioB = (int)($b['priority'] ?? 60);
-            if ($prioA !== $prioB) {
-                return $prioA <=> $prioB;
-            }
-
-            // Final fallback to ID
-            $idA = (string)($a['id'] ?? '');
-            $idB = (string)($b['id'] ?? '');
-            return $idA <=> $idB;
-        });
+        $this->sortLedgerTransactions($transactions);
 
         return $transactions;
     }
@@ -886,11 +1039,19 @@ class GeneralLedgerController extends Controller
             })->whereIn('status', ['posted', 'Posted'])
             ->where(DB::raw($pjDateCol), '<', $date)->sum('net_amount');
 
-        // 6. Sale Returns (Credit)
+        // 6. Sale Returns (Credit sub_total2, debit discount — matches party ledger)
         $srDateCol = $this->getDateColumn('sale_returns', 'current_date');
-        $sReturns = (float)$this->ledgerQuery(SaleReturn::class)->where('customer_id', $id)->whereIn('party_type', $typeArray)
+        $sReturnRows = $this->ledgerQuery(SaleReturn::class)->where('customer_id', $id)->whereIn('party_type', $typeArray)
             ->whereIn('status', ['posted', 'Posted'])
-            ->where(DB::raw($srDateCol), '<', $date)->sum('total_balance');
+            ->where(DB::raw($srDateCol), '<', $date)->get(['sub_total2', 'discount_amount', 'discount_account_id']);
+        $sReturnCredits = 0;
+        $sReturnDebits = 0;
+        foreach ($sReturnRows as $sr) {
+            $sReturnCredits += (float)($sr->sub_total2 ?? 0);
+            if ((float)($sr->discount_amount ?? 0) > 0 && !$sr->discount_account_id) {
+                $sReturnDebits += (float)$sr->discount_amount;
+            }
+        }
 
         // 7. Receipts (Credit)
         $rvDateCol = $this->getDateColumn('receipts_vouchers', 'receipt_date');
@@ -928,10 +1089,12 @@ class GeneralLedgerController extends Controller
             }
         }
 
-        // 7.2 Generic Vouchers (Credit)
+        // 7.2 Generic Vouchers (Credit) — skip SR discount VO (shown as SRJ debit in GL)
         $vCredits = (float)DB::table('vouchers')->where('person', $id)->where('type', 'Credit')
             ->whereIn('status', ['posted', 'Posted'])
-            ->where(DB::raw("COALESCE(date, DATE(created_at))"), '<', $date)->sum('amount');
+            ->where(DB::raw("COALESCE(date, DATE(created_at))"), '<', $date)
+            ->where('narration', 'not like', 'Discount on Sale Return Posted:%')
+            ->sum('amount');
 
         // 8. JV Credits
         $jvDateCol = $this->getDateColumn('journal_vouchers');
@@ -1007,7 +1170,7 @@ class GeneralLedgerController extends Controller
             ->where('status', 'Posted')
             ->where(DB::raw($crnDateCol), '<', $date)->sum('net_total');
 
-        $balance += ($sales + $pReturns + $payments + $vDebits + $jvDebits + $avDebits + $incomes + $claimDebits + $crNotes) - ($purchases + $sReturns + $receipts + $vCredits + $jvCredits + $avCredits + $expenses + $claimCredits);
+        $balance += ($sales + $pReturns + $payments + $vDebits + $jvDebits + $avDebits + $incomes + $claimDebits + $crNotes + $sReturnDebits) - ($purchases + $sReturnCredits + $receipts + $vCredits + $jvCredits + $avCredits + $expenses + $claimCredits);
         
         return $balance;
     }
@@ -1539,33 +1702,7 @@ class GeneralLedgerController extends Controller
                 }
             }
 
-            // Sort by Date, Priority, then created_at for chronological order
-            usort($transactions, function ($a, $b) { 
-                $dateA = strtotime(substr($a['date'], 0, 10));
-                $dateB = strtotime(substr($b['date'], 0, 10));
-                if ($dateA != $dateB) {
-                    return $dateA - $dateB;
-                }
-
-                $prioA = (int)($a['priority'] ?? 60);
-                $prioB = (int)($b['priority'] ?? 60);
-                if ($prioA !== $prioB) {
-                    return $prioA - $prioB;
-                }
-
-                $timeA = isset($a['created_at']) ? strtotime($a['created_at']) : 0;
-                $timeB = isset($b['created_at']) ? strtotime($b['created_at']) : 0;
-                if ($timeA != $timeB && $timeA !== 0 && $timeB !== 0) {
-                    return $timeA - $timeB;
-                }
-
-                $idA = $a['id'] ?? 0;
-                $idB = $b['id'] ?? 0;
-                if (is_numeric($idA) && is_numeric($idB)) {
-                    return $idA - $idB;
-                }
-                return strcmp((string)$idA, (string)$idB);
-            });
+            $this->sortLedgerTransactions($transactions);
             return $transactions;
         }
 
@@ -1577,6 +1714,7 @@ class GeneralLedgerController extends Controller
             ->whereBetween(DB::raw($salesDateCol), [$start, $end])
             ->with('items.product.brandRelation')->get();
         foreach ($sales as $sale) {
+            $itemSum = 0;
             foreach ($sale->items as $item) {
                 $brand = $item->product->brandRelation->name ?? '';
                 $qty = (float)$item->sales_qty;
@@ -1585,6 +1723,8 @@ class GeneralLedgerController extends Controller
                 $rate = (float)$item->sales_rate;
                 
                 $finalPrice = $rate ?: (($qty > 0) ? ($price - ($disc / $qty)) : $price);
+
+                $itemSum += (float)$item->amount;
 
                 $transactions[] = [
                     'created_at' => $sale->created_at,
@@ -1601,6 +1741,7 @@ class GeneralLedgerController extends Controller
                     'sort_inv' => preg_replace('/[^0-9]/', '', $sale->invoice_no)
                 ];
             }
+            $this->appendSaleSubTotalReconciliation($sale, $transactions, $itemSum);
         }
 
         // 2. Purchase Returns (PRJ) - Debit
@@ -1798,8 +1939,11 @@ class GeneralLedgerController extends Controller
             $inv = $v->voucher_type;
             $desc = $v->narration ?? $v->voucher_type;
             if (str_contains($v->narration ?? '', 'Discount on Sale:')) {
-                $ref = 'SJ';
                 $inv = trim(str_replace('Discount on Sale:', '', $v->narration));
+                if ($this->saleDiscountJvExists($inv)) {
+                    continue;
+                }
+                $ref = 'SJ';
                 
                 $sale = $this->ledgerQuery(\App\Models\Sale::class)->where('invoice_no', $inv)->first();
                 if ($sale && $sale->discount_account_id) {
@@ -1847,8 +1991,8 @@ class GeneralLedgerController extends Controller
                 if ($pid == $id && in_array($types[$idx] ?? '', $typeArray)) {
                     $ref = 'JV';
                     $inv = $jv->jvid;
-                    // Skip PRJ-WHT JVs in detailed mode to avoid duplication since PRJ block handles it natively
-                    if (str_starts_with($inv, 'PRJ-WHT')) {
+                    // Skip purchase JVs in detailed mode — PJ block shows WHT & allocations natively
+                    if (str_starts_with($inv, 'PRJ-WHT') || str_starts_with($inv, 'PJ-WHT') || str_starts_with($inv, 'PJ-ALLOC')) {
                         continue;
                     }
 
@@ -1926,7 +2070,7 @@ class GeneralLedgerController extends Controller
                         'debit' => (float)($debits[$idx] ?? 0), 
                         'credit' => (float)($credits[$idx] ?? 0),
                         'priority' => $priority,
-                        'sort_inv' => ($ref === 'SJ' || $ref === 'SRJ') ? preg_replace('/[^0-9]/', '', (string) $inv) : null,
+                        'sort_inv' => ($ref === 'SJ' || $ref === 'SRJ' || $ref === 'PJ') ? preg_replace('/[^0-9]/', '', (string) $inv) : null,
                     ];
                 }
             }
@@ -2066,10 +2210,13 @@ class GeneralLedgerController extends Controller
                 }
             })->whereIn('status', ['posted', 'Posted'])
             ->whereBetween(DB::raw($pjDateCol), [$start, $end])
-            ->with('items.product.brandRelation')->get();
+            ->with(['items.product.brandRelation', 'accountAllocations.account'])->get();
             
         foreach ($purchases as $p) {
-            $sumLines = 0;
+            $pjInv = preg_replace('/[^0-9]/', '', substr($p->invoice_no, strlen('PUR-'))) ?: $p->invoice_no;
+            $pjDate = $p->entry_date ?: $p->current_date ?: $p->created_at;
+            $lineCredit = 0;
+            $allocDebit = 0;
             foreach ($p->items as $item) {
                 $brand = $item->product->brandRelation->name ?? '';
                 $qty = (float)$item->qty;
@@ -2079,22 +2226,92 @@ class GeneralLedgerController extends Controller
                 
                 $finalPrice = $rate ?: (($qty > 0) ? ($price - (($disc > 100) ? ($disc / $qty) : ($price * $disc / 100))) : $price);
 
-                $sumLines += (float)$item->line_total;
+                $lineCredit += (float)$item->line_total;
 
                 $transactions[] = [
                     'created_at' => $p->created_at,
                     'id' => $item->id,
                     'date' => $p->entry_date ?: $p->current_date ?: $p->created_at,
                     'ref' => 'PJ',
-                    'inv' => preg_replace('/[^0-9]/', '', substr($p->invoice_no, strlen('PUR-'))) ?: $p->invoice_no,
+                    'inv' => $pjInv,
                     'desc' => ($brand ? $brand . ' - ' : '') . ($item->product->name ?? 'Product'),
                     'price' => $finalPrice,
                     'qty' => $qty,
                     'debit' => 0,
                     'credit' => (float)$item->line_total,
-                    'priority' => 30 // PJ after SJ/SRJ
+                    'priority' => 30, // PJ after SJ/SRJ
+                    'sort_inv' => $pjInv,
                 ];
             }
+
+            $whtCredit = 0;
+            if ((float)$p->wht > 0) {
+                $whtCredit = (float)$p->wht;
+                $whtHeadName = 'WHT Deduction (Tax)';
+                if ($p->wht_account_id) {
+                    $whtAcc = $this->ledgerQuery(Account::class)->find($p->wht_account_id);
+                    if ($whtAcc) {
+                        $whtHeadName = $whtAcc->title;
+                    }
+                }
+                $transactions[] = [
+                    'created_at' => $p->created_at,
+                    'id' => $p->id . '_wht',
+                    'date' => $pjDate,
+                    'ref' => 'PJ',
+                    'inv' => $pjInv,
+                    'desc' => $whtHeadName,
+                    'price' => 0,
+                    'qty' => 0,
+                    'debit' => 0,
+                    'credit' => (float)$p->wht,
+                    'priority' => 31,
+                    'sort_inv' => $pjInv,
+                ];
+            }
+
+            foreach ($p->accountAllocations as $allocation) {
+                $allocAmt = (float)($allocation->amount ?? 0);
+                if ($allocAmt <= 0) {
+                    continue;
+                }
+                $allocDebit += $allocAmt;
+                $accTitle = $allocation->account->title ?? 'Account Allocation';
+                $transactions[] = [
+                    'created_at' => $p->created_at,
+                    'id' => 'pjalloc_' . $allocation->id,
+                    'date' => $pjDate,
+                    'ref' => 'PJ',
+                    'inv' => $pjInv,
+                    'desc' => $accTitle,
+                    'price' => 0,
+                    'qty' => 0,
+                    'debit' => $allocAmt,
+                    'credit' => 0,
+                    'priority' => 32,
+                    'sort_inv' => $pjInv,
+                ];
+            }
+
+            if ((float)($p->discount ?? 0) > 0 && $p->accountAllocations->isEmpty()) {
+                $transactions[] = [
+                    'created_at' => $p->created_at,
+                    'id' => $p->id . '_disc',
+                    'date' => $pjDate,
+                    'ref' => 'PJ',
+                    'inv' => $pjInv,
+                    'desc' => 'Purchase Discount',
+                    'price' => 0,
+                    'qty' => 0,
+                    'debit' => (float)$p->discount,
+                    'credit' => 0,
+                    'priority' => 32,
+                    'sort_inv' => $pjInv,
+                ];
+                $allocDebit += (float)$p->discount;
+            }
+
+            $this->appendPurchaseNetReconciliation($p, $transactions, $lineCredit, $allocDebit, $whtCredit);
         }
 
         // 6. Sale Returns (SRJ) - Details
@@ -2104,6 +2321,8 @@ class GeneralLedgerController extends Controller
             ->get();
         foreach ($sReturns as $sr) {
             $originalInv = $sr->sale ? $sr->sale->invoice_no : '';
+            $srInv = preg_replace('/[^0-9]/', '', substr($sr->invoice_no, strlen('SR-'))) ?: $sr->invoice_no;
+            $itemSum = 0;
             foreach ($sr->items as $item) {
                 $brand = $item->product->brandRelation->name ?? '';
                 $desc = ($brand ? $brand . ' - ' : '') . ($item->product->name ?? 'Product');
@@ -2115,20 +2334,24 @@ class GeneralLedgerController extends Controller
                 $disc = (float)$item->discount_amount;
                 $finalPrice = ($qty > 0) ? ($price - ($disc / $qty)) : $price;
 
+                $itemSum += (float)$item->amount;
+
                 $transactions[] = [
                     'created_at' => $sr->created_at,
                     'id' => $item->id,
                     'date' => $sr->entry_date ?: $sr->current_date,
                     'ref' => 'SRJ',
-                    'inv' => preg_replace('/[^0-9]/', '', substr($sr->invoice_no, strlen('SR-'))) ?: $sr->invoice_no,
+                    'inv' => $srInv,
                     'desc' => $desc,
                     'price' => $finalPrice,
                     'qty' => $qty,
                     'debit' => 0,
                     'credit' => (float)$item->amount,
-                    'priority' => 20 // SRJ after SJ
+                    'priority' => 20,
+                    'sort_inv' => $srInv,
                 ];
             }
+            $this->appendSaleReturnSubTotalReconciliation($sr, $transactions, $itemSum);
             if ((float)$sr->discount_amount > 0 && !$sr->discount_account_id) {
                 $descDisc = 'Discount';
                 if ($originalInv) {
@@ -2139,13 +2362,14 @@ class GeneralLedgerController extends Controller
                     'id' => $sr->id . '_disc',
                     'date' => $sr->entry_date ?: $sr->current_date,
                     'ref' => 'SRJ',
-                    'inv' => preg_replace('/[^0-9]/', '', substr($sr->invoice_no, strlen('SR-'))) ?: $sr->invoice_no,
+                    'inv' => $srInv,
                     'desc' => $descDisc,
                     'price' => 0,
                     'qty' => 0,
                     'debit' => (float)$sr->discount_amount,
                     'credit' => 0,
-                    'priority' => 21
+                    'priority' => 21,
+                    'sort_inv' => $srInv,
                 ];
             }
         }
@@ -2393,37 +2617,7 @@ class GeneralLedgerController extends Controller
             ];
         }
 
-        // Strictly chronologically (Time Wise)
-        usort($transactions, function ($a, $b) {
-            $timeA = isset($a['created_at']) && $a['created_at'] ? strtotime($a['created_at']) : 0;
-            $timeB = isset($b['created_at']) && $b['created_at'] ? strtotime($b['created_at']) : 0;
-            
-            // If both have explicit timestamps and they differ, sort by timestamp
-            if ($timeA !== 0 && $timeB !== 0 && $timeA !== $timeB) {
-                return $timeA - $timeB;
-            }
-
-            // Fallback: Date
-            $dateA = strtotime(substr($a['date'] ?? '', 0, 10));
-            $dateB = strtotime(substr($b['date'] ?? '', 0, 10));
-            if ($dateA != $dateB) {
-                return $dateA - $dateB;
-            }
-
-            // Same exact time and date: Compare Priority as last resort
-            $prioA = (int)($a['priority'] ?? 60);
-            $prioB = (int)($b['priority'] ?? 60);
-            if ($prioA !== $prioB) {
-                return $prioA - $prioB;
-            }
-
-            $idA = $a['id'] ?? 0;
-            $idB = $b['id'] ?? 0;
-            if (is_numeric($idA) && is_numeric($idB)) {
-                return $idA - $idB;
-            }
-            return strcmp((string)$idA, (string)$idB);
-        });
+        $this->sortLedgerTransactions($transactions);
 
         return $transactions;
     }
