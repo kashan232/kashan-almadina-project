@@ -17,6 +17,7 @@ use App\Models\PurchaseItem;
 use App\Models\VendorLedger;
 use App\Models\Voucher;
 use App\Models\JournalVoucher;
+use App\Services\PartyLedgerService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -816,13 +817,12 @@ class PurchaseController extends Controller
         }
 
         if ($ledgerModel && $netAmount > 0) {
-            $this->postPartyLedgerCredit(
-                $ledgerModel,
-                $partyCol,
+            app(PartyLedgerService::class)->postPurchaseCredit(
+                $type,
                 $party_id,
                 $netAmount,
                 $purchase->current_date,
-                'Purchase: ' . $purchase->invoice_no
+                $purchase->invoice_no
             );
 
             // --- Secondary Impacts (JV & Account Balances) ---
@@ -932,13 +932,12 @@ class PurchaseController extends Controller
         }
 
         if ($ledgerModel && $netAmount > 0) {
-            $this->postPartyLedgerDebit(
-                $ledgerModel,
-                $partyCol,
+            app(PartyLedgerService::class)->reversePurchaseCredit(
+                $type,
                 $party_id,
                 $netAmount,
                 $purchase->current_date,
-                'Purchase Reversal: ' . $purchase->invoice_no
+                $purchase->invoice_no
             );
         }
 
@@ -968,63 +967,5 @@ class PurchaseController extends Controller
         if ($purchase->inward_id) {
             InwardGatepass::where('id', $purchase->inward_id)->update(['status' => 'pending']);
         }
-    }
-
-    /** Credit party ledger — closing balance decreases (e.g. PJ Net Amount). */
-    private function postPartyLedgerCredit(
-        string $ledgerModel,
-        string $partyCol,
-        int $partyId,
-        float $amount,
-        string $date,
-        string $description
-    ): void {
-        if ($amount <= 0) {
-            return;
-        }
-
-        $ledger = $ledgerModel::where($partyCol, $partyId)->latest('id')->first();
-        $prev = $ledger ? (float) $ledger->closing_balance : 0;
-
-        $ledgerModel::create([
-            $partyCol => $partyId,
-            'admin_or_user_id' => auth()->id(),
-            'date' => $date,
-            'description' => $description,
-            'opening_balance' => 0,
-            'previous_balance' => $prev,
-            'debit' => 0,
-            'credit' => $amount,
-            'closing_balance' => $prev - $amount,
-        ]);
-    }
-
-    /** Debit party ledger — closing balance increases (e.g. purchase reversal). */
-    private function postPartyLedgerDebit(
-        string $ledgerModel,
-        string $partyCol,
-        int $partyId,
-        float $amount,
-        string $date,
-        string $description
-    ): void {
-        if ($amount <= 0) {
-            return;
-        }
-
-        $ledger = $ledgerModel::where($partyCol, $partyId)->latest('id')->first();
-        $prev = $ledger ? (float) $ledger->closing_balance : 0;
-
-        $ledgerModel::create([
-            $partyCol => $partyId,
-            'admin_or_user_id' => auth()->id(),
-            'date' => $date,
-            'description' => $description,
-            'opening_balance' => 0,
-            'previous_balance' => $prev,
-            'debit' => $amount,
-            'credit' => 0,
-            'closing_balance' => $prev + $amount,
-        ]);
     }
 }

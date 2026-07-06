@@ -17,6 +17,7 @@ use App\Models\ProductBookingItem;
 use App\Models\WarehouseStock;
 use App\Models\Voucher;
 use App\Models\ReceiptsVoucher;
+use App\Services\PartyLedgerService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -1213,48 +1214,14 @@ class SaleController extends Controller
         $date = $sale->entry_date ?? now()->format('Y-m-d');
         $invoiceNo = $sale->invoice_no;
 
-        // 1. Identify Ledger Model
-        $ledgerModel = null;
-        $partyCol = '';
-        if ($pType === 'vendor') {
-            $ledgerModel = \App\Models\VendorLedger::class;
-            $partyCol = 'vendor_id';
-        } else {
-            $ledgerModel = \App\Models\CustomerLedger::class;
-            $partyCol = 'customer_id';
-        }
-
-        // 2. CONSOLIDATED UPDATE (MODIFIES LATEST ROW)
-        // The user requires updating the existing ledger row instead of creating a new one.
-        $ledger = $ledgerModel::where($partyCol, $partyId)->latest('id')->first();
-        
-        $totalDebit = $saleAmount;
-        $totalCredit = $orderDiscount + $receiptAmount;
-        $impact = $totalDebit - $totalCredit;
-
-        if ($ledger) {
-            // Update the existing latest row
-            $ledger->previous_balance = $ledger->closing_balance;
-            $ledger->date = $date;
-            $ledger->description = 'Sale: ' . $invoiceNo . ($orderDiscount > 0 ? ' (Incl. Discount)' : '') . ($receiptAmount > 0 ? ' (Incl. Receipt)' : '');
-            $ledger->debit = $totalDebit;
-            $ledger->credit = $totalCredit;
-            $ledger->closing_balance += $impact;
-            $ledger->save();
-        } else {
-            // Create a new one only if no ledger exists at all for this customer
-            $ledgerModel::create([
-                $partyCol => $partyId,
-                'admin_or_user_id' => auth()->id(),
-                'date' => $date,
-                'description' => 'Sale: ' . $invoiceNo,
-                'opening_balance' => 0,
-                'previous_balance' => 0,
-                'debit' => $totalDebit,
-                'credit' => $totalCredit,
-                'closing_balance' => $totalDebit - $totalCredit,
-            ]);
-        }
+        app(PartyLedgerService::class)->postSale(
+            $pType,
+            (int) $partyId,
+            $saleAmount,
+            $orderDiscount + $receiptAmount,
+            $date,
+            $invoiceNo
+        );
 
         // 3. Create Vouchers for documentation
         if ($orderDiscount > 0 && $sale->discount_account_id) {

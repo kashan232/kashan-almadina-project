@@ -12,6 +12,7 @@ use App\Models\Account;
 use App\Models\Voucher;
 use App\Models\AccountHead;
 use App\Models\JournalVoucher;
+use App\Services\PartyLedgerService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -396,45 +397,20 @@ class SaleReturnController extends Controller
                     }
                 }
 
-                // 2. Ledger Impact (Customer receives credit / balance decreases)
-                $amount = $ret->total_balance;
-                $pType = $ret->party_type;
-                $pId = $ret->customer_id;
+                // 2. Ledger Impact — SRJ matches GL (credit sub_total2, debit discount).
+                $pType = $ret->party_type ?? 'customer';
+                $pId = (int) $ret->customer_id;
+                $subTotal = (float) ($ret->sub_total2 ?? 0);
+                $discount = (float) ($ret->discount_amount ?? 0);
 
-                if ($pType === 'vendor') {
-                    $ledger = VendorLedger::where('vendor_id', $pId)->latest('id')->first();
-                    if ($ledger) {
-                        // For vendor, sale return means they owe us less
-                        $ledger->previous_balance = $ledger->closing_balance;
-                        $ledger->closing_balance  = $ledger->closing_balance - $amount;
-                        $ledger->save();
-                    } else {
-                        VendorLedger::create([
-                            'vendor_id'        => $pId,
-                            'admin_or_user_id' => auth()->id(),
-                            'date'             => $ret->current_date,
-                            'description'      => 'Sale Return Posted: ' . $ret->invoice_no,
-                            'previous_balance' => 0,
-                            'closing_balance'  => -$amount,
-                            'opening_balance'  => -$amount,
-                        ]);
-                    }
-                } elseif ($pType === 'customer' || $pType === 'walking') {
-                    $ledger = CustomerLedger::where('customer_id', $pId)->latest('id')->first();
-                    if ($ledger) {
-                        $ledger->previous_balance = $ledger->closing_balance;
-                        $ledger->closing_balance  = $ledger->closing_balance - $amount;
-                        $ledger->save();
-                    } else {
-                        CustomerLedger::create([
-                            'customer_id'      => $pId,
-                            'admin_or_user_id' => auth()->id(),
-                            'previous_balance' => 0,
-                            'closing_balance'  => -$amount,
-                            'opening_balance'  => -$amount,
-                        ]);
-                    }
-                }
+                app(PartyLedgerService::class)->postSaleReturn(
+                    $pType,
+                    $pId,
+                    $subTotal,
+                    $discount,
+                    $ret->entry_date ?: $ret->current_date,
+                    $ret->invoice_no
+                );
 
                 // 3. Order discount — same account heads as sale (JournalVoucher for GL)
                 if ($ret->discount_amount > 0) {

@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\PartyLedgerService;
 use App\Models\ClaimCreditNote;
-use App\Models\ClaimCreditNoteItem;
 use App\Models\ClaimAcceptanceItem;
 use App\Models\Product;
 use App\Models\Warehouse;
@@ -244,39 +244,17 @@ class ClaimCreditNoteController extends Controller
 
     private function updateLedger($voucher)
     {
-        $amount = (float)$voucher->net_total;
-        if ($amount <= 0) return;
-
-        $description = 'CIR: ' . $voucher->voucher_no;
-
-        if ($voucher->party_type == 'vendor') {
-            $ledger = \App\Models\VendorLedger::where('vendor_id', $voucher->party_id)->latest('id')->first();
-            $prevBal = $ledger ? $ledger->closing_balance : 0;
-            \App\Models\VendorLedger::create([
-                'vendor_id'        => $voucher->party_id,
-                'admin_or_user_id' => auth()->id(),
-                'date'             => $voucher->date,
-                'description'      => $description,
-                'debit'            => $amount,
-                'credit'           => 0,
-                'previous_balance' => $prevBal,
-                'closing_balance'  => $prevBal + $amount,
-                'opening_balance'  => $ledger ? $ledger->opening_balance : ($prevBal + $amount),
-            ]);
-        } else {
-            $ledger = \App\Models\CustomerLedger::where('customer_id', $voucher->party_id)->latest('id')->first();
-            $prevBal = $ledger ? $ledger->closing_balance : 0;
-            \App\Models\CustomerLedger::create([
-                'customer_id'      => $voucher->party_id,
-                'admin_or_user_id' => auth()->id(),
-                'date'             => $voucher->date,
-                'description'      => $description,
-                'debit'            => $amount,
-                'credit'           => 0,
-                'previous_balance' => $prevBal,
-                'closing_balance'  => $prevBal + $amount,
-                'opening_balance'  => $ledger ? $ledger->opening_balance : ($prevBal + $amount),
-            ]);
+        $amount = (float) $voucher->net_total;
+        if ($amount <= 0) {
+            return;
         }
+
+        app(PartyLedgerService::class)->postClaimDebit(
+            $voucher->party_type ?? 'customer',
+            (int) $voucher->party_id,
+            $amount,
+            $voucher->date ?? now()->toDateString(),
+            'CIR: ' . $voucher->voucher_no
+        );
     }
 }

@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Customer;
 use App\Models\CustomerLedger;
+use App\Services\PartyLedgerService;
 use App\Models\UserGroup;
 use App\Models\Zone;
 use Illuminate\Support\Facades\DB;
@@ -314,13 +315,7 @@ class CustomerImportService
         $customer = Customer::create($data);
 
         if ($openingBalance != 0.0) {
-            CustomerLedger::create([
-                'customer_id' => $customer->id,
-                'admin_or_user_id' => $userId,
-                'opening_balance' => $openingBalance,
-                'previous_balance' => 0,
-                'closing_balance' => $openingBalance,
-            ]);
+            app(PartyLedgerService::class)->postOpeningBalance('customer', $customer->id, $openingBalance, $userId);
         }
 
         return $customer;

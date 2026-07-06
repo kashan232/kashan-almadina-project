@@ -18,6 +18,7 @@ use App\Models\SaleReturn;
 use App\Models\SaleReturnItem;
 use App\Models\InwardGatepass;
 use App\Models\VendorLedger;
+use App\Services\PartyLedgerService;
 use App\Models\CustomerLedger;
 use App\Models\Voucher;
 use App\Models\Account;
@@ -194,9 +195,15 @@ class RollbackController extends Controller
         $saleAmount = (float)($sale->sub_total2 ?? 0);
         $orderDiscount = (float)($sale->discount_amount ?? 0);
         $receiptAmount = (float)($sale->receipt1 + $sale->receipt2);
-        $impact = $saleAmount - ($orderDiscount + $receiptAmount);
         
-        $this->adjustLedger($sale->partyType, $sale->customer_id, $impact, 'subtract');
+        app(PartyLedgerService::class)->reverseSale(
+            $sale->partyType ?? 'customer',
+            (int) $sale->customer_id,
+            $saleAmount,
+            $orderDiscount + $receiptAmount,
+            $sale->entry_date ?? now()->format('Y-m-d'),
+            $sale->invoice_no
+        );
 
         // 3. Delete Auto-generated Vouchers and reverse Account impacts
         $rvs = ReceiptsVoucher::where('remarks', 'LIKE', '%Auto-generated from Sale: ' . $sale->invoice_no . '%')->get();
@@ -266,8 +273,16 @@ class RollbackController extends Controller
             $this->adjustStock($item->product_id, $purchase->warehouse_id, $item->qty, 'subtract');
         }
 
-        // 2. Reverse Ledger Impact (Consolidated)
-        $this->adjustLedger($purchase->purchasable_type, $purchase->purchasable_id, $purchase->net_amount, 'subtract');
+        // 2. Reverse Ledger Impact — append debit reversal (undo PJ credit).
+        $partyType = app(PartyLedgerService::class)->partyTypeFromPurchasable($purchase->purchasable_type);
+        app(PartyLedgerService::class)->reversePurchaseCredit(
+            $partyType,
+            (int) $purchase->purchasable_id,
+            (float) $purchase->net_amount,
+            $purchase->current_date,
+            $purchase->invoice_no,
+            'Rollback Purchase'
+        );
         
         // 3. Reverse WHT Account Impact
         if ($purchase->wht > 0 && $purchase->wht_account_id) {
@@ -308,7 +323,15 @@ class RollbackController extends Controller
             $this->adjustStock($item->product_id, $ret->warehouse_id, $item->qty, 'add');
         }
 
-        $this->adjustLedger($ret->party_type, $ret->party_id, $ret->total_balance, 'add');
+        $partyType = app(PartyLedgerService::class)->partyTypeFromPurchasable($ret->purchasable_type);
+        app(PartyLedgerService::class)->reversePurchaseReturnDebit(
+            $partyType,
+            (int) $ret->purchasable_id,
+            (float) $ret->net_amount,
+            $ret->current_date,
+            $ret->invoice_no,
+            'Rollback Purchase Return'
+        );
         $ret->update(['status' => 'Unposted']);
         return back()->with('success', "Purchase Return #$invoiceNo set to Unposted.");
     }
@@ -327,7 +350,14 @@ class RollbackController extends Controller
             $this->adjustStock($item->product_id, $item->warehouse_id, $item->sales_qty, 'subtract');
         }
 
-        $this->adjustLedger($ret->party_type, $ret->customer_id, $ret->total_balance, 'add');
+        app(PartyLedgerService::class)->reverseSaleReturn(
+            $ret->party_type ?? 'customer',
+            (int) $ret->customer_id,
+            (float) ($ret->sub_total2 ?? 0),
+            (float) ($ret->discount_amount ?? 0),
+            $ret->entry_date ?: $ret->current_date,
+            $ret->invoice_no
+        );
 
         Voucher::where('narration', 'LIKE', '%Discount on Sale Return Posted: ' . $ret->invoice_no . '%')->delete();
         $discountJVs = \App\Models\JournalVoucher::where('jvid', 'SR-DISC-' . $ret->invoice_no)->get();
@@ -511,10 +541,63 @@ class RollbackController extends Controller
         
         if ($v->status !== 'posted') throw new \Exception("$name $invoiceNo is not posted.");
 
-        $amount = (float)$v->total_amount;
-        
-        // Reverse Header Party
-        $this->adjustLedger($v->type, $v->party_id, $amount, $model === ReceiptsVoucher::class ? 'add' : 'subtract');
+        $amount = (float) $v->total_amount;
+        $totalDiscount = $this->sumVoucherDiscountsForRollback($v);
+        $totalCreditAmount = $amount + $totalDiscount;
+        $rowAmounts = json_decode($v->amount, true) ?? [];
+        $discountList = json_decode($v->discount_value, true) ?? [];
+        $ledger = app(PartyLedgerService::class);
+        $date = $v->entry_date ?? now()->toDateString();
+
+        if ($model === ReceiptsVoucher::class) {
+            if (!str_contains($v->remarks ?? '', 'Auto-generated from Sale:')) {
+                $ledger->appendReversal(
+                    $v->type,
+                    (int) $v->party_id,
+                    0,
+                    $totalCreditAmount,
+                    $date,
+                    "Rollback Receipt Voucher #$invoiceNo"
+                );
+            }
+        } elseif ($model === PaymentVoucher::class) {
+            foreach ($rowAmounts as $index => $rowAmount) {
+                $partyImpact = (float) $rowAmount + (float) ($discountList[$index] ?? 0);
+                if ($partyImpact <= 0) {
+                    continue;
+                }
+                $ledger->appendReversal(
+                    $v->type,
+                    (int) $v->party_id,
+                    $partyImpact,
+                    0,
+                    $date,
+                    "Rollback Payment Voucher #$invoiceNo"
+                );
+            }
+        } elseif ($model === ExpenseVoucher::class) {
+            $ledger->appendReversal(
+                $v->type,
+                (int) $v->party_id,
+                0,
+                $amount,
+                $date,
+                "Rollback Expense Voucher #$invoiceNo"
+            );
+        } elseif ($model === IncomeVoucher::class) {
+            $types = json_decode($v->party_type, true) ?? [];
+            $pIds = json_decode($v->party_id, true) ?? [];
+            foreach ($pIds as $idx => $pId) {
+                $rowAmount = (float) ($rowAmounts[$idx] ?? 0);
+                $pType = $types[$idx] ?? '';
+                if ($rowAmount <= 0 || !in_array($pType, ['vendor', 'customer', 'walkin'], true)) {
+                    continue;
+                }
+                $ledger->appendReversal($pType, (int) $pId, $rowAmount, 0, $date, "Rollback Income Voucher #$invoiceNo");
+            }
+        } else {
+            $this->adjustLedger($v->type, $v->party_id, $amount, $model === ReceiptsVoucher::class ? 'add' : 'subtract', "Rollback $name #$invoiceNo");
+        }
 
         // Reverse Row Accounts
         $rowAccs = json_decode($v->row_account_id, true);
@@ -549,36 +632,36 @@ class RollbackController extends Controller
         }
     }
 
-    // Helper: Adjust Ledger
-    private function adjustLedger($type, $id, $amount, $action)
+    // Helper: Adjust Ledger — append reversal row (never mutate prior rows).
+    private function adjustLedger($type, $id, $amount, $action, $description = 'Ledger rollback')
     {
-        $amount = (float)$amount;
-        $type = strtolower(class_basename($type));
-        
-        if ($type === 'vendor') {
-            $ledger = VendorLedger::where('vendor_id', $id)->latest('id')->first();
-            if ($ledger) {
-                $ledger->previous_balance = $ledger->closing_balance;
-                $ledger->closing_balance = $action === 'add' ? ($ledger->closing_balance + $amount) : ($ledger->closing_balance - $amount);
-                $ledger->save();
-            }
-        } elseif (in_array($type, ['customer', 'walkin', 'walking'])) {
-            $ledger = CustomerLedger::where('customer_id', $id)->latest('id')->first();
-            if ($ledger) {
-                $ledger->previous_balance = $ledger->closing_balance;
-                $ledger->closing_balance = $action === 'add' ? ($ledger->closing_balance + $amount) : ($ledger->closing_balance - $amount);
-                $ledger->save();
-            }
-        } elseif ($type === 'subcustomer') {
-            $ledger = \App\Models\SubCustomerLedger::where('sub_customer_id', $id)->latest('id')->first();
-            if ($ledger) {
-                $ledger->previous_balance = $ledger->closing_balance;
-                $ledger->closing_balance = $action === 'add' ? ($ledger->closing_balance + $amount) : ($ledger->closing_balance - $amount);
-                $ledger->save();
-            }
-        } else {
-            $this->adjustAccount($id, $amount, $action);
+        $amount = abs((float) $amount);
+        if ($amount <= 0) {
+            return;
         }
+
+        $service = app(PartyLedgerService::class);
+        if (!$service->resolveLedger((string) $type)) {
+            $this->adjustAccount($id, $amount, $action);
+
+            return;
+        }
+
+        $entry = [
+            'date' => now()->toDateString(),
+            'description' => $description,
+            'admin_or_user_id' => auth()->id(),
+        ];
+
+        if ($action === 'add') {
+            $entry['debit'] = $amount;
+            $entry['credit'] = 0;
+        } else {
+            $entry['debit'] = 0;
+            $entry['credit'] = $amount;
+        }
+
+        $service->append((string) $type, (int) $id, $entry);
     }
 
     // Helper: Adjust Account
@@ -589,6 +672,19 @@ class RollbackController extends Controller
             $acc->opening_balance = $action === 'add' ? (($acc->opening_balance ?? 0) + $amount) : (($acc->opening_balance ?? 0) - $amount);
             $acc->save();
         }
+    }
+
+    private function sumVoucherDiscountsForRollback(object $voucher): float
+    {
+        $discountList = json_decode($voucher->discount_value ?? '[]', true);
+        $total = 0.0;
+        if (is_array($discountList)) {
+            foreach ($discountList as $disc) {
+                $total += (float) $disc;
+            }
+        }
+
+        return $total;
     }
 
     private function validateRollbackDate($record)

@@ -12,6 +12,7 @@ use App\Models\Narration;
 use App\Models\PaymentVoucher;
 use App\Models\ReceiptsVoucher;
 use App\Models\VendorLedger;
+use App\Services\PartyLedgerService;
 use App\Models\IncomeVoucher;
 use App\Models\AdjustmentVoucher;
 use App\Models\JournalVoucher;
@@ -595,58 +596,17 @@ class VoucherController extends Controller
             $totalDiscount = $this->sumVoucherDiscounts($voucher);
             $totalCreditAmount = $amount + $totalDiscount;
 
-            if ($voucher->type === 'vendor') {
-                $ledger = VendorLedger::where('vendor_id', $voucher->party_id)->latest()->first();
-                if ($ledger) {
-                    VendorLedger::create([
-                        'vendor_id'        => $voucher->party_id,
-                        'admin_or_user_id' => auth()->id(),
-                        'date'             => $voucher->entry_date ?? now(),
-                        'description'      => "Receipt Voucher #$rvid",
-                        'opening_balance'  => 0,
-                        'debit'            => 0,
-                        'credit'           => $totalCreditAmount,
-                        'previous_balance' => $ledger->closing_balance,
-                        'closing_balance'  => (float)$ledger->closing_balance - $totalCreditAmount,
-                    ]);
-                } else {
-                    VendorLedger::create([
-                        'vendor_id'        => $voucher->party_id,
-                        'admin_or_user_id' => auth()->id(),
-                        'date'             => $voucher->entry_date ?? now(),
-                        'description'      => "Receipt Voucher #$rvid",
-                        'opening_balance'  => 0,
-                        'debit'            => 0,
-                        'credit'           => $totalCreditAmount,
-                        'previous_balance' => 0,
-                        'closing_balance'  => -$totalCreditAmount,
-                    ]);
-                }
-            } elseif ($voucher->type === 'customer' || $voucher->type === 'walkin') {
-                $ledger = CustomerLedger::where('customer_id', $voucher->party_id)->latest()->first();
-                if ($ledger) {
-                    CustomerLedger::create([
-                        'customer_id'      => $voucher->party_id,
-                        'admin_or_user_id' => auth()->id(),
-                        'date'             => $voucher->entry_date ?? now(),
-                        'description'      => "Receipt Voucher #$rvid",
-                        'debit'            => 0,
-                        'credit'           => $totalCreditAmount,
-                        'previous_balance' => $ledger->closing_balance,
-                        'closing_balance'  => (float)$ledger->closing_balance - $totalCreditAmount,
-                    ]);
-                } else {
-                    CustomerLedger::create([
-                        'customer_id'      => $voucher->party_id,
-                        'admin_or_user_id' => auth()->id(),
-                        'date'             => $voucher->entry_date ?? now(),
-                        'description'      => "Receipt Voucher #$rvid",
-                        'debit'            => 0,
-                        'credit'           => $totalCreditAmount,
-                        'previous_balance' => 0,
-                        'closing_balance'  => -$totalCreditAmount,
-                    ]);
-                }
+            $partyLedger = app(PartyLedgerService::class);
+            $rvDate = $voucher->entry_date ?? now()->toDateString();
+
+            if (in_array($voucher->type, ['vendor', 'customer', 'walkin'], true)) {
+                $partyLedger->postReceiptCredit(
+                    $voucher->type,
+                    (int) $voucher->party_id,
+                    $totalCreditAmount,
+                    $rvDate,
+                    "Receipt Voucher #$rvid"
+                );
             } else {
                 $account = Account::find($voucher->party_id);
                 if ($account) {
@@ -698,24 +658,18 @@ class VoucherController extends Controller
             $totalDiscount = $this->sumVoucherDiscounts($voucher);
             $totalCreditAmount = $amount + $totalDiscount;
             
-            // 1. Reverse Header Party (Destination) -> Add back
-            if ($voucher->type === 'vendor') {
-                $ledger = VendorLedger::where('vendor_id', $voucher->party_id)->latest()->first();
-                if ($ledger) {
-                    $ledger->closing_balance = (float)$ledger->closing_balance + $totalCreditAmount;
-                    $ledger->save();
-                }
-            } elseif ($voucher->type === 'customer' || $voucher->type === 'walkin') {
-                $ledger = CustomerLedger::where('customer_id', $voucher->party_id)->latest()->first();
-                if ($ledger) {
-                    $ledger->closing_balance = (float)$ledger->closing_balance + $totalCreditAmount;
-                    $ledger->save();
-                }
-                $cust = \App\Models\Customer::find($voucher->party_id);
-                if ($cust) {
-                    $cust->opening_balance = (float)($cust->opening_balance ?? 0) + $totalCreditAmount;
-                    $cust->save();
-                }
+            $partyLedger = app(PartyLedgerService::class);
+            $rvDate = $voucher->entry_date ?? now()->toDateString();
+
+            if (in_array($voucher->type, ['vendor', 'customer', 'walkin'], true)) {
+                $partyLedger->appendReversal(
+                    $voucher->type,
+                    (int) $voucher->party_id,
+                    0,
+                    $totalCreditAmount,
+                    $rvDate,
+                    "Unpost Receipt Voucher #{$voucher->rvid}"
+                );
             } else {
                 $account = Account::find($voucher->party_id);
                 if ($account) {
@@ -884,41 +838,26 @@ class VoucherController extends Controller
             $partyId = $voucher->party_id;
             $pType = $voucher->type;
 
+            $partyLedger = app(PartyLedgerService::class);
+            $pvDate = $voucher->entry_date ?? now()->toDateString();
+
             if ($partyId && $pType && is_array($rowAmounts)) {
                 foreach ($rowAmounts as $index => $rowAmount) {
-                    $rowAmount = (float)$rowAmount;
-                    $rowDiscount = (float)($discountList[$index] ?? 0);
+                    $rowAmount = (float) $rowAmount;
+                    $rowDiscount = (float) ($discountList[$index] ?? 0);
                     $partyImpact = $rowAmount + $rowDiscount;
-                    if ($partyImpact <= 0) continue;
+                    if ($partyImpact <= 0) {
+                        continue;
+                    }
 
-                    if ($pType === 'vendor') {
-                        $ledger = VendorLedger::where('vendor_id', $partyId)->latest()->first();
-                        $prev = $ledger ? $ledger->closing_balance : 0;
-                        VendorLedger::create([
-                            'vendor_id' => $partyId,
-                            'admin_or_user_id' => auth()->id(),
-                            'date' => now(),
-                            'description' => "Payment Voucher #$pvid",
-                            'opening_balance' => $prev,
-                            'debit' => $partyImpact,
-                            'credit' => 0,
-                            'previous_balance' => $prev,
-                            'closing_balance' => $prev + $partyImpact,
-                        ]);
-                    } elseif ($pType === 'customer' || $pType === 'walkin') {
-                        $ledger = CustomerLedger::where('customer_id', $partyId)->latest()->first();
-                        $prev = $ledger ? $ledger->closing_balance : 0;
-                        CustomerLedger::create([
-                            'customer_id' => $partyId,
-                            'admin_or_user_id' => auth()->id(),
-                            'date' => now(),
-                            'description' => "Payment Voucher #$pvid",
-                            'opening_balance' => $prev,
-                            'debit' => $partyImpact,
-                            'credit' => 0,
-                            'previous_balance' => $prev,
-                            'closing_balance' => $prev + $partyImpact,
-                        ]);
+                    if (in_array($pType, ['vendor', 'customer', 'walkin'], true)) {
+                        $partyLedger->postPaymentDebit(
+                            $pType,
+                            (int) $partyId,
+                            $partyImpact,
+                            $pvDate,
+                            "Payment Voucher #$pvid"
+                        );
                     } else {
                         $partyAcc = Account::find($partyId);
                         if ($partyAcc) {
@@ -971,27 +910,25 @@ class VoucherController extends Controller
 
             $this->adjustVoucherDiscountAccounts($voucher, false, true);
 
-            // 2. Reverse Party ledger impacts
-            if ($partyId && in_array($pType, ['vendor', 'customer', 'walkin']) && is_array($rowAmounts)) {
-                foreach ($rowAmounts as $index => $rowAmount) {
-                    $partyImpact = (float)$rowAmount + (float)($discountList[$index] ?? 0);
-                    if ($partyImpact <= 0) continue;
+            $partyLedger = app(PartyLedgerService::class);
+            $pvDate = $voucher->entry_date ?? now()->toDateString();
 
-                    if ($pType === 'vendor') {
-                        $ledger = VendorLedger::where('vendor_id', $partyId)->latest()->first();
-                        if ($ledger) {
-                            $ledger->closing_balance = (float)$ledger->closing_balance - $partyImpact;
-                            $ledger->save();
-                        }
-                    } else {
-                        $ledger = CustomerLedger::where('customer_id', $partyId)->latest()->first();
-                        if ($ledger) {
-                            $ledger->closing_balance = (float)$ledger->closing_balance - $partyImpact;
-                            $ledger->save();
-                        }
+            if ($partyId && in_array($pType, ['vendor', 'customer', 'walkin'], true) && is_array($rowAmounts)) {
+                foreach ($rowAmounts as $index => $rowAmount) {
+                    $partyImpact = (float) $rowAmount + (float) ($discountList[$index] ?? 0);
+                    if ($partyImpact <= 0) {
+                        continue;
                     }
+                    $partyLedger->appendReversal(
+                        $pType,
+                        (int) $partyId,
+                        $partyImpact,
+                        0,
+                        $pvDate,
+                        "Unpost Payment Voucher #{$voucher->pvid}"
+                    );
                 }
-            } elseif ($partyId && !in_array($pType, ['vendor', 'customer', 'walkin'])) {
+            } elseif ($partyId && !in_array($pType, ['vendor', 'customer', 'walkin'], true)) {
                 $partyAcc = Account::find($partyId);
                 if ($partyAcc) {
                     $partyAcc->opening_balance -= ($totalAmount + $totalDiscount);
@@ -1082,70 +1019,6 @@ class VoucherController extends Controller
             ];
 
             PaymentVoucher::create($voucherData);
-
-            $amount = (float)$request->total_amount;
-            /**
-             * STEP 1: Row accounts → MINUS (opposite of receipt voucher)
-             */
-            if ($request->row_account_id && $request->amount) {
-                foreach ($request->row_account_id as $index => $accId) {
-                    $rowAmount = isset($request->amount[$index]) ? (float)$request->amount[$index] : 0;
-
-                    if ($rowAmount > 0) {
-                        $rowAccount = Account::find($accId);
-                        if ($rowAccount) {
-                            $rowAccount->opening_balance = $rowAccount->opening_balance - $rowAmount;
-                            $rowAccount->save();
-                        }
-                    }
-                }
-            }
-
-            /**
-             * STEP 2: Party side (Vendor / Customer / Account Head) → PLUS
-             */
-            if ($request->vendor_type === 'vendor') {
-                $ledger = VendorLedger::where('vendor_id', $request->vendor_id)->latest()->first();
-                if ($ledger) {
-                    $ledger->previous_balance = $ledger->closing_balance;
-                    $ledger->closing_balance  = $ledger->closing_balance + $amount;
-                    $ledger->save();
-                } else {
-                    VendorLedger::create([
-                        'vendor_id'        => $request->vendor_id,
-                        'admin_or_user_id' => auth()->id(),
-                        'date'             => now(),
-                        'description'      => "Payment Voucher #$pvid",
-                        'opening_balance'  => 0,
-                        'debit'            => $amount,
-                        'credit'           => 0,
-                        'previous_balance' => 0,
-                        'closing_balance'  => $amount,
-                    ]);
-                }
-            } elseif ($request->vendor_type === 'customer') {
-                $ledger = CustomerLedger::where('customer_id', $request->vendor_id)->latest()->first();
-                if ($ledger) {
-                    $ledger->previous_balance = $ledger->closing_balance;
-                    $ledger->closing_balance  = $ledger->closing_balance + $amount;
-                    $ledger->save();
-                } else {
-                    CustomerLedger::create([
-                        'customer_id'      => $request->vendor_id,
-                        'admin_or_user_id' => auth()->id(),
-                        'previous_balance' => 0,
-                        'opening_balance'  => 0,
-                        'closing_balance'  => $amount,
-                    ]);
-                }
-            } else {
-                // agar vendor_type me account head/account ki id ayi
-                $account = Account::find($request->vendor_id);
-                if ($account) {
-                    $account->opening_balance = $account->opening_balance + $amount;
-                    $account->save();
-                }
-            }
 
             DB::commit();
             return back()->with('success', 'Payment Voucher saved successfully!');
@@ -1356,25 +1229,17 @@ class VoucherController extends Controller
         try {
             $amount = (float)$voucher->total_amount;
 
-            // Header Side (Source of payment) -> MINUS
-            if ($voucher->type === 'vendor') {
-                $ledger = VendorLedger::where('vendor_id', $voucher->party_id)->latest()->first();
-                $prev = $ledger ? $ledger->closing_balance : 0;
-                VendorLedger::create([
-                    'vendor_id' => $voucher->party_id, 'admin_or_user_id' => auth()->id(),
-                    'date' => now(), 'description' => "Expense Voucher #$voucher->evid",
-                    'debit' => 0, 'credit' => $amount,
-                    'previous_balance' => $prev, 'closing_balance' => $prev - $amount
-                ]);
-            } elseif ($voucher->type === 'customer' || $voucher->type === 'walkin') {
-                $ledger = CustomerLedger::where('customer_id', $voucher->party_id)->latest()->first();
-                $prev = $ledger ? $ledger->closing_balance : 0;
-                CustomerLedger::create([
-                    'customer_id' => $voucher->party_id, 'admin_or_user_id' => auth()->id(),
-                    'date' => now(), 'description' => "Expense Voucher #$voucher->evid",
-                    'debit' => 0, 'credit' => $amount,
-                    'previous_balance' => $prev, 'closing_balance' => $prev - $amount
-                ]);
+            $partyLedger = app(PartyLedgerService::class);
+            $evDate = $voucher->entry_date ?? now()->toDateString();
+
+            if (in_array($voucher->type, ['vendor', 'customer', 'walkin'], true)) {
+                $partyLedger->postExpenseCredit(
+                    $voucher->type,
+                    (int) $voucher->party_id,
+                    $amount,
+                    $evDate,
+                    "Expense Voucher #$voucher->evid"
+                );
             } else {
                 $account = Account::find($voucher->party_id);
                 if ($account) {
@@ -1416,11 +1281,16 @@ class VoucherController extends Controller
         try {
             $amount = (float)$voucher->total_amount;
 
-            // Revert Header
-            if ($voucher->type === 'vendor') {
-                \App\Models\VendorLedger::where('vendor_id', $voucher->party_id)->where('description', "Expense Voucher #$voucher->evid")->delete();
-            } elseif ($voucher->type === 'customer' || $voucher->type === 'walkin') {
-                \App\Models\CustomerLedger::where('customer_id', $voucher->party_id)->where('description', "Expense Voucher #$voucher->evid")->delete();
+            // Revert Header party ledger via reversal row (keeps chain intact)
+            if (in_array($voucher->type, ['vendor', 'customer', 'walkin'], true)) {
+                app(PartyLedgerService::class)->appendReversal(
+                    $voucher->type,
+                    (int) $voucher->party_id,
+                    0,
+                    $amount,
+                    $voucher->entry_date ?? now()->toDateString(),
+                    "Unpost Expense Voucher #$voucher->evid"
+                );
             } else {
                 $account = Account::find($voucher->party_id);
                 if ($account) { $account->opening_balance += $amount; $account->save(); }
@@ -1673,34 +1543,19 @@ class VoucherController extends Controller
             $totalAmount = (float)$voucher->total_amount;
             $ivid = $voucher->ivid;
 
-            // 🏦 1. Update Header Account (Destination) -> DEBIT (Increase)
+            $partyLedger = app(PartyLedgerService::class);
+            $ivDate = $voucher->entry_date ?? now()->toDateString();
+
+            // Header account (destination) -> debit
             $hType = strtolower($voucher->account_head ?? '');
-            if ($hType === 'vendor') {
-                $ledger = \App\Models\VendorLedger::where('vendor_id', $voucher->account_id)->latest()->first();
-                $prev = $ledger ? $ledger->closing_balance : 0;
-                \App\Models\VendorLedger::create([
-                    'vendor_id'        => $voucher->account_id,
-                    'admin_or_user_id' => auth()->id(),
-                    'date'             => now(),
-                    'description'      => "Income Voucher #$ivid",
-                    'debit'            => $totalAmount,
-                    'credit'           => 0,
-                    'previous_balance' => $prev,
-                    'closing_balance'  => $prev + $totalAmount,
-                ]);
-            } elseif (in_array($hType, ['customer', 'walkin', 'subcustomer'])) {
-                $ledger = \App\Models\CustomerLedger::where('customer_id', $voucher->account_id)->latest()->first();
-                $prev = $ledger ? $ledger->closing_balance : 0;
-                \App\Models\CustomerLedger::create([
-                    'customer_id'      => $voucher->account_id,
-                    'admin_or_user_id' => auth()->id(),
-                    'date'             => now(),
-                    'description'      => "Income Voucher #$ivid",
-                    'debit'            => $totalAmount,
-                    'credit'           => 0,
-                    'previous_balance' => $prev,
-                    'closing_balance'  => $prev + $totalAmount,
-                ]);
+            if (in_array($hType, ['vendor', 'customer', 'walkin', 'subcustomer'], true)) {
+                $partyLedger->postIncomeDebit(
+                    $hType === 'subcustomer' ? 'subcustomer' : ($hType === 'walkin' ? 'customer' : $hType),
+                    (int) $voucher->account_id,
+                    $totalAmount,
+                    $ivDate,
+                    "Income Voucher #$ivid (Header)"
+                );
             } else {
                 $headerAcc = \App\Models\Account::find($voucher->account_id);
                 if ($headerAcc) {
@@ -1709,44 +1564,21 @@ class VoucherController extends Controller
                 }
             }
 
-            // 🧩 2. Update Row Sources (Parties) -> CREDIT (Impact depends on type)
+            // Row parties -> debit (matches GL IV)
             $types = json_decode($voucher->party_type, true) ?? [];
             $pIds = json_decode($voucher->party_id, true) ?? [];
             $amounts = json_decode($voucher->amount, true) ?? [];
 
             foreach ($pIds as $idx => $pId) {
-                $rowAmount = (float)($amounts[$idx] ?? 0);
+                $rowAmount = (float) ($amounts[$idx] ?? 0);
                 $pType = $types[$idx] ?? '';
-                if ($rowAmount <= 0) continue;
+                if ($rowAmount <= 0) {
+                    continue;
+                }
 
-                if ($pType === 'vendor') {
-                    $ledger = \App\Models\VendorLedger::where('vendor_id', $pId)->latest()->first();
-                    $prev = $ledger ? $ledger->closing_balance : 0;
-                    \App\Models\VendorLedger::create([
-                        'vendor_id'        => $pId,
-                        'admin_or_user_id' => auth()->id(),
-                        'date'             => now(),
-                        'description'      => "Income Voucher #$ivid",
-                        'debit'            => $rowAmount,
-                        'credit'           => 0,
-                        'previous_balance' => $prev,
-                        'closing_balance'  => $prev + $rowAmount,
-                    ]);
-                } elseif ($pType === 'customer' || $pType === 'walkin') {
-                    $ledger = \App\Models\CustomerLedger::where('customer_id', $pId)->latest()->first();
-                    $prev = $ledger ? $ledger->closing_balance : 0;
-                    \App\Models\CustomerLedger::create([
-                        'customer_id'      => $pId,
-                        'admin_or_user_id' => auth()->id(),
-                        'date'             => now(),
-                        'description'      => "Income Voucher #$ivid",
-                        'debit'            => $rowAmount,
-                        'credit'           => 0,
-                        'previous_balance' => $prev,
-                        'closing_balance'  => $prev + $rowAmount,
-                    ]);
+                if (in_array($pType, ['vendor', 'customer', 'walkin'], true)) {
+                    $partyLedger->postIncomeDebit($pType, (int) $pId, $rowAmount, $ivDate, "Income Voucher #$ivid");
                 } else {
-                    // It's a standard Chart of Accounts entry (e.g. Sales Income Account)
                     $acc = \App\Models\Account::find($pId);
                     if ($acc) {
                         $acc->opening_balance -= $rowAmount;
@@ -1776,12 +1608,19 @@ class VoucherController extends Controller
             $totalAmount = (float)$voucher->total_amount;
             $ivid = $voucher->ivid;
 
-            // 🏦 1. Reverse Header Account Destination -> DEBIT (Decrease)
+            $partyLedger = app(PartyLedgerService::class);
+            $ivDate = $voucher->entry_date ?? now()->toDateString();
+
             $hType = strtolower($voucher->account_head ?? '');
-            if ($hType === 'vendor') {
-                \App\Models\VendorLedger::where('vendor_id', $voucher->account_id)->where('description', "Income Voucher #$ivid")->delete();
-            } elseif (in_array($hType, ['customer', 'walkin', 'subcustomer'])) {
-                \App\Models\CustomerLedger::where('customer_id', $voucher->account_id)->where('description', "Income Voucher #$ivid")->delete();
+            if (in_array($hType, ['vendor', 'customer', 'walkin', 'subcustomer'], true)) {
+                $partyLedger->appendReversal(
+                    $hType === 'subcustomer' ? 'subcustomer' : ($hType === 'walkin' ? 'customer' : $hType),
+                    (int) $voucher->account_id,
+                    $totalAmount,
+                    0,
+                    $ivDate,
+                    "Unpost Income Voucher #$ivid (Header)"
+                );
             } else {
                 $headerAcc = \App\Models\Account::find($voucher->account_id);
                 if ($headerAcc) {
@@ -1790,23 +1629,20 @@ class VoucherController extends Controller
                 }
             }
 
-            // 🧩 2. Reverse Row Sources (Delete created ledgers & reverse COA accounts)
             $types = json_decode($voucher->party_type, true) ?? [];
             $pIds = json_decode($voucher->party_id, true) ?? [];
             $amounts = json_decode($voucher->amount, true) ?? [];
 
             foreach ($pIds as $idx => $pId) {
-                $rowAmount = (float)($amounts[$idx] ?? 0);
+                $rowAmount = (float) ($amounts[$idx] ?? 0);
                 $pType = $types[$idx] ?? '';
-                if ($rowAmount <= 0) continue;
+                if ($rowAmount <= 0) {
+                    continue;
+                }
 
-                if ($pType === 'vendor') {
-                    // Logic: Delete the newest ledger entry for this voucher
-                    \App\Models\VendorLedger::where('vendor_id', $pId)->where('description', "Income Voucher #$ivid")->delete();
-                } elseif ($pType === 'customer' || $pType === 'walkin') {
-                    \App\Models\CustomerLedger::where('customer_id', $pId)->where('description', "Income Voucher #$ivid")->delete();
+                if (in_array($pType, ['vendor', 'customer', 'walkin'], true)) {
+                    $partyLedger->appendReversal($pType, (int) $pId, $rowAmount, 0, $ivDate, "Unpost Income Voucher #$ivid");
                 } else {
-                    // Reverse COA accounts (Credit side reverse = ADD back)
                     $acc = \App\Models\Account::find($pId);
                     if ($acc) {
                         $acc->opening_balance += $rowAmount;
@@ -2069,32 +1905,11 @@ class VoucherController extends Controller
             $pType = $voucher->party_type;
             $pId = $voucher->party_id;
 
-            if ($pType === 'vendor') {
-                $ledger = \App\Models\VendorLedger::where('vendor_id', $pId)->latest()->first();
-                $prev = $ledger ? $ledger->closing_balance : 0;
-                \App\Models\VendorLedger::create([
-                    'vendor_id'        => $pId,
-                    'admin_or_user_id' => auth()->id(),
-                    'date'             => now(),
-                    'description'      => "Adjustment Voucher #$avid",
-                    'debit'            => $totalAmount,
-                    'credit'           => 0,
-                    'previous_balance' => $prev,
-                    'closing_balance'  => $prev + $totalAmount,
-                ]);
-            } elseif ($pType === 'customer' || $pType === 'walkin') {
-                $ledger = \App\Models\CustomerLedger::where('customer_id', $pId)->latest()->first();
-                $prev = $ledger ? $ledger->closing_balance : 0;
-                \App\Models\CustomerLedger::create([
-                    'customer_id'      => $pId,
-                    'admin_or_user_id' => auth()->id(),
-                    'date'             => now(),
-                    'description'      => "Adjustment Voucher #$avid",
-                    'debit'            => $totalAmount,
-                    'credit'           => 0,
-                    'previous_balance' => $prev,
-                    'closing_balance'  => $prev + $totalAmount,
-                ]);
+            $partyLedger = app(PartyLedgerService::class);
+            $avDate = $voucher->entry_date ?? now()->toDateString();
+
+            if (in_array($pType, ['vendor', 'customer', 'walkin'], true)) {
+                $partyLedger->postPaymentDebit($pType, (int) $pId, $totalAmount, $avDate, "Adjustment Voucher #$avid");
             } else {
                 // Head/Account based Source
                 $headerAcc = \App\Models\Account::find($pId);
@@ -2115,32 +1930,8 @@ class VoucherController extends Controller
 
                 $rType = $accHeads[$idx] ?? '';
 
-                if ($rType === 'vendor') {
-                    $ledger = \App\Models\VendorLedger::where('vendor_id', $accId)->latest()->first();
-                    $prev = $ledger ? $ledger->closing_balance : 0;
-                    \App\Models\VendorLedger::create([
-                        'vendor_id'        => $accId,
-                        'admin_or_user_id' => auth()->id(),
-                        'date'             => now(),
-                        'description'      => "Adjustment Voucher #$avid",
-                        'debit'            => 0,
-                        'credit'           => $rowAmount,
-                        'previous_balance' => $prev,
-                        'closing_balance'  => $prev - $rowAmount,
-                    ]);
-                } elseif ($rType === 'customer' || $rType === 'walkin') {
-                    $ledger = \App\Models\CustomerLedger::where('customer_id', $accId)->latest()->first();
-                    $prev = $ledger ? $ledger->closing_balance : 0;
-                    \App\Models\CustomerLedger::create([
-                        'customer_id'      => $accId,
-                        'admin_or_user_id' => auth()->id(),
-                        'date'             => now(),
-                        'description'      => "Adjustment Voucher #$avid",
-                        'debit'            => 0,
-                        'credit'           => $rowAmount,
-                        'previous_balance' => $prev,
-                        'closing_balance'  => $prev - $rowAmount,
-                    ]);
+                if (in_array($rType, ['vendor', 'customer', 'walkin'], true)) {
+                    $partyLedger->postReceiptCredit($rType, (int) $accId, $rowAmount, $avDate, "Adjustment Voucher #$avid");
                 } else {
                     $rowAcc = \App\Models\Account::find($accId);
                     if ($rowAcc) {
@@ -2346,37 +2137,32 @@ class VoucherController extends Controller
             $debits = json_decode($voucher->debit, true) ?? [];
             $credits = json_decode($voucher->credit, true) ?? [];
 
+            $partyLedger = app(PartyLedgerService::class);
+
             foreach ($pTypes as $idx => $type) {
-                $dr = (float)($debits[$idx] ?? 0);
-                $cr = (float)($credits[$idx] ?? 0);
-                $impact = $dr - $cr; // Debit is positive impact, Credit is negative
-                
-                if ($impact == 0) continue;
+                $dr = (float) ($debits[$idx] ?? 0);
+                $cr = (float) ($credits[$idx] ?? 0);
+                if ($dr == 0.0 && $cr == 0.0) {
+                    continue;
+                }
 
                 $pid = $pIds[$idx] ?? null;
-                if (!$pid) continue;
+                if (!$pid) {
+                    continue;
+                }
 
-                if ($type === 'vendor') {
-                    $ledger = \App\Models\VendorLedger::where('vendor_id', $pid)->latest()->first();
-                    $prev = $ledger ? $ledger->closing_balance : 0;
-                    \App\Models\VendorLedger::create([
-                        'vendor_id' => $pid, 'admin_or_user_id' => auth()->id(), 'date' => $entryDate,
-                        'description' => "Journal Voucher #$jvid", 'debit' => $dr, 'credit' => $cr,
-                        'previous_balance' => $prev, 'closing_balance' => $prev + $impact
-                    ]);
-                } elseif ($type === 'customer' || $type === 'walkin') {
-                    $ledger = \App\Models\CustomerLedger::where('customer_id', $pid)->latest()->first();
-                    $prev = $ledger ? $ledger->closing_balance : 0;
-                    \App\Models\CustomerLedger::create([
-                        'customer_id' => $pid, 'admin_or_user_id' => auth()->id(), 'date' => $entryDate,
-                        'description' => "Journal Voucher #$jvid", 'debit' => $dr, 'credit' => $cr,
-                        'previous_balance' => $prev, 'closing_balance' => $prev + $impact
+                if (in_array($type, ['vendor', 'customer', 'walkin'], true)) {
+                    $partyLedger->append($type, (int) $pid, [
+                        'date' => $entryDate,
+                        'description' => "Journal Voucher #$jvid",
+                        'debit' => $dr,
+                        'credit' => $cr,
                     ]);
                 } else {
                     // It's an Account Head
                     $acc = \App\Models\Account::find($pid);
                     if ($acc) {
-                        $acc->opening_balance += $impact;
+                        $acc->opening_balance += ($dr - $cr);
                         $acc->save();
                     }
                 }

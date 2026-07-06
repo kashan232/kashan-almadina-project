@@ -8,6 +8,7 @@ use App\Models\Zone;
 use App\Models\SalesOfficer;
 use App\Models\OutstandingLoss; // make sure to import this
 use App\Models\CustomerLedger;
+use App\Services\PartyLedgerService;
 use Illuminate\Support\Facades\Auth;
 use App\Models\CustomerPayment;
 use Illuminate\Support\Facades\DB;
@@ -267,25 +268,7 @@ class CustomerController extends Controller
 
         $openingBalance = floatval($request->opening_balance ?? 0);
 
-        // Keep first ledger row in sync with defined opening balance
-        $firstLedger = CustomerLedger::where('customer_id', $customer->id)
-            ->orderBy('id', 'asc')
-            ->first();
-
-        if ($firstLedger) {
-            $firstLedger->update([
-                'opening_balance' => $openingBalance,
-                'closing_balance' => $openingBalance + (float) ($firstLedger->debit ?? 0) - (float) ($firstLedger->credit ?? 0),
-            ]);
-        } elseif ($openingBalance != 0.0) {
-            CustomerLedger::create([
-                'customer_id' => $customer->id,
-                'admin_or_user_id' => Auth::id(),
-                'opening_balance' => $openingBalance,
-                'previous_balance' => 0,
-                'closing_balance' => $openingBalance,
-            ]);
-        }
+        app(PartyLedgerService::class)->syncOpeningBalance('customer', $customer->id, $openingBalance, Auth::id());
 
         return redirect()->route('customers.index')->with('success', 'Customer updated successfully.');
     }
@@ -372,36 +355,20 @@ class CustomerController extends Controller
             'note' => $request->note,
         ]);
 
-        // Get the latest ledger entry for the customer
-        $previousLedger = CustomerLedger::where('customer_id', $request->customer_id)->latest()->first();
-        // If a previous ledger exists, use its closing_balance; else, start from 0
-        $prevBalance = $previousLedger ? $previousLedger->closing_balance : 0;
+        // Append credit row — customer balance decreases (payment to customer).
+        $prevBalance = app(PartyLedgerService::class)->latestClosing('customer', (int) $request->customer_id);
 
-        // Prevent over-payment (optional)
-        if ($request->amount > $prevBalance) {
+        if ($request->amount > $prevBalance && $prevBalance > 0) {
             return back()->with('error', 'Amount exceeds available balance.');
         }
 
-        // Calculate the new closing balance
-        $newClosing = $prevBalance - $request->amount;
-
-        // If a previous ledger exists, update it; otherwise, create a new one
-        if ($previousLedger) {
-            // Update the existing ledger entry with the new closing balance
-            $previousLedger->update([
-                'previous_balance' => $prevBalance,
-                'closing_balance' => $newClosing,
-            ]);
-        } else {
-            // Create a new ledger entry if no previous ledger exists
-            CustomerLedger::create([
-                'customer_id' => $request->customer_id,
-                'admin_or_user_id' => $userId,
-                'date' => $request->payment_date,
-                'previous_balance' => 0, // Starting from zero since no previous ledger
-                'closing_balance' => $request->amount, // New closing balance is the payment amount
-            ]);
-        }
+        app(PartyLedgerService::class)->append('customer', (int) $request->customer_id, [
+            'date' => $request->payment_date,
+            'description' => 'Customer Payment' . ($request->note ? ': ' . $request->note : ''),
+            'debit' => 0,
+            'credit' => (float) $request->amount,
+            'admin_or_user_id' => $userId,
+        ]);
 
         return back()->with('success', 'Payment to customer recorded and ledger updated.');
     }

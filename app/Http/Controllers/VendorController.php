@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Vendor;
 use App\Models\VendorLedger;
+use App\Services\PartyLedgerService;
 use Illuminate\Support\Facades\Auth;
 use App\Models\VendorPayment;
 use Illuminate\Support\Facades\DB;
@@ -85,16 +86,8 @@ class VendorController extends Controller
             'created_by' => $userId,
         ]);
 
-        $opening = intval($request->opening_balance ?? 0);
-        VendorLedger::create([
-            'vendor_id'        => $vendor->id,
-            'admin_or_user_id' => $userId,
-            'date'             => now(),
-            'description'      => 'Opening Balance',
-            'opening_balance'  => $opening,
-            'previous_balance' => 0,
-            'closing_balance'  => $opening,
-        ]);
+        $opening = floatval($request->opening_balance ?? 0);
+        app(PartyLedgerService::class)->postOpeningBalance('vendor', $vendor->id, $opening, $userId);
 
         return redirect('/vendor')->with('success', 'Vendor saved successfully');
     }
@@ -126,25 +119,9 @@ class VendorController extends Controller
             'user_group_ids' => $request->user_group_ids,
         ]);
 
-        // Sync ledger
+        // Sync ledger opening row and recalculate running balances.
         $opening = floatval($request->opening_balance ?? 0);
-        $firstLedger = VendorLedger::where('vendor_id', $vendor->id)->orderBy('id', 'asc')->first();
-        if ($firstLedger) {
-            $firstLedger->update([
-                'opening_balance' => $opening,
-                'closing_balance' => $opening + ($firstLedger->credit ?? 0) - ($firstLedger->debit ?? 0)
-            ]);
-        } else if ($opening > 0) {
-            VendorLedger::create([
-                'vendor_id'        => $vendor->id,
-                'admin_or_user_id' => Auth::id(),
-                'date'             => now(),
-                'description'      => 'Opening Balance',
-                'opening_balance'  => $opening,
-                'previous_balance' => 0,
-                'closing_balance'  => $opening,
-            ]);
-        }
+        app(PartyLedgerService::class)->syncOpeningBalance('vendor', $vendor->id, $opening, Auth::id());
 
         return redirect('/vendor')->with('success', 'Vendor updated successfully');
     }
@@ -220,37 +197,14 @@ class VendorController extends Controller
             'note'             => $request->note,
         ]);
 
-        // Get the latest ledger entry for the vendor
-        $previousLedger = VendorLedger::where('vendor_id', $request->vendor_id)->latest()->first();
-
-        // Agar ledger pehle se hai to uska closing_balance use karenge
-        $prevBalance = $previousLedger ? $previousLedger->closing_balance : 0;
-
-        // Over-payment check
-        if ($request->amount_paid > $prevBalance) {
-            return back()->with('error', 'Paid amount exceeds available balance.');
-        }
-
-        // Naya closing balance calculate hoga
-        $newClosing = $prevBalance - $request->amount_paid;
-
-        if ($previousLedger) {
-            // Sirf update hoga
-            $previousLedger->update([
-                'previous_balance' => $prevBalance,
-                'closing_balance'  => $newClosing,
-            ]);
-        } else {
-            // Sirf pehli dafa create hoga (aur isme amount_paid nahi jayega)
-            VendorLedger::create([
-                'vendor_id'        => $request->vendor_id,
-                'admin_or_user_id' => $userId,
-                'date'             => $request->payment_date,
-                'description'      => 'Opening Balance',
-                'previous_balance' => 0,
-                'closing_balance'  => $request->amount, // Opening balance ke equal
-            ]);
-        }
+        // Payment to vendor — debit party (reduces CR / increases DR side).
+        app(PartyLedgerService::class)->append('vendor', (int) $request->vendor_id, [
+            'date' => $request->payment_date,
+            'description' => 'Vendor Payment' . ($request->note ? ': ' . $request->note : ''),
+            'debit' => (float) $request->amount_paid,
+            'credit' => 0,
+            'admin_or_user_id' => $userId,
+        ]);
 
         return back()->with('success', 'Payment to vendor recorded and ledger updated.');
     }

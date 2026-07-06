@@ -14,6 +14,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Models\User;
+use App\Services\PartyLedgerService;
 
 class PurchaseReturnController extends Controller
 {
@@ -381,46 +382,22 @@ class PurchaseReturnController extends Controller
                     }
                 }
 
-                // 2. Ledger Impact (Consolidated Update)
-                $pType = class_basename($ret->purchasable_type);
-                $pId = $ret->purchasable_id;
-                $ledgerModel = ($pType === 'Vendor') ? \App\Models\VendorLedger::class : \App\Models\CustomerLedger::class;
-                $partyCol = ($pType === 'Vendor') ? 'vendor_id' : 'customer_id';
+                // 2. Ledger Impact — PRJ debits party by Net Amount.
+                $partyType = strtolower(class_basename($ret->purchasable_type));
+                $pId = (int) $ret->purchasable_id;
+                $netAmount = (float) ($ret->net_amount ?? 0);
 
-                $ledger = $ledgerModel::where($partyCol, $pId)->first();
-                
-                // Net Impact for Purchase Return: 
-                // Subtotal: Debit (Decreases Vendor balance)
-                // Discount: Credit (Increases Vendor balance)
-                // WHT: Debit (Decreases Vendor balance)
-                // Net = -Subtotal + Discount - WHT  (for Vendor)
-                $netDebit = $ret->subtotal + $ret->wht;
-                $netCredit = $ret->discount;
-                $impact = $netCredit - $netDebit; 
-
-                if ($ledger) {
-                    $ledger->update([
-                        'previous_balance' => $ledger->closing_balance,
-                        'closing_balance'  => $ledger->closing_balance + $impact,
-                        'date'             => $ret->current_date,
-                        'description'      => 'Purchase Return: ' . $ret->invoice_no . ' (Consolidated)',
-                    ]);
-                } else {
-                    $ledgerModel::create([
-                        $partyCol => $pId,
-                        'admin_or_user_id' => auth()->id(),
-                        'date' => $ret->current_date,
-                        'description' => 'Purchase Return: ' . $ret->invoice_no,
-                        'opening_balance' => 0,
-                        'previous_balance' => 0,
-                        'debit' => $netDebit,
-                        'credit' => $netCredit,
-                        'closing_balance' => $impact,
-                    ]);
+                if ($netAmount > 0) {
+                    app(PartyLedgerService::class)->postPurchaseReturnDebit(
+                        $partyType,
+                        $pId,
+                        $netAmount,
+                        $ret->current_date,
+                        $ret->invoice_no
+                    );
                 }
 
                 // --- Secondary Impacts (JV & Account Balances) ---
-                $partyType = strtolower($pType);
 
                 // Post WHT Account Impact (Tax)
                 if ($ret->wht > 0 && $ret->wht_account_id) {
