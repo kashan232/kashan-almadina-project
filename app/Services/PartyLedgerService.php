@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\CustomerClaim;
 use App\Models\CustomerLedger;
 use App\Models\SubCustomerLedger;
 use App\Models\VendorLedger;
@@ -314,5 +315,92 @@ class PartyLedgerService
             'debit' => $debit,
             'credit' => 0,
         ]);
+    }
+
+    /** CLM — claim received (credit) and optional replacement (debit); matches General Ledger. */
+    public function postCustomerClaim(CustomerClaim $claim): void
+    {
+        if ($claim->claim_type === 'item_return') {
+            return;
+        }
+
+        $partyType = $this->normalizePartyType((string) ($claim->party_type ?? 'customer'));
+        $partyId = (int) $claim->party_id;
+        if ($partyId <= 0) {
+            return;
+        }
+
+        $claim->loadMissing(['product', 'replacementProduct']);
+        $date = $claim->entry_date ?: substr((string) $claim->created_at, 0, 10);
+        $claimNo = (string) $claim->claim_no;
+
+        $salesPrice = (float) $claim->sales_price;
+        if ($salesPrice > 0) {
+            $productName = $claim->product->name ?? 'Battery';
+            $this->append($partyType, $partyId, [
+                'date' => $date,
+                'description' => 'Claim Received: ' . $productName . ' (' . $claimNo . ')',
+                'debit' => 0,
+                'credit' => $salesPrice,
+            ]);
+        }
+
+        if ($claim->claim_type === 'credit_note') {
+            $replacementPrice = (float) ($claim->replacement_sales_price ?? 0);
+            if ($replacementPrice > 0) {
+                $replacementName = $claim->replacementProduct->name ?? 'Battery';
+                $this->append($partyType, $partyId, [
+                    'date' => $date,
+                    'description' => 'Claim Replacement: ' . $replacementName . ' (' . $claimNo . ')',
+                    'debit' => $replacementPrice,
+                    'credit' => 0,
+                ]);
+            }
+        }
+    }
+
+    public function reverseCustomerClaim(CustomerClaim $claim, string $labelPrefix = 'Rollback'): void
+    {
+        if ($claim->claim_type === 'item_return') {
+            return;
+        }
+
+        $partyType = $this->normalizePartyType((string) ($claim->party_type ?? 'customer'));
+        $partyId = (int) $claim->party_id;
+        if ($partyId <= 0) {
+            return;
+        }
+
+        $claim->loadMissing(['product', 'replacementProduct']);
+        $date = $claim->entry_date ?: substr((string) $claim->created_at, 0, 10);
+        $claimNo = (string) $claim->claim_no;
+
+        $salesPrice = (float) $claim->sales_price;
+        if ($salesPrice > 0) {
+            $productName = $claim->product->name ?? 'Battery';
+            $this->appendReversal(
+                $partyType,
+                $partyId,
+                0,
+                $salesPrice,
+                $date,
+                $labelPrefix . ' Claim Received: ' . $productName . ' (' . $claimNo . ')'
+            );
+        }
+
+        if ($claim->claim_type === 'credit_note') {
+            $replacementPrice = (float) ($claim->replacement_sales_price ?? 0);
+            if ($replacementPrice > 0) {
+                $replacementName = $claim->replacementProduct->name ?? 'Battery';
+                $this->appendReversal(
+                    $partyType,
+                    $partyId,
+                    $replacementPrice,
+                    0,
+                    $date,
+                    $labelPrefix . ' Claim Replacement: ' . $replacementName . ' (' . $claimNo . ')'
+                );
+            }
+        }
     }
 }

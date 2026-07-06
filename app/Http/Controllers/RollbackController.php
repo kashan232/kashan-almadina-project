@@ -504,6 +504,8 @@ class RollbackController extends Controller
             StockHold::where('remarks', 'Reserved via Customer Claim Hold: ' . $claim->claim_no)->delete();
         }
 
+        app(PartyLedgerService::class)->reverseCustomerClaim($claim);
+
         $claim->update(['status' => 'Unposted']);
         return back()->with('success', "Customer Claim #$invoiceNo set to Unposted.");
     }

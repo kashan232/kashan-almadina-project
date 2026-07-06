@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\DB;
 use App\Models\CustomerClaim;
 use App\Models\WarehouseStock;
 use App\Models\StockHold;
+use App\Services\PartyLedgerService;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Validator;
 
@@ -154,6 +155,7 @@ class CustomerClaimController extends Controller
 
             if ($newStatus === 'Posted' && $currentStatus !== 'Posted') {
                 $this->syncInventory($claim);
+                app(PartyLedgerService::class)->postCustomerClaim($claim);
             }
 
             DB::commit();
@@ -184,6 +186,7 @@ class CustomerClaimController extends Controller
             $claim->save();
 
             $this->syncInventory($claim);
+            app(PartyLedgerService::class)->postCustomerClaim($claim);
             DB::commit();
 
             return back()->with('success', 'Claim posted and inventory updated successfully.');
