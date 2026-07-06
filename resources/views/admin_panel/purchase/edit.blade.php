@@ -407,7 +407,7 @@
                                 // Pass custom data
                                 brand: item.brand,
                                 price_net: item.purchase_net_amount,
-                                price_retail: item.purchase_retail_price
+                                price_retail: item.sale_retail_price ?? item.retail_price ?? 0
                             };
                         });
 
@@ -480,7 +480,7 @@
                                     text: product.name,
                                     brand: product.brand,
                                     price_net: product.purchase_net_amount,
-                                    price_retail: product.purchase_retail_price
+                                    price_retail: product.sale_retail_price ?? product.retail_price ?? 0
                                 }
                             }
                         });
@@ -577,7 +577,7 @@
             $discAmts = $items->map(fn($i) => round(($i->price * $i->qty) - $i->line_total, 2))->toArray();
 
             // Product latest prices for retail/cost reference
-            $retails = $items->map(fn($i) => optional(optional($i->product)->latestPrice)->purchase_retail_price ?? 0)->toArray();
+            $retails = $items->map(fn($i) => optional(optional($i->product)->latestPrice)->sale_retail_price ?? 0)->toArray();
             $nets    = $items->map(fn($i) => optional(optional($i->product)->latestPrice)->purchase_net_amount ?? 0)->toArray();
             $totals  = $items->pluck('line_total')->toArray();
 

@@ -497,58 +497,7 @@
               </thead>
               <tbody id="purchaseItems">
                   {{-- Rows will be populated by JS or Blade if editing --}}
-                  @if(isset($purchase) && $purchase->items->count() > 0 && !old('product_id'))
-                      @foreach($purchase->items as $index => $item)
-                          @php
-                              $product = $item->product;
-                              $retail = $product?->latestPrice?->purchase_retail_price ?? 0;
-                              $net = $product?->latestPrice?->purchase_net_amount ?? 0;
-                              $gross = ($item->price ?? 0) * ($item->qty ?? 0);
-                              $disc_amt = $gross * (($item->item_discount ?? 0) / 100);
-                          @endphp
-                          <tr>
-                              <td>
-                                  <input type="text" class="form-control form-control-sm item-id-input text-center" placeholder="ID" value="{{ $item->product_id }}">
-                              </td>
-                              <td>
-                                  <select name="product_id[]" class="form-control form-control-sm product-select" style="width: 100%;">
-                                      <option value="{{ $item->product_id }}" selected>{{ $product?->name ?? 'Unknown' }}</option>
-                                  </select>
-                                  <input type="hidden" name="product_name[]" class="product_name_hidden" value="{{ $product?->name }}">
-                              </td>
-                              <td>
-                                  <input type="text" name="brand[]" class="form-control form-control-sm brand-name input-readonly" readonly value="{{ $product?->brandRelation?->name ?? '' }}">
-                              </td>
-                              <td>
-                                  <input type="number" step="0.01" name="price[]" class="form-control form-control-sm price text-end" value="{{ $item->price }}">
-                              </td>
-                              <td>
-                                  <input type="number" step="0.01" name="retail_price_show[]" class="form-control form-control-sm retail_price_show text-end" value="{{ $retail }}">
-                              </td>
-                              <td>
-                                  <div class="input-group input-group-sm">
-                                      <input type="number" step="0.01" min="0" name="item_disc[]" class="form-control form-control-sm item_disc text-end" placeholder="%" value="{{ $item->item_discount }}">
-                                      <span class="input-group-text px-1" style="font-size: 0.7rem;">%</span>
-                                      <input type="text" name="item_disc_amount[]" class="form-control form-control-sm disc_amount text-end input-readonly" readonly value="{{ number_format($disc_amt, 2, '.', '') }}">
-                                  </div>
-                                  <input type="hidden" name="purchase_retail_price[]" class="purchase_retail_price" value="{{ $retail }}">
-                                  <input type="hidden" name="purchase_net_amount[]" class="purchase_net_amount" value="{{ $net }}">
-                              </td>
-                              <td>
-                                  <input type="number" name="qty[]" class="form-control form-control-sm quantity text-center" value="{{ $item->qty }}" min="1">
-                              </td>
-                              <td>
-                                  <input type="text" name="amount[]" class="form-control form-control-sm row-amount text-end input-readonly" readonly value="{{ number_format($item->price, 2, '.', '') }}">
-                              </td>
-                              <td>
-                                  <input type="text" name="total[]" class="form-control form-control-sm row-total text-end fw-bold input-readonly" readonly value="{{ number_format($item->line_total, 2, '.', '') }}">
-                              </td>
-                              <td class="text-center">
-                                  <button type="button" class="btn btn-xs btn-outline-danger remove-row">&times;</button>
-                              </td>
-                          </tr>
-                      @endforeach
-                  @endif
+                  {{-- Rows populated by restoreProducts() JS on load --}}
               </tbody>
             </table>
           </div>
@@ -863,7 +812,7 @@
                                 // Pass custom data
                                 brand: item.brand,
                                 price_net: item.purchase_net_amount,
-                                price_retail: item.purchase_retail_price
+                                price_retail: item.sale_retail_price ?? item.retail_price ?? 0
                             };
                         });
 
@@ -936,7 +885,7 @@
                                     text: product.name,
                                     brand: product.brand,
                                     price_net: product.purchase_net_amount,
-                                    price_retail: product.purchase_retail_price
+                                    price_retail: product.sale_retail_price ?? product.retail_price ?? 0
                                 }
                             }
                         });
@@ -1016,17 +965,30 @@
 {{-- Item Row Autocomplete + Add/Remove --}}
 <script>
     (function() {
+        @php
+            $restoreItems = isset($purchase) ? $purchase->items : collect();
+            $restoreProductIds = old('product_id', $restoreItems->pluck('product_id')->toArray());
+            $restorePrices = old('price', $restoreItems->pluck('price')->toArray());
+            $restoreQtys = old('qty', $restoreItems->pluck('qty')->toArray());
+            $restoreDiscs = old('item_disc', $restoreItems->pluck('item_discount')->toArray());
+            $restoreDiscAmts = old('item_disc_amount', $restoreItems->map(fn($i) => round((($i->price ?? 0) * ($i->qty ?? 0)) - ($i->line_total ?? 0), 2))->toArray());
+            $restoreRetails = old('purchase_retail_price', $restoreItems->map(fn($i) => optional(optional($i->product)->latestPrice)->sale_retail_price ?? 0)->toArray());
+            $restoreNets = old('purchase_net_amount', $restoreItems->map(fn($i) => optional(optional($i->product)->latestPrice)->purchase_net_amount ?? 0)->toArray());
+            $restoreTotals = old('total', $restoreItems->pluck('line_total')->toArray());
+            $restoreNames = old('product_name', $restoreItems->map(fn($i) => optional($i->product)->name ?? '')->toArray());
+            $restoreBrands = old('brand', $restoreItems->map(fn($i) => optional(optional($i->product)->brandRelation)->name ?? '')->toArray());
+        @endphp
         // restore old arrays from server (Blade -> JS)
-        const oldProducts = @json(old('product_id', []));
-        const oldPrices = @json(old('price', []));
-        const oldQtys = @json(old('qty', []));
-        const oldItemDiscs = @json(old('item_disc', []));
-        const oldDiscAmounts = @json(old('item_disc_amount', []));
-        const oldRetailPrices = @json(old('purchase_retail_price', []));
-        const oldPurchaseNet = @json(old('purchase_net_amount', []));
-        const oldRowAmounts = @json(old('total', []));
-        const oldProductNames = @json(old('product_name', []));
-        const oldBrands = @json(old('brand', []));
+        const oldProducts = @json($restoreProductIds);
+        const oldPrices = @json($restorePrices);
+        const oldQtys = @json($restoreQtys);
+        const oldItemDiscs = @json($restoreDiscs);
+        const oldDiscAmounts = @json($restoreDiscAmts);
+        const oldRetailPrices = @json($restoreRetails);
+        const oldPurchaseNet = @json($restoreNets);
+        const oldRowAmounts = @json($restoreTotals);
+        const oldProductNames = @json($restoreNames);
+        const oldBrands = @json($restoreBrands);
 
         // account allocations
         const oldAccHeads = @json(old('account_head_id', []));
@@ -1037,7 +999,7 @@
             @php
                 $pItems = $purchase->items->map(function($item) {
                     $product = $item->product;
-                    $retail = $product?->latestPrice?->purchase_retail_price ?? 0;
+                    $retail = $product?->latestPrice?->sale_retail_price ?? 0;
                     $net = $product?->latestPrice?->purchase_net_amount ?? 0;
                     
                     $price = (float)($item->price ?? 0);

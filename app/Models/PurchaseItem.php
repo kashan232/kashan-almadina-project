@@ -32,7 +32,7 @@ class PurchaseItem extends Model
         if ($this->product) {
             $lp = $this->product->latestPrice;
             if ($lp) {
-                $retail = (float) ($lp->purchase_retail_price ?? $lp->sale_retail_price ?? 0);
+                $retail = (float) ($lp->sale_retail_price ?? $lp->purchase_retail_price ?? 0);
             }
         }
 
