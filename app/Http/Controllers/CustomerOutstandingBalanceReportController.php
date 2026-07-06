@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Customer;
 use App\Models\UserGroup;
+use App\Models\Vendor;
 use App\Services\CustomerOutstandingBalanceReportBuilder;
 use Illuminate\Http\Request;
 
@@ -13,8 +14,9 @@ class CustomerOutstandingBalanceReportController extends Controller
     {
         $userGroups = UserGroup::orderBy('group_name')->get();
         $customers = Customer::orderBy('customer_name')->get();
+        $vendors = Vendor::orderBy('name')->get();
 
-        return view('admin_panel.reports.customer_outstanding.index', compact('userGroups', 'customers'));
+        return view('admin_panel.reports.customer_outstanding.index', compact('userGroups', 'customers', 'vendors'));
     }
 
     public function preview(Request $request, CustomerOutstandingBalanceReportBuilder $builder)

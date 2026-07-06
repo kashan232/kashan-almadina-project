@@ -72,7 +72,8 @@
             font-size: 7px;
         }
         .sno { width: 3%; text-align: center; }
-        .customer { width: 14%; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .type { width: 7%; text-align: center; }
+        .customer { width: 12%; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .num { text-align: right; white-space: nowrap; }
         .period-head { background: #eceff1; }
         .col-green { color: #1b5e20; font-weight: 600; }
@@ -113,7 +114,7 @@
     <div class="company-name">AL-MADINA TRADERS</div>
     <div class="report-header">
         <div class="generated-date">{{ $generated_at->format('l, M j, Y') }}</div>
-        <div class="report-title">Customer Outstanding Balance</div>
+        <div class="report-title">Outstanding Balance</div>
         <div class="report-sub">Detailed View</div>
     </div>
 
@@ -122,7 +123,8 @@
         <thead>
             <tr>
                 <th class="sno" rowspan="2">S#</th>
-                <th class="customer" rowspan="2">Customer Name</th>
+                <th class="type" rowspan="2">Type</th>
+                <th class="customer" rowspan="2">Party Name</th>
                 <th rowspan="2">Opening Balance</th>
                 <th colspan="{{ count($periodCols) + 1 }}" class="period-head">Between {{ $fromLabel }} To. {{ $toLabel }}</th>
             </tr>
@@ -137,7 +139,8 @@
             @foreach($rows as $i => $row)
             <tr>
                 <td class="sno">{{ $i + 1 }}</td>
-                <td class="customer" title="{{ $row['customer_name'] }}">{{ $row['customer_name'] }}</td>
+                <td class="type">{{ $row['party_type_label'] ?? 'Customer' }}</td>
+                <td class="customer" title="{{ $row['party_name'] ?? $row['customer_name'] }}">{{ $row['party_name'] ?? $row['customer_name'] }}</td>
                 <td class="num">{{ $fmt($row['opening']) }}</td>
                 @foreach($periodCols as $col)
                 <td class="num {{ $col['class'] }}">{{ $fmt($row[$col['key']] ?? 0) }}</td>
@@ -146,7 +149,7 @@
             </tr>
             @endforeach
             <tr class="grand-row">
-                <td colspan="2" class="grand-label">Grand Total Amount</td>
+                <td colspan="3" class="grand-label">Grand Total Amount</td>
                 <td class="num">{{ $fmt($grand['opening']) }}</td>
                 @foreach($periodCols as $col)
                 <td class="num {{ $col['class'] }}">{{ $fmt($grand[$col['key']] ?? 0) }}</td>
@@ -156,7 +159,7 @@
         </tbody>
     </table>
     @else
-    <p class="empty-msg">No customer outstanding balance found for selected filters.</p>
+    <p class="empty-msg">No outstanding balance found for selected filters.</p>
     @endif
 </body>
 </html>

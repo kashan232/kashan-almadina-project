@@ -5,7 +5,7 @@
     <div class="container-fluid p-3">
         <div class="card border-0 shadow-sm">
             <div class="card-header bg-white py-3 border-bottom-0 d-flex justify-content-between align-items-center">
-                <h4 class="mb-0 fw-bold" style="color: #0d47a1;">Customer Outstanding Balance Filters</h4>
+                <h4 class="mb-0 fw-bold" style="color: #0d47a1;">Outstanding Balance Filters</h4>
                 <div class="form-check">
                     <input class="form-check-input" type="checkbox" id="globalSelectAll">
                     <label class="form-check-label fw-bold text-danger" for="globalSelectAll" style="cursor:pointer;">
@@ -34,19 +34,54 @@
                                     </div>
                                 </div>
                             </div>
+                            <div class="col-md-2" style="min-width: 120px;">
+                                <div class="filter-column">
+                                    <div class="filter-header">
+                                        <input type="checkbox" class="select-all" data-target="partytype-list"> Type
+                                    </div>
+                                    <div class="filter-list" id="partytype-list">
+                                        <div class="filter-item">
+                                            <input type="checkbox" name="party_type[]" value="customer">
+                                            <span>Customer</span>
+                                        </div>
+                                        <div class="filter-item">
+                                            <input type="checkbox" name="party_type[]" value="walkin">
+                                            <span>Walking</span>
+                                        </div>
+                                        <div class="filter-item">
+                                            <input type="checkbox" name="party_type[]" value="vendor">
+                                            <span>Vendor</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                             <div class="col-md-4">
                                 <div class="filter-column">
                                     <div class="filter-header">
-                                        <input type="checkbox" class="select-all" data-target="customer-list"> Customer
+                                        <input type="checkbox" class="select-all" data-target="party-list"> Party
                                     </div>
                                     <div class="p-1 bg-light border-bottom">
-                                        <input type="text" class="form-control form-control-sm" id="customerSearch" placeholder="Search customer..." style="height: 24px; font-size: 11px;">
+                                        <input type="text" class="form-control form-control-sm" id="partySearch" placeholder="Search party..." style="height: 24px; font-size: 11px;">
                                     </div>
-                                    <div class="filter-list" id="customer-list">
+                                    <div class="filter-list" id="party-list">
                                         @foreach($customers as $customer)
-                                            <div class="filter-item" data-search="{{ strtolower($customer->customer_name) }}">
-                                                <input type="checkbox" name="customer[]" value="{{ $customer->id }}">
-                                                <span>{{ $customer->customer_name }}</span>
+                                            @php
+                                                $partyTypeKey = $customer->customer_type === 'Walking Customer' ? 'walkin' : 'customer';
+                                                $partyTypeLabel = $partyTypeKey === 'walkin' ? 'Walking' : 'Customer';
+                                            @endphp
+                                            <div class="filter-item"
+                                                 data-party-type="{{ $partyTypeKey }}"
+                                                 data-search="{{ strtolower($customer->customer_name . ' ' . $partyTypeLabel) }}">
+                                                <input type="checkbox" name="party[]" value="{{ $partyTypeKey }}:{{ $customer->id }}">
+                                                <span>{{ $customer->customer_name }} <small class="text-muted">({{ $partyTypeLabel }})</small></span>
+                                            </div>
+                                        @endforeach
+                                        @foreach($vendors as $vendor)
+                                            <div class="filter-item"
+                                                 data-party-type="vendor"
+                                                 data-search="{{ strtolower($vendor->name . ' vendor') }}">
+                                                <input type="checkbox" name="party[]" value="vendor:{{ $vendor->id }}">
+                                                <span>{{ $vendor->name }} <small class="text-muted">(Vendor)</small></span>
                                             </div>
                                         @endforeach
                                     </div>
@@ -149,6 +184,10 @@
             const $cb = $(this).find('input[type="checkbox"]');
             $cb.prop('checked', !$cb.prop('checked'));
             $(this).toggleClass('selected', $cb.prop('checked'));
+
+            if ($(this).closest('#partytype-list').length) {
+                setTimeout(applyPartyFilters, 0);
+            }
         });
 
         $('.select-all').on('change', function() {
@@ -158,21 +197,44 @@
                 $(this).find('input[type="checkbox"]').prop('checked', checked);
                 $(this).toggleClass('selected', checked);
             });
+            if (target === 'partytype-list') {
+                applyPartyFilters();
+            }
         });
 
         $('#globalSelectAll').on('change', function() {
             $('.select-all').prop('checked', $(this).is(':checked')).trigger('change');
         });
 
-        $('#customerSearch').on('keyup', function() {
-            const term = ($(this).val() || '').toLowerCase();
-            $('#customer-list .filter-item').each(function() {
+        function getCheckedValues(listId, inputName) {
+            const values = [];
+            $('#' + listId + ' .filter-item input[name="' + inputName + '"]:checked').each(function() {
+                if ($(this).closest('.filter-item').is(':visible')) {
+                    values.push($(this).val());
+                }
+            });
+            return values;
+        }
+
+        function applyPartyFilters() {
+            const selectedTypes = getCheckedValues('partytype-list', 'party_type[]');
+            const term = ($('#partySearch').val() || '').toLowerCase();
+
+            $('#party-list .filter-item').each(function() {
                 const $item = $(this);
-                const show = !term || String($item.data('search') || '').includes(term);
+                const partyType = String($item.data('party-type') || '');
+                const searchText = String($item.data('search') || '');
+                const typeMatch = selectedTypes.length === 0 || selectedTypes.includes(partyType);
+                const searchMatch = !term || searchText.includes(term);
+                const show = typeMatch && searchMatch;
+
                 $item.toggle(show);
                 if (!show) uncheckItem($item);
             });
-        });
+        }
+
+        $('#partySearch').on('keyup', applyPartyFilters);
+        applyPartyFilters();
     });
 </script>
 @endsection
