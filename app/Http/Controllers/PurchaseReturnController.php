@@ -82,7 +82,7 @@ class PurchaseReturnController extends Controller
                     'qty' => $item->qty,
                     'item_discount' => $item->item_discount,
                     'discount_percent' => $discPercent,
-                    'retail_price' => $pPrice->purchase_retail_price ?? 0,
+                    'retail_price' => optional($pPrice)->sale_retail_price ?? 0,
                 ];
             });
 

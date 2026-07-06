@@ -248,6 +248,9 @@
                                                 @php
                                                     $discAmt = $item->qty > 0 ? ($item->item_discount / $item->qty) : 0;
                                                     $rate = $item->price - $discAmt;
+                                                    $storedRetail = (float) ($item->retail_price ?? 0);
+                                                    $saleRetail = (float) (optional(optional($item->product)->latestPrice)->sale_retail_price ?? 0);
+                                                    $displayRetail = $storedRetail > 0 ? $storedRetail : $saleRetail;
                                                 @endphp
                                                 <tr>
                                                     <td><input type="text" class="form-control form-control-sm item-id-input text-center" value="{{ $item->product_id }}"></td>
@@ -258,7 +261,7 @@
                                                     </td>
                                                     <td><input type="text" name="brand[]" class="form-control form-control-sm brand-name input-readonly" readonly value="{{ $item->product->brand ?? '' }}"></td>
                                                     <td><input type="number" step="0.01" name="price[]" class="form-control form-control-sm price text-end" value="{{ $item->price }}"></td>
-                                                    <td><input type="number" step="0.01" name="retail_price[]" class="form-control form-control-sm retail_price text-end" value="{{ $item->retail_price }}"></td>
+                                                    <td><input type="number" step="0.01" name="retail_price[]" class="form-control form-control-sm retail_price text-end" value="{{ $displayRetail }}"></td>
                                                     <td>
                                                         <div class="input-group input-group-sm">
                                                             <input type="number" step="0.01" min="0" name="discount_percent[]" class="form-control form-control-sm discount_percent text-end" value="{{ $item->discount_percent }}">
@@ -821,7 +824,7 @@ $(document).ready(function() {
                         id: item.id,
                         text: item.name,
                         price: item.purchase_net_amount,
-                        retail: item.purchase_retail_price,
+                        retail: item.sale_retail_price ?? item.retail_price ?? 0,
                         brand: item.brand || (item.brand_relation ? item.brand_relation.name : '') || ''
                     }))
                 }),
@@ -870,7 +873,7 @@ $(document).ready(function() {
                                 id: product.id,
                                 text: product.name,
                                 price: product.purchase_net_amount,
-                                retail: product.purchase_retail_price,
+                                retail: product.sale_retail_price ?? product.retail_price ?? 0,
                                 brand: product.brand
                             }
                         }
