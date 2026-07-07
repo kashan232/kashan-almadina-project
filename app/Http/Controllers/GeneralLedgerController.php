@@ -258,6 +258,122 @@ class GeneralLedgerController extends Controller
         ]);
     }
 
+    /** @return array{qty: float, price: float, credit: float} */
+    private function resolveSaleReturnItemMetrics($item): array
+    {
+        $qty = (float)($item->sales_qty ?? $item->quantity ?? $item->qty ?? 0);
+        $price = (float)($item->sales_price ?? $item->price ?? 0);
+        $disc = (float)($item->discount_amount ?? 0);
+        $lineCredit = (float)($item->amount ?? 0);
+
+        if ($lineCredit <= 0 && $qty > 0 && $price > 0) {
+            $lineCredit = max(0, ($qty * $price) - $disc);
+        }
+
+        if ($lineCredit <= 0 && $qty > 0) {
+            $fallbackRate = (float)($item->sales_rate ?? $item->retail_price ?? $item->price_level ?? 0);
+            if ($fallbackRate > 0) {
+                $price = $fallbackRate;
+                $lineCredit = max(0, ($qty * $fallbackRate) - $disc);
+            }
+        }
+
+        if ($lineCredit <= 0 && $price > 0 && $qty <= 0) {
+            $qty = 1;
+            $lineCredit = max(0, $price - $disc);
+        }
+
+        $finalPrice = ($qty > 0 && $lineCredit > 0)
+            ? ($lineCredit / $qty)
+            : (($qty > 0) ? ($price - ($disc / $qty)) : $price);
+
+        return [
+            'qty' => $qty,
+            'price' => $finalPrice,
+            'credit' => round($lineCredit, 2),
+        ];
+    }
+
+    /**
+     * Legacy/live rows may have product lines with blank amount/qty/price while sub_total2 is set.
+     * Allocate header sub_total2 onto item rows so GL shows rate + credit on the item line.
+     *
+     * @return list<array{qty: float, price: float, credit: float}>
+     */
+    private function allocateSaleReturnItemCredits($sr): array
+    {
+        $items = $sr->items;
+        $subTotal2 = round((float)($sr->sub_total2 ?? 0), 2);
+        $lines = [];
+
+        foreach ($items as $item) {
+            $lines[] = $this->resolveSaleReturnItemMetrics($item);
+        }
+
+        if ($subTotal2 <= 0 || $items->isEmpty()) {
+            return $lines;
+        }
+
+        $itemSum = round(array_sum(array_column($lines, 'credit')), 2);
+        if (abs($subTotal2 - $itemSum) < 0.01) {
+            return $lines;
+        }
+
+        $zeroIndexes = [];
+        foreach ($lines as $idx => $line) {
+            if ($line['credit'] <= 0) {
+                $zeroIndexes[] = $idx;
+            }
+        }
+
+        if ($zeroIndexes === []) {
+            return $lines;
+        }
+
+        $fixedSum = round(array_sum(array_map(
+            fn ($idx) => $lines[$idx]['credit'],
+            array_values(array_diff(array_keys($lines), $zeroIndexes))
+        )), 2);
+        $pool = round($subTotal2 - $fixedSum, 2);
+        if ($pool <= 0) {
+            return $lines;
+        }
+
+        if (count($zeroIndexes) === 1) {
+            $idx = $zeroIndexes[0];
+            $qty = $lines[$idx]['qty'] > 0 ? $lines[$idx]['qty'] : 1;
+            $lines[$idx] = [
+                'qty' => $qty,
+                'price' => round($pool / $qty, 2),
+                'credit' => $pool,
+            ];
+
+            return $lines;
+        }
+
+        $weightTotal = 0.0;
+        foreach ($zeroIndexes as $idx) {
+            $qty = $lines[$idx]['qty'] > 0 ? $lines[$idx]['qty'] : 1;
+            $lines[$idx]['qty'] = $qty;
+            $weightTotal += $qty;
+        }
+
+        $remaining = $pool;
+        $last = count($zeroIndexes) - 1;
+        foreach ($zeroIndexes as $j => $idx) {
+            $qty = $lines[$idx]['qty'];
+            $credit = ($j === $last) ? $remaining : round($pool * ($qty / $weightTotal), 2);
+            $remaining = round($remaining - $credit, 2);
+            $lines[$idx] = [
+                'qty' => $qty,
+                'price' => $qty > 0 ? round($credit / $qty, 2) : $credit,
+                'credit' => $credit,
+            ];
+        }
+
+        return $lines;
+    }
+
     /** Reconcile detailed PJ lines with net_amount (party-ledger credit). */
     private function appendPurchaseNetReconciliation($purchase, array &$transactions, float $lineCredit, float $allocDebit, float $whtCredit): void
     {
@@ -1122,7 +1238,7 @@ class GeneralLedgerController extends Controller
         $sReturnDebits = 0;
         foreach ($sReturnRows as $sr) {
             $sReturnCredits += (float)($sr->sub_total2 ?? 0);
-            if ((float)($sr->discount_amount ?? 0) > 0 && !$sr->discount_account_id) {
+            if ((float)($sr->discount_amount ?? 0) > 0) {
                 $sReturnDebits += (float)$sr->discount_amount;
             }
         }
@@ -2397,23 +2513,18 @@ class GeneralLedgerController extends Controller
             $originalInv = $sr->sale ? $sr->sale->invoice_no : '';
             $srInv = preg_replace('/[^0-9]/', '', substr($sr->invoice_no, strlen('SR-'))) ?: $sr->invoice_no;
             $srSortAt = $this->saleReturnSortTimestamp($sr);
+            $itemMetrics = $this->allocateSaleReturnItemCredits($sr);
             $itemSum = 0;
-            foreach ($sr->items as $item) {
+            foreach ($sr->items as $index => $item) {
                 $brand = $item->product->brandRelation->name ?? '';
                 $desc = ($brand ? $brand . ' - ' : '') . ($item->product->name ?? 'Product');
                 if ($originalInv) {
                     $desc .= ' (SJ ' . $originalInv . ')';
                 }
-                $qty = (float)($item->sales_qty ?? 0);
-                $price = (float)($item->sales_price ?? 0);
-                $disc = (float)($item->discount_amount ?? 0);
-                $lineCredit = (float)($item->amount ?? 0);
-                if ($lineCredit <= 0 && $qty > 0 && $price > 0) {
-                    $lineCredit = max(0, ($qty * $price) - $disc);
-                }
-                $finalPrice = ($qty > 0 && $lineCredit > 0)
-                    ? ($lineCredit / $qty)
-                    : (($qty > 0) ? ($price - ($disc / $qty)) : $price);
+                $metrics = $itemMetrics[$index] ?? $this->resolveSaleReturnItemMetrics($item);
+                $qty = $metrics['qty'];
+                $finalPrice = $metrics['price'];
+                $lineCredit = $metrics['credit'];
 
                 $itemSum += $lineCredit;
 
