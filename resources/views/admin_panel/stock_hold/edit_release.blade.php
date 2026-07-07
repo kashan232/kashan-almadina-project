@@ -318,6 +318,17 @@
 </div>
 @endsection
 
+@php
+    $accountHeadsJson = collect($accountHeads ?? [])->map(function ($head) {
+        return [
+            'id' => $head->id,
+            'accounts' => $head->accounts->map(function ($account) {
+                return ['id' => $account->id, 'title' => $account->title];
+            })->values(),
+        ];
+    })->values();
+@endphp
+
 @section('scripts')
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script>
@@ -334,10 +345,7 @@ $(document).ready(function() {
     var isViewMode = @json($isViewMode);
 
     $('.select2').select2({ width: '100%' });
-    var accountHeadsData = @json(collect($accountHeads ?? [])->map(fn($h) => [
-        'id' => $h->id,
-        'accounts' => $h->accounts->map(fn($a) => ['id' => $a->id, 'title' => $a->title])->values(),
-    ])->values());
+    var accountHeadsData = @json($accountHeadsJson);
     function fillAccountSelect(headId, $accSelect, selectedId) {
         $accSelect.empty().append('<option value="">Select Account</option>');
         var head = accountHeadsData.find(function(h) { return String(h.id) === String(headId); });

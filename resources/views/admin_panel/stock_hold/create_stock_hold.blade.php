@@ -90,6 +90,15 @@
     if ($isViewMode) {
         $formClass .= ' view-mode';
     }
+    $accountHeadsJson = collect($accountHeads ?? [])->map(function ($head) {
+        return [
+            'id' => $head->id,
+            'name' => $head->name,
+            'accounts' => $head->accounts->map(function ($account) {
+                return ['id' => $account->id, 'title' => $account->title];
+            })->values(),
+        ];
+    })->values();
 @endphp
 <div class="main-content">
     <div class="main-content-inner">
@@ -393,11 +402,7 @@ $(document).ready(function() {
         $('#vendor_id').trigger('change.select2');
     }
 
-    var accountHeadsData = @json(collect($accountHeads ?? [])->map(fn($h) => [
-        'id' => $h->id,
-        'name' => $h->name,
-        'accounts' => $h->accounts->map(fn($a) => ['id' => $a->id, 'title' => $a->title])->values(),
-    ])->values());
+    var accountHeadsData = @json($accountHeadsJson);
 
     function fillAccountSelect(headId, $accSelect, selectedId) {
         $accSelect.empty().append('<option value="">Select Account</option>');
