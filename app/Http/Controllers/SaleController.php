@@ -1022,40 +1022,26 @@ class SaleController extends Controller
     public function getCustomerData($id, Request $request)
     {
         $type = strtolower($request->query('type', 'customer'));
+        $ledger = app(PartyLedgerService::class);
 
         if ($type === 'vendor') {
-            // Fetch Vendor data
             $v = Vendor::find($id);
             if (!$v) {
                 return response()->json(['error' => 'Vendor not found'], 404);
             }
 
-            // Fetch dynamic balance matching the General Ledger
-            $gl = new \App\Http\Controllers\GeneralLedgerController();
-            $previous_balance = $gl->calculateOpeningBalance('vendor', $id, date('Y-m-d', strtotime('+1 day')));
-
-            // Revert sign for Vendors (GL displays Credits as positive for Vendor)
-            // Wait, GL Preview displays: $runningBalance >= 0 ? 'DR.' : 'CR.'
-            // So if $previous_balance is -420485, it's CR. 420485.
-            // The Sale Add screen just displays the numeric value, so we leave it as is.
-
             return response()->json([
                 'address' => $v->address,
-                'mobile' => $v->phone, // assuming 'phone' field for vendors
-                'remarks' => '', // No remarks for vendors
-                'previous_balance' => $previous_balance, 
+                'mobile' => $v->phone,
+                'remarks' => '',
+                'previous_balance' => $ledger->latestClosing('vendor', (int) $id),
             ]);
         }
 
-        // Default: Fetch Customer data (including walking)
         $c = Customer::find($id);
         if (!$c) {
             return response()->json(['error' => 'Customer not found'], 404);
         }
-
-        // Fetch dynamic balance matching the General Ledger
-        $gl = new \App\Http\Controllers\GeneralLedgerController();
-        $previous_balance = $gl->calculateOpeningBalance('customer', $id, date('Y-m-d', strtotime('+1 day')));
 
         return response()->json([
             'filer_type' => $c->filer_type,
@@ -1063,7 +1049,7 @@ class SaleController extends Controller
             'address' => $c->address,
             'mobile' => $c->mobile,
             'remarks' => $c->remarks ?? '',
-            'previous_balance' => $previous_balance,
+            'previous_balance' => $ledger->latestClosing($type, (int) $id),
         ]);
     }
 
@@ -1074,12 +1060,11 @@ class SaleController extends Controller
             return response()->json(['error' => 'Vendor not found'], 404);
         }
 
-        // Return vendor data (adjust as per your requirements)
         return response()->json([
             'address' => $vendor->address,
             'mobile' => $vendor->phone,
-            'remarks' => '', // No remarks for vendors or set as required
-            'previous_balance' => $vendor->debit, // Example using vendor's debit balance
+            'remarks' => '',
+            'previous_balance' => app(PartyLedgerService::class)->latestClosing('vendor', (int) $id),
         ]);
     }
 
