@@ -56,6 +56,18 @@
     .total-highlight { font-weight: 800; color: #2c3e50; }
 </style>
 
+@php
+    $isViewMode = isset($viewMode) && $viewMode;
+    $isPosted = isset($voucher) && $voucher->status === 'Posted';
+    $formLockClass = 'position-relative';
+    if ($isViewMode || $isPosted) {
+        $formLockClass .= ' form-locked';
+    }
+    if ($isViewMode) {
+        $formLockClass .= ' view-mode';
+    }
+@endphp
+
 <div class="main-content">
     <div class="main-content-inner">
         <div class="container-fluid stock-hold-page">
@@ -64,7 +76,11 @@
             <div class="d-flex justify-content-between align-items-center page-top-bar bg-light rounded shadow-sm">
                 <div style="min-width:80px;"></div>
                 <div class="d-flex align-items-center gap-2 justify-content-center flex-grow-1">
-                    <h6 class="page-title mb-0 fw-bold">Claim Credit Note Management</h6>
+                    <h6 class="page-title mb-0 fw-bold">Claim Credit Note Management
+                        @if($isViewMode)
+                            <span class="badge bg-info px-2 py-1 rounded ms-1" style="font-size:10px;"><i class="fa fa-eye"></i> View Only</span>
+                        @endif
+                    </h6>
                     <span id="statusBadge" class="badge bg-warning text-dark px-3 py-2 rounded-pill shadow-sm" style="font-size:12px;">
                         <i class="fa fa-pencil me-1"></i> {{ isset($voucher) ? $voucher->status : 'New Credit Note' }}
                     </span>
@@ -73,17 +89,17 @@
                     </span>
                 </div>
                 <div class="d-flex align-items-center justify-content-end" style="min-width:115px;">
-                    <a href="{{ route('claim-credit-note.index') }}" id="listBtn" class="btn btn-sm btn-outline-secondary rounded-pill px-3">
+                    <a href="{{ route('claim-item-receipt.index') }}" id="listBtn" class="btn btn-sm btn-outline-secondary rounded-pill px-3">
                         <i class="fa fa-list me-1"></i> List <kbd style="font-size:9px;opacity:.7;margin-left:4px;">Ctrl+L</kbd>
                     </a>
                 </div>
             </div>
 
-            <form action="{{ route('claim-credit-note.ajax-save') }}" method="POST" id="creditNoteForm" class="position-relative {{ (isset($voucher) && $voucher->status == 'Posted') ? 'form-locked' : '' }}">
+            <form action="{{ $isViewMode ? '#' : route('claim-credit-note.ajax-save') }}" method="POST" id="creditNoteForm" class="{{ $formLockClass }}">
                 @csrf
                 <input type="hidden" name="action" id="formAction" value="save">
                 <input type="hidden" name="id" value="{{ $voucher->id ?? '' }}">
-                <div class="posted-watermark {{ (isset($voucher) && $voucher->status == 'Posted') ? 'show' : '' }}" id="postedWatermark">Posted</div>
+                <div class="posted-watermark {{ ($isViewMode && $isPosted) || $isPosted ? 'show' : '' }}" id="postedWatermark">Posted</div>
 
                 {{-- Header Details --}}
                 <div class="card shadow-sm">
@@ -256,22 +272,22 @@
                 {{-- Footer Buttons --}}
                 <div class="card shadow-sm mt-2 border-0 bg-transparent">
                     <div class="card-footer bg-white border rounded text-end">
-                        <button type="button" id="saveDraftBtn" class="btn btn-sm btn-warning rounded-pill px-4 shadow-sm fw-bold">
+                        <button type="button" id="saveDraftBtn" class="btn btn-sm btn-warning rounded-pill px-4 shadow-sm fw-bold" style="{{ ($isViewMode || $isPosted) ? 'display:none;' : '' }}">
                             <i class="fa fa-floppy-o me-1"></i> Save Draft <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+S</kbd>
                         </button>
                         <button type="button" id="previewPrintBtn" class="btn btn-sm btn-outline-dark rounded-pill px-4 shadow-sm fw-bold" style="{{ isset($voucher) ? '' : 'display:none;' }}">
                             <i class="fa fa-print me-1"></i> Print Preview <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+P</kbd>
                         </button>
-                        <button type="button" id="postBtn" class="btn btn-sm btn-primary rounded-pill px-4 shadow-sm fw-bold" style="{{ (isset($voucher) && $voucher->status == 'Posted') ? 'display:none;' : '' }}">
+                        <button type="button" id="postBtn" class="btn btn-sm btn-primary rounded-pill px-4 shadow-sm fw-bold" style="{{ ($isViewMode || $isPosted) ? 'display:none;' : '' }}">
                             <i class="fa fa-send me-1"></i> Save & Post <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+&#8629;</kbd>
                         </button>
-                        <button type="button" id="editBtn" class="btn btn-sm btn-warning rounded-pill px-4 shadow-sm fw-bold" style="{{ (isset($voucher) && $voucher->status == 'Posted') ? '' : 'display:none;' }}">
+                        <button type="button" id="editBtn" class="btn btn-sm btn-warning rounded-pill px-4 shadow-sm fw-bold" style="{{ ($isViewMode && !$isPosted) ? '' : ((isset($voucher) && $isPosted && !$isViewMode) ? '' : 'display:none;') }}">
                             <i class="fa fa-pencil me-1"></i> Edit <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+E</kbd>
                         </button>
-                        <a href="{{ route('claim-credit-note.create') }}" id="newBtn" class="btn btn-sm btn-info rounded-pill px-4 shadow-sm fw-bold text-white" style="{{ isset($voucher) ? '' : 'display:none;' }}">
+                        <a href="{{ route('claim-credit-note.create') }}" id="newBtn" class="btn btn-sm btn-info rounded-pill px-4 shadow-sm fw-bold text-white" style="{{ (isset($voucher) && !$isViewMode) ? '' : 'display:none;' }}">
                             <i class="fa fa-plus me-1"></i> New <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+M</kbd>
                         </a>
-                        <a href="{{ route('claim-credit-note.index') }}" id="cancelBtn" class="btn btn-sm btn-danger rounded-pill px-4 shadow-sm fw-bold text-white">
+                        <a href="{{ route('claim-item-receipt.index') }}" id="cancelBtn" class="btn btn-sm btn-danger rounded-pill px-4 shadow-sm fw-bold text-white">
                             <i class="fa fa-times me-1"></i> Cancel <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Esc</kbd>
                         </a>
                     </div>
@@ -288,6 +304,17 @@
 $(document).ready(function() {
     $('.select2').select2({ width: '100%' });
     var _savedId = "{{ $voucher->id ?? '' }}";
+    var isViewMode = {{ $isViewMode ? 'true' : 'false' }};
+    var isPostedVoucher = {{ $isPosted ? 'true' : 'false' }};
+
+    if (isViewMode) {
+        $('#creditNoteForm').addClass('form-locked view-mode');
+        $('#saveDraftBtn, #postBtn').hide();
+        $('#previewPrintBtn').show();
+        if (!isPostedVoucher) {
+            $('#editBtn').show();
+        }
+    }
 
     function showToast(msg, type = 'success') {
         var icon = type === 'success' ? 'fa-check-circle' : 'fa-times-circle';
@@ -436,6 +463,10 @@ $(document).ready(function() {
         window.open("/claim-credit-note/print/" + _savedId, "_blank");
     });
     $('#editBtn').click(function() {
+        if (isViewMode && !isPostedVoucher) {
+            window.location.href = "{{ isset($voucher) ? route('claim-credit-note.edit', $voucher->id) : '#' }}";
+            return;
+        }
         $('#creditNoteForm').removeClass('form-locked');
         $('#saveDraftBtn, #postBtn').show();
         $(this).hide();
@@ -448,7 +479,7 @@ $(document).ready(function() {
         if(e.ctrlKey && e.key === 'p') { e.preventDefault(); $('#previewPrintBtn:visible').click(); }
         if(e.ctrlKey && e.key === 'e') { e.preventDefault(); $('#editBtn:visible').click(); }
         if(e.ctrlKey && e.key === 'm') { e.preventDefault(); window.location.href = "{{ route('claim-credit-note.create') }}"; }
-        if(e.key === 'Escape') { window.location.href = "{{ route('claim-credit-note.index') }}"; }
+        if(e.key === 'Escape') { window.location.href = "{{ route('claim-item-receipt.index') }}"; }
     });
 });
 </script>

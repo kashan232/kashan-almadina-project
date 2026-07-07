@@ -16,7 +16,7 @@ class ClaimAcceptanceController extends Controller
 {
     public function index(Request $request)
     {
-        $query = ClaimAcceptance::with(['vendor', 'customer', 'creator']);
+        $query = ClaimAcceptance::with(['vendor', 'customer', 'creator', 'items']);
         
         if ($request->start_date) {
             $query->whereDate('date', '>=', $request->start_date);
@@ -49,6 +49,16 @@ class ClaimAcceptanceController extends Controller
         $customerWarehouses = Warehouse::withoutGlobalScopes()->where('claim_type', 'customer')->orderBy('warehouse_name')->get();
         $companyWarehouses = Warehouse::withoutGlobalScopes()->where('claim_type', 'company')->orderBy('warehouse_name')->get();
         return view('admin_panel.claim_acceptance.create', compact('voucher', 'customerWarehouses', 'companyWarehouses'));
+    }
+
+    public function show($id)
+    {
+        $voucher = ClaimAcceptance::with(['items.product.brandRelation', 'vendor', 'customer'])->findOrFail($id);
+        $customerWarehouses = Warehouse::withoutGlobalScopes()->where('claim_type', 'customer')->orderBy('warehouse_name')->get();
+        $companyWarehouses = Warehouse::withoutGlobalScopes()->where('claim_type', 'company')->orderBy('warehouse_name')->get();
+        $viewMode = true;
+
+        return view('admin_panel.claim_acceptance.create', compact('voucher', 'customerWarehouses', 'companyWarehouses', 'viewMode'));
     }
 
     public function ajaxSave(Request $request)
@@ -120,6 +130,14 @@ class ClaimAcceptanceController extends Controller
                     // 2. Add to Destination Warehouse
                     $this->adjustStock($voucher->to_warehouse_id, $pid, $qty);
                 }
+            }
+
+            $firstBtr = collect($request->btr_no ?? [])
+                ->map(fn ($b) => trim((string) $b))
+                ->filter()
+                ->first();
+            if ($firstBtr) {
+                $voucher->update(['btr_no' => $firstBtr]);
             }
 
             DB::commit();

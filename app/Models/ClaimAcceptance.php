@@ -53,6 +53,27 @@ class ClaimAcceptance extends Model
         return strtoupper($this->customer->customer_name ?? 'N/A');
     }
 
+    /** BTR from header or item lines (list/view). */
+    public function getBtrNoAttribute($value)
+    {
+        if (!empty(trim((string) $value))) {
+            return $value;
+        }
+
+        if (!$this->relationLoaded('items')) {
+            return $value;
+        }
+
+        $btrs = $this->items
+            ->pluck('btr_no')
+            ->map(fn ($b) => trim((string) $b))
+            ->filter()
+            ->unique()
+            ->values();
+
+        return $btrs->isEmpty() ? $value : $btrs->implode(', ');
+    }
+
     public static function generateVoucherNo()
     {
         $last = self::withoutGlobalScopes()->orderBy('id', 'desc')->first();

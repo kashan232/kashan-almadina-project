@@ -42,6 +42,18 @@
     .posted-watermark.show { display: block; }
 </style>
 
+@php
+    $isViewMode = isset($viewMode) && $viewMode;
+    $isReceiptPosted = isset($voucher) && $voucher->status === 'Posted';
+    $receiptFormClass = 'position-relative';
+    if ($isViewMode || $isReceiptPosted) {
+        $receiptFormClass .= ' form-locked';
+    }
+    if ($isViewMode) {
+        $receiptFormClass .= ' view-mode';
+    }
+@endphp
+
 <div class="main-content">
     <div class="main-content-inner">
         <div class="container-fluid stock-hold-page">
@@ -54,13 +66,18 @@
                 <li class="nav-item" role="presentation">
                     <button class="nav-link active fw-bold px-4 py-1" id="receipt-tab" data-bs-toggle="pill" data-bs-target="#receipt-pane" type="button" role="tab">
                         <i class="fa fa-file-text-o me-2"></i> Item Receipt
+                        @if($isViewMode)
+                            <span class="badge bg-info ms-1" style="font-size:9px;"><i class="fa fa-eye"></i> View</span>
+                        @endif
                     </button>
                 </li>
+                @if(!$isViewMode)
                 <li class="nav-item mx-2" role="presentation">
                     <button class="nav-link fw-bold px-4 py-1" id="credit-tab" data-bs-toggle="pill" data-bs-target="#credit-pane" type="button" role="tab">
                         <i class="fa fa-money me-2"></i> Credit Note
                     </button>
                 </li>
+                @endif
                 <li class="nav-item" role="presentation">
                     <a href="{{ route('claim-item-receipt.index') }}" id="listBtn" class="btn btn-sm btn-outline-secondary rounded-pill px-4 py-1 fw-bold">
                         <i class="fa fa-list me-1"></i> List <kbd style="font-size:9px;opacity:.7;margin-left:4px;">Ctrl+L</kbd>
@@ -80,11 +97,11 @@
                         </span>
                     </div>
 
-                    <form action="{{ route('claim-item-receipt.ajax-save') }}" method="POST" id="receiptForm" class="position-relative {{ (isset($voucher) && $voucher->status == 'Posted') ? 'form-locked' : '' }}">
+                    <form action="{{ $isViewMode ? '#' : route('claim-item-receipt.ajax-save') }}" method="POST" id="receiptForm" class="{{ $receiptFormClass }}">
                         @csrf
                         <input type="hidden" name="action" id="receiptFormAction" value="save">
                         <input type="hidden" name="id" value="{{ $voucher->id ?? '' }}">
-                        <div class="posted-watermark {{ (isset($voucher) && $voucher->status == 'Posted') ? 'show' : '' }}" id="receiptPostedWatermark">Posted</div>
+                        <div class="posted-watermark {{ ($isViewMode && $isReceiptPosted) || $isReceiptPosted ? 'show' : '' }}" id="receiptPostedWatermark">Posted</div>
 
                         {{-- Header Details --}}
                         <div class="card shadow-sm mb-2">
@@ -217,13 +234,13 @@
                             </div>
                             <div class="card-footer bg-white">
                                 <div class="d-flex flex-wrap justify-content-center w-100 bottom-bar-btns">
-                                    <button type="button" id="receiptSaveDraftBtn" class="btn btn-primary px-3 fw-bold shadow-sm receipt-save-btn receipt-action-btn" {{ (isset($voucher) && $voucher->status == 'Posted') ? 'disabled' : '' }}>
+                                    <button type="button" id="receiptSaveDraftBtn" class="btn btn-primary px-3 fw-bold shadow-sm receipt-save-btn receipt-action-btn" {{ ($isViewMode || $isReceiptPosted) ? 'disabled' : '' }}>
                                         <u>S</u>ave <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+S</kbd>
                                     </button>
-                                    <button type="button" id="receiptEditBtn" class="btn btn-warning px-3 fw-bold text-dark shadow-sm receipt-action-btn" disabled>
+                                    <button type="button" id="receiptEditBtn" class="btn btn-warning px-3 fw-bold text-dark shadow-sm receipt-action-btn" {{ ($isViewMode && !$isReceiptPosted) ? '' : 'disabled' }}>
                                         <u>E</u>dit <kbd style="font-size:10px;opacity:.8;margin-left:4px;color:#fff;">Ctrl+E</kbd>
                                     </button>
-                                    <button type="button" id="receiptPostBtn" class="btn btn-success px-3 fw-bold shadow-sm receipt-action-btn" {{ (isset($voucher) && $voucher->status == 'Posted') ? 'disabled' : '' }}>
+                                    <button type="button" id="receiptPostBtn" class="btn btn-success px-3 fw-bold shadow-sm receipt-action-btn" {{ ($isViewMode || $isReceiptPosted) ? 'disabled' : '' }}>
                                         <u>P</u>ost <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+&crarr;</kbd>
                                     </button>
                                     <button type="button" id="receiptDeleteBtn" class="btn btn-danger px-3 fw-bold shadow-sm receipt-action-btn" disabled title="Delete not available">
@@ -455,6 +472,8 @@
 $(document).ready(function() {
     $('.select2').select2({ width: '100%' });
     var _savedReceiptId = "{{ $voucher->id ?? '' }}";
+    var isReceiptViewMode = {{ $isViewMode ? 'true' : 'false' }};
+    var isReceiptPosted = {{ $isReceiptPosted ? 'true' : 'false' }};
     var _savedCreditId = "";
     var _receiptSaveInFlight = false;
     var _receiptPostInFlight = false;
@@ -604,6 +623,10 @@ $(document).ready(function() {
     });
     $('#receiptEditBtn').on('click', function() {
         if ($(this).prop('disabled')) return;
+        if (isReceiptViewMode && !isReceiptPosted) {
+            window.location.href = "{{ isset($voucher) ? route('claim-item-receipt.edit', $voucher->id) : '#' }}";
+            return;
+        }
         $('#receiptForm').removeClass('form-locked');
         $(this).prop('disabled', true);
         $('#receiptPostBtn').prop('disabled', true);
@@ -794,7 +817,11 @@ $(document).ready(function() {
         $('#creditSaveDraftBtn').prop('disabled', false).show().html(creditSaveBtnHtml);
     });
 
-    @if(isset($voucher) && $voucher->status == 'Posted')
+    @if($isViewMode)
+    $('#receiptForm').addClass('form-locked view-mode');
+    $('#receiptSaveDraftBtn, #receiptPostBtn').prop('disabled', true);
+    $('#receiptEditBtn').prop('disabled', isReceiptPosted);
+    @elseif(isset($voucher) && $voucher->status == 'Posted')
     $('#receiptEditBtn, #receiptPostBtn, #receiptSaveDraftBtn').prop('disabled', true);
     @endif
 

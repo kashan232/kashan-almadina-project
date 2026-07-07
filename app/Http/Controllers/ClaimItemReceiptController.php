@@ -72,6 +72,17 @@ class ClaimItemReceiptController extends Controller
         return view('admin_panel.claim_item_receipt.create', compact('voucher', 'warehouses', 'companyWarehouses', 'AccountHeads'));
     }
 
+    public function show($id)
+    {
+        $voucher = ClaimItemReceipt::with(['items.product', 'vendor', 'customer', 'fromWarehouse', 'toWarehouse'])->findOrFail($id);
+        $warehouses = Warehouse::orderBy('warehouse_name')->get();
+        $companyWarehouses = Warehouse::withoutGlobalScope('exclude_claims')->where('claim_type', 'company')->orderBy('warehouse_name')->get();
+        $AccountHeads = \App\Models\AccountHead::where('status', 1)->get();
+        $viewMode = true;
+
+        return view('admin_panel.claim_item_receipt.create', compact('voucher', 'warehouses', 'companyWarehouses', 'AccountHeads', 'viewMode'));
+    }
+
     public function fetchByBTR(Request $request)
     {
         $btr = $request->btr;

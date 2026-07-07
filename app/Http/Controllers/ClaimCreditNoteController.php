@@ -54,6 +54,15 @@ class ClaimCreditNoteController extends Controller
         return view('admin_panel.claim_credit_note.create', compact('voucher', 'warehouses'));
     }
 
+    public function show($id)
+    {
+        $voucher = ClaimCreditNote::with(['items.product.brandRelation', 'vendor', 'customer'])->findOrFail($id);
+        $warehouses = Warehouse::orderBy('warehouse_name')->get();
+        $viewMode = true;
+
+        return view('admin_panel.claim_credit_note.create', compact('voucher', 'warehouses', 'viewMode'));
+    }
+
     public function fetchByBTR(Request $request)
     {
         $btr = $request->btr;

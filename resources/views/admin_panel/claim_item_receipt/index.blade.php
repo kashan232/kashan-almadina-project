@@ -223,12 +223,18 @@
                                                             </a>
                                                         @endif
                                                     @endif
-                                                    
+
                                                     @if($v->doc_type == 'credit')
+                                                        <a href="{{ route('claim-credit-note.view', $v->id) }}" class="btn btn-outline-info btn-xs px-1 py-0" title="View" style="height: 20px;">
+                                                            <i class="fa fa-eye"></i>
+                                                        </a>
                                                         <a href="{{ route('claim-credit-note.print', $v->id) }}" target="_blank" class="btn btn-outline-dark btn-xs px-1 py-0" title="Print" style="height: 20px;">
                                                             <i class="fa fa-print"></i>
                                                         </a>
                                                     @else
+                                                        <a href="{{ route('claim-item-receipt.view', $v->id) }}" class="btn btn-outline-info btn-xs px-1 py-0" title="View" style="height: 20px;">
+                                                            <i class="fa fa-eye"></i>
+                                                        </a>
                                                         <a href="{{ route('claim-item-receipt.print', $v->id) }}" target="_blank" class="btn btn-outline-dark btn-xs px-1 py-0" title="Print" style="height: 20px;">
                                                             <i class="fa fa-print"></i>
                                                         </a>

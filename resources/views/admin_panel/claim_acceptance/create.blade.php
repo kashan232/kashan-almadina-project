@@ -63,6 +63,15 @@
     .ajax-valid-error { color: #dc3545; font-size: 0.75rem; font-weight: 700; margin-bottom: 2px; display: block; }
 </style>
 
+@php
+    $isViewMode = isset($viewMode) && $viewMode;
+    $isPosted = isset($voucher) && $voucher->status === 'Posted';
+    $formLockClass = ($isViewMode || $isPosted || isset($voucher)) ? 'form-locked' : '';
+    if ($isViewMode) {
+        $formLockClass .= ' view-mode';
+    }
+@endphp
+
 <div class="container-fluid stock-hold-page">
     <div class="main-container bg-white border shadow-sm mx-auto rounded-3 position-relative">
         
@@ -70,7 +79,11 @@
 
         <div class="d-flex justify-content-between align-items-center page-top-bar bg-light rounded shadow-sm border">
             <div class="d-flex align-items-center gap-3">
-                <h6 class="page-title mb-0 fw-bold text-primary"><i class="fa fa-check-square-o me-2"></i>Claim Acceptance</h6>
+                <h6 class="page-title mb-0 fw-bold text-primary"><i class="fa fa-check-square-o me-2"></i>Claim Acceptance
+                    @if($isViewMode)
+                        <span class="badge bg-info px-2 py-1 rounded ms-1" style="font-size:10px;"><i class="fa fa-eye"></i> View Only</span>
+                    @endif
+                </h6>
                 <span id="statusBadge" class="badge {{ isset($voucher) && $voucher->status == 'Posted' ? 'bg-success' : 'bg-warning text-dark' }} px-3 py-2 rounded-pill shadow-sm">
                     <i class="fa {{ isset($voucher) && $voucher->status == 'Posted' ? 'fa-check-circle' : 'fa-pencil' }} me-1"></i> 
                     {{ strtoupper(isset($voucher) ? $voucher->status : 'DRAFT') }}
@@ -86,7 +99,7 @@
             </div>
         </div>
 
-        <form id="acceptanceForm" action="{{ route('claim-acceptance.ajax-save') }}" method="POST" autocomplete="off" class="{{ (isset($voucher) && $voucher->status == 'Posted') ? 'form-locked' : '' }}">
+        <form id="acceptanceForm" action="{{ $isViewMode ? '#' : route('claim-acceptance.ajax-save') }}" method="POST" autocomplete="off" class="{{ trim($formLockClass) }}">
             @csrf
             <input type="hidden" name="id" id="voucher_id" value="{{ $voucher->id ?? '' }}">
             <input type="hidden" name="action" id="formAction" value="save">
@@ -232,16 +245,16 @@
 
             <div class="card-footer bg-white border-top mt-1">
                 <div class="d-flex flex-wrap justify-content-center w-100 bottom-bar-btns">
-                    <button type="button" id="saveDraftBtn" class="btn btn-primary px-3 fw-bold shadow-sm" {{ (isset($voucher) && $voucher->status == 'Posted') ? 'disabled' : '' }}>
+                    <button type="button" id="saveDraftBtn" class="btn btn-primary px-3 fw-bold shadow-sm" {{ ($isViewMode || $isPosted) ? 'disabled' : '' }}>
                         <u>S</u>ave <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+S</kbd>
                     </button>
-                    <button type="button" id="editInvoiceBtn" class="btn btn-warning px-3 fw-bold text-dark shadow-sm" {{ (isset($voucher) && $voucher->status != 'Posted') ? '' : 'disabled' }}>
+                    <button type="button" id="editInvoiceBtn" class="btn btn-warning px-3 fw-bold text-dark shadow-sm" {{ ($isViewMode && !$isPosted) ? '' : ((isset($voucher) && !$isPosted && !$isViewMode) ? '' : 'disabled') }}>
                         <u>E</u>dit <kbd style="font-size:10px;opacity:.8;margin-left:4px;color:#fff;">Ctrl+E</kbd>
                     </button>
-                    <button type="button" id="postBtn" class="btn btn-success px-3 fw-bold shadow-sm" {{ (isset($voucher) && $voucher->status == 'Posted') ? 'disabled' : '' }}>
+                    <button type="button" id="postBtn" class="btn btn-success px-3 fw-bold shadow-sm" {{ ($isViewMode || $isPosted) ? 'disabled' : '' }}>
                         <u>P</u>ost <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+&crarr;</kbd>
                     </button>
-                    <button type="button" id="deleteBtn" class="btn btn-danger px-3 fw-bold shadow-sm" {{ (!isset($voucher) || $voucher->status == 'Posted') ? 'disabled' : '' }}>
+                    <button type="button" id="deleteBtn" class="btn btn-danger px-3 fw-bold shadow-sm" {{ ($isViewMode || !isset($voucher) || $isPosted) ? 'disabled' : '' }}>
                         <u>D</u>elete <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+D</kbd>
                     </button>
                     <a href="{{ isset($voucher) ? route('claim-acceptance.print', $voucher->id) : 'javascript:void(0)' }}" id="realPrintBtn" target="_blank" class="btn btn-info px-3 fw-bold text-dark shadow-sm {{ !isset($voucher) ? 'pe-none opacity-50' : '' }}">
@@ -263,7 +276,7 @@
         </form>
         @endif
 
-        <div class="posted-watermark {{ (isset($voucher) && $voucher->status == 'Posted') ? 'show' : '' }}" id="postedWatermark">Posted</div>
+        <div class="posted-watermark {{ ($isViewMode && $isPosted) || ($isPosted && !$isViewMode) ? 'show' : '' }}" id="postedWatermark">Posted</div>
     </div>
 </div>
 
@@ -277,6 +290,9 @@ $(document).ready(function() {
     var _postInFlight = false;
     var saveBtnHtml = '<u>S</u>ave <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+S</kbd>';
     var postBtnHtml = '<u>P</u>ost <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+&crarr;</kbd>';
+
+    var isViewMode = {{ $isViewMode ? 'true' : 'false' }};
+    var isPostedVoucher = {{ $isPosted ? 'true' : 'false' }};
 
     // Initialization functions
     function initProductSelect($row) {
@@ -408,7 +424,16 @@ $(document).ready(function() {
         $('#saveDraftBtn').prop('disabled', false);
     }
 
-    if ("{{ isset($voucher) && $voucher->status != 'Posted' }}") lockForm();
+    if (isViewMode) {
+        $('#acceptanceForm').addClass('form-locked view-mode');
+        $('#saveDraftBtn, #postBtn, #deleteBtn').prop('disabled', true);
+        $('#editInvoiceBtn').prop('disabled', isPostedVoucher);
+        if (isPostedVoucher) {
+            $('#postedWatermark').addClass('show');
+        }
+    } else if ("{{ isset($voucher) && $voucher->status != 'Posted' }}") {
+        lockForm();
+    }
 
     function save(act) {
         if (_saveInFlight || _postInFlight) return;
@@ -468,7 +493,13 @@ $(document).ready(function() {
 
     $('#saveDraftBtn').on('click', function(e) { e.preventDefault(); if (!$(this).prop('disabled')) save('save'); });
     $('#postBtn').on('click', function(e) { e.preventDefault(); if (!$(this).prop('disabled')) save('post'); });
-    $('#editInvoiceBtn').on('click', function() { if (!$(this).prop('disabled')) unlockForm(); });
+    $('#editInvoiceBtn').on('click', function() {
+        if (isViewMode && !isPostedVoucher) {
+            window.location.href = "{{ isset($voucher) ? route('claim-acceptance.edit', $voucher->id) : '#' }}";
+            return;
+        }
+        if (!$(this).prop('disabled')) unlockForm();
+    });
 
     $('#deleteBtn').on('click', function() {
         if ($(this).prop('disabled') || !$('#deleteForm').length) return;

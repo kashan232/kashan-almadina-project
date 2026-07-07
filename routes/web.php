@@ -85,6 +85,7 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/claim-acceptance/ajax-save', [\App\Http\Controllers\ClaimAcceptanceController::class, 'ajaxSave'])->name('claim-acceptance.ajax-save');
     Route::post('/claim-acceptance/post/{id}', [\App\Http\Controllers\ClaimAcceptanceController::class, 'post'])->name('claim-acceptance.post');
     Route::get('/claim-acceptance/edit/{id}', [\App\Http\Controllers\ClaimAcceptanceController::class, 'edit'])->name('claim-acceptance.edit');
+    Route::get('/claim-acceptance/view/{id}', [\App\Http\Controllers\ClaimAcceptanceController::class, 'show'])->name('claim-acceptance.view');
     Route::get('/claim-acceptance/print/{id}', [\App\Http\Controllers\ClaimAcceptanceController::class, 'print'])->name('claim-acceptance.print');
     Route::delete('/claim-acceptance/destroy/{id}', [\App\Http\Controllers\ClaimAcceptanceController::class, 'destroy'])->name('claim-acceptance.destroy');
     Route::get('/claim-acceptance/party-list', [\App\Http\Controllers\ClaimAcceptanceController::class, 'partyList'])->name('claim-acceptance.party-list');
@@ -471,6 +472,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/claim-item-receipt', [ClaimItemReceiptController::class, 'index'])->name('claim-item-receipt.index');
     Route::get('/claim-item-receipt/add', [ClaimItemReceiptController::class, 'create'])->name('claim-item-receipt.create');
     Route::get('/claim-item-receipt/edit/{id}', [ClaimItemReceiptController::class, 'edit'])->name('claim-item-receipt.edit');
+    Route::get('/claim-item-receipt/view/{id}', [ClaimItemReceiptController::class, 'show'])->name('claim-item-receipt.view');
     Route::get('/claim-item-receipt/fetch-btr', [ClaimItemReceiptController::class, 'fetchByBTR'])->name('claim-item-receipt.fetch-btr');
     Route::post('/claim-item-receipt/ajax-save', [ClaimItemReceiptController::class, 'ajaxSave'])->name('claim-item-receipt.ajax-save');
     Route::post('/claim-item-receipt/post/{id}', [ClaimItemReceiptController::class, 'post'])->name('claim-item-receipt.post');
@@ -480,6 +482,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/claim-credit-note', [ClaimCreditNoteController::class, 'index'])->name('claim-credit-note.index');
     Route::get('/claim-credit-note/add', [ClaimCreditNoteController::class, 'create'])->name('claim-credit-note.create');
     Route::get('/claim-credit-note/edit/{id}', [ClaimCreditNoteController::class, 'edit'])->name('claim-credit-note.edit');
+    Route::get('/claim-credit-note/view/{id}', [ClaimCreditNoteController::class, 'show'])->name('claim-credit-note.view');
     Route::get('/claim-credit-note/fetch-btr', [ClaimCreditNoteController::class, 'fetchByBTR'])->name('claim-credit-note.fetch-btr');
     Route::post('/claim-credit-note/ajax-save', [ClaimCreditNoteController::class, 'ajaxSave'])->name('claim-credit-note.ajax-save');
     Route::post('/claim-credit-note/post/{id}', [ClaimCreditNoteController::class, 'post'])->name('claim-credit-note.post');
