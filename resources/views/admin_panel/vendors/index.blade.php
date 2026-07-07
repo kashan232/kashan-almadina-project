@@ -205,7 +205,7 @@
                                                 <td><small>{{ $v->creator->name ?? 'System' }}</small></td>
                                             @endif
                                             <td>{{ $v->phone }}</td>
-                                            <td class="text-end fw-bold">{{ number_format($v->latestLedger->opening_balance ?? 0, 0) }}</td>
+                                            <td class="text-end fw-bold">{{ number_format($v->opening_balance ?? 0, 0) }}</td>
                                             <td class="text-end fw-bold text-success">{{ number_format($v->latestLedger->closing_balance ?? 0, 0) }}</td>
                                             <td><small>{{ Str::limit($v->address, 30) }}</small></td>
                                             <td class="text-center">
