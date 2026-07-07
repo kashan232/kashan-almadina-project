@@ -50,7 +50,74 @@ class GeneralLedgerController extends Controller
         return $acc ? ('Discount ; ' . $acc->title) : $fallback;
     }
 
-    /** Date → priority → invoice group → created_at → id (keeps SJ/PJ lines together). */
+    /** Details report: first created entry first (created_at ascending). */
+    private function sortLedgerDetailsByCreatedAt(array &$transactions): void
+    {
+        usort($transactions, function ($a, $b) {
+            $timeA = $this->ledgerSortTime($a['created_at'] ?? null);
+            $timeB = $this->ledgerSortTime($b['created_at'] ?? null);
+            if ($timeA !== $timeB) {
+                return $timeA <=> $timeB;
+            }
+
+            $idA = $a['id'] ?? 0;
+            $idB = $b['id'] ?? 0;
+            if (is_numeric($idA) && is_numeric($idB)) {
+                return $idA <=> $idB;
+            }
+
+            return strcmp((string)$idA, (string)$idB);
+        });
+    }
+
+    /** Unix timestamp for ledger sort; missing/invalid times sort last. */
+    private function ledgerSortTime($value): int
+    {
+        if ($value instanceof \DateTimeInterface) {
+            return $value->getTimestamp();
+        }
+        if (empty($value)) {
+            return PHP_INT_MAX;
+        }
+        $ts = strtotime((string)$value);
+
+        return ($ts !== false) ? $ts : PHP_INT_MAX;
+    }
+
+    /**
+     * Sort time for header documents. SaleReturn has no created_at column — use item created_at.
+     */
+    private function documentSortTimestamp($model, ?string $fallbackDate = null)
+    {
+        if (!empty($model->created_at)) {
+            return $model->created_at;
+        }
+        if (!empty($model->updated_at)) {
+            return $model->updated_at;
+        }
+        if (isset($model->items) && $model->items->isNotEmpty()) {
+            $itemTime = $model->items
+                ->filter(fn ($item) => !empty($item->created_at))
+                ->sortBy('created_at')
+                ->first();
+            if ($itemTime) {
+                return $itemTime->created_at;
+            }
+        }
+        $date = $fallbackDate ?? $model->entry_date ?? $model->current_date ?? null;
+        if ($date) {
+            return strlen((string)$date) <= 10 ? ($date . ' 12:00:00') : $date;
+        }
+
+        return null;
+    }
+
+    private function saleReturnSortTimestamp($sr)
+    {
+        return $this->documentSortTimestamp($sr, $sr->entry_date ?? $sr->current_date ?? null);
+    }
+
+    /** Summary report: date → priority → invoice group → created_at → id. */
     private function sortLedgerTransactions(array &$transactions): void
     {
         usort($transactions, function ($a, $b) {
@@ -150,8 +217,9 @@ class GeneralLedgerController extends Controller
 
         $inv = preg_replace('/[^0-9]/', '', substr($sr->invoice_no, strlen('SR-'))) ?: $sr->invoice_no;
         $srDate = $sr->entry_date ?: $sr->current_date;
+        $srSortAt = $this->saleReturnSortTimestamp($sr);
         $base = [
-            'created_at' => $sr->created_at,
+            'created_at' => $srSortAt,
             'date' => $srDate,
             'ref' => 'SRJ',
             'inv' => $inv,
@@ -1702,7 +1770,7 @@ class GeneralLedgerController extends Controller
                 }
             }
 
-            $this->sortLedgerTransactions($transactions);
+            $this->sortLedgerDetailsByCreatedAt($transactions);
             return $transactions;
         }
 
@@ -2322,6 +2390,7 @@ class GeneralLedgerController extends Controller
         foreach ($sReturns as $sr) {
             $originalInv = $sr->sale ? $sr->sale->invoice_no : '';
             $srInv = preg_replace('/[^0-9]/', '', substr($sr->invoice_no, strlen('SR-'))) ?: $sr->invoice_no;
+            $srSortAt = $this->saleReturnSortTimestamp($sr);
             $itemSum = 0;
             foreach ($sr->items as $item) {
                 $brand = $item->product->brandRelation->name ?? '';
@@ -2337,7 +2406,7 @@ class GeneralLedgerController extends Controller
                 $itemSum += (float)$item->amount;
 
                 $transactions[] = [
-                    'created_at' => $sr->created_at,
+                    'created_at' => $item->created_at ?? $srSortAt,
                     'id' => $item->id,
                     'date' => $sr->entry_date ?: $sr->current_date,
                     'ref' => 'SRJ',
@@ -2358,7 +2427,7 @@ class GeneralLedgerController extends Controller
                     $descDisc .= ' (SR ' . $originalInv . ')';
                 }
                 $transactions[] = [
-                    'created_at' => $sr->created_at,
+                    'created_at' => $srSortAt,
                     'id' => $sr->id . '_disc',
                     'date' => $sr->entry_date ?: $sr->current_date,
                     'ref' => 'SRJ',
@@ -2617,7 +2686,7 @@ class GeneralLedgerController extends Controller
             ];
         }
 
-        $this->sortLedgerTransactions($transactions);
+        $this->sortLedgerDetailsByCreatedAt($transactions);
 
         return $transactions;
     }
