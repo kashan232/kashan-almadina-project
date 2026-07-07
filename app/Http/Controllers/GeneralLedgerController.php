@@ -2787,26 +2787,101 @@ class GeneralLedgerController extends Controller
                 ];
             }
         }
-        // 12. Claim Credit Notes (CIR)
+        // 12. Claim Credit Notes (CIR) - item-wise like PRJ
         $crnDateCol = $this->getDateColumn('claim_credit_notes');
         $crNotes = $this->ledgerQuery(\App\Models\ClaimCreditNote::class)->where('party_id', $id)
             ->where('party_type', $type == 'customer' ? 'customer' : 'vendor')
             ->where('status', 'Posted')
             ->whereBetween(DB::raw($crnDateCol), [$start, $end])
+            ->with(['items.product.brandRelation'])
             ->get();
         foreach ($crNotes as $crn) {
-            $transactions[] = [
-                'created_at' => $crn->created_at,
-                'id' => 'crn_' . $crn->id,
-                'date' => $crn->entry_date ?: substr((string)$crn->created_at, 0, 10),
-                'ref' => 'CIR',
-                'inv' => preg_replace('/[^0-9]/', '', $crn->voucher_no ?? '0'),
-                'desc' => 'CIR: ' . $crn->voucher_no,
-                'price' => 0, 'qty' => 0, 
-                'debit' => (float)$crn->net_total, 
-                'credit' => 0,
-                'priority' => 32
-            ];
+            $crnDate = $crn->date ?? $crn->entry_date ?? substr((string)$crn->created_at, 0, 10);
+            $crnInv = preg_replace('/[^0-9]/', '', $crn->voucher_no ?? '0');
+            $itemSum = 0;
+
+            foreach ($crn->items as $item) {
+                $brand = $item->product->brandRelation->name ?? '';
+                $qty = (float)$item->quantity;
+                $lineDebit = (float)($item->line_total ?? 0);
+                if ($lineDebit <= 0 && $qty > 0) {
+                    $lineDebit = max(0, (float)($item->amount ?? 0) - (float)($item->discount_amount ?? 0));
+                }
+                $price = ($qty > 0 && $lineDebit > 0) ? ($lineDebit / $qty) : (float)($item->price ?? 0);
+                $itemSum += $lineDebit;
+
+                $transactions[] = [
+                    'created_at' => $crn->created_at,
+                    'id' => 'crn_item_' . $item->id,
+                    'date' => $crnDate,
+                    'ref' => 'CIR',
+                    'inv' => $crnInv,
+                    'desc' => ($brand ? $brand . ' - ' : '') . ($item->product->name ?? 'Product'),
+                    'price' => $price,
+                    'qty' => $qty,
+                    'debit' => $lineDebit,
+                    'credit' => 0,
+                    'priority' => 32,
+                ];
+            }
+
+            $whtAmount = (float)($crn->wht_amount ?? 0);
+            if ($whtAmount > 0) {
+                $whtHeadName = 'WHT ' . ($crn->wht_percent ?? 0) . '%';
+                if (!empty($crn->wht_account_id)) {
+                    $whtAcc = $this->ledgerQuery(Account::class)->find($crn->wht_account_id);
+                    if ($whtAcc) {
+                        $whtHeadName = $whtAcc->title;
+                    }
+                }
+                $transactions[] = [
+                    'created_at' => $crn->created_at,
+                    'id' => 'crn_' . $crn->id . '_wht',
+                    'date' => $crnDate,
+                    'ref' => 'CIR',
+                    'inv' => $crnInv,
+                    'desc' => $whtHeadName,
+                    'price' => 0,
+                    'qty' => 0,
+                    'debit' => $whtAmount,
+                    'credit' => 0,
+                    'priority' => 33,
+                ];
+            }
+
+            $netTotal = (float)($crn->net_total ?? 0);
+            $postedSum = $itemSum + $whtAmount;
+
+            if ($crn->items->isEmpty()) {
+                $transactions[] = [
+                    'created_at' => $crn->created_at,
+                    'id' => 'crn_' . $crn->id,
+                    'date' => $crnDate,
+                    'ref' => 'CIR',
+                    'inv' => $crnInv,
+                    'desc' => 'CIR: ' . $crn->voucher_no,
+                    'price' => 0,
+                    'qty' => 0,
+                    'debit' => $netTotal,
+                    'credit' => 0,
+                    'priority' => 32,
+                ];
+            } elseif (abs($postedSum - $netTotal) > 0.01) {
+                $diff = $netTotal - $postedSum;
+                $transactions[] = [
+                    'created_at' => $crn->created_at,
+                    'id' => 'crn_' . $crn->id . '_adj',
+                    'date' => $crnDate,
+                    'ref' => 'CIR',
+                    'inv' => $crnInv,
+                    'desc' => 'Claim Credit Note Adjustment',
+                    'price' => 0,
+                    'qty' => 0,
+                    'debit' => $diff > 0 ? $diff : 0,
+                    'credit' => $diff < 0 ? abs($diff) : 0,
+                    'priority' => 34,
+                ];
+            }
         }
 
         $this->sortLedgerDetailsByCreatedAt($transactions);
