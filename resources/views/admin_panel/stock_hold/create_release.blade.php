@@ -454,7 +454,8 @@ $(document).ready(function() {
                 $('#warehouse_id').val(res.warehouse_id);
                 $('#itemRows').empty();
                 res.items.forEach(item => {
-                    addRow(item.product_id, item.item_name, item.sale_qty, item.hold_qty, item.hold_qty, item.hold_id || '');
+                    var remaining = item.remaining_qty ?? item.release_qty ?? item.hold_qty;
+                    addRow(item.product_id, item.item_name, item.sale_qty, item.hold_qty, remaining, item.hold_id || '');
                 });
             });
         }

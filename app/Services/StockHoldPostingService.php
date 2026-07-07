@@ -12,16 +12,14 @@ use App\Models\StockReleaseVoucher;
 use App\Models\WarehouseStock;
 
 /**
- * Client rule (Hold / Warehouse liability):
- * - Stock Hold:   Hold = Credit (liability ↑), Warehouse = Debit (liability ↑)
- * - Stock Release: Hold = Debit (liability ↓), Warehouse = Credit (liability ↓)
- *
- * Stock qty mirrors this: hold post increases physical + hold qty; release decreases physical.
+ * Simple hold / release stock flow:
+ * - Hold: reserve qty from warehouse (liability ↑), physical stock unchanged, available ↓
+ * - Release: deliver qty out (physical stock ↓, hold liability ↓)
  */
 class StockHoldPostingService
 {
     /**
-     * Hold post: Warehouse Debit (+physical), Hold Credit (+reserved qty).
+     * Hold post: reserve from warehouse — no physical stock increase.
      */
     public function applyHoldEffects(
         int $warehouseId,
@@ -35,7 +33,14 @@ class StockHoldPostingService
             return 0;
         }
 
-        $this->adjustStock($warehouseId, $productId, $holdQty);
+        $available = $this->availableQty($warehouseId, $productId, $excludeVoucherId);
+        if ($holdQty > $available + 0.0001) {
+            $productName = Product::find($productId)?->name ?? ('Product #' . $productId);
+            throw new \InvalidArgumentException(
+                'Insufficient warehouse stock for hold. '
+                . $productName . ': available ' . round($available, 2) . ', requested ' . round($holdQty, 2) . '.'
+            );
+        }
 
         return $this->applyHoldReservedIncrease(
             $productId,
@@ -47,7 +52,7 @@ class StockHoldPostingService
     }
 
     /**
-     * Release post: Warehouse Credit (-physical), Hold Debit (-reserved via release records).
+     * Release post: physical stock leaves warehouse; hold liability reduced via release records.
      */
     public function applyReleaseEffects(
         int $warehouseId,
@@ -296,6 +301,50 @@ class StockHoldPostingService
         $rate = (float) ($product?->latestPrice?->sale_net_amount ?? 0);
 
         return round($qty * $rate, 2);
+    }
+
+    public function physicalQty(int $warehouseId, int $productId): float
+    {
+        if ((int) $warehouseId === 0) {
+            return (float) (Product::find($productId)?->stock ?? 0);
+        }
+
+        return (float) (WarehouseStock::where('warehouse_id', $warehouseId)
+            ->where('product_id', $productId)
+            ->orderByRaw("CASE WHEN status = 'Posted' THEN 0 WHEN status IS NULL THEN 1 ELSE 2 END")
+            ->orderByDesc('id')
+            ->value('quantity') ?? 0);
+    }
+
+    public function reservedQty(int $warehouseId, int $productId, ?int $excludeVoucherId = null): float
+    {
+        $query = StockHold::withoutGlobalScopes()
+            ->withSum(StockHold::postedReleasesWithSum(), 'release_qty')
+            ->where('product_id', $productId)
+            ->where('warehouse_id', $warehouseId)
+            ->where(function ($q) {
+                $q->where('status', 0)->orWhereNull('status');
+            })
+            ->where(function ($q) {
+                $q->whereNull('stock_hold_voucher_id')
+                    ->orWhereHas('voucher', function ($v) {
+                        $v->where('status', 'Posted');
+                    });
+            });
+
+        if ($excludeVoucherId) {
+            $query->where(function ($q) use ($excludeVoucherId) {
+                $q->whereNull('stock_hold_voucher_id')
+                    ->orWhere('stock_hold_voucher_id', '!=', $excludeVoucherId);
+            });
+        }
+
+        return (float) $query->get()->sum(fn (StockHold $item) => $item->netHoldQtyForDisplay());
+    }
+
+    public function availableQty(int $warehouseId, int $productId, ?int $excludeVoucherId = null): float
+    {
+        return max(0, $this->physicalQty($warehouseId, $productId) - $this->reservedQty($warehouseId, $productId, $excludeVoucherId));
     }
 
     public function adjustStock(int $warehouseId, int $productId, float $qty): void

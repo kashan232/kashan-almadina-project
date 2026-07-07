@@ -395,11 +395,6 @@ class RollbackController extends Controller
 
         $posting = app(StockHoldPostingService::class);
         $hold->load('items');
-        foreach ($hold->items as $item) {
-            $wh = (int) ($item->warehouse_id ?? $hold->warehouse_id ?? 0);
-            $posting->adjustStock($wh, (int) $item->product_id, -(float) $item->hold_qty);
-        }
-
         $amount = $posting->computeHoldVoucherAmount($hold);
         $posting->reverseHoldAccounting($hold, $amount);
 
