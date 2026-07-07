@@ -804,8 +804,8 @@ class StockReportBuilder
                         $voucher,
                         $item
                     );
-                    // Hold reserves stock — no physical balance change on hold post.
-                    $this->addMovement((int) $item->product_id, $wh, $date, 'hold', $qty, 0, $ref, 'SH', $party, 0, 0, (int) ($voucher->id ?? 0));
+                    // Hold: warehouse +qty (reserve tracked separately in hold column).
+                    $this->addMovement((int) $item->product_id, $wh, $date, 'hold', $qty, $qty, $ref, 'SH', $party, 0, 0, (int) ($voucher->id ?? 0));
                 }
             });
     }

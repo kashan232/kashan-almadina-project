@@ -395,6 +395,17 @@ class RollbackController extends Controller
 
         $posting = app(StockHoldPostingService::class);
         $hold->load('items');
+
+        foreach ($hold->items as $item) {
+            $qty = (float) $item->hold_qty;
+            if ($qty <= 0) {
+                continue;
+            }
+            $wh = (int) ($item->warehouse_id ?? $hold->warehouse_id);
+            $posting->adjustStock($wh, (int) $item->product_id, -$qty);
+            $item->update(['status' => 1]);
+        }
+
         $hold->update(['status' => 'Unposted']);
         return back()->with('success', "Stock Hold #$invoiceNo set to Unposted.");
     }

@@ -323,7 +323,7 @@
 
                                             <td class="text-center total-col fs-6">
                                                 @php 
-                                                    $availableStock = ($physicalShopStock + $whSum); 
+                                                    $availableStock = ($physicalShopStock - $shopHoldSum + $whSum); 
                                                     $systemStock = $availableStock + $holdSum;
                                                 @endphp
                                                 {{ number_format($systemStock, 0) }}

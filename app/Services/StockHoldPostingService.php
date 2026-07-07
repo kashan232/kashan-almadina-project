@@ -10,14 +10,15 @@ use App\Models\StockReleaseVoucher;
 use App\Models\WarehouseStock;
 
 /**
- * Simple hold / release stock flow:
- * - Hold: reserve qty from warehouse (liability ↑), physical stock unchanged, available ↓
- * - Release: deliver qty out (physical stock ↓, hold liability ↓)
+ * Hold / release stock flow (Reserve + Warehouse move together):
+ * - Hold:   Reserve (Credit) +qty, Warehouse (Debit) +qty — liability and warehouse both increase
+ * - Release: Reserve (Debit) −qty, Warehouse (Credit) −qty — liability and warehouse both decrease
+ * - Available = physical warehouse − reserved hold (unchanged on hold; decreases on release)
  */
 class StockHoldPostingService
 {
     /**
-     * Hold post: reserve from warehouse — no physical stock increase.
+     * Hold post: increase reserve liability and warehouse physical stock by the same qty.
      */
     public function applyHoldEffects(
         int $warehouseId,
@@ -31,26 +32,23 @@ class StockHoldPostingService
             return 0;
         }
 
-        $available = $this->availableQty($warehouseId, $productId, $excludeVoucherId);
-        if ($holdQty > $available + 0.0001) {
-            $productName = Product::find($productId)?->name ?? ('Product #' . $productId);
-            throw new \InvalidArgumentException(
-                'Insufficient warehouse stock for hold. '
-                . $productName . ': available ' . round($available, 2) . ', requested ' . round($holdQty, 2) . '.'
-            );
-        }
-
-        return $this->applyHoldReservedIncrease(
+        $remaining = $this->applyHoldReservedIncrease(
             $productId,
             $holdQty,
             $partyType,
             $partyId,
             $excludeVoucherId
         );
+
+        if ($remaining > 0) {
+            $this->adjustStock($warehouseId, $productId, $remaining);
+        }
+
+        return $remaining;
     }
 
     /**
-     * Release post: physical stock leaves warehouse; hold liability reduced via release records.
+     * Release post: warehouse stock and hold liability both decrease.
      */
     public function applyReleaseEffects(
         int $warehouseId,
