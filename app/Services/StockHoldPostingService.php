@@ -2,8 +2,6 @@
 
 namespace App\Services;
 
-use App\Models\Account;
-use App\Models\JournalVoucher;
 use App\Models\Product;
 use App\Models\StockHold;
 use App\Models\StockHoldVoucher;
@@ -100,10 +98,8 @@ class StockHoldPostingService
         return (int) ($item->warehouse_id ?: $voucher->warehouse_id);
     }
 
-    public function applyReleaseVoucherPosting(StockReleaseVoucher $voucher): float
+    public function applyReleaseVoucherPosting(StockReleaseVoucher $voucher): void
     {
-        $totalAmount = 0.0;
-
         $items = StockRelease::withoutGlobalScopes()
             ->where('stock_release_voucher_id', $voucher->id)
             ->get();
@@ -136,171 +132,7 @@ class StockHoldPostingService
             );
 
             $item->update(['status' => 'Posted']);
-            $totalAmount += $this->lineAmount((int) $item->product_id, $releaseQty);
         }
-
-        $this->postReleaseAccounting($voucher, $totalAmount);
-
-        return $totalAmount;
-    }
-
-    public function postHoldAccounting(StockHoldVoucher $voucher, float $totalAmount): void
-    {
-        if ($totalAmount <= 0 || !$voucher->hold_account_id || !$voucher->warehouse_account_id) {
-            return;
-        }
-
-        $holdAccount = Account::find($voucher->hold_account_id);
-        $warehouseAccount = Account::find($voucher->warehouse_account_id);
-        if (!$holdAccount || !$warehouseAccount) {
-            return;
-        }
-
-        $jvid = 'SH-GL-' . ($voucher->voucher_no ?? $voucher->id);
-        if (JournalVoucher::withoutGlobalScopes()->where('jvid', $jvid)->exists()) {
-            return;
-        }
-
-        // Hold Credit (liability increase)
-        $holdAccount->opening_balance = ($holdAccount->opening_balance ?? 0) - $totalAmount;
-        $holdAccount->save();
-
-        // Warehouse Debit (liability increase)
-        $warehouseAccount->opening_balance = ($warehouseAccount->opening_balance ?? 0) + $totalAmount;
-        $warehouseAccount->save();
-
-        JournalVoucher::create([
-            'jvid' => $jvid,
-            'entry_date' => $voucher->date ?? now()->toDateString(),
-            'status' => 'posted',
-            'total_debit' => $totalAmount,
-            'total_credit' => $totalAmount,
-            'party_type' => json_encode([(string) ($warehouseAccount->head_id ?? ''), (string) ($holdAccount->head_id ?? '')]),
-            'party_id' => json_encode([$warehouseAccount->id, $holdAccount->id]),
-            'debit' => json_encode([$totalAmount, 0]),
-            'credit' => json_encode([0, $totalAmount]),
-            'remarks' => 'Stock Hold ' . ($voucher->display_no ?? $voucher->voucher_no),
-        ]);
-    }
-
-    public function postReleaseAccounting(StockReleaseVoucher $voucher, float $totalAmount): void
-    {
-        if ($totalAmount <= 0 || !$voucher->hold_account_id || !$voucher->warehouse_account_id) {
-            return;
-        }
-
-        $holdAccount = Account::find($voucher->hold_account_id);
-        $warehouseAccount = Account::find($voucher->warehouse_account_id);
-        if (!$holdAccount || !$warehouseAccount) {
-            return;
-        }
-
-        $jvid = 'SR-GL-' . ($voucher->voucher_no ?? $voucher->id);
-        if (JournalVoucher::withoutGlobalScopes()->where('jvid', $jvid)->exists()) {
-            return;
-        }
-
-        // Hold Debit (liability decrease)
-        $holdAccount->opening_balance = ($holdAccount->opening_balance ?? 0) + $totalAmount;
-        $holdAccount->save();
-
-        // Warehouse Credit (liability decrease)
-        $warehouseAccount->opening_balance = ($warehouseAccount->opening_balance ?? 0) - $totalAmount;
-        $warehouseAccount->save();
-
-        JournalVoucher::create([
-            'jvid' => $jvid,
-            'entry_date' => $voucher->date ?? now()->toDateString(),
-            'status' => 'posted',
-            'total_debit' => $totalAmount,
-            'total_credit' => $totalAmount,
-            'party_type' => json_encode([(string) ($holdAccount->head_id ?? ''), (string) ($warehouseAccount->head_id ?? '')]),
-            'party_id' => json_encode([$holdAccount->id, $warehouseAccount->id]),
-            'debit' => json_encode([$totalAmount, 0]),
-            'credit' => json_encode([0, $totalAmount]),
-            'remarks' => 'Stock Release ' . ($voucher->display_no ?? $voucher->voucher_no),
-        ]);
-    }
-
-    public function reverseHoldAccounting(StockHoldVoucher $voucher, float $totalAmount): void
-    {
-        if ($totalAmount <= 0 || !$voucher->hold_account_id || !$voucher->warehouse_account_id) {
-            return;
-        }
-
-        $holdAccount = Account::find($voucher->hold_account_id);
-        $warehouseAccount = Account::find($voucher->warehouse_account_id);
-        if (!$holdAccount || !$warehouseAccount) {
-            return;
-        }
-
-        $holdAccount->opening_balance = ($holdAccount->opening_balance ?? 0) + $totalAmount;
-        $holdAccount->save();
-        $warehouseAccount->opening_balance = ($warehouseAccount->opening_balance ?? 0) - $totalAmount;
-        $warehouseAccount->save();
-
-        JournalVoucher::withoutGlobalScopes()
-            ->where('jvid', 'SH-GL-' . ($voucher->voucher_no ?? $voucher->id))
-            ->delete();
-    }
-
-    public function reverseReleaseAccounting(StockReleaseVoucher $voucher, float $totalAmount): void
-    {
-        if ($totalAmount <= 0 || !$voucher->hold_account_id || !$voucher->warehouse_account_id) {
-            return;
-        }
-
-        $holdAccount = Account::find($voucher->hold_account_id);
-        $warehouseAccount = Account::find($voucher->warehouse_account_id);
-        if (!$holdAccount || !$warehouseAccount) {
-            return;
-        }
-
-        $holdAccount->opening_balance = ($holdAccount->opening_balance ?? 0) - $totalAmount;
-        $holdAccount->save();
-        $warehouseAccount->opening_balance = ($warehouseAccount->opening_balance ?? 0) + $totalAmount;
-        $warehouseAccount->save();
-
-        JournalVoucher::withoutGlobalScopes()
-            ->where('jvid', 'SR-GL-' . ($voucher->voucher_no ?? $voucher->id))
-            ->delete();
-    }
-
-    public function computeHoldVoucherAmount(StockHoldVoucher $voucher): float
-    {
-        $voucher->loadMissing('items');
-        $total = 0.0;
-        foreach ($voucher->items as $item) {
-            $total += $this->lineAmount((int) $item->product_id, (float) $item->hold_qty);
-        }
-
-        return $total;
-    }
-
-    public function computeReleaseVoucherAmount(StockReleaseVoucher $voucher): float
-    {
-        $items = StockRelease::withoutGlobalScopes()
-            ->where('stock_release_voucher_id', $voucher->id)
-            ->get();
-
-        $total = 0.0;
-        foreach ($items as $item) {
-            $total += $this->lineAmount((int) $item->product_id, (float) $item->release_qty);
-        }
-
-        return $total;
-    }
-
-    public function lineAmount(int $productId, float $qty): float
-    {
-        if ($qty <= 0) {
-            return 0.0;
-        }
-
-        $product = Product::with('latestPrice')->find($productId);
-        $rate = (float) ($product?->latestPrice?->sale_net_amount ?? 0);
-
-        return round($qty * $rate, 2);
     }
 
     public function physicalQty(int $warehouseId, int $productId): float

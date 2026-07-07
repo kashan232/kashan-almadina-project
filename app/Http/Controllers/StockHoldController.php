@@ -12,7 +12,6 @@ use App\Models\StockRelease;
 use App\Models\Warehouse;
 use App\Models\Vendor;
 use App\Models\Customer;
-use App\Models\AccountHead;
 use App\Models\Product;
 use App\Models\Sale;
 use App\Models\Stock;
@@ -77,34 +76,15 @@ class StockHoldController extends Controller
 
         $warehouses = Warehouse::orderBy('warehouse_name')->get();
         $products = Product::select('id', 'name')->orderBy('name')->get();
-        $accountHeads = AccountHead::with('accounts')->orderBy('name')->get();
-
-        return compact('voucher', 'warehouses', 'products', 'viewMode', 'accountHeads');
+        return compact('voucher', 'warehouses', 'products', 'viewMode');
     }
 
     public function create()
     {
         $warehouses = Warehouse::orderBy('warehouse_name')->get();
         $products = Product::select('id', 'name')->orderBy('name')->get();
-        $accountHeads = AccountHead::with('accounts')->orderBy('name')->get();
 
-        return view('admin_panel.stock_hold.create_stock_hold', compact('warehouses', 'products', 'accountHeads'));
-    }
-
-    private function syncHoldAccountFields(StockHoldVoucher $voucher, Request $request): void
-    {
-        $voucher->hold_account_head_id = $request->hold_account_head_id ?: null;
-        $voucher->hold_account_id = $request->hold_account_id ?: null;
-        $voucher->warehouse_account_head_id = $request->warehouse_account_head_id ?: null;
-        $voucher->warehouse_account_id = $request->warehouse_account_id ?: null;
-    }
-
-    private function syncReleaseAccountFields(\App\Models\StockReleaseVoucher $voucher, Request $request): void
-    {
-        $voucher->hold_account_head_id = $request->hold_account_head_id ?: null;
-        $voucher->hold_account_id = $request->hold_account_id ?: null;
-        $voucher->warehouse_account_head_id = $request->warehouse_account_head_id ?: null;
-        $voucher->warehouse_account_id = $request->warehouse_account_id ?: null;
+        return view('admin_panel.stock_hold.create_stock_hold', compact('warehouses', 'products'));
     }
 
     public function partyList(Request $request)
@@ -227,7 +207,6 @@ class StockHoldController extends Controller
             $voucher->hold_type    = $request->hold_type ?? 'hold';
             $voucher->remarks      = $request->remarks;
             $voucher->status       = $status;
-            $this->syncHoldAccountFields($voucher, $request);
             $voucher->save();
 
             if ($voucherId) {
@@ -269,7 +248,6 @@ class StockHoldController extends Controller
 
             if ($status === 'Posted') {
                 $voucher->refresh()->load('items');
-                $this->posting->postHoldAccounting($voucher, $this->posting->computeHoldVoucherAmount($voucher));
             }
 
             DB::commit();
@@ -419,7 +397,6 @@ class StockHoldController extends Controller
 
             $voucher->update(['status' => 'Posted']);
             $voucher->refresh()->load('items');
-            $this->posting->postHoldAccounting($voucher, $this->posting->computeHoldVoucherAmount($voucher));
 
             DB::commit();
         } catch (\Exception $e) {
@@ -595,9 +572,7 @@ class StockHoldController extends Controller
     public function createRelease()
     {
         $warehouses = Warehouse::orderBy('warehouse_name')->get();
-        $accountHeads = AccountHead::with('accounts')->orderBy('name')->get();
-
-        return view('admin_panel.stock_hold.create_release', compact('warehouses', 'accountHeads'));
+        return view('admin_panel.stock_hold.create_release', compact('warehouses'));
     }
 
     public function holdVoucherList(Request $request)
@@ -759,8 +734,6 @@ class StockHoldController extends Controller
                 'remarks'         => $request->remarks,
                 'status'          => 'Unposted',
             ]);
-            $this->syncReleaseAccountFields($voucher, $request);
-            $voucher->save();
 
             foreach ($request->product_id as $index => $pid) {
                 $releaseQty = (float)($request->release_qty[$index] ?? 0);
@@ -914,9 +887,7 @@ class StockHoldController extends Controller
         }
 
         $warehouses = Warehouse::orderBy('warehouse_name')->get();
-        $accountHeads = AccountHead::with('accounts')->orderBy('name')->get();
-
-        return view('admin_panel.stock_hold.edit_release', compact('voucher', 'warehouses', 'accountHeads'));
+        return view('admin_panel.stock_hold.edit_release', compact('voucher', 'warehouses'));
     }
 
     public function showRelease($id)
@@ -931,10 +902,9 @@ class StockHoldController extends Controller
         ])->findOrFail($id);
 
         $warehouses = Warehouse::orderBy('warehouse_name')->get();
-        $accountHeads = AccountHead::with('accounts')->orderBy('name')->get();
         $viewMode = true;
 
-        return view('admin_panel.stock_hold.edit_release', compact('voucher', 'warehouses', 'accountHeads', 'viewMode'));
+        return view('admin_panel.stock_hold.edit_release', compact('voucher', 'warehouses', 'viewMode'));
     }
 
     public function updateRelease(Request $request, $id)
@@ -978,8 +948,6 @@ class StockHoldController extends Controller
                 'remarks'         => $request->remarks,
                 'status'          => 'Unposted',
             ]);
-            $this->syncReleaseAccountFields($voucher, $request);
-            $voucher->save();
 
             $voucher->load('items');
             $existingHoldIds = $voucher->items->pluck('hold_id', 'product_id');

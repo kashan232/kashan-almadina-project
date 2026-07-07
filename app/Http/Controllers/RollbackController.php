@@ -395,9 +395,6 @@ class RollbackController extends Controller
 
         $posting = app(StockHoldPostingService::class);
         $hold->load('items');
-        $amount = $posting->computeHoldVoucherAmount($hold);
-        $posting->reverseHoldAccounting($hold, $amount);
-
         $hold->update(['status' => 'Unposted']);
         return back()->with('success', "Stock Hold #$invoiceNo set to Unposted.");
     }
@@ -426,9 +423,6 @@ class RollbackController extends Controller
 
             $item->update(['status' => 'Unposted']);
         }
-
-        $amount = $posting->computeReleaseVoucherAmount($rel);
-        $posting->reverseReleaseAccounting($rel, $amount);
 
         $rel->update(['status' => 'Unposted']);
         return back()->with('success', "Stock Release #$invoiceNo set to Unposted.");
