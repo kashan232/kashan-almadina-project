@@ -10,6 +10,7 @@ use App\Models\Product;
 use App\Models\Warehouse;
 use App\Models\Vendor;
 use App\Models\Customer;
+use App\Models\AccountHead;
 use App\Models\WarehouseStock;
 use App\Models\VendorLedger;
 use App\Models\CustomerLedger;
@@ -41,26 +42,29 @@ class ClaimCreditNoteController extends Controller
     {
         $voucherNo = ClaimCreditNote::generateVoucherNo();
         $warehouses = Warehouse::orderBy('warehouse_name')->get();
-        return view('admin_panel.claim_credit_note.create', compact('voucherNo', 'warehouses'));
+        $AccountHeads = AccountHead::where('status', 1)->get();
+        return view('admin_panel.claim_credit_note.create', compact('voucherNo', 'warehouses', 'AccountHeads'));
     }
 
     public function edit($id)
     {
-        $voucher = ClaimCreditNote::with('items.product')->findOrFail($id);
+        $voucher = ClaimCreditNote::with(['items.product', 'whtAccount'])->findOrFail($id);
         if ($voucher->status === 'Posted') {
             return redirect()->route('claim-credit-note.index')->with('error', 'Posted vouchers cannot be edited.');
         }
         $warehouses = Warehouse::orderBy('warehouse_name')->get();
-        return view('admin_panel.claim_credit_note.create', compact('voucher', 'warehouses'));
+        $AccountHeads = AccountHead::where('status', 1)->get();
+        return view('admin_panel.claim_credit_note.create', compact('voucher', 'warehouses', 'AccountHeads'));
     }
 
     public function show($id)
     {
-        $voucher = ClaimCreditNote::with(['items.product.brandRelation', 'vendor', 'customer'])->findOrFail($id);
+        $voucher = ClaimCreditNote::with(['items.product.brandRelation', 'vendor', 'customer', 'whtAccount'])->findOrFail($id);
         $warehouses = Warehouse::orderBy('warehouse_name')->get();
+        $AccountHeads = AccountHead::where('status', 1)->get();
         $viewMode = true;
 
-        return view('admin_panel.claim_credit_note.create', compact('voucher', 'warehouses', 'viewMode'));
+        return view('admin_panel.claim_credit_note.create', compact('voucher', 'warehouses', 'AccountHeads', 'viewMode'));
     }
 
     public function fetchByBTR(Request $request)

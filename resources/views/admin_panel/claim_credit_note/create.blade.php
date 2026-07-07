@@ -247,15 +247,34 @@
                                     <span id="txtTotalDisc" class="fw-bold text-danger">0.00</span>
                                     <input type="hidden" name="total_discount" id="total_discount">
                                 </div>
-                                <div class="row g-2 mb-2 align-items-center">
-                                    <div class="col-6">
-                                        <span class="text-muted fw-bold">WHT (%) / Amount:</span>
-                                    </div>
-                                    <div class="col-3">
-                                        <input type="number" name="wht_percent" id="wht_percent" class="form-control form-control-sm text-center" value="{{ $voucher->wht_percent ?? 0 }}" step="any">
-                                    </div>
-                                    <div class="col-3">
-                                        <input type="number" name="wht_amount" id="wht_amount" class="form-control form-control-sm text-center bg-light" value="{{ $voucher->wht_amount ?? 0 }}" readonly>
+                                <div class="d-flex justify-content-between align-items-center py-1 border-bottom px-1 mb-2">
+                                    <span class="text-muted fw-bold">WHT (Tax):</span>
+                                    <div class="d-flex align-items-center gap-2 flex-wrap justify-content-end">
+                                        <div class="d-flex gap-1" style="width:190px;">
+                                            <select id="wht_head_id" class="form-select form-select-sm py-0" style="width:80px;">
+                                                <option value="">Head</option>
+                                                @foreach(($AccountHeads ?? []) as $head)
+                                                    <option value="{{ $head->id }}" {{ (isset($voucher) && $voucher->whtAccount && $voucher->whtAccount->head_id == $head->id) ? 'selected' : '' }}>
+                                                        {{ $head->name }}
+                                                    </option>
+                                                @endforeach
+                                            </select>
+                                            <select name="wht_account_id" id="wht_account_id" class="form-select form-select-sm py-0" style="flex-grow:1;">
+                                                <option value="">Account</option>
+                                                @if(isset($voucher) && $voucher->whtAccount)
+                                                    <option value="{{ $voucher->wht_account_id }}" selected>{{ $voucher->whtAccount->title }}</option>
+                                                @endif
+                                            </select>
+                                        </div>
+                                        <div class="d-flex align-items-center gap-1">
+                                            @php $whtType = old('wht_type', $voucher->wht_type ?? 'percent'); @endphp
+                                            <input type="number" step="0.01" name="wht_percent" id="wht_percent" class="form-control form-control-sm text-end py-0" placeholder="Val" value="{{ $voucher->wht_percent ?? 0 }}" style="width:60px">
+                                            <select id="wht_type" name="wht_type" class="form-select form-select-sm py-0" style="width:60px;">
+                                                <option value="percent" {{ $whtType == 'percent' ? 'selected' : '' }}>%</option>
+                                                <option value="amount" {{ $whtType == 'amount' ? 'selected' : '' }}>PKR</option>
+                                            </select>
+                                        </div>
+                                        <input type="text" name="wht_amount" id="wht_amount" class="form-control form-control-sm text-end bg-light" value="{{ $voucher->wht_amount ?? 0 }}" readonly style="width:80px;">
                                     </div>
                                 </div>
                                 <hr class="my-2">
@@ -377,6 +396,34 @@ $(document).ready(function() {
 
     $(document).on('click', '.remove-row', function() { $(this).closest('tr').remove(); calculate(); });
     $(document).on('input', '.line-input, #wht_percent', calculate);
+    $(document).on('change', '#wht_type', calculate);
+
+    $(document).on('change', '#wht_head_id', function() {
+        var headId = $(this).val();
+        var $accSelect = $('#wht_account_id');
+        var selectedAcc = $accSelect.data('selected') || $accSelect.val();
+
+        if (!headId) {
+            $accSelect.html('<option value="">Account</option>');
+            return;
+        }
+
+        $.ajax({
+            url: "{{ url('/get-accounts-by-head') }}/" + headId,
+            type: 'GET',
+            success: function(res) {
+                var html = '<option value="">Account</option>';
+                if (res && res.length) {
+                    res.forEach(function(acc) {
+                        html += '<option value="' + acc.id + '"' + (String(acc.id) === String(selectedAcc) ? ' selected' : '') + '>' + acc.title + '</option>';
+                    });
+                } else {
+                    html = '<option value="">No Accounts</option>';
+                }
+                $accSelect.html(html);
+            }
+        });
+    });
 
     function calculate() {
         let subtotal = 0;
@@ -407,8 +454,9 @@ $(document).ready(function() {
         });
 
         let whtPct = parseFloat($('#wht_percent').val()) || 0;
+        let whtType = $('#wht_type').val() || 'percent';
         let netBeforeWHT = subtotal - totalDisc;
-        let whtAmt = (netBeforeWHT * whtPct) / 100;
+        let whtAmt = whtType === 'percent' ? (netBeforeWHT * whtPct) / 100 : whtPct;
         let finalNet = netBeforeWHT + whtAmt;
 
         $('#txtSubtotal').text(subtotal.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2}));
@@ -421,6 +469,11 @@ $(document).ready(function() {
         $('#net_total').val(finalNet.toFixed(2));
     }
     calculate();
+
+    if ($('#wht_head_id').val() && !isViewMode) {
+        $('#wht_account_id').data('selected', $('#wht_account_id').val());
+        $('#wht_head_id').trigger('change');
+    }
 
     function save(act) {
         $('#formAction').val(act);

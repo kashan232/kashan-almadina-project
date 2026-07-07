@@ -44,6 +44,11 @@ class ClaimCreditNote extends Model
         return $this->belongsTo(User::class, 'created_by');
     }
 
+    public function whtAccount()
+    {
+        return $this->belongsTo(Account::class, 'wht_account_id');
+    }
+
     public function partyName(): string
     {
         if ($this->party_type === 'vendor') {
