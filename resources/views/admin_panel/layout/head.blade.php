@@ -67,6 +67,9 @@
          -moz-appearance: textfield;
      }
  </style>
+@if(request()->is('reports*') || request()->is('general-ledger*'))
+@include('admin_panel.reports.partials.report_global_zoom')
+@endif
  <meta charset="UTF-8">
  <meta http-equiv="x-ua-compatible" content="ie=edge">
  <meta name="viewport" content="width=device-width, initial-scale=1">

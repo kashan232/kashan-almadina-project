@@ -1,3 +1,4 @@
+@include('admin_panel.reports.partials.report_global_zoom')
 <style>
     @page { size: A4 landscape; margin: 5mm; }
     body {

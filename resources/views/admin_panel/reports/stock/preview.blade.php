@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    @include('admin_panel.reports.partials.report_global_zoom')
     <meta charset="UTF-8">
     <title>Stock Report — Without Values</title>
     <style>
