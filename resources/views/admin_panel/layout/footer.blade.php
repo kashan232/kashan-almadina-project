@@ -31,6 +31,7 @@
 
     <script src="{{ asset('assets/js/home.js') }}"></script>
     <script src="{{ asset('assets/js/main.js') }}"></script>
+    <script src="{{ asset('assets/js/form-guard.js') }}"></script>
 
     <script>
         $('#sidebar').slimScroll({
