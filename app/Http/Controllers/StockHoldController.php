@@ -64,6 +64,18 @@ class StockHoldController extends Controller
         ])->findOrFail($id);
     }
 
+    private function holdFormViewData(int $id, bool $viewMode = false): array
+    {
+        $voucher = $viewMode
+            ? $this->loadHoldVoucherWithDisplayQty($id)
+            : StockHoldVoucher::with(['items.product', 'sale', 'partyCustomer', 'partyVendor', 'warehouse'])->findOrFail($id);
+
+        $warehouses = Warehouse::orderBy('warehouse_name')->get();
+        $products = Product::select('id', 'name')->orderBy('name')->get();
+
+        return compact('voucher', 'warehouses', 'products', 'viewMode');
+    }
+
     public function create()
     {
         $warehouses = Warehouse::orderBy('warehouse_name')->get();
@@ -255,23 +267,81 @@ class StockHoldController extends Controller
 
     public function edit($id)
     {
-        $voucher = StockHoldVoucher::with('items.product')->findOrFail($id);
+        $voucher = StockHoldVoucher::findOrFail($id);
         if ($voucher->status === 'Posted') {
-            return redirect()->route('stock-hold-list')->with('error', 'Posted holds cannot be edited.');
+            return redirect()->route('stock-holds.view', $id);
         }
-        $warehouses = Warehouse::orderBy('warehouse_name')->get();
-        $products = Product::select('id', 'name')->orderBy('name')->get();
-        return view('admin_panel.stock_hold.edit_stock_hold', compact('voucher', 'warehouses', 'products'));
+
+        $viewMode = false;
+
+        return view('admin_panel.stock_hold.create_stock_hold', $this->holdFormViewData($id, false));
     }
 
     public function showHold($id)
     {
-        $voucher = $this->loadHoldVoucherWithDisplayQty($id);
-        $warehouses = Warehouse::orderBy('warehouse_name')->get();
-        $products = Product::select('id', 'name')->orderBy('name')->get();
         $viewMode = true;
 
-        return view('admin_panel.stock_hold.edit_stock_hold', compact('voucher', 'warehouses', 'products', 'viewMode'));
+        return view('admin_panel.stock_hold.create_stock_hold', $this->holdFormViewData($id, true));
+    }
+
+    public function destroy($id)
+    {
+        try {
+            DB::beginTransaction();
+
+            $voucher = StockHoldVoucher::with('items')->findOrFail($id);
+
+            if ($voucher->status === 'Posted') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Posted stock holds cannot be deleted.',
+                ], 422);
+            }
+
+            $hasPostedReleases = \App\Models\StockReleaseVoucher::withoutGlobalScopes()
+                ->where('hold_voucher_id', $voucher->id)
+                ->where('status', 'Posted')
+                ->exists();
+
+            if ($hasPostedReleases) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Cannot delete — posted release exists against this hold.',
+                ], 422);
+            }
+
+            $draftReleases = \App\Models\StockReleaseVoucher::withoutGlobalScopes()
+                ->where('hold_voucher_id', $voucher->id)
+                ->where('status', '!=', 'Posted')
+                ->get();
+
+            foreach ($draftReleases as $releaseVoucher) {
+                $releaseVoucher->items()->delete();
+                $releaseVoucher->delete();
+            }
+
+            $voucher->items()->delete();
+            $voucher->delete();
+
+            DB::commit();
+
+            if (request()->ajax() || request()->wantsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Stock hold deleted successfully.',
+                ]);
+            }
+
+            return redirect()->route('stock-hold-list')->with('success', 'Stock hold deleted successfully.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            if (request()->ajax() || request()->wantsJson()) {
+                return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+            }
+
+            return back()->with('error', $e->getMessage());
+        }
     }
 
     public function update(Request $request, $id)

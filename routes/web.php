@@ -445,6 +445,7 @@ Route::middleware('auth')->group(function () {
     Route::post('stock-holds/store', [StockHoldController::class, 'store'])->name('stock-holds.store');
     Route::get('/stock-holds/edit/{id}', [StockHoldController::class, 'edit'])->name('stock-holds.edit');
     Route::post('/stock-holds/update/{id}', [StockHoldController::class, 'update'])->name('stock-holds.update');
+    Route::post('/stock-holds/delete/{id}', [StockHoldController::class, 'destroy'])->name('stock-holds.destroy');
     Route::post('/stock-holds/post/{id}', [StockHoldController::class, 'post'])->name('stock-holds.post');
     Route::post('stock-holds/claim/invoice/{invoice}', [StockHoldController::class, 'claimByInvoice'])->name('stock-holds.claim.invoice');
     Route::post('stock-holds/claim/item', [StockHoldController::class, 'claimItem'])->name('stock-holds.claim.item');
