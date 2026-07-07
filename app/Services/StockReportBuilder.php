@@ -727,13 +727,7 @@ class StockReportBuilder
             $query->where('warehouse_id', $warehouseId);
         }
 
-        return (float) $query->get()->sum(function (StockHold $item) {
-            if ($item->isFormalHoldLine()) {
-                return $item->remainingHoldQty();
-            }
-
-            return (float) $item->hold_qty;
-        });
+        return (float) $query->get()->sum(fn (StockHold $item) => $item->netHoldQtyForDisplay());
     }
 
     private function currentHoldQtyForWarehouses(int $productId, array $warehouseIds): float

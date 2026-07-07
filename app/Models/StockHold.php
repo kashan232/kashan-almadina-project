@@ -105,11 +105,11 @@ class StockHold extends Model
         return $voucher && strtolower((string) ($voucher->status ?? '')) === 'posted';
     }
 
-    /** Qty counted against available stock (remaining on formal hold lines). */
+    /** Net reserve qty for balances (negative = over-released → shows + in Total Reserved). */
     public function netHoldQtyForDisplay(): float
     {
         if ($this->isFormalHoldLine()) {
-            return $this->remainingHoldQty();
+            return (float) $this->hold_qty - $this->postedReleaseQty();
         }
 
         return (float) $this->hold_qty;

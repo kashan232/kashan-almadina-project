@@ -210,16 +210,7 @@ class StockHoldPostingService
 
     public function assertReleaseQtyAllowed(?StockHold $hold, float $releaseQty): void
     {
-        if (!$hold || !$hold->isFormalHoldLine()) {
-            return;
-        }
-
-        $remaining = $hold->remainingHoldQty();
-        if ($releaseQty > $remaining + 0.0001) {
-            throw new \InvalidArgumentException(
-                'Release qty (' . $releaseQty . ') exceeds remaining hold qty (' . $remaining . ') for this hold line.'
-            );
-        }
+        // Over-release allowed — excess shows as positive in Total Reserved.
     }
 
     private function applyHoldReservedIncrease(

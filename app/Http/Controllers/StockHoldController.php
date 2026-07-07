@@ -597,10 +597,6 @@ class StockHoldController extends Controller
             })
             ->latest()
             ->get()
-            ->filter(function ($voucher) {
-                return $voucher->items->contains(fn ($item) => $item->remainingHoldQty() > 0);
-            })
-            ->values()
             ->map(fn($v) => ['id' => 'hold:' . $v->id, 'text' => 'Hold: ' . $v->display_no . ' (Date: ' . $v->date . ')']);
 
         if ($includeHoldId) {
@@ -669,13 +665,6 @@ class StockHoldController extends Controller
             'warehouse_id' => $voucher->warehouse_id,
             'warehouse_name' => ($voucher->warehouse_id == 0) ? 'Shop' : ($voucher->warehouse->warehouse_name ?? '-'),
             'items' => $voucher->items
-                ->filter(function ($it) use ($releaseByHoldId) {
-                    if ($releaseByHoldId->has($it->id)) {
-                        return true;
-                    }
-
-                    return $it->remainingHoldQty() > 0;
-                })
                 ->map(function ($it) use ($releaseByHoldId) {
                     $releaseLine = $releaseByHoldId->get($it->id);
 
@@ -817,14 +806,14 @@ class StockHoldController extends Controller
 
         if ($releaseType === 'claim' && $claimId) {
             $hold = (clone $query)->where('meta->claim_id', (string) $claimId)->first();
-            if ($hold && $hold->remainingHoldQty() > 0) {
+            if ($hold) {
                 return $hold;
             }
         }
 
         if ($holdVoucherId) {
             $hold = (clone $query)->where('stock_hold_voucher_id', $holdVoucherId)->first();
-            if ($hold && $hold->remainingHoldQty() > 0) {
+            if ($hold) {
                 return $hold;
             }
         }
@@ -834,8 +823,7 @@ class StockHoldController extends Controller
                 ->where('party_type', $request->vendor_type)
                 ->where('party_id', $request->vendor_id)
                 ->orderByDesc('id')
-                ->get()
-                ->first(fn ($row) => $row->remainingHoldQty() > 0);
+                ->first();
 
             if ($hold) {
                 return $hold;
@@ -857,7 +845,7 @@ class StockHoldController extends Controller
             $hold = StockHold::withoutGlobalScopes()
                 ->withSum(StockHold::postedReleasesWithSum(), 'release_qty')
                 ->find($explicitHoldId);
-            if ($hold && (int) $hold->product_id === $productId && $hold->remainingHoldQty() > 0) {
+            if ($hold && (int) $hold->product_id === $productId) {
                 return $hold;
             }
         }
