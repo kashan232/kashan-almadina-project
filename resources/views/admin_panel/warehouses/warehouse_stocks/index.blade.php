@@ -263,11 +263,11 @@
                                 <tbody>
                                     @foreach($products as $product)
                                         @php
-                                            $shopHoldSum = (float) $product->stockHolds->where('warehouse_id', 0)->sum('hold_qty');
+                                            $shopHoldSum = (float) $product->stockHolds->where('warehouse_id', 0)->sum(fn($h) => $h->netHoldQtyForDisplay());
                                             $shopStock = (float)$product->stock - $shopHoldSum;
                                             $whSum = 0;
                                             $physicalWhSum = 0;
-                                            $holdSum = (float) $product->stockHolds->sum('hold_qty');
+                                            $holdSum = (float) $product->stockHolds->sum(fn($h) => $h->netHoldQtyForDisplay());
                                         @endphp
                                         <tr>
                                             <td class="text-muted small">#{{ $product->id }}</td>
@@ -294,7 +294,7 @@
                                                         ->where('warehouse_id', $wh->id)
                                                         ->sum('quantity');
                                                     
-                                                    $whHoldSum = (float) $product->stockHolds->where('warehouse_id', $wh->id)->sum('hold_qty');
+                                                    $whHoldSum = (float) $product->stockHolds->where('warehouse_id', $wh->id)->sum(fn($h) => $h->netHoldQtyForDisplay());
                                                     $availableQty = $physicalQty - $whHoldSum;
 
                                                     $whSum += $availableQty;

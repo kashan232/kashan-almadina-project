@@ -138,6 +138,46 @@
                                 <input type="text" name="remarks" class="form-control input-sm" value="{{ $voucher->remarks }}" placeholder="Optional release notes...">
                             </div>
                         </div>
+                        <div class="row g-2 mt-1">
+                            <div class="col-md-3">
+                                <label class="form-label small fw-bold">Hold Account Head</label>
+                                <select name="hold_account_head_id" id="hold_account_head_id" class="form-select select2 input-sm">
+                                    <option value="">Select Head</option>
+                                    @foreach(($accountHeads ?? []) as $head)
+                                        <option value="{{ $head->id }}" @selected((string)$voucher->hold_account_head_id === (string)$head->id)>{{ $head->name }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label small fw-bold">Hold Account</label>
+                                <select name="hold_account_id" id="hold_account_id" class="form-select select2 input-sm">
+                                    <option value="">Select Account</option>
+                                    @if($voucher->hold_account_id)
+                                        @php $holdAcc = \App\Models\Account::find($voucher->hold_account_id); @endphp
+                                        @if($holdAcc)<option value="{{ $holdAcc->id }}" selected>{{ $holdAcc->title }}</option>@endif
+                                    @endif
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label small fw-bold">Warehouse Account Head</label>
+                                <select name="warehouse_account_head_id" id="warehouse_account_head_id" class="form-select select2 input-sm">
+                                    <option value="">Select Head</option>
+                                    @foreach(($accountHeads ?? []) as $head)
+                                        <option value="{{ $head->id }}" @selected((string)$voucher->warehouse_account_head_id === (string)$head->id)>{{ $head->name }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label small fw-bold">Warehouse Account</label>
+                                <select name="warehouse_account_id" id="warehouse_account_id" class="form-select select2 input-sm">
+                                    <option value="">Select Account</option>
+                                    @if($voucher->warehouse_account_id)
+                                        @php $whAcc = \App\Models\Account::find($voucher->warehouse_account_id); @endphp
+                                        @if($whAcc)<option value="{{ $whAcc->id }}" selected>{{ $whAcc->title }}</option>@endif
+                                    @endif
+                                </select>
+                            </div>
+                        </div>
 
                         <div class="row g-2 align-items-end">
                             <div class="col-md-2">
@@ -292,6 +332,27 @@ $(document).ready(function() {
     var postBtnHtml = '<u>P</u>ost <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+&crarr;</kbd>';
     var _selectedPartyName = @json($partyName);
     var isViewMode = @json($isViewMode);
+
+    $('.select2').select2({ width: '100%' });
+    var accountHeadsData = @json(collect($accountHeads ?? [])->map(fn($h) => [
+        'id' => $h->id,
+        'accounts' => $h->accounts->map(fn($a) => ['id' => $a->id, 'title' => $a->title])->values(),
+    ])->values());
+    function fillAccountSelect(headId, $accSelect, selectedId) {
+        $accSelect.empty().append('<option value="">Select Account</option>');
+        var head = accountHeadsData.find(function(h) { return String(h.id) === String(headId); });
+        if (head && head.accounts) {
+            head.accounts.forEach(function(a) {
+                var sel = String(selectedId || '') === String(a.id) ? ' selected' : '';
+                $accSelect.append('<option value="' + a.id + '"' + sel + '>' + a.title + '</option>');
+            });
+        }
+        $accSelect.trigger('change.select2');
+    }
+    $('#hold_account_head_id').on('change', function() { if (!isViewMode) fillAccountSelect($(this).val(), $('#hold_account_id'), null); });
+    $('#warehouse_account_head_id').on('change', function() { if (!isViewMode) fillAccountSelect($(this).val(), $('#warehouse_account_id'), null); });
+    if ($('#hold_account_head_id').val()) fillAccountSelect($('#hold_account_head_id').val(), $('#hold_account_id'), @json($voucher->hold_account_id));
+    if ($('#warehouse_account_head_id').val()) fillAccountSelect($('#warehouse_account_head_id').val(), $('#warehouse_account_id'), @json($voucher->warehouse_account_id));
 
     function setReleaseFormPostedState(voucherId, printUrl) {
         $('#stockReleaseForm').addClass('form-locked view-mode');

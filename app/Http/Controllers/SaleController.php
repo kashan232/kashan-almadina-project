@@ -18,6 +18,7 @@ use App\Models\WarehouseStock;
 use App\Models\Voucher;
 use App\Models\ReceiptsVoucher;
 use App\Services\PartyLedgerService;
+use App\Services\StockHoldPostingService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -584,13 +585,15 @@ class SaleController extends Controller
                 if ($sale->is_sale_order) {
                     $holdVoucher = \App\Models\StockHoldVoucher::where('sale_id', $sale->id)->first();
                     if (!$holdVoucher) {
+                        $firstWh = (int) ($booking->items->first()->warehouse_id ?? 0);
                         $holdVoucher = \App\Models\StockHoldVoucher::create([
                             'sale_id' => $sale->id,
                             'voucher_no' => \App\Models\StockHoldVoucher::generateVoucherNo(),
                             'party_type' => $sale->partyType,
                             'party_id' => $sale->customer_id,
+                            'warehouse_id' => $firstWh,
                             'date' => now(),
-                            'status' => 'Posted', // Automate posting for auto-holds
+                            'status' => 'Posted',
                             'remarks' => 'Auto-Hold from Sale Order #' . $sale->invoice_no,
                         ]);
                     } else {
@@ -598,6 +601,8 @@ class SaleController extends Controller
                         $holdVoucher = null; 
                     }
                 }
+
+                $holdPosting = app(StockHoldPostingService::class);
 
                 foreach ($booking->items as $it) {
                     if (!$it) continue;
@@ -627,7 +632,17 @@ class SaleController extends Controller
                             }
                         }
                     } elseif ($holdVoucher) {
-                        // Create Stock Hold Record (Only if we created/found a voucher just now)
+                        $effectiveQty = $holdPosting->applyHoldEffects(
+                            (int) $it->warehouse_id,
+                            (int) $it->product_id,
+                            $salesQty,
+                            $sale->partyType,
+                            (int) $sale->customer_id,
+                            (int) $holdVoucher->id
+                        );
+                        if ($effectiveQty <= 0) {
+                            continue;
+                        }
                         \App\Models\StockHold::create([
                             'stock_hold_voucher_id' => $holdVoucher->id,
                             'sale_id' => $sale->id,
@@ -635,7 +650,7 @@ class SaleController extends Controller
                             'party_id' => $sale->customer_id,
                             'product_id' => $it->product_id,
                             'warehouse_id' => $it->warehouse_id,
-                            'hold_qty' => $salesQty,
+                            'hold_qty' => $effectiveQty,
                             'sale_qty' => $salesQty,
                             'entry_date' => now(),
                             'status' => 0,
@@ -740,19 +755,23 @@ class SaleController extends Controller
             if ($sale->is_sale_order) {
                 $holdVoucher = \App\Models\StockHoldVoucher::where('sale_id', $sale->id)->first();
                 if (!$holdVoucher) {
+                    $firstWh = (int) ($booking->items->first()->warehouse_id ?? 0);
                     $holdVoucher = \App\Models\StockHoldVoucher::create([
                         'sale_id' => $sale->id,
                         'voucher_no' => \App\Models\StockHoldVoucher::generateVoucherNo(),
                         'party_type' => $sale->partyType,
                         'party_id' => $sale->customer_id,
+                        'warehouse_id' => $firstWh,
                         'date' => now(),
-                        'status' => 'Posted', // Automate posting for auto-holds
+                        'status' => 'Posted',
                         'remarks' => 'Auto-Hold from Sale Order #' . $sale->invoice_no,
                     ]);
                 } else {
                     $holdVoucher = null; // Already exists
                 }
             }
+
+            $holdPosting = app(StockHoldPostingService::class);
 
             foreach ($booking->items as $it) {
                 $salesQty = (float)($it->sales_qty ?? 0);
@@ -773,7 +792,17 @@ class SaleController extends Controller
                         }
                     }
                 } elseif ($holdVoucher) {
-                    // Create Stock Hold Record (Only if we created/found a voucher just now)
+                    $effectiveQty = $holdPosting->applyHoldEffects(
+                        (int) $it->warehouse_id,
+                        (int) $it->product_id,
+                        $salesQty,
+                        $sale->partyType,
+                        (int) $sale->customer_id,
+                        (int) $holdVoucher->id
+                    );
+                    if ($effectiveQty <= 0) {
+                        continue;
+                    }
                     \App\Models\StockHold::create([
                         'stock_hold_voucher_id' => $holdVoucher->id,
                         'sale_id' => $sale->id,
@@ -781,10 +810,10 @@ class SaleController extends Controller
                         'party_id' => $sale->customer_id,
                         'product_id' => $it->product_id,
                         'warehouse_id' => $it->warehouse_id,
-                        'hold_qty' => $salesQty,
+                        'hold_qty' => $effectiveQty,
                         'sale_qty' => $salesQty,
                         'entry_date' => now(),
-                        'status' => 0, // 0 = Active Hold
+                        'status' => 0,
                     ]);
                 }
 

@@ -50,7 +50,8 @@ class WarehouseStockController extends Controller
         $products = Product::with([
             'warehouseStocks' => function($q) { $q->where('status', 'Posted'); },
             'stockHolds' => function($q) { 
-                $q->where('hold_qty', '!=', 0)
+                $q->withSum(\App\Models\StockHold::postedReleasesWithSum(), 'release_qty')
+                  ->where('hold_qty', '!=', 0)
                   ->where(function($query) {
                       $query->whereNull('stock_hold_voucher_id')
                             ->orWhereHas('voucher', function($v) {

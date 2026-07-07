@@ -105,6 +105,16 @@ class StockHold extends Model
         return $voucher && strtolower((string) ($voucher->status ?? '')) === 'posted';
     }
 
+    /** Qty counted against available stock (remaining on formal hold lines). */
+    public function netHoldQtyForDisplay(): float
+    {
+        if ($this->isFormalHoldLine()) {
+            return $this->remainingHoldQty();
+        }
+
+        return (float) $this->hold_qty;
+    }
+
     /** Original held qty shown on hold list / view (unchanged after release). */
     public function getDisplayHoldQtyAttribute(): float
     {

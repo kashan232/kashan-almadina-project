@@ -24,6 +24,7 @@ use App\Models\Voucher;
 use App\Models\Account;
 use App\Models\StockHold;
 use App\Models\StockHoldVoucher;
+use App\Services\StockHoldPostingService;
 use App\Models\StockRelease;
 use App\Models\StockTransfer;
 use App\Models\StockWastage;
@@ -392,10 +393,15 @@ class RollbackController extends Controller
         
         if ($hold->status !== 'Posted') throw new \Exception("Hold $invoiceNo is not Posted.");
 
+        $posting = app(StockHoldPostingService::class);
         $hold->load('items');
         foreach ($hold->items as $item) {
-            $this->adjustStock($item->product_id, $item->warehouse_id, $item->hold_qty, 'subtract');
+            $wh = (int) ($item->warehouse_id ?? $hold->warehouse_id ?? 0);
+            $posting->adjustStock($wh, (int) $item->product_id, -(float) $item->hold_qty);
         }
+
+        $amount = $posting->computeHoldVoucherAmount($hold);
+        $posting->reverseHoldAccounting($hold, $amount);
 
         $hold->update(['status' => 'Unposted']);
         return back()->with('success', "Stock Hold #$invoiceNo set to Unposted.");
@@ -410,21 +416,24 @@ class RollbackController extends Controller
         
         if ($rel->status !== 'Posted') throw new \Exception("Release $invoiceNo is not Posted.");
 
+        $posting = app(StockHoldPostingService::class);
         $rel->load('items.hold');
 
         foreach ($rel->items as $item) {
-            // 1. Add back physical stock that was deducted during release
-            $this->adjustStock($item->product_id, $item->warehouse_id, $item->release_qty, 'add');
+            $wh = $posting->resolveReleaseWarehouseId($rel, $item);
+            $posting->adjustStock($wh, (int) $item->product_id, (float) $item->release_qty);
 
-            // 2. Restore hold_qty in the original StockHold
-            if ($item->hold) {
+            if ($item->hold && !$item->hold->isFormalHoldLine()) {
                 $item->hold->hold_qty += $item->release_qty;
-                $item->hold->status = 0; // Set back to active hold
+                $item->hold->status = 0;
                 $item->hold->save();
             }
 
             $item->update(['status' => 'Unposted']);
         }
+
+        $amount = $posting->computeReleaseVoucherAmount($rel);
+        $posting->reverseReleaseAccounting($rel, $amount);
 
         $rel->update(['status' => 'Unposted']);
         return back()->with('success', "Stock Release #$invoiceNo set to Unposted.");
