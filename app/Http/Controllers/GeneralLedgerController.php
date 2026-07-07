@@ -718,7 +718,7 @@ class GeneralLedgerController extends Controller
         foreach ($sReturns as $sr) {
             $desc = 'Sale Return';
             if ($sr->sale) {
-                $desc .= ' (SR ' . $sr->sale->invoice_no . ')';
+                $desc .= ' (SJ ' . $sr->sale->invoice_no . ')';
             }
             $transactions[] = [
                 'created_at' => $sr->created_at,
@@ -735,7 +735,7 @@ class GeneralLedgerController extends Controller
             if ((float)$sr->discount_amount > 0 && !$sr->discount_account_id) {
                 $descDisc = 'Discount';
                 if ($sr->sale) {
-                    $descDisc .= ' (SR ' . $sr->sale->invoice_no . ')';
+                    $descDisc .= ' (SJ ' . $sr->sale->invoice_no . ')';
                 }
                 $transactions[] = [
                     'created_at' => $sr->created_at,
@@ -2402,7 +2402,7 @@ class GeneralLedgerController extends Controller
                 $brand = $item->product->brandRelation->name ?? '';
                 $desc = ($brand ? $brand . ' - ' : '') . ($item->product->name ?? 'Product');
                 if ($originalInv) {
-                    $desc .= ' (SR ' . $originalInv . ')';
+                    $desc .= ' (SJ ' . $originalInv . ')';
                 }
                 $qty = (float)($item->sales_qty ?? 0);
                 $price = (float)($item->sales_price ?? 0);
@@ -2436,7 +2436,7 @@ class GeneralLedgerController extends Controller
             if ((float)$sr->discount_amount > 0) {
                 $descDisc = $this->voucherDiscountDescription($sr->discount_account_id, 'Discount');
                 if ($originalInv) {
-                    $descDisc .= ' (SR ' . $originalInv . ')';
+                    $descDisc .= ' (SJ ' . $originalInv . ')';
                 }
                 $transactions[] = [
                     'created_at' => $srSortAt,
