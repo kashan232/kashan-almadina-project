@@ -76,9 +76,21 @@ class StockHold extends Model
             ->sum('release_qty');
     }
 
+    /** Original qty on the hold document (never reduced when release is posted). */
     public function grossHoldQty(): float
     {
-        return (float) $this->hold_qty + $this->postedReleaseQty();
+        return (float) $this->hold_qty;
+    }
+
+    /** Qty still available to release against this hold line. */
+    public function remainingHoldQty(): float
+    {
+        return max(0, (float) $this->hold_qty - $this->postedReleaseQty());
+    }
+
+    public function isFormalHoldLine(): bool
+    {
+        return !empty($this->stock_hold_voucher_id);
     }
 
     public static function isPostedRelease(StockRelease $release): bool
@@ -93,10 +105,10 @@ class StockHold extends Model
         return $voucher && strtolower((string) ($voucher->status ?? '')) === 'posted';
     }
 
-    /** Original held qty for list/history — remaining + already released. */
+    /** Original held qty shown on hold list / view (unchanged after release). */
     public function getDisplayHoldQtyAttribute(): float
     {
-        return $this->grossHoldQty();
+        return (float) $this->hold_qty;
     }
 
     public function warehouse()

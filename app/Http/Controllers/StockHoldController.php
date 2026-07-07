@@ -29,11 +29,7 @@ class StockHoldController extends Controller
             'partyCustomer:id,customer_name',
             'partyVendor:id,name',
             'items' => function ($q) {
-                $q->withSum([
-                    'releases as released_qty' => function ($rq) {
-                        $rq->withoutGlobalScopes()->whereIn('status', ['Posted', 'posted']);
-                    },
-                ], 'release_qty');
+                $q->withSum(StockHold::postedReleasesWithSum(), 'release_qty');
             },
             'items.product',
         ]);
@@ -62,11 +58,7 @@ class StockHoldController extends Controller
             'partyVendor',
             'sale',
             'items' => function ($q) {
-                $q->withSum([
-                    'releases as released_qty' => function ($rq) {
-                        $rq->withoutGlobalScopes()->whereIn('status', ['Posted', 'posted']);
-                    },
-                ], 'release_qty');
+                $q->withSum(StockHold::postedReleasesWithSum(), 'release_qty');
             },
             'items.product',
         ])->findOrFail($id);
@@ -425,6 +417,8 @@ class StockHoldController extends Controller
         DB::beginTransaction();
         try {
             $releaseQty = (float) $data['release_qty'];
+            $hold->loadSum(StockHold::postedReleasesWithSum(), 'release_qty');
+            $this->assertReleaseQtyAllowed($hold, $releaseQty);
 
             // prepare meta: record it came from this hold and what the hold meta was
             $meta = [
@@ -510,9 +504,9 @@ class StockHoldController extends Controller
         $includeHoldId = $request->include_hold_id;
 
         $query = StockHoldVoucher::where('status', 'Posted')
-            ->whereHas('items', function ($q) {
-                $q->where('hold_qty', '>', 0);
-            })
+            ->with(['items' => function ($q) {
+                $q->withSum(StockHold::postedReleasesWithSum(), 'release_qty');
+            }])
             ->when($partyType, function($query) use ($partyType) {
                 $query->where('party_type', $partyType);
             })
@@ -524,14 +518,18 @@ class StockHoldController extends Controller
             })
             ->latest()
             ->get()
-            ->map(fn($v) => ['id' => 'hold:' . $v->id, 'text' => 'Hold: ' . $v->voucher_no . ' (Date: ' . $v->date . ')']);
+            ->filter(function ($voucher) {
+                return $voucher->items->contains(fn ($item) => $item->remainingHoldQty() > 0);
+            })
+            ->values()
+            ->map(fn($v) => ['id' => 'hold:' . $v->id, 'text' => 'Hold: ' . $v->display_no . ' (Date: ' . $v->date . ')']);
 
         if ($includeHoldId) {
             $linked = StockHoldVoucher::find($includeHoldId);
             if ($linked) {
                 $entry = [
                     'id' => 'hold:' . $linked->id,
-                    'text' => 'Hold: ' . $linked->voucher_no . ' (Date: ' . $linked->date . ')',
+                    'text' => 'Hold: ' . $linked->display_no . ' (Date: ' . $linked->date . ')',
                 ];
                 if (!$query->firstWhere('id', $entry['id'])) {
                     $query->prepend($entry);
@@ -562,7 +560,15 @@ class StockHoldController extends Controller
 
     public function voucherDetails(Request $request, $id)
     {
-        $voucher = StockHoldVoucher::with(['items.product', 'warehouse', 'partyCustomer', 'partyVendor'])->findOrFail($id);
+        $voucher = StockHoldVoucher::with([
+            'items' => function ($q) {
+                $q->withSum(StockHold::postedReleasesWithSum(), 'release_qty')
+                    ->with('product');
+            },
+            'warehouse',
+            'partyCustomer',
+            'partyVendor',
+        ])->findOrFail($id);
 
         $releaseVoucherId = $request->query('release_voucher_id');
         $releaseByHoldId = collect();
@@ -585,26 +591,25 @@ class StockHoldController extends Controller
             'warehouse_name' => ($voucher->warehouse_id == 0) ? 'Shop' : ($voucher->warehouse->warehouse_name ?? '-'),
             'items' => $voucher->items
                 ->filter(function ($it) use ($releaseByHoldId) {
-                    if ((float) $it->hold_qty > 0) {
+                    if ($releaseByHoldId->has($it->id)) {
                         return true;
                     }
 
-                    return $releaseByHoldId->has($it->id);
+                    return $it->remainingHoldQty() > 0;
                 })
                 ->map(function ($it) use ($releaseByHoldId) {
-                    $holdQty = (float) $it->hold_qty;
                     $releaseLine = $releaseByHoldId->get($it->id);
-                    if ($releaseLine) {
-                        $holdQty += (float) $releaseLine->release_qty;
-                    }
 
                     return [
                         'hold_id'    => $it->id,
                         'product_id' => $it->product_id,
                         'item_name'  => $it->product->name ?? 'Product',
                         'sale_qty'   => (float) $it->sale_qty,
-                        'hold_qty'   => $holdQty,
-                        'release_qty' => $releaseLine ? (float) $releaseLine->release_qty : $holdQty,
+                        'hold_qty'   => (float) $it->hold_qty,
+                        'remaining_qty' => $it->remainingHoldQty(),
+                        'release_qty' => $releaseLine
+                            ? (float) $releaseLine->release_qty
+                            : $it->remainingHoldQty(),
                     ];
                 })->values()
         ]);
@@ -665,6 +670,10 @@ class StockHoldController extends Controller
                     $holdId
                 );
 
+                if ($isPosting) {
+                    $this->assertReleaseQtyAllowed($linkedHold, $releaseQty);
+                }
+
                 if (!$holdVoucherId && ($linkedHold?->stock_hold_voucher_id || $holdId)) {
                     $fromHold = $linkedHold ?? StockHold::withoutGlobalScopes()->find($holdId);
                     if ($fromHold?->stock_hold_voucher_id) {
@@ -720,6 +729,7 @@ class StockHoldController extends Controller
         $claimId
     ): ?StockHold {
         $query = StockHold::withoutGlobalScopes()
+            ->withSum(StockHold::postedReleasesWithSum(), 'release_qty')
             ->where('product_id', $productId)
             ->where(function ($q) {
                 $q->where('status', 0)->orWhereNull('status');
@@ -728,24 +738,29 @@ class StockHoldController extends Controller
 
         if ($releaseType === 'claim' && $claimId) {
             $hold = (clone $query)->where('meta->claim_id', (string) $claimId)->first();
-            if ($hold) {
+            if ($hold && $hold->remainingHoldQty() > 0) {
                 return $hold;
             }
         }
 
         if ($holdVoucherId) {
             $hold = (clone $query)->where('stock_hold_voucher_id', $holdVoucherId)->first();
-            if ($hold) {
+            if ($hold && $hold->remainingHoldQty() > 0) {
                 return $hold;
             }
         }
 
         if ($request->filled('vendor_type') && $request->filled('vendor_id')) {
-            return (clone $query)
+            $hold = (clone $query)
                 ->where('party_type', $request->vendor_type)
                 ->where('party_id', $request->vendor_id)
                 ->orderByDesc('id')
-                ->first();
+                ->get()
+                ->first(fn ($row) => $row->remainingHoldQty() > 0);
+
+            if ($hold) {
+                return $hold;
+            }
         }
 
         return null;
@@ -760,8 +775,10 @@ class StockHoldController extends Controller
         $explicitHoldId = null
     ): ?StockHold {
         if ($explicitHoldId) {
-            $hold = StockHold::withoutGlobalScopes()->find($explicitHoldId);
-            if ($hold && (int) $hold->product_id === $productId && (float) $hold->hold_qty > 0) {
+            $hold = StockHold::withoutGlobalScopes()
+                ->withSum(StockHold::postedReleasesWithSum(), 'release_qty')
+                ->find($explicitHoldId);
+            if ($hold && (int) $hold->product_id === $productId && $hold->remainingHoldQty() > 0) {
                 return $hold;
             }
         }
@@ -836,6 +853,14 @@ class StockHoldController extends Controller
                 continue;
             }
 
+            $linkedHold = null;
+            if ($item->hold_id) {
+                $linkedHold = StockHold::withoutGlobalScopes()
+                    ->withSum(StockHold::postedReleasesWithSum(), 'release_qty')
+                    ->find($item->hold_id);
+            }
+            $this->assertReleaseQtyAllowed($linkedHold, $releaseQty);
+
             $this->applyReleaseEffects(
                 $this->resolveReleaseWarehouseId($voucher, $item),
                 (int) $item->product_id,
@@ -865,14 +890,30 @@ class StockHoldController extends Controller
         $explicitHold = null;
 
         if ($explicitHoldId) {
-            $explicitHold = StockHold::withoutGlobalScopes()->find($explicitHoldId);
+            $explicitHold = StockHold::withoutGlobalScopes()
+                ->withSum(StockHold::postedReleasesWithSum(), 'release_qty')
+                ->find($explicitHoldId);
             if ($explicitHold && (int) $explicitHold->product_id === $productId) {
                 $primaryHold = $explicitHold;
+                if ($explicitHold->isFormalHoldLine()) {
+                    return $primaryHold;
+                }
             }
         }
 
         if (!$holdVoucherId && $explicitHold?->stock_hold_voucher_id) {
             $holdVoucherId = (int) $explicitHold->stock_hold_voucher_id;
+        }
+
+        if ($holdVoucherId) {
+            $formalHold = StockHold::withoutGlobalScopes()
+                ->withSum(StockHold::postedReleasesWithSum(), 'release_qty')
+                ->where('stock_hold_voucher_id', $holdVoucherId)
+                ->where('product_id', $productId)
+                ->first();
+            if ($formalHold) {
+                return $formalHold;
+            }
         }
 
         $query = StockHold::withoutGlobalScopes()
@@ -884,8 +925,6 @@ class StockHoldController extends Controller
 
         if ($claimId) {
             $query->where('meta->claim_id', (string) $claimId);
-        } elseif ($holdVoucherId) {
-            $query->where('stock_hold_voucher_id', $holdVoucherId);
         } elseif ($partyType && $partyId) {
             $query->where('party_type', $partyType)->where('party_id', $partyId);
         } elseif ($explicitHoldId) {
@@ -931,6 +970,20 @@ class StockHoldController extends Controller
         }
 
         return $primaryHold;
+    }
+
+    private function assertReleaseQtyAllowed(?StockHold $hold, float $releaseQty): void
+    {
+        if (!$hold || !$hold->isFormalHoldLine()) {
+            return;
+        }
+
+        $remaining = $hold->remainingHoldQty();
+        if ($releaseQty > $remaining + 0.0001) {
+            throw new \InvalidArgumentException(
+                'Release qty (' . $releaseQty . ') exceeds remaining hold qty (' . $remaining . ') for this hold line.'
+            );
+        }
     }
 
     /** When no hold link exists, still track reserved impact (can go negative / over-release). */
@@ -1191,6 +1244,10 @@ class StockHoldController extends Controller
                     $claimId,
                     $holdId
                 );
+
+                if ($isPosting) {
+                    $this->assertReleaseQtyAllowed($linkedHold, $releaseQty);
+                }
 
                 if (!$holdVoucherId && ($linkedHold?->stock_hold_voucher_id || $holdId)) {
                     $fromHold = $linkedHold ?? StockHold::withoutGlobalScopes()->find($holdId);

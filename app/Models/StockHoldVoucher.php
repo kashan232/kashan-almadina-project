@@ -67,4 +67,11 @@ class StockHoldVoucher extends Model
     {
         return $this->belongsTo(User::class, 'created_by');
     }
+
+    public function getDisplayNoAttribute(): string
+    {
+        $num = (int) preg_replace('/[^0-9]/', '', (string) $this->voucher_no);
+
+        return 'SH-' . str_pad((string) max(0, $num), 3, '0', STR_PAD_LEFT);
+    }
 }

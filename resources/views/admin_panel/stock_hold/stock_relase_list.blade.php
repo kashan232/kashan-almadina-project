@@ -175,7 +175,7 @@
                                         @foreach($vouchers as $v)
                                         <tr>
                                             <td class="text-muted small text-center">SR</td>
-                                            <td class="fw-bold text-primary text-center">{{ (int) preg_replace('/[^0-9]/', '', $v->voucher_no) ?: $v->voucher_no }}</td>
+                                            <td class="fw-bold text-primary text-center">{{ $v->display_no }}</td>
                                             <td class="small">{{ \Carbon\Carbon::parse($v->date)->format('d-M-Y') }}</td>
                                             <td class="text-center">
                                                 @if(($v->release_type ?? 'stock') == 'claim')
@@ -235,7 +235,7 @@
                                                     @endif
 
                                                     @if($v->hold_voucher_id)
-                                                    <a href="{{ route('stock-hold-list') }}#hold-{{ $v->hold_voucher_id }}" class="btn btn-outline-info btn-xs px-2 py-0" title="View Hold" style="font-size: 10px;">
+                                                    <a href="{{ route('stock-holds.view', $v->hold_voucher_id) }}" class="btn btn-outline-info btn-xs px-2 py-0" title="View Hold {{ optional($v->holdVoucher)->display_no }}" style="font-size: 10px;">
                                                        Hold
                                                     </a>
                                                     @endif

@@ -120,7 +120,7 @@
                             </div>
                             <div class="col-md-2">
                                 <label class="form-label small fw-bold text-muted">Release No</label>
-                                <input type="text" id="release_no" class="form-control input-sm fw-bold text-primary bg-light" value="{{ (int) preg_replace('/[^0-9]/', '', $voucher->voucher_no) ?: $voucher->voucher_no }}" readonly>
+                                <input type="text" id="release_no" class="form-control input-sm fw-bold text-primary bg-light" value="{{ $voucher->display_no }}" readonly>
                             </div>
                             <div class="col-md-2">
                                 <label class="form-label small fw-bold text-muted">Deliver From <span class="text-danger">*</span></label>
