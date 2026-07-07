@@ -712,22 +712,7 @@ class StockReportBuilder
     /** Net reserved qty — original hold minus posted releases on formal hold lines. */
     private function currentHoldQty(int $productId, ?int $warehouseId = null): float
     {
-        $query = $this->activeHoldQuery()
-            ->withSum(StockHold::postedReleasesWithSum(), 'release_qty')
-            ->where('product_id', $productId)
-            ->where('hold_qty', '>', 0)
-            ->where(function ($q) {
-                $q->whereNull('stock_hold_voucher_id')
-                    ->orWhereHas('voucher', function ($v) {
-                        $v->withoutGlobalScopes()->where('status', 'Posted');
-                    });
-            });
-
-        if ($warehouseId !== null) {
-            $query->where('warehouse_id', $warehouseId);
-        }
-
-        return (float) $query->get()->sum(fn (StockHold $item) => $item->netHoldQtyForDisplay());
+        return StockHold::netReservedForProduct($productId, $warehouseId);
     }
 
     private function currentHoldQtyForWarehouses(int $productId, array $warehouseIds): float

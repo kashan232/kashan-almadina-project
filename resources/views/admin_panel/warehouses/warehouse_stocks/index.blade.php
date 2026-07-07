@@ -263,11 +263,9 @@
                                 <tbody>
                                     @foreach($products as $product)
                                         @php
-                                            $shopHoldSum = (float) $product->stockHolds->where('warehouse_id', 0)->sum(fn($h) => $h->netHoldQtyForDisplay());
-                                            $shopStock = (float)$product->stock - $shopHoldSum;
+                                            $shopHoldSum = \App\Models\StockHold::netReservedForProduct($product->id, 0);
                                             $whSum = 0;
-                                            $physicalWhSum = 0;
-                                            $holdSum = (float) $product->stockHolds->sum(fn($h) => $h->netHoldQtyForDisplay());
+                                            $holdSum = \App\Models\StockHold::netReservedForProduct($product->id);
                                         @endphp
                                         <tr>
                                             <td class="text-muted small">#{{ $product->id }}</td>
@@ -294,11 +292,10 @@
                                                         ->where('warehouse_id', $wh->id)
                                                         ->sum('quantity');
                                                     
-                                                    $whHoldSum = (float) $product->stockHolds->where('warehouse_id', $wh->id)->sum(fn($h) => $h->netHoldQtyForDisplay());
+                                                    $whHoldSum = \App\Models\StockHold::netReservedForProduct($product->id, (int) $wh->id);
                                                     $availableQty = $physicalQty - $whHoldSum;
 
                                                     $whSum += $availableQty;
-                                                    $physicalWhSum += $physicalQty;
                                                 @endphp
                                                 <td class="text-center wh-col" style="border-left: 1px solid #f1f5f9;">
                                                     @if($physicalQty != 0)

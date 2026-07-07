@@ -148,28 +148,7 @@ class StockHoldPostingService
 
     public function reservedQty(int $warehouseId, int $productId, ?int $excludeVoucherId = null): float
     {
-        $query = StockHold::withoutGlobalScopes()
-            ->withSum(StockHold::postedReleasesWithSum(), 'release_qty')
-            ->where('product_id', $productId)
-            ->where('warehouse_id', $warehouseId)
-            ->where(function ($q) {
-                $q->where('status', 0)->orWhereNull('status');
-            })
-            ->where(function ($q) {
-                $q->whereNull('stock_hold_voucher_id')
-                    ->orWhereHas('voucher', function ($v) {
-                        $v->where('status', 'Posted');
-                    });
-            });
-
-        if ($excludeVoucherId) {
-            $query->where(function ($q) use ($excludeVoucherId) {
-                $q->whereNull('stock_hold_voucher_id')
-                    ->orWhere('stock_hold_voucher_id', '!=', $excludeVoucherId);
-            });
-        }
-
-        return (float) $query->get()->sum(fn (StockHold $item) => $item->netHoldQtyForDisplay());
+        return StockHold::netReservedForProduct($productId, $warehouseId);
     }
 
     public function availableQty(int $warehouseId, int $productId, ?int $excludeVoucherId = null): float
@@ -322,6 +301,21 @@ class StockHoldPostingService
                 $query->where('id', $explicitHoldId);
             }
         } else {
+            $formalHold = StockHold::withoutGlobalScopes()
+                ->where('product_id', $productId)
+                ->whereNotNull('stock_hold_voucher_id')
+                ->whereHas('voucher', function ($v) {
+                    $v->withoutGlobalScopes()->where('status', 'Posted');
+                })
+                ->when($partyType && $partyId, function ($q) use ($partyType, $partyId) {
+                    $q->where('party_type', $partyType)->where('party_id', $partyId);
+                })
+                ->orderByDesc('id')
+                ->first();
+            if ($formalHold) {
+                return $formalHold;
+            }
+
             return $this->applyReleaseOverflow($productId, $releaseQty, $partyType, $partyId, null);
         }
 
@@ -333,6 +327,9 @@ class StockHoldPostingService
         foreach ($holds as $hold) {
             if ($remaining <= 0) {
                 break;
+            }
+            if ($hold->isFormalHoldLine()) {
+                continue;
             }
             if (!$primaryHold) {
                 $primaryHold = $hold;

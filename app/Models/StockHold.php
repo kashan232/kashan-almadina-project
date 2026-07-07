@@ -56,8 +56,10 @@ class StockHold extends Model
 
     public function postedReleaseQty(): float
     {
-        if (array_key_exists('released_qty', $this->attributes)) {
-            return (float) ($this->attributes['released_qty'] ?? 0);
+        foreach (['released_qty', 'releases_sum_release_qty'] as $key) {
+            if (array_key_exists($key, $this->attributes)) {
+                return (float) ($this->attributes[$key] ?? 0);
+            }
         }
 
         if ($this->relationLoaded('releases')) {
@@ -74,6 +76,44 @@ class StockHold extends Model
                 })->orWhereIn('status', ['Posted', 'posted']);
             })
             ->sum('release_qty');
+    }
+
+    /**
+     * Net reserved for balances: + = on hold, − = over-released.
+     * Posted formal hold gross − posted releases (+ informal positive holds only).
+     */
+    public static function netReservedForProduct(int $productId, ?int $warehouseId = null): float
+    {
+        $formalGross = (float) static::withoutGlobalScopes()
+            ->where('product_id', $productId)
+            ->whereNotNull('stock_hold_voucher_id')
+            ->whereHas('voucher', function ($v) {
+                $v->withoutGlobalScopes()->where('status', 'Posted');
+            })
+            ->when($warehouseId !== null, fn ($q) => $q->where('warehouse_id', $warehouseId))
+            ->sum('hold_qty');
+
+        $released = (float) StockRelease::withoutGlobalScopes()
+            ->where('product_id', $productId)
+            ->where(function ($q) {
+                $q->whereHas('voucher', function ($v) {
+                    $v->withoutGlobalScopes()->where('status', 'Posted');
+                })->orWhereIn('status', ['Posted', 'posted']);
+            })
+            ->when($warehouseId !== null, fn ($q) => $q->where('warehouse_id', $warehouseId))
+            ->sum('release_qty');
+
+        $informalPositive = (float) static::withoutGlobalScopes()
+            ->where('product_id', $productId)
+            ->whereNull('stock_hold_voucher_id')
+            ->where('hold_qty', '>', 0)
+            ->where(function ($q) {
+                $q->where('status', 0)->orWhereNull('status');
+            })
+            ->when($warehouseId !== null, fn ($q) => $q->where('warehouse_id', $warehouseId))
+            ->sum('hold_qty');
+
+        return $formalGross - $released + $informalPositive;
     }
 
     /** Original qty on the hold document (never reduced when release is posted). */
