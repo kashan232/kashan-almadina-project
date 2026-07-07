@@ -60,6 +60,12 @@ class GeneralLedgerController extends Controller
                 return $timeA <=> $timeB;
             }
 
+            $prioA = (int)($a['priority'] ?? 60);
+            $prioB = (int)($b['priority'] ?? 60);
+            if ($prioA !== $prioB) {
+                return $prioA <=> $prioB;
+            }
+
             $idA = $a['id'] ?? 0;
             $idB = $b['id'] ?? 0;
             if (is_numeric($idA) && is_numeric($idB)) {
@@ -2059,8 +2065,8 @@ class GeneralLedgerController extends Controller
                 if ($pid == $id && in_array($types[$idx] ?? '', $typeArray)) {
                     $ref = 'JV';
                     $inv = $jv->jvid;
-                    // Skip purchase JVs in detailed mode — PJ block shows WHT & allocations natively
-                    if (str_starts_with($inv, 'PRJ-WHT') || str_starts_with($inv, 'PJ-WHT') || str_starts_with($inv, 'PJ-ALLOC')) {
+                    // Skip purchase/sale-return JVs in detailed mode — native PJ/SRJ blocks show them
+                    if (str_starts_with($inv, 'PRJ-WHT') || str_starts_with($inv, 'PJ-WHT') || str_starts_with($inv, 'PJ-ALLOC') || str_starts_with($inv, 'SR-DISC-')) {
                         continue;
                     }
 
@@ -2398,12 +2404,18 @@ class GeneralLedgerController extends Controller
                 if ($originalInv) {
                     $desc .= ' (SR ' . $originalInv . ')';
                 }
-                $qty = (float)$item->sales_qty;
-                $price = (float)$item->sales_price;
-                $disc = (float)$item->discount_amount;
-                $finalPrice = ($qty > 0) ? ($price - ($disc / $qty)) : $price;
+                $qty = (float)($item->sales_qty ?? 0);
+                $price = (float)($item->sales_price ?? 0);
+                $disc = (float)($item->discount_amount ?? 0);
+                $lineCredit = (float)($item->amount ?? 0);
+                if ($lineCredit <= 0 && $qty > 0 && $price > 0) {
+                    $lineCredit = max(0, ($qty * $price) - $disc);
+                }
+                $finalPrice = ($qty > 0 && $lineCredit > 0)
+                    ? ($lineCredit / $qty)
+                    : (($qty > 0) ? ($price - ($disc / $qty)) : $price);
 
-                $itemSum += (float)$item->amount;
+                $itemSum += $lineCredit;
 
                 $transactions[] = [
                     'created_at' => $item->created_at ?? $srSortAt,
@@ -2415,14 +2427,14 @@ class GeneralLedgerController extends Controller
                     'price' => $finalPrice,
                     'qty' => $qty,
                     'debit' => 0,
-                    'credit' => (float)$item->amount,
+                    'credit' => $lineCredit,
                     'priority' => 20,
                     'sort_inv' => $srInv,
                 ];
             }
             $this->appendSaleReturnSubTotalReconciliation($sr, $transactions, $itemSum);
-            if ((float)$sr->discount_amount > 0 && !$sr->discount_account_id) {
-                $descDisc = 'Discount';
+            if ((float)$sr->discount_amount > 0) {
+                $descDisc = $this->voucherDiscountDescription($sr->discount_account_id, 'Discount');
                 if ($originalInv) {
                     $descDisc .= ' (SR ' . $originalInv . ')';
                 }
