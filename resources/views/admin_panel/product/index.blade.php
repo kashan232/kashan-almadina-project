@@ -236,6 +236,11 @@
                                                                 <i class="fa fa-edit me-2 text-warning"></i> Edit Product
                                                             </a>
                                                         </li>
+                                                        <li>
+                                                            <a href="{{ route('products.toggleStatus', $product->id) }}" class="dropdown-item py-2" onclick="return confirm('Change product status?')">
+                                                                <i class="fa fa-toggle-on me-2 text-secondary"></i> {{ $product->status == 1 ? 'Disable Product' : 'Enable Product' }}
+                                                            </a>
+                                                        </li>
                                                         <li><hr class="dropdown-divider"></li>
                                                         <li>
                                                              <a class="dropdown-item py-2" href="/products/bulk-set-price?type=purchase&ids={{ $product->id }}">
@@ -265,6 +270,7 @@
                                          <option value="set-sale-prices">Set Sale Price</option>
                                          <option value="delete">Delete Selected</option>
                                          <option value="deactivate">Deactivate Selected</option>
+                                         <option value="activate">Activate Selected</option>
                                      </select>
                                  </div>
                              </div>

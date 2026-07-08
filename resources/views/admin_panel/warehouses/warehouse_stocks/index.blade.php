@@ -230,8 +230,10 @@
                                         <label class="column-picker-item"><input type="checkbox" data-column="1" checked> ID</label>
                                         <label class="column-picker-item"><input type="checkbox" data-column="2" checked> Product Name</label>
                                         <label class="column-picker-item"><input type="checkbox" data-column="3" checked> Brand</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="4" checked> Shop Stock</label>
-                                        @php $colCounter = 5; @endphp
+                                        @if($canAccessShop)
+                                            <label class="column-picker-item"><input type="checkbox" data-column="4" checked> Shop Stock</label>
+                                        @endif
+                                        @php $colCounter = $canAccessShop ? 5 : 4; @endphp
                                         @foreach($warehouses as $wh)
                                             <label class="column-picker-item"><input type="checkbox" data-column="{{ $colCounter++ }}" checked> {{ $wh->warehouse_name }}</label>
                                         @endforeach
@@ -251,7 +253,9 @@
                                         <th style="width: 50px;">ID</th>
                                         <th>Product Name</th>
                                         <th>Brand</th>
-                                        <th class="text-center shop-col">Shop Stock</th>
+                                        @if($canAccessShop)
+                                            <th class="text-center shop-col">Shop Stock</th>
+                                        @endif
                                         @foreach($warehouses as $wh)
                                             <th class="text-center wh-col text-primary" style="border-left: 1px solid #e2e8f0;">{{ $wh->warehouse_name }}</th>
                                         @endforeach
@@ -263,9 +267,17 @@
                                 <tbody>
                                     @foreach($products as $product)
                                         @php
-                                            $shopHoldSum = \App\Models\StockHold::netReservedForProduct($product->id, 0);
+                                            $shopHoldSum = $canAccessShop
+                                                ? \App\Models\StockHold::netReservedForProduct($product->id, 0)
+                                                : 0;
                                             $whSum = 0;
-                                            $holdSum = \App\Models\StockHold::netReservedForProduct($product->id);
+                                            $holdSum = 0;
+                                            if ($canAccessShop) {
+                                                $holdSum += \App\Models\StockHold::netReservedForProduct($product->id, 0);
+                                            }
+                                            foreach ($warehouses as $visibleWh) {
+                                                $holdSum += \App\Models\StockHold::netReservedForProduct($product->id, (int) $visibleWh->id);
+                                            }
                                         @endphp
                                         <tr>
                                             <td class="text-muted small">#{{ $product->id }}</td>
@@ -273,17 +285,19 @@
                                             <td class="text-muted">{{ $product->brandRelation->name ?? '-' }}</td>
                                             
                                             @php
-                                                $physicalShopStock = (float)$product->stock;
+                                                $physicalShopStock = $canAccessShop ? (float) $product->stock : 0;
                                             @endphp
-                                            <td class="text-center shop-col">
-                                                @if($physicalShopStock != 0)
-                                                    <span class="stock-badge {{ $physicalShopStock < 0 ? 'text-danger' : 'text-primary' }}">
-                                                        {{ number_format($physicalShopStock, 0) }}
-                                                    </span>
-                                                @else
-                                                    <span class="text-muted" style="opacity: 0.3;">0</span>
-                                                @endif
-                                            </td>
+                                            @if($canAccessShop)
+                                                <td class="text-center shop-col">
+                                                    @if($physicalShopStock != 0)
+                                                        <span class="stock-badge {{ $physicalShopStock < 0 ? 'text-danger' : 'text-primary' }}">
+                                                            {{ number_format($physicalShopStock, 0) }}
+                                                        </span>
+                                                    @else
+                                                        <span class="text-muted" style="opacity: 0.3;">0</span>
+                                                    @endif
+                                                </td>
+                                            @endif
 
                                             {{-- Warehouse Columns --}}
                                             @foreach($warehouses as $wh)
@@ -320,7 +334,8 @@
 
                                             <td class="text-center total-col fs-6">
                                                 @php 
-                                                    $availableStock = ($physicalShopStock - $shopHoldSum + $whSum); 
+                                                    $shopAvailable = $canAccessShop ? ($physicalShopStock - $shopHoldSum) : 0;
+                                                    $availableStock = $shopAvailable + $whSum; 
                                                     $systemStock = $availableStock + $holdSum;
                                                 @endphp
                                                 {{ number_format($systemStock, 0) }}
@@ -352,7 +367,7 @@
                                 <label class="small fw-bold text-muted">Warehouse</label>
                                 <select name="warehouse_id" class="form-select form-select-sm select2">
                                     <option value="">All Warehouses</option>
-                                    @foreach($warehouses as $wh)
+                                    @foreach($allWarehouses as $wh)
                                         <option value="{{ $wh->id }}" {{ request('warehouse_id') == $wh->id ? 'selected' : '' }}>{{ $wh->warehouse_name }}</option>
                                     @endforeach
                                 </select>

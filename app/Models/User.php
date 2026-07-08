@@ -56,14 +56,20 @@ class User extends Authenticatable
         return $this->belongsToMany(UserGroup::class, 'user_group_assignments', 'user_id', 'user_group_id');
     }
 
+    public function isAdmin(): bool
+    {
+        return $this->hasRole('Admin') || (int) $this->id === 1;
+    }
+
     /**
      * Check if user can access the default Shop Stock (ID 0)
      */
-    public function canAccessShop()
+    public function canAccessShop(): bool
     {
-        if ($this->hasRole('Admin')) {
+        if ($this->isAdmin()) {
             return true;
         }
+
         return $this->userGroups()->where('allow_shop', 1)->exists();
     }
 }

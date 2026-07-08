@@ -79,6 +79,7 @@
  <link rel="shortcut icon" type="image/png" href="{{ asset('amt-logo.png') }}">
  <link rel="stylesheet" href="{{ asset('assets/css/bootstrap.min.css') }}">
  <link rel="stylesheet" href="{{ asset('assets/css/style.css') }}">
+ <link rel="stylesheet" href="{{ asset('assets/css/compact-listing.css') }}">
  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 
  {{-- Font Awesome --}}

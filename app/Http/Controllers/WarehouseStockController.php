@@ -10,51 +10,97 @@ use Illuminate\Support\Facades\DB;
 
 class WarehouseStockController extends Controller
 {
+    private function accessibleWarehouses()
+    {
+        return Warehouse::accessibleQuery()->orderBy('warehouse_name')->get();
+    }
+
+    private function accessibleWarehouseIds(): array
+    {
+        return $this->accessibleWarehouses()->pluck('id')->map(fn ($id) => (int) $id)->all();
+    }
+
+    private function assertWarehouseAccessible(int $warehouseId): void
+    {
+        if (!in_array($warehouseId, $this->accessibleWarehouseIds(), true)) {
+            abort(403, 'You do not have access to this warehouse.');
+        }
+    }
+
+    private function assertAdjustmentAccessible(\App\Models\StockAdjustment $adjustment): void
+    {
+        $this->assertWarehouseAccessible((int) $adjustment->warehouse_id);
+    }
+
     public function index(Request $request)
     {
+        $user = auth()->user();
+        $isAdmin = $user->isAdmin();
+        $canAccessShop = $user->canAccessShop();
+
         // View mode: 'balances' or 'history'
         $view = $request->get('view', 'balances');
-        $filter_warehouse_ids = $request->get('filter_warehouse_id', []);
+        $filter_warehouse_ids = (array) $request->get('filter_warehouse_id', []);
         $filter_claim_type = $request->get('claim_type', 'none'); // Default to 'none' (Normal)
 
-        $isAdmin = auth()->check() && (auth()->user()->roles->pluck('name')->contains('Admin') || auth()->id() == 1);
-        
-        if ($isAdmin) {
-            $allWarehouses = Warehouse::withoutGlobalScopes()->orderBy('warehouse_name')->get();
-        } else {
-            $allWarehouses = Warehouse::withoutGlobalScope('exclude_claims')->orderBy('warehouse_name')->get();
-        }
+        $allWarehouses = $this->accessibleWarehouses();
+        $accessibleWarehouseIds = $allWarehouses->pluck('id')->map(fn ($id) => (int) $id)->all();
 
         if (!empty($filter_warehouse_ids)) {
-            $warehouses = $allWarehouses->whereIn('id', $filter_warehouse_ids);
+            $filter_warehouse_ids = array_values(array_intersect(
+                array_map('intval', $filter_warehouse_ids),
+                $accessibleWarehouseIds
+            ));
+            $warehouses = $allWarehouses->whereIn('id', $filter_warehouse_ids)->values();
         } else {
             $warehouses = $allWarehouses;
         }
 
         if ($filter_claim_type !== 'all') {
-            $warehouses = $warehouses->where('claim_type', $filter_claim_type);
+            $warehouses = $warehouses->where('claim_type', $filter_claim_type)->values();
         }
 
         if ($view === 'history') {
-            $query = \App\Models\StockAdjustment::with(['warehouse', 'items.product'])->latest();
-            if ($request->filled('start_date')) $query->whereDate('date', '>=', $request->start_date);
-            if ($request->filled('end_date')) $query->whereDate('date', '<=', $request->end_date);
-            if ($request->filled('warehouse_id')) $query->where('warehouse_id', $request->warehouse_id);
-            if ($request->filled('status')) $query->where('status', $request->status);
+            $query = \App\Models\StockAdjustment::with(['warehouse', 'items.product'])
+                ->whereIn('warehouse_id', $accessibleWarehouseIds)
+                ->latest();
+
+            if ($request->filled('start_date')) {
+                $query->whereDate('date', '>=', $request->start_date);
+            }
+            if ($request->filled('end_date')) {
+                $query->whereDate('date', '<=', $request->end_date);
+            }
+            if ($request->filled('warehouse_id')) {
+                $warehouseId = (int) $request->warehouse_id;
+                if (in_array($warehouseId, $accessibleWarehouseIds, true)) {
+                    $query->where('warehouse_id', $warehouseId);
+                }
+            }
+            if ($request->filled('status')) {
+                $query->where('status', $request->status);
+            }
+
             $stocks = $query->get();
-            return view('admin_panel.warehouses.warehouse_stocks.index', compact('stocks', 'warehouses', 'allWarehouses', 'view'));
+
+            return view('admin_panel.warehouses.warehouse_stocks.index', compact(
+                'stocks', 'warehouses', 'allWarehouses', 'view', 'isAdmin', 'canAccessShop'
+            ));
         }
 
         // Live Balances Mode
         // Fetch all products with their shop stock and warehouse stock relations
         $products = Product::with([
-            'warehouseStocks' => function($q) { $q->where('status', 'Posted'); },
-            'stockHolds' => function($q) { 
+            'warehouseStocks' => function ($q) use ($accessibleWarehouseIds) {
+                $q->where('status', 'Posted')
+                    ->whereIn('warehouse_id', $accessibleWarehouseIds);
+            },
+            'stockHolds' => function ($q) {
                 $q->withSum(\App\Models\StockHold::postedReleasesWithSum(), 'release_qty')
                   ->where('hold_qty', '!=', 0)
-                  ->where(function($query) {
+                  ->where(function ($query) {
                       $query->whereNull('stock_hold_voucher_id')
-                            ->orWhereHas('voucher', function($v) {
+                            ->orWhereHas('voucher', function ($v) {
                                 $v->where('status', 'Posted');
                             });
                   });
@@ -62,12 +108,15 @@ class WarehouseStockController extends Controller
             'brandRelation'
         ])->orderBy('name')->get();
 
-        return view('admin_panel.warehouses.warehouse_stocks.index', compact('products', 'warehouses', 'allWarehouses', 'view', 'filter_warehouse_ids', 'filter_claim_type'));
+        return view('admin_panel.warehouses.warehouse_stocks.index', compact(
+            'products', 'warehouses', 'allWarehouses', 'view', 'filter_warehouse_ids',
+            'filter_claim_type', 'isAdmin', 'canAccessShop'
+        ));
     }
 
     public function create()
     {
-        $warehouses = Warehouse::orderBy('warehouse_name')->get();
+        $warehouses = $this->accessibleWarehouses();
         return view('admin_panel.warehouses.warehouse_stocks.create', compact('warehouses'));
     }
 
@@ -80,6 +129,8 @@ class WarehouseStockController extends Controller
             'quantity'     => 'required|array',
             'quantity.*'   => 'required|numeric',
         ]);
+
+        $this->assertWarehouseAccessible((int) $request->warehouse_id);
 
         $status = $request->action === 'post' ? 'Posted' : 'Unposted';
 
@@ -144,6 +195,7 @@ class WarehouseStockController extends Controller
         try {
             DB::beginTransaction();
             $adjustment = \App\Models\StockAdjustment::with('items')->findOrFail($id);
+            $this->assertAdjustmentAccessible($adjustment);
 
             if ($adjustment->status === 'Posted') {
                 throw new \Exception('This adjustment is already posted.');
@@ -174,18 +226,21 @@ class WarehouseStockController extends Controller
     public function print($id)
     {
         $adjustment = \App\Models\StockAdjustment::with(['warehouse', 'items.product'])->findOrFail($id);
+        $this->assertAdjustmentAccessible($adjustment);
+
         return view('admin_panel.warehouses.warehouse_stocks.print', compact('adjustment'));
     }
 
     public function edit($id)
     {
         $adjustment = \App\Models\StockAdjustment::with(['items.product', 'warehouse'])->findOrFail($id);
+        $this->assertAdjustmentAccessible($adjustment);
         
         if ($adjustment->status === 'Posted') {
             return redirect()->route('warehouse_stocks.index')->with('error', 'Posted adjustments cannot be edited.');
         }
 
-        $warehouses = Warehouse::orderBy('warehouse_name')->get();
+        $warehouses = $this->accessibleWarehouses();
         return view('admin_panel.warehouses.warehouse_stocks.edit', compact('adjustment', 'warehouses'));
     }
 
@@ -200,10 +255,13 @@ class WarehouseStockController extends Controller
         ]);
 
         $adjustment = \App\Models\StockAdjustment::findOrFail($id);
+        $this->assertAdjustmentAccessible($adjustment);
 
         if ($adjustment->status === 'Posted') {
             return response()->json(['success' => false, 'message' => 'Posted records cannot be modified.'], 422);
         }
+
+        $this->assertWarehouseAccessible((int) $request->warehouse_id);
 
         $status = $request->action === 'post' ? 'Posted' : 'Unposted';
 
@@ -270,6 +328,7 @@ class WarehouseStockController extends Controller
     public function destroy($id)
     {
         $adjustment = \App\Models\StockAdjustment::findOrFail($id);
+        $this->assertAdjustmentAccessible($adjustment);
         
         if ($adjustment->status === 'Posted') {
             return redirect()->route('warehouse_stocks.index')->with('error', 'Posted adjustments cannot be deleted.');

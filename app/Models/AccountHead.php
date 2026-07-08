@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class AccountHead extends Model
 {
-    use HasFactory, \App\Traits\HasModuleIdSequence;
+    use HasFactory, \App\Traits\HasModuleIdSequence, \App\Traits\FiltersInactiveRecords;
 
     protected $fillable = [
         'name',

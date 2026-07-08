@@ -32,7 +32,7 @@ class StockTransferController extends Controller
 
     public function create()
     {
-        $warehouses = Warehouse::orderBy('warehouse_name')->get();
+        $warehouses = Warehouse::allForSelection();
         $products = Product::orderBy('name')->get();
 
         return view('admin_panel.warehouses.stock_transfers.create', compact('warehouses', 'products'));
@@ -106,7 +106,7 @@ class StockTransferController extends Controller
             return back()->with('error', 'Only unposted stock transfers can be edited.');
         }
 
-        $warehouses = Warehouse::orderBy('warehouse_name')->get();
+        $warehouses = Warehouse::allForSelection();
         $products = Product::orderBy('name')->get();
 
         return view('admin_panel.warehouses.stock_transfers.edit', compact('transfer', 'warehouses', 'products'));

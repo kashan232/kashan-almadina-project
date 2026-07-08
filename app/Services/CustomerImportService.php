@@ -312,6 +312,8 @@ class CustomerImportService
             $data['user_group_ids'] = $userGroupIds;
         }
 
+        $data['status'] = $data['status'] ?? 'active';
+
         $customer = Customer::create($data);
 
         if ($openingBalance != 0.0) {

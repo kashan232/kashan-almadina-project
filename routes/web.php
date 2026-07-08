@@ -233,6 +233,7 @@ Route::middleware('auth')->group(function () {
     //     Route::post('/products/bulk-set-price', [ProductController::class, 'bulkSetPriceUpdate'])->name('products.bulkUpdatePrices.update');
 
     Route::post('/products/bulk-action', [ProductController::class, 'bulkAction'])->name('products.bulkAction');
+    Route::get('/products/toggle-status/{id}', [ProductController::class, 'toggleStatus'])->name('products.toggleStatus');
 
     Route::get('/products', [ProductController::class, 'index'])->name('products.index');
     Route::get('/products/create', [ProductController::class, 'create'])->name('products.create');
@@ -280,6 +281,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/vendor/edit/{id}', [VendorController::class, 'edit'])->name('vendor.edit');
     Route::post('/vendor/update/{id}', [VendorController::class, 'update'])->name('vendor.update');
     Route::get('/vendor/delete/{id}', [VendorController::class, 'delete']);
+    Route::get('vendor/toggle-status/{id}', [VendorController::class, 'toggleStatus'])->name('vendor.toggleStatus');
     Route::get('vendor/ledger', [VendorController::class, 'allLedgers'])->name('vendor.ledger');
     Route::get('vendor/payments', [VendorController::class, 'payments_index'])->name('vendor.payments.index');
     Route::post('vendor/payments/store', [VendorController::class, 'payments_store'])->name('vendor.payments.store');

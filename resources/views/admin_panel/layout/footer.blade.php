@@ -1,6 +1,8 @@
 <footer>
     </div>
 
+    @include('admin_panel.layout._compact_listing_override')
+
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
@@ -32,6 +34,7 @@
     <script src="{{ asset('assets/js/home.js') }}"></script>
     <script src="{{ asset('assets/js/main.js') }}"></script>
     <script src="{{ asset('assets/js/form-guard.js') }}"></script>
+    <script src="{{ asset('assets/js/us-number-format.js') }}"></script>
 
     <script>
         $('#sidebar').slimScroll({

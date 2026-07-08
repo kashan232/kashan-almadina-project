@@ -181,6 +181,7 @@
                                             <th class="text-end">Opening Balance</th>
                                             <th class="text-end">Closing Balance</th>
                                             <th>Address</th>
+                                            <th class="text-center">Status</th>
                                             <th class="text-center">Action</th>
                                         </tr>
                                     </thead>
@@ -209,7 +210,17 @@
                                             <td class="text-end fw-bold text-success">{{ number_format($v->latestLedger->closing_balance ?? 0, 0) }}</td>
                                             <td><small>{{ Str::limit($v->address, 30) }}</small></td>
                                             <td class="text-center">
+                                                @if(($v->status ?? 'active') === 'active')
+                                                    <span class="badge bg-success">Active</span>
+                                                @else
+                                                    <span class="badge bg-danger">Disabled</span>
+                                                @endif
+                                            </td>
+                                            <td class="text-center">
                                                 <div class="d-flex gap-1 justify-content-center">
+                                                    <a href="{{ route('vendor.toggleStatus', $v->id) }}" class="btn btn-outline-secondary btn-xs px-1 py-0" title="Toggle Status" style="height: 20px;" onclick="return confirm('Change vendor status?')">
+                                                        <i class="fa fa-toggle-on"></i>
+                                                    </a>
                                                     <a href="{{ route('vendor.edit', $v->id) }}" class="btn btn-outline-primary btn-xs px-1 py-0" style="height: 20px;">
                                                         <i class="fa fa-edit"></i>
                                                     </a>

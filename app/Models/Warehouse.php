@@ -46,4 +46,52 @@ class Warehouse extends Model
         });
     }
 
+    /**
+     * Warehouses visible to the logged-in user (admin = all, user = group-assigned).
+     */
+    public static function accessibleQuery()
+    {
+        $user = auth()->user();
+
+        if ($user && $user->isAdmin()) {
+            return static::withoutGlobalScopes();
+        }
+
+        return static::withoutGlobalScope('exclude_claims');
+    }
+
+    public static function accessibleByClaimType(string $claimType, ?int $includeWarehouseId = null)
+    {
+        $warehouses = static::accessibleQuery()
+            ->where('claim_type', $claimType)
+            ->orderBy('warehouse_name')
+            ->get();
+
+        if ($includeWarehouseId && !$warehouses->contains('id', $includeWarehouseId)) {
+            $extra = static::withoutGlobalScopes()->find($includeWarehouseId);
+            if ($extra && $extra->claim_type === $claimType) {
+                $warehouses->push($extra);
+            }
+        }
+
+        return $warehouses->sortBy('warehouse_name')->values();
+    }
+
+    public static function isAccessibleToUser(int $warehouseId, ?string $claimType = null): bool
+    {
+        $query = static::accessibleQuery()->where('id', $warehouseId);
+
+        if ($claimType !== null) {
+            $query->where('claim_type', $claimType);
+        }
+
+        return $query->exists();
+    }
+
+    /** All warehouses for cross-location transfers (no group or claim-type filter). */
+    public static function allForSelection()
+    {
+        return static::withoutGlobalScopes()->orderBy('warehouse_name')->get();
+    }
+
 }

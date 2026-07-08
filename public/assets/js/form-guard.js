@@ -17,6 +17,7 @@
         recentSaveAction: null,
         confirming: false,
         target: null,
+        posted: false,
     };
 
     var SAVE_BTN_SELECTORS = [
@@ -219,6 +220,31 @@
         markClean();
     }
 
+    /**
+     * Once a form is posted it becomes locked/read-only, so the guard must never
+     * beep or block navigation again. This turns the guard fully off.
+     */
+    function disableGuard() {
+        state.posted = true;
+        state.enabled = false;
+        state.dirty = false;
+        state.bypassNavigation = true;
+        state.recentSaveAction = null;
+    }
+
+    function isFormPostedNow() {
+        if (!state.target) return false;
+        if (state.target.classList.contains('form-locked') ||
+            state.target.classList.contains('view-mode')) {
+            return true;
+        }
+        var badge = document.getElementById('statusBadge');
+        if (badge && /posted/i.test(badge.textContent || '')) {
+            return true;
+        }
+        return false;
+    }
+
     function armSaveAction(type) {
         state.recentSaveAction = type || 'save';
         window.setTimeout(function () {
@@ -239,8 +265,15 @@
             return;
         }
 
+        if (isFormPostedNow()) {
+            disableGuard();
+            return;
+        }
+
         state.enabled = true;
         window.setTimeout(captureBaseline, 400);
+
+        watchPostedState(state.target);
 
         var onChange = function () {
             if (!state.bypassNavigation) {
@@ -258,6 +291,28 @@
 
         if (window.jQuery) {
             jQuery(document).on('change', '.select2-hidden-accessible', onChange);
+        }
+    }
+
+    /**
+     * When the form gains a locked/posted state after an AJAX post (without a
+     * full page reload), turn the guard off so navigation is silent.
+     */
+    function watchPostedState(target) {
+        if (!target || typeof MutationObserver === 'undefined') return;
+
+        var observer = new MutationObserver(function () {
+            if (isFormPostedNow()) {
+                disableGuard();
+                observer.disconnect();
+            }
+        });
+
+        observer.observe(target, { attributes: true, attributeFilter: ['class'] });
+
+        var badge = document.getElementById('statusBadge');
+        if (badge) {
+            observer.observe(badge, { childList: true, characterData: true, subtree: true });
         }
     }
 
@@ -311,14 +366,23 @@
             if (!(xhr.status >= 200 && xhr.status < 300)) return;
 
             var ok = true;
+            var json = null;
             try {
-                var json = xhr.responseJSON || JSON.parse(xhr.responseText || '{}');
+                json = xhr.responseJSON || JSON.parse(xhr.responseText || '{}');
                 if (json && (json.success === false || json.error)) ok = false;
             } catch (e) {
                 ok = true;
             }
 
-            if (ok) {
+            if (!ok) return;
+
+            var postedNow = state.recentSaveAction === 'post' ||
+                (json && typeof json.status === 'string' && /posted/i.test(json.status));
+
+            if (postedNow) {
+                // Posted form becomes read-only; never guard/beep again.
+                disableGuard();
+            } else {
                 markSaved();
             }
         });
@@ -336,6 +400,8 @@
         },
         markClean: markClean,
         markSaved: markSaved,
+        markPosted: disableGuard,
+        disable: disableGuard,
         refresh: function () {
             initGuard();
             captureBaseline();
@@ -349,4 +415,5 @@
     };
 
     document.addEventListener('form-guard:saved', markSaved);
+    document.addEventListener('form-guard:posted', disableGuard);
 })(window, document);

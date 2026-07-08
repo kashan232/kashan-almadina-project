@@ -14,6 +14,33 @@ use Illuminate\Support\Facades\Validator;
 
 class ClaimAcceptanceController extends Controller
 {
+    private function claimWarehouses(string $claimType, ?ClaimAcceptance $voucher = null)
+    {
+        $includeId = null;
+        if ($voucher) {
+            $includeId = $claimType === 'customer'
+                ? (int) ($voucher->from_warehouse_id ?? 0)
+                : (int) ($voucher->to_warehouse_id ?? 0);
+            if ($includeId === 0) {
+                $includeId = null;
+            }
+        }
+
+        return Warehouse::accessibleByClaimType($claimType, $includeId);
+    }
+
+    private function assertClaimWarehouseAccessible(int $warehouseId, string $claimType): void
+    {
+        if (!Warehouse::isAccessibleToUser($warehouseId, $claimType)) {
+            throw new \Illuminate\Http\Exceptions\HttpResponseException(
+                response()->json([
+                    'success' => false,
+                    'message' => 'You do not have access to the selected warehouse.',
+                ], 403)
+            );
+        }
+    }
+
     public function index(Request $request)
     {
         $query = ClaimAcceptance::with(['vendor', 'customer', 'creator', 'items']);
@@ -35,8 +62,8 @@ class ClaimAcceptanceController extends Controller
     public function create()
     {
         $voucherNo = ClaimAcceptance::generateVoucherNo();
-        $customerWarehouses = Warehouse::withoutGlobalScopes()->where('claim_type', 'customer')->orderBy('warehouse_name')->get();
-        $companyWarehouses = Warehouse::withoutGlobalScopes()->where('claim_type', 'company')->orderBy('warehouse_name')->get();
+        $customerWarehouses = $this->claimWarehouses('customer');
+        $companyWarehouses = $this->claimWarehouses('company');
         return view('admin_panel.claim_acceptance.create', compact('voucherNo', 'customerWarehouses', 'companyWarehouses'));
     }
 
@@ -46,16 +73,16 @@ class ClaimAcceptanceController extends Controller
         if ($voucher->status === 'Posted') {
             return redirect()->route('claim-acceptance.index')->with('error', 'Posted vouchers cannot be edited.');
         }
-        $customerWarehouses = Warehouse::withoutGlobalScopes()->where('claim_type', 'customer')->orderBy('warehouse_name')->get();
-        $companyWarehouses = Warehouse::withoutGlobalScopes()->where('claim_type', 'company')->orderBy('warehouse_name')->get();
+        $customerWarehouses = $this->claimWarehouses('customer', $voucher);
+        $companyWarehouses = $this->claimWarehouses('company', $voucher);
         return view('admin_panel.claim_acceptance.create', compact('voucher', 'customerWarehouses', 'companyWarehouses'));
     }
 
     public function show($id)
     {
         $voucher = ClaimAcceptance::with(['items.product.brandRelation', 'vendor', 'customer'])->findOrFail($id);
-        $customerWarehouses = Warehouse::withoutGlobalScopes()->where('claim_type', 'customer')->orderBy('warehouse_name')->get();
-        $companyWarehouses = Warehouse::withoutGlobalScopes()->where('claim_type', 'company')->orderBy('warehouse_name')->get();
+        $customerWarehouses = $this->claimWarehouses('customer', $voucher);
+        $companyWarehouses = $this->claimWarehouses('company', $voucher);
         $viewMode = true;
 
         return view('admin_panel.claim_acceptance.create', compact('voucher', 'customerWarehouses', 'companyWarehouses', 'viewMode'));
@@ -80,6 +107,9 @@ class ClaimAcceptanceController extends Controller
         if ($validator->fails()) {
             return response()->json(['success' => false, 'message' => 'Validation failed', 'errors' => $validator->errors()], 422);
         }
+
+        $this->assertClaimWarehouseAccessible((int) $request->from_warehouse_id, 'customer');
+        $this->assertClaimWarehouseAccessible((int) $request->to_warehouse_id, 'company');
 
         try {
             DB::beginTransaction();

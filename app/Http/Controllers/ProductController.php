@@ -22,7 +22,7 @@ class ProductController extends Controller
 {
     public function index()
     {
-        $products = Product::with('latestPrice')->get();
+        $products = Product::withInactive()->with('latestPrice')->orderByDesc('id')->get();
         return view('admin_panel.product.index', compact('products'));
     }
     public function prices($id)
@@ -153,7 +153,7 @@ class ProductController extends Controller
             'brand_id' => $request->brand,
             'stock' => $shopStock, // Remainder goes to shop
             'alert_qty' => $request->alert_qty,
-            'status' => $request->status,
+            'status' => $request->input('status', 1),
             'weight' => $request->weight,
         ]);
 
@@ -498,10 +498,24 @@ class ProductController extends Controller
         }
 
         if ($action === 'deactivate') {
-            Product::whereIn('id', $ids)->update(['status' => 0]);
+            Product::withInactive()->whereIn('id', $ids)->update(['status' => 0]);
             return response()->json(['status' => 'success', 'message' => 'Selected products deactivated.']);
         }
 
+        if ($action === 'activate') {
+            Product::withInactive()->whereIn('id', $ids)->update(['status' => 1]);
+            return response()->json(['status' => 'success', 'message' => 'Selected products activated.']);
+        }
+
+    }
+
+    public function toggleStatus($id)
+    {
+        $product = Product::withInactive()->findOrFail($id);
+        $product->status = (int) $product->status === 1 ? 0 : 1;
+        $product->save();
+
+        return redirect()->back()->with('success', 'Product status updated.');
     }
 
     public function getProductById($id)

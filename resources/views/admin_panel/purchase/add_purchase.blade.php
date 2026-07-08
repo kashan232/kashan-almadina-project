@@ -594,7 +594,7 @@
               </div>
 
               <div class="d-flex justify-content-between align-items-center py-1 border-bottom px-1">
-                <span class="text-dark small fw-bold">Total Discount</span>
+                <span class="text-dark small fw-bold">Accounts Allocation</span>
                 <span id="overallDiscountDisplay" class="fw-bold text-dark" style="font-size: 0.9rem;">0.00</span>
                 <input type="hidden" id="overallDiscount" name="discount" value="{{ old('discount', $purchase->discount ?? 0) }}">
               </div>

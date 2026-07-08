@@ -56,7 +56,7 @@ class CustomerController extends Controller
 
     public function toggleStatus($id)
     {
-        $customer = Customer::findOrFail($id);
+        $customer = Customer::withInactive()->findOrFail($id);
         // dd($customer);
         // Check if changing to inactive
         if ($customer->status === 'active') {
@@ -88,7 +88,7 @@ class CustomerController extends Controller
 
     public function markInactive($id)
     {
-        $customer = Customer::findOrFail($id);
+        $customer = Customer::withInactive()->findOrFail($id);
         $customer->status = 'inactive';
         $customer->save();
 
@@ -97,7 +97,7 @@ class CustomerController extends Controller
 
     public function inactiveCustomers()
     {
-        $customers = Customer::where('status', 'inactive')->latest()->get();
+        $customers = Customer::withInactive()->where('status', 'inactive')->latest()->get();
         return view('admin_panel.customers.inactive', compact('customers'));
     }
 
@@ -225,7 +225,7 @@ class CustomerController extends Controller
 
     public function edit($id)
     {
-        $customer = Customer::findOrFail($id);
+        $customer = Customer::withInactive()->findOrFail($id);
         $customer->persistOpeningBalanceFromLedgerIfMissing();
         $customer->refresh();
 
@@ -239,7 +239,7 @@ class CustomerController extends Controller
 
     public function update(Request $request, $id)
     {
-        $customer = Customer::findOrFail($id);
+        $customer = Customer::withInactive()->findOrFail($id);
 
         // Validate input. For customer_id, ignore unique check for this record.
         $data = $request->validate([

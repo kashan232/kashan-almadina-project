@@ -43,7 +43,7 @@ class VendorController extends Controller
             }
         }
 
-        $vendors = $query->withCount('purchases')->latest()->get();
+        $vendors = $query->withInactive()->withCount('purchases')->latest()->get();
         $userGroups = UserGroup::all();
         $users = User::all();
 
@@ -81,6 +81,7 @@ class VendorController extends Controller
             'name' => $request->name,
             'phone' => $request->phone,
             'address' => $request->address,
+            'status' => 'active',
             'opening_balance' => intval($request->opening_balance ?? 0),
             'user_group_ids' => $request->user_group_ids,
             'created_by' => $userId,
@@ -94,10 +95,19 @@ class VendorController extends Controller
 
     public function edit($id)
     {
-        $vendor = Vendor::findOrFail($id);
+        $vendor = Vendor::withInactive()->findOrFail($id);
         $userGroups = UserGroup::all();
         $isAdmin = Auth::user()->roles->pluck('name')->contains('Admin') || Auth::id() == 1;
         return view('admin_panel.vendors.edit', compact('vendor', 'userGroups', 'isAdmin'));
+    }
+
+    public function toggleStatus($id)
+    {
+        $vendor = Vendor::withInactive()->findOrFail($id);
+        $vendor->status = $vendor->status === 'active' ? 'inactive' : 'active';
+        $vendor->save();
+
+        return redirect()->back()->with('success', 'Vendor status updated.');
     }
 
     public function update(Request $request, $id)
@@ -110,7 +120,7 @@ class VendorController extends Controller
             'user_group_ids' => 'nullable|array',
         ]);
 
-        $vendor = Vendor::findOrFail($id);
+        $vendor = Vendor::withInactive()->findOrFail($id);
         $vendor->update([
             'name' => $request->name,
             'phone' => $request->phone,

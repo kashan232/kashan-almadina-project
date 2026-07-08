@@ -270,7 +270,11 @@
                                                 @endif
                                             </td>
                                             <td class="text-center">
-                                                <input type="checkbox" disabled {{ $account->status ? '' : 'checked' }}>
+                                                @if($account->status)
+                                                    <span class="badge bg-success">Active</span>
+                                                @else
+                                                    <span class="badge bg-danger">Disabled</span>
+                                                @endif
                                             </td>
                                             <td class="text-center">
                                                 <button class="btn btn-outline-warning btn-xs px-1 py-0 edit-account-btn" 
@@ -321,7 +325,7 @@
                     <label class="form-label small fw-bold">Select Head</label>
                     <select name="head_id" class="form-select form-select-sm" id="accountHeadSelect" required>
                         <option value="">Select Head</option>
-                        @foreach($heads as $head)
+                        @foreach($activeHeads as $head)
                         <option value="{{ $head->id }}">{{ $head->id }} — {{ $head->name }}</option>
                         @endforeach
                     </select>

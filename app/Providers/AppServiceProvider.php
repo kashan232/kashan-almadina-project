@@ -22,5 +22,13 @@ class AppServiceProvider extends ServiceProvider
         \Illuminate\Support\Facades\Gate::before(function ($user, $ability) {
             return $user->email === 'admin@admin.com' ? true : null;
         });
+
+        \Illuminate\Support\Facades\Blade::directive('num', function ($expression) {
+            return "<?php echo fmt_num($expression); ?>";
+        });
+
+        \Illuminate\Support\Facades\Blade::directive('money', function ($expression) {
+            return "<?php echo fmt_money($expression); ?>";
+        });
     }
 }

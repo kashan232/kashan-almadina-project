@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Product extends Model
 {
-    use HasFactory, \App\Traits\HasModuleIdSequence;
+    use HasFactory, \App\Traits\HasModuleIdSequence, \App\Traits\FiltersInactiveRecords;
 
     protected static function defaultModuleIdRange(): array
     {
@@ -27,7 +27,15 @@ class Product extends Model
         'opening_warehouse_stocks' => 'array',
         'opening_total_stock' => 'float',
         'opening_shop_stock' => 'float',
+        'status' => 'boolean',
     ];
+
+    public function resolveRouteBinding($value, $field = null)
+    {
+        return static::withInactive()
+            ->where($field ?? $this->getRouteKeyName(), $value)
+            ->firstOrFail();
+    }
     // protected $fillable = [
     //     'creater_id', 'category_id', 'sub_category_id', 'item_code', 'item_name', 'size',
     //     'opening_carton_quantity', 'carton_quantity', 'loose_pieces', 'pcs_in_carton',

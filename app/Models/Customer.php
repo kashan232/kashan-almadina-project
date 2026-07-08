@@ -15,7 +15,7 @@ class Customer extends Model
         'opening_balance' => 'float',
     ];
 
-    use HasFactory, \App\Traits\GroupIsolation, \App\Traits\HasModuleIdSequence;
+    use HasFactory, \App\Traits\GroupIsolation, \App\Traits\HasModuleIdSequence, \App\Traits\FiltersInactiveRecords;
 
     protected function resolveModuleIdRange(): array
     {
@@ -36,6 +36,13 @@ class Customer extends Model
         if (empty($this->customer_id) && $this->getKey()) {
             $this->customer_id = (string) $this->getKey();
         }
+    }
+
+    public function resolveRouteBinding($value, $field = null)
+    {
+        return static::withInactive()
+            ->where($field ?? $this->getRouteKeyName(), $value)
+            ->firstOrFail();
     }
 
     public function customerLedger()

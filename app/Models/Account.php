@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\DB;
 
 class Account extends Model
 {
-    use HasFactory, \App\Traits\GroupIsolation, \App\Traits\HasModuleIdSequence;
+    use HasFactory, \App\Traits\GroupIsolation, \App\Traits\HasModuleIdSequence, \App\Traits\FiltersInactiveRecords;
 
     protected static function defaultModuleIdRange(): array
     {
@@ -53,6 +53,13 @@ class Account extends Model
     protected $casts = [
         'user_group_ids' => 'array',
     ];
+
+    public function resolveRouteBinding($value, $field = null)
+    {
+        return static::withInactive()
+            ->where($field ?? $this->getRouteKeyName(), $value)
+            ->firstOrFail();
+    }
 
     // Relation with AccountHead
     public function head()

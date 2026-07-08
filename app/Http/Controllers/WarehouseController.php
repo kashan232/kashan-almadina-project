@@ -13,9 +13,10 @@ class WarehouseController extends Controller
 {
     public function index(Request $request)
     {
-        $isAdmin = Auth::user()->roles->pluck('name')->contains('Admin') || Auth::id() == 1;
-        $query = Warehouse::withoutGlobalScopes()->with(['creator']);
-        
+        $user = Auth::user();
+        $isAdmin = $user->isAdmin();
+        $query = Warehouse::accessibleQuery()->with(['creator']);
+
         // Admin can filter by user
         if ($isAdmin && $request->has('created_by') && $request->created_by != '') {
             $query->where('created_by', $request->created_by);

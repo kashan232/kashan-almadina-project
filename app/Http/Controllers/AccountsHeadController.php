@@ -37,7 +37,11 @@ class AccountsHeadController extends Controller
             }
         }
 
-        $heads = AccountHead::query()
+        $heads = AccountHead::withInactive()
+            ->orderByRaw('CASE WHEN id >= ? THEN 0 ELSE 1 END', [ModuleIdSequence::ACCOUNT_HEAD_MIN])
+            ->orderBy('id')
+            ->get();
+        $activeHeads = AccountHead::query()
             ->orderByRaw('CASE WHEN id >= ? THEN 0 ELSE 1 END', [ModuleIdSequence::ACCOUNT_HEAD_MIN])
             ->orderBy('id')
             ->get();
@@ -45,11 +49,12 @@ class AccountsHeadController extends Controller
         $users = User::all();
         $nextHeadId = ModuleIdSequence::peekNextMainHeadId();
 
-        $accounts = $query->orderBy('head_id')->orderBy('account_code')->get();
+        $accounts = $query->withInactive()->orderBy('head_id')->orderBy('account_code')->get();
 
         return view('admin_panel.chart_of_accounts', compact(
             'accounts',
             'heads',
+            'activeHeads',
             'nextHeadId',
             'isAdmin',
             'userGroups',
