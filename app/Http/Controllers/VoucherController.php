@@ -1457,6 +1457,23 @@ class VoucherController extends Controller
     // INCOME VOUCHER METHODS
     // ==========================================
 
+    /**
+     * Next sequential voucher number across ALL users (ignores group isolation)
+     * using the highest numeric value — prevents duplicate voucher numbers.
+     */
+    private function nextVoucherNumber(string $modelClass, string $column): string
+    {
+        $max = 0;
+        foreach ($modelClass::withoutGlobalScopes()->pluck($column) as $val) {
+            $num = (int) preg_replace('/[^0-9]/', '', (string) $val);
+            if ($num > $max) {
+                $max = $num;
+            }
+        }
+
+        return str_pad($max + 1, 3, '0', STR_PAD_LEFT);
+    }
+
     public function income_vochers($id = null)
     {
         $receipt = $id ? IncomeVoucher::findOrFail($id) : new IncomeVoucher();
@@ -1466,9 +1483,7 @@ class VoucherController extends Controller
         
         $nextIvid = null;
         if (!$id) {
-            $last = IncomeVoucher::orderBy('id', 'desc')->first();
-            $num = $last ? (int) preg_replace('/[^0-9]/', '', $last->ivid) + 1 : 1;
-            $nextIvid = str_pad($num, 3, '0', STR_PAD_LEFT);
+            $nextIvid = $this->nextVoucherNumber(IncomeVoucher::class, 'ivid');
         }
 
         return view('admin_panel.vochers.income_vouchers.income_vouchers', compact('receipt', 'AccountHeads', 'narrationsList', 'nextIvid'));
@@ -1493,9 +1508,7 @@ class VoucherController extends Controller
             $voucher = $id ? IncomeVoucher::findOrFail($id) : new IncomeVoucher();
 
             if (!$id) {
-                $last = IncomeVoucher::orderBy('id', 'desc')->first();
-                $num = $last ? (int) preg_replace('/[^0-9]/', '', $last->ivid) + 1 : 1;
-                $voucher->ivid = str_pad($num, 3, '0', STR_PAD_LEFT);
+                $voucher->ivid = $this->nextVoucherNumber(IncomeVoucher::class, 'ivid');
                 $voucher->status = 'draft';
             }
 
@@ -1830,9 +1843,7 @@ class VoucherController extends Controller
         
         $nextAvid = null;
         if (!$id) {
-            $last = AdjustmentVoucher::orderBy('id', 'desc')->first();
-            $num = $last ? (int) preg_replace('/[^0-9]/', '', $last->avid) + 1 : 1;
-            $nextAvid = str_pad($num, 3, '0', STR_PAD_LEFT);
+            $nextAvid = $this->nextVoucherNumber(AdjustmentVoucher::class, 'avid');
         }
 
         return view('admin_panel.vochers.adjustment_vouchers.adjustment_vouchers', compact('receipt', 'AccountHeads', 'narrationsList', 'nextAvid'));
@@ -1878,9 +1889,7 @@ class VoucherController extends Controller
                 if ($voucher->status == 'posted') return response()->json(['success' => false, 'message' => 'Cannot edit posted voucher.'], 403);
                 $voucher->update($data);
             } else {
-                $last = AdjustmentVoucher::orderBy('id', 'desc')->first();
-                $num = $last ? (int) preg_replace('/[^0-9]/', '', $last->avid) + 1 : 1;
-                $data['avid'] = str_pad($num, 3, '0', STR_PAD_LEFT);
+                $data['avid'] = $this->nextVoucherNumber(AdjustmentVoucher::class, 'avid');
                 $data['status'] = 'draft';
                 $voucher = AdjustmentVoucher::create($data);
             }
