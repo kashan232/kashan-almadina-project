@@ -43,7 +43,7 @@
                                 <label class="form-label fw-bold text-secondary">Invoice / Document Number</label>
                                 <div class="input-group">
                                     <span class="input-group-text bg-light border-2 border-end-0"><i class="fas fa-hashtag"></i></span>
-                                    <input type="text" name="invoice_no" class="form-control border-2 border-start-0" placeholder="e.g. INV-001, INV-002, 003" required>
+                                    <input type="text" name="invoice_no" class="form-control border-2 border-start-0 no-us-format" data-us-number="off" placeholder="e.g. INV-001, INV-002, 003" required>
                                 </div>
                                 <small class="text-muted d-block mt-1"><i class="fa fa-info-circle me-1"></i>You can enter multiple numbers separated by commas.</small>
                             </div>
