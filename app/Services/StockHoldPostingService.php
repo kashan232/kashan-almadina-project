@@ -79,6 +79,19 @@ class StockHoldPostingService
 
     public function resolveReleaseWarehouseId(StockReleaseVoucher $voucher, StockRelease $item): int
     {
+        // The physical stock impact must hit the warehouse chosen on the RELEASE
+        // itself. If a release is made from W2 against a hold taken in W1, W2's
+        // stock must decrease — not W1's. (warehouse_id 0 = Shop is a valid pick.)
+        if ($item->warehouse_id !== null && $item->warehouse_id !== '') {
+            return (int) $item->warehouse_id;
+        }
+
+        if ($voucher->warehouse_id !== null && $voucher->warehouse_id !== '') {
+            return (int) $voucher->warehouse_id;
+        }
+
+        // Fallback only when the release did not specify a warehouse: use the
+        // original hold's location.
         if ($item->hold_id) {
             $hold = StockHold::withoutGlobalScopes()->find($item->hold_id);
             if ($hold && $hold->warehouse_id !== null && $hold->warehouse_id !== '') {
@@ -93,7 +106,7 @@ class StockHoldPostingService
             }
         }
 
-        return (int) ($item->warehouse_id ?: $voucher->warehouse_id);
+        return 0;
     }
 
     public function applyReleaseVoucherPosting(StockReleaseVoucher $voucher): void
