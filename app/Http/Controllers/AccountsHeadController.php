@@ -16,7 +16,7 @@ class AccountsHeadController extends Controller
 {
     public function index()
     {
-        $query = Account::with('head');
+        $query = Account::withInactive()->with('head');
         $isAdmin = Auth::user()->roles->pluck('name')->contains('Admin') || Auth::id() == 1;
         
         if (!$isAdmin) {
@@ -49,7 +49,7 @@ class AccountsHeadController extends Controller
         $users = User::all();
         $nextHeadId = ModuleIdSequence::peekNextMainHeadId();
 
-        $accounts = $query->withInactive()->orderBy('head_id')->orderBy('account_code')->get();
+        $accounts = $query->orderBy('head_id')->orderBy('account_code')->get();
 
         return view('admin_panel.chart_of_accounts', compact(
             'accounts',
@@ -118,46 +118,54 @@ class AccountsHeadController extends Controller
     public function storeAccount(Request $request)
     {
         $request->validate([
-            'head_id'        => 'required|exists:account_heads,id',
-            'account_code'   => 'required',
-            'title'          => 'required|string|max:150',
+            'id'              => 'nullable|integer',
+            'head_id'         => 'required|exists:account_heads,id',
+            'title'           => 'required|string|max:150',
             'opening_balance' => 'nullable|numeric',
-            'status'         => 'nullable|in:on',
-            'user_group_ids' => 'nullable|array',
+            'status'          => 'nullable|in:on',
+            'user_group_ids'  => 'nullable|array',
         ]);
 
-        // Support both creating and updating in one method or just create
-        // Actually the form currently only does store.
-        
         $status = $request->status === 'on' ? 1 : 0;
+        $groupIds = !empty($request->user_group_ids) ? array_values($request->user_group_ids) : null;
 
-        $existingInScope = Account::where('account_code', $request->account_code)->first();
-        $accountCode = $request->account_code;
+        // EDIT: an explicit id targets one existing account. Update that exact
+        // record so assigning extra groups never spawns a duplicate account.
+        if ($request->filled('id')) {
+            $account = Account::withInactive()
+                ->withoutGlobalScope(\App\Scopes\GroupIsolationScope::class)
+                ->find($request->id);
 
-        if (!$existingInScope) {
-            $accountCode = Account::generateAccountCode((int) $request->head_id);
-        } elseif (DB::table('accounts')->where('account_code', $accountCode)->where('id', '!=', $existingInScope->id)->exists()) {
-            return redirect()
-                ->route('view_all')
-                ->with('error', 'Account code already exists. Please refresh and try again.');
-        }
+            if (!$account) {
+                return redirect()->route('view_all')->with('error', 'Account not found.');
+            }
 
-        Account::updateOrCreate(
-            ['account_code' => $accountCode],
-            [
+            $account->update([
                 'head_id'         => $request->head_id,
                 'title'           => $request->title,
-                'type'            => $existingInScope->type ?? 'Debit',
                 'opening_balance' => $request->opening_balance ?? 0,
                 'status'          => $status,
-                'user_group_ids'  => $request->user_group_ids,
-                'created_by'      => $existingInScope ? $existingInScope->created_by : Auth::id(),
-            ]
-        );
+                'user_group_ids'  => $groupIds,
+            ]);
 
-        return redirect()
-            ->route('view_all')
-            ->with('success', 'Account saved successfully.');
+            return redirect()->route('view_all')->with('success', 'Account updated successfully.');
+        }
+
+        // CREATE: always mint a fresh, collision-free code server-side.
+        $accountCode = Account::generateAccountCode((int) $request->head_id);
+
+        Account::create([
+            'head_id'         => $request->head_id,
+            'account_code'    => $accountCode,
+            'title'           => $request->title,
+            'type'            => 'Debit',
+            'opening_balance' => $request->opening_balance ?? 0,
+            'status'          => $status,
+            'user_group_ids'  => $groupIds,
+            'created_by'      => Auth::id(),
+        ]);
+
+        return redirect()->route('view_all')->with('success', 'Account saved successfully.');
     }
 
     

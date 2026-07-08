@@ -316,6 +316,7 @@
     <div class="modal-dialog">
         <form action="{{ route('coa.account.store') }}" method="POST" class="modal-content border-0 shadow">
             @csrf
+            <input type="hidden" name="id" id="accountId" value="">
             <div class="modal-header bg-primary text-white py-2">
                 <h6 class="modal-title fw-bold"><i class="fa fa-plus-circle me-2"></i>Account Setup</h6>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
@@ -569,6 +570,7 @@
             const btn = $(this);
             const modal = $('#addAccountModal');
             modal.find('.modal-title').html('<i class="fa fa-edit me-2"></i>Edit Account');
+            modal.find('#accountId').val(btn.data('id'));
             modal.find('select[name="head_id"]').val(btn.data('head_id'));
             modal.find('input[name="account_code"]').val(btn.data('code'));
             modal.find('input[name="title"]').val(btn.data('title'));
@@ -598,6 +600,7 @@
         $('#addAccountModal').on('hidden.bs.modal', function() {
             const modal = $(this);
             modal.find('.modal-title').html('<i class="fa fa-plus-circle me-2"></i>Account Setup');
+            modal.find('#accountId').val('');
             modal.find('select[name="head_id"]').val('');
             modal.find('input[name="account_code"]').val('');
             modal.find('input[name="title"]').val('');
