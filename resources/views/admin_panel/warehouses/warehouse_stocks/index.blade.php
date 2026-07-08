@@ -199,19 +199,25 @@
                 <div class="card shadow-sm">
                     <div class="card-header bg-white py-1 border-bottom">
                         <div class="row align-items-center">
-                            <div class="col-md-3">
+                            <div class="col-md-2">
                                 <span class="fw-bold text-muted small text-uppercase">Stock Balance Matrix</span>
                             </div>
-                            <div class="col-md-5">
-                                <form action="{{ route('warehouse_stocks.index') }}" method="GET" class="d-flex align-items-center gap-2 m-0">
+                            <div class="col-md-6">
+                                <form action="{{ route('warehouse_stocks.index') }}" method="GET" class="d-flex align-items-center flex-wrap gap-2 m-0">
                                     <input type="hidden" name="view" value="balances">
-                                    <select name="claim_type" class="form-select form-select-sm" style="width: 140px; font-size: 11px;">
+                                    <select name="claim_type" class="form-select form-select-sm" style="width: 130px; font-size: 11px;">
                                         <option value="none" {{ $filter_claim_type == 'none' ? 'selected' : '' }}>Normal</option>
                                         <option value="company" {{ $filter_claim_type == 'company' ? 'selected' : '' }}>Company Claim</option>
                                         <option value="customer" {{ $filter_claim_type == 'customer' ? 'selected' : '' }}>Customer Claim</option>
                                         <option value="all" {{ $filter_claim_type == 'all' ? 'selected' : '' }}>All Types</option>
                                     </select>
-                                    <select name="filter_warehouse_id[]" class="form-select form-select-sm select2" multiple="multiple" data-placeholder="All Warehouses">
+                                    <select name="filter_product_id" id="filter_product_id" class="form-select form-select-sm" style="width: 180px; font-size: 11px;">
+                                        <option value="">All Products</option>
+                                        @if(!empty($filterProduct))
+                                            <option value="{{ $filterProduct->id }}" selected>{{ $filterProduct->id }} - {{ $filterProduct->name }}</option>
+                                        @endif
+                                    </select>
+                                    <select name="filter_warehouse_id[]" class="form-select form-select-sm select2" multiple="multiple" data-placeholder="All Warehouses" style="min-width: 160px;">
                                         @foreach($allWarehouses as $aw)
                                             <option value="{{ $aw->id }}" {{ in_array($aw->id, request('filter_warehouse_id', [])) ? 'selected' : '' }}>{{ $aw->warehouse_name }}</option>
                                         @endforeach
@@ -372,7 +378,16 @@
                                     @endforeach
                                 </select>
                             </div>
-                            <div class="col-md-3 d-flex gap-2">
+                            <div class="col-md-3">
+                                <label class="small fw-bold text-muted">Product</label>
+                                <select name="filter_product_id" id="filter_product_id_history" class="form-select form-select-sm">
+                                    <option value="">All Products</option>
+                                    @if(!empty($filterProduct))
+                                        <option value="{{ $filterProduct->id }}" selected>{{ $filterProduct->id }} - {{ $filterProduct->name }}</option>
+                                    @endif
+                                </select>
+                            </div>
+                            <div class="col-md-2 d-flex gap-2 align-items-end">
                                 <button type="submit" class="btn btn-primary btn-sm rounded-pill px-3"><i class="fa fa-filter me-1"></i> Filter</button>
                                 <a href="{{ route('warehouse_stocks.index', ['view' => 'history']) }}" class="btn btn-outline-secondary btn-sm rounded-pill px-3">Reset</a>
                             </div>
@@ -446,6 +461,39 @@
 <script>
     $(document).ready(function() {
         $('.select2').select2({ width: '100%' });
+
+        function initProductFilter($el) {
+            $el.select2({
+                placeholder: 'All Products',
+                allowClear: true,
+                width: '100%',
+                ajax: {
+                    url: "{{ route('search-productsinwar') }}",
+                    dataType: 'json',
+                    delay: 150,
+                    data: function(params) {
+                        return { q: params.term || '' };
+                    },
+                    processResults: function(data) {
+                        return {
+                            results: data.map(function(item) {
+                                return {
+                                    id: item.id,
+                                    text: item.id + ' - ' + item.name
+                                };
+                            })
+                        };
+                    }
+                },
+                minimumInputLength: 1
+            });
+        }
+
+        @if($view == 'balances')
+            initProductFilter($('#filter_product_id'));
+        @else
+            initProductFilter($('#filter_product_id_history'));
+        @endif
 
         // Toggle Column Picker Menu
         $('#columnPickerBtn').on('click', function(e) {

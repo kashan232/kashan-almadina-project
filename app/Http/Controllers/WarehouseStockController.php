@@ -42,6 +42,8 @@ class WarehouseStockController extends Controller
         $view = $request->get('view', 'balances');
         $filter_warehouse_ids = (array) $request->get('filter_warehouse_id', []);
         $filter_claim_type = $request->get('claim_type', 'none'); // Default to 'none' (Normal)
+        $filter_product_id = $request->filled('filter_product_id') ? (int) $request->filter_product_id : null;
+        $filterProduct = $filter_product_id ? Product::find($filter_product_id) : null;
 
         $allWarehouses = $this->accessibleWarehouses();
         $accessibleWarehouseIds = $allWarehouses->pluck('id')->map(fn ($id) => (int) $id)->all();
@@ -80,17 +82,23 @@ class WarehouseStockController extends Controller
             if ($request->filled('status')) {
                 $query->where('status', $request->status);
             }
+            if ($filter_product_id) {
+                $query->whereHas('items', function ($q) use ($filter_product_id) {
+                    $q->where('product_id', $filter_product_id);
+                });
+            }
 
             $stocks = $query->get();
 
             return view('admin_panel.warehouses.warehouse_stocks.index', compact(
-                'stocks', 'warehouses', 'allWarehouses', 'view', 'isAdmin', 'canAccessShop'
+                'stocks', 'warehouses', 'allWarehouses', 'view', 'isAdmin', 'canAccessShop',
+                'filter_product_id', 'filterProduct'
             ));
         }
 
         // Live Balances Mode
         // Fetch all products with their shop stock and warehouse stock relations
-        $products = Product::with([
+        $productsQuery = Product::with([
             'warehouseStocks' => function ($q) use ($accessibleWarehouseIds) {
                 $q->where('status', 'Posted')
                     ->whereIn('warehouse_id', $accessibleWarehouseIds);
@@ -106,11 +114,17 @@ class WarehouseStockController extends Controller
                   });
             },
             'brandRelation'
-        ])->orderBy('name')->get();
+        ])->orderBy('name');
+
+        if ($filter_product_id) {
+            $productsQuery->where('id', $filter_product_id);
+        }
+
+        $products = $productsQuery->get();
 
         return view('admin_panel.warehouses.warehouse_stocks.index', compact(
             'products', 'warehouses', 'allWarehouses', 'view', 'filter_warehouse_ids',
-            'filter_claim_type', 'isAdmin', 'canAccessShop'
+            'filter_claim_type', 'filter_product_id', 'filterProduct', 'isAdmin', 'canAccessShop'
         ));
     }
 
