@@ -47,11 +47,11 @@ class ProductController extends Controller
             'brand' => 'required',
         ]);
 
-        $totalOpeningStock = (float) ($request->stock ?? 0);
+        $totalOpeningStock = parse_num($request->stock ?? 0);
         $warehouseTotal = 0;
         if ($request->has('warehouse_stocks')) {
             foreach ($request->warehouse_stocks as $qty) {
-                $warehouseTotal += (float) $qty;
+                $warehouseTotal += parse_num($qty);
             }
         }
         $shopStock = $totalOpeningStock - $warehouseTotal;
@@ -69,26 +69,12 @@ class ProductController extends Controller
 
         $latestPrice = $product->latestPrice;
 
-        $newPriceData = [
-            'purchase_retail_price' => $request->purchase_retail_price,
-            'purchase_tax_percent' => $request->purchase_tax_percent,
-            'purchase_tax_amount' => $request->purchase_tax_amount,
-            'purchase_discount_percent' => $request->purchase_discount_percent,
-            'purchase_discount_amount' => $request->purchase_discount_amount,
-            'purchase_net_amount' => $request->purchase_net_amount,
-            'sale_retail_price' => $request->sale_retail_price,
-            'sale_tax_percent' => $request->sale_tax_percent,
-            'sale_tax_amount' => $request->sale_tax_amount,
-            'sale_wht_percent' => $request->sale_wht_percent,
-            'sale_discount_percent' => $request->sale_discount_percent,
-            'sale_discount_amount' => $request->sale_discount_amount,
-            'sale_net_amount' => $request->sale_net_amount,
-        ];
+        $newPriceData = $this->pricePayloadFromRequest($request);
 
         $priceChanged = false;
         if ($latestPrice) {
             foreach ($newPriceData as $key => $value) {
-                if ((string) $latestPrice->$key !== (string) $value) {
+                if (round((float) $latestPrice->$key, 2) !== round($value, 2)) {
                     $priceChanged = true;
                     break;
                 }
@@ -135,11 +121,11 @@ class ProductController extends Controller
         ]);
 
         // Calculate distribution
-        $totalOpeningStock = (float)($request->stock ?? 0);
+        $totalOpeningStock = parse_num($request->stock ?? 0);
         $warehouseTotal = 0;
         if ($request->has('warehouse_stocks')) {
             foreach ($request->warehouse_stocks as $qty) {
-                $warehouseTotal += (float)$qty;
+                $warehouseTotal += parse_num($qty);
             }
         }
 
@@ -157,23 +143,10 @@ class ProductController extends Controller
             'weight' => $request->weight,
         ]);
 
-        $product->prices()->create([
-            'purchase_retail_price' => $request->purchase_retail_price,
-            'purchase_tax_percent' => $request->purchase_tax_percent,
-            'purchase_tax_amount' => $request->purchase_tax_amount,
-            'purchase_discount_percent' => $request->purchase_discount_percent,
-            'purchase_discount_amount' => $request->purchase_discount_amount,
-            'purchase_net_amount' => $request->purchase_net_amount,
-            'sale_retail_price' => $request->sale_retail_price,
-            'sale_tax_percent' => $request->sale_tax_percent,
-            'sale_tax_amount' => $request->sale_tax_amount,
-            'sale_wht_percent' => $request->sale_wht_percent,
-            'sale_discount_percent' => $request->sale_discount_percent,
-            'sale_discount_amount' => $request->sale_discount_amount,
-            'sale_net_amount' => $request->sale_net_amount,
+        $product->prices()->create(array_merge($this->pricePayloadFromRequest($request), [
             'start_date' => now()->setTimezone('Asia/Karachi')->toDateString(),
             'end_date' => null,
-        ]);
+        ]));
 
         // Save Warehouse Stocks & Create Stock Adjustments
         $this->syncWarehouseStocksFromForm($product, $request);
@@ -189,7 +162,7 @@ class ProductController extends Controller
         }
 
         foreach ($request->warehouse_ids as $index => $warehouseId) {
-            $qty = (float) ($request->warehouse_stocks[$index] ?? 0);
+            $qty = parse_num($request->warehouse_stocks[$index] ?? 0);
 
             $stock = WarehouseStock::where('warehouse_id', $warehouseId)
                 ->where('product_id', $product->id)
@@ -417,23 +390,23 @@ class ProductController extends Controller
 
                 // Update only relevant type fields
                 if ($type === 'purchase' || $type === 'both') {
-                    $data['purchase_retail_price'] = $request->purchase_retail_price[$index];
-                    $data['purchase_tax_percent'] = $request->purchase_tax_percent[$index];
-                    $data['purchase_tax_amount'] = $request->purchase_tax_amount[$index];
-                    $data['purchase_discount_percent'] = $request->purchase_discount_percent[$index];
-                    $data['purchase_discount_amount'] = $request->purchase_discount_amount[$index];
-                    $data['purchase_net_amount'] = $request->purchase_net_amount[$index];
+                    $data['purchase_retail_price'] = parse_num($request->purchase_retail_price[$index] ?? 0);
+                    $data['purchase_tax_percent'] = parse_num($request->purchase_tax_percent[$index] ?? 0);
+                    $data['purchase_tax_amount'] = parse_num($request->purchase_tax_amount[$index] ?? 0);
+                    $data['purchase_discount_percent'] = parse_num($request->purchase_discount_percent[$index] ?? 0);
+                    $data['purchase_discount_amount'] = parse_num($request->purchase_discount_amount[$index] ?? 0);
+                    $data['purchase_net_amount'] = parse_num($request->purchase_net_amount[$index] ?? 0);
                 }
 
                 if ($type === 'sale' || $type === 'both') {
-                    $data['sale_retail_price'] = $request->sale_retail_price[$index];
-                    $data['sale_tax_percent'] = $request->sale_tax_percent[$index];
-                    $data['sale_tax_amount'] = $request->sale_tax_amount[$index];
-                    $data['sale_wht_percent'] = $request->sale_wht_percent[$index];
-                    $data['sale_wht_amount'] = $request->sale_wht_amount[$index];
-                    $data['sale_discount_percent'] = $request->sale_discount_percent[$index];
-                    $data['sale_discount_amount'] = $request->sale_discount_amount[$index];
-                    $data['sale_net_amount'] = $request->sale_net_amount[$index];
+                    $data['sale_retail_price'] = parse_num($request->sale_retail_price[$index] ?? 0);
+                    $data['sale_tax_percent'] = parse_num($request->sale_tax_percent[$index] ?? 0);
+                    $data['sale_tax_amount'] = parse_num($request->sale_tax_amount[$index] ?? 0);
+                    $data['sale_wht_percent'] = parse_num($request->sale_wht_percent[$index] ?? 0);
+                    $data['sale_wht_amount'] = parse_num($request->sale_wht_amount[$index] ?? 0);
+                    $data['sale_discount_percent'] = parse_num($request->sale_discount_percent[$index] ?? 0);
+                    $data['sale_discount_amount'] = parse_num($request->sale_discount_amount[$index] ?? 0);
+                    $data['sale_net_amount'] = parse_num($request->sale_net_amount[$index] ?? 0);
                 }
 
                 ProductPrice::create($data);
@@ -539,7 +512,7 @@ class ProductController extends Controller
 
         if ($request->has('warehouse_ids')) {
             foreach ($request->warehouse_ids as $index => $warehouseId) {
-                $qty = (float) ($request->warehouse_stocks[$index] ?? 0);
+                $qty = parse_num($request->warehouse_stocks[$index] ?? 0);
                 $warehouseMap[(string) $warehouseId] = $qty;
                 $warehouseTotal += $qty;
             }
@@ -602,5 +575,24 @@ class ProductController extends Controller
         }
 
         return (float) ($product->stock ?? 0);
+    }
+
+    private function pricePayloadFromRequest(Request $request): array
+    {
+        return [
+            'purchase_retail_price' => parse_num($request->purchase_retail_price),
+            'purchase_tax_percent' => parse_num($request->purchase_tax_percent),
+            'purchase_tax_amount' => parse_num($request->purchase_tax_amount),
+            'purchase_discount_percent' => parse_num($request->purchase_discount_percent),
+            'purchase_discount_amount' => parse_num($request->purchase_discount_amount),
+            'purchase_net_amount' => parse_num($request->purchase_net_amount),
+            'sale_retail_price' => parse_num($request->sale_retail_price),
+            'sale_tax_percent' => parse_num($request->sale_tax_percent),
+            'sale_tax_amount' => parse_num($request->sale_tax_amount),
+            'sale_wht_percent' => parse_num($request->sale_wht_percent),
+            'sale_discount_percent' => parse_num($request->sale_discount_percent),
+            'sale_discount_amount' => parse_num($request->sale_discount_amount),
+            'sale_net_amount' => parse_num($request->sale_net_amount),
+        ];
     }
 }

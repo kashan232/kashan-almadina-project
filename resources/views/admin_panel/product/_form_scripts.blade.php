@@ -40,7 +40,20 @@
             }
         });
 
+        function parseFormNum(val) {
+            if (typeof window.parseUS === 'function') {
+                const parsed = window.parseUS(val);
+                return parsed === '' ? 0 : Number(parsed);
+            }
+
+            return parseFloat(String(val).replace(/,/g, '')) || 0;
+        }
+
         $('#form').on('submit', function(e) {
+            if (window.USNumber) {
+                USNumber.unformatForm(this);
+            }
+
             const submitter = e.originalEvent && e.originalEvent.submitter;
             if (!submitter || submitter.id !== 'btnSave') {
                 e.preventDefault();
@@ -76,9 +89,9 @@
         }
 
         function calculateValues(section) {
-            const retailPrice = parseFloat($(`[name="${section}_retail_price"]`).val()) || 0;
-            const taxPercent = parseFloat($(`[name="${section}_tax_percent"]`).val()) || 0;
-            const discountPercent = parseFloat($(`[name="${section}_discount_percent"]`).val()) || 0;
+            const retailPrice = parseFormNum($(`[name="${section}_retail_price"]`).val());
+            const taxPercent = parseFormNum($(`[name="${section}_tax_percent"]`).val());
+            const discountPercent = parseFormNum($(`[name="${section}_discount_percent"]`).val());
 
             const taxAmount = (retailPrice * taxPercent / 100).toFixed(2);
             const discountAmount = (retailPrice * discountPercent / 100).toFixed(2);
@@ -90,10 +103,10 @@
         }
 
         function calculateSaleValues() {
-            const retail = parseFloat($('[name="sale_retail_price"]').val()) || 0;
-            const taxPct = parseFloat($('[name="sale_tax_percent"]').val()) || 0;
-            const whtPct = parseFloat($('[name="sale_wht_percent"]').val()) || 0;
-            const discPct = parseFloat($('[name="sale_discount_percent"]').val()) || 0;
+            const retail = parseFormNum($('[name="sale_retail_price"]').val());
+            const taxPct = parseFormNum($('[name="sale_tax_percent"]').val());
+            const whtPct = parseFormNum($('[name="sale_wht_percent"]').val());
+            const discPct = parseFormNum($('[name="sale_discount_percent"]').val());
 
             const taxAmount = retail * (taxPct / 100);
             $('[name="sale_tax_amount"]').val(taxAmount.toFixed(2));
@@ -121,10 +134,10 @@
         calculateSaleValues();
 
         function updateShopStock() {
-            let total = parseFloat($('#total-stock-input').val()) || 0;
+            let total = parseFormNum($('#total-stock-input').val());
             let distributed = 0;
             $('.warehouse-stock-input').each(function() {
-                distributed += parseFloat($(this).val()) || 0;
+                distributed += parseFormNum($(this).val());
             });
             let shopBalance = total - distributed;
             $('#shop-stock-display').text(shopBalance);
