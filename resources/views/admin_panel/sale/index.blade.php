@@ -221,17 +221,18 @@
                             <label class="column-picker-item"><input type="checkbox" data-column="6" checked> Sale Type</label>
                             <label class="column-picker-item"><input type="checkbox" data-column="7" checked> Source</label>
                             <label class="column-picker-item"><input type="checkbox" data-column="8" checked> Party Type</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="9" checked> Customer / Warehouse</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="10" checked> Items</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="11" checked> Item Qty</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="12" checked> T. Qty</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="13" checked> Inv Total</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="14" checked> Disc</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="15" checked> Receipts</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="16" checked> A/C Allocation</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="17" checked> Net Payble</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="18" checked> Created</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="19" checked> Status</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="9" checked> Customer</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="10" checked> Warehouse</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="11" checked> Items</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="12" checked> Item Qty</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="13" checked> T. Qty</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="14" checked> Inv Total</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="15" checked> Disc</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="16" checked> Receipts</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="17" checked> A/C Allocation</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="18" checked> Net Payble</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="19" checked> Created</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="20" checked> Status</label>
                         </div>
                     </div>
                 </div>
@@ -249,7 +250,8 @@
                                     <th>Sale Type</th>
                                     <th>Source</th>
                                     <th>Party Type</th>
-                                    <th>Customer / Warehouse</th>
+                                    <th>Customer</th>
+                                    <th>Warehouse</th>
                                     <th>Items</th>
                                     <th class="text-center">Item Qty</th>
                                     <th class="text-center">T. Qty</th>
@@ -305,9 +307,10 @@
                                     </td>
                                     <td>
                                         <span class="fw-bold text-dark small">{{ $partyName }}</span>
+                                    </td>
+                                    <td>
                                         <div class="text-muted" style="font-size: 10px;"><i class="fa fa-building-o me-1"></i>{{ Str::limit($whNames ?: '-', 20) }}</div>
                                     </td>
-
                                     <td class="py-1">
                                         @foreach($sale->items as $item)
                                             <div class="item-detail-row">{{ $item->product->name ?? 'Product #'.$item->product_id }}</div>

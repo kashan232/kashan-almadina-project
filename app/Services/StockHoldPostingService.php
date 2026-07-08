@@ -2,21 +2,23 @@
 
 namespace App\Services;
 
-use App\Models\Product;
 use App\Models\StockHold;
 use App\Models\StockHoldVoucher;
 use App\Models\StockRelease;
 use App\Models\StockReleaseVoucher;
-use App\Models\WarehouseStock;
 
 /**
- * Hold / release stock flow (Reserve + Warehouse move together):
- * - Hold:   Reserve (Credit) +qty, Warehouse (Debit) +qty — liability and warehouse both increase
- * - Release: Reserve (Debit) −qty, Warehouse (Credit) −qty — liability and warehouse both decrease
- * - Available = physical warehouse − reserved hold (unchanged on hold; decreases on release)
+ * Hold / release stock flow:
+ * - Manual Hold:   Reserve +qty AND physical +qty (available unchanged)
+ * - Sale Order:    Reserve +qty only (reserveOnly flag — physical unchanged)
+ * - Release:       Reserve −qty AND physical −qty (available decreases)
  */
 class StockHoldPostingService
 {
+    public function __construct(
+        private readonly StockService $stock
+    ) {
+    }
     /**
      * Hold post: increase reserve liability and warehouse physical stock by the same qty.
      */
@@ -26,7 +28,8 @@ class StockHoldPostingService
         float $holdQty,
         ?string $partyType = null,
         ?int $partyId = null,
-        ?int $excludeVoucherId = null
+        ?int $excludeVoucherId = null,
+        bool $reserveOnly = false
     ): float {
         if ($holdQty <= 0) {
             return 0;
@@ -40,7 +43,8 @@ class StockHoldPostingService
             $excludeVoucherId
         );
 
-        if ($remaining > 0) {
+        // Sale orders reserve stock only — physical qty stays unchanged.
+        if ($remaining > 0 && !$reserveOnly) {
             $this->adjustStock($warehouseId, $productId, $remaining);
         }
 
@@ -148,15 +152,7 @@ class StockHoldPostingService
 
     public function physicalQty(int $warehouseId, int $productId): float
     {
-        if ((int) $warehouseId === 0) {
-            return (float) (Product::find($productId)?->stock ?? 0);
-        }
-
-        return (float) (WarehouseStock::where('warehouse_id', $warehouseId)
-            ->where('product_id', $productId)
-            ->orderByRaw("CASE WHEN status = 'Posted' THEN 0 WHEN status IS NULL THEN 1 ELSE 2 END")
-            ->orderByDesc('id')
-            ->value('quantity') ?? 0);
+        return $this->stock->physicalQty($productId, $warehouseId);
     }
 
     public function reservedQty(int $warehouseId, int $productId, ?int $excludeVoucherId = null): float
@@ -171,33 +167,7 @@ class StockHoldPostingService
 
     public function adjustStock(int $warehouseId, int $productId, float $qty): void
     {
-        if ((int) $warehouseId === 0) {
-            $product = Product::find($productId);
-            if ($product) {
-                $product->stock = ($product->stock ?? 0) + $qty;
-                $product->save();
-            }
-
-            return;
-        }
-
-        $stock = WarehouseStock::where('warehouse_id', $warehouseId)
-            ->where('product_id', $productId)
-            ->orderByRaw("CASE WHEN status = 'Posted' THEN 0 WHEN status IS NULL THEN 1 ELSE 2 END")
-            ->orderByDesc('id')
-            ->first();
-
-        if (!$stock) {
-            $stock = new WarehouseStock([
-                'warehouse_id' => $warehouseId,
-                'product_id' => $productId,
-                'quantity' => 0,
-            ]);
-        }
-
-        $stock->quantity = ($stock->quantity ?? 0) + $qty;
-        $stock->status = 'Posted';
-        $stock->save();
+        $this->stock->adjust($productId, $warehouseId, $qty);
     }
 
     public function assertReleaseQtyAllowed(?StockHold $hold, float $releaseQty): void

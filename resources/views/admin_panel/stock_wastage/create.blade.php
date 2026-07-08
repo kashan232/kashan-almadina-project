@@ -654,7 +654,7 @@
                     processResults: function (data, params) {
                         const term = (params.term || '').toLowerCase();
                         const results = data.map(function(item) {
-                            return { id: item.id, text: item.name, price_net: item.price_net || 0 };
+                            return { id: item.id, text: item.name, sale_price: item.sale_price || 0 };
                         });
 
                         // Prioritize exact matches (ID or Name) at the top of the list
@@ -705,8 +705,8 @@
                         // Set qty = 1 (default)
                         $row.find('.qty').val(1);
 
-                        // Set price (if available from DB, otherwise 0)
-                        var price = parseFloat(match.price_net || 0);
+                        // Set sales price (if available from DB, otherwise 0)
+                        var price = parseFloat(match.sale_price || 0);
                         $row.find('.price').val(price.toFixed(2));
 
                         // Calculate immediately
@@ -762,7 +762,7 @@
             var data  = e.params.data;
             $row.find('.item-id-input').val(data.id);
             $row.find('.qty').val(1);
-            var price = parseFloat(data.price_net || 0);
+            var price = parseFloat(data.sale_price || 0);
             $row.find('.price').val(price.toFixed(2));
             calcRow($row);
             setTimeout(function() {

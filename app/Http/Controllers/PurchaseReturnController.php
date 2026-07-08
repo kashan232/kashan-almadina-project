@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Models\User;
 use App\Services\PartyLedgerService;
+use App\Services\StockService;
 
 class PurchaseReturnController extends Controller
 {
@@ -356,30 +357,15 @@ class PurchaseReturnController extends Controller
                     throw new \Exception("Already Posted");
                 }
 
+                $stock = app(StockService::class);
+
                 foreach ($ret->items as $item) {
-                    // 1. Stock Impact
-                    if ($ret->warehouse_id == 0) {
-                        // Shop Stock
-                        $product = Product::find($item->product_id);
-                        if ($product) {
-                            $product->stock = ($product->stock ?? 0) - $item->qty;
-                            $product->save();
-                        }
-                    } else {
-                        // Warehouse Stock
-                        $stock = \App\Models\WarehouseStock::where('product_id', $item->product_id)
-                            ->where('warehouse_id', $ret->warehouse_id)
-                            ->first();
-                        if ($stock) {
-                            $stock->decrement('quantity', $item->qty);
-                        } else {
-                            \App\Models\WarehouseStock::create([
-                                'warehouse_id' => $ret->warehouse_id,
-                                'product_id'   => $item->product_id,
-                                'quantity'     => -$item->qty,
-                            ]);
-                        }
-                    }
+                    // Stock Impact: − Credit from selected warehouse
+                    $stock->subtract(
+                        (int) $item->product_id,
+                        $ret->warehouse_id,
+                        (float) $item->qty
+                    );
                 }
 
                 // 2. Ledger Impact — PRJ debits party by Net Amount.

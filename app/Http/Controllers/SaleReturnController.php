@@ -370,31 +370,15 @@ class SaleReturnController extends Controller
                     throw new \Exception("Already Posted");
                 }
 
+                $stock = app(\App\Services\StockService::class);
+
                 foreach ($ret->items as $item) {
-                    // Stock Logic: 0 = Shop, >0 = Warehouse
-                    $qty = $item->sales_qty;
-                    if ($item->warehouse_id == 0) {
-                        // Shop Stock
-                        $product = Product::find($item->product_id);
-                        if ($product) {
-                            $product->stock = ($product->stock ?? 0) + $qty;
-                            $product->save();
-                        }
-                    } else {
-                        // Warehouse Stock
-                        $stock = \App\Models\WarehouseStock::where('product_id', $item->product_id)
-                            ->where('warehouse_id', $item->warehouse_id)
-                            ->first();
-                        if ($stock) {
-                            $stock->increment('quantity', $qty);
-                        } else {
-                            \App\Models\WarehouseStock::create([
-                                'warehouse_id' => $item->warehouse_id,
-                                'product_id'   => $item->product_id,
-                                'quantity'     => $qty,
-                            ]);
-                        }
-                    }
+                    // Stock Logic: + Debit to selected warehouse
+                    $stock->add(
+                        (int) $item->product_id,
+                        $item->warehouse_id,
+                        (float) $item->sales_qty
+                    );
                 }
 
                 // 2. Ledger Impact — SRJ matches GL (credit sub_total2, debit discount).

@@ -8,6 +8,7 @@ use App\Models\WarehouseStock;
 use App\Models\Warehouse;
 use App\Models\Product;
 use App\Models\StockTransferProduct;
+use App\Services\StockService;
 use Illuminate\Support\Facades\DB;
 
 class StockTransferController extends Controller
@@ -195,58 +196,7 @@ class StockTransferController extends Controller
         try {
             DB::transaction(function () use ($transfer, $isAdmin) {
                 if ($isAdmin) {
-                    // Admin posts directly
-                    foreach ($transfer->items as $item) {
-                        if ($transfer->from_shop) {
-                            $sourceProduct = Product::lockForUpdate()->find($item->product_id);
-
-                            if ($sourceProduct) {
-                                $sourceProduct->stock -= $item->quantity;
-                                $sourceProduct->save();
-                            }
-                        } else {
-                            $sourceStock = WarehouseStock::where('warehouse_id', $transfer->from_warehouse_id)
-                                ->where('product_id', $item->product_id)
-                                ->lockForUpdate()->first();
-
-                            if ($sourceStock) {
-                                $sourceStock->quantity -= $item->quantity;
-                                $sourceStock->save();
-                            } else {
-                                WarehouseStock::create([
-                                    'warehouse_id' => $transfer->from_warehouse_id,
-                                    'product_id'   => $item->product_id,
-                                    'quantity'     => -($item->quantity),
-                                    'status'       => 'Posted',
-                                ]);
-                            }
-                        }
-
-                        if ($transfer->to_shop) {
-                            $destProduct = Product::lockForUpdate()->find($item->product_id);
-                            if ($destProduct) {
-                                $destProduct->stock += $item->quantity;
-                                $destProduct->save();
-                            }
-                        } else {
-                            $destStock = WarehouseStock::where('warehouse_id', $transfer->to_warehouse_id)
-                                ->where('product_id', $item->product_id)
-                                ->lockForUpdate()->first();
-
-                            if ($destStock) {
-                                $destStock->quantity += $item->quantity;
-                                $destStock->save();
-                            } else {
-                                WarehouseStock::create([
-                                    'warehouse_id' => $transfer->to_warehouse_id,
-                                    'product_id'   => $item->product_id,
-                                    'quantity'     => $item->quantity,
-                                    'status'       => 'Posted',
-                                ]);
-                            }
-                        }
-                    }
-
+                    $this->applyTransferStock($transfer);
                     $transfer->status = 'Posted';
                     $transfer->confirmed_by = auth()->id();
                 } else {
@@ -323,57 +273,7 @@ class StockTransferController extends Controller
                 throw new \Exception("Transfer already processed.");
             }
 
-            foreach ($transfer->items as $item) {
-                if ($transfer->from_shop) {
-                    $sourceProduct = Product::lockForUpdate()->find($item->product_id);
-
-                    if ($sourceProduct) {
-                        $sourceProduct->stock -= $item->quantity;
-                        $sourceProduct->save();
-                    }
-                } else {
-                    $sourceStock = WarehouseStock::where('warehouse_id', $transfer->from_warehouse_id)
-                        ->where('product_id', $item->product_id)
-                        ->lockForUpdate()->first();
-
-                    if ($sourceStock) {
-                        $sourceStock->quantity -= $item->quantity;
-                        $sourceStock->save();
-                    } else {
-                        WarehouseStock::create([
-                            'warehouse_id' => $transfer->from_warehouse_id,
-                            'product_id'   => $item->product_id,
-                            'quantity'     => -($item->quantity),
-                            'status'       => 'Posted',
-                        ]);
-                    }
-                }
-
-                if ($transfer->to_shop) {
-                    $destProduct = Product::lockForUpdate()->find($item->product_id);
-                    if ($destProduct) {
-                        $destProduct->stock += $item->quantity;
-                        $destProduct->save();
-                    }
-                } else {
-                    $destStock = WarehouseStock::where('warehouse_id', $transfer->to_warehouse_id)
-                        ->where('product_id', $item->product_id)
-                        ->lockForUpdate()
-                        ->first();
-
-                    if ($destStock) {
-                        $destStock->quantity += $item->quantity;
-                        $destStock->save();
-                    } else {
-                        WarehouseStock::create([
-                            'warehouse_id' => $transfer->to_warehouse_id,
-                            'product_id'   => $item->product_id,
-                            'quantity'     => $item->quantity,
-                            'status'       => 'Posted',
-                        ]);
-                    }
-                }
-            }
+            $this->applyTransferStock($transfer);
 
             // Update transfer status
             $transfer->status = 'Posted';
@@ -417,6 +317,18 @@ class StockTransferController extends Controller
         return response()->json([
             'quantity' => $stock ? $stock->quantity : 0
         ]);
+    }
+
+    /** − Credit from location, + Debit to location. */
+    private function applyTransferStock(StockTransfer $transfer): void
+    {
+        $stock = app(StockService::class);
+        $fromWh = $transfer->from_shop ? 0 : (int) $transfer->from_warehouse_id;
+        $toWh = $transfer->to_shop ? 0 : (int) $transfer->to_warehouse_id;
+
+        foreach ($transfer->items as $item) {
+            $stock->transfer((int) $item->product_id, $fromWh, $toWh, (float) $item->quantity);
+        }
     }
 }
 

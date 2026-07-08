@@ -9,6 +9,8 @@ use App\Models\AccountHead;
 use App\Models\Account;
 use App\Models\Product;
 use App\Models\ExpenseVoucher; // Assuming we use this for accounting
+use App\Models\JournalVoucher;
+use App\Services\StockService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
@@ -16,6 +18,43 @@ use App\Models\User;
 
 class StockWastageController extends Controller
 {
+    /**
+     * Post accounting for a wastage: debit the selected expense account and
+     * create a Journal Voucher so the entry shows up in the General Ledger.
+     */
+    private function postWastageAccounting(StockWastage $wastage): void
+    {
+        $total = (float) ($wastage->total_amount ?? 0);
+        if ($total <= 0 || !$wastage->account_id) {
+            return;
+        }
+
+        $account = Account::find($wastage->account_id);
+        if (!$account) {
+            return;
+        }
+
+        // Debit the expense account (increases its balance)
+        $account->opening_balance = ($account->opening_balance ?? 0) + $total;
+        $account->save();
+
+        // Journal entry so it appears in the General Ledger (Dr Expense / Cr Inventory)
+        $jvid = 'GWN-' . $wastage->gwn_id;
+        JournalVoucher::where('jvid', $jvid)->delete();
+        JournalVoucher::create([
+            'jvid'         => $jvid,
+            'entry_date'   => $wastage->entry_date ?: $wastage->date,
+            'status'       => 'posted',
+            'total_debit'  => $total,
+            'total_credit' => $total,
+            'party_type'   => json_encode([(string) $account->head_id, 'inventory']),
+            'party_id'     => json_encode([(int) $account->id, 0]),
+            'debit'        => json_encode([$total, 0]),
+            'credit'       => json_encode([0, $total]),
+            'remarks'      => 'Stock Wastage' . ($wastage->remarks ? ' - ' . $wastage->remarks : ''),
+        ]);
+    }
+
     public function index(Request $request)
     {
         $query = StockWastage::with(['warehouse', 'account', 'accountHead', 'items.product', 'user'])->latest();
@@ -135,26 +174,9 @@ class StockWastageController extends Controller
 
                     $grandTotal += $amount;
 
-                    // 3. Stock Impact (Only if Posted)
+                    // 3. Stock Impact (Only if Posted) — − Credit from selected warehouse
                     if ($status === 'Posted') {
-                        if ($warehouseId == 0) {
-                            // Decrement SHOP stock
-                            $product = Product::find($productId);
-                            if ($product) {
-                                $product->stock = ($product->stock ?? 0) - $qty;
-                                $product->save();
-                            }
-                        } else {
-                            // Decrement Warehouse Specific Stock
-                            $stock = \App\Models\WarehouseStock::where('warehouse_id', $warehouseId)
-                                ->where('product_id', $productId)
-                                ->first();
-
-                            if ($stock) {
-                                $stock->quantity = ($stock->quantity ?? 0) - $qty;
-                                $stock->save();
-                            }
-                        }
+                        $this->deductWastageStock($warehouseId, $productId, $qty);
                     }
                 }
 
@@ -162,11 +184,7 @@ class StockWastageController extends Controller
 
                 // 4. Accounting Impact (Only if Posted)
                 if ($status === 'Posted' && $grandTotal > 0) {
-                    $account = \App\Models\Account::find($request->account_id);
-                    if ($account) {
-                        $account->opening_balance = ($account->opening_balance ?? 0) + $grandTotal;
-                        $account->save();
-                    }
+                    $this->postWastageAccounting($wastage->fresh());
                 }
 
                 $savedWastage = $wastage;
@@ -279,24 +297,9 @@ class StockWastageController extends Controller
 
                     $grandTotal += $amount;
 
-                    // 4. Stock Impact (Only if transitioning to Posted)
+                    // 4. Stock Impact (Only if transitioning to Posted) — − Credit from selected warehouse
                     if ($status === 'Posted') {
-                        if ($warehouseId == 0) {
-                            $product = Product::find($productId);
-                            if ($product) {
-                                $product->stock = ($product->stock ?? 0) - $qty;
-                                $product->save();
-                            }
-                        } else {
-                            $stock = \App\Models\WarehouseStock::where('warehouse_id', $warehouseId)
-                                ->where('product_id', $productId)
-                                ->first();
-
-                            if ($stock) {
-                                $stock->quantity = ($stock->quantity ?? 0) - $qty;
-                                $stock->save();
-                            }
-                        }
+                        $this->deductWastageStock($warehouseId, $productId, $qty);
                     }
                 }
 
@@ -304,11 +307,7 @@ class StockWastageController extends Controller
 
                 // 5. Accounting Impact (Only if transitioning to Posted)
                 if ($status === 'Posted' && $grandTotal > 0) {
-                    $account = \App\Models\Account::find($request->account_id);
-                    if ($account) {
-                        $account->opening_balance = ($account->opening_balance ?? 0) + $grandTotal;
-                        $account->save();
-                    }
+                    $this->postWastageAccounting($stock_wastage->fresh());
                 }
             });
 
@@ -343,42 +342,16 @@ class StockWastageController extends Controller
 
         try {
             DB::transaction(function () use ($wastage) {
-                 // Stock Impact
+                 // Stock Impact — − Credit from selected warehouse
                 foreach ($wastage->items as $item) {
-                     $warehouseId = $wastage->warehouse_id;
-                     
-                     if (!$warehouseId) {
-                         // 1. Decrement SHOP stock
-                         $product = Product::find($item->product_id);
-                         if ($product) {
-                             $product->stock = ($product->stock ?? 0) - $item->qty;
-                             $product->save();
-                         }
-                     } else {
-                         // 2. Decrement Warehouse Specific Stock
-                         $stock = \App\Models\WarehouseStock::where('warehouse_id', $warehouseId)
-                             ->where('product_id', $item->product_id)
-                             ->first();
-                         
-                         if ($stock) {
-                             $stock->quantity = ($stock->quantity ?? 0) - $item->qty;
-                             $stock->save();
-                         }
-                     }
+                    $this->deductWastageStock($wastage->warehouse_id, $item->product_id, (float) $item->qty);
                 }
                 
-                // Accounting Impact: Update Expense Account (opening_balance for consistency)
-                if ($wastage->total_amount > 0) {
-                    $account = \App\Models\Account::find($wastage->account_id);
-                    if ($account) {
-                        // Increment balance (opening_balance is used as current balance in VoucherController)
-                        $account->opening_balance = ($account->opening_balance ?? 0) + $wastage->total_amount;
-                        $account->save();
-                    }
-                }
-
                 $wastage->status = 'Posted';
                 $wastage->save();
+
+                // Accounting Impact: debit expense account + create GL journal entry
+                $this->postWastageAccounting($wastage->fresh());
             });
             $msg = 'Stock Wastage Posted successfully.';
             if ($request->ajax() || $request->wantsJson()) {
@@ -422,5 +395,11 @@ class StockWastageController extends Controller
         }
 
         return redirect()->route('stock-wastage.index')->with('success', 'Stock Wastage deleted.');
+    }
+
+    /** − Credit stock from selected warehouse (shop when warehouse_id is 0/null). */
+    private function deductWastageStock($warehouseId, int $productId, float $qty): void
+    {
+        app(StockService::class)->subtract($productId, $warehouseId, $qty, false);
     }
 }

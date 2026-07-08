@@ -19,6 +19,7 @@ use App\Models\Voucher;
 use App\Models\ReceiptsVoucher;
 use App\Services\PartyLedgerService;
 use App\Services\StockHoldPostingService;
+use App\Services\StockService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -345,22 +346,8 @@ class SaleController extends Controller
 
                 $saleQty = (float) str_replace(',', '', $request->input("sales-qty.$i", 0));
 
-                // Stock Logic: 0 = Shop, >0 = Warehouse
-                if ($warehouse_id == 0) {
-                    // Shop Stock
-                    if ($p = Product::find($productId)) {
-                        $p->stock = ($p->stock ?? 0) - $saleQty;
-                        $p->save();
-                    }
-                } else {
-                    // Warehouse Stock
-                    if ($ws = WarehouseStock::where('warehouse_id', $warehouse_id)
-                        ->where('product_id', $productId)
-                        ->first()) {
-                        $ws->quantity = ($ws->quantity ?? 0) - $saleQty;
-                        $ws->save();
-                    }
-                }
+                // Stock Logic: − Credit from selected warehouse
+                app(StockService::class)->subtract((int) $productId, $warehouse_id, $saleQty, false);
 
                 SaleItem::create([
                     'sale_id' => $sale->id,
@@ -614,23 +601,14 @@ class SaleController extends Controller
                     $discAmt = (float) data_get($it, 'discount_amount', 0);
                     $amount = (float) data_get($it, 'amount', 0);
 
-                    // Stock Logic: Skip deduction if is_sale_order
+                    // Stock Logic: Skip deduction if is_sale_order (reserve only)
                     if (!$sale->is_sale_order) {
-                        if ($it->warehouse_id == 0) {
-                            // Shop Stock
-                            if ($p = Product::find($it->product_id)) {
-                                $p->stock = ($p->stock ?? 0) - $salesQty;
-                                $p->save();
-                            }
-                        } else {
-                            // Warehouse Stock
-                            if ($ws = WarehouseStock::where('warehouse_id', $it->warehouse_id)
-                                ->where('product_id', $it->product_id)
-                                ->first()) {
-                                $ws->quantity = ($ws->quantity ?? 0) - $salesQty;
-                                $ws->save();
-                            }
-                        }
+                        app(StockService::class)->subtract(
+                            (int) $it->product_id,
+                            $it->warehouse_id,
+                            $salesQty,
+                            false
+                        );
                     } elseif ($holdVoucher) {
                         $effectiveQty = $holdPosting->applyHoldEffects(
                             (int) $it->warehouse_id,
@@ -638,7 +616,8 @@ class SaleController extends Controller
                             $salesQty,
                             $sale->partyType,
                             (int) $sale->customer_id,
-                            (int) $holdVoucher->id
+                            (int) $holdVoucher->id,
+                            true
                         );
                         if ($effectiveQty <= 0) {
                             continue;
@@ -776,21 +755,14 @@ class SaleController extends Controller
             foreach ($booking->items as $it) {
                 $salesQty = (float)($it->sales_qty ?? 0);
                 
-                // Stock Logic: Skip deduction if is_sale_order
+                // Stock Logic: Skip deduction if is_sale_order (reserve only)
                 if (!$sale->is_sale_order) {
-                    if ($it->warehouse_id == 0) {
-                        if ($p = Product::find($it->product_id)) {
-                            $p->stock = ($p->stock ?? 0) - $salesQty;
-                            $p->save();
-                        }
-                    } else {
-                        if ($ws = WarehouseStock::where('warehouse_id', $it->warehouse_id)
-                            ->where('product_id', $it->product_id)
-                            ->first()) {
-                            $ws->quantity = ($ws->quantity ?? 0) - $salesQty;
-                            $ws->save();
-                        }
-                    }
+                    app(StockService::class)->subtract(
+                        (int) $it->product_id,
+                        $it->warehouse_id,
+                        $salesQty,
+                        false
+                    );
                 } elseif ($holdVoucher) {
                     $effectiveQty = $holdPosting->applyHoldEffects(
                         (int) $it->warehouse_id,
@@ -798,7 +770,8 @@ class SaleController extends Controller
                         $salesQty,
                         $sale->partyType,
                         (int) $sale->customer_id,
-                        (int) $holdVoucher->id
+                        (int) $holdVoucher->id,
+                        true
                     );
                     if ($effectiveQty <= 0) {
                         continue;

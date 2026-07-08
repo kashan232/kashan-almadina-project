@@ -18,6 +18,7 @@ use App\Models\VendorLedger;
 use App\Models\Voucher;
 use App\Models\JournalVoucher;
 use App\Services\PartyLedgerService;
+use App\Services\StockService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -687,6 +688,11 @@ class PurchaseController extends Controller
     public function destroy($id)
     {
         $purchase = Purchase::findOrFail($id);
+
+        if ($purchase->status === 'Posted') {
+            return redirect()->back()->with('error', 'Cannot delete a posted purchase. Unpost it first.');
+        }
+
         $purchase->delete();
 
         return redirect()->back()->with('success', 'Purchase deleted successfully.');
@@ -775,27 +781,15 @@ class PurchaseController extends Controller
 
     private function performPosting(Purchase $purchase)
     {
-        // 1. Stock Update
+        $stock = app(StockService::class);
+
+        // 1. Stock Update (+ Debit to selected warehouse)
         foreach ($purchase->items as $item) {
-            $productId = $item->product_id;
-            $qty = (float)($item->qty ?? 0);
-            
-            if ($purchase->warehouse_id == 0) {
-                // UPDATE SHOP STOCK
-                $product = Product::find($productId);
-                if ($product) {
-                    $product->stock = ($product->stock ?? 0) + $qty;
-                    $product->save();
-                }
-            } else {
-                // UPDATE WAREHOUSE STOCK
-                $stock = \App\Models\WarehouseStock::firstOrNew([
-                    'warehouse_id' => $purchase->warehouse_id,
-                    'product_id'   => $productId,
-                ]);
-                $stock->quantity = ($stock->quantity ?? 0) + $qty;
-                $stock->save();
-            }
+            $stock->add(
+                (int) $item->product_id,
+                $purchase->warehouse_id,
+                (float) ($item->qty ?? 0)
+            );
         }
 
         // 2. Ledger Impact — PJ credits party by Net Amount (balance decreases / goes negative).
@@ -892,25 +886,16 @@ class PurchaseController extends Controller
 
     private function reversePosting(Purchase $purchase)
     {
-        // 1. Reverse Stock
+        $stock = app(StockService::class);
+
+        // 1. Reverse Stock (− Credit from selected warehouse)
         foreach ($purchase->items as $item) {
-            $productId = $item->product_id;
-            $qty = (float)($item->qty ?? 0);
-            
-            if ($purchase->warehouse_id == 0) {
-                $product = Product::find($productId);
-                if ($product) {
-                    $product->stock = ($product->stock ?? 0) - $qty;
-                    $product->save();
-                }
-            } else {
-                $stock = \App\Models\WarehouseStock::where('warehouse_id', $purchase->warehouse_id)
-                    ->where('product_id', $productId)->first();
-                if ($stock) {
-                    $stock->quantity = ($stock->quantity ?? 0) - $qty;
-                    $stock->save();
-                }
-            }
+            $stock->subtract(
+                (int) $item->product_id,
+                $purchase->warehouse_id,
+                (float) ($item->qty ?? 0),
+                false
+            );
         }
 
         // 2. Reverse Ledger Impact (restore party balance)

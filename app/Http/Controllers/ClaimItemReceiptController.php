@@ -221,20 +221,6 @@ class ClaimItemReceiptController extends Controller
 
     private function adjustStock($warehouseId, $productId, $qty)
     {
-        if ($warehouseId == 0) {
-            $product = Product::find($productId);
-            if ($product) {
-                $product->stock = ($product->stock ?? 0) + $qty;
-                $product->save();
-            }
-        } else {
-            $stock = WarehouseStock::firstOrNew([
-                'warehouse_id' => $warehouseId,
-                'product_id'   => $productId
-            ]);
-            $stock->quantity = ($stock->quantity ?? 0) + $qty;
-            if (!$stock->exists) $stock->status = 'Posted';
-            $stock->save();
-        }
+        app(\App\Services\StockService::class)->adjust((int) $productId, $warehouseId, (float) $qty);
     }
 }

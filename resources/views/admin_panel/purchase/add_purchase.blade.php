@@ -614,7 +614,16 @@
                     <select name="wht_account_id" id="wht_account_id" class="form-select form-select-sm py-0" style="flex-grow:1;">
                       <option value="">Account</option>
                       @if(isset($purchase) && $purchase->whtAccount)
-                          <option value="{{ $purchase->wht_account_id }}" selected>{{ $purchase->whtAccount->title }}</option>
+                          @php
+                              $whtHeadAccounts = \App\Models\Account::where('head_id', $purchase->whtAccount->head_id)
+                                  ->where(function ($q) use ($purchase) {
+                                      $q->where('status', 1)->orWhere('id', $purchase->wht_account_id);
+                                  })
+                                  ->orderBy('title')->get();
+                          @endphp
+                          @foreach($whtHeadAccounts as $whtAcc)
+                              <option value="{{ $whtAcc->id }}" {{ (int) $purchase->wht_account_id === (int) $whtAcc->id ? 'selected' : '' }}>{{ $whtAcc->title }}</option>
+                          @endforeach
                       @endif
                     </select>
                   </div>

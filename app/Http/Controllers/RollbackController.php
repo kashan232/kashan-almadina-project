@@ -32,6 +32,8 @@ use App\Models\CustomerClaim;
 use App\Models\ClaimAcceptance;
 use App\Models\ClaimItemReceipt;
 use App\Models\ClaimCreditNote;
+use App\Models\CustomerClaimRelease;
+use App\Services\StockService;
 use App\Models\ReceiptsVoucher;
 use App\Models\PaymentVoucher;
 use App\Models\ExpenseVoucher;
@@ -55,6 +57,7 @@ class RollbackController extends Controller
             'stock_wastage' => 'Stock Wastage',
             'warehouse_stock' => 'Warehouse Stock (Manual)',
             'customer_claim' => 'Customer Claim',
+            'customer_claim_release' => 'Customer Claim Release',
             'claim_acceptance' => 'Claim Acceptance',
             'claim_receipt' => 'Claim Receipt/Credits',
             'receipt_voucher' => 'Receipt Voucher',
@@ -119,6 +122,9 @@ class RollbackController extends Controller
                             break;
                         case 'customer_claim':
                             $this->rollbackCustomerClaim($invoiceNo);
+                            break;
+                        case 'customer_claim_release':
+                            $this->rollbackCustomerClaimRelease($invoiceNo);
                             break;
                         case 'claim_acceptance':
                             $this->rollbackClaimAcceptance($invoiceNo);
@@ -188,8 +194,16 @@ class RollbackController extends Controller
         $sale->load('items');
 
         // 1. Reverse Stock Impact
-        foreach ($sale->items as $item) {
-            $this->adjustStock($item->product_id, $item->warehouse_id, $item->sales_qty, 'add');
+        if ($sale->is_sale_order) {
+            // Sale orders only reserved stock — unpost the linked hold voucher.
+            $holdVoucher = StockHoldVoucher::where('sale_id', $sale->id)->first();
+            if ($holdVoucher && $holdVoucher->status === 'Posted') {
+                $holdVoucher->update(['status' => 'Unposted']);
+            }
+        } else {
+            foreach ($sale->items as $item) {
+                $this->adjustStock($item->product_id, $item->warehouse_id, $item->sales_qty, 'add');
+            }
         }
 
         // 2. Reverse Ledger Impact
@@ -393,7 +407,6 @@ class RollbackController extends Controller
         
         if ($hold->status !== 'Posted') throw new \Exception("Hold $invoiceNo is not Posted.");
 
-        $posting = app(StockHoldPostingService::class);
         $hold->load('items');
 
         foreach ($hold->items as $item) {
@@ -401,8 +414,13 @@ class RollbackController extends Controller
             if ($qty <= 0) {
                 continue;
             }
-            $wh = (int) ($item->warehouse_id ?? $hold->warehouse_id);
-            $posting->adjustStock($wh, (int) $item->product_id, -$qty);
+
+            // Sale-order holds are reserve-only — no physical stock was added on post.
+            if (!$hold->sale_id) {
+                $wh = (int) ($item->warehouse_id ?? $hold->warehouse_id);
+                app(StockService::class)->subtract((int) $item->product_id, $wh, $qty, false);
+            }
+
             $item->update(['status' => 1]);
         }
 
@@ -451,8 +469,12 @@ class RollbackController extends Controller
         if ($trans->status !== 'Posted') throw new \Exception("Transfer $invoiceNo is not Posted.");
 
         foreach ($trans->items as $item) {
-            $this->adjustStock($item->product_id, $trans->from_warehouse, $item->qty, 'add');
-            $this->adjustStock($item->product_id, $trans->to_warehouse, $item->qty, 'subtract');
+            $fromWh = $trans->from_shop ? 0 : (int) $trans->from_warehouse_id;
+            $toWh = $trans->to_shop ? 0 : (int) $trans->to_warehouse_id;
+            $qty = (float) $item->quantity;
+
+            $this->adjustStock($item->product_id, $fromWh, $qty, 'add');
+            $this->adjustStock($item->product_id, $toWh, $qty, 'subtract');
         }
 
         $trans->update(['status' => 'Unposted']);
@@ -472,6 +494,18 @@ class RollbackController extends Controller
         foreach ($wastage->items as $item) {
             $this->adjustStock($item->product_id, $wastage->warehouse_id, $item->qty, 'add');
         }
+
+        // Reverse the expense account balance that was debited on posting
+        if ((float) $wastage->total_amount > 0 && $wastage->account_id) {
+            $account = Account::find($wastage->account_id);
+            if ($account) {
+                $account->opening_balance = ($account->opening_balance ?? 0) - (float) $wastage->total_amount;
+                $account->save();
+            }
+        }
+
+        // Remove the General Ledger journal entry
+        JournalVoucher::where('jvid', 'GWN-' . $wastage->gwn_id)->delete();
 
         $wastage->update(['status' => 'Unposted']);
         return back()->with('success', "Stock Wastage #$invoiceNo set to Unposted.");
@@ -519,10 +553,60 @@ class RollbackController extends Controller
         return back()->with('success', "Customer Claim #$invoiceNo set to Unposted.");
     }
 
+    private function rollbackCustomerClaimRelease($invoiceNo)
+    {
+        $release = $this->findRecord(CustomerClaimRelease::class, 'release_no', $invoiceNo);
+        if (!$release) {
+            throw new \Exception("Customer Claim Release $invoiceNo not found.");
+        }
+
+        $this->validateRollbackDate($release);
+
+        if ($release->status !== 'Posted') {
+            throw new \Exception("Claim Release $invoiceNo is not Posted.");
+        }
+
+        $release->load('claim');
+
+        $stock = app(StockService::class);
+        $qty = (float) ($release->release_qty ?? 1);
+
+        // Reverse physical deduction from deliver-from warehouse
+        $stock->add((int) $release->product_id, $release->warehouse_id, $qty);
+
+        // Restore reserve on the linked claim hold
+        $hold = StockHold::where('meta->claim_id', (string) $release->claim_id)->first();
+        if (!$hold) {
+            $hold = StockHold::where('remarks', 'Reserved via Customer Claim Hold: ' . ($release->claim?->claim_no ?? ''))->first();
+        }
+        if ($hold) {
+            $hold->hold_qty = (float) $hold->hold_qty + $qty;
+            $hold->status = 0;
+            $hold->save();
+        }
+
+        $release->update(['status' => 'Draft']);
+        return back()->with('success', "Customer Claim Release #$invoiceNo set to Draft.");
+    }
+
     private function rollbackClaimAcceptance($invoiceNo)
     {
         $acc = $this->findRecord(ClaimAcceptance::class, 'voucher_no', $invoiceNo);
         if (!$acc) throw new \Exception("Acceptance $invoiceNo not found.");
+
+        $this->validateRollbackDate($acc);
+
+        if ($acc->status !== 'Posted') {
+            throw new \Exception("Acceptance $invoiceNo is not Posted.");
+        }
+
+        $acc->load('items');
+        foreach ($acc->items as $item) {
+            $qty = (float) $item->quantity;
+            $this->adjustStock($item->product_id, $acc->from_warehouse_id, $qty, 'add');
+            $this->adjustStock($item->product_id, $acc->to_warehouse_id, $qty, 'subtract');
+        }
+
         $acc->update(['status' => 'Unposted']);
         return back()->with('success', "Claim Acceptance #$invoiceNo set to Unposted.");
     }
@@ -533,12 +617,34 @@ class RollbackController extends Controller
         $type = "Receipt";
 
         if (!$rec) {
-            $rec = $this->findRecord(\App\Models\ClaimCreditNote::class, 'voucher_no', $invoiceNo);
+            $rec = $this->findRecord(ClaimCreditNote::class, 'voucher_no', $invoiceNo);
             $type = "Credit Note";
         }
 
         if (!$rec) throw new \Exception("Receipt or Credit Note $invoiceNo not found.");
-        
+
+        $this->validateRollbackDate($rec);
+
+        if ($rec->status !== 'Posted') {
+            throw new \Exception("Claim $type $invoiceNo is not Posted.");
+        }
+
+        $rec->load('items');
+
+        if ($rec instanceof ClaimItemReceipt) {
+            foreach ($rec->items as $item) {
+                $qty = (float) $item->quantity;
+                $this->adjustStock($item->product_id, $rec->from_warehouse_id, $qty, 'add');
+                $this->adjustStock($item->product_id, $rec->to_warehouse_id, $qty, 'subtract');
+            }
+        } elseif ($rec instanceof ClaimCreditNote) {
+            foreach ($rec->items as $item) {
+                if ($rec->to_warehouse_id !== null) {
+                    $this->adjustStock($item->product_id, $rec->to_warehouse_id, (float) $item->quantity, 'subtract');
+                }
+            }
+        }
+
         $rec->update(['status' => 'Unposted']);
         return back()->with('success', "Claim $type #$invoiceNo set to Unposted.");
     }
@@ -624,22 +730,16 @@ class RollbackController extends Controller
         return back()->with('success', "$name #$invoiceNo set to Draft.");
     }
 
-    // Helper: Adjust Stock
+    // Helper: Adjust Stock (delegates to StockService)
     private function adjustStock($pid, $wid, $qty, $action)
     {
-        $qty = (float)$qty;
-        if ($wid == 0) {
-            $p = Product::find($pid);
-            if ($p) {
-                $p->stock = $action === 'add' ? ($p->stock + $qty) : ($p->stock - $qty);
-                $p->save();
-            }
+        $stock = app(StockService::class);
+        $amount = (float) $qty;
+
+        if ($action === 'add') {
+            $stock->add((int) $pid, $wid, $amount);
         } else {
-            $ws = WarehouseStock::where('warehouse_id', $wid)->where('product_id', $pid)->first();
-            if ($ws) {
-                $ws->quantity = $action === 'add' ? ($ws->quantity + $qty) : ($ws->quantity - $qty);
-                $ws->save();
-            }
+            $stock->subtract((int) $pid, $wid, $amount, true);
         }
     }
 

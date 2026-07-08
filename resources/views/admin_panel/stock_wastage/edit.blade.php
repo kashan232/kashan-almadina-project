@@ -582,7 +582,7 @@
                     processResults: function (data, params) {
                         const term = (params.term || '').toLowerCase();
                         const results = data.map(function(item) {
-                            return { id: item.id, text: item.name, price_net: item.price_net || 0 };
+                            return { id: item.id, text: item.name, sale_price: item.sale_price || 0 };
                         });
                         results.sort((a, b) => {
                             if (String(a.id) === term || a.text.toLowerCase() === term) return -1;
@@ -685,7 +685,7 @@
                     if (match) {
                         var option = new Option(match.name, match.id, true, true);
                         $row.find('.product-select').empty().append(option).trigger('change');
-                        $row.find('.price').val(parseFloat(match.price_net || 0).toFixed(2));
+                        $row.find('.price').val(parseFloat(match.sale_price || 0).toFixed(2));
                         calcRow($row);
                     } else {
                         $row.find('.item-id-input').val('').focus();
@@ -707,7 +707,7 @@
             var $row = $(this).closest('tr');
             var data = e.params.data;
             $row.find('.item-id-input').val(data.id);
-            $row.find('.price').val(parseFloat(data.price_net || 0).toFixed(2));
+            $row.find('.price').val(parseFloat(data.sale_price || 0).toFixed(2));
             calcRow($row);
             setTimeout(function() { $row.find('.price').focus().select(); }, 80);
         });
