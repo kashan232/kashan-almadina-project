@@ -8,7 +8,11 @@
         return;
     }
 
-    var NUMERIC_NAME = /amount|price|qty|quantity|total|subtotal|net|gross|disc|discount|wht|tax|balance|debit|credit|rate|retail|cost|paid|due|remaining|loss|profit|commission|row-total|row_amount|row-amount|unit|value|stock|fee|charge|percent_amt|line_total|grand|sum|adjust|payment|receipt|expense|income|advance|refund|penalty|fine|salary|bonus|allowance|deduction|carriage|freight|margin|markup|cash|bank|cheque|unit_price|unitprice|purchase|sale|invoice|voucher|ledger|opening|closing|available|reserved|physical|hold|release|transfer|adjustment|carriage|freight|load|unload|bilty|fare|rent|salary|wage/i;
+    // Money, quantity, and pricing fields only — not document / invoice / ID fields.
+    var NUMERIC_NAME = /amount|price|qty|quantity|total|subtotal|net|gross|disc|discount|wht|tax|balance|debit|credit|rate|retail|cost|paid|due|remaining|loss|profit|commission|row-total|row_amount|row-amount|fee|charge|percent_amt|line_total|grand|sum|margin|markup|cash|bank|cheque|unit_price|unitprice|carriage|freight|bilty|fare|rent|salary|wage|allowance|deduction|advance|refund|penalty|fine|bonus|opening_balance|stock|_qty|qty_|_amount|amount_|_price|price_|_total|total_|_balance|balance_|_rate|rate_|_cost|cost_|_paid|paid_|_due|due_|rv-amount/i;
+
+    // System reference numbers, IDs, and contact fields must stay plain (no commas).
+    var IDENTIFIER_EXCLUDE = /invoice|voucher|reference|ref_no|manual_inv|gwn|adj_id|sjid|sj_id|pjid|pj_id|rvid|pvid|jvid|evid|ivid|avid|doc_no|doc_id|hold_voucher|sale_id|purchase_id|product_id|item_id|account_id|warehouse_id|mobile|phone|cnic|ntn|strn|postal|zip|token|barcode|sku|hsn|payment_date|payment_method|payment_id|receipt_date|receipt_from|receipt_to|bill_date|entry_date|invoice_main|inv_main|(?:^|[\[._-])(?:[^.\[]*_)?(id|no|num|number|code|serial)(?:$|[\].\[_-])/i;
 
     var USNumber = {
         _initialized: true,
@@ -73,9 +77,6 @@
             if ($el.data('usNumber') === 'off' || $el.hasClass('no-us-format')) {
                 return false;
             }
-            if ($el.data('usNumber') === 'on' || $el.hasClass('us-num-input')) {
-                return true;
-            }
 
             var type = (el.type || '').toLowerCase();
             if (type === 'hidden' || type === 'checkbox' || type === 'radio' || type === 'file' ||
@@ -84,11 +85,20 @@
             }
 
             var blob = (($el.attr('name') || '') + ' ' + ($el.attr('id') || '') + ' ' + ($el.attr('class') || '')).toLowerCase();
+
+            if (IDENTIFIER_EXCLUDE.test(blob)) {
+                return false;
+            }
+
+            if ($el.data('usNumber') === 'on') {
+                return true;
+            }
+
             if (NUMERIC_NAME.test(blob)) {
                 return true;
             }
 
-            if (type === 'number') {
+            if ($el.hasClass('us-num-input')) {
                 return true;
             }
 
@@ -153,6 +163,12 @@
             if ($el.data('usFormatted')) {
                 return;
             }
+            if ($el.data('usNumber') === 'off' || $el.hasClass('no-us-format')) {
+                return;
+            }
+            if ($el.closest('[data-us-number="off"], .no-us-format').length) {
+                return;
+            }
             if ($el.children('input,select,textarea,button,a,.select2').length) {
                 return;
             }
@@ -181,7 +197,12 @@
         scanInputs: function (root) {
             var self = this;
             $(root).find('input, textarea').each(function () {
+                var $el = $(this);
                 if (!self.shouldFormatInput(this)) {
+                    if ($el.hasClass('us-num-input')) {
+                        self.unformatInput(this);
+                        $el.removeClass('us-num-input');
+                    }
                     return;
                 }
                 self.prepareInput(this);
