@@ -211,20 +211,21 @@
                         <div class="column-picker-menu shadow" id="columnPickerMenu">
                             <div class="p-2 border-bottom fw-bold small text-muted">Show/Hide Columns</div>
                             <label class="column-picker-item"><input type="checkbox" data-column="1" checked> #</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="2" checked> Date</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="3" checked> Type</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="4" checked> Inv#</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="5" checked> Source</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="6" checked> Supplier</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="7" checked> Items</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="8" checked> Total Qty</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="9" checked> Warehouse</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="10" checked> Subtotal</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="11" checked> Disc</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="12" checked> WHT</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="13" checked> Net</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="14" checked> Created By</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="15" checked> Status</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="2" checked> Type</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="3" checked> Inv#</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="4" checked> DC #</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="5" checked> Date</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="6" checked> Party Type</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="7" checked> Customer / Warehouse</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="8" checked> Items</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="9" checked> Item Qty</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="10" checked> T. Qty</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="11" checked> Inv Total</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="12" checked> Disc</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="13" checked> WHT</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="14" checked> Net</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="15" checked> Created</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="16" checked> Status</label>
                         </div>
                     </div>
                 </div>
@@ -235,62 +236,65 @@
                             <thead>
                                 <tr>
                                     <th>#</th>
-                                    <th>Date</th>
                                     <th>Type</th>
                                     <th>Inv#</th>
-                                    <th>Source</th>
-                                    <th>Supplier</th>
+                                    <th>DC #</th>
+                                    <th>Date</th>
+                                    <th>Party Type</th>
+                                    <th>Customer / Warehouse</th>
                                     <th>Items</th>
-                                    <th class="text-center">Total Qty</th>
-                                    <th>Warehouse</th>
-                                    <th class="text-end">Subtotal</th>
+                                    <th class="text-center">Item Qty</th>
+                                    <th class="text-center">T. Qty</th>
+                                    <th class="text-end">Inv Total</th>
                                     <th class="text-end">Disc</th>
                                     <th class="text-end">WHT</th>
                                     <th class="text-end text-success">Net</th>
-                                    <th>Created By</th>
+                                    <th>Created</th>
                                     <th class="text-center">Status</th>
                                     <th class="text-center" style="min-width: 100px;">Action</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 @foreach ($Purchase as $key => $purchase)
+                                @php
+                                    $partyLabel = ucfirst(strtolower(class_basename($purchase->purchasable_type ?? '')));
+                                    if ($partyLabel === '') { $partyLabel = 'Vendor'; }
+                                    $partyName = $purchase->purchasable->name
+                                        ?? ($purchase->purchasable->customer_name ?? ($purchase->vendor->name ?? 'N/A'));
+                                    $warehouseName = ($purchase->warehouse_id == 0 || !$purchase->warehouse)
+                                        ? 'Shop'
+                                        : ($purchase->warehouse->warehouse_name ?? 'N/A');
+                                @endphp
                                 <tr>
                                     <td class="text-muted">{{ $key+1 }}</td>
+                                    <td class="text-center small fw-bold">PJ</td>
+                                    <td class="fw-bold text-primary" data-order="{{ (int) preg_replace('/[^0-9]/', '', $purchase->invoice_no) ?: $purchase->id }}">{{ preg_replace('/[^0-9]/', '', $purchase->invoice_no) }}</td>
+                                    <td class="small">{{ $purchase->dc ?: '-' }}</td>
                                     <td class="fw-bold text-dark" data-order="{{ $purchase->current_date }}_{{ $purchase->id }}">
                                         {{ \Carbon\Carbon::parse($purchase->current_date)->format('d-M-Y') }}
                                     </td>
-                                    <td class="text-center small fw-bold">PJ</td>
-                                    <td class="fw-bold text-primary" data-order="{{ (int) preg_replace('/[^0-9]/', '', $purchase->invoice_no) ?: $purchase->id }}">{{ preg_replace('/[^0-9]/', '', $purchase->invoice_no) }}</td>
-                                    <td class="text-center">
-                                        @if($purchase->inward_id)
-                                            <span class="badge bg-info-subtle text-info border border-info px-2 py-0" style="font-size: 9px;">Inward ({{ $purchase->inward_id }})</span>
-                                        @else
-                                            <span class="badge bg-success-subtle text-success border border-success px-2 py-0" style="font-size: 9px;">Direct</span>
-                                        @endif
+                                    <td>
+                                        <span class="badge bg-info-subtle text-info border border-info px-1 py-0" style="font-size: 10px;">{{ $partyLabel }}</span>
                                     </td>
                                     <td>
-                                        <span class="fw-bold text-dark small">{{ $purchase->purchasable->name ?? ($purchase->purchasable->customer_name ?? ($purchase->vendor->name ?? 'N/A')) }}</span>
+                                        <span class="fw-bold text-dark small">{{ $partyName }}</span>
+                                        <div class="text-muted" style="font-size: 10px;"><i class="fa fa-building-o me-1"></i>{{ Str::limit($warehouseName, 18) }}</div>
                                     </td>
-                                    
+
                                     <td class="py-1">
                                         @foreach($purchase->items as $item)
-                                            <div class="item-detail-row">
-                                                {{ $item->product->name ?? 'Unknown' }}
-                                                <span class="text-primary fw-bold ms-1">({{ (float)$item->qty }})</span>
-                                            </div>
+                                            <div class="item-detail-row">{{ $item->product->name ?? 'Unknown' }}</div>
+                                        @endforeach
+                                    </td>
+                                    <td class="text-center">
+                                        @foreach($purchase->items as $item)
+                                            <div class="item-detail-row text-primary fw-bold">{{ (float)$item->qty }}</div>
                                         @endforeach
                                     </td>
                                     <td class="text-center fw-bold text-info">
                                         {{ (float)$purchase->items->sum('qty') }}
                                     </td>
-                                    <td class="small text-muted">
-                                        @if($purchase->warehouse_id == 0 || !$purchase->warehouse)
-                                            Shop
-                                        @else
-                                            {{ Str::limit($purchase->warehouse->warehouse_name ?? 'N/A', 15) }}
-                                        @endif
-                                    </td>
-                                    
+
                                     <td class="text-end fw-bold">{{ number_format($purchase->subtotal, 0) }}</td>
                                     <td class="text-end text-danger">{{ number_format($purchase->discount, 0) }}</td>
                                     <td class="text-end">{{ number_format($purchase->wht, 0) }}</td>
@@ -365,13 +369,13 @@
             }
         });
 
-        const storageKey = 'purchase_table_cols_v4';
+        const storageKey = 'purchase_table_cols_v5';
         
         // Initialize DataTable
         var dt = $('#purchaseTable').DataTable({
-            "order": [[3, 'desc']], // Latest Inv# first
+            "order": [[2, 'desc']], // Latest Inv# first
             "columnDefs": [
-                { "type": "num", "targets": 3 }
+                { "type": "num", "targets": 2 }
             ],
             "pageLength": 25,
             "scrollX": true,

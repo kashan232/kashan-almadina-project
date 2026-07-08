@@ -217,18 +217,21 @@
                             <label class="column-picker-item"><input type="checkbox" data-column="2" checked> Type</label>
                             <label class="column-picker-item"><input type="checkbox" data-column="3" checked> Inv#</label>
                             <label class="column-picker-item"><input type="checkbox" data-column="4" checked> Manual Inv</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="5" checked> Sale Type</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="6" checked> Party Type</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="7" checked> Customer/Vendor</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="8" checked> Items</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="9" checked> Location</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="10" checked> Net Total</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="11" checked> Disc</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="12" checked> Receipts</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="13" checked> Payable Balance</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="14" checked> Created By</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="15" checked> Date</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="16" checked> Status</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="5" checked> Date</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="6" checked> Sale Type</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="7" checked> Source</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="8" checked> Party Type</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="9" checked> Customer / Warehouse</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="10" checked> Items</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="11" checked> Item Qty</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="12" checked> T. Qty</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="13" checked> Inv Total</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="14" checked> Disc</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="15" checked> Receipts</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="16" checked> A/C Allocation</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="17" checked> Net Payble</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="18" checked> Created</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="19" checked> Status</label>
                         </div>
                     </div>
                 </div>
@@ -242,33 +245,53 @@
                                     <th>Type</th>
                                     <th>Inv#</th>
                                     <th>Manual Inv</th>
+                                    <th>Date</th>
                                     <th>Sale Type</th>
+                                    <th>Source</th>
                                     <th>Party Type</th>
-                                    <th>Customer/Vendor</th>
+                                    <th>Customer / Warehouse</th>
                                     <th>Items</th>
-                                    <th>Location</th>
-                                    <th class="text-end">Net Total</th>
+                                    <th class="text-center">Item Qty</th>
+                                    <th class="text-center">T. Qty</th>
+                                    <th class="text-end">Inv Total</th>
                                     <th class="text-end">Disc</th>
                                     <th class="text-end text-success">Receipts</th>
-                                    <th class="text-end text-primary">Payable Balance</th>
-                                    <th>Created By</th>
-                                    <th>Date</th>
+                                    <th class="text-end">A/C Allocation</th>
+                                    <th class="text-end text-primary">Net Payble</th>
+                                    <th>Created</th>
                                     <th class="text-center">Status</th>
                                     <th class="text-center" style="min-width: 120px;">Action</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 @foreach($sales as $key => $sale)
+                                @php
+                                    $saleReceipts = ($sale->receipt1 ?? 0) + ($sale->receipt2 ?? 0);
+                                    $partyName = $sale->p_type === 'vendor'
+                                        ? ($sale->vendor->name ?? 'N/A')
+                                        : ($sale->customer->customer_name ?? 'N/A');
+                                    $whNames = $sale->items->map(function($it) {
+                                        return $it->warehouse_id == 0 ? 'Shop' : ($it->warehouse->warehouse_name ?? 'N/A');
+                                    })->unique()->implode(', ');
+                                @endphp
                                 <tr>
                                     <td class="text-muted">{{ $key+1 }}</td>
                                     <td class="text-muted small">SJ</td>
                                     <td class="fw-bold text-primary">{{ (int) preg_replace('/[^0-9]/', '', $sale->invoice_no) }}</td>
                                     <td>{{ $sale->manual_invoice ?? '-' }}</td>
+                                    <td class="small">{{ \Carbon\Carbon::parse($sale->entry_date ?? $sale->created_at)->format('d-M-Y') }}</td>
                                     <td>
                                         @if($sale->is_sale_order)
                                             <span class="badge bg-danger rounded-pill px-2" style="font-size: 9px;"><i class="fa fa-calendar-check-o me-1"></i> Order</span>
                                         @else
                                             <span class="badge bg-success rounded-pill px-2" style="font-size: 9px;"><i class="fa fa-check-circle me-1"></i> Proper</span>
+                                        @endif
+                                    </td>
+                                    <td>
+                                        @if($sale->entry_status === 'Posted')
+                                            <span class="badge bg-success-subtle text-success border border-success px-1 py-0" style="font-size: 10px;">Direct</span>
+                                        @else
+                                            <span class="badge bg-info-subtle text-info border border-info px-1 py-0" style="font-size: 10px;">Booking</span>
                                         @endif
                                     </td>
                                     <td>
@@ -281,47 +304,38 @@
                                         @endif
                                     </td>
                                     <td>
-                                        @if($sale->p_type === 'vendor')
-                                            <span class="fw-bold text-dark small">{{ $sale->vendor->name ?? 'N/A' }}</span>
-                                        @else
-                                            <span class="fw-bold text-dark small">{{ $sale->customer->customer_name ?? 'N/A' }}</span>
-                                        @endif
+                                        <span class="fw-bold text-dark small">{{ $partyName }}</span>
+                                        <div class="text-muted" style="font-size: 10px;"><i class="fa fa-building-o me-1"></i>{{ Str::limit($whNames ?: '-', 20) }}</div>
                                     </td>
-                                    
+
                                     <td class="py-1">
                                         @foreach($sale->items as $item)
-                                            <div class="item-detail-row">
-                                                {{ $item->product->name ?? 'Product #'.$item->product_id }}
-                                                <span class="text-primary fw-bold ms-1">({{ number_format($item->sales_qty ?? 0, 0) }})</span>
-                                            </div>
+                                            <div class="item-detail-row">{{ $item->product->name ?? 'Product #'.$item->product_id }}</div>
                                         @endforeach
                                     </td>
-                                    <td class="small text-muted">
+                                    <td class="text-center">
                                         @foreach($sale->items as $item)
-                                            <div class="item-detail-row">
-                                                @if($item->warehouse_id == 0)
-                                                    Shop
-                                                @else
-                                                    {{ Str::limit($item->warehouse->warehouse_name ?? 'N/A', 15) }}
-                                                @endif
-                                            </div>
+                                            <div class="item-detail-row text-primary fw-bold">{{ number_format($item->sales_qty ?? 0, 0) }}</div>
                                         @endforeach
                                     </td>
+                                    <td class="text-center fw-bold text-info">{{ number_format($sale->items->sum('sales_qty'), 0) }}</td>
 
                                     <td class="text-end fw-bold">{{ number_format($sale->sub_total2 ?? ($sale->items->sum('amount') ?? 0), 0) }}</td>
                                     <td class="text-end text-danger">{{ number_format($sale->discount_amount ?? 0, 0) }}</td>
-                                    <td class="text-end text-success">{{ number_format(($sale->receipt1 ?? 0) + ($sale->receipt2 ?? 0), 0) }}</td>
+                                    <td class="text-end text-success">{{ number_format($saleReceipts, 0) }}</td>
+                                    <td class="text-end">{{ number_format($saleReceipts, 0) }}</td>
                                     <td class="text-end fw-bold text-primary">{{ number_format($sale->total_balance, 0) }}</td>
-                                    
+
                                     <td>
-                                        @if($sale->creator)
+                                        @if($sale->user)
+                                            <span class="text-dark small">{{ $sale->user->name }}</span>
+                                        @elseif($sale->creator)
                                             <span class="text-dark small">{{ $sale->creator->name }}</span>
                                         @else
                                             <span class="text-muted small">System</span>
                                         @endif
                                     </td>
-                                    
-                                    <td class="small">{{ \Carbon\Carbon::parse($sale->created_at)->format('d-M-Y') }}</td>
+
                                     <td class="text-center">
                                         @if($sale->entry_status === 'Posted')
                                             <span class="badge bg-success rounded-pill px-3">Posted</span>
@@ -387,7 +401,7 @@
             }
         });
 
-        const storageKey = 'sale_table_cols_v2';
+        const storageKey = 'sale_table_cols_v3';
         
         // Initialize DataTable
         var dt = $('#saleListingTable').DataTable({
