@@ -195,10 +195,9 @@ class RollbackController extends Controller
 
         // 1. Reverse Stock Impact
         if ($sale->is_sale_order) {
-            // Sale orders only reserved stock — unpost the linked hold voucher.
             $holdVoucher = StockHoldVoucher::where('sale_id', $sale->id)->first();
-            if ($holdVoucher && $holdVoucher->status === 'Posted') {
-                $holdVoucher->update(['status' => 'Unposted']);
+            if ($holdVoucher && strtolower((string) ($holdVoucher->status ?? '')) === 'posted') {
+                app(StockHoldPostingService::class)->reverseHoldVoucherPosting($holdVoucher);
             }
         } else {
             foreach ($sale->items as $item) {
@@ -401,60 +400,29 @@ class RollbackController extends Controller
     private function rollbackStockHold($invoiceNo)
     {
         $hold = $this->findRecord(StockHoldVoucher::class, 'voucher_no', $invoiceNo);
-        if (!$hold) throw new \Exception("Stock Hold Voucher $invoiceNo not found.");
-        
-        $this->validateRollbackDate($hold);
-        
-        if ($hold->status !== 'Posted') throw new \Exception("Hold $invoiceNo is not Posted.");
-
-        $hold->load('items');
-
-        foreach ($hold->items as $item) {
-            $qty = (float) $item->hold_qty;
-            if ($qty <= 0) {
-                continue;
-            }
-
-            // Sale-order holds are reserve-only — no physical stock was added on post.
-            if (!$hold->sale_id) {
-                $wh = (int) ($item->warehouse_id ?? $hold->warehouse_id);
-                app(StockService::class)->subtract((int) $item->product_id, $wh, $qty, false);
-            }
-
-            $item->update(['status' => 1]);
+        if (!$hold) {
+            throw new \Exception("Stock Hold Voucher $invoiceNo not found.");
         }
 
-        $hold->update(['status' => 'Unposted']);
-        return back()->with('success', "Stock Hold #$invoiceNo set to Unposted.");
+        $this->validateRollbackDate($hold);
+
+        app(StockHoldPostingService::class)->reverseHoldVoucherPosting($hold);
+
+        return back()->with('success', "Stock Hold #$invoiceNo rolled back (Unposted). Physical and reserve effects reversed.");
     }
 
     private function rollbackStockRelease($invoiceNo)
     {
         $rel = $this->findRecord(\App\Models\StockReleaseVoucher::class, 'voucher_no', $invoiceNo);
-        if (!$rel) throw new \Exception("Stock Release Voucher $invoiceNo not found.");
-        
-        $this->validateRollbackDate($rel);
-        
-        if ($rel->status !== 'Posted') throw new \Exception("Release $invoiceNo is not Posted.");
-
-        $posting = app(StockHoldPostingService::class);
-        $rel->load('items.hold');
-
-        foreach ($rel->items as $item) {
-            $wh = $posting->resolveReleaseWarehouseId($rel, $item);
-            $posting->adjustStock($wh, (int) $item->product_id, (float) $item->release_qty);
-
-            if ($item->hold && !$item->hold->isFormalHoldLine()) {
-                $item->hold->hold_qty += $item->release_qty;
-                $item->hold->status = 0;
-                $item->hold->save();
-            }
-
-            $item->update(['status' => 'Unposted']);
+        if (!$rel) {
+            throw new \Exception("Stock Release Voucher $invoiceNo not found.");
         }
 
-        $rel->update(['status' => 'Unposted']);
-        return back()->with('success', "Stock Release #$invoiceNo set to Unposted.");
+        $this->validateRollbackDate($rel);
+
+        app(StockHoldPostingService::class)->reverseReleaseVoucherPosting($rel);
+
+        return back()->with('success', "Stock Release #$invoiceNo rolled back (Unposted). Physical and reserve effects reversed.");
     }
 
     private function rollbackStockTransfer($invoiceNo)

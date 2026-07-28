@@ -150,6 +150,74 @@ class StockHoldPostingService
         }
     }
 
+    /**
+     * Undo a posted hold voucher (mirror of post: physical −qty for manual holds, reserve via unpost).
+     */
+    public function reverseHoldVoucherPosting(StockHoldVoucher $voucher): void
+    {
+        $voucher->loadMissing(['items', 'sale']);
+
+        if (strtolower((string) ($voucher->status ?? '')) !== 'posted') {
+            throw new \RuntimeException('Stock hold voucher is not Posted.');
+        }
+
+        if ($this->hasPostedReleasesAgainstHoldVoucher($voucher)) {
+            throw new \RuntimeException(
+                'Cannot roll back this stock hold: posted release(s) still exist against it. Roll back stock release voucher(s) first.'
+            );
+        }
+
+        $reserveOnly = (bool) (
+            $voucher->sale_id
+            && $voucher->sale
+            && $voucher->sale->is_sale_order
+        );
+
+        foreach ($voucher->items as $item) {
+            $qty = (float) $item->hold_qty;
+            if ($qty <= 0) {
+                continue;
+            }
+
+            if (!$reserveOnly) {
+                $wh = (int) ($item->warehouse_id ?? $voucher->warehouse_id ?? 0);
+                $this->stock->subtract((int) $item->product_id, $wh, $qty, false);
+            }
+
+            $item->update(['status' => 1]);
+        }
+
+        $voucher->update(['status' => 'Unposted']);
+    }
+
+    /**
+     * Undo a posted release voucher (mirror of applyReleaseVoucherPosting).
+     */
+    public function reverseReleaseVoucherPosting(StockReleaseVoucher $voucher): void
+    {
+        $voucher->loadMissing(['items.hold']);
+
+        if (strtolower((string) ($voucher->status ?? '')) !== 'posted') {
+            throw new \RuntimeException('Stock release voucher is not Posted.');
+        }
+
+        foreach ($voucher->items as $item) {
+            $qty = (float) $item->release_qty;
+            if ($qty <= 0) {
+                continue;
+            }
+
+            $wh = $this->resolveReleaseWarehouseId($voucher, $item);
+            $this->adjustStock($wh, (int) $item->product_id, $qty);
+
+            $this->reverseReleaseReservedEffects($item, $voucher, $qty);
+
+            $item->update(['status' => 'Unposted']);
+        }
+
+        $voucher->update(['status' => 'Unposted']);
+    }
+
     public function physicalQty(int $warehouseId, int $productId): float
     {
         return $this->stock->physicalQty($productId, $warehouseId);
@@ -392,5 +460,76 @@ class StockHoldPostingService
             'entry_date' => now()->toDateString(),
             'entry_time' => now()->format('H:i'),
         ]);
+    }
+
+    private function hasPostedReleasesAgainstHoldVoucher(StockHoldVoucher $voucher): bool
+    {
+        $voucher->loadMissing('items');
+        $holdIds = $voucher->items->pluck('id')->filter()->values()->all();
+
+        return StockRelease::withoutGlobalScopes()
+            ->where(function ($q) {
+                $q->whereHas('voucher', function ($v) {
+                    $v->withoutGlobalScopes()->where('status', 'Posted');
+                })->orWhereIn('status', ['Posted', 'posted']);
+            })
+            ->where(function ($q) use ($voucher, $holdIds) {
+                $q->whereHas('voucher', function ($v) use ($voucher) {
+                    $v->withoutGlobalScopes()
+                        ->where('status', 'Posted')
+                        ->where('hold_voucher_id', $voucher->id);
+                });
+
+                if (!empty($holdIds)) {
+                    $q->orWhereIn('hold_id', $holdIds);
+                }
+            })
+            ->exists();
+    }
+
+    private function reverseReleaseReservedEffects(
+        StockRelease $item,
+        StockReleaseVoucher $voucher,
+        float $qty
+    ): void {
+        $hold = $item->relationLoaded('hold') ? $item->hold : null;
+        if (!$hold && $item->hold_id) {
+            $hold = StockHold::withoutGlobalScopes()->find($item->hold_id);
+        }
+
+        if ($hold && $hold->isFormalHoldLine()) {
+            return;
+        }
+
+        if ($hold) {
+            $hold->hold_qty = (float) $hold->hold_qty + $qty;
+            $hold->status = (float) $hold->hold_qty <= 0
+                ? (((float) $hold->hold_qty == 0) ? 1 : 0)
+                : 0;
+            $hold->save();
+
+            return;
+        }
+
+        $overflowQuery = StockHold::withoutGlobalScopes()
+            ->where('product_id', $item->product_id)
+            ->whereNull('stock_hold_voucher_id')
+            ->where(function ($q) {
+                $q->where('status', 0)->orWhereNull('status');
+            });
+
+        if ($voucher->party_type && $voucher->party_id) {
+            $overflowQuery->where('party_type', $voucher->party_type)
+                ->where('party_id', $voucher->party_id);
+        }
+
+        $overflow = $overflowQuery->orderByDesc('id')->first();
+        if ($overflow) {
+            $overflow->hold_qty = (float) $overflow->hold_qty + $qty;
+            $overflow->status = (float) $overflow->hold_qty <= 0
+                ? (((float) $overflow->hold_qty == 0) ? 1 : 0)
+                : 0;
+            $overflow->save();
+        }
     }
 }
