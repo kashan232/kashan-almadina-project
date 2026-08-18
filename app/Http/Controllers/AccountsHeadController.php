@@ -117,6 +117,12 @@ class AccountsHeadController extends Controller
 
     public function storeAccount(Request $request)
     {
+        if ($request->has('opening_balance')) {
+            $rawOb = $request->input('opening_balance');
+            $cleanOb = (is_null($rawOb) || $rawOb === '') ? 0 : (float) str_replace(',', '', (string) $rawOb);
+            $request->merge(['opening_balance' => $cleanOb]);
+        }
+
         $request->validate([
             'id'              => 'nullable|integer',
             'head_id'         => 'required|exists:account_heads,id',
@@ -125,6 +131,7 @@ class AccountsHeadController extends Controller
             'status'          => 'nullable|in:on',
             'user_group_ids'  => 'nullable|array',
         ]);
+
 
         $status = $request->status === 'on' ? 1 : 0;
         $groupIds = !empty($request->user_group_ids) ? array_values($request->user_group_ids) : null;

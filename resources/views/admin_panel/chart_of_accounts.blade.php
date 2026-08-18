@@ -282,7 +282,7 @@
                                                     data-head_id="{{ $account->head_id }}"
                                                     data-code="{{ $account->account_code }}"
                                                     data-title="{{ $account->title }}"
-                                                    data-balance="{{ $account->opening_balance }}"
+                                                    data-balance="{{ (float) ($account->opening_balance ?? 0) }}"
                                                     data-status="{{ $account->status }}"
                                                     data-groups="{{ json_encode($account->user_group_ids ?? []) }}"
                                                     data-bs-toggle="modal" data-bs-target="#addAccountModal"

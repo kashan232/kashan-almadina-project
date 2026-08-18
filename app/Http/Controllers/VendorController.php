@@ -66,6 +66,12 @@ class VendorController extends Controller
 
     public function store(Request $request)
     {
+        if ($request->has('opening_balance')) {
+            $rawOb = $request->input('opening_balance');
+            $cleanOb = (is_null($rawOb) || $rawOb === '') ? 0 : (float) str_replace(',', '', (string) $rawOb);
+            $request->merge(['opening_balance' => $cleanOb]);
+        }
+
         $request->validate([
             'name' => 'required|string',
             'phone' => 'nullable|string',
@@ -112,6 +118,12 @@ class VendorController extends Controller
 
     public function update(Request $request, $id)
     {
+        if ($request->has('opening_balance')) {
+            $rawOb = $request->input('opening_balance');
+            $cleanOb = (is_null($rawOb) || $rawOb === '') ? 0 : (float) str_replace(',', '', (string) $rawOb);
+            $request->merge(['opening_balance' => $cleanOb]);
+        }
+
         $request->validate([
             'name' => 'required|string',
             'phone' => 'nullable|string',
