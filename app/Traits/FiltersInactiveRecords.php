@@ -16,4 +16,10 @@ trait FiltersInactiveRecords
     {
         return static::withoutGlobalScope(ActiveOnlyScope::class);
     }
+
+    public function scopeWithInactive(Builder $query): Builder
+    {
+        return $query->withoutGlobalScope(ActiveOnlyScope::class);
+    }
 }
+

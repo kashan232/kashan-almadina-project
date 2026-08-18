@@ -688,12 +688,12 @@
                         </select>
                       </td>
                       <td style="width: 80px;"><input type="text" class="form-control form-control-sm stock text-center input-readonly" name="stock[]" value="{{ number_format((float)$stock) }}" readonly></td>
-                      <td style="width: 100px;"><input type="text" class="form-control form-control-sm text-end sales-price" name="sales-price[]" value="{{ number_format((float)$sPrice, 2) }}" onblur="this.value=toNum(this.value).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})"></td>
+                      <td style="width: 100px;"><input type="text" class="form-control form-control-sm text-end sales-price" name="sales-price[]" value="{{ number_format((float)$sPrice, 2, '.', '') }}" onblur="this.value=toNum(this.value).toFixed(2)"></td>
                       <td style="width: 70px;"><input type="text" class="form-control form-control-sm text-center sales-qty" name="sales-qty[]" value="{{ $qty }}"></td>
-                      <td style="width: 100px;"><input type="text" class="form-control form-control-sm text-end retail-price input-readonly" name="retail-price[]" value="{{ number_format((float)$rPrice, 2) }}" readonly></td>
+                      <td style="width: 100px;"><input type="text" class="form-control form-control-sm text-end retail-price input-readonly" name="retail-price[]" value="{{ number_format((float)$rPrice, 2, '.', '') }}" readonly></td>
                       <td style="width:165px;">
                         <div class="input-group input-group-sm">
-                          <input type="text" class="form-control text-end discount-value" placeholder="%" value="{{ number_format((float)$dPct, 2) }}" style="max-width: 65px;" onblur="this.value=toNum(this.value).toLocaleString('en-US', {maximumFractionDigits: 2})">
+                          <input type="text" class="form-control text-end discount-value" placeholder="%" value="{{ number_format((float)$dPct, 2, '.', '') }}" style="max-width: 65px;" onblur="this.value=toNum(this.value)">
                           <span class="input-group-text px-1" style="font-size: 0.7rem;">%</span>
                           <input type="text" class="form-control text-end discount-amount-display input-readonly" value="{{ number_format((float)$dAmtDisplay, 2) }}" readonly style="background: #f8f9fa;">
                         </div>
@@ -747,12 +747,12 @@
                         </select>
                       </td>
                       <td style="width: 80px;"><input type="text" class="form-control form-control-sm stock text-center input-readonly" name="stock[]" value="{{ number_format((float)$stock) }}" readonly></td>
-                      <td style="width: 100px;"><input type="text" class="form-control form-control-sm text-end sales-price" name="sales-price[]" value="{{ number_format((float)$sPrice, 2) }}" onblur="this.value=toNum(this.value).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})"></td>
+                      <td style="width: 100px;"><input type="text" class="form-control form-control-sm text-end sales-price" name="sales-price[]" value="{{ number_format((float)$sPrice, 2, '.', '') }}" onblur="this.value=toNum(this.value).toFixed(2)"></td>
                       <td style="width: 70px;"><input type="text" class="form-control form-control-sm text-center sales-qty" name="sales-qty[]" value="{{ $qty }}"></td>
-                      <td style="width: 100px;"><input type="text" class="form-control form-control-sm text-end retail-price input-readonly" name="retail-price[]" value="{{ number_format((float)$rPrice, 2) }}" readonly></td>
+                      <td style="width: 100px;"><input type="text" class="form-control form-control-sm text-end retail-price input-readonly" name="retail-price[]" value="{{ number_format((float)$rPrice, 2, '.', '') }}" readonly></td>
                       <td style="width:165px;">
                         <div class="input-group input-group-sm">
-                          <input type="text" class="form-control text-end discount-value" placeholder="%" value="{{ number_format((float)$dPct, 2) }}" style="max-width: 65px;" onblur="this.value=toNum(this.value).toLocaleString('en-US', {maximumFractionDigits: 2})">
+                          <input type="text" class="form-control text-end discount-value" placeholder="%" value="{{ number_format((float)$dPct, 2, '.', '') }}" style="max-width: 65px;" onblur="this.value=toNum(this.value)">
                           <span class="input-group-text px-1" style="font-size: 0.7rem;">%</span>
                           <input type="text" class="form-control text-end discount-amount-display input-readonly" value="{{ number_format((float)$dAmtDisplay, 2) }}" readonly style="background: #f8f9fa;">
                         </div>
@@ -1222,12 +1222,12 @@
         </select>
       </td>
       <td style="width: 80px;"><input type="text" class="form-control form-control-sm stock text-center input-readonly" name="stock[]" readonly></td>
-      <td style="width: 100px;"><input type="text" class="form-control form-control-sm text-end sales-price" name="sales-price[]" value="0.00" onblur="this.value=toNum(this.value).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})"></td>
+      <td style="width: 100px;"><input type="text" class="form-control form-control-sm text-end sales-price" name="sales-price[]" value="0.00" onblur="this.value=toNum(this.value).toFixed(2)"></td>
       <td style="width: 70px;"><input type="text" class="form-control form-control-sm text-center sales-qty" name="sales-qty[]" value=""></td>
       <td style="width: 100px;"><input type="text" class="form-control form-control-sm text-end retail-price input-readonly" name="retail-price[]" value="0.00" readonly></td>
       <td style="width: 165px;">
         <div class="input-group input-group-sm">
-          <input type="text" class="form-control text-end discount-value" placeholder="%" value="0" style="max-width: 65px;" onblur="this.value=toNum(this.value).toLocaleString('en-US', {maximumFractionDigits: 2})">
+          <input type="text" class="form-control text-end discount-value" placeholder="%" value="0" style="max-width: 65px;" onblur="this.value=toNum(this.value)">
           <span class="input-group-text px-1" style="font-size: 0.7rem;">%</span>
           <input type="text" class="form-control text-end discount-amount-display input-readonly" value="0.00" readonly style="background: #f8f9fa;">
         </div>
