@@ -93,16 +93,13 @@
                                 <thead>
                                     <tr>
                                         <th width="15%">Narration</th>
-                                        <th width="10%">Ref#</th>
-                                        <th width="15%">Account Head</th>
-                                        <th width="8%" class="text-center">Code</th>
-                                        <th width="12%">Destination Account</th>
-                                        <th width="9%">Disc Head</th>
-                                        <th width="11%">Disc Sub Head</th>
-                                        <th width="6%" class="text-end">Disc.</th>
-                                        <th width="7%" class="text-center">KG</th>
-                                        <th width="8%" class="text-end">Rate</th>
-                                        <th width="10%" class="text-end">Amount</th>
+                                        <th width="7%">Ref#</th>
+                                        <th width="14%">Account Head</th>
+                                        <th width="5%" class="text-center">Code</th>
+                                        <th width="16%">Destination Account</th>
+                                        <th width="5%" class="text-center">KG</th>
+                                        <th width="11%" class="text-end">Rate</th>
+                                        <th width="24%" class="text-end">Amount</th>
                                         <th width="3%" class="text-center">Act</th>
                                     </tr>
                                 </thead>
@@ -112,12 +109,17 @@
                                         $references = json_decode($receipt->reference_no, true) ?? [];
                                         $rowHeads = json_decode($receipt->row_account_head, true) ?? [];
                                         $rowAccounts = json_decode($receipt->row_account_id, true) ?? [];
-                                        $discounts = json_decode($receipt->discount_value, true) ?? [];
-                                        $discountHeads = json_decode($receipt->discount_head, true) ?? [];
-                                        $discountAccounts = json_decode($receipt->discount_account_id, true) ?? [];
                                         $kgs = json_decode($receipt->kg, true) ?? [];
                                         $rates = json_decode($receipt->rate, true) ?? [];
                                         $amounts = json_decode($receipt->amount, true) ?? [];
+
+                                        $dHeadsArr = json_decode($receipt->discount_head, true);
+                                        $dAccsArr  = json_decode($receipt->discount_account_id, true);
+                                        $dValsArr  = json_decode($receipt->discount_value, true);
+
+                                        $discHeadVal = is_array($dHeadsArr) ? ($dHeadsArr[0] ?? '') : ($receipt->discount_head ?? '');
+                                        $discAccVal  = is_array($dAccsArr)  ? ($dAccsArr[0] ?? '')  : ($receipt->discount_account_id ?? '');
+                                        $discAmtVal  = is_array($dValsArr)  ? (float)($dValsArr[0] ?? 0) : (float)($receipt->discount_value ?? 0);
                                     @endphp
                                     @foreach($narrations_json as $index => $nId)
                                     <tr>
@@ -144,26 +146,6 @@
                                                 <option value="">Select Account...</option>
                                             </select>
                                         </td>
-                                        <td>
-                                            <select name="discount_head[]" class="form-select form-select-sm discountAccountHead select2">
-                                                <option value="">Head</option>
-                                                @foreach($AccountHeads as $head)
-                                                <option value="{{ $head->id }}" {{ ($discountHeads[$index] ?? '') == $head->id ? 'selected' : '' }}>{{ $head->name }}</option>
-                                                @endforeach
-                                            </select>
-                                        </td>
-                                        <td>
-                                            <select name="discount_account_id[]" class="form-select form-select-sm discountAccountSub select2" data-selected="{{ $discountAccounts[$index] ?? '' }}">
-                                                <option value="">Sub Head</option>
-                                                @if(!empty($discountAccounts[$index]))
-                                                    @php $dAcc = \App\Models\Account::find($discountAccounts[$index]); @endphp
-                                                    @if($dAcc)
-                                                        <option value="{{ $discountAccounts[$index] }}" selected>{{ $dAcc->title }}</option>
-                                                    @endif
-                                                @endif
-                                            </select>
-                                        </td>
-                                        <td><input name="discount_value[]" type="number" step="any" class="form-control form-control-sm text-end discountValue" value="{{ $discounts[$index] ?? 0 }}"></td>
                                         <td><input name="kg[]" type="number" step="any" class="form-control form-control-sm text-center kg" value="{{ $kgs[$index] ?? '' }}"></td>
                                         <td><input name="rate[]" type="number" step="any" class="form-control form-control-sm text-end rate" value="{{ $rates[$index] ?? '' }}"></td>
                                         <td><input name="amount[]" type="text" class="form-control form-control-sm text-end fw-bold amount" value="{{ $amounts[$index] ?? '' }}"></td>
@@ -174,9 +156,6 @@
                                 <tfoot class="bg-light">
                                     <tr class="fw-bold">
                                         <td colspan="5" class="text-end py-2 text-muted small">TOTALS</td>
-                                        <td class="text-end py-1">
-                                            <input type="text" id="totalDisc" class="form-control form-control-sm text-end border-0 bg-transparent fw-bold text-dark fs-5 py-0" readonly value="0.00">
-                                        </td>
                                         <td class="text-center py-1">
                                             <input type="text" id="totalKg" class="form-control form-control-sm text-center border-0 bg-transparent fw-bold text-dark fs-5 py-0" readonly value="0.00">
                                         </td>
@@ -188,6 +167,33 @@
                                     </tr>
                                 </tfoot>
                             </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Voucher Discount Section -->
+                <div class="card form-card mb-2">
+                    <div class="card-body p-2 bg-light-subtle">
+                        <div class="row g-2 align-items-center">
+                            <div class="col-md-4">
+                                <label class="form-label mb-1 fw-bold text-dark"><i class="fa fa-percent text-primary me-1"></i> Disc Head</label>
+                                <select name="discount_head" id="discount_head" class="form-select form-select-sm select2">
+                                    <option value="">Select Discount Head...</option>
+                                    @foreach($AccountHeads as $head)
+                                    <option value="{{ $head->id }}" {{ $discHeadVal == $head->id ? 'selected' : '' }}>{{ $head->name }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="col-md-5">
+                                <label class="form-label mb-1 fw-bold text-dark"><i class="fa fa-university text-primary me-1"></i> Disc Sub Head (Account)</label>
+                                <select name="discount_account_id" id="discount_account_id" class="form-select form-select-sm select2" data-selected="{{ $discAccVal }}">
+                                    <option value="">Select Sub Head Account...</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label mb-1 fw-bold text-dark"><i class="fa fa-minus-circle text-danger me-1"></i> Disc. Amount</label>
+                                <input name="discount_value" id="discount_value" type="number" step="any" class="form-control form-control-sm text-end fw-bold text-danger fs-6" value="{{ $discAmtVal > 0 ? $discAmtVal : 0 }}" placeholder="0.00">
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -290,25 +296,30 @@ $(document).ready(function() {
     $('.rowAccountHead').each(function() { if ($(this).val()) $(this).trigger('change'); });
     $('.discountAccountHead').each(function() { if ($(this).val()) $(this).trigger('change'); });
 
-    $(document).on('change', '.discountAccountHead', function() {
-        let $row = $(this).closest('tr');
+    // 🏷️ Voucher Level Discount Head & Sub Head Logic
+    $(document).on('change', '#discount_head', function() {
         let headId = $(this).val();
-        let $subSelect = $row.find('.discountAccountSub');
+        let $subSelect = $('#discount_account_id');
         let selected = $subSelect.data('selected');
         $subSelect.html('<option value="">Loading...</option>');
         if (headId) {
             $.get('{{ url("get-accounts-by-head") }}/' + headId, function(res) {
-                $subSelect.html('<option value="">Sub Head</option>');
+                $subSelect.html('<option value="">Select Sub Head Account...</option>');
                 res.forEach(acc => {
                     let sel = (acc.id == selected) ? 'selected' : '';
                     $subSelect.append(`<option value="${acc.id}" ${sel}>${acc.title}</option>`);
                 });
                 $subSelect.data('selected', '');
+                $subSelect.trigger('change');
             });
         } else {
-            $subSelect.html('<option value="">Sub Head</option>');
+            $subSelect.html('<option value="">Select Sub Head Account...</option>').trigger('change');
         }
     });
+
+    if ($('#discount_head').val()) {
+        $('#discount_head').trigger('change');
+    }
 
     $(document).on('change', '.rowAccountSub', function() { let code = $(this).find('option:selected').data('code'); $(this).closest('tr').find('.rowAccountCode').val(code || ''); });
 
@@ -326,18 +337,15 @@ $(document).ready(function() {
     // ➕ Table Actions
     function calculateTotals() {
         let grandTotal = 0;
-        let grandDisc = 0;
         let grandKg = 0;
         $('.amount').each(function() { grandTotal += parseFloat($(this).val()) || 0; });
-        $('.discountValue').each(function() { grandDisc += parseFloat($(this).val()) || 0; });
         $('.kg').each(function() { grandKg += parseFloat($(this).val()) || 0; });
 
-        $('#totalAmount').val(grandTotal.toLocaleString('en-US', {minimumFractionDigits: 2}));
-        $('#totalDisc').val(grandDisc.toLocaleString('en-US', {minimumFractionDigits: 2}));
-        $('#totalKg').val(grandKg.toLocaleString('en-US', {minimumFractionDigits: 2}));
+        $('#totalAmount').val(grandTotal.toFixed(2));
+        $('#totalKg').val(grandKg.toFixed(2));
     }
 
-    $(document).on('input', '.kg, .rate, .discountValue', function() {
+    $(document).on('input', '.kg, .rate', function() {
         let $tr = $(this).closest('tr');
         let kg = parseFloat($tr.find('.kg').val()) || 0, rate = parseFloat($tr.find('.rate').val()) || 0;
         let $amount = $tr.find('.amount');
@@ -350,7 +358,7 @@ $(document).ready(function() {
         calculateTotals();
     });
 
-    $(document).on('input', '.amount', function() {
+    $(document).on('input', '.amount, #discount_value', function() {
         calculateTotals();
     });
 
@@ -370,9 +378,6 @@ $(document).ready(function() {
             <td><select name="row_account_head[]" class="form-select form-select-sm rowAccountHead select2"><option value="">Select Head...</option>@foreach($AccountHeads as $head) <option value="{{ $head->id }}">{{ $head->name }}</option>@endforeach</select></td>
             <td><input type="text" class="form-control form-control-sm text-center fw-bold text-danger rowAccountCode" placeholder="Code"></td>
             <td><select name="row_account_id[]" class="form-select form-select-sm rowAccountSub select2"><option value="">Select Account...</option></select></td>
-            <td><select name="discount_head[]" class="form-select form-select-sm discountAccountHead select2"><option value="">Head</option>@foreach($AccountHeads as $head)<option value="{{ $head->id }}">{{ $head->name }}</option>@endforeach</select></td>
-            <td><select name="discount_account_id[]" class="form-select form-select-sm discountAccountSub select2"><option value="">Sub Head</option></select></td>
-            <td><input name="discount_value[]" type="number" step="any" class="form-control form-control-sm text-end discountValue" value="0"></td>
             <td><input name="kg[]" type="number" step="any" class="form-control form-control-sm text-center kg"></td>
             <td><input name="rate[]" type="number" step="any" class="form-control form-control-sm text-end rate"></td>
             <td><input name="amount[]" type="text" class="form-control form-control-sm text-end fw-bold amount"></td>

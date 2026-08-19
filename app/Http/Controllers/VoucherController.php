@@ -72,10 +72,18 @@ class VoucherController extends Controller
 
     private function voucherDiscountFieldsFromRequest(Request $request): array
     {
+        $discVal  = $request->input('discount_value');
+        $discHead = $request->input('discount_head');
+        $discAcc  = $request->input('discount_account_id');
+
+        $valArray  = is_array($discVal)  ? array_values($discVal)  : ($discVal !== null && $discVal !== '' ? [(float)$discVal] : []);
+        $headArray = is_array($discHead) ? array_values($discHead) : ($discHead ? [$discHead] : []);
+        $accArray  = is_array($discAcc)  ? array_values($discAcc)  : ($discAcc  ? [$discAcc]  : []);
+
         return [
-            'discount_value' => json_encode($request->input('discount_value', [])),
-            'discount_head' => json_encode($request->input('discount_head', [])),
-            'discount_account_id' => json_encode($request->input('discount_account_id', [])),
+            'discount_value'      => json_encode($valArray),
+            'discount_head'       => json_encode($headArray),
+            'discount_account_id' => json_encode($accArray),
         ];
     }
 
@@ -107,9 +115,8 @@ class VoucherController extends Controller
 
             foreach ($amounts as $idx => $rawAmt) {
                 $amt = (float) str_replace(',', '', (string) $rawAmt);
-                $disc = (float) ($request->input('discount_value', [])[$idx] ?? 0);
 
-                if ($amt <= 0 && $disc <= 0) {
+                if ($amt <= 0) {
                     continue;
                 }
 
@@ -121,22 +128,28 @@ class VoucherController extends Controller
                 if (empty($request->input('row_account_id', [])[$idx] ?? null)) {
                     $v->errors()->add("row_account_id.$idx", 'Destination Account is required.');
                 }
-                if ($amt <= 0 && $disc <= 0) {
-                    $v->errors()->add("amount.$idx", 'Amount is required.');
-                }
-
-                if ($withDiscount && $disc > 0) {
-                    if (empty($request->input('discount_head', [])[$idx] ?? null)) {
-                        $v->errors()->add("discount_head.$idx", 'Discount Head is required.');
-                    }
-                    if (empty($request->input('discount_account_id', [])[$idx] ?? null)) {
-                        $v->errors()->add("discount_account_id.$idx", 'Discount Sub Head is required.');
-                    }
-                }
             }
 
             if (!$hasValidRow) {
-                $v->errors()->add('amount.0', 'At least one line with amount or discount is required.');
+                $v->errors()->add('amount.0', 'At least one line with an amount is required.');
+            }
+
+            $rawDisc = $request->input('discount_value');
+            $discVal = (float) (is_array($rawDisc) ? ($rawDisc[0] ?? 0) : ($rawDisc ?? 0));
+
+            if ($withDiscount && $discVal > 0) {
+                $dHead = $request->input('discount_head');
+                if (is_array($dHead)) { $dHead = $dHead[0] ?? null; }
+
+                $dAcc = $request->input('discount_account_id');
+                if (is_array($dAcc)) { $dAcc = $dAcc[0] ?? null; }
+
+                if (empty($dHead)) {
+                    $v->errors()->add('discount_head', 'Discount Head is required when discount is entered.');
+                }
+                if (empty($dAcc)) {
+                    $v->errors()->add('discount_account_id', 'Discount Sub Head is required when discount is entered.');
+                }
             }
         });
 
@@ -547,7 +560,7 @@ class VoucherController extends Controller
                 }
             }
 
-            $voucher->update([
+            $voucherData = array_merge([
                 'receipt_date'     => $request->receipt_date,
                 'entry_date'       => $request->entry_date,
                 'entry_time'       => $request->entry_time,
@@ -559,14 +572,13 @@ class VoucherController extends Controller
                 'reference_no'     => json_encode($request->input('reference_no', [])),
                 'row_account_head' => json_encode($request->input('row_account_head', [])),
                 'row_account_id'   => json_encode($request->input('row_account_id', [])),
-                'discount_value'   => json_encode($request->input('discount_value', [])),
-                'discount_head'    => json_encode($request->input('discount_head', [])),
-                'discount_account_id' => json_encode($request->input('discount_account_id', [])),
                 'kg'               => json_encode($request->input('kg', [])),
-                'rate'               => json_encode($request->input('rate', [])),
+                'rate'             => json_encode($request->input('rate', [])),
                 'amount'           => json_encode($request->input('amount', [])),
                 'total_amount'     => (float) str_replace(',', '', $request->total_amount),
-            ]);
+            ], $this->voucherDiscountFieldsFromRequest($request));
+
+            $voucher->update($voucherData);
 
             return response()->json([
                 'success' => true, 
@@ -768,7 +780,7 @@ class VoucherController extends Controller
             }
         }
 
-        $data = [
+        $data = array_merge([
             'receipt_date'     => $request->receipt_date,
             'entry_date'       => $request->entry_date,
             'entry_time'       => $request->entry_time,
@@ -780,14 +792,11 @@ class VoucherController extends Controller
             'reference_no'     => json_encode($request->reference_no),
             'row_account_head' => json_encode($request->row_account_head), // JSON from Rows
             'row_account_id'   => json_encode($request->row_account_id),   // JSON from Rows
-            'discount_value'   => json_encode($request->discount_value),
-            'discount_head'    => json_encode($request->input('discount_head', [])),
-            'discount_account_id' => json_encode($request->input('discount_account_id', [])),
             'kg'               => json_encode($request->kg),
             'rate'             => json_encode($request->rate),
             'amount'           => json_encode($request->amount),
             'total_amount'     => str_replace(',', '', $request->total_amount),
-        ];
+        ], $this->voucherDiscountFieldsFromRequest($request));
 
         if ($id) {
             $voucher = PaymentVoucher::find($id);
@@ -996,7 +1005,7 @@ class VoucherController extends Controller
                     $narrationIds[] = (string)$narrId; // force string format
                 }
             }
-            $voucherData = [
+            $voucherData = array_merge([
                 'pvid'             => $pvid,
                 'receipt_date'     => $request->receipt_date,
                 'entry_date'       => $request->entry_date,
@@ -1005,18 +1014,15 @@ class VoucherController extends Controller
                 'party_id'         => $request->vendor_id,
                 'tel'              => $request->tel,
                 'remarks'          => $request->remarks,
-                'narration_id' => json_encode($narrationIds),
+                'narration_id'     => json_encode($narrationIds),
                 'reference_no'     => json_encode($request->reference_no),
-            'row_account_head' => json_encode($request->row_account_head),
-            'row_account_id'   => json_encode($request->row_account_id),
-            'discount_value'   => json_encode($request->discount_value),
-            'discount_head'    => json_encode($request->input('discount_head', [])),
-            'discount_account_id' => json_encode($request->input('discount_account_id', [])),
+                'row_account_head' => json_encode($request->row_account_head),
+                'row_account_id'   => json_encode($request->row_account_id),
                 'kg'               => json_encode($request->kg),
                 'rate'             => json_encode($request->rate),
                 'amount'           => json_encode($request->amount),
                 'total_amount'     => str_replace(',', '', $request->total_amount),
-            ];
+            ], $this->voucherDiscountFieldsFromRequest($request));
 
             PaymentVoucher::create($voucherData);
 
