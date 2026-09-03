@@ -156,7 +156,7 @@
                                 <label class="form-label">Bill Date</label>
                                 <input type="date" name="bill_date" class="form-control input-sm" value="{{ $claim->bill_date }}">
                             </div>
-                            <div class="col-md-2 mt-1" id="original_warehouse_div">
+                            <div class="col-md-2 mt-1 {{ in_array($claim->claim_type, ['credit_note', 'claim_hold']) ? 'd-none' : '' }}" id="original_warehouse_div">
                                 <label class="form-label border-danger border-bottom"><span class="text-danger"><i class="fa fa-minus-circle"></i></span> Deliver From</label>
                                 <select name="original_warehouse_id" class="form-select input-sm">
                                     @if(auth()->user()->canAccessShop())
@@ -312,7 +312,7 @@ $(document).ready(function() {
             $('#original_warehouse_div').addClass('d-none');
             if(!_isPosted) $('#sales_price, #replacement_sales_price').prop('readonly', true);
         }
-    });
+    }).trigger('change');
 
     // Party Selection Sync
     $('#party_id').on('change', function() {

@@ -28,7 +28,7 @@
     .stock-hold-page .select2-container--default .select2-selection--single { height: 24px !important; padding: 0 4px !important; font-size: .76rem !important; border: 1px solid #dee2e6 !important; }
     .stock-hold-page .select2-container--default .select2-selection--single .select2-selection__rendered { line-height: 22px !important; }
     .stock-hold-page .select2-container--default .select2-selection--single .select2-selection__arrow { height: 22px !important; }
-    .stock-hold-page .table thead th { background: #f8f9fa !important; text-align: center; font-size: .7rem; padding: 1px 3px !important; white-space: nowrap; }
+    .stock-hold-page .table thead th { background: #1e293b !important; color: #ffffff !important; text-align: center; font-size: .7rem; padding: 1px 3px !important; white-space: nowrap; }
     .stock-hold-page .table td { vertical-align: middle; padding: 1px 3px !important; font-size: .76rem; }
     .stock-hold-page .table .form-control { height: 22px !important; min-height: 22px !important; padding: 0 3px !important; font-size: .72rem !important; }
     .stock-hold-page .table tfoot td.py-3 { padding: .15rem .3rem !important; }

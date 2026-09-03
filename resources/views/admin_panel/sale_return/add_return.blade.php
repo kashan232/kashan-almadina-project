@@ -98,7 +98,7 @@
     .purchase-page .form-control-sm,
     .purchase-page .form-select-sm { padding: .1rem .35rem !important; font-size: .75rem !important; height: 24px !important; min-height: 24px !important; }
     .purchase-page textarea.form-control-sm { height: auto !important; min-height: 38px !important; }
-    .purchase-page .table thead th { padding: 2px !important; font-size: .7rem !important; background: #f8f9fa !important; position: sticky; top: 0; z-index: 2; }
+    .purchase-page .table thead th { padding: 2px !important; font-size: .7rem !important; background: #1e293b !important; color: #ffffff !important; position: sticky; top: 0; z-index: 2; }
     .purchase-page .table-sm td { padding: 1px !important; vertical-align: middle; }
     .purchase-page .table-sm .form-control,
     .purchase-page .table-sm .form-select { height: 24px !important; min-height: 24px !important; font-size: .75rem !important; padding: 2px 4px !important; }
@@ -122,7 +122,7 @@
     $formLocked = $isViewMode || $isPosted || (isset($returnData) && !$isNew);
 @endphp
 
-<div class="main-content bg-white purchase-page">
+<div class="main-content purchase-page">
     <div class="main-content-inner">
         <div class="container-fluid purchase-page-inner">
             <div class="main-container bg-white border shadow-sm mx-auto rounded-3">

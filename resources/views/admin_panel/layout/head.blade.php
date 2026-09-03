@@ -66,6 +66,122 @@
      input[type=number] {
          -moz-appearance: textfield;
      }
+
+     /* 🎨 Soft Yellowish Theme for Entry Forms & Form Cards */
+     body,
+     .page-container,
+     .main-content,
+     .main-content-inner,
+     .content-wrapper,
+     .body-wrapper,
+     .bodywrapper__inner,
+     .main-container,
+     .stock-hold-page,
+     .purchase-page,
+     .purchase-page-inner,
+     .card,
+     .card-body,
+     .card-header,
+     .card-footer,
+     .form-card,
+     form,
+     .main-content .bg-white,
+     .main-content .bg-light,
+     .main-content .bg-light-subtle,
+     .main-container.bg-white,
+     .card-body.bg-white,
+     .card.bg-white {
+         background-color: #fffde7 !important;
+     }
+
+     /* ⚪ Clean White Background for DataTables & Listing Tables */
+     .table,
+     .table tbody,
+     .table tbody tr,
+     .table td,
+     .dataTable,
+     .dataTable tbody tr,
+     .dataTable tbody td,
+     .table-responsive .table {
+         background-color: #ffffff !important;
+     }
+
+     /* 🖤 Dark Styled Header for All Tables */
+     .table thead,
+     .table thead tr,
+     .table thead th,
+     .table-sm thead th,
+     .dataTable thead th,
+     .main-content table.table thead th,
+     .main-content table.table-sm thead th,
+     .main-content table.dataTable thead th,
+     #voucherTable thead th {
+         background-color: #1e293b !important;
+         color: #ffffff !important;
+         font-weight: 600 !important;
+         border-bottom: 2px solid #0f172a !important;
+     }
+
+     .table thead th a,
+     .table thead th i {
+         color: #ffffff !important;
+     }
+
+     /* ⚪ Pure White Form Inputs & Dropdowns ONLY */
+     .form-control,
+     .form-select,
+     input[type="text"],
+     input[type="number"],
+     input[type="date"],
+     input[type="time"],
+     input[type="email"],
+     input[type="password"],
+     select,
+     textarea,
+     .select2-container--default .select2-selection--single,
+     .select2-container--default .select2-selection--multiple,
+     .select2-dropdown,
+     .select2-results__option {
+         background-color: #ffffff !important;
+         border: 1px solid #94a3b8 !important;
+         color: #0f172a !important;
+     }
+
+     .form-control:focus,
+     .form-select:focus,
+     .select2-container--default.select2-container--focus .select2-selection--single {
+         background-color: #ffffff !important;
+         border-color: #3b82f6 !important;
+         box-shadow: 0 0 0 0.2rem rgba(59, 130, 246, 0.2) !important;
+     }
+
+     .form-control[readonly],
+     .form-control:disabled,
+     .form-select:disabled,
+     input[readonly],
+     input:disabled,
+     select:disabled {
+         background-color: #f1f5f9 !important;
+         color: #475569 !important;
+         border-color: #cbd5e1 !important;
+     }
+
+     /* Preserve Buttons, Badges, Modals, Toasts, Alerts, and Print Views */
+     .btn,
+     .badge,
+     .alert,
+     .modal-content,
+     .modal-header,
+     .modal-body,
+     .modal-footer {
+         background-color: initial;
+     }
+
+     @media print {
+         body, .page-container, .main-content, .card, .table, .table td, .table th {
+             background-color: #ffffff !important;
+         }
+     }
  </style>
 @if(request()->is('reports*') || request()->is('general-ledger*'))
 @include('admin_panel.reports.partials.report_global_zoom')

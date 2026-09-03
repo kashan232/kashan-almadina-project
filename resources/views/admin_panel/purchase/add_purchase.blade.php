@@ -93,7 +93,7 @@
     }
     
 </style>
-<div class="main-content bg-white purchase-page">
+<div class="main-content purchase-page">
     <div class="main-content-inner">
         <div class="row">
             <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css"
@@ -218,7 +218,8 @@
     position: sticky;
     top: 0;
     z-index: 2;
-    background: #f8f9fa !important;
+    background: #1e293b !important;
+    color: #ffffff !important;
     text-align: center;
     font-size: 0.75rem;
     padding: 4px !important;

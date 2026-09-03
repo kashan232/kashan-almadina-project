@@ -170,7 +170,8 @@
     position: sticky;
     top: 0;
     z-index: 2;
-    background: #f8f9fa !important;
+    background: #1e293b !important;
+    color: #ffffff !important;
     text-align: center;
     font-size: 0.75rem;
     padding: 4px !important;

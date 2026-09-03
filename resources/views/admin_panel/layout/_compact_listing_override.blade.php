@@ -1,12 +1,27 @@
 <style>
     /* Loaded after page content — wins over per-page #tableId rules */
-    .main-content table[id].table thead th,
-    .main-content table[id].table-sm thead th,
-    .main-content table.dataTable thead th {
-        padding: 2px 8px !important;
+    body .main-content table.table thead th,
+    body .main-content table[id].table thead th,
+    body .main-content table[id].table-sm thead th,
+    body .main-content table.dataTable thead th,
+    body .table thead th,
+    #voucherTable thead th,
+    #saleTable thead th,
+    #itemsTable thead th {
+        background-color: #1e293b !important;
+        background: #1e293b !important;
+        color: #ffffff !important;
+        font-weight: 600 !important;
+        border-bottom: 2px solid #0f172a !important;
+        padding: 4px 8px !important;
         font-size: 11px !important;
         line-height: 1.2 !important;
         vertical-align: middle !important;
+    }
+
+    body .main-content table thead th a,
+    body .main-content table thead th i {
+        color: #ffffff !important;
     }
 
     .main-content table[id].table tbody td,
