@@ -309,18 +309,59 @@
   .purchase-page .totals-card .py-1 { padding-top: .15rem !important; padding-bottom: .15rem !important; }
   .purchase-page #netAmountDisplay { font-size: 1rem !important; }
   .purchase-page #accountsTotal { font-size: .95rem !important; }
-  .purchase-page .allocation-bar { margin-top: .35rem !important; padding: .15rem .35rem !important; }
-  .purchase-page .bottom-bar { margin-top: .4rem !important; padding: .4rem !important; gap: .35rem !important; }
-  .purchase-page .bottom-bar .btn { padding: .2rem .55rem !important; font-size: .75rem !important; }
-  .purchase-page .bottom-bar kbd { font-size: 8px !important; padding: 1px 3px !important; }
-  .purchase-page .accounts-section { --bs-gutter-x: .5rem; --bs-gutter-y: .35rem; margin-top: .25rem !important; }
+  .purchase-page .bottom-bar {
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    width: 100% !important;
+    z-index: 1050 !important;
+    margin-top: 0 !important;
+    padding: 8px 16px !important;
+    gap: 8px !important;
+    background: #ffffff !important;
+    border-top: 1px solid #cbd5e1 !important;
+    box-shadow: 0 -4px 15px rgba(0, 0, 0, 0.1) !important;
+    border-radius: 0 !important;
+  }
+  .purchase-page .bottom-bar .btn {
+    padding: 5px 16px !important;
+    font-size: 0.8rem !important;
+    font-weight: 600 !important;
+    letter-spacing: 0.4px !important;
+    border-radius: 6px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 5px !important;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08) !important;
+    transition: all 0.2s ease !important;
+  }
+  .purchase-page .bottom-bar .btn:hover:not(:disabled) {
+    transform: translateY(-1px) !important;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15) !important;
+  }
+  .purchase-page .bottom-bar kbd {
+    font-size: 9px !important;
+    letter-spacing: 0.3px !important;
+    font-weight: 500 !important;
+    padding: 2px 5px !important;
+    background: rgba(0, 0, 0, 0.12) !important;
+    color: inherit !important;
+    border-radius: 4px !important;
+    border: 1px solid rgba(255, 255, 255, 0.25) !important;
+    margin-left: 6px !important;
+  }
+  .purchase-page-inner {
+    padding-bottom: 60px !important;
+  }
   .purchase-page.main-content,
   .purchase-page .main-content-inner,
   .purchase-page .bodywrapper__inner { padding: 0 !important; }
 </style>
 
-<div class="container-fluid purchase-page-inner bg-white">
-  <div class="main-container bg-white border shadow-sm mx-auto rounded-3" style="max-width: 99%;">
+<div class="container-fluid purchase-page-inner">
+  <div class="main-container border shadow-sm mx-auto rounded-3" style="max-width: 99%;">
 
     <div id="alertBox" class="alert d-none mb-1" role="alert"></div>
 
@@ -653,35 +694,35 @@
         </div>
       </div>
 
-      {{-- BOTTOM BUTTONS --}}
-      <div class="d-flex flex-wrap justify-content-center bg-light bottom-bar rounded-2 border shadow-sm w-100">
+      {{-- BOTTOM BUTTONS (Fixed at Page Bottom) --}}
+      <div class="d-flex flex-wrap justify-content-center align-items-center bottom-bar w-100">
 
-          <button type="button" id="saveDraftBtn" class="btn btn-primary px-3 fw-bold shadow-sm" {{ $isPosted || $isDraft || $isViewMode ? 'disabled' : '' }}>
-              <u>S</u>ave <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+S</kbd>
+          <button type="button" id="saveDraftBtn" class="btn btn-primary shadow-sm" {{ $isPosted || $isDraft || $isViewMode ? 'disabled' : '' }}>
+              <i class="fa fa-floppy-o me-1"></i> Save <kbd>Ctrl+S</kbd>
           </button>
 
-          <button type="button" id="editInvoiceBtn" class="btn btn-warning px-3 fw-bold text-dark shadow-sm" {{ $isNew || $isPosted || $isViewMode ? 'disabled' : '' }}>
-              <u>E</u>dit <kbd style="font-size:10px;opacity:.8;margin-left:4px;color:#fff;">Ctrl+E</kbd>
+          <button type="button" id="editInvoiceBtn" class="btn btn-warning text-dark shadow-sm" {{ $isNew || $isPosted || $isViewMode ? 'disabled' : '' }}>
+              <i class="fa fa-pencil me-1"></i> Edit <kbd style="color:#000;">Ctrl+E</kbd>
           </button>
 
-          <button type="button" id="postBtn" class="btn btn-success px-3 fw-bold shadow-sm" {{ $isNew || $isPosted || $isViewMode ? 'disabled' : '' }}>
-              <u>P</u>ost <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+&crarr;</kbd>
+          <button type="button" id="postBtn" class="btn btn-success shadow-sm" {{ $isNew || $isPosted || $isViewMode ? 'disabled' : '' }}>
+              <i class="fa fa-check-circle me-1"></i> Post <kbd>Ctrl+&crarr;</kbd>
           </button>
 
-          <button type="button" id="deleteBtn" class="btn btn-danger px-3 fw-bold shadow-sm" {{ $isNew || $isPosted || $isViewMode ? 'disabled' : '' }}>
-              <u>D</u>elete <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+D</kbd>
+          <button type="button" id="deleteBtn" class="btn btn-danger shadow-sm" {{ $isNew || $isPosted || $isViewMode ? 'disabled' : '' }}>
+              <i class="fa fa-trash me-1"></i> Delete <kbd>Ctrl+D</kbd>
           </button>
 
-          <a href="{{ isset($purchase) ? route('purchase.invoice', $purchase->id) : 'javascript:void(0)' }}" id="realPrintBtn" target="_blank" class="btn btn-info px-3 fw-bold text-dark shadow-sm" {{ $isNew ? 'disabled' : '' }}>
-              <u>P</u>rint <kbd style="font-size:10px;opacity:.8;margin-left:4px;color:#fff;">Ctrl+P</kbd>
+          <a href="{{ isset($purchase) ? route('purchase.invoice', $purchase->id) : 'javascript:void(0)' }}" id="realPrintBtn" target="_blank" class="btn btn-info text-dark shadow-sm" {{ $isNew ? 'disabled' : '' }}>
+              <i class="fa fa-print me-1"></i> Print <kbd style="color:#000;">Ctrl+P</kbd>
           </a>
 
-          <a href="{{ route('Purchase.home') }}" id="exitBtn" class="btn btn-secondary px-3 fw-bold shadow-sm text-white">
-              E<u>x</u>it <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Esc</kbd>
+          <a href="{{ route('Purchase.home') }}" id="exitBtn" class="btn btn-secondary shadow-sm text-white">
+              <i class="fa fa-times-circle me-1"></i> Exit <kbd>Esc</kbd>
           </a>
 
-          <a href="{{ route('add_purchase') }}" id="newInvoiceBtn" class="btn btn-dark px-3 fw-bold shadow-sm text-white">
-              <u>N</u>ew <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+M</kbd>
+          <a href="{{ route('add_purchase') }}" id="newInvoiceBtn" class="btn btn-dark shadow-sm text-white">
+              <i class="fa fa-plus-circle me-1"></i> New <kbd>Ctrl+M</kbd>
           </a>
       </div>
     </form>
@@ -1768,7 +1809,7 @@ $(document).ready(function() {
         }
     }
 
-    var BTN_POST = '<u>P</u>ost <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+&crarr;</kbd>';
+    var BTN_POST = '<i class="fa fa-check-circle me-1"></i> Post <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+&crarr;</kbd>';
 
     function isPurchasePostedView() {
         return isViewMode || $('#purchaseForm').hasClass('view-mode');
@@ -1872,7 +1913,7 @@ $(document).ready(function() {
                     }
 
                     // Show Edit, Post, Delete, Print buttons, hide Save
-                    $('#saveDraftBtn').prop('disabled', true).html('<u>S</u>ave');
+                    $('#saveDraftBtn').prop('disabled', true).html('<i class="fa fa-floppy-o me-1"></i> Save <kbd>Ctrl+S</kbd>');
                     $('#editInvoiceBtn').prop('disabled', false);
                     $('#postBtn').prop('disabled', false);
                     $('#deleteBtn').prop('disabled', false);
@@ -1885,7 +1926,7 @@ $(document).ready(function() {
                     
                 } else {
                     showToast('❌ ' + (res.message || 'Error saving draft.'), 'error');
-                    $('#saveDraftBtn').prop('disabled', false).html('<u>S</u>ave');
+                    $('#saveDraftBtn').prop('disabled', false).html('<i class="fa fa-floppy-o me-1"></i> Save <kbd>Ctrl+S</kbd>');
                 }
             },
             error: function(xhr) {
@@ -1923,7 +1964,7 @@ $(document).ready(function() {
                     }
                 } catch(e){}
                 showToast('❌ ' + msg, 'error');
-                $('#saveDraftBtn').prop('disabled', false).html('<u>S</u>ave');
+                $('#saveDraftBtn').prop('disabled', false).html('<i class="fa fa-floppy-o me-1"></i> Save <kbd>Ctrl+S</kbd>');
             },
             complete: function() {
                 _saveInFlight = false;
@@ -1988,7 +2029,7 @@ $(document).ready(function() {
     // Edit logic
     $('#editInvoiceBtn').on('click', function() {
         $('#purchaseForm').removeClass('form-locked');
-        $('#saveDraftBtn').prop('disabled', false).html('<u>S</u>ave');
+        $('#saveDraftBtn').prop('disabled', false).html('<i class="fa fa-floppy-o me-1"></i> Save <kbd>Ctrl+S</kbd>');
         $(this).prop('disabled', true);
         $('#postBtn').prop('disabled', true);
         $('#deleteBtn').prop('disabled', true);
@@ -2010,7 +2051,7 @@ $(document).ready(function() {
                 },
                 error: function(xhr) {
                     showToast('❌ Failed to delete.', 'error');
-                    $('#deleteBtn').prop('disabled', false).html('<u>D</u>elete');
+                    $('#deleteBtn').prop('disabled', false).html('<i class="fa fa-trash me-1"></i> Delete <kbd>Ctrl+D</kbd>');
                 }
             });
         }
