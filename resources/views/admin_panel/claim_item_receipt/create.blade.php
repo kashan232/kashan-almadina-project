@@ -176,21 +176,46 @@
                                         </select>
                                     </div>
                                     
-                                    <div class="col-md-6">
-                                        <div class="card border-primary border-opacity-25 bg-primary bg-opacity-10 p-1 px-3 rounded-pill h-100 shadow-sm">
-                                            <div class="row g-2 align-items-center">
-                                                <div class="col-auto"><i class="fa fa-barcode text-primary fs-4"></i></div>
+                                    <div class="col-md-3">
+                                        <div class="card border-primary border-opacity-25 bg-primary bg-opacity-10 p-1 px-2 rounded-3 h-100 shadow-sm">
+                                            <div class="row g-1 align-items-center">
+                                                <div class="col-auto"><i class="fa fa-barcode text-primary fs-5 ms-1"></i></div>
                                                 <div class="col">
                                                     <div class="input-group input-group-sm">
-                                                        <input type="text" id="receipt_btr_search_input" class="form-control border-primary" placeholder="Enter BTR# to fetch items (e.g. 22225)...">
-                                                        <button type="button" id="receipt_btr_search_btn" class="btn btn-primary px-3">
-                                                            <i class="fa fa-search me-1"></i> Find BTR#
+                                                        <input type="text" id="receipt_btr_search_input" class="form-control border-primary" placeholder="Enter BTR# (e.g. 22225)...">
+                                                        <button type="button" id="receipt_btr_search_btn" class="btn btn-primary px-2">
+                                                            <i class="fa fa-search me-1"></i> BTR#
                                                         </button>
                                                     </div>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
+
+                                    @if(!$isViewMode)
+                                    <div class="col-md-4">
+                                        <div class="card border-success border-opacity-25 bg-success bg-opacity-10 p-1 px-2 rounded-3 h-100 shadow-sm">
+                                            <div class="row g-1 align-items-center">
+                                                <div class="col-auto"><i class="fa fa-plus-circle text-success fs-5 ms-1"></i></div>
+                                                <div class="col">
+                                                    <div class="input-group input-group-sm">
+                                                        <select id="receipt_manual_product_search" class="form-select select2">
+                                                            <option value="">Manual Product Search...</option>
+                                                            @if(isset($products))
+                                                                @foreach($products as $p)
+                                                                    <option value="{{ $p->id }}" data-name="{{ $p->name }}">{{ $p->id }} - {{ $p->name }}</option>
+                                                                @endforeach
+                                                            @endif
+                                                        </select>
+                                                        <button type="button" id="receipt_add_manual_item_btn" class="btn btn-success px-2">
+                                                            <i class="fa fa-plus me-1"></i> Add Manual
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    @endif
                                 </div>
                             </div>
                         </div>
@@ -515,6 +540,25 @@ $(document).ready(function() {
     $('#credit_party_type').on('change', function() { loadParties($(this).val(), '#credit_party_id'); });
 
     // --- ITEM RECEIPT LOGIC ---
+    $('#receipt_manual_product_search').select2({
+        placeholder: 'Manual Product Search...',
+        allowClear: true
+    });
+
+    $('#receipt_add_manual_item_btn').on('click', function() {
+        var $opt = $('#receipt_manual_product_search').find(':selected');
+        var id = $opt.val();
+        var name = $opt.data('name');
+        
+        if (!id) {
+            showToast('Please select a product first', 'error');
+            return;
+        }
+        
+        addReceiptRow('MANUAL', id, name, 1);
+        $('#receipt_manual_product_search').val('').trigger('change');
+    });
+
     $('#receipt_btr_search_btn').on('click', function() {
         var btr = $('#receipt_btr_search_input').val();
         if(!btr) return showToast('Please enter a BTR#', 'error');

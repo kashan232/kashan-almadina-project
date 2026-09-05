@@ -57,7 +57,8 @@ class ClaimItemReceiptController extends Controller
         $warehouses = Warehouse::orderBy('warehouse_name')->get();
         $companyWarehouses = Warehouse::withoutGlobalScope('exclude_claims')->where('claim_type', 'company')->orderBy('warehouse_name')->get();
         $AccountHeads = \App\Models\AccountHead::where('status', 1)->get();
-        return view('admin_panel.claim_item_receipt.create', compact('voucherNo', 'creditNoteVoucherNo', 'warehouses', 'companyWarehouses', 'AccountHeads'));
+        $products = \App\Models\Product::select('id', 'name')->orderBy('name')->get();
+        return view('admin_panel.claim_item_receipt.create', compact('voucherNo', 'creditNoteVoucherNo', 'warehouses', 'companyWarehouses', 'AccountHeads', 'products'));
     }
 
     public function edit($id)
@@ -69,7 +70,8 @@ class ClaimItemReceiptController extends Controller
         $warehouses = Warehouse::orderBy('warehouse_name')->get();
         $companyWarehouses = Warehouse::withoutGlobalScope('exclude_claims')->where('claim_type', 'company')->orderBy('warehouse_name')->get();
         $AccountHeads = \App\Models\AccountHead::where('status', 1)->get();
-        return view('admin_panel.claim_item_receipt.create', compact('voucher', 'warehouses', 'companyWarehouses', 'AccountHeads'));
+        $products = \App\Models\Product::select('id', 'name')->orderBy('name')->get();
+        return view('admin_panel.claim_item_receipt.create', compact('voucher', 'warehouses', 'companyWarehouses', 'AccountHeads', 'products'));
     }
 
     public function show($id)
@@ -78,9 +80,10 @@ class ClaimItemReceiptController extends Controller
         $warehouses = Warehouse::orderBy('warehouse_name')->get();
         $companyWarehouses = Warehouse::withoutGlobalScope('exclude_claims')->where('claim_type', 'company')->orderBy('warehouse_name')->get();
         $AccountHeads = \App\Models\AccountHead::where('status', 1)->get();
+        $products = \App\Models\Product::select('id', 'name')->orderBy('name')->get();
         $viewMode = true;
 
-        return view('admin_panel.claim_item_receipt.create', compact('voucher', 'warehouses', 'companyWarehouses', 'AccountHeads', 'viewMode'));
+        return view('admin_panel.claim_item_receipt.create', compact('voucher', 'warehouses', 'companyWarehouses', 'AccountHeads', 'products', 'viewMode'));
     }
 
     public function fetchByBTR(Request $request)

@@ -141,10 +141,26 @@
      .select2-container--default .select2-selection--single,
      .select2-container--default .select2-selection--multiple,
      .select2-dropdown,
-     .select2-results__option {
+     .select2-results__option:not(.select2-results__option--highlighted) {
          background-color: #ffffff !important;
          border: 1px solid #94a3b8 !important;
          color: #0f172a !important;
+     }
+
+     /* 💙 Bold Dark Blue Highlighted Option for Select2 Dropdowns */
+     .select2-container--default .select2-results__option--highlighted[aria-selected],
+     .select2-container--default .select2-results__option--highlighted[data-selected],
+     .select2-results__option--highlighted,
+     .select2-results__option.select2-results__option--highlighted,
+     body .select2-container--default .select2-results__option--highlighted[aria-selected] {
+         background-color: #1e40af !important; /* Bold Royal Dark Blue */
+         color: #ffffff !important;
+         font-weight: 700 !important;
+     }
+
+     .select2-container--default .select2-results__option--highlighted[aria-selected] *,
+     .select2-results__option--highlighted * {
+         color: #ffffff !important;
      }
 
      .form-control:focus,
@@ -164,6 +180,66 @@
          background-color: #f1f5f9 !important;
          color: #475569 !important;
          border-color: #cbd5e1 !important;
+     }
+
+     /* 🚀 Global Fixed Bottom Action Bar for All ERP Forms */
+     .bottom-bar,
+     .bottom-bar-btns {
+         position: fixed !important;
+         bottom: 0 !important;
+         left: 0 !important;
+         right: 0 !important;
+         width: 100% !important;
+         z-index: 1050 !important;
+         margin-top: 0 !important;
+         margin-bottom: 0 !important;
+         padding: 8px 16px !important;
+         gap: 8px !important;
+         background: #ffffff !important;
+         border-top: 1px solid #cbd5e1 !important;
+         box-shadow: 0 -4px 15px rgba(0, 0, 0, 0.1) !important;
+         border-radius: 0 !important;
+     }
+
+     .bottom-bar .btn,
+     .bottom-bar-btns .btn {
+         padding: 5px 16px !important;
+         font-size: 0.8rem !important;
+         font-weight: 600 !important;
+         letter-spacing: 0.4px !important;
+         border-radius: 6px !important;
+         display: inline-flex !important;
+         align-items: center !important;
+         justify-content: center !important;
+         gap: 5px !important;
+         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08) !important;
+         transition: all 0.2s ease !important;
+     }
+
+     .bottom-bar .btn:hover:not(:disabled),
+     .bottom-bar-btns .btn:hover:not(:disabled) {
+         transform: translateY(-1px) !important;
+         box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15) !important;
+     }
+
+     .bottom-bar kbd,
+     .bottom-bar-btns kbd {
+         font-size: 9px !important;
+         letter-spacing: 0.3px !important;
+         font-weight: 500 !important;
+         padding: 2px 5px !important;
+         background: rgba(0, 0, 0, 0.12) !important;
+         color: inherit !important;
+         border-radius: 4px !important;
+         border: 1px solid rgba(255, 255, 255, 0.25) !important;
+         margin-left: 6px !important;
+     }
+
+     /* Bottom padding to prevent content from hiding behind fixed bottom bar */
+     .main-content-inner,
+     .purchase-page-inner,
+     .stock-hold-page {
+         padding-bottom: 60px !important;
      }
 
      /* Preserve Buttons, Badges, Modals, Toasts, Alerts, and Print Views */

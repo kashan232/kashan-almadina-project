@@ -990,49 +990,49 @@
       </div>
 
       {{-- BOTTOM BUTTONS (Purchase standard) --}}
-      <div class="d-flex flex-wrap gap-2 justify-content-center bg-light bottom-bar rounded-2 border shadow-sm w-100">
+      <div class="d-flex flex-wrap align-items-center justify-content-center bottom-bar w-100">
 
-        <button type="button" id="saveDraftBtn" class="btn btn-primary px-3 fw-bold shadow-sm" {{ $isViewMode ? 'disabled' : '' }}>
-          <u>S</u>ave <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+S</kbd>
+        <button type="button" id="saveDraftBtn" class="btn btn-primary shadow-sm" {{ $isViewMode ? 'disabled' : '' }}>
+          <i class="fa fa-floppy-o me-1"></i> Save <kbd>Ctrl+S</kbd>
         </button>
 
-        <button type="button" id="editBtn" class="btn btn-warning px-3 fw-bold text-dark shadow-sm" {{ $isViewMode ? 'disabled' : 'disabled' }}>
-          <u>E</u>dit <kbd style="font-size:10px;opacity:.8;margin-left:4px;color:#fff;">Ctrl+E</kbd>
+        <button type="button" id="editBtn" class="btn btn-warning text-dark shadow-sm" {{ $isViewMode ? 'disabled' : 'disabled' }}>
+          <i class="fa fa-pencil me-1"></i> Edit <kbd style="color:#000;">Ctrl+E</kbd>
         </button>
 
-        <button type="button" id="postBtn" class="btn btn-success px-3 fw-bold shadow-sm" {{ $isViewMode ? 'disabled' : '' }}>
-          <u>P</u>ost <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+&crarr;</kbd>
+        <button type="button" id="postBtn" class="btn btn-success shadow-sm" {{ $isViewMode ? 'disabled' : '' }}>
+          <i class="fa fa-check-circle me-1"></i> Post <kbd>Ctrl+&crarr;</kbd>
         </button>
 
-        <button type="button" id="deleteBtn" class="btn btn-danger px-3 fw-bold shadow-sm" {{ $isViewMode ? 'disabled' : '' }}>
-          <u>D</u>elete <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+D</kbd>
+        <button type="button" id="deleteBtn" class="btn btn-danger shadow-sm" {{ $isViewMode ? 'disabled' : '' }}>
+          <i class="fa fa-trash me-1"></i> Delete <kbd>Ctrl+D</kbd>
         </button>
 
         @if($isViewMode && isset($sale))
-        <a href="{{ route('sale.invoice', $sale->id) }}" target="_blank" id="invPrintBtn" class="btn btn-info px-3 fw-bold text-dark shadow-sm">
-          <i class="fa fa-file-text-o me-1"></i><u>I</u>nv Print <kbd style="font-size:10px;opacity:.8;margin-left:4px;color:#fff;">Ctrl+P</kbd>
+        <a href="{{ route('sale.invoice', $sale->id) }}" target="_blank" id="invPrintBtn" class="btn btn-info text-dark shadow-sm">
+          <i class="fa fa-file-text-o me-1"></i> Inv Print <kbd style="color:#000;">Ctrl+P</kbd>
         </a>
-        <a href="{{ route('sale.dc', $sale->id) }}" target="_blank" id="dcPrintBtn" class="btn btn-outline-info px-3 fw-bold shadow-sm">
-          <i class="fa fa-truck me-1"></i><u>D</u>C Print <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+Shift+D</kbd>
+        <a href="{{ route('sale.dc', $sale->id) }}" target="_blank" id="dcPrintBtn" class="btn btn-outline-info shadow-sm">
+          <i class="fa fa-truck me-1"></i> DC Print <kbd>Ctrl+Shift+D</kbd>
         </a>
         @else
-        <a href="#" target="_blank" id="invPrintBtn" class="btn btn-info px-3 fw-bold text-dark shadow-sm d-none">
-          <i class="fa fa-file-text-o me-1"></i><u>I</u>nv Print <kbd style="font-size:10px;opacity:.8;margin-left:4px;color:#fff;">Ctrl+P</kbd>
+        <a href="#" target="_blank" id="invPrintBtn" class="btn btn-info text-dark shadow-sm d-none">
+          <i class="fa fa-file-text-o me-1"></i> Inv Print <kbd style="color:#000;">Ctrl+P</kbd>
         </a>
-        <a href="#" target="_blank" id="dcPrintBtn" class="btn btn-outline-info px-3 fw-bold shadow-sm d-none">
-          <i class="fa fa-truck me-1"></i><u>D</u>C Print <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+Shift+D</kbd>
+        <a href="#" target="_blank" id="dcPrintBtn" class="btn btn-outline-info shadow-sm d-none">
+          <i class="fa fa-truck me-1"></i> DC Print <kbd>Ctrl+Shift+D</kbd>
         </a>
-        <button type="button" id="previewPrintBtn" class="btn btn-info px-3 fw-bold text-dark shadow-sm">
-          <u>P</u>rint <kbd style="font-size:10px;opacity:.8;margin-left:4px;color:#fff;">Ctrl+P</kbd>
+        <button type="button" id="previewPrintBtn" class="btn btn-info text-dark shadow-sm">
+          <i class="fa fa-print me-1"></i> Print <kbd style="color:#000;">Ctrl+P</kbd>
         </button>
         @endif
 
-        <a href="{{ route('sale.index') }}" id="exitBtn" class="btn btn-secondary px-3 fw-bold shadow-sm text-white">
-          E<u>x</u>it <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Esc</kbd>
+        <a href="{{ route('sale.index') }}" id="exitBtn" class="btn btn-secondary shadow-sm text-white">
+          <i class="fa fa-times-circle me-1"></i> Exit <kbd>Esc</kbd>
         </a>
 
-        <a href="{{ route('sale.add') }}" id="newBtn" class="btn btn-dark px-3 fw-bold shadow-sm text-white">
-          <u>N</u>ew <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+M</kbd>
+        <a href="{{ route('sale.add') }}" id="newBtn" class="btn btn-dark shadow-sm text-white">
+          <i class="fa fa-plus-circle me-1"></i> New <kbd>Ctrl+M</kbd>
         </a>
 
       </div>
@@ -1174,7 +1174,7 @@
       if ($currentRow.is(':last-child')) {
           addNewRow(false);
       }
-      setTimeout(() => $currentRow.find('.sales-qty').focus(), 50);
+      setTimeout(() => $currentRow.find('.sales-qty').focus().select(), 50);
     });
 
     $select.on('select2:clear', function(e) {
@@ -1429,9 +1429,9 @@
       var _postInFlight = false;
       var isViewMode = @json($isViewMode);
 
-      var BTN_SAVE = '<u>S</u>ave <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+S</kbd>';
-      var BTN_POST = '<u>P</u>ost <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+&crarr;</kbd>';
-      var BTN_DELETE = '<u>D</u>elete <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+D</kbd>';
+      var BTN_SAVE = '<i class="fa fa-floppy-o me-1"></i> Save <kbd>Ctrl+S</kbd>';
+      var BTN_POST = '<i class="fa fa-check-circle me-1"></i> Post <kbd>Ctrl+&crarr;</kbd>';
+      var BTN_DELETE = '<i class="fa fa-trash me-1"></i> Delete <kbd>Ctrl+D</kbd>';
 
       function setSaleButtonsAfterLock() {
           $('#editBtn').prop('disabled', false);
@@ -1968,7 +1968,7 @@
           // If current selection is already same, just move focus
           if ($select.val() === String(id)) {
               if ($row.is(':last-child')) addNewRow(false);
-              setTimeout(() => $row.find('.sales-qty').focus(), 50);
+              setTimeout(() => $row.find('.sales-qty').focus().select(), 50);
               e.preventDefault();
               return;
           }
@@ -2021,7 +2021,7 @@
                     }
                     
                     // 3. Focus Quantity of current row
-                    setTimeout(() => $row.find('.sales-qty').focus(), 50);
+                    setTimeout(() => $row.find('.sales-qty').focus().select(), 50);
                 } else {
                     Swal.fire({
                         icon: 'error',
@@ -2968,13 +2968,25 @@
       });
   });
 
+  // Auto-select text on focus so typing immediately replaces existing default value (e.g. 1 -> 5 instead of 15)
+  $(document).on('focus', '#salesTableBody input, #rvWrapper input', function() {
+      const $input = $(this);
+      setTimeout(function() {
+          $input.select();
+      }, 10);
+  });
+
   // Full Grid Navigation (Arrows Up/Down/Left/Right)
   $(document).on('keydown', '#salesTableBody input, #rvWrapper input', function(e) {
       if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].indexOf(e.key) === -1) return;
+
+      // Do not hijack arrow keys when Select2 dropdown is open or search field is focused
+      if ($(e.target).hasClass('select2-search__field') || $('.select2-container--open').length > 0) {
+          return;
+      }
       
       var $this = $(this);
       var $row = $this.closest('tr');
-      // For rvWrapper it might be a div with class rv-row, let's just use closest('tr, .rv-row')
       if ($row.length === 0) $row = $this.closest('.rv-row');
       var $inputs = $row.find('input:visible:not([readonly])'); 
       var currentIndex = $inputs.index($this);
@@ -3008,6 +3020,19 @@
               if ($prev.length && currentIndex > 0) {
                   e.preventDefault();
                   $prev.focus().select();
+              }
+          }
+      }
+  });
+
+  // Open Select2 dropdown when user presses ArrowDown/ArrowUp/Space on Select2 container
+  $(document).on('keydown', '.select2-container', function(e) {
+      if (['ArrowDown', 'ArrowUp', ' '].includes(e.key)) {
+          if (!$('.select2-container--open').length) {
+              const $select = $(this).prev('select');
+              if ($select.length) {
+                  e.preventDefault();
+                  $select.select2('open');
               }
           }
       }
