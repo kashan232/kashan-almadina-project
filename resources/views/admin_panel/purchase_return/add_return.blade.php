@@ -284,8 +284,8 @@
                                                     $discAmt = $item->qty > 0 ? ($item->item_discount / $item->qty) : 0;
                                                     $rate = $item->price - $discAmt;
                                                     $storedRetail = (float) ($item->retail_price ?? 0);
-                                                    $saleRetail = (float) (optional(optional($item->product)->latestPrice)->sale_retail_price ?? 0);
-                                                    $displayRetail = $storedRetail > 0 ? $storedRetail : $saleRetail;
+                                                    $purchaseRetail = (float) (optional(optional($item->product)->latestPrice)->purchase_retail_price ?? 0);
+                                                    $displayRetail = $storedRetail > 0 ? $storedRetail : $purchaseRetail;
                                                 @endphp
                                                 <tr>
                                                     <td><input type="text" class="form-control form-control-sm item-id-input text-center" value="{{ $item->product_id }}"></td>
@@ -859,7 +859,7 @@ $(document).ready(function() {
                         id: item.id,
                         text: item.name,
                         price: item.purchase_net_amount,
-                        retail: item.sale_retail_price ?? item.retail_price ?? 0,
+                        retail: item.purchase_retail_price ?? item.retail_price ?? 0,
                         brand: item.brand || (item.brand_relation ? item.brand_relation.name : '') || ''
                     }))
                 }),
@@ -908,7 +908,7 @@ $(document).ready(function() {
                                 id: product.id,
                                 text: product.name,
                                 price: product.purchase_net_amount,
-                                retail: product.sale_retail_price ?? product.retail_price ?? 0,
+                                retail: product.purchase_retail_price ?? product.retail_price ?? 0,
                                 brand: product.brand
                             }
                         }
