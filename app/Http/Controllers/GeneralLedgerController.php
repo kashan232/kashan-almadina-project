@@ -648,6 +648,7 @@ class GeneralLedgerController extends Controller
             ->whereBetween(DB::raw($prDateCol), [$start, $end])
             ->get();
         foreach ($pReturns as $pr) {
+            $itemLineTotalSum = (float)DB::table('purchase_return_items')->where('purchase_return_id', $pr->id)->sum('line_total');
             $transactions[] = [
                 'created_at' => $pr->created_at,
                 'id' => $pr->id,
@@ -656,7 +657,7 @@ class GeneralLedgerController extends Controller
                 'inv' => $pr->invoice_no,
                 'desc' => 'Purchase Return',
                 'qty' => (float)DB::table('purchase_return_items')->where('purchase_return_id', $pr->id)->sum('qty'),
-                'debit' => (float)($pr->subtotal + $pr->wht),
+                'debit' => (float)($itemLineTotalSum + $pr->wht),
                 'credit' => (float)$pr->discount
             ];
         }
@@ -666,6 +667,11 @@ class GeneralLedgerController extends Controller
         $payments = $this->ledgerQuery(PaymentVoucher::class)->where('party_id', $id)->whereIn('type', $typeArray)
             ->whereIn('status', ['posted', 'Posted'])->whereBetween(DB::raw($pvDateCol), [$start, $end])->get();
         foreach ($payments as $pv) {
+            $accIds = json_decode($pv->row_account_id, true) ?? [];
+            $amounts = json_decode($pv->amount, true) ?? [];
+            $discounts = json_decode($pv->discount_value, true) ?? [];
+            $discAccIds = json_decode($pv->discount_account_id, true) ?? [];
+
             $transactions[] = [
                 'created_at' => $pv->created_at,
                 'id' => $pv->id,
@@ -675,6 +681,21 @@ class GeneralLedgerController extends Controller
                 'desc' => $pv->remarks ?? 'Payment Voucher',
                 'qty' => 0, 'debit' => (float)$pv->total_amount, 'credit' => 0
             ];
+
+            foreach ($accIds as $idx => $aid) {
+                $rowDiscount = (float)($discounts[$idx] ?? 0);
+                if ($rowDiscount > 0) {
+                    $transactions[] = [
+                        'created_at' => $pv->created_at,
+                        'id' => $pv->id . '_disc_' . $idx,
+                        'date' => $pv->entry_date ?: $pv->created_at,
+                        'ref' => 'PV',
+                        'inv' => $pv->pvid,
+                        'desc' => $this->voucherDiscountDescription($discAccIds[$idx] ?? null),
+                        'qty' => 0, 'debit' => $rowDiscount, 'credit' => 0
+                    ];
+                }
+            }
         }
 
         // 3.1 Expenses (EV) - Credit
