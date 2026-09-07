@@ -43,10 +43,14 @@
                 <!-- Voucher Header Fields -->
                 <div class="card form-card mb-2">
                     <div class="card-body p-2">
-                        <div class="row g-2">
-                            <div class="col-md-2">
+                        <div class="row g-2 align-items-center">
+                            <div class="col-auto">
                                 <label class="form-label">Entry Date</label>
                                 <input type="date" name="entry_date" id="entry_date" class="form-control form-control-sm" value="{{ $receipt->entry_date ?: date('Y-m-d') }}" required>
+                            </div>
+                            <div class="col-auto">
+                                <label class="form-label">Entry Time</label>
+                                <input type="time" name="entry_time" id="entry_time" class="form-control form-control-sm" value="{{ $receipt->entry_time ?: date('H:i') }}" required>
                             </div>
                             <div class="col-md-2">
                                 <label class="form-label">Party Type <span class="text-danger">*</span></label>
@@ -64,7 +68,7 @@
                                 <label class="form-label">ID/Code</label>
                                 <input type="text" id="party_code_input" class="form-control form-control-sm text-center fw-bold text-danger" placeholder="Code" value="{{ $receipt->party_id }}">
                             </div>
-                            <div class="col-md-7">
+                            <div class="col">
                                 <label class="form-label">Source Party Name <span class="text-danger">*</span></label>
                                 <select name="vendor_id" id="vendor_id" class="form-select form-select-sm select2" data-selected-id="{{ $receipt->party_id }}">
                                     <option value="">Select Party...</option>
@@ -78,7 +82,7 @@
                 <div class="card form-card mb-2">
                     <div class="card-header bg-white py-1 d-flex justify-content-between align-items-center border-bottom">
                         <span class="fw-bold text-muted small text-uppercase"><i class="fa fa-list-ul me-1"></i> Voucher Details</span>
-                        <button type="button" class="btn btn-primary btn-xs px-3 rounded-pill" id="btnAddRow" {{ $receipt->status == 'posted' ? 'disabled' : '' }}>
+                        <button type="button" class="btn btn-primary btn-sm px-3 rounded-pill" id="btnAddRow" {{ $receipt->status == 'posted' ? 'disabled' : '' }}>
                             <i class="fa fa-plus me-1"></i> Add Line
                         </button>
                     </div>

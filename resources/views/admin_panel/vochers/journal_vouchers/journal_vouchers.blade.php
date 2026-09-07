@@ -43,16 +43,16 @@
                 <!-- Voucher Header Fields -->
                 <div class="card form-card mb-2">
                     <div class="card-body p-2">
-                        <div class="row g-2">
-                            <div class="col-md-2">
+                        <div class="row g-2 align-items-center">
+                            <div class="col-auto">
                                 <label class="form-label">Entry Date</label>
                                 <input type="date" name="entry_date" class="form-control form-control-sm" value="{{ $receipt->entry_date ?: date('Y-m-d') }}" required>
                             </div>
-                            <div class="col-md-2">
+                            <div class="col-auto">
                                 <label class="form-label">Entry Time</label>
                                 <input type="time" name="entry_time" class="form-control form-control-sm" value="{{ $receipt->entry_time ?: date('H:i') }}" required>
                             </div>
-                            <div class="col-md-8">
+                            <div class="col">
                                 <label class="form-label">General Remarks / Memo</label>
                                 <input type="text" name="remarks" class="form-control form-control-sm" placeholder="General voucher notes..." value="{{ $receipt->remarks }}">
                             </div>
@@ -64,7 +64,7 @@
                 <div class="card form-card mb-2">
                     <div class="card-header bg-white py-1 d-flex justify-content-between align-items-center border-bottom">
                         <span class="fw-bold text-muted small text-uppercase"><i class="fa fa-list-ul me-1"></i> Journal Entries</span>
-                        <button type="button" class="btn btn-primary btn-xs px-3 rounded-pill" id="btnAddRow" {{ $receipt->status == 'posted' ? 'disabled' : '' }}>
+                        <button type="button" class="btn btn-primary btn-sm px-3 rounded-pill" id="btnAddRow" {{ $receipt->status == 'posted' ? 'disabled' : '' }}>
                             <i class="fa fa-plus me-1"></i> Add Row
                         </button>
                     </div>

@@ -49,8 +49,15 @@
         border-color: #dc3545 !important;
         box-shadow: 0 0 0 1px rgba(220, 53, 69, 0.25) !important;
     }
-    .stock-hold-page .btn-xs { padding: 0 4px; font-size: 9px; line-height: 1.2; }
-    .stock-hold-page .btn-mini { padding: 0 4px; font-size: 9px; height: 18px; display: inline-flex; align-items: center; justify-content: center; }
+    .stock-hold-page #btnAddRow {
+        padding: .25rem .75rem !important;
+        font-size: .8rem !important;
+        font-weight: 600 !important;
+    }
+    .stock-hold-page input[type="date"],
+    .stock-hold-page input[type="time"] {
+        min-width: 125px;
+    }
     .posted-watermark {
         position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-30deg);
         font-size: 6rem; color: rgba(220, 53, 69, 0.05); font-weight: 900; text-transform: uppercase;
