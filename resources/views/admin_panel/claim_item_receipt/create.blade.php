@@ -3,26 +3,26 @@
 @section('content')
 <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 <style>
-    .stock-hold-page.container-fluid { padding: .25rem .4rem !important; }
+    .stock-hold-page.container-fluid { padding: .5rem .75rem !important; }
     .stock-hold-page .main-content-inner { padding: 0 !important; }
-    .stock-hold-page .nav-pills { margin-bottom: .35rem !important; padding: .25rem !important; }
-    .stock-hold-page .nav-pills .nav-link { padding: .25rem .65rem !important; font-size: .78rem !important; }
-    .stock-hold-page .card { margin-bottom: .35rem !important; }
-    .stock-hold-page .card-body { padding: .45rem .55rem !important; }
-    .stock-hold-page .card-footer { padding: .45rem .55rem !important; }
-    .stock-hold-page .row.g-2 { --bs-gutter-x: .4rem; --bs-gutter-y: .25rem; }
-    .stock-hold-page .form-label { margin-bottom: .1rem !important; font-size: .72rem !important; }
+    .stock-hold-page .nav-pills { margin-bottom: .6rem !important; padding: .4rem !important; }
+    .stock-hold-page .nav-pills .nav-link { padding: .35rem .85rem !important; font-size: .85rem !important; }
+    .stock-hold-page .card { margin-bottom: .6rem !important; }
+    .stock-hold-page .card-body { padding: .75rem .85rem !important; }
+    .stock-hold-page .card-footer { padding: .65rem .85rem !important; }
+    .stock-hold-page .row.g-2 { --bs-gutter-x: .6rem; --bs-gutter-y: .4rem; }
+    .stock-hold-page .form-label { margin-bottom: .25rem !important; font-size: .82rem !important; font-weight: 600; }
     .stock-hold-page .input-sm,
     .stock-hold-page .form-control,
-    .stock-hold-page .form-select { height: 26px !important; min-height: 26px !important; padding: .1rem .4rem !important; font-size: .78rem !important; }
-    .stock-hold-page .select2-container .select2-selection--single { height: 26px !important; border: 1px solid #ced4da; }
-    .stock-hold-page .select2-container .select2-selection--single .select2-selection__rendered { line-height: 24px !important; padding-left: 6px !important; font-size: .78rem !important; }
-    .stock-hold-page .select2-container .select2-selection--single .select2-selection__arrow { height: 24px !important; }
-    .stock-hold-page .table td, .stock-hold-page .table th { vertical-align: middle !important; padding: 2px 4px !important; font-size: .78rem !important; }
-    .stock-hold-page .table .form-control { height: 24px !important; min-height: 24px !important; padding: 1px 4px !important; font-size: .75rem !important; }
-    .stock-hold-page .bottom-bar-btns { gap: .35rem !important; }
-    .stock-hold-page .bottom-bar-btns .btn { padding: .25rem .65rem !important; font-size: .78rem !important; }
-    .stock-hold-page .badge { font-size: 11px !important; padding: .2rem .55rem !important; }
+    .stock-hold-page .form-select { height: 32px !important; min-height: 32px !important; padding: .25rem .5rem !important; font-size: .85rem !important; }
+    .stock-hold-page .select2-container .select2-selection--single { height: 32px !important; border: 1px solid #ced4da; }
+    .stock-hold-page .select2-container .select2-selection--single .select2-selection__rendered { line-height: 30px !important; padding-left: 8px !important; font-size: .85rem !important; }
+    .stock-hold-page .select2-container .select2-selection--single .select2-selection__arrow { height: 30px !important; }
+    .stock-hold-page .table td, .stock-hold-page .table th { vertical-align: middle !important; padding: 6px 8px !important; font-size: .85rem !important; }
+    .stock-hold-page .table .form-control { height: 30px !important; min-height: 30px !important; padding: 2px 6px !important; font-size: .82rem !important; }
+    .stock-hold-page .bottom-bar-btns { gap: .5rem !important; }
+    .stock-hold-page .bottom-bar-btns .btn { padding: .35rem .85rem !important; font-size: .85rem !important; }
+    .stock-hold-page .badge { font-size: 12px !important; padding: .3rem .65rem !important; }
 
     .form-locked { position: relative; opacity: 0.8; }
     .form-locked .card-body { pointer-events: none !important; }

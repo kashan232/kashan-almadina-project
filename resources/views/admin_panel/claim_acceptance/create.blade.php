@@ -3,45 +3,45 @@
 @section('content')
 <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 <style>
-    .stock-hold-page.container-fluid { padding: .15rem .3rem !important; }
+    .stock-hold-page.container-fluid { padding: .5rem .75rem !important; }
     .stock-hold-page .main-content-inner { padding: 0 !important; }
-    .stock-hold-page .main-container { padding: .3rem .4rem !important; font-size: .82rem; max-width: 98%; }
-    .stock-hold-page .page-top-bar { margin-bottom: .2rem !important; padding: .25rem .4rem !important; }
-    .stock-hold-page .page-top-bar .page-title { font-size: .85rem !important; }
-    .stock-hold-page .page-top-bar .badge { font-size: 10px !important; padding: .15rem .45rem !important; }
-    .stock-hold-page .page-top-bar .gap-3 { gap: .3rem !important; }
-    .stock-hold-page .mb-4, .stock-hold-page .mb-3 { margin-bottom: .25rem !important; }
-    .stock-hold-page .mb-2 { margin-bottom: .15rem !important; }
-    .stock-hold-page .mt-2, .stock-hold-page .mt-3 { margin-top: .15rem !important; }
-    .stock-hold-page .row.g-3, .stock-hold-page .row.g-2 { --bs-gutter-x: .3rem; --bs-gutter-y: .12rem; }
-    .stock-hold-page .card { margin-bottom: .2rem !important; }
-    .stock-hold-page .card-body { padding: .35rem .45rem !important; }
+    .stock-hold-page .main-container { padding: .5rem .75rem !important; font-size: .85rem; max-width: 100%; }
+    .stock-hold-page .page-top-bar { margin-bottom: .6rem !important; padding: .5rem .75rem !important; }
+    .stock-hold-page .page-top-bar .page-title { font-size: 1rem !important; }
+    .stock-hold-page .page-top-bar .badge { font-size: 12px !important; padding: .3rem .65rem !important; }
+    .stock-hold-page .page-top-bar .gap-3 { gap: .5rem !important; }
+    .stock-hold-page .mb-4, .stock-hold-page .mb-3 { margin-bottom: .6rem !important; }
+    .stock-hold-page .mb-2 { margin-bottom: .4rem !important; }
+    .stock-hold-page .mt-2, .stock-hold-page .mt-3 { margin-top: .4rem !important; }
+    .stock-hold-page .row.g-3, .stock-hold-page .row.g-2 { --bs-gutter-x: .6rem; --bs-gutter-y: .4rem; }
+    .stock-hold-page .card { margin-bottom: .6rem !important; }
+    .stock-hold-page .card-body { padding: .75rem .85rem !important; }
     .stock-hold-page .card-body.p-0 { padding: 0 !important; }
-    .stock-hold-page .card-header { padding: .2rem .45rem !important; }
-    .stock-hold-page .card-header.py-3 { padding-top: .2rem !important; padding-bottom: .2rem !important; }
-    .stock-hold-page .card-header h6 { font-size: .78rem !important; margin: 0 !important; }
-    .stock-hold-page .card.border-0.bg-light { padding: .25rem .35rem !important; margin-bottom: .12rem !important; }
-    .stock-hold-page .card-footer { padding: .35rem .45rem !important; }
-    .stock-hold-page .form-label { margin-bottom: 0 !important; font-size: .7rem !important; line-height: 1.1; }
-    .stock-hold-page .form-label.mb-1 { margin-bottom: 0 !important; }
-    .stock-hold-page .form-control, .stock-hold-page .form-select { height: 24px !important; min-height: 24px !important; padding: .05rem .35rem !important; font-size: .76rem !important; }
-    .stock-hold-page .select2-container--default .select2-selection--single { height: 24px !important; padding: 0 4px !important; font-size: .76rem !important; border: 1px solid #dee2e6 !important; }
-    .stock-hold-page .select2-container--default .select2-selection--single .select2-selection__rendered { line-height: 22px !important; }
-    .stock-hold-page .select2-container--default .select2-selection--single .select2-selection__arrow { height: 22px !important; }
-    .stock-hold-page .table thead th { background: #1e293b !important; color: #ffffff !important; text-align: center; font-size: .7rem; padding: 1px 3px !important; white-space: nowrap; }
-    .stock-hold-page .table td { vertical-align: middle; padding: 1px 3px !important; font-size: .76rem; }
-    .stock-hold-page .table .form-control { height: 22px !important; min-height: 22px !important; padding: 0 3px !important; font-size: .72rem !important; }
-    .stock-hold-page .table tfoot td.py-3 { padding: .15rem .3rem !important; }
-    .stock-hold-page #addItemBtn { height: 22px; padding: 0 .45rem; font-size: .72rem; line-height: 1.1; }
-    .stock-hold-page .bottom-bar-btns { gap: .3rem !important; }
-    .stock-hold-page .bottom-bar-btns .btn { padding: .2rem .55rem !important; font-size: .76rem !important; }
-    .stock-hold-page .alert.mb-2 { margin-bottom: .12rem !important; padding: .3rem .45rem; font-size: .78rem; }
-    .stock-hold-page .btr-search-card { padding: .2rem .35rem !important; }
-    .stock-hold-page .btr-search-card .fa-barcode { font-size: 1rem !important; }
-    .stock-hold-page .summary-card .card-body { padding: .35rem .45rem !important; }
-    .stock-hold-page .summary-card hr { margin: .25rem 0 !important; }
-    .stock-hold-page .total-highlight { font-size: .95rem !important; }
-    .stock-hold-page .summary-card .fs-5 { font-size: .85rem !important; }
+    .stock-hold-page .card-header { padding: .5rem .75rem !important; }
+    .stock-hold-page .card-header.py-3 { padding-top: .5rem !important; padding-bottom: .5rem !important; }
+    .stock-hold-page .card-header h6 { font-size: .88rem !important; margin: 0 !important; }
+    .stock-hold-page .card.border-0.bg-light { padding: .5rem .65rem !important; margin-bottom: .4rem !important; }
+    .stock-hold-page .card-footer { padding: .65rem .85rem !important; }
+    .stock-hold-page .form-label { margin-bottom: .25rem !important; font-size: .82rem !important; line-height: 1.2; font-weight: 600; }
+    .stock-hold-page .form-label.mb-1 { margin-bottom: .25rem !important; }
+    .stock-hold-page .form-control, .stock-hold-page .form-select { height: 32px !important; min-height: 32px !important; padding: .25rem .5rem !important; font-size: .85rem !important; }
+    .stock-hold-page .select2-container--default .select2-selection--single { height: 32px !important; padding: 0 6px !important; font-size: .85rem !important; border: 1px solid #dee2e6 !important; }
+    .stock-hold-page .select2-container--default .select2-selection--single .select2-selection__rendered { line-height: 30px !important; }
+    .stock-hold-page .select2-container--default .select2-selection--single .select2-selection__arrow { height: 30px !important; }
+    .stock-hold-page .table thead th { background: #1e293b !important; color: #ffffff !important; text-align: center; font-size: .82rem; padding: 6px 8px !important; white-space: nowrap; }
+    .stock-hold-page .table td { vertical-align: middle; padding: 6px 8px !important; font-size: .85rem; }
+    .stock-hold-page .table .form-control { height: 30px !important; min-height: 30px !important; padding: .2rem .4rem !important; font-size: .82rem !important; }
+    .stock-hold-page .table tfoot td.py-3 { padding: .4rem .6rem !important; }
+    .stock-hold-page #addItemBtn { height: 30px; padding: 0 .65rem; font-size: .82rem; line-height: 1.2; }
+    .stock-hold-page .bottom-bar-btns { gap: .5rem !important; }
+    .stock-hold-page .bottom-bar-btns .btn { padding: .35rem .85rem !important; font-size: .85rem !important; }
+    .stock-hold-page .alert.mb-2 { margin-bottom: .4rem !important; padding: .5rem .75rem; font-size: .85rem; }
+    .stock-hold-page .btr-search-card { padding: .5rem .65rem !important; }
+    .stock-hold-page .btr-search-card .fa-barcode { font-size: 1.1rem !important; }
+    .stock-hold-page .summary-card .card-body { padding: .75rem .85rem !important; }
+    .stock-hold-page .summary-card hr { margin: .4rem 0 !important; }
+    .stock-hold-page .total-highlight { font-size: 1rem !important; }
+    .stock-hold-page .summary-card .fs-5 { font-size: .95rem !important; }
 
     .posted-watermark {
         position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-30deg);
