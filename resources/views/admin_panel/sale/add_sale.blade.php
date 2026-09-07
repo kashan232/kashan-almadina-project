@@ -1166,7 +1166,7 @@
               text: item.name,
               stock: item.stock || 0,
               sale_price: item.sale_price || 0,
-              retail_price: item.retail_price || 0
+              retail_price: item.sale_retail_price || item.retail_price || 0
             };
           });
 

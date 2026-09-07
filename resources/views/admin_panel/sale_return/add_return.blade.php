@@ -906,7 +906,7 @@ $(document).ready(function() {
                         id: item.id,
                         text: item.name,
                         price: item.sale_price,
-                        retail: item.retail_price,
+                        retail: item.sale_retail_price || item.retail_price,
                         purchase_price: item.purchase_net_amount
                     }))
                 }),
@@ -957,7 +957,7 @@ $(document).ready(function() {
                                 id: product.id,
                                 text: product.name,
                                 price: product.sale_price,
-                                retail: product.retail_price,
+                                retail: product.sale_retail_price || product.retail_price,
                                 purchase_price: product.purchase_net_amount
                             }
                         }

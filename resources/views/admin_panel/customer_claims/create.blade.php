@@ -143,7 +143,11 @@
                                 <label class="form-label">Card No</label>
                                 <input type="text" name="card_no" class="form-control input-sm">
                             </div>
-                            <div class="col-md-3">
+                            <div class="col-md-2">
+                                <label class="form-label font-weight-bold">Retail Price</label>
+                                <input type="number" step="any" id="retail_price_display" class="form-control input-sm text-end fw-bold text-dark bg-light" placeholder="0.00" readonly disabled>
+                            </div>
+                            <div class="col-md-2">
                                 <label class="form-label font-weight-bold">Sales Price</label>
                                 <input type="number" step="any" name="sales_price" id="sales_price" class="form-control input-sm text-end fw-bold text-danger" placeholder="0.00" readonly>
                             </div>
@@ -216,6 +220,10 @@
                                         </select>
                                     </div>
                                 </div>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label text-secondary fw-bold">Retail Price</label>
+                                <input type="number" step="any" id="replacement_retail_price_display" class="form-control input-sm text-end fw-bold text-dark bg-light" placeholder="0.00" readonly disabled>
                             </div>
                             <div class="col-md-2">
                                 <label class="form-label text-primary fw-bold">Sales Price</label>
@@ -324,7 +332,7 @@ $(document).ready(function() {
     });
 
     // Item Selection Sync - Precise Lookup on Enter/Tab (Sale Style)
-    function handleItemIdLookup($input, targetDropdown, targetPriceInput, nextFocus) {
+    function handleItemIdLookup($input, targetDropdown, targetPriceInput, nextFocus, retailDisplayId) {
         $input.on('keydown', function(e) {
             if (e.key === 'Enter' || e.key === 'Tab') {
                 const id = $(this).val().trim();
@@ -340,14 +348,17 @@ $(document).ready(function() {
                             if ($option.length) {
                                 $(targetDropdown).val(prod.id).trigger('change.select2');
                             } else {
-                                // Add option if not exists (for select2 with ajax etc, but here we have preloaded)
                                 var newOption = new Option(prod.name, prod.id, true, true);
                                 $(targetDropdown).append(newOption).trigger('change.select2');
                             }
                             
-                            var price = prod.sale_price || prod.net_price || 0;
+                            var retail = prod.sale_retail_price || prod.retail_price || 0;
+                            var price = prod.sale_price || prod.net_price || retail || 0;
                             $(targetPriceInput).val(parseFloat(price).toFixed(2));
-                            $(this).val(prod.id);
+                            if (retailDisplayId) {
+                                $(retailDisplayId).val(parseFloat(retail).toFixed(2));
+                            }
+                            $input.val(prod.id);
 
                             if (nextFocus) {
                                 setTimeout(() => $(nextFocus).focus(), 100);
@@ -365,30 +376,38 @@ $(document).ready(function() {
         });
     }
 
-    handleItemIdLookup($('#item_id_input'), '#product_id', '#sales_price', 'input[name="mfg_date"]');
-    handleItemIdLookup($('#replacement_item_id_input'), '#replacement_product_id', '#replacement_sales_price', null);
+    handleItemIdLookup($('#item_id_input'), '#product_id', '#sales_price', 'input[name="mfg_date"]', '#retail_price_display');
+    handleItemIdLookup($('#replacement_item_id_input'), '#replacement_product_id', '#replacement_sales_price', null, '#replacement_retail_price_display');
 
     $('#product_id').on('change', function() {
         var val = $(this).val();
         $('#item_id_input').val(val);
-        fetchPrice(val, '#sales_price');
+        fetchPrice(val, '#sales_price', '#retail_price_display');
     });
 
     $('#replacement_product_id').on('change', function() {
         var val = $(this).val();
         $('#replacement_item_id_input').val(val);
-        fetchPrice(val, '#replacement_sales_price');
+        fetchPrice(val, '#replacement_sales_price', '#replacement_retail_price_display');
     });
 
     // Product Price Fetching
-    function fetchPrice(productId, targetInputId) {
-        if(!productId) { $(targetInputId).val('0.00'); return; }
+    function fetchPrice(productId, targetInputId, retailDisplayId) {
+        if(!productId) { 
+            $(targetInputId).val('0.00'); 
+            if(retailDisplayId) $(retailDisplayId).val('0.00');
+            return; 
+        }
         $.get("{{ route('search-products') }}", { q: productId }, function(res) {
             if(res && res.length) {
                 var prod = res.find(p => p.id == productId) || res[0];
                 if(prod) {
-                    var price = prod.sale_retail_price || prod.retail_price || prod.sale_price || 0;
+                    var retail = prod.sale_retail_price || prod.retail_price || 0;
+                    var price = prod.sale_price || prod.net_price || retail || 0;
                     $(targetInputId).val(parseFloat(price).toFixed(2));
+                    if(retailDisplayId) {
+                        $(retailDisplayId).val(parseFloat(retail).toFixed(2));
+                    }
                 }
             }
         });
