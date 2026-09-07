@@ -107,8 +107,8 @@
 </head>
 <body>
     <div class="no-print">
-        <button onclick="window.print()" style="padding:10px 25px;background:#0d47a1;color:#fff;border:none;cursor:pointer;font-weight:bold;border-radius:4px;">Print Report</button>
-        <button onclick="window.close()" style="padding:10px 25px;margin-left:8px;cursor:pointer;">Close</button>
+        <button onclick="window.print()" style="padding:10px 25px;font-weight:bold;cursor:pointer;">Print Report</button>
+        <button onclick="if(window.history.length > 1){ window.history.back(); } else { window.close(); }" style="padding:10px 25px;margin-left:8px;cursor:pointer;">Close</button>
     </div>
 
     @php
