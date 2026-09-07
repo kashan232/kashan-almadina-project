@@ -28,10 +28,8 @@
                             </span>
                         </div>
                         <div class="d-flex align-items-center gap-2">
-                            <div class="header-datetime-box">
-                                <span><i class="fa fa-calendar me-1"></i>{{ \Carbon\Carbon::parse($receipt->entry_date ?? now())->format('d-M-Y') }}</span>
-                                <span class="text-muted">|</span>
-                                <span><i class="fa fa-clock-o me-1"></i>{{ \Carbon\Carbon::parse($receipt->entry_time ?? now())->format('h:i A') }}</span>
+                            <div class="header-time-badge">
+                                <i class="fa fa-clock-o me-1"></i><span>Entry Time: {{ \Carbon\Carbon::parse($receipt->entry_time ?? now())->format('h:i A') }}</span>
                             </div>
                             <a href="{{ route('all-expense-vochers') }}" id="listBtn" class="btn btn-outline-secondary btn-sm rounded-pill px-3" style="font-size: 11px;">
                                 <i class="fa fa-list me-1"></i> View Registry
@@ -44,14 +42,17 @@
             <form id="expenseForm" autocomplete="off" class="{{ ($receipt->id && $receipt->status == 'posted') ? 'form-locked' : '' }}">
                 @csrf
                 <input type="hidden" name="id" id="receipt_id" value="{{ $receipt->id }}">
-                <input type="hidden" name="entry_date" id="entry_date" value="{{ $receipt->entry_date ?: date('Y-m-d') }}">
                 <input type="hidden" name="entry_time" id="entry_time" value="{{ $receipt->entry_time ?: date('H:i') }}">
 
                 <!-- Voucher Header Fields -->
                 <div class="card form-card mb-2">
                     <div class="card-body p-2">
                         <div class="row g-2 align-items-center">
-                            <div class="col-md-3">
+                            <div class="col-auto">
+                                <label class="form-label">Entry Date <span class="text-danger">*</span></label>
+                                <input type="date" name="entry_date" id="entry_date" class="form-control form-control-sm" value="{{ $receipt->entry_date ?: date('Y-m-d') }}" required>
+                            </div>
+                            <div class="col-md-2">
                                 <label class="form-label">Party Type <span class="text-danger">*</span></label>
                                 <select name="vendor_type" id="vendor_type" class="form-select form-select-sm select2">
                                     <option value="">Select Type...</option>
@@ -63,11 +64,11 @@
                                     <option value="walkin" {{ $receipt->type == 'walkin' ? 'selected' : '' }}>Walkin Customer</option>
                                 </select>
                             </div>
-                            <div class="col-md-2">
+                            <div class="col-md-1">
                                 <label class="form-label">ID/Code</label>
                                 <input type="text" id="party_code_input" class="form-control form-control-sm text-center fw-bold text-danger" placeholder="Code" value="{{ $receipt->party_id }}">
                             </div>
-                            <div class="col-md-7">
+                            <div class="col">
                                 <label class="form-label">Source Party Name <span class="text-danger">*</span></label>
                                 <select name="vendor_id" id="vendor_id" class="form-select form-select-sm select2" data-selected-id="{{ $receipt->party_id }}">
                                     <option value="">Select Party...</option>

@@ -28,10 +28,8 @@
                             </span>
                         </div>
                         <div class="d-flex align-items-center gap-2">
-                            <div class="header-datetime-box">
-                                <span><i class="fa fa-calendar me-1"></i>{{ \Carbon\Carbon::parse($receipt->entry_date ?? now())->format('d-M-Y') }}</span>
-                                <span class="text-muted">|</span>
-                                <span><i class="fa fa-clock-o me-1"></i>{{ \Carbon\Carbon::parse($receipt->entry_time ?? now())->format('h:i A') }}</span>
+                            <div class="header-time-badge">
+                                <i class="fa fa-clock-o me-1"></i><span>Entry Time: {{ \Carbon\Carbon::parse($receipt->entry_time ?? now())->format('h:i A') }}</span>
                             </div>
                             <a href="{{ route('all-journal-vochers') }}" id="listBtn" class="btn btn-outline-secondary btn-sm rounded-pill px-3" style="font-size: 11px;">
                                 <i class="fa fa-list me-1"></i> View Registry
@@ -44,14 +42,17 @@
             <form id="journalForm" autocomplete="off" class="{{ ($receipt->id && $receipt->status == 'posted') ? 'form-locked' : '' }}">
                 @csrf
                 <input type="hidden" name="id" id="receipt_id" value="{{ $receipt->id }}">
-                <input type="hidden" name="entry_date" id="entry_date" value="{{ $receipt->entry_date ?: date('Y-m-d') }}">
                 <input type="hidden" name="entry_time" id="entry_time" value="{{ $receipt->entry_time ?: date('H:i') }}">
 
                 <!-- Voucher Header Fields -->
                 <div class="card form-card mb-2">
                     <div class="card-body p-2">
                         <div class="row g-2 align-items-center">
-                            <div class="col-12">
+                            <div class="col-auto">
+                                <label class="form-label">Entry Date <span class="text-danger">*</span></label>
+                                <input type="date" name="entry_date" class="form-control form-control-sm" value="{{ $receipt->entry_date ?: date('Y-m-d') }}" required>
+                            </div>
+                            <div class="col">
                                 <label class="form-label">General Remarks / Memo</label>
                                 <input type="text" name="remarks" class="form-control form-control-sm" placeholder="General voucher notes..." value="{{ $receipt->remarks }}">
                             </div>

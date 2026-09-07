@@ -58,20 +58,29 @@
     .stock-hold-page input[type="time"] {
         min-width: 125px;
     }
-    .stock-hold-page .header-datetime-box {
-        background: #f1f5f9;
-        border: 1px solid #cbd5e1;
-        border-radius: 6px;
-        padding: 3px 10px;
-        font-size: 11px;
-        font-weight: 600;
-        color: #334155;
+    .stock-hold-page .header-time-badge {
+        background: #0f172a;
+        color: #f8fafc;
+        border-radius: 20px;
+        padding: 4px 14px;
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: 0.5px;
         display: inline-flex;
         align-items: center;
-        gap: 8px;
+        gap: 6px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
     }
-    .stock-hold-page .header-datetime-box i {
-        color: #64748b;
+    .stock-hold-page .header-time-badge i {
+        color: #38bdf8;
+    }
+    .stock-hold-page .form-vr {
+        width: 1px;
+        height: 34px;
+        background-color: #cbd5e1;
+        margin: 0 4px;
+        align-self: flex-end;
+        margin-bottom: 2px;
     }
     .posted-watermark {
         position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-30deg);
