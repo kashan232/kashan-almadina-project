@@ -352,6 +352,20 @@
                                         </tr>
                                     @endforeach
                                 </tbody>
+                                <tfoot class="bg-light fw-bold text-dark border-top border-2">
+                                    <tr style="background-color: #f1f5f9; font-size: 12px;">
+                                        <td colspan="3" class="text-end fw-bold py-2 text-uppercase text-muted">Grand Total:</td>
+                                        @if($canAccessShop)
+                                            <td class="text-center shop-col text-primary py-2 footer-shop-total">0</td>
+                                        @endif
+                                        @foreach($warehouses as $wh)
+                                            <td class="text-center wh-col text-primary py-2 footer-wh-total" data-wh-id="{{ $wh->id }}">0</td>
+                                        @endforeach
+                                        <td class="text-center text-danger py-2 footer-reserved-total">0</td>
+                                        <td class="text-center total-col py-2 footer-physical-total fs-6">0</td>
+                                        <td class="text-center py-2 footer-available-total fs-6" style="background-color: #dcfce7; color: #15803d; font-weight: 800;">0</td>
+                                    </tr>
+                                </tfoot>
                             </table>
                         </div>
                     </div>
@@ -522,7 +536,38 @@
                     'csvHtml5',
                     'pdfHtml5',
                     'print'
-                ]
+                ],
+                footerCallback: function (row, data, start, end, display) {
+                    var api = this.api();
+
+                    // Helper to parse numbers safely
+                    var intVal = function (i) {
+                        if (typeof i === 'string') {
+                            var clean = i.replace(/<[^>]+>/g, '').replace(/[\$,]/g, '').trim();
+                            return clean === '' ? 0 : parseFloat(clean) || 0;
+                        } else if (typeof i === 'number') {
+                            return i;
+                        }
+                        return 0;
+                    };
+
+                    var numCols = api.columns().count();
+                    // First 3 columns are ID, Product Name, Brand (index 0, 1, 2)
+                    for (var c = 3; c < numCols; c++) {
+                        var total = api
+                            .column(c, { page: 'current' })
+                            .data()
+                            .reduce(function (a, b) {
+                                return intVal(a) + intVal(b);
+                            }, 0);
+
+                        var formatted = total.toLocaleString('en-US', { maximumFractionDigits: 0 });
+                        if (c === numCols - 3 && total !== 0) { // Reserved column
+                            formatted = (total > 0 ? '+' : '') + formatted;
+                        }
+                        $(api.column(c).footer()).html(formatted);
+                    }
+                }
             });
 
             // Apply saved column visibility
