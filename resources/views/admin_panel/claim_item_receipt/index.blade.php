@@ -228,7 +228,7 @@
                                                 </td>
                                                 <td class="text-end small">
                                                     @if($v->doc_type == 'credit' && isset($v->wht_amount))
-                                                        {{ number_format($v->wht_amount, 2) }} ({{ $v->wht_percent ?? 0 }}%)
+                                                        {{ number_format($v->wht_amount, 2) }}
                                                     @else
                                                         <span class="text-muted">-</span>
                                                     @endif

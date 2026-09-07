@@ -22,20 +22,11 @@ class ClaimCreditNoteController extends Controller
 {
     public function index(Request $request)
     {
-        $query = ClaimCreditNote::with(['vendor', 'customer', 'creator']);
-        
-        if ($request->start_date) {
-            $query->whereDate('date', '>=', $request->start_date);
+        $params = $request->all();
+        if (!isset($params['claim_type'])) {
+            $params['claim_type'] = 'credit';
         }
-        if ($request->end_date) {
-            $query->whereDate('date', '<=', $request->end_date);
-        }
-        if ($request->status) {
-            $query->where('status', $request->status);
-        }
-        
-        $vouchers = $query->latest()->get();
-        return view('admin_panel.claim_credit_note.index', compact('vouchers'));
+        return redirect()->route('claim-item-receipt.index', $params);
     }
 
     public function create()

@@ -1023,9 +1023,7 @@ $(document).ready(function() {
     // Top List Button Behavior
     $('#listBtn').on('click', function(e) {
         e.preventDefault();
-        var activeTab = $('.nav-link.active').attr('id');
-        if(activeTab === 'receipt-tab') window.location.href = "{{ route('claim-item-receipt.index') }}";
-        else window.location.href = "{{ route('claim-credit-note.index') }}";
+        window.location.href = "{{ route('claim-item-receipt.index') }}";
     });
 });
 </script>
