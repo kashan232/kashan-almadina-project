@@ -73,16 +73,46 @@
 
     #returnForm { position: relative; }
 
-    .purchase-page .main-container { padding: .35rem !important; border-radius: .35rem !important; max-width: 99%; }
+    .purchase-page-inner { padding-bottom: 50px !important; }
+    .purchase-page .main-container {
+        padding: .35rem !important;
+        border-radius: .35rem !important;
+        max-width: 99%;
+        display: flex !important;
+        flex-direction: column !important;
+        min-height: calc(100vh - 120px) !important;
+    }
+    .purchase-page #returnForm {
+        display: flex !important;
+        flex-direction: column !important;
+        flex: 1 1 auto !important;
+    }
     .purchase-page.container-fluid,
     .purchase-page-inner.container-fluid { padding: .2rem .35rem !important; }
     .purchase-page.main-content,
     .purchase-page .main-content-inner { padding: 0 !important; }
     .purchase-page .header-panel { padding: .4rem !important; min-width: 255px !important; max-width: 255px !important; font-size: .78rem; }
     .purchase-page .section-block { padding: .4rem !important; }
-    .purchase-page .items-panel { padding-left: .35rem !important; padding-right: 0 !important; }
-    .purchase-page .items-table-wrap { min-height: 280px !important; border-radius: .35rem !important; overflow: auto; }
-    .purchase-page .main-row { gap: .35rem !important; padding: .25rem 0 !important; }
+    .purchase-page .items-panel {
+        padding-left: .35rem !important;
+        padding-right: 0 !important;
+        display: flex !important;
+        flex-direction: column !important;
+        flex: 1 1 auto !important;
+    }
+    .purchase-page .items-table-wrap {
+        flex: 1 1 auto !important;
+        min-height: 250px !important;
+        max-height: calc(100vh - 360px) !important;
+        border-radius: .35rem !important;
+        overflow: auto;
+    }
+    .purchase-page .main-row {
+        flex: 1 1 auto !important;
+        min-height: 260px !important;
+        gap: .35rem !important;
+        padding: .25rem 0 !important;
+    }
     .purchase-page .field-gap { margin-bottom: .3rem !important; }
     .purchase-page .panel-head { margin-bottom: .35rem !important; padding-bottom: .2rem !important; }
     .purchase-page .panel-head h6 { font-size: .8rem !important; }
@@ -97,7 +127,12 @@
     .purchase-page .select2-container--default .select2-selection--single { height: 24px !important; font-size: .75rem !important; }
     .purchase-page .select2-container--default .select2-selection--single .select2-selection__rendered { line-height: 22px !important; padding-left: 6px !important; }
     .purchase-page .select2-container--default .select2-selection--single .select2-selection__arrow { height: 22px !important; }
-    .purchase-page .bottom-section { --bs-gutter-x: .5rem; --bs-gutter-y: .35rem; margin-top: .25rem !important; }
+    .purchase-page .bottom-section {
+        --bs-gutter-x: .5rem;
+        --bs-gutter-y: .35rem;
+        margin-top: auto !important;
+        padding-top: .35rem !important;
+    }
     .purchase-page .totals-card .py-1 { padding-top: .15rem !important; padding-bottom: .15rem !important; }
     .purchase-page #netAmount { font-size: 1rem !important; width: 140px !important; }
     .purchase-page .bottom-bar { margin-top: .4rem !important; padding: .75rem !important; }

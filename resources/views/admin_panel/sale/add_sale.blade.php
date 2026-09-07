@@ -212,21 +212,39 @@
   }
 
   /* Items table — stretch to bottom like Purchase */
-  .sale-page .sale-main-row { align-items: stretch !important; gap: .35rem !important; }
+  .sale-page .main-container {
+    display: flex !important;
+    flex-direction: column !important;
+    min-height: calc(100vh - 120px) !important;
+    padding: .35rem !important;
+    border-radius: .35rem !important;
+  }
+  .sale-page #saleForm {
+    display: flex !important;
+    flex-direction: column !important;
+    flex: 1 1 auto !important;
+  }
+  .sale-page .sale-main-row {
+    flex: 1 1 auto !important;
+    min-height: 260px !important;
+  }
   .sale-page .items-panel {
-    padding-left: .35rem !important;
-    padding-right: 0 !important;
-    min-height: 0;
-    flex: 1 1 auto;
+    display: flex !important;
+    flex-direction: column !important;
+    flex: 1 1 auto !important;
   }
   .sale-page .items-toolbar { flex-shrink: 0; margin-bottom: .25rem !important; }
   .sale-page .items-table-wrap {
     flex: 1 1 auto !important;
-    min-height: 280px !important;
-    max-height: none !important;
+    min-height: 250px !important;
+    max-height: calc(100vh - 360px) !important;
     overflow-y: auto !important;
     border: 1px solid #dee2e6 !important;
     border-radius: .35rem !important;
+  }
+  .sale-page .sale-totals-section {
+    margin-top: auto !important;
+    padding-top: .35rem !important;
   }
 
   .minw-350 {
@@ -776,7 +794,7 @@
       </div>
 
       {{-- Receipt Vouchers + Totals --}}
-      <div class="row g-2 mt-2">
+      <div class="row g-2 mt-2 sale-totals-section">
         {{-- Receipt Vouchers --}}
         <div class="col-lg-7">
           <div class="bg-light border rounded-3 p-2 shadow-sm">
