@@ -220,8 +220,9 @@
                                     <label class="column-picker-item"><input type="checkbox" data-column="5" checked> Account Title</label>
                                     <label class="column-picker-item"><input type="checkbox" data-column="6" checked> Opening Dr.</label>
                                     <label class="column-picker-item"><input type="checkbox" data-column="7" checked> Opening Cr.</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="8" checked> Assigned User Groups</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="9" checked> Inactive</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="8" checked> Closing Balance</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="9" checked> Assigned User Groups</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="10" checked> Inactive</label>
                                 </div>
                             </div>
                         </div>
@@ -238,6 +239,7 @@
                                             <th>Account Title</th>
                                             <th class="text-end">Opening Dr.</th>
                                             <th class="text-end">Opening Cr.</th>
+                                            <th class="text-end">Closing Balance</th>
                                             <th>Assigned User Groups</th>
                                             <th class="text-center">Inactive</th>
                                             <th class="text-center" style="width: 80px;">Action</th>
@@ -249,6 +251,7 @@
                                             $opening = (float) ($account->opening_balance ?? 0);
                                             $openingDr = $opening > 0 ? $opening : 0;
                                             $openingCr = $opening < 0 ? abs($opening) : 0;
+                                            $closing = $opening; // current net balance in accounts table
                                         @endphp
                                         <tr>
                                             <td class="text-center">{{ $account->id }}</td>
@@ -258,6 +261,7 @@
                                             <td class="fw-bold text-dark">{{ $account->title }}</td>
                                             <td class="text-end">{{ $openingDr > 0 ? number_format($openingDr, 2) : '0.00' }}</td>
                                             <td class="text-end">{{ $openingCr > 0 ? number_format($openingCr, 2) : '0.00' }}</td>
+                                            <td class="text-end fw-bold {{ $closing >= 0 ? 'text-success' : 'text-danger' }}">{{ number_format($closing, 2) }}</td>
                                             <td>
                                                 @if(!empty($account->user_group_ids))
                                                     @foreach($account->user_group_ids as $groupId)
@@ -293,7 +297,7 @@
                                         </tr>
                                         @empty
                                         <tr class="no-data-row">
-                                            <td colspan="10" class="text-center text-muted py-4">
+                                            <td colspan="11" class="text-center text-muted py-4">
                                                 No accounts found.
                                             </td>
                                         </tr>
