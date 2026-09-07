@@ -1029,8 +1029,8 @@ class GeneralLedgerController extends Controller
                         'inv' => $iv->ivid,
                         'desc' => $desc,
                         'qty' => 0, 
-                        'debit' => $rowAmount,
-                        'credit' => 0,
+                        'debit' => 0,
+                        'credit' => $rowAmount,
                         'priority' => 60
                     ];
                 }
