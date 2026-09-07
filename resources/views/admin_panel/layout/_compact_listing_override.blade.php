@@ -70,12 +70,12 @@
         transition: all 0.2s ease !important;
     }
 
-    /* 💙 Bold Royal Dark Blue Highlight for Select2 Options */
+    /* 💙 Clean Standard Primary Blue Highlight for Select2 Options */
     body .select2-container--default .select2-results__option--highlighted[aria-selected],
     body .select2-results__option--highlighted,
     body li.select2-results__option--highlighted {
-        background-color: #1e40af !important; /* Bold Royal Dark Blue */
+        background-color: #3b82f6 !important; /* Clean Primary Blue */
         color: #ffffff !important;
-        font-weight: 700 !important;
+        font-weight: 600 !important;
     }
 </style>

@@ -281,7 +281,7 @@
                                             if ($canAccessShop) {
                                                 $holdSum += \App\Models\StockHold::netReservedForProduct($product->id, 0);
                                             }
-                                            foreach ($warehouses as $visibleWh) {
+                                            foreach ($allWarehouses as $visibleWh) {
                                                 $holdSum += \App\Models\StockHold::netReservedForProduct($product->id, (int) $visibleWh->id);
                                             }
                                         @endphp

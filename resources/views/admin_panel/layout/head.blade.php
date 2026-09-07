@@ -147,15 +147,15 @@
          color: #0f172a !important;
      }
 
-     /* 💙 Bold Dark Blue Highlighted Option for Select2 Dropdowns */
+     /* 💙 Clean Standard Primary Blue Highlighted Option for Select2 Dropdowns */
      .select2-container--default .select2-results__option--highlighted[aria-selected],
      .select2-container--default .select2-results__option--highlighted[data-selected],
      .select2-results__option--highlighted,
      .select2-results__option.select2-results__option--highlighted,
      body .select2-container--default .select2-results__option--highlighted[aria-selected] {
-         background-color: #1e40af !important; /* Bold Royal Dark Blue */
+         background-color: #3b82f6 !important; /* Clean Primary Blue */
          color: #ffffff !important;
-         font-weight: 700 !important;
+         font-weight: 600 !important;
      }
 
      .select2-container--default .select2-results__option--highlighted[aria-selected] *,
