@@ -262,6 +262,7 @@ class SalesReportController extends Controller
 
         $query = SaleItem::with([
             'sale.customer',
+            'sale.vendor',
             'product.brandRelation',
             'product.sub_category_relation',
             'warehouse',
@@ -307,6 +308,17 @@ class SalesReportController extends Controller
             $item->sales_qty = $sign * (float) $item->sales_qty;
             $item->discount_amount = $sign * (float) ($item->discount_amount ?? 0);
             $item->amount = $sign * (float) ($item->amount ?? 0);
+        }
+
+        if ($item->sale && $item->sale->partyType === 'vendor') {
+            $vendor = $item->sale->vendor;
+            if ($vendor) {
+                $item->sale->setRelation('customer', (object) [
+                    'customer_name' => $vendor->name ?? 'N/A',
+                    'cnic' => $vendor->cnic ?? '',
+                    'filer_type' => 'Non Filer',
+                ]);
+            }
         }
 
         $item->setAttribute('entry_type', 'sale');
