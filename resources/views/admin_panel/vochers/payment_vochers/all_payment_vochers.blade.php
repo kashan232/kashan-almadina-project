@@ -226,25 +226,29 @@
                                     </td>
                                     <td class="text-center">
                                         <div class="d-flex gap-1 justify-content-center">
-                                            @if($item->status === 'draft' || $item->status === 'unposted' || empty($item->status))
-                                                <form action="{{ route('Payment.vochers.post', $item->id) }}" method="POST" class="d-inline">
-                                                    @csrf
-                                                    <button type="submit" class="btn btn-primary btn-mini px-2" title="Post now">
-                                                        <i class="fa fa-send me-1"></i> Post
-                                                    </button>
-                                                </form>
-                                                
-                                                <a href="{{ route('Payment-vochers', $item->id) }}" class="btn btn-outline-warning btn-mini" title="Edit">
-                                                    <i class="fa fa-pencil text-dark"></i>
-                                                </a>
+                                             @if($item->status === 'draft' || $item->status === 'unposted' || empty($item->status))
+                                                 <form action="{{ route('Payment.vochers.post', $item->id) }}" method="POST" class="d-inline">
+                                                     @csrf
+                                                     <button type="submit" class="btn btn-primary btn-mini px-2" title="Post now">
+                                                         <i class="fa fa-send me-1"></i> Post
+                                                     </button>
+                                                 </form>
+                                                 
+                                                 <a href="{{ route('Payment-vochers', $item->id) }}" class="btn btn-outline-warning btn-mini" title="Edit">
+                                                     <i class="fa fa-pencil text-dark"></i>
+                                                 </a>
 
-                                                <form action="{{ route('Payment.vochers.cancel', $item->id) }}" method="POST" class="d-inline delete-form">
-                                                    @csrf @method('DELETE')
-                                                    <button type="button" class="btn btn-outline-danger btn-mini delete-btn" title="Delete">
-                                                        <i class="fa fa-trash"></i>
-                                                    </button>
-                                                </form>
-                                            @endif
+                                                 <form action="{{ route('Payment.vochers.cancel', $item->id) }}" method="POST" class="d-inline delete-form">
+                                                     @csrf @method('DELETE')
+                                                     <button type="button" class="btn btn-outline-danger btn-mini delete-btn" title="Delete">
+                                                         <i class="fa fa-trash"></i>
+                                                     </button>
+                                                 </form>
+                                             @else
+                                                 <a href="{{ route('payment-vouchers.view', $item->id) }}" class="btn btn-outline-info btn-mini" title="View Payment Voucher">
+                                                     <i class="fa fa-eye"></i>
+                                                 </a>
+                                             @endif
                                             
                                             <a href="{{ route('PaymentVoucher.print', $item->id) }}" target="_blank" class="btn btn-outline-dark btn-mini" title="Print">
                                                 <i class="fa fa-print"></i>

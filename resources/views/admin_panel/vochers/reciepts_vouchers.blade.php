@@ -5,6 +5,10 @@
 <style>
 @include('admin_panel.vochers._compact_voucher_styles', ['accentColor' => '#3b82f6'])
 </style>
+@php
+    $isViewMode = isset($viewMode) && $viewMode;
+    $isPosted = ($receipt->status ?? '') === 'posted';
+@endphp
 
 <div class="main-content">
     <div class="main-content-inner">
@@ -39,7 +43,7 @@
                 </div>
             </div>
 
-            <form id="receiptForm" autocomplete="off" class="{{ ($receipt->id && $receipt->status == 'posted') ? 'form-locked' : '' }}">
+            <form id="receiptForm" autocomplete="off" class="{{ ($isViewMode || ($receipt->id && $isPosted)) ? 'form-locked' : '' }}{{ $isViewMode ? ' view-mode' : '' }}">
                 @csrf
                 <input type="hidden" name="id" id="receipt_id" value="{{ $receipt->id }}">
                 <input type="hidden" name="entry_time" id="entry_time" value="{{ $receipt->entry_time ?? date('H:i') }}">

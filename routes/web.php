@@ -120,7 +120,10 @@ Route::get('/all-recepit-vochers', [VoucherController::class, 'all_recepit_voche
 Route::get('/receipt-voucher/print/{id}', [VoucherController::class, 'print'])->name('receiptVoucher.print');
 
 
+Route::get('/receipt-voucher/{id}/view', [VoucherController::class, 'showReceipt'])->name('receipt-vouchers.view');
+
 Route::get('/Payment-vochers/{id?}', [VoucherController::class, 'Payment_vochers'])->name('Payment-vochers');
+Route::get('/payment-voucher/{id}/view', [VoucherController::class, 'showPayment'])->name('payment-vouchers.view');
 Route::post('/Payment/vochers/store', [VoucherController::class, 'store_Pay_vochers'])->name('Payment.vochers.store');
 Route::post('/Payment/vochers/ajax-save', [VoucherController::class, 'ajax_save_payment'])->name('Payment.vochers.ajax-save');
 Route::post('/Payment/vochers/post/{id}', [VoucherController::class, 'post_payment'])->name('Payment.vochers.post');
@@ -131,6 +134,7 @@ Route::get('/all-Payment-vochers', [VoucherController::class, 'all_Payment_voche
 Route::get('/Payment-voucher/print/{id}', [VoucherController::class, 'Paymentprint'])->name('PaymentVoucher.print');
 
 Route::get('/expense-vochers/{id?}', [VoucherController::class, 'expense_vochers'])->name('expense-vochers');
+Route::get('/expense-voucher/{id}/view', [VoucherController::class, 'showExpense'])->name('expense-vouchers.view');
 Route::post('/expense/vochers/store', [VoucherController::class, 'store_expense_vochers'])->name('expense.vochers.store');
 Route::post('/expense/vochers/ajax-save', [VoucherController::class, 'ajax_save_expense'])->name('Expense.vochers.ajax-save');
 Route::post('/expense/vochers/post/{id}', [VoucherController::class, 'post_expense'])->name('Expense.vochers.post');

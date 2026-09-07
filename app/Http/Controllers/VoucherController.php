@@ -510,6 +510,17 @@ class VoucherController extends Controller
         return view('admin_panel.vochers.reciepts_vouchers', compact('narrations', 'AccountHeads', 'receipt'));
     }
 
+    public function showReceipt($id)
+    {
+        $receipt = ReceiptsVoucher::findOrFail($id);
+        $narrations = \App\Models\Narration::where('expense_head', 'Receipts Voucher')
+            ->pluck('narration', 'id');
+        $AccountHeads = AccountHead::get();
+        $viewMode = true;
+
+        return view('admin_panel.vochers.reciepts_vouchers', compact('narrations', 'AccountHeads', 'receipt', 'viewMode'));
+    }
+
     public function ajax_save_receipt(Request $request)
     {
         $this->validateReceiptPaymentRequest($request, 'vendor_type', 'vendor_id', true);
@@ -755,6 +766,18 @@ class VoucherController extends Controller
         }
 
         return view('admin_panel.vochers.payment_vochers.payment_vouchers', compact('narrations', 'AccountHeads', 'nextPVID', 'receipt'));
+    }
+
+    public function showPayment($id)
+    {
+        $receipt = PaymentVoucher::findOrFail($id);
+        $narrations = \App\Models\Narration::where('expense_head', 'Payment voucher')
+            ->pluck('narration', 'id');
+        $AccountHeads = AccountHead::get();
+        $nextPVID = $receipt->pvid;
+        $viewMode = true;
+
+        return view('admin_panel.vochers.payment_vochers.payment_vouchers', compact('narrations', 'AccountHeads', 'nextPVID', 'receipt', 'viewMode'));
     }
 
     public function ajax_save_payment(Request $request)
@@ -1178,6 +1201,18 @@ class VoucherController extends Controller
         $narrationsList = \App\Models\Narration::where('expense_head', 'Expense voucher')->pluck('narration', 'id');
 
         return view('admin_panel.vochers.expense_vochers.expense_vouchers', compact('receipt', 'AccountHeads', 'accounts', 'narrationsList', 'nextRvid'));
+    }
+
+    public function showExpense($id)
+    {
+        $receipt = \App\Models\ExpenseVoucher::findOrFail($id);
+        $nextRvid = $receipt->evid;
+        $AccountHeads = AccountHead::get();
+        $accounts = Account::get();
+        $narrationsList = \App\Models\Narration::where('expense_head', 'Expense voucher')->pluck('narration', 'id');
+        $viewMode = true;
+
+        return view('admin_panel.vochers.expense_vochers.expense_vouchers', compact('receipt', 'AccountHeads', 'accounts', 'narrationsList', 'nextRvid', 'viewMode'));
     }
 
     public function ajax_save_expense(Request $request)

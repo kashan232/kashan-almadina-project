@@ -246,7 +246,7 @@
                                     </td>
                                     <td class="text-center">
                                         <div class="d-flex gap-1 justify-content-center">
-                                            @if($item->status === 'draft' || $item->status === 'Unposted')
+                                            @if($item->status === 'draft' || $item->status === 'Unposted' || $item->status === 'unposted')
                                                 <form action="{{ route('recepit.vochers.post', $item->id) }}" method="POST" class="d-inline">
                                                     @csrf
                                                     <button type="submit" class="btn btn-primary btn-mini px-2" title="Post now">
@@ -264,6 +264,10 @@
                                                         <i class="fa fa-trash"></i>
                                                     </button>
                                                 </form>
+                                            @else
+                                                <a href="{{ route('receipt-vouchers.view', $item->id) }}" class="btn btn-outline-info btn-mini" title="View Receipt Voucher">
+                                                    <i class="fa fa-eye"></i>
+                                                </a>
                                             @endif
                                             
                                             <a href="{{ route('receiptVoucher.print', $item->id) }}" target="_blank" class="btn btn-outline-dark btn-mini" title="Print">
