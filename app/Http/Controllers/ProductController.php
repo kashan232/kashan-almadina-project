@@ -338,7 +338,7 @@ class ProductController extends Controller
                 'stock' => $stock,
                 'sale_price' => $price->sale_net_amount ?? 0,
                 'sale_retail_price' => $price->sale_retail_price ?? 0,
-                'retail_price' => $price->sale_retail_price ?? 0,
+                'retail_price' => $price->purchase_retail_price ?? $price->sale_retail_price ?? 0,
                 'net_price' => $price->sale_net_amount ?? 0,
                 'purchase_net_amount' => $price->purchase_net_amount ?? 0,
                 'purchase_retail_price' => $price->purchase_retail_price ?? 0,

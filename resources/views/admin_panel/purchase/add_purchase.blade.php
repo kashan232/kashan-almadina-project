@@ -896,7 +896,7 @@
                                 // Pass custom data
                                 brand: item.brand,
                                 price_net: item.purchase_net_amount,
-                                price_retail: item.sale_retail_price ?? item.retail_price ?? 0
+                                price_retail: item.purchase_retail_price ?? item.retail_price ?? 0
                             };
                         });
 
@@ -969,7 +969,7 @@
                                     text: product.name,
                                     brand: product.brand,
                                     price_net: product.purchase_net_amount,
-                                    price_retail: product.sale_retail_price ?? product.retail_price ?? 0
+                                    price_retail: product.purchase_retail_price ?? product.retail_price ?? 0
                                 }
                             }
                         });
@@ -1056,7 +1056,7 @@
             $restoreQtys = old('qty', $restoreItems->pluck('qty')->toArray());
             $restoreDiscs = old('item_disc', $restoreItems->pluck('item_discount')->toArray());
             $restoreDiscAmts = old('item_disc_amount', $restoreItems->map(fn($i) => round((($i->price ?? 0) * ($i->qty ?? 0)) - ($i->line_total ?? 0), 2))->toArray());
-            $restoreRetails = old('purchase_retail_price', $restoreItems->map(fn($i) => optional(optional($i->product)->latestPrice)->sale_retail_price ?? 0)->toArray());
+            $restoreRetails = old('purchase_retail_price', $restoreItems->map(fn($i) => optional(optional($i->product)->latestPrice)->purchase_retail_price ?? 0)->toArray());
             $restoreNets = old('purchase_net_amount', $restoreItems->map(fn($i) => optional(optional($i->product)->latestPrice)->purchase_net_amount ?? 0)->toArray());
             $restoreTotals = old('total', $restoreItems->pluck('line_total')->toArray());
             $restoreNames = old('product_name', $restoreItems->map(fn($i) => optional($i->product)->name ?? '')->toArray());
@@ -1083,7 +1083,7 @@
             @php
                 $pItems = $purchase->items->map(function($item) {
                     $product = $item->product;
-                    $retail = $product?->latestPrice?->sale_retail_price ?? 0;
+                    $retail = $product?->latestPrice?->purchase_retail_price ?? 0;
                     $net = $product?->latestPrice?->purchase_net_amount ?? 0;
                     
                     $price = (float)($item->price ?? 0);
