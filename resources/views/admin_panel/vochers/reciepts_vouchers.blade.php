@@ -157,11 +157,11 @@
                                     <tr class="fw-bold">
                                         <td colspan="5" class="text-end py-2 text-muted small">TOTALS</td>
                                         <td class="text-center py-1">
-                                            <input type="text" id="totalKg" class="form-control form-control-sm text-center border-0 bg-transparent fw-bold text-dark fs-5 py-0" readonly value="0.00">
+                                            <input type="text" id="totalKg" class="form-control form-control-sm text-center fw-bold total-highlight-input" readonly value="0.00">
                                         </td>
                                         <td></td>
                                         <td class="text-end py-1">
-                                            <input type="text" name="total_amount" id="totalAmount" class="form-control form-control-sm text-end border-0 bg-transparent fw-bold text-dark fs-5 py-0" readonly value="{{ $receipt->total_amount ?? '0.00' }}">
+                                            <input type="text" name="total_amount" id="totalAmount" class="form-control form-control-sm text-end fw-bold total-highlight-input" readonly value="{{ $receipt->total_amount ?? '0.00' }}">
                                         </td>
                                         <td></td>
                                     </tr>
