@@ -994,7 +994,7 @@ class GeneralLedgerController extends Controller
             }
         }
 
-        $this->sortLedgerTransactions($transactions);
+        $this->sortLedgerDetailsByCreatedAt($transactions);
 
         return $transactions;
     }
