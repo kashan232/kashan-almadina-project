@@ -338,13 +338,18 @@
                                                 @endif
                                             </td>
 
-                                            <td class="text-center total-col fs-6">
-                                                @php 
-                                                    $shopAvailable = $canAccessShop ? ($physicalShopStock - $shopHoldSum) : 0;
-                                                    $availableStock = $shopAvailable + $whSum; 
-                                                    $systemStock = $availableStock + $holdSum;
-                                                @endphp
-                                                {{ number_format($systemStock, 0) }}
+                                            @php
+                                                $totalPhysicalWhStock = 0;
+                                                foreach ($warehouses as $wh) {
+                                                    $totalPhysicalWhStock += (float) $product->warehouseStocks
+                                                        ->where('warehouse_id', $wh->id)
+                                                        ->sum('quantity');
+                                                }
+                                                $totalPhysicalStock = $physicalShopStock + $totalPhysicalWhStock;
+                                                $availableStock = $totalPhysicalStock - $holdSum;
+                                            @endphp
+                                            <td class="text-center total-col fs-6 fw-bold">
+                                                {{ number_format($totalPhysicalStock, 0) }}
                                             </td>
                                             <td class="text-center fs-6" style="background-color: #f0fdf4; color: #166534; font-weight: bold;">
                                                 {{ number_format($availableStock, 0) }}
