@@ -17,6 +17,7 @@ use App\Models\Customer;
 use App\Models\Vendor;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 class SalesReportController extends Controller
 {
