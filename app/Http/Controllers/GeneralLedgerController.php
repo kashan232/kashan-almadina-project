@@ -1080,7 +1080,8 @@ class GeneralLedgerController extends Controller
             // Receipts
             $rvDateCol = $this->getDateColumn('receipts_vouchers', 'receipt_date');
             $rvs = $this->ledgerQuery(ReceiptsVoucher::class)->where(function($q) use ($id) {
-                    $q->whereJsonContains('row_account_id', (string)$id)
+                    $q->where('party_id', $id)
+                      ->orWhereJsonContains('row_account_id', (string)$id)
                       ->orWhereJsonContains('row_account_id', (int)$id)
                       ->orWhereJsonContains('discount_account_id', (string)$id)
                       ->orWhereJsonContains('discount_account_id', (int)$id);
@@ -1108,6 +1109,22 @@ class GeneralLedgerController extends Controller
                 if (str_starts_with($rv->remarks ?? '', 'Auto-generated from Sale:')) {
                     $ref = 'SJ';
                     $inv = trim(str_replace('Auto-generated from Sale:', '', $rv->remarks));
+                }
+
+                if ($rv->party_id == $id) {
+                    $totAmt = (float)$rv->total_amount + $this->sumVoucherDiscounts($rv);
+                    if ($totAmt > 0) {
+                        $transactions[] = [
+                            'created_at' => $rv->created_at,
+                            'id' => $rv->id . '_h',
+                            'date' => $rv->entry_date ?: $rv->created_at,
+                            'ref' => $ref,
+                            'inv' => $inv,
+                            'desc' => $rv->remarks ?? 'Receipt Voucher (Source Party)',
+                            'price' => 0, 'qty' => 0, 'debit' => 0, 'credit' => $totAmt,
+                            'priority' => 60
+                        ];
+                    }
                 }
 
                 foreach ($accIds as $idx => $aid) {
@@ -1180,7 +1197,8 @@ class GeneralLedgerController extends Controller
             // Payments
             $pvDateCol = $this->getDateColumn('payment_vouchers', 'receipt_date');
             $pvs = $this->ledgerQuery(PaymentVoucher::class)->where(function($q) use ($id) {
-                    $q->whereJsonContains('row_account_id', (string)$id)
+                    $q->where('party_id', $id)
+                      ->orWhereJsonContains('row_account_id', (string)$id)
                       ->orWhereJsonContains('row_account_id', (int)$id)
                       ->orWhereJsonContains('discount_account_id', (string)$id)
                       ->orWhereJsonContains('discount_account_id', (int)$id);
@@ -1199,6 +1217,22 @@ class GeneralLedgerController extends Controller
                     $partyName = DB::table('customers')->where('id', $pv->party_id)->value('customer_name');
                 } elseif ($pv->type == 'vendor') {
                     $partyName = DB::table('vendors')->where('id', $pv->party_id)->value('name');
+                }
+
+                if ($pv->party_id == $id) {
+                    $totAmt = (float)$pv->total_amount + $this->sumVoucherDiscounts($pv);
+                    if ($totAmt > 0) {
+                        $transactions[] = [
+                            'created_at' => $pv->created_at,
+                            'id' => $pv->id . '_h',
+                            'date' => $pv->entry_date ?: $pv->created_at,
+                            'ref' => 'PV',
+                            'inv' => $pv->pvid,
+                            'desc' => $pv->remarks ?? 'Payment Voucher (Destination Party)',
+                            'price' => 0, 'qty' => 0, 'debit' => $totAmt, 'credit' => 0,
+                            'priority' => 60
+                        ];
+                    }
                 }
 
                 foreach ($accIds as $idx => $aid) {
