@@ -306,6 +306,17 @@ class PartyLedgerService
         ]);
     }
 
+    /** IV — credit party by income row. */
+    public function postIncomeCredit(string $partyType, int $partyId, float $credit, string $date, string $description): ?Model
+    {
+        return $this->append($this->normalizePartyType($partyType), $partyId, [
+            'date' => $date,
+            'description' => $description,
+            'debit' => 0,
+            'credit' => $credit,
+        ]);
+    }
+
     /** CLM/CIR — claim credit note debit to party. */
     public function postClaimDebit(string $partyType, int $partyId, float $debit, string $date, string $description): ?Model
     {

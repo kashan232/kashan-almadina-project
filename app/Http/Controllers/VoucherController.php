@@ -1565,7 +1565,7 @@ class VoucherController extends Controller
             $partyLedger = app(PartyLedgerService::class);
             $ivDate = $voucher->entry_date ?? now()->toDateString();
 
-            // Header account (destination) -> debit
+            // Header account (Destination: Cash/Bank) -> DEBIT (Increase balance)
             $hType = strtolower($voucher->account_head ?? '');
             if (in_array($hType, ['vendor', 'customer', 'walkin', 'subcustomer'], true)) {
                 $partyLedger->postIncomeDebit(
@@ -1583,7 +1583,7 @@ class VoucherController extends Controller
                 }
             }
 
-            // Row parties -> debit (matches GL IV)
+            // Row parties / accounts (Source: Income Head/Party) -> CREDIT (Reduce balance or record income)
             $types = json_decode($voucher->party_type, true) ?? [];
             $pIds = json_decode($voucher->party_id, true) ?? [];
             $amounts = json_decode($voucher->amount, true) ?? [];
@@ -1596,7 +1596,7 @@ class VoucherController extends Controller
                 }
 
                 if (in_array($pType, ['vendor', 'customer', 'walkin'], true)) {
-                    $partyLedger->postIncomeDebit($pType, (int) $pId, $rowAmount, $ivDate, "Income Voucher #$ivid");
+                    $partyLedger->postIncomeCredit($pType, (int) $pId, $rowAmount, $ivDate, "Income Voucher #$ivid");
                 } else {
                     $acc = \App\Models\Account::find($pId);
                     if ($acc) {
@@ -1630,6 +1630,7 @@ class VoucherController extends Controller
             $partyLedger = app(PartyLedgerService::class);
             $ivDate = $voucher->entry_date ?? now()->toDateString();
 
+            // Reverse Header account (Destination: Cash/Bank) -> CREDIT back (Reduce balance)
             $hType = strtolower($voucher->account_head ?? '');
             if (in_array($hType, ['vendor', 'customer', 'walkin', 'subcustomer'], true)) {
                 $partyLedger->appendReversal(
@@ -1648,6 +1649,7 @@ class VoucherController extends Controller
                 }
             }
 
+            // Reverse Row parties / accounts (Source: Income Head/Party) -> DEBIT back (Add back balance)
             $types = json_decode($voucher->party_type, true) ?? [];
             $pIds = json_decode($voucher->party_id, true) ?? [];
             $amounts = json_decode($voucher->amount, true) ?? [];
@@ -1660,7 +1662,7 @@ class VoucherController extends Controller
                 }
 
                 if (in_array($pType, ['vendor', 'customer', 'walkin'], true)) {
-                    $partyLedger->appendReversal($pType, (int) $pId, $rowAmount, 0, $ivDate, "Unpost Income Voucher #$ivid");
+                    $partyLedger->appendReversal($pType, (int) $pId, 0, $rowAmount, $ivDate, "Unpost Income Voucher #$ivid");
                 } else {
                     $acc = \App\Models\Account::find($pId);
                     if ($acc) {
