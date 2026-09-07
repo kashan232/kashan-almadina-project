@@ -51,12 +51,14 @@ class ClaimCreditNoteController extends Controller
     {
         $voucher = ClaimCreditNote::with(['items.product', 'whtAccount'])->findOrFail($id);
         if ($voucher->status === 'Posted') {
-            return redirect()->route('claim-credit-note.index')->with('error', 'Posted vouchers cannot be edited.');
+            return redirect()->route('claim-item-receipt.index')->with('error', 'Posted vouchers cannot be edited.');
         }
         $warehouses = Warehouse::orderBy('warehouse_name')->get();
+        $companyWarehouses = Warehouse::withoutGlobalScope('exclude_claims')->where('claim_type', 'company')->orderBy('warehouse_name')->get();
         $AccountHeads = AccountHead::where('status', 1)->get();
         $products = Product::select('id', 'name')->orderBy('name')->get();
-        return view('admin_panel.claim_credit_note.create', compact('voucher', 'warehouses', 'AccountHeads', 'products'));
+        $creditVoucher = $voucher;
+        return view('admin_panel.claim_item_receipt.create', compact('creditVoucher', 'warehouses', 'companyWarehouses', 'AccountHeads', 'products'));
     }
 
     public function show($id)

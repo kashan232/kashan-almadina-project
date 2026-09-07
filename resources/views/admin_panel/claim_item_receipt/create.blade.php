@@ -43,14 +43,26 @@
 </style>
 
 @php
+    $isCreditEdit = isset($creditVoucher);
+    $cVoucher = $creditVoucher ?? null;
     $isViewMode = isset($viewMode) && $viewMode;
     $isReceiptPosted = isset($voucher) && $voucher->status === 'Posted';
+    $isCreditPosted = isset($cVoucher) && $cVoucher->status === 'Posted';
+    
     $receiptFormClass = 'position-relative';
     if ($isViewMode || $isReceiptPosted) {
         $receiptFormClass .= ' form-locked';
     }
     if ($isViewMode) {
         $receiptFormClass .= ' view-mode';
+    }
+
+    $creditFormClass = 'position-relative';
+    if ($isViewMode || $isCreditPosted) {
+        $creditFormClass .= ' form-locked';
+    }
+    if ($isViewMode) {
+        $creditFormClass .= ' view-mode';
     }
 @endphp
 
@@ -64,7 +76,7 @@
             {{-- TABS --}}
             <ul class="nav nav-pills mb-2 justify-content-center bg-white p-1 rounded shadow-sm" id="claimTabs" role="tablist">
                 <li class="nav-item" role="presentation">
-                    <button class="nav-link active fw-bold px-4 py-1" id="receipt-tab" data-bs-toggle="pill" data-bs-target="#receipt-pane" type="button" role="tab">
+                    <button class="nav-link {{ $isCreditEdit ? '' : 'active' }} fw-bold px-4 py-1" id="receipt-tab" data-bs-toggle="pill" data-bs-target="#receipt-pane" type="button" role="tab">
                         <i class="fa fa-file-text-o me-2"></i> Item Receipt
                         @if($isViewMode)
                             <span class="badge bg-info ms-1" style="font-size:9px;"><i class="fa fa-eye"></i> View</span>
@@ -73,7 +85,7 @@
                 </li>
                 @if(!$isViewMode)
                 <li class="nav-item mx-2" role="presentation">
-                    <button class="nav-link fw-bold px-4 py-1" id="credit-tab" data-bs-toggle="pill" data-bs-target="#credit-pane" type="button" role="tab">
+                    <button class="nav-link {{ $isCreditEdit ? 'active' : '' }} fw-bold px-4 py-1" id="credit-tab" data-bs-toggle="pill" data-bs-target="#credit-pane" type="button" role="tab">
                         <i class="fa fa-money me-2"></i> Credit Note
                     </button>
                 </li>
@@ -87,7 +99,7 @@
 
             <div class="tab-content" id="claimTabsContent">
                 {{-- ITEM RECEIPT PANE --}}
-                <div class="tab-pane fade show active" id="receipt-pane" role="tabpanel">
+                <div class="tab-pane fade {{ $isCreditEdit ? '' : 'show active' }}" id="receipt-pane" role="tabpanel">
                     <div class="d-flex align-items-center gap-2 mb-2 justify-content-center">
                         <span id="receiptStatusBadge" class="badge bg-warning text-dark px-3 py-2 rounded-pill shadow-sm" style="font-size:12px;">
                             <i class="fa fa-pencil me-1"></i> {{ isset($voucher) ? $voucher->status : 'New Receipt' }}
@@ -242,7 +254,7 @@
                                                         <td class="text-center fw-bold text-primary">{{ $item->product_id }} <input type="hidden" name="product_id[]" value="{{ $item->product_id }}"></td>
                                                         <td>{{ $item->product->name ?? 'N/A' }}</td>
                                                         <td class="text-center"><input type="number" name="quantity[]" class="form-control input-sm text-center border-success" value="{{ $item->quantity }}" step="any" min="0"></td>
-                                                        <td class="text-center"><button type="button" class="btn btn-sm btn-link text-danger remove-row p-0"><i class="fa fa-trash fs-5"></i></button></td>
+                                                        <td class="text-center"><button type="button" class="btn btn-sm btn-link text-danger remove-receipt-row p-0"><i class="fa fa-trash fs-5"></i></button></td>
                                                     </tr>
                                                 @endforeach
                                             @endif
@@ -287,21 +299,21 @@
                 </div>
 
                 {{-- CREDIT NOTE PANE --}}
-                <div class="tab-pane fade" id="credit-pane" role="tabpanel">
+                <div class="tab-pane fade {{ $isCreditEdit ? 'show active' : '' }}" id="credit-pane" role="tabpanel">
                     <div class="d-flex align-items-center gap-2 mb-2 justify-content-center">
                         <span id="creditStatusBadge" class="badge bg-warning text-dark px-3 py-2 rounded-pill shadow-sm" style="font-size:12px;">
-                            <i class="fa fa-pencil me-1"></i> New Credit Note
+                            <i class="fa fa-pencil me-1"></i> {{ isset($cVoucher) ? $cVoucher->status : 'New Credit Note' }}
                         </span>
-                        <span id="creditIdBadge" class="badge bg-primary px-3 py-2 rounded-pill shadow-sm" style="display:none; font-size:12px;">
-                            <i class="fa fa-tag me-1"></i> ID: NEW
+                        <span id="creditIdBadge" class="badge bg-primary px-3 py-2 rounded-pill shadow-sm" style="{{ isset($cVoucher) ? '' : 'display:none;' }} font-size:12px;">
+                            <i class="fa fa-tag me-1"></i> ID: {{ isset($cVoucher) ? $cVoucher->id : 'NEW' }}
                         </span>
                     </div>
 
-                    <form action="{{ route('claim-credit-note.ajax-save') }}" method="POST" id="creditForm" class="position-relative">
+                    <form action="{{ route('claim-credit-note.ajax-save') }}" method="POST" id="creditForm" class="{{ $creditFormClass }}">
                         @csrf
                         <input type="hidden" name="action" id="creditFormAction" value="save">
-                        <input type="hidden" name="id" value="">
-                        <div class="posted-watermark" id="creditPostedWatermark">Posted</div>
+                        <input type="hidden" name="id" value="{{ $cVoucher->id ?? '' }}">
+                        <div class="posted-watermark {{ ($isViewMode && $isCreditPosted) || $isCreditPosted ? 'show' : '' }}" id="creditPostedWatermark">Posted</div>
 
                         {{-- Header Details --}}
                         <div class="card shadow-sm mb-2">
@@ -309,26 +321,26 @@
                                 <div class="row g-2 mb-3 align-items-end">
                                     <div class="col-md-2">
                                         <label class="form-label small fw-bold text-muted mb-1">Entry Date</label>
-                                        <input type="date" name="entry_date" class="form-control input-sm" value="{{ date('Y-m-d') }}" required>
+                                        <input type="date" name="entry_date" class="form-control input-sm" value="{{ $cVoucher->entry_date ?? date('Y-m-d') }}" required>
                                     </div>
                                     <div class="col-md-1">
                                         <label class="form-label small fw-bold text-muted mb-1">Entry Time</label>
-                                        <input type="time" name="entry_time" class="form-control input-sm" value="{{ date('H:i') }}" required>
+                                        <input type="time" name="entry_time" class="form-control input-sm" value="{{ $cVoucher->entry_time ?? date('H:i') }}" required>
                                     </div>
                                     <div class="col-md-2">
                                         <label class="form-label small fw-bold text-muted mb-1">Date</label>
-                                        <input type="date" name="date" class="form-control input-sm" value="{{ date('Y-m-d') }}" required>
+                                        <input type="date" name="date" class="form-control input-sm" value="{{ $cVoucher->date ?? date('Y-m-d') }}" required>
                                     </div>
                                     <div class="col-md-1">
                                         <label class="form-label small fw-bold text-muted mb-1">Voucher No</label>
-                                        <input type="text" class="form-control input-sm fw-bold text-primary bg-light" value="{{ isset($voucher) ? $voucher->voucher_no : 'Auto-Generated' }}" readonly style="font-size: 0.8rem;">
+                                        <input type="text" class="form-control input-sm fw-bold text-primary bg-light" value="{{ isset($cVoucher) ? $cVoucher->voucher_no : 'Auto-Generated' }}" readonly style="font-size: 0.8rem;">
                                     </div>
                                     <div class="col-md-2">
                                         <label class="form-label small fw-bold text-danger mb-1"><i class="fa fa-minus-circle"></i> Deduct From (-) Cr</label>
                                         <select name="from_warehouse_id" id="credit_from_warehouse_id" class="form-select input-sm" required>
                                             <option value="">Select Stock Source...</option>
                                             @foreach($companyWarehouses as $wh)
-                                                <option value="{{ $wh->id }}">{{ $wh->warehouse_name }}</option>
+                                                <option value="{{ $wh->id }}" {{ (isset($cVoucher) && $cVoucher->from_warehouse_id == $wh->id) ? 'selected' : '' }}>{{ $wh->warehouse_name }}</option>
                                             @endforeach
                                         </select>
                                     </div>
@@ -337,16 +349,16 @@
                                         <select name="to_warehouse_id" id="credit_to_warehouse_id" class="form-select input-sm">
                                             <option value="">Select Target...</option>
                                             @if(auth()->user()->canAccessShop())
-                                                <option value="0">Shop Stock</option>
+                                                <option value="0" {{ (isset($cVoucher) && $cVoucher->to_warehouse_id == 0) ? 'selected' : '' }}>Shop Stock</option>
                                             @endif
                                             @foreach($warehouses as $wh)
-                                                <option value="{{ $wh->id }}">{{ $wh->warehouse_name }}</option>
+                                                <option value="{{ $wh->id }}" {{ (isset($cVoucher) && $cVoucher->to_warehouse_id == $wh->id) ? 'selected' : '' }}>{{ $wh->warehouse_name }}</option>
                                             @endforeach
                                         </select>
                                     </div>
                                     <div class="col-md-2">
                                         <label class="form-label small fw-bold text-muted mb-1">Remarks</label>
-                                        <input type="text" name="remarks" class="form-control input-sm" placeholder="Optional notes...">
+                                        <input type="text" name="remarks" class="form-control input-sm" value="{{ $cVoucher->remarks ?? '' }}" placeholder="Optional notes...">
                                     </div>
                                 </div>
 
@@ -355,15 +367,24 @@
                                         <label class="form-label small fw-bold text-primary mb-1">Party Type <span class="text-danger">*</span></label>
                                         <select name="party_type" id="credit_party_type" class="form-select input-sm" required>
                                             <option value="">Select Type...</option>
-                                            <option value="vendor">Vendor</option>
-                                            <option value="customer">Customer</option>
-                                            <option value="walking">Walking Customer</option>
+                                            <option value="vendor" {{ (isset($cVoucher) && $cVoucher->party_type == 'vendor') ? 'selected' : '' }}>Vendor</option>
+                                            <option value="customer" {{ (isset($cVoucher) && $cVoucher->party_type == 'customer') ? 'selected' : '' }}>Customer</option>
+                                            <option value="walking" {{ (isset($cVoucher) && $cVoucher->party_type == 'walking') ? 'selected' : '' }}>Walking Customer</option>
                                         </select>
                                     </div>
                                     <div class="col-md-3">
                                         <label class="form-label small fw-bold text-primary mb-1">Supplier / Party Name <span class="text-danger">*</span></label>
                                         <select name="party_id" id="credit_party_id" class="form-select select2" required>
                                             <option value="">Select Party...</option>
+                                            @if(isset($cVoucher))
+                                                <option value="{{ $cVoucher->party_id }}" selected>
+                                                    @if($cVoucher->party_type == 'vendor')
+                                                        {{ $cVoucher->vendor->name ?? 'N/A' }}
+                                                    @else
+                                                        {{ $cVoucher->customer->customer_name ?? 'N/A' }}
+                                                    @endif
+                                                </option>
+                                            @endif
                                         </select>
                                     </div>
                                     
@@ -430,7 +451,30 @@
                                                 <th style="width:40px;">Act</th>
                                             </tr>
                                         </thead>
-                                        <tbody id="creditItemRows"></tbody>
+                                        <tbody id="creditItemRows">
+                                            @if(isset($cVoucher))
+                                                @foreach($cVoucher->items as $cItem)
+                                                    <tr>
+                                                        <td class="text-center"><input type="text" name="btr_no[]" class="form-control form-control-sm text-center bg-light" value="{{ $cItem->btr_no }}" readonly></td>
+                                                        <td class="text-center fw-bold text-primary">{{ $cItem->product_id }} <input type="hidden" name="product_id[]" value="{{ $cItem->product_id }}"></td>
+                                                        <td>{{ $cItem->product->name ?? 'N/A' }}</td>
+                                                        <td><input type="number" name="price[]" class="form-control form-control-sm text-center credit-line-input price" value="{{ number_format($cItem->price, 2, '.', '') }}" step="any"></td>
+                                                        <td><input type="number" name="retail_price[]" class="form-control form-control-sm text-center credit-line-input retail_price" value="{{ number_format($cItem->retail_price, 2, '.', '') }}" step="any"></td>
+                                                        <td>
+                                                            <div class="input-group input-group-sm">
+                                                                <input type="number" name="discount_percent[]" class="form-control text-center credit-line-input discount_percent" value="{{ $cItem->discount_percent }}" step="any" placeholder="%">
+                                                                <span class="input-group-text px-1" style="font-size: 0.7rem;">%</span>
+                                                                <input type="text" name="discount_amount[]" class="form-control text-center bg-light discount_amount" value="{{ number_format($cItem->discount_amount, 2, '.', '') }}" readonly>
+                                                            </div>
+                                                        </td>
+                                                        <td><input type="number" name="qty[]" class="form-control form-control-sm text-center credit-line-input quantity" value="{{ $cItem->quantity }}" step="any"></td>
+                                                        <td><input type="text" name="line_amount[]" class="form-control form-control-sm text-end bg-light row-rate" value="{{ number_format($cItem->amount, 2, '.', '') }}" readonly></td>
+                                                        <td><input type="text" name="line_total[]" class="form-control form-control-sm text-end fw-bold bg-light row-total" value="{{ number_format($cItem->line_total, 2, '.', '') }}" readonly></td>
+                                                        <td class="text-center"><button type="button" class="btn btn-sm btn-link text-danger remove-credit-row p-0"><i class="fa fa-trash"></i></button></td>
+                                                    </tr>
+                                                @endforeach
+                                            @endif
+                                        </tbody>
                                     </table>
                                 </div>
                             </div>
@@ -454,21 +498,24 @@
                                                 <select id="credit_wht_head_id" class="form-select form-select-sm py-0" style="width:80px;">
                                                     <option value="">Head</option>
                                                     @foreach($AccountHeads as $head)
-                                                        <option value="{{ $head->id }}">{{ $head->name }}</option>
+                                                        <option value="{{ $head->id }}" {{ (isset($cVoucher->whtAccount) && $cVoucher->whtAccount->account_head_id == $head->id) ? 'selected' : '' }}>{{ $head->name }}</option>
                                                     @endforeach
                                                 </select>
-                                                <select name="wht_account_id" id="credit_wht_account_id" class="form-select form-select-sm py-0" style="flex-grow:1;">
+                                                <select name="wht_account_id" id="credit_wht_account_id" data-selected="{{ $cVoucher->wht_account_id ?? '' }}" class="form-select form-select-sm py-0" style="flex-grow:1;">
                                                     <option value="">Account</option>
+                                                    @if(isset($cVoucher->whtAccount))
+                                                        <option value="{{ $cVoucher->whtAccount->id }}" selected>{{ $cVoucher->whtAccount->title }}</option>
+                                                    @endif
                                                 </select>
                                             </div>
                                             <div class="d-flex align-items-center gap-1">
-                                                <input type="number" step="0.01" name="wht_percent" id="credit_wht_percent" class="form-control form-control-sm text-end py-0" placeholder="Val" value="0" style="width:60px">
+                                                <input type="number" step="0.01" name="wht_percent" id="credit_wht_percent" class="form-control form-control-sm text-end py-0" placeholder="Val" value="{{ $cVoucher->wht_percent ?? 0 }}" style="width:60px">
                                                 <select id="credit_wht_type" name="wht_type" class="form-select form-select-sm py-0" style="width:60px;">
-                                                    <option value="percent">%</option>
-                                                    <option value="amount">PKR</option>
+                                                    <option value="percent" {{ (isset($cVoucher) && ($cVoucher->wht_type ?? 'percent') == 'percent') ? 'selected' : '' }}>%</option>
+                                                    <option value="amount" {{ (isset($cVoucher) && ($cVoucher->wht_type ?? '') == 'amount') ? 'selected' : '' }}>PKR</option>
                                                 </select>
                                             </div>
-                                            <input type="text" name="wht_amount" id="credit_wht_amount" class="form-control form-control-sm text-end bg-light" value="0.00" readonly style="width:80px;">
+                                            <input type="text" name="wht_amount" id="credit_wht_amount" class="form-control form-control-sm text-end bg-light" value="{{ number_format($cVoucher->wht_amount ?? 0, 2, '.', '') }}" readonly style="width:80px;">
                                         </div>
                                     </div>
                                     <hr class="my-2">
