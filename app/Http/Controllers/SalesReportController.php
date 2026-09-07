@@ -519,7 +519,7 @@ class SalesReportController extends Controller
             $salesPrice = $amount;
         }
 
-        $retailPrice = (float) ($claim->product?->latestPrice?->retail_price ?? $claim->product?->retail_price ?? 0);
+        $retailPrice = (float) ($claim->product?->latestPrice?->sale_retail_price ?? $claim->product?->latestPrice?->retail_price ?? $claim->product?->retail_price ?? $salesPrice);
         $party = $claim->party;
         $reportCustomer = $party;
         if ($claim->party_type === 'vendor' && $party) {

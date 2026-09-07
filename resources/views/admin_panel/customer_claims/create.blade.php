@@ -387,7 +387,7 @@ $(document).ready(function() {
             if(res && res.length) {
                 var prod = res.find(p => p.id == productId) || res[0];
                 if(prod) {
-                    var price = prod.sale_price || prod.net_price || 0;
+                    var price = prod.sale_retail_price || prod.retail_price || prod.sale_price || 0;
                     $(targetInputId).val(parseFloat(price).toFixed(2));
                 }
             }
