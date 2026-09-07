@@ -281,9 +281,18 @@ $(document).ready(function() {
         $('.row-amount').each(function() { t += parseFloat($(this).val()) || 0; });
         $('#totalAmount').val(t.toLocaleString('en-US', {minimumFractionDigits: 2}));
     }
-    $(document).on('input', '.row-amount', calc);
+    $(document).on('keydown', '.row-amount', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            $('#btnAddRow').click();
+            $('#voucherTable tbody tr').last().find('.narrationSelect').focus();
+        }
+    });
 
     $('#btnAddRow').click(function() {
+        if (window.VoucherRowValidation && !window.VoucherRowValidation.validateLastRow($('#voucherTable'))) {
+            return;
+        }
         let row = `<tr>
             <td><select name="narration_id[]" class="form-select form-select-sm narrationSelect"><option value="">Narration...</option>@foreach($narrationsList as $lid => $lname)<option value="{{ $lid }}">{{ $lname }}</option>@endforeach</select></td>
             <td><select name="account_head[]" class="form-select form-select-sm rowAccountHead select2"><option value="">Select Head...</option>@foreach($AccountHeads as $head)<option value="{{ $head->id }}">{{ $head->name }}</option>@endforeach<option value="vendor">Vendor</option><option value="customer">Customer</option><option value="walkin">Walkin</option></select></td>
@@ -297,7 +306,17 @@ $(document).ready(function() {
         initSelectors($('#voucherTable tbody tr').last());
     });
 
-    $(document).on('click', '.removeRow', function() { if($('#voucherTable tbody tr').length > 1) { $(this).closest('tr').remove(); calc(); } });
+    $(document).on('click', '.removeRow', function() {
+        let $tbody = $('#voucherTable tbody');
+        if ($tbody.find('tr').length > 1) {
+            $(this).closest('tr').remove();
+        } else {
+            let $row = $(this).closest('tr');
+            $row.find('input').val('');
+            $row.find('select').val('').trigger('change');
+        }
+        calc();
+    });
 
     // 💾 Storage Logic
     function showAlert(msg, type = 'success') {

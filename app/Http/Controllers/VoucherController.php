@@ -650,7 +650,7 @@ class VoucherController extends Controller
             $voucher->save();
 
             DB::commit();
-            return redirect()->route('all-recepit-vochers')->with('success', 'Voucher posted successfully!');
+            return redirect()->route('recepit-vochers', $id)->with('success', 'Voucher posted successfully!');
         } catch (\Exception $e) {
             DB::rollBack();
             return back()->with('error', $e->getMessage());
@@ -878,7 +878,7 @@ class VoucherController extends Controller
             }
 
             DB::commit();
-            return redirect()->route('Payment-vochers')->with('success', 'Voucher posted successfully!');
+            return redirect()->route('Payment-vochers', $id)->with('success', 'Voucher posted successfully!');
         } catch (\Exception $e) {
             DB::rollBack();
             return back()->with('error', 'Error: ' . $e->getMessage());
@@ -1271,7 +1271,7 @@ class VoucherController extends Controller
             $voucher->status = 'posted';
             $voucher->save();
             DB::commit();
-            return redirect()->route('all-expense-vochers')->with('success', 'Expense Voucher posted successfully!');
+            return redirect()->route('expense-vochers', $id)->with('success', 'Expense Voucher posted successfully!');
         } catch (\Exception $e) {
             DB::rollBack();
             return back()->with('error', $e->getMessage());
@@ -1610,7 +1610,7 @@ class VoucherController extends Controller
             $voucher->save();
 
             DB::commit();
-            return redirect()->route('income-vochers')->with('success', 'Income Voucher Posted Successfully and Ledgers Updated');
+            return redirect()->route('income-vochers', $id)->with('success', 'Income Voucher Posted Successfully and Ledgers Updated');
         } catch (\Exception $e) {
             DB::rollBack();
             return back()->with('error', 'Error: ' . $e->getMessage());
@@ -1960,7 +1960,7 @@ class VoucherController extends Controller
             $voucher->save();
 
             DB::commit();
-            return back()->with('success', 'Adjustment Voucher posted successfully!');
+            return redirect()->route('adjustment-vochers', $id)->with('success', 'Adjustment Voucher posted successfully!');
         } catch (\Exception $e) {
             DB::rollBack();
             return back()->with('error', $e->getMessage());
@@ -2186,7 +2186,7 @@ class VoucherController extends Controller
             $voucher->status = 'posted';
             $voucher->save();
             DB::commit();
-            return redirect()->route('all-journal-vochers')->with('success', 'Journal Voucher posted successfully!');
+            return redirect()->route('journal-vochers', $id)->with('success', 'Journal Voucher posted successfully!');
         } catch (\Exception $e) {
             DB::rollBack();
             return back()->with('error', $e->getMessage());

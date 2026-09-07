@@ -290,6 +290,9 @@ $(document).ready(function() {
     });
 
     $('#btnAddRow').click(function() {
+        if (window.VoucherRowValidation && !window.VoucherRowValidation.validateLastRow($('#voucherTable'))) {
+            return;
+        }
         let newRow = `<tr>
             <td><select name="narration_id[]" class="form-select form-select-sm narrationSelect"><option value="">Narration...</option>@foreach($narrationsList as $lid => $lname)<option value="{{ $lid }}">{{ $lname }}</option>@endforeach</select></td>
             <td><select name="row_account_head[]" class="form-select form-select-sm rowAccountHead select2"><option value="">Select Head...</option>@foreach($AccountHeads as $head)<option value="{{ $head->id }}">{{ $head->name }}</option>@endforeach</select></td>
@@ -301,7 +304,18 @@ $(document).ready(function() {
         $('#voucherTable tbody').append(newRow);
         initSelectors($('#voucherTable tbody tr').last());
     });
-    $(document).on('click', '.removeRow', function() { if ($('#voucherTable tbody tr').length > 1) { $(this).closest('tr').remove(); calculateTotals(); } });
+
+    $(document).on('click', '.removeRow', function() {
+        let $tbody = $('#voucherTable tbody');
+        if ($tbody.find('tr').length > 1) {
+            $(this).closest('tr').remove();
+        } else {
+            let $row = $(this).closest('tr');
+            $row.find('input').val('');
+            $row.find('select').val('').trigger('change');
+        }
+        calculateTotals();
+    });
 
     // 💾 Storage Logic
     function showAlert(msg, type='info') {

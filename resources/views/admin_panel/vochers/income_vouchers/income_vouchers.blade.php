@@ -307,6 +307,7 @@ $(document).ready(function() {
     $(document).on('input', '.row-amount', calc);
 
     $('#btnAddRow').click(function() {
+        if (window.VoucherRowValidation && !window.VoucherRowValidation.validateLastRow($('#voucherTable'))) return;
         let row = `<tr>
             <td><select name="narration_id[]" class="form-select form-select-sm narrationSelect"><option value="">Narration...</option>@foreach($narrationsList as $lid => $lname)<option value="{{ $lid }}">{{ $lname }}</option>@endforeach</select></td>
             <td><select name="party_type[]" class="form-select form-select-sm rowPartyType select2"><option value="">Select Type...</option>@foreach($AccountHeads as $head)<option value="{{ $head->id }}">{{ $head->name }}</option>@endforeach<option value="vendor">Vendor</option><option value="customer">Customer</option><option value="walkin">Walkin</option></select></td>
@@ -314,13 +315,30 @@ $(document).ready(function() {
             <td><select name="party_id[]" class="form-select form-select-sm rowPartySelect select2"><option value="">Select Party...</option></select></td>
             <td><input type="text" name="reference_no[]" class="form-control form-control-sm" placeholder="Ref#"></td>
             <td><input type="number" step="0.01" name="amount[]" class="form-control form-control-sm text-end fw-bold row-amount" placeholder="0.00"></td>
-            <td class="text-center"><button type="button" class="btn text-danger btn-xs removeRow p-0"><i class="fa fa-trash-o fs-6"></i></button></td>
+            <td class="text-center"><button type="button" class="btn text-danger btn-xs removeRow p-0" title="Remove Line"><i class="fa fa-trash-o fs-5"></i></button></td>
         </tr>`;
         $('#voucherTable tbody').append(row);
         initSelectors($('#voucherTable tbody tr').last());
     });
 
-    $(document).on('click', '.removeRow', function() { if($('#voucherTable tbody tr').length > 1) { $(this).closest('tr').remove(); calc(); } });
+    $(document).on('keydown', '.row-amount', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            $('#btnAddRow').click();
+        }
+    });
+
+    $(document).on('click', '.removeRow', function() {
+        let $tbody = $('#voucherTable tbody');
+        let $tr = $(this).closest('tr');
+        if ($tbody.find('tr').length > 1) {
+            $tr.remove();
+        } else {
+            $tr.find('input').val('');
+            $tr.find('select').val('').trigger('change');
+        }
+        calc();
+    });
 
     // 💾 Storage Logic
     function showAlert(msg, type = 'success') {

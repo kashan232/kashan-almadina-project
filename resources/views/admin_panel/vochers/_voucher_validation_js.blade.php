@@ -69,6 +69,68 @@ window.VoucherFieldValidation = {
     }
 };
 
+window.VoucherRowValidation = {
+    validateLastRow: function($table) {
+        let $lastTr = $table.find('tbody tr').last();
+        if (!$lastTr.length) return true;
+
+        let isValid = true;
+        let $firstInvalid = null;
+
+        // 1. Check Party / Account Select
+        let $partyOrAcc = $lastTr.find('.rowPartySelect, .rowPartyName, .rowAccountSelect, .rowAccountSub, select[name="party_id[]"], select[name="row_account_id[]"], select[name="account_id[]"]').first();
+        if ($partyOrAcc.length && !$partyOrAcc.val()) {
+            isValid = false;
+            $partyOrAcc.addClass('is-field-invalid');
+            $partyOrAcc.next('.select2-container').addClass('is-field-invalid');
+            if (!$firstInvalid) $firstInvalid = $partyOrAcc;
+        }
+
+        // 2. Check Amount / Debit / Credit Input
+        let $amounts = $lastTr.find('input.row-amount, input.amount, input.row-debit, input.row-credit, input[name="amount[]"], input[name="debit[]"], input[name="credit[]"]');
+        if ($amounts.length) {
+            let hasValidNum = false;
+            $amounts.each(function() {
+                let v = parseFloat($(this).val());
+                if (!isNaN(v) && v > 0) {
+                    hasValidNum = true;
+                }
+            });
+            if (!hasValidNum) {
+                isValid = false;
+                let $amtInput = $amounts.first();
+                $amtInput.addClass('is-field-invalid');
+                if (!$firstInvalid) $firstInvalid = $amtInput;
+            }
+        }
+
+        if (!isValid) {
+            if ($firstInvalid) {
+                $firstInvalid.focus();
+                if ($firstInvalid.hasClass('select2-hidden-accessible')) {
+                    try { $firstInvalid.select2('open'); } catch(e) {}
+                }
+            }
+            let msg = 'Pehle maujuda row ki details aur amount poori karein.';
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Line Incomplete',
+                    text: msg,
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+            } else if (typeof showAlert === 'function') {
+                showAlert(msg, 'danger');
+            } else {
+                alert(msg);
+            }
+            return false;
+        }
+        return true;
+    }
+};
+
 $(document).on('input change', 'form input, form select, form textarea', function() {
     const $el = $(this);
     $el.removeClass('is-field-invalid');

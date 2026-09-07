@@ -373,6 +373,9 @@ $(document).ready(function() {
 
 
     $('#btnAddRow').click(function() {
+        if (window.VoucherRowValidation && !window.VoucherRowValidation.validateLastRow($('#voucherTable'))) {
+            return;
+        }
         let newRow = `<tr>
             <td><select name="narration_id[]" class="form-select form-select-sm narrationSelect"><option value="">Narration...</option>@foreach($narrations as $id => $name)<option value="{{ $id }}">{{ $name }}</option>@endforeach</select></td>
             <td><input name="reference_no[]" type="text" class="form-control form-control-sm" placeholder="Ref#"></td>
@@ -388,7 +391,17 @@ $(document).ready(function() {
         initSelectors($('#voucherTable tbody tr').last());
     });
 
-    $(document).on('click', '.removeRow', function() { if ($('#voucherTable tbody tr').length > 1) { $(this).closest('tr').remove(); calculateTotals(); } });
+    $(document).on('click', '.removeRow', function() {
+        let $tbody = $('#voucherTable tbody');
+        if ($tbody.find('tr').length > 1) {
+            $(this).closest('tr').remove();
+        } else {
+            let $row = $(this).closest('tr');
+            $row.find('input').val('');
+            $row.find('select').val('').trigger('change');
+        }
+        calculateTotals();
+    });
 
     // 💾 Storage Logic
     function showAlert(msg, type='info') {
