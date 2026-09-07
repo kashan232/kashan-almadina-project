@@ -261,6 +261,13 @@
                                                             <a href="{{ route('claim-credit-note.edit', $v->id) }}" class="btn btn-outline-warning btn-xs px-1 py-0" title="Edit" style="height: 20px;">
                                                                 <i class="fa fa-edit text-dark"></i>
                                                             </a>
+                                                            <form action="{{ route('claim-credit-note.destroy', $v->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this unposted Credit Note?')">
+                                                                @csrf
+                                                                @method('DELETE')
+                                                                <button type="submit" class="btn btn-outline-danger btn-xs px-1 py-0" title="Delete" style="height: 20px;">
+                                                                    <i class="fa fa-trash"></i>
+                                                                </button>
+                                                            </form>
                                                         @else
                                                             <form action="{{ route('claim-item-receipt.post', $v->id) }}" method="POST" class="d-inline">
                                                                 @csrf
@@ -271,6 +278,13 @@
                                                             <a href="{{ route('claim-item-receipt.edit', $v->id) }}" class="btn btn-outline-warning btn-xs px-1 py-0" title="Edit" style="height: 20px;">
                                                                 <i class="fa fa-edit text-dark"></i>
                                                             </a>
+                                                            <form action="{{ route('claim-item-receipt.destroy', $v->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this unposted Receipt?')">
+                                                                @csrf
+                                                                @method('DELETE')
+                                                                <button type="submit" class="btn btn-outline-danger btn-xs px-1 py-0" title="Delete" style="height: 20px;">
+                                                                    <i class="fa fa-trash"></i>
+                                                                </button>
+                                                            </form>
                                                         @endif
                                                     @endif
 

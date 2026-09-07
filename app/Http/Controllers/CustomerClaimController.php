@@ -196,6 +196,16 @@ class CustomerClaimController extends Controller
         }
     }
 
+    public function destroy($id)
+    {
+        $claim = CustomerClaim::findOrFail($id);
+        if ($claim->status === 'Posted') {
+            return back()->with('error', 'Posted claims cannot be deleted.');
+        }
+        $claim->delete();
+        return back()->with('success', 'Customer Claim deleted successfully.');
+    }
+
     private function syncInventory(CustomerClaim $claim)
     {
         // 1. Faulty Item Movement

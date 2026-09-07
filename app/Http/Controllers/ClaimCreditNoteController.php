@@ -229,6 +229,17 @@ class ClaimCreditNoteController extends Controller
         return view('admin_panel.claim_credit_note.print', compact('voucher'));
     }
 
+    public function destroy($id)
+    {
+        $voucher = ClaimCreditNote::findOrFail($id);
+        if ($voucher->status === 'Posted') {
+            return back()->with('error', 'Posted credit notes cannot be deleted.');
+        }
+        $voucher->items()->delete();
+        $voucher->delete();
+        return back()->with('success', 'Claim Credit Note deleted successfully.');
+    }
+
     private function adjustStock($warehouseId, $productId, $qty)
     {
         app(\App\Services\StockService::class)->adjust((int) $productId, $warehouseId, (float) $qty);

@@ -62,6 +62,7 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/customer-claims/ajax-save', [CustomerClaimController::class, 'ajaxSave'])->name('customer-claims.ajax-save');
     Route::post('/customer-claims/post/{id}', [CustomerClaimController::class, 'post'])->name('customer-claims.post');
     Route::get('/customer-claims/edit/{id}', [CustomerClaimController::class, 'edit'])->name('customer-claims.edit');
+    Route::delete('/customer-claims/destroy/{id}', [CustomerClaimController::class, 'destroy'])->name('customer-claims.destroy');
     Route::get('/customer-claims/search-products', [ProductController::class, 'searchProducts'])->name('customer-claims.search-products');
     
     // General Ledger Routes
@@ -484,6 +485,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/claim-item-receipt/ajax-save', [ClaimItemReceiptController::class, 'ajaxSave'])->name('claim-item-receipt.ajax-save');
     Route::post('/claim-item-receipt/post/{id}', [ClaimItemReceiptController::class, 'post'])->name('claim-item-receipt.post');
     Route::get('/claim-item-receipt/print/{id}', [ClaimItemReceiptController::class, 'print'])->name('claim-item-receipt.print');
+    Route::delete('/claim-item-receipt/destroy/{id}', [ClaimItemReceiptController::class, 'destroy'])->name('claim-item-receipt.destroy');
 
     // Claim Credit Note Routes
     Route::get('/claim-credit-note', [ClaimCreditNoteController::class, 'index'])->name('claim-credit-note.index');
@@ -494,6 +496,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/claim-credit-note/ajax-save', [ClaimCreditNoteController::class, 'ajaxSave'])->name('claim-credit-note.ajax-save');
     Route::post('/claim-credit-note/post/{id}', [ClaimCreditNoteController::class, 'post'])->name('claim-credit-note.post');
     Route::get('/claim-credit-note/print/{id}', [ClaimCreditNoteController::class, 'print'])->name('claim-credit-note.print');
+    Route::delete('/claim-credit-note/destroy/{id}', [ClaimCreditNoteController::class, 'destroy'])->name('claim-credit-note.destroy');
 
 
     // AJAX (no refresh)

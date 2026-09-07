@@ -207,6 +207,14 @@
                                                         <a href="{{ route('claim-acceptance.edit', $v->id) }}" class="btn btn-outline-warning btn-xs px-1 py-0" title="Edit" style="height: 20px;">
                                                             <i class="fa fa-edit text-dark"></i>
                                                         </a>
+
+                                                        <form action="{{ route('claim-acceptance.destroy', $v->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this unposted acceptance?')">
+                                                            @csrf
+                                                            @method('DELETE')
+                                                            <button type="submit" class="btn btn-outline-danger btn-xs px-1 py-0" title="Delete" style="height: 20px;">
+                                                                <i class="fa fa-trash"></i>
+                                                            </button>
+                                                        </form>
                                                     @endif
                                                     <a href="{{ route('claim-acceptance.view', $v->id) }}" class="btn btn-outline-info btn-xs px-1 py-0" title="View" style="height: 20px;">
                                                         <i class="fa fa-eye"></i>

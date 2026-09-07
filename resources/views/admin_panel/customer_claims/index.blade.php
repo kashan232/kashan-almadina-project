@@ -228,6 +228,13 @@
                                                                 <i class="fa fa-send"></i> Post
                                                             </button>
                                                         </form>
+                                                        <form action="{{ route('customer-claims.destroy', $claim->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this unposted claim?')">
+                                                            @csrf
+                                                            @method('DELETE')
+                                                            <button type="submit" class="btn btn-outline-danger btn-xs px-1 py-0" title="Delete" style="height: 20px;">
+                                                                <i class="fa fa-trash"></i>
+                                                            </button>
+                                                        </form>
                                                     @endif
                                                 </div>
                                             </td>

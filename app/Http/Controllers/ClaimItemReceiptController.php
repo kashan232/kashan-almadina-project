@@ -238,6 +238,17 @@ class ClaimItemReceiptController extends Controller
         return view('admin_panel.claim_item_receipt.print', compact('voucher'));
     }
 
+    public function destroy($id)
+    {
+        $voucher = ClaimItemReceipt::findOrFail($id);
+        if ($voucher->status === 'Posted') {
+            return back()->with('error', 'Posted receipts cannot be deleted.');
+        }
+        $voucher->items()->delete();
+        $voucher->delete();
+        return back()->with('success', 'Claim Item Receipt deleted successfully.');
+    }
+
     private function adjustStock($warehouseId, $productId, $qty)
     {
         app(\App\Services\StockService::class)->adjust((int) $productId, $warehouseId, (float) $qty);
