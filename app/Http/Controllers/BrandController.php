@@ -6,6 +6,8 @@ use App\Models\Brand;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Auth;
+use App\Rules\GlobalUniqueName;
+
 class BrandController extends Controller
 {
      public function index()
@@ -20,7 +22,7 @@ class BrandController extends Controller
     public function store(request $request){
 
         $validator = Validator::make($request->all(), [
-            'name' => 'required|unique:brands,name,'.$request->edit_id,
+            'name' => ['required', new GlobalUniqueName('brands', $request->edit_id)],
         ]);
 
         if ($validator->fails()) {

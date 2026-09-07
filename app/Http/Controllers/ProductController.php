@@ -17,6 +17,7 @@ use App\Models\Warehouse;
 use App\Models\WarehouseStock;
 use App\Models\StockAdjustment;
 use App\Models\StockAdjustmentItem;
+use App\Rules\GlobalUniqueName;
 
 class ProductController extends Controller
 {
@@ -40,7 +41,7 @@ class ProductController extends Controller
         $request->validate([
             'name' => [
                 'required',
-                Rule::unique('products')->ignore($product->id),
+                new GlobalUniqueName('products', $product->id),
             ],
             'category' => 'required',
             'sub_category' => 'required',
@@ -114,7 +115,7 @@ class ProductController extends Controller
     {
         // dd($request->all());
         $request->validate([
-            'name' => 'required|unique:products,name',
+            'name' => ['required', new GlobalUniqueName('products')],
             'category' => 'required',
             'sub_category' => 'required',
             'brand' => 'required',

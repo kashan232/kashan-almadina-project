@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\DB;
 use App\Models\UserGroup;
 use App\Models\User;
 use App\Services\CustomerImportService;
+use App\Rules\GlobalUniqueName;
 
 class CustomerController extends Controller
 {
@@ -155,7 +156,7 @@ class CustomerController extends Controller
         }
 
         $data = $request->validate([
-            'customer_name' => 'nullable',
+            'customer_name' => ['required', 'string', new GlobalUniqueName('customers')],
             'customer_name_ur' => 'nullable',
             'cnic' => 'nullable',
             'filer_type' => 'nullable',
@@ -256,7 +257,7 @@ class CustomerController extends Controller
         // Validate input. For customer_id, ignore unique check for this record.
         $data = $request->validate([
             'customer_id' => ['required', 'string', \Illuminate\Validation\Rule::unique('customers', 'customer_id')->ignore($customer->id)],
-            'customer_name' => 'nullable',
+            'customer_name' => ['required', 'string', new GlobalUniqueName('customers', $customer->id)],
             'customer_name_ur' => 'nullable',
             'cnic' => 'nullable',
             'filer_type' => 'nullable',

@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\DB;
 use App\Models\UserGroup;
 use App\Models\User;
 use App\Support\ModuleIdSequence;
+use App\Rules\GlobalUniqueName;
 
 class AccountsHeadController extends Controller
 {
@@ -88,11 +89,9 @@ class AccountsHeadController extends Controller
     public function storeHead(Request $request)
     {
         $request->validate([
-            'name' => 'required|string|max:100|unique:account_heads,name,' . ($request->head_id ?? 'NULL') . ',id',
+            'name' => ['required', 'string', 'max:100', new GlobalUniqueName('account_heads', $request->head_id)],
             'head_id' => 'nullable|exists:account_heads,id',
             'status' => 'nullable|in:on',
-        ], [
-            'name.unique' => 'An Account Head with this title already exists. Head title must be unique.',
         ]);
 
         $status = $request->status === 'on' ? 1 : 0;
@@ -155,12 +154,10 @@ class AccountsHeadController extends Controller
         $request->validate([
             'id'              => 'nullable|integer',
             'head_id'         => 'required|exists:account_heads,id',
-            'title'           => 'required|string|max:150|unique:accounts,title,' . ($request->id ?? 'NULL') . ',id',
+            'title'           => ['required', 'string', 'max:150', new GlobalUniqueName('accounts', $request->id)],
             'opening_balance' => 'nullable|numeric',
             'status'          => 'nullable|in:on',
             'user_group_ids'  => 'nullable|array',
-        ], [
-            'title.unique'    => 'A Sub-Account with this title already exists. Sub-Account title must be unique across all heads.',
         ]);
 
 

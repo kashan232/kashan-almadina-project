@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
+use App\Rules\GlobalUniqueName;
 
 class SubcategoryController extends Controller
 {
@@ -25,8 +26,7 @@ class SubcategoryController extends Controller
         $rules = [
             'name' => [
                 'required',
-                // ignore current record when editing
-                Rule::unique('subcategories', 'name')->ignore($request->edit_id)
+                new GlobalUniqueName('subcategories', $request->edit_id),
             ],
             'category_id' => 'required', // <-- fixed: no concatenation
         ];

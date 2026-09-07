@@ -11,6 +11,7 @@ use App\Models\VendorPayment;
 use Illuminate\Support\Facades\DB;
 use App\Models\UserGroup;
 use App\Models\User;
+use App\Rules\GlobalUniqueName;
 
 class VendorController extends Controller
 {
@@ -73,7 +74,7 @@ class VendorController extends Controller
         }
 
         $request->validate([
-            'name' => 'required|string',
+            'name' => ['required', 'string', new GlobalUniqueName('vendors')],
             'phone' => 'nullable|string',
             'address' => 'nullable|string',
             'opening_balance' => 'nullable|numeric',
@@ -125,7 +126,7 @@ class VendorController extends Controller
         }
 
         $request->validate([
-            'name' => 'required|string',
+            'name' => ['required', 'string', new GlobalUniqueName('vendors', $id)],
             'phone' => 'nullable|string',
             'address' => 'nullable|string',
             'opening_balance' => 'nullable|numeric',

@@ -5,6 +5,8 @@ use App\Models\Category;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Auth;
+use App\Rules\GlobalUniqueName;
+
 class CategoryController extends Controller
 {
     
@@ -20,7 +22,7 @@ class CategoryController extends Controller
     public function store(request $request){
 
         $validator = Validator::make($request->all(), [
-            'name' => 'required|unique:categories,name,'.$request->edit_id,
+            'name' => ['required', new GlobalUniqueName('categories', $request->edit_id)],
         ]);
 
         if ($validator->fails()) {
