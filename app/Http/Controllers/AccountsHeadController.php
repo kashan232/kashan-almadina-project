@@ -52,6 +52,20 @@ class AccountsHeadController extends Controller
 
         $accounts = $query->orderBy('head_id')->orderBy('account_code')->get();
 
+        // Calculate dynamic Closing Balance matching General Ledger logic
+        $glController = app(\App\Http\Controllers\GeneralLedgerController::class);
+        foreach ($accounts as $acc) {
+            $open = (float)($acc->opening_balance ?? 0);
+            $txs = $glController->fetchTransactions('account', $acc->id, '2000-01-01', '2099-12-31');
+            $totDr = 0;
+            $totCr = 0;
+            foreach ($txs as $t) {
+                $totDr += (float)($t['debit'] ?? 0);
+                $totCr += (float)($t['credit'] ?? 0);
+            }
+            $acc->current_balance = $open + $totDr - $totCr;
+        }
+
         return view('admin_panel.chart_of_accounts', compact(
             'accounts',
             'heads',
