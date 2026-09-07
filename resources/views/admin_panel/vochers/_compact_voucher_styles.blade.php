@@ -58,6 +58,21 @@
     .stock-hold-page input[type="time"] {
         min-width: 125px;
     }
+    .stock-hold-page .header-datetime-box {
+        background: #f1f5f9;
+        border: 1px solid #cbd5e1;
+        border-radius: 6px;
+        padding: 3px 10px;
+        font-size: 11px;
+        font-weight: 600;
+        color: #334155;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .stock-hold-page .header-datetime-box i {
+        color: #64748b;
+    }
     .posted-watermark {
         position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-30deg);
         font-size: 6rem; color: rgba(220, 53, 69, 0.05); font-weight: 900; text-transform: uppercase;

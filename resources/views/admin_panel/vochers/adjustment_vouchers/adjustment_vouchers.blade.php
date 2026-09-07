@@ -15,10 +15,10 @@
             <!-- Page Header Card -->
             <div class="card form-card mb-2">
                 <div class="card-body p-2">
-                    <div class="d-flex justify-content-between align-items-center">
+                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
                         <div class="d-flex align-items-center gap-3">
                             <div class="header-info-box">
-                                <h6 class="mb-0 fw-bold text-dark"><i class="fa fa-adjust me-2 text-primary"></i>Adjustment Voucher</h6>
+                                <h6 class="mb-0 fw-bold text-dark"><i class="fa fa-sliders me-2 text-primary"></i>Adjustment Voucher</h6>
                             </div>
                             <span id="statusBadge" class="badge {{ $receipt->status == 'posted' ? 'bg-success' : 'bg-warning text-dark' }} rounded-pill px-3 py-1" style="font-size: 10px;">
                                 {{ strtoupper($receipt->status ?: 'DRAFT') }}
@@ -27,8 +27,13 @@
                                 <i class="fa fa-hashtag me-1"></i> <span id="avidBadgeText">{{ $receipt->id ? $receipt->avid : 'Auto-Generated' }}</span>
                             </span>
                         </div>
-                        <div class="d-flex gap-1">
-                            <a href="{{ route('all-adjustment-vochers') }}" id="listBtn" class="btn btn-secondary btn-sm rounded-pill px-3" style="font-size: 11px;">
+                        <div class="d-flex align-items-center gap-2">
+                            <div class="header-datetime-box">
+                                <span><i class="fa fa-calendar me-1"></i>{{ \Carbon\Carbon::parse($receipt->entry_date ?? now())->format('d-M-Y') }}</span>
+                                <span class="text-muted">|</span>
+                                <span><i class="fa fa-clock-o me-1"></i>{{ \Carbon\Carbon::parse($receipt->entry_time ?? now())->format('h:i A') }}</span>
+                            </div>
+                            <a href="{{ route('all-adjustment-vochers') }}" id="listBtn" class="btn btn-outline-secondary btn-sm rounded-pill px-3" style="font-size: 11px;">
                                 <i class="fa fa-list me-1"></i> View Registry
                             </a>
                         </div>
@@ -39,20 +44,14 @@
             <form id="adjustmentForm" autocomplete="off" class="{{ ($receipt->id && $receipt->status == 'posted') ? 'form-locked' : '' }}">
                 @csrf
                 <input type="hidden" name="id" id="receipt_id" value="{{ $receipt->id }}">
+                <input type="hidden" name="entry_date" id="entry_date" value="{{ $receipt->entry_date ?: date('Y-m-d') }}">
+                <input type="hidden" name="entry_time" id="entry_time" value="{{ $receipt->entry_time ?: date('H:i') }}">
 
                 <!-- Voucher Header Fields -->
                 <div class="card form-card mb-2">
                     <div class="card-body p-2">
                         <div class="row g-2 align-items-center">
-                            <div class="col-auto">
-                                <label class="form-label">Entry Date</label>
-                                <input type="date" name="entry_date" class="form-control form-control-sm" value="{{ $receipt->entry_date ?: date('Y-m-d') }}" required>
-                            </div>
-                            <div class="col-auto">
-                                <label class="form-label">Entry Time</label>
-                                <input type="time" name="entry_time" class="form-control form-control-sm" value="{{ $receipt->entry_time ?: date('H:i') }}" required>
-                            </div>
-                            <div class="col-md-2">
+                            <div class="col-md-3">
                                 <label class="form-label">Party Type <span class="text-danger">*</span></label>
                                 <select name="party_type" id="party_type_header" class="form-select form-select-sm select2">
                                     <option value="">Select Type...</option>
@@ -64,11 +63,11 @@
                                     <option value="walkin" {{ $receipt->party_type == 'walkin' ? 'selected' : '' }}>Walkin Customer</option>
                                 </select>
                             </div>
-                            <div class="col-md-1">
+                            <div class="col-md-2">
                                 <label class="form-label">ID/Code</label>
                                 <input type="text" id="party_code_input" class="form-control form-control-sm text-center fw-bold text-primary" placeholder="Code" value="">
                             </div>
-                            <div class="col">
+                            <div class="col-md-7">
                                 <label class="form-label">Source Party Name (Debit) <span class="text-danger">*</span></label>
                                 <select name="party_id" id="party_id_header" class="form-select form-select-sm select2" data-selected="{{ $receipt->party_id }}">
                                     <option value="">Select Party...</option>
