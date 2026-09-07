@@ -103,21 +103,28 @@
                                     </div>
                                 </div>
                                 <div class="col-md-2">
-                                    <select name="status" class="form-select form-select-sm select2">
-                                        <option value="">All Status</option>
-                                        <option value="Draft" {{ request('status') == 'Draft' ? 'selected' : '' }}>Draft</option>
-                                        <option value="Posted" {{ request('status') == 'Posted' ? 'selected' : '' }}>Posted</option>
-                                    </select>
-                                </div>
-                                <div class="col-md-4 text-end">
-                                    <div class="d-flex gap-1 justify-content-end align-items-center">
-                                        <button type="submit" class="btn btn-primary btn-sm rounded-pill px-3 shadow-sm">Filter</button>
-                                        <a href="{{ route('claim-item-receipt.index') }}" class="btn btn-outline-secondary btn-sm rounded-pill px-2" title="Reset"><i class="fa fa-refresh"></i></a>
-                                        <a class="btn btn-success btn-sm rounded-pill px-4 shadow-sm ms-2" href="{{ route('claim-item-receipt.create') }}">
-                                            <i class="fa fa-plus me-1"></i> Add Receipt
-                                        </a>
-                                    </div>
-                                </div>
+                                     <select name="claim_type" class="form-select form-select-sm select2">
+                                         <option value="">All Claim Types</option>
+                                         <option value="receipt" {{ request('claim_type') == 'receipt' ? 'selected' : '' }}>Item Receipt</option>
+                                         <option value="credit" {{ request('claim_type') == 'credit' ? 'selected' : '' }}>Credit Note</option>
+                                     </select>
+                                 </div>
+                                 <div class="col-md-2">
+                                     <select name="status" class="form-select form-select-sm select2">
+                                         <option value="">All Status</option>
+                                         <option value="Draft" {{ request('status') == 'Draft' ? 'selected' : '' }}>Draft</option>
+                                         <option value="Posted" {{ request('status') == 'Posted' ? 'selected' : '' }}>Posted</option>
+                                     </select>
+                                 </div>
+                                 <div class="col-md-2 text-end">
+                                     <div class="d-flex gap-1 justify-content-end align-items-center">
+                                         <button type="submit" class="btn btn-primary btn-sm rounded-pill px-3 shadow-sm">Filter</button>
+                                         <a href="{{ route('claim-item-receipt.index') }}" class="btn btn-outline-secondary btn-sm rounded-pill px-2" title="Reset"><i class="fa fa-refresh"></i></a>
+                                         <a class="btn btn-success btn-sm rounded-pill px-4 shadow-sm ms-2" href="{{ route('claim-item-receipt.create') }}">
+                                             <i class="fa fa-plus me-1"></i> Add Receipt
+                                         </a>
+                                     </div>
+                                 </div>
                             </form>
                         </div>
                     </div>
@@ -129,75 +136,118 @@
                     <div class="card border-0 shadow-sm">
                         <div class="card-header bg-white d-flex justify-content-between align-items-center py-2 border-bottom">
                             <span class="fw-bold text-muted small text-uppercase">Receipt Registry</span>
-                            <div class="column-picker-dropdown">
-                                <button class="btn btn-outline-secondary btn-sm px-3 rounded-pill" type="button" id="columnPickerBtn">
-                                    <i class="fa fa-columns me-1"></i> Columns
-                                </button>
-                                <div class="column-picker-menu shadow" id="columnPickerMenu">
-                                    <div class="p-2 border-bottom fw-bold small text-muted">Show/Hide Columns</div>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="1" checked> Type</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="2" checked> Inv#</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="3" checked> Date</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="4" checked> Party / Supplier</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="5" checked> From (Cr)</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="6" checked> To (Dr)</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="7" checked> Status</label>
+                                <div class="column-picker-dropdown">
+                                    <button class="btn btn-outline-secondary btn-sm px-3 rounded-pill" type="button" id="columnPickerBtn">
+                                        <i class="fa fa-columns me-1"></i> Columns
+                                    </button>
+                                    <div class="column-picker-menu shadow" id="columnPickerMenu">
+                                        <div class="p-2 border-bottom fw-bold small text-muted">Show/Hide Columns</div>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="1" checked> Type</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="2" checked> Claim Type</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="3" checked> Inv#</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="4" checked> Inv Date</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="5" checked> Entry Date</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="6" checked> Entry Time</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="7" checked> Party / Supplier</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="8" checked> From (Cr)</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="9" checked> To (Dr)</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="10" checked> Total Qty</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="11" checked> Net Amount</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="12" checked> WHT Tax</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="13" checked> Remarks</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="14" checked> Created By</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="15" checked> Status</label>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
 
-                        <div class="card-body p-0">
-                            <div class="table-responsive">
-                                <table id="receiptTable" class="table table-sm table-striped table-bordered w-100 mb-0">
-                                    <thead>
-                                        <tr>
-                                            <th>Type</th>
-                                            <th>Inv#</th>
-                                            <th>Date</th>
-                                            <th>Party / Supplier</th>
-                                            <th>From (Cr)</th>
-                                            <th>To (Dr)</th>
-                                            <th>Created By</th>
-                                    <th class="text-center">Status</th>
-                                            <th class="text-center" style="min-width: 120px;">Action</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        @foreach($vouchers as $v)
-                                        <tr>
-                                            
-                                    <td class="text-muted small text-center fw-bold">{{ $v->doc_type == 'credit' ? 'CRN' : 'CLR' }}</td>
-                                            <td class="fw-bold text-primary text-center">
-                                                {{ $v->voucher_no }}
-                                            </td>
-                                            <td class="small">{{ \Carbon\Carbon::parse($v->date)->format('d-M-Y') }}</td>
-                                            <td>
-                                                <small class="text-muted d-block" style="font-size:9px;">{{ ucfirst($v->party_type) }}</small>
-                                                <span class="fw-semibold text-dark small">
-                                                    @if($v->party_type == 'vendor')
-                                                        {{ $v->vendor->name ?? 'N/A' }}
+                            <div class="card-body p-0">
+                                <div class="table-responsive">
+                                    <table id="receiptTable" class="table table-sm table-striped table-bordered w-100 mb-0">
+                                        <thead>
+                                            <tr>
+                                                <th>Type</th>
+                                                <th>Claim Type</th>
+                                                <th>Inv#</th>
+                                                <th>Inv Date</th>
+                                                <th>Entry Date</th>
+                                                <th>Entry Time</th>
+                                                <th>Party / Supplier</th>
+                                                <th>From (Cr)</th>
+                                                <th>To (Dr)</th>
+                                                <th class="text-center">Total Qty</th>
+                                                <th class="text-end">Net Amount</th>
+                                                <th class="text-end">WHT Tax</th>
+                                                <th>Remarks</th>
+                                                <th>Created By</th>
+                                                <th class="text-center">Status</th>
+                                                <th class="text-center" style="min-width: 120px;">Action</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach($vouchers as $v)
+                                            <tr>
+                                                <td class="text-muted small text-center fw-bold">CLR</td>
+                                                <td class="small">
+                                                    @if($v->doc_type == 'credit')
+                                                        <span class="badge bg-light text-danger border">Credit Note</span>
                                                     @else
-                                                        {{ $v->customer->customer_name ?? 'N/A' }}
+                                                        <span class="badge bg-light text-primary border">Item Receipt</span>
                                                     @endif
-                                                </span>
-                                            </td>
-                                            <td class="small"><span class="text-danger"><i class="fa fa-minus-circle"></i></span> {{ $v->fromWarehouse->warehouse_name ?? 'Shop' }}</td>
-                                            <td class="small"><span class="text-success"><i class="fa fa-plus-circle"></i></span> {{ $v->toWarehouse->warehouse_name ?? 'Shop' }}</td>
-                                            
-                                            <td>
-                                        @if($v->creator)
-                                            <span class="text-dark small">{{ $v->creator->name }}</span>
-                                        @else
-                                            <span class="text-muted small">System</span>
-                                        @endif
-                                    </td>
-                                    <td class="text-center">
-                                                @if($v->status == 'Posted')
-                                                    <span class="badge bg-success rounded-pill px-3">Posted</span>
+                                                </td>
+                                                <td class="fw-bold text-primary text-center">
+                                                    {{ $v->voucher_no }}
+                                                </td>
+                                                <td class="small">{{ \Carbon\Carbon::parse($v->date)->format('d-M-Y') }}</td>
+                                                <td class="small">{{ \Carbon\Carbon::parse($v->created_at)->format('d-M-Y') }}</td>
+                                                <td class="small text-muted">{{ \Carbon\Carbon::parse($v->created_at)->format('h:i A') }}</td>
+                                                <td>
+                                                    <small class="text-muted d-block" style="font-size:9px;">{{ ucfirst($v->party_type) }}</small>
+                                                    <span class="fw-semibold text-dark small">
+                                                        @if($v->party_type == 'vendor')
+                                                            {{ $v->vendor->name ?? 'N/A' }}
+                                                        @else
+                                                            {{ $v->customer->customer_name ?? 'N/A' }}
+                                                        @endif
+                                                    </span>
+                                                </td>
+                                                @if($v->doc_type == 'credit')
+                                                    <td class="small"><span class="text-danger"><i class="fa fa-minus-circle"></i></span> {{ $v->fromWarehouse->warehouse_name ?? 'Shop' }}</td>
+                                                    <td class="small text-center text-muted">-</td>
                                                 @else
-                                                    <span class="badge bg-warning text-dark rounded-pill px-3">Draft</span>
+                                                    <td class="small"><span class="text-danger"><i class="fa fa-minus-circle"></i></span> {{ $v->fromWarehouse->warehouse_name ?? 'Shop' }}</td>
+                                                    <td class="small"><span class="text-success"><i class="fa fa-plus-circle"></i></span> {{ $v->toWarehouse->warehouse_name ?? 'Shop' }}</td>
                                                 @endif
-                                            </td>
+                                                <td class="text-center small fw-bold">{{ $v->items->sum('quantity') }}</td>
+                                                <td class="text-end small fw-bold text-dark">
+                                                    @if($v->doc_type == 'credit')
+                                                        {{ number_format($v->net_total ?? 0, 2) }}
+                                                    @else
+                                                        <span class="text-muted">-</span>
+                                                    @endif
+                                                </td>
+                                                <td class="text-end small">
+                                                    @if($v->doc_type == 'credit' && isset($v->wht_amount))
+                                                        {{ number_format($v->wht_amount, 2) }} ({{ $v->wht_percent ?? 0 }}%)
+                                                    @else
+                                                        <span class="text-muted">-</span>
+                                                    @endif
+                                                </td>
+                                                <td class="small text-truncate" style="max-width: 150px;" title="{{ $v->remarks }}">{{ $v->remarks ?? '-' }}</td>
+                                                <td>
+                                                    @if($v->creator)
+                                                        <span class="text-dark small">{{ $v->creator->name }}</span>
+                                                    @else
+                                                        <span class="text-muted small">System</span>
+                                                    @endif
+                                                </td>
+                                                <td class="text-center">
+                                                    @if($v->status == 'Posted')
+                                                        <span class="badge bg-success rounded-pill px-3">Posted</span>
+                                                    @else
+                                                        <span class="badge bg-warning text-dark rounded-pill px-3">Draft</span>
+                                                    @endif
+                                                </td>
                                             <td class="text-center">
                                                 <div class="d-flex gap-1 justify-content-center">
                                                     @if($v->status != 'Posted')

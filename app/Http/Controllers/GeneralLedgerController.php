@@ -1392,21 +1392,37 @@ class GeneralLedgerController extends Controller
                 })
                 ->whereIn('status', ['posted', 'Posted'])->whereBetween(DB::raw($evDateCol), [$start, $end])->get();
             foreach($evs as $ev) {
+                $accIds = json_decode($ev->row_account_id, true) ?? [];
+                $amounts = json_decode($ev->amount, true) ?? [];
+                $narrIds = json_decode($ev->narration_id, true) ?? [];
+
                 if ($ev->party_id == $id && is_numeric($ev->type ?? '')) {
+                    $rowNarrs = [];
+                    foreach ($narrIds as $nid) {
+                        if (empty($nid)) continue;
+                        if (is_numeric($nid)) {
+                            $nt = DB::table('narrations')->where('id', $nid)->value('narration');
+                            if ($nt) $rowNarrs[] = $nt;
+                        } else {
+                            $rowNarrs[] = $nid;
+                        }
+                    }
+                    $allNarrStr = !empty($rowNarrs) ? implode(', ', array_unique($rowNarrs)) : '';
+                    $descParts = array_filter([$allNarrStr, $ev->remarks]);
+                    $descHeader = !empty($descParts) ? implode(' ; ', $descParts) : 'Expense Voucher';
+
                     $transactions[] = [
                         'created_at' => $ev->created_at,
                         'id' => $ev->id . '_h',
                         'date' => $ev->entry_date ?: $ev->created_at,
                         'ref' => 'EV',
                         'inv' => $ev->evid,
-                        'desc' => $ev->remarks ?? 'Expense Voucher (Expense Head)',
+                        'desc' => $descHeader,
                         'price' => 0, 'qty' => 0, 'debit' => 0, 'credit' => (float)$ev->total_amount,
                         'priority' => 60
                     ];
                 }
-                $accIds = json_decode($ev->row_account_id, true) ?? [];
-                $amounts = json_decode($ev->amount, true) ?? [];
-                $narrIds = json_decode($ev->narration_id, true) ?? [];
+
                 foreach($accIds as $idx => $aid) {
                     if ($aid == $id) {
                         $rowNarr = '';
@@ -1427,7 +1443,8 @@ class GeneralLedgerController extends Controller
                             $partyName = DB::table('customers')->where('id', $ev->party_id)->value('customer_name');
                         }
 
-                        $baseDesc = $rowNarr ?: ($ev->remarks ?? 'Expense Voucher (Source)');
+                        $descParts = array_filter([$rowNarr, $ev->remarks]);
+                        $baseDesc = !empty($descParts) ? implode(' ; ', $descParts) : 'Expense Voucher';
                         $desc = $partyName ? $baseDesc . ' ; ' . $partyName : $baseDesc;
 
                         $transactions[] = [

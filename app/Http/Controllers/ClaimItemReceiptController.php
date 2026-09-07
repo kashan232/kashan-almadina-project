@@ -35,15 +35,23 @@ class ClaimItemReceiptController extends Controller
             $credits->where('status', $request->status);
         }
         
-        $receiptList = $receipts->get()->map(function($item) {
-            $item->doc_type = 'receipt';
-            return $item;
-        });
+        $claimType = $request->get('claim_type');
         
-        $creditList = $credits->get()->map(function($item) {
-            $item->doc_type = 'credit';
-            return $item;
-        });
+        $receiptList = collect();
+        if (!$claimType || $claimType === 'receipt') {
+            $receiptList = $receipts->get()->map(function($item) {
+                $item->doc_type = 'receipt';
+                return $item;
+            });
+        }
+        
+        $creditList = collect();
+        if (!$claimType || $claimType === 'credit') {
+            $creditList = $credits->get()->map(function($item) {
+                $item->doc_type = 'credit';
+                return $item;
+            });
+        }
         
         $vouchers = $receiptList->concat($creditList)->sortByDesc('created_at')->values();
         
@@ -63,7 +71,15 @@ class ClaimItemReceiptController extends Controller
 
     public function edit($id)
     {
-        $voucher = ClaimItemReceipt::with('items.product')->findOrFail($id);
+        $voucher = ClaimItemReceipt::with('items.product')->find($id);
+        if (!$voucher) {
+            // Check if it's a ClaimCreditNote
+            $creditVoucher = ClaimCreditNote::find($id);
+            if ($creditVoucher) {
+                return redirect()->route('claim-credit-note.edit', $id);
+            }
+            abort(404);
+        }
         if ($voucher->status === 'Posted') {
             return redirect()->route('claim-item-receipt.index')->with('error', 'Posted vouchers cannot be edited.');
         }
