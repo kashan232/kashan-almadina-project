@@ -2466,6 +2466,7 @@
       }
     });
 
+    recomputeReceipts();
     updateGrandTotals();
     refreshPostedState();
   }

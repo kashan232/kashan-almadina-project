@@ -148,6 +148,13 @@ class SaleController extends Controller
     {
         $sale = Sale::findOrFail($id);
 
+        // Aggregate all receipts from common form input array
+        $receiptHeads = $request->input('receipt_head_id', []);
+        $receiptAccounts = $request->input('receipt_account_id', []);
+        $receiptNarrations = $request->input('receipt_narration', []);
+        $receiptAmountsArr = $request->input('receipt_amount', []);
+        $totalReceipts = array_sum(array_map(function($val) { return (float) str_replace(',', '', $val); }, $receiptAmountsArr));
+
         $sale->update([
             'manual_invoice' => $request->Invoice_main ?? null,
             'customer_id' => $request->customer ?? null,
@@ -164,8 +171,12 @@ class SaleController extends Controller
             'discount_account_id' => $request->discount_account_id ?? null,
             'previous_balance' => $request->previousBalance ?? 0,
             'total_balance' => $request->totalBalance ?? 0,
-            'receipt1' => $request->receipt1 ?? 0,
-            'receipt2' => $request->receipt2 ?? 0,
+            'receipt1' => $totalReceipts,
+            'receipt2' => 0,
+            'receipt_heads' => json_encode($receiptHeads),
+            'receipt_accounts' => json_encode($receiptAccounts),
+            'receipt_narrations' => json_encode($receiptNarrations),
+            'receipt_amounts_json' => json_encode($receiptAmountsArr),
             'final_balance1' => $request->finalBalance1 ?? 0,
             'final_balance2' => $request->finalBalance2 ?? 0,
             'entry_date' => $request->entry_date,
