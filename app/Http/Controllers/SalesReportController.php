@@ -47,6 +47,21 @@ class SalesReportController extends Controller
 
     public function preview(Request $request)
     {
+        $hasSelectedFilters = !empty($request->user_group) ||
+                              !empty($request->sales_officer) ||
+                              !empty($request->warehouse) ||
+                              !empty($request->category) ||
+                              !empty($request->subcategory) ||
+                              !empty($request->brand) ||
+                              !empty($request->item) ||
+                              !empty($request->party_type) ||
+                              !empty($request->party) ||
+                              !empty($request->invoice_no);
+
+        if (!$hasSelectedFilters) {
+            return back()->with('error', 'Please select at least one filter option before generating the report.');
+        }
+
         $report_type = $request->report_type;
         $from_date = $request->from_date;
         $to_date = $request->to_date;

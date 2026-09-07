@@ -14,6 +14,12 @@
                 </div>
             </div>
             <div class="card-body pt-0">
+                @if(session('error'))
+                    <div class="alert alert-danger alert-dismissible fade show mb-3" role="alert">
+                        <i class="fas fa-exclamation-triangle me-1"></i> {{ session('error') }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                @endif
                 <form action="{{ route('reports.sales.preview') }}" method="POST" id="reportForm">
                     @csrf
                     
@@ -480,9 +486,16 @@
             applyCascadeFilters();
         });
 
-        // Search functionality for Party
-        $('#partySearch').on('keyup', function() {
-            applyCascadeFilters();
+        // Validate filter selection before submitting form
+        $('#reportForm').on('submit', function(e) {
+            const hasCheckedFilter = $('.filter-item input[type="checkbox"]:checked').length > 0;
+            const hasInvoiceNo = $.trim($('input[name="invoice_no"]').val()).length > 0;
+
+            if (!hasCheckedFilter && !hasInvoiceNo) {
+                e.preventDefault();
+                alert('Please select at least one filter option before generating the report.');
+                return false;
+            }
         });
 
         // AUTO-SELECT ALL FILTERS BY DEFAULT
