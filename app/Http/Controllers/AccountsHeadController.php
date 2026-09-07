@@ -155,10 +155,12 @@ class AccountsHeadController extends Controller
         $request->validate([
             'id'              => 'nullable|integer',
             'head_id'         => 'required|exists:account_heads,id',
-            'title'           => 'required|string|max:150',
+            'title'           => 'required|string|max:150|unique:accounts,title,' . ($request->id ?? 'NULL') . ',id',
             'opening_balance' => 'nullable|numeric',
             'status'          => 'nullable|in:on',
             'user_group_ids'  => 'nullable|array',
+        ], [
+            'title.unique'    => 'A Sub-Account with this title already exists. Sub-Account title must be unique across all heads.',
         ]);
 
 
