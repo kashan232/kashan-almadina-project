@@ -162,7 +162,9 @@
                             <label class="column-picker-item"><input type="checkbox" data-column="9" checked> Remarks</label>
                             <label class="column-picker-item"><input type="checkbox" data-column="10" checked> Discount</label>
                             <label class="column-picker-item"><input type="checkbox" data-column="11" checked> Total Amount</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="12" checked> Status</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="12" checked> Created By</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="13" checked> Status</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="14" checked> Action</label>
                         </div>
                     </div>
                 </div>
@@ -278,7 +280,7 @@
             }
         });
 
-        const storageKey = 'payment_voucher_cols_v2';
+        const storageKey = 'payment_voucher_cols_v3';
         
         var dt = $('#paymentVoucherTable').DataTable({
             "destroy": true, // Fix reinitialisation error

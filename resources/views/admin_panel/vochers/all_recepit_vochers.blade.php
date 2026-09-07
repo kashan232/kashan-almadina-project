@@ -170,12 +170,15 @@
                             <label class="column-picker-item"><input type="checkbox" data-column="3" checked> Inv#</label>
                             <label class="column-picker-item"><input type="checkbox" data-column="4" checked> Receipt Date</label>
                             <label class="column-picker-item"><input type="checkbox" data-column="5" checked> Entry Date</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="6" checked> Type Label</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="6" checked> Party Type</label>
                             <label class="column-picker-item"><input type="checkbox" data-column="7" checked> Party</label>
                             <label class="column-picker-item"><input type="checkbox" data-column="8" checked> Reference No</label>
                             <label class="column-picker-item"><input type="checkbox" data-column="9" checked> Remarks</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="10" checked> Total Amount</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="11" checked> Status</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="10" checked> Disc.</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="11" checked> Total Amount</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="12" checked> Created By</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="13" checked> Status</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="14" checked> Action</label>
                         </div>
                     </div>
                 </div>
@@ -297,7 +300,7 @@
             }
         });
 
-        const storageKey = 'receipt_voucher_cols_v2';
+        const storageKey = 'receipt_voucher_cols_v3';
         
         var dt = $('#receiptVoucherTable').DataTable({
             "destroy": true, // Fix reinitialisation error
