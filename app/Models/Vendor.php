@@ -52,4 +52,22 @@ class Vendor extends Model
     {
         return $this->hasOne(VendorLedger::class, 'vendor_id')->latestOfMany();
     }
+
+    /**
+     * Calculate live closing balance matching General Ledger.
+     */
+    public function getLiveClosingBalance(): float
+    {
+        $gl = app(\App\Http\Controllers\GeneralLedgerController::class);
+        $txs = $gl->fetchTransactions('vendor', $this->id, '2000-01-01', '2099-12-31');
+        $debits = 0;
+        $credits = 0;
+        foreach ($txs as $t) {
+            $debits += (float) ($t['debit'] ?? 0);
+            $credits += (float) ($t['credit'] ?? 0);
+        }
+        $op = (float) ($this->opening_balance ?? 0);
+
+        return round($op + $debits - $credits, 2);
+    }
 }
