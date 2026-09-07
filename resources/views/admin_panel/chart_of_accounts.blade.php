@@ -448,13 +448,25 @@
                                 </td>
                                 <td class="text-center small text-muted">{{ $head->created_at ? $head->created_at->format('d-M-Y') : '-' }}</td>
                                 <td class="text-center">
-                                    <button class="btn btn-warning btn-xs edit-head-btn"
-                                        data-id="{{ $head->id }}"
-                                        data-name="{{ $head->name }}"
-                                        data-status="{{ $head->status }}"
-                                        style="padding: 1px 5px; font-size: 10px;">
-                                        <i class="fa fa-edit"></i>
-                                    </button>
+                                    <div class="d-flex gap-1 justify-content-center">
+                                        <button class="btn btn-warning btn-xs edit-head-btn"
+                                            data-id="{{ $head->id }}"
+                                            data-name="{{ $head->name }}"
+                                            data-status="{{ $head->status }}"
+                                            style="padding: 1px 5px; font-size: 10px;"
+                                            title="Edit Head">
+                                            <i class="fa fa-edit"></i>
+                                        </button>
+                                        <button class="btn btn-danger btn-xs delete-btn"
+                                            data-url="{{ route('coa.head.delete', $head->id) }}"
+                                            data-msg="Are you sure you want to delete head '{{ $head->name }}'?"
+                                            data-method="get"
+                                            onclick="logoutAndDeleteFunction(this)"
+                                            style="padding: 1px 5px; font-size: 10px;"
+                                            title="Delete Head">
+                                            <i class="fa fa-trash"></i>
+                                        </button>
+                                    </div>
                                 </td>
                             </tr>
                             @endforeach

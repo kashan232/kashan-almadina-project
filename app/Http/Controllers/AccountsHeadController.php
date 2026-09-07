@@ -88,9 +88,11 @@ class AccountsHeadController extends Controller
     public function storeHead(Request $request)
     {
         $request->validate([
-            'name' => 'required|string|max:100',
+            'name' => 'required|string|max:100|unique:account_heads,name,' . ($request->head_id ?? 'NULL') . ',id',
             'head_id' => 'nullable|exists:account_heads,id',
             'status' => 'nullable|in:on',
+        ], [
+            'name.unique' => 'An Account Head with this title already exists. Head title must be unique.',
         ]);
 
         $status = $request->status === 'on' ? 1 : 0;
@@ -112,6 +114,33 @@ class AccountsHeadController extends Controller
         $message = 'Head added successfully.';
 
         return redirect()->route('view_all')->with('success', $message);
+    }
+
+    public function deleteHead($id)
+    {
+        $head = AccountHead::find($id);
+        if (!$head) {
+            return redirect()->route('view_all')->with('error', 'Head not found.');
+        }
+
+        // Check if any Sub-Accounts are linked to this head
+        $linkedAccountsCount = Account::withInactive()
+            ->withoutGlobalScope(\App\Scopes\GroupIsolationScope::class)
+            ->where('head_id', $id)
+            ->count();
+
+        if ($linkedAccountsCount > 0) {
+            return redirect()->route('view_all')->with('error', "Cannot delete Head '{$head->name}'. There are {$linkedAccountsCount} account(s) attached to this head.");
+        }
+
+        // Check if referenced in purchase allocations
+        $linkedAllocations = DB::table('purchase_account_allocaations')->where('head_id', $id)->count();
+        if ($linkedAllocations > 0) {
+            return redirect()->route('view_all')->with('error', "Cannot delete Head '{$head->name}'. It is used in Purchase Account Allocations.");
+        }
+
+        $head->delete();
+        return redirect()->route('view_all')->with('success', "Account Head '{$head->name}' deleted successfully.");
     }
 
 

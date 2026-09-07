@@ -604,6 +604,7 @@ Route::post('inward-gatepass/{id}/store-bill', [PurchaseController::class, 'stor
 Route::prefix('coa')->group(function () {
     Route::get('/', [AccountsHeadController::class, 'index'])->name('coa.index');
     Route::post('/head', [AccountsHeadController::class, 'storeHead'])->name('coa.head.store');
+    Route::get('/head/delete/{id}', [AccountsHeadController::class, 'deleteHead'])->name('coa.head.delete');
     Route::post('/account', [AccountsHeadController::class, 'storeAccount'])->name('coa.account.store');
     Route::get('/next-account-code/{headId}', [AccountsHeadController::class, 'getNextAccountCode'])->name('coa.account.next_code');
 });
