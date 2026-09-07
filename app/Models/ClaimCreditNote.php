@@ -60,17 +60,26 @@ class ClaimCreditNote extends Model
 
     public static function generateVoucherNo()
     {
-        $latest = self::withoutGlobalScopes()->orderBy('id', 'desc')->first();
-        $num = 0;
-        if ($latest) {
-            $num = (int) preg_replace('/[^0-9]/', '', $latest->voucher_no);
+        $num1 = 0;
+        $latestCredit = self::withoutGlobalScopes()->orderBy('id', 'desc')->first();
+        if ($latestCredit && $latestCredit->voucher_no) {
+            $num1 = (int) preg_replace('/[^0-9]/', '', $latestCredit->voucher_no);
         }
+
+        $num2 = 0;
+        $latestReceipt = \App\Models\ClaimItemReceipt::withoutGlobalScopes()->orderBy('id', 'desc')->first();
+        if ($latestReceipt && $latestReceipt->voucher_no) {
+            $num2 = (int) preg_replace('/[^0-9]/', '', $latestReceipt->voucher_no);
+        }
+
+        $num = max($num1, $num2);
 
         do {
             $num++;
             $nextInvoice = str_pad($num, 4, '0', STR_PAD_LEFT);
-            $exists = self::withoutGlobalScopes()->where('voucher_no', $nextInvoice)->exists();
-        } while ($exists);
+            $exists1 = self::withoutGlobalScopes()->where('voucher_no', $nextInvoice)->exists();
+            $exists2 = \App\Models\ClaimItemReceipt::withoutGlobalScopes()->where('voucher_no', $nextInvoice)->exists();
+        } while ($exists1 || $exists2);
 
         return $nextInvoice;
     }

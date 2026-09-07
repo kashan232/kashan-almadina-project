@@ -43,7 +43,8 @@ class ClaimCreditNoteController extends Controller
         $voucherNo = ClaimCreditNote::generateVoucherNo();
         $warehouses = Warehouse::orderBy('warehouse_name')->get();
         $AccountHeads = AccountHead::where('status', 1)->get();
-        return view('admin_panel.claim_credit_note.create', compact('voucherNo', 'warehouses', 'AccountHeads'));
+        $products = Product::select('id', 'name')->orderBy('name')->get();
+        return view('admin_panel.claim_credit_note.create', compact('voucherNo', 'warehouses', 'AccountHeads', 'products'));
     }
 
     public function edit($id)
@@ -54,7 +55,8 @@ class ClaimCreditNoteController extends Controller
         }
         $warehouses = Warehouse::orderBy('warehouse_name')->get();
         $AccountHeads = AccountHead::where('status', 1)->get();
-        return view('admin_panel.claim_credit_note.create', compact('voucher', 'warehouses', 'AccountHeads'));
+        $products = Product::select('id', 'name')->orderBy('name')->get();
+        return view('admin_panel.claim_credit_note.create', compact('voucher', 'warehouses', 'AccountHeads', 'products'));
     }
 
     public function show($id)

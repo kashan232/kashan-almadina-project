@@ -165,21 +165,46 @@
                                 </select>
                             </div>
                             
-                            <div class="col-md-6">
-                                <div class="card border-primary border-opacity-25 bg-primary bg-opacity-10 btr-search-card rounded-pill h-100 shadow-sm">
-                                    <div class="row g-2 align-items-center">
-                                        <div class="col-auto"><i class="fa fa-barcode text-primary fs-4"></i></div>
+                            <div class="col-md-3">
+                                <div class="card border-primary border-opacity-25 bg-primary bg-opacity-10 btr-search-card rounded-3 h-100 shadow-sm p-1">
+                                    <div class="row g-1 align-items-center">
+                                        <div class="col-auto"><i class="fa fa-barcode text-primary fs-5 ms-1"></i></div>
                                         <div class="col">
                                             <div class="input-group input-group-sm">
-                                                <input type="text" id="btr_search_input" class="form-control border-primary" placeholder="Enter BTR# to fetch claim items...">
-                                                <button type="button" id="btr_search_btn" class="btn btn-primary px-3">
-                                                    <i class="fa fa-search me-1"></i> Find BTR#
+                                                <input type="text" id="btr_search_input" class="form-control border-primary" placeholder="BTR# (e.g. 22225)...">
+                                                <button type="button" id="btr_search_btn" class="btn btn-primary px-2">
+                                                    <i class="fa fa-search me-1"></i> BTR#
                                                 </button>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
+
+                            @if(!$isViewMode)
+                            <div class="col-md-3">
+                                <div class="card border-success border-opacity-25 bg-success bg-opacity-10 p-1 px-2 rounded-3 h-100 shadow-sm">
+                                    <div class="row g-1 align-items-center">
+                                        <div class="col-auto"><i class="fa fa-plus-circle text-success fs-5 ms-1"></i></div>
+                                        <div class="col">
+                                            <div class="input-group input-group-sm">
+                                                <select id="manual_product_search" class="form-select select2">
+                                                    <option value="">Manual Product Search...</option>
+                                                    @if(isset($products))
+                                                        @foreach($products as $p)
+                                                            <option value="{{ $p->id }}" data-name="{{ $p->name }}" data-retail="{{ $p->retail_price ?? 0 }}">{{ $p->id }} - {{ $p->name }}</option>
+                                                        @endforeach
+                                                    @endif
+                                                </select>
+                                                <button type="button" id="add_manual_item_btn" class="btn btn-success px-2">
+                                                    <i class="fa fa-plus me-1"></i> Add Manual
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            @endif
                         </div>
                     </div>
                 </div>
@@ -369,7 +394,46 @@ $(document).ready(function() {
                 showToast(res.data.length + ' item(s) attached.');
                 $('#btr_search_input').val('');
             } else { showToast(res.message, 'error'); }
-        }).always(() => $('#btr_search_btn').prop('disabled', false).html('<i class="fa fa-search me-1"></i> Find BTR#'));
+        }).always(() => $('#btr_search_btn').prop('disabled', false).html('<i class="fa fa-search me-1"></i> BTR#'));
+    });
+
+    $('#add_manual_item_btn').on('click', function() {
+        let select = $('#manual_product_search');
+        let pId = select.val();
+        if(!pId) { showToast('Select a product first', 'error'); return; }
+
+        let opt = select.find('option:selected');
+        let pName = opt.data('name') || '';
+
+        $.get("{{ url('/get-stock') }}/" + pId, function(res) {
+            let priceVal = res && res.sales_price ? parseFloat(res.sales_price) : 0;
+            let retailVal = res && res.retail_price ? parseFloat(res.retail_price) : priceVal;
+
+            addRow({
+                btr_no: 'MANUAL',
+                product_id: pId,
+                product_name: pName,
+                brand_name: 'Manual Entry',
+                price: priceVal,
+                retail_price: retailVal,
+                quantity: 1
+            });
+
+            select.val('').trigger('change');
+            showToast('Manual product added.');
+        }).fail(function() {
+            addRow({
+                btr_no: 'MANUAL',
+                product_id: pId,
+                product_name: pName,
+                brand_name: 'Manual Entry',
+                price: 0,
+                retail_price: 0,
+                quantity: 1
+            });
+            select.val('').trigger('change');
+            showToast('Manual product added.');
+        });
     });
 
     function addRow(item) {
