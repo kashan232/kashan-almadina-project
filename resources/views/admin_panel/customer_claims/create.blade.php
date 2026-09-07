@@ -74,24 +74,21 @@
                 <div class="card shadow-sm">
                     <div class="card-body">
                         <div class="row g-2">
-                            <!-- Main Row -->
-                            <div class="col-md-1">
+                            <!-- Row 1: Claim No, Date, Time, Claim Type -->
+                            <div class="col-md-2">
                                 <label class="form-label">Claim No</label>
                                 <input type="text" class="form-control input-sm bg-light fw-bold text-primary" value="Auto-Generated" readonly style="font-size: 0.8rem;">
                             </div>
-                            <div class="col-md-2">
-                                <label class="form-label">Entry Date</label>
-                                <input type="date" name="entry_date" class="form-control input-sm" value="{{ date('Y-m-d') }}" required>
+                            <div class="col-md-3">
+                                <label class="form-label">Date</label>
+                                <input type="date" name="claim_date" class="form-control input-sm" value="{{ date('Y-m-d') }}" required>
+                                <input type="hidden" name="entry_date" value="{{ date('Y-m-d') }}">
                             </div>
-                            <div class="col-md-1">
-                                <label class="form-label">Entry Time</label>
+                            <div class="col-md-3">
+                                <label class="form-label">Time</label>
                                 <input type="time" name="entry_time" class="form-control input-sm" value="{{ date('H:i') }}" required>
                             </div>
-                            <div class="col-md-2">
-                                <label class="form-label">Claim Date</label>
-                                <input type="date" name="claim_date" class="form-control input-sm" value="{{ date('Y-m-d') }}" required>
-                            </div>
-                            <div class="col-md-2">
+                            <div class="col-md-4">
                                 <label class="form-label">Claim Type <span class="text-danger">*</span></label>
                                 <select name="claim_type" id="claim_type" class="form-select input-sm fw-bold">
                                     <option value="item_return">Item Return</option>
@@ -99,37 +96,35 @@
                                     <option value="claim_hold">Claim Hold</option>
                                 </select>
                             </div>
+
+                            <!-- Row 2: Party Type, Code/ID, Sub Dealer / Party -->
                             <div class="col-md-3">
-                                <div class="row g-1">
-                                    <div class="col-8">
-                                        <label class="form-label">Party Type</label>
-                                        <select name="party_type" id="party_type" class="form-select input-sm">
-                                            <option value="customer">Customer</option>
-                                            <option value="vendor">Vendor</option>
-                                            <option value="walkin">Walk-in Customer</option>
-                                        </select>
-                                    </div>
-                                    <div class="col-4">
-                                        <label class="form-label">Code/ID</label>
-                                        <input type="text" id="party_code_input" class="form-control input-sm border-danger fw-bold text-danger text-center" placeholder="ID">
-                                    </div>
-                                </div>
+                                <label class="form-label">Party Type</label>
+                                <select name="party_type" id="party_type" class="form-select input-sm">
+                                    <option value="customer">Customer</option>
+                                    <option value="vendor">Vendor</option>
+                                    <option value="walkin">Walk-in Customer</option>
+                                </select>
                             </div>
-                            <div class="col-md-3">
+                            <div class="col-md-2">
+                                <label class="form-label">Code/ID</label>
+                                <input type="text" id="party_code_input" class="form-control input-sm border-danger fw-bold text-danger text-center" placeholder="ID">
+                            </div>
+                            <div class="col-md-7">
                                 <label class="form-label">Sub Dealer / Party <span class="text-danger">*</span></label>
                                 <select name="party_id" id="party_id" class="form-select select2" required>
                                     <option value="">Search Party...</option>
                                 </select>
                             </div>
 
-                            <!-- Row 2 -->
-                            <div class="col-md-3 mt-1">
+                            <!-- Row 3: Claim Item (with Item ID), MFG Date, Card Number, Sale Price -->
+                            <div class="col-md-5">
                                 <div class="row g-1">
-                                    <div class="col-4">
+                                    <div class="col-3">
                                         <label class="form-label">Item ID</label>
                                         <input type="text" id="item_id_input" class="form-control input-sm border-primary fw-bold text-primary text-center" placeholder="ID">
                                     </div>
-                                    <div class="col-8">
+                                    <div class="col-9">
                                         <label class="form-label">Claim Item <span class="text-danger">*</span></label>
                                         <select name="product_id" id="product_id" class="form-select select2" required>
                                             <option value="">Select Battery...</option>
@@ -140,23 +135,25 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-md-1 mt-1">
+                            <div class="col-md-2">
                                 <label class="form-label">MFG Date</label>
                                 <input type="text" name="mfg_date" class="form-control input-sm" placeholder="BH JC BD">
                             </div>
-                            <div class="col-md-2 mt-1">
-                                <label class="form-label font-weight-bold">Sales Price</label>
-                                <input type="number" step="any" name="sales_price" id="sales_price" class="form-control input-sm text-end fw-bold text-danger" placeholder="0.00" readonly>
-                            </div>
-                            <div class="col-md-2 mt-1">
+                            <div class="col-md-2">
                                 <label class="form-label">Card No</label>
                                 <input type="text" name="card_no" class="form-control input-sm">
                             </div>
-                            <div class="col-md-2 mt-1">
+                            <div class="col-md-3">
+                                <label class="form-label font-weight-bold">Sales Price</label>
+                                <input type="number" step="any" name="sales_price" id="sales_price" class="form-control input-sm text-end fw-bold text-danger" placeholder="0.00" readonly>
+                            </div>
+
+                            <!-- Row 4: Bill Date, Warehouses -->
+                            <div class="col-md-3">
                                 <label class="form-label">Bill Date</label>
                                 <input type="date" name="bill_date" class="form-control input-sm">
                             </div>
-                            <div class="col-md-2 mt-1" id="original_warehouse_div">
+                            <div class="col-md-4" id="original_warehouse_div">
                                 <label class="form-label border-danger border-bottom"><span class="text-danger"><i class="fa fa-minus-circle"></i></span> Deliver From</label>
                                 <select name="original_warehouse_id" class="form-select input-sm">
                                     @if(auth()->user()->canAccessShop())
@@ -167,7 +164,7 @@
                                     @endforeach
                                 </select>
                             </div>
-                            <div class="col-md-2 mt-1">
+                            <div class="col-md-5">
                                 <label class="form-label border-primary border-bottom font-weight-bold"><span class="text-success"><i class="fa fa-plus-circle"></i></span> Claim WH (To)</label>
                                 @if(isset($isAdmin) && $isAdmin)
                                     <select name="claim_warehouse_id" class="form-select input-sm">
@@ -184,11 +181,13 @@
                                     </select>
                                 @endif
                             </div>
-                            <div class="col-md-5 mt-1">
+
+                            <!-- Row 5: Fault Found & Remarks -->
+                            <div class="col-md-6">
                                 <label class="form-label">Fault Found / Analysis</label>
                                 <textarea name="fault_found" class="form-control input-sm" rows="1" placeholder="Detail fault..."></textarea>
                             </div>
-                            <div class="col-md-5 mt-1">
+                            <div class="col-md-6">
                                 <label class="form-label">Remarks</label>
                                 <textarea name="remarks" class="form-control input-sm" rows="1" placeholder="General remarks..."></textarea>
                             </div>
