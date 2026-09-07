@@ -175,10 +175,15 @@ class AccountsHeadController extends Controller
                 return redirect()->route('view_all')->with('error', 'Account not found.');
             }
 
+            $oldOb = (float)$account->opening_balance;
+            $newOb = (float)($request->opening_balance ?? 0);
+            $diff = $newOb - $oldOb;
+
             $account->update([
                 'head_id'         => $request->head_id,
                 'title'           => $request->title,
-                'opening_balance' => $request->opening_balance ?? 0,
+                'opening_balance' => $newOb,
+                'current_balance' => (float)$account->current_balance + $diff,
                 'status'          => $status,
                 'user_group_ids'  => $groupIds,
             ]);
@@ -188,13 +193,15 @@ class AccountsHeadController extends Controller
 
         // CREATE: always mint a fresh, collision-free code server-side.
         $accountCode = Account::generateAccountCode((int) $request->head_id);
+        $ob = (float)($request->opening_balance ?? 0);
 
         Account::create([
             'head_id'         => $request->head_id,
             'account_code'    => $accountCode,
             'title'           => $request->title,
             'type'            => 'Debit',
-            'opening_balance' => $request->opening_balance ?? 0,
+            'opening_balance' => $ob,
+            'current_balance' => $ob,
             'status'          => $status,
             'user_group_ids'  => $groupIds,
             'created_by'      => Auth::id(),

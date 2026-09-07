@@ -251,7 +251,7 @@
                                             $opening = (float) ($account->opening_balance ?? 0);
                                             $openingDr = $opening > 0 ? $opening : 0;
                                             $openingCr = $opening < 0 ? abs($opening) : 0;
-                                            $closing = $opening; // current net balance in accounts table
+                                            $closing = (float) ($account->current_balance ?? $opening);
                                         @endphp
                                         <tr>
                                             <td class="text-center">{{ $account->id }}</td>

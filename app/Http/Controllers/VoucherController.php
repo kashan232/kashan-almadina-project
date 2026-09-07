@@ -64,7 +64,7 @@ class VoucherController extends Controller
 
             $acc = Account::find($accId);
             if ($acc) {
-                $acc->opening_balance = (float) ($acc->opening_balance ?? 0) + ($sign * $disc);
+                $acc->current_balance = (float) ($acc->current_balance ?? 0) + ($sign * $disc);
                 $acc->save();
             }
         }
@@ -622,7 +622,7 @@ class VoucherController extends Controller
             } else {
                 $account = Account::find($voucher->party_id);
                 if ($account) {
-                    $account->opening_balance = (float)($account->opening_balance ?? 0) - $totalCreditAmount;
+                    $account->current_balance = (float)($account->current_balance ?? 0) - $totalCreditAmount;
                     $account->save();
                 }
             }
@@ -637,7 +637,7 @@ class VoucherController extends Controller
                     if ($rowAmount > 0 && $accId) {
                         $rowAccount = Account::find($accId);
                         if ($rowAccount) {
-                            $rowAccount->opening_balance = (float)($rowAccount->opening_balance ?? 0) + $rowAmount;
+                            $rowAccount->current_balance = (float)($rowAccount->current_balance ?? 0) + $rowAmount;
                             $rowAccount->save();
                         }
                     }
@@ -685,7 +685,7 @@ class VoucherController extends Controller
             } else {
                 $account = Account::find($voucher->party_id);
                 if ($account) {
-                    $account->opening_balance = (float)($account->opening_balance ?? 0) + $totalCreditAmount;
+                    $account->current_balance = (float)($account->current_balance ?? 0) + $totalCreditAmount;
                     $account->save();
                 }
             }
@@ -699,7 +699,7 @@ class VoucherController extends Controller
                     if ($rowAmount > 0 && $accId) {
                         $rowAccount = Account::find($accId);
                         if ($rowAccount) {
-                            $rowAccount->opening_balance = (float)($rowAccount->opening_balance ?? 0) - $rowAmount;
+                            $rowAccount->current_balance = (float)($rowAccount->current_balance ?? 0) - $rowAmount;
                             $rowAccount->save();
                         }
                     }
@@ -834,7 +834,7 @@ class VoucherController extends Controller
                     if ($accId && $rowAmount > 0) {
                         $acc = Account::find($accId);
                         if ($acc) {
-                            $acc->opening_balance -= $rowAmount;
+                            $acc->current_balance -= $rowAmount;
                             $acc->save();
                         }
                     }
@@ -870,7 +870,7 @@ class VoucherController extends Controller
                     } else {
                         $partyAcc = Account::find($partyId);
                         if ($partyAcc) {
-                            $partyAcc->opening_balance += $partyImpact;
+                            $partyAcc->current_balance += $partyImpact;
                             $partyAcc->save();
                         }
                     }
@@ -910,7 +910,7 @@ class VoucherController extends Controller
                     if ($accId && $rowAmount > 0) {
                         $acc = Account::find($accId);
                         if ($acc) {
-                            $acc->opening_balance += $rowAmount;
+                            $acc->current_balance += $rowAmount;
                             $acc->save();
                         }
                     }
@@ -940,7 +940,7 @@ class VoucherController extends Controller
             } elseif ($partyId && !in_array($pType, ['vendor', 'customer', 'walkin'], true)) {
                 $partyAcc = Account::find($partyId);
                 if ($partyAcc) {
-                    $partyAcc->opening_balance -= ($totalAmount + $totalDiscount);
+                    $partyAcc->current_balance -= ($totalAmount + $totalDiscount);
                     $partyAcc->save();
                 }
             }
@@ -1138,7 +1138,7 @@ class VoucherController extends Controller
                 ];
             }
 
-            $previousBalance = $account->opening_balance ?? 0;
+            $previousBalance = $account->current_balance ?? 0;
 
             // ✅ Vendor
         } elseif ($voucher->type === 'vendor') {
@@ -1249,7 +1249,7 @@ class VoucherController extends Controller
             } else {
                 $account = Account::find($voucher->party_id);
                 if ($account) {
-                    $account->opening_balance -= $amount;
+                    $account->current_balance -= $amount;
                     $account->save();
                 }
             }
@@ -1262,7 +1262,7 @@ class VoucherController extends Controller
                 if ($rowAmount > 0) {
                     $acc = Account::find($accId);
                     if ($acc) {
-                        $acc->opening_balance += $rowAmount;
+                        $acc->current_balance += $rowAmount;
                         $acc->save();
                     }
                 }
@@ -1299,7 +1299,7 @@ class VoucherController extends Controller
                 );
             } else {
                 $account = Account::find($voucher->party_id);
-                if ($account) { $account->opening_balance += $amount; $account->save(); }
+                if ($account) { $account->current_balance += $amount; $account->save(); }
             }
 
             // Revert Rows
@@ -1309,7 +1309,7 @@ class VoucherController extends Controller
                 $rowAmount = isset($amounts[$index]) ? (float)$amounts[$index] : 0;
                 if ($rowAmount > 0) {
                     $acc = Account::find($accId);
-                    if ($acc) { $acc->opening_balance -= $rowAmount; $acc->save(); }
+                    if ($acc) { $acc->current_balance -= $rowAmount; $acc->save(); }
                 }
             }
 
@@ -1433,7 +1433,7 @@ class VoucherController extends Controller
                 ];
             }
 
-            $previousBalance = $account->opening_balance ?? 0;
+            $previousBalance = $account->current_balance ?? 0;
         } elseif ($voucher->type === 'vendor') {
             // ✅ Vendor Type
             $party = DB::table('vendors')->where('id', $voucher->party_id)->first();
@@ -1578,7 +1578,7 @@ class VoucherController extends Controller
             } else {
                 $headerAcc = \App\Models\Account::find($voucher->account_id);
                 if ($headerAcc) {
-                    $headerAcc->opening_balance += $totalAmount;
+                    $headerAcc->current_balance += $totalAmount;
                     $headerAcc->save();
                 }
             }
@@ -1600,7 +1600,7 @@ class VoucherController extends Controller
                 } else {
                     $acc = \App\Models\Account::find($pId);
                     if ($acc) {
-                        $acc->opening_balance -= $rowAmount;
+                        $acc->current_balance -= $rowAmount;
                         $acc->save();
                     }
                 }
@@ -1644,7 +1644,7 @@ class VoucherController extends Controller
             } else {
                 $headerAcc = \App\Models\Account::find($voucher->account_id);
                 if ($headerAcc) {
-                    $headerAcc->opening_balance -= $totalAmount;
+                    $headerAcc->current_balance -= $totalAmount;
                     $headerAcc->save();
                 }
             }
@@ -1666,7 +1666,7 @@ class VoucherController extends Controller
                 } else {
                     $acc = \App\Models\Account::find($pId);
                     if ($acc) {
-                        $acc->opening_balance += $rowAmount;
+                        $acc->current_balance += $rowAmount;
                         $acc->save();
                     }
                 }
@@ -1781,7 +1781,7 @@ class VoucherController extends Controller
         $party->name = $party->title;
         $party->phone = $party->account_code; // Using code as phone placeholder for account type
         
-        $previousBalance = (float)($headerAccount->opening_balance ?? 0);
+        $previousBalance = (float)($headerAccount->current_balance ?? 0);
 
         return view('admin_panel.vochers.income_vouchers.print', compact('voucher', 'rows', 'headerAccount', 'party', 'previousBalance'));
     }
@@ -1931,7 +1931,7 @@ class VoucherController extends Controller
                 // Head/Account based Source
                 $headerAcc = \App\Models\Account::find($pId);
                 if ($headerAcc) {
-                    $headerAcc->opening_balance += $totalAmount;
+                    $headerAcc->current_balance += $totalAmount;
                     $headerAcc->save();
                 }
             }
@@ -1952,7 +1952,7 @@ class VoucherController extends Controller
                 } else {
                     $rowAcc = \App\Models\Account::find($accId);
                     if ($rowAcc) {
-                        $rowAcc->opening_balance -= $rowAmount;
+                        $rowAcc->current_balance -= $rowAmount;
                         $rowAcc->save();
                     }
                 }
@@ -2179,7 +2179,7 @@ class VoucherController extends Controller
                     // It's an Account Head
                     $acc = \App\Models\Account::find($pid);
                     if ($acc) {
-                        $acc->opening_balance += ($dr - $cr);
+                        $acc->current_balance += ($dr - $cr);
                         $acc->save();
                     }
                 }

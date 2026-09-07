@@ -46,6 +46,7 @@ class Account extends Model
         'total_credit',
         'status',        // active/inactive
         'opening_balance',
+        'current_balance',
         'user_group_ids',
         'created_by',
     ];
