@@ -117,14 +117,14 @@
                                 </select>
                             </div>
 
-                            <!-- Row 3: Claim Item (with Item ID), MFG Date, Card Number, Sale Price -->
-                            <div class="col-md-5">
+                            <!-- Row 3: Claim Item (with Item ID), MFG Date, Card Number, Retail Price, Sale Price -->
+                            <div class="col-md-4">
                                 <div class="row g-1">
-                                    <div class="col-3">
+                                    <div class="col-4">
                                         <label class="form-label">Item ID</label>
                                         <input type="text" id="item_id_input" class="form-control input-sm border-primary fw-bold text-primary text-center" placeholder="ID">
                                     </div>
-                                    <div class="col-9">
+                                    <div class="col-8">
                                         <label class="form-label">Claim Item <span class="text-danger">*</span></label>
                                         <select name="product_id" id="product_id" class="form-select select2" required>
                                             <option value="">Select Battery...</option>
