@@ -987,9 +987,13 @@ class GeneralLedgerController extends Controller
 
         // 7.1 Incomes (IV)
         $ivDateCol = $this->getDateColumn('income_vouchers');
-        $incomes = $this->ledgerQuery(\App\Models\IncomeVoucher::class)->where(function($q) use ($id) {
-                $q->whereJsonContains('party_id', (string)$id)
-                  ->orWhereJsonContains('party_id', (int)$id);
+        $incomes = $this->ledgerQuery(\App\Models\IncomeVoucher::class)->where(function($q) use ($id, $typeArray) {
+                $q->where(function($q2) use ($id, $typeArray) {
+                    $q2->where('account_id', $id)
+                       ->whereIn('account_head', $typeArray);
+                })
+                ->orWhereJsonContains('party_id', (string)$id)
+                ->orWhereJsonContains('party_id', (int)$id);
             })
             ->whereIn('status', ['posted', 'Posted'])->whereBetween(DB::raw($ivDateCol), [$start, $end])->get();
             
@@ -998,6 +1002,47 @@ class GeneralLedgerController extends Controller
             $pIds = json_decode($iv->party_id, true) ?? [];
             $amounts = json_decode($iv->amount, true) ?? [];
             $narrIds = json_decode($iv->narration_id, true) ?? [];
+
+            $hType = strtolower($iv->account_head ?? '');
+            if ($iv->account_id == $id && in_array($hType, $typeArray)) {
+                foreach($pIds as $idx => $pid) {
+                    $rowAmount = (float)($amounts[$idx] ?? 0);
+                    if ($rowAmount <= 0) continue;
+
+                    $rowNarr = '';
+                    if (isset($narrIds[$idx])) {
+                        if (is_numeric($narrIds[$idx])) {
+                            $rowNarr = DB::table('narrations')->where('id', $narrIds[$idx])->value('narration');
+                        } else {
+                            $rowNarr = $narrIds[$idx];
+                        }
+                    }
+
+                    $partyName = '';
+                    $pType = strtolower($types[$idx] ?? '');
+                    if (is_numeric($pType) || $pType === 'expense') {
+                        $partyName = DB::table('accounts')->where('id', $pid)->value('title');
+                    } elseif ($pType === 'vendor') {
+                        $partyName = DB::table('vendors')->where('id', $pid)->value('name');
+                    } elseif (in_array($pType, ['customer', 'walkin', 'subcustomer'])) {
+                        $partyName = DB::table('customers')->where('id', $pid)->value('customer_name');
+                    }
+
+                    $baseDesc = $rowNarr ?: ($iv->remarks ?? 'Income Voucher (Deposit)');
+                    $desc = $partyName ? $baseDesc . ' ; ' . $partyName : $baseDesc;
+
+                    $transactions[] = [
+                        'created_at' => $iv->created_at,
+                        'id' => $iv->id . '_h_' . $idx,
+                        'date' => $iv->entry_date ?: $iv->created_at,
+                        'ref' => 'IV',
+                        'inv' => $iv->ivid,
+                        'desc' => $desc,
+                        'qty' => 0, 'debit' => $rowAmount, 'credit' => 0,
+                        'priority' => 60
+                    ];
+                }
+            }
 
             foreach ($pIds as $idx => $pid) {
                 if ($pid == $id && in_array($types[$idx] ?? '', $typeArray)) {
@@ -1012,14 +1057,23 @@ class GeneralLedgerController extends Controller
                             $narrText = $narrIds[$idx];
                         }
                     }
-                    $depositAccName = DB::table('accounts')->where('id', $iv->account_id)->value('title');
+                    
+                    $hType = strtolower($iv->account_head ?? '');
+                    $depositAccName = '';
+                    if ($hType === 'vendor') {
+                        $depositAccName = DB::table('vendors')->where('id', $iv->account_id)->value('name');
+                    } elseif (in_array($hType, ['customer', 'walkin', 'subcustomer'])) {
+                        $depositAccName = DB::table('customers')->where('id', $iv->account_id)->value('customer_name');
+                    } else {
+                        $depositAccName = DB::table('accounts')->where('id', $iv->account_id)->value('title');
+                    }
                     
                     $descParts = [];
                     if ($narrText) $descParts[] = $narrText;
                     if (!empty($iv->remarks)) $descParts[] = $iv->remarks;
                     
                     $baseDesc = !empty($descParts) ? implode(' ; ', $descParts) : 'Income Voucher';
-                    $desc = $depositAccName ? $baseDesc . ' (Deposit To: ' . $depositAccName . ')' : $baseDesc;
+                    $desc = $depositAccName ? $baseDesc . ' ; ' . $depositAccName : $baseDesc;
 
                     $transactions[] = [
                         'created_at' => $iv->created_at,
@@ -1032,6 +1086,195 @@ class GeneralLedgerController extends Controller
                         'debit' => 0,
                         'credit' => $rowAmount,
                         'priority' => 60
+                    ];
+                }
+            }
+        }
+
+        // 8. Customer Claims
+        $claimDateCol = $this->getDateColumn('customer_claims');
+        $claims = $this->ledgerQuery(\App\Models\CustomerClaim::class)->with(['product', 'replacementProduct'])
+            ->where('party_id', $id)
+            ->whereIn('party_type', $typeArray)
+            ->where('status', 'Posted')
+            ->whereBetween(DB::raw($claimDateCol), [$start, $end])
+            ->get();
+            
+        foreach ($claims as $claim) {
+            if ($claim->claim_type === 'item_return') {
+                continue;
+            }
+
+            $productName = $claim->product->name ?? 'Battery';
+            $salesPrice = (float) $claim->sales_price;
+            $claimDate = $claim->entry_date ?: substr((string) $claim->created_at, 0, 10);
+            $claimInv = preg_replace('/[^0-9]/', '', $claim->claim_no ?? '0');
+
+            if ($salesPrice > 0) {
+                $transactions[] = [
+                    'created_at' => $claim->created_at,
+                    'id' => 'clm_' . $claim->id . '_f',
+                    'date' => $claimDate,
+                    'ref' => 'CLM',
+                    'inv' => $claimInv,
+                    'desc' => 'Claim Received: ' . $productName . ' (' . $claim->claim_no . ')',
+                    'qty' => 1, 'debit' => 0, 'credit' => $salesPrice,
+                    'priority' => 30
+                ];
+            }
+            if ($claim->claim_type === 'credit_note' && (float)$claim->replacement_sales_price > 0) {
+                $transactions[] = [
+                    'created_at' => $claim->created_at,
+                    'id' => 'clm_' . $claim->id . '_r',
+                    'date' => $claimDate,
+                    'ref' => 'CLM',
+                    'inv' => $claimInv,
+                    'desc' => 'Claim Replacement: ' . ($claim->replacementProduct->name ?? 'Battery') . ' (' . $claim->claim_no . ')',
+                    'qty' => 1, 'debit' => (float)$claim->replacement_sales_price, 'credit' => 0,
+                    'priority' => 31
+                ];
+            }
+        }
+
+        // 9. Claim Credit Notes (CIR)
+        $crnDateCol = $this->getDateColumn('claim_credit_notes');
+        $crNotes = $this->ledgerQuery(\App\Models\ClaimCreditNote::class)->where('party_id', $id)
+            ->where('party_type', $type == 'customer' ? 'customer' : 'vendor')
+            ->where('status', 'Posted')
+            ->whereBetween(DB::raw($crnDateCol), [$start, $end])
+            ->get();
+        foreach ($crNotes as $crn) {
+            $crnDate = $crn->date ?? $crn->entry_date ?? substr((string)$crn->created_at, 0, 10);
+            $crnInv = preg_replace('/[^0-9]/', '', $crn->voucher_no ?? '0');
+            $netTotal = (float)($crn->net_total ?? 0);
+
+            $transactions[] = [
+                'created_at' => $crn->created_at,
+                'id' => 'crn_' . $crn->id,
+                'date' => $crnDate,
+                'ref' => 'CIR',
+                'inv' => $crnInv,
+                'desc' => 'Claim Credit Note (' . $crn->voucher_no . ')',
+                'qty' => (float)DB::table('claim_credit_note_items')->where('claim_credit_note_id', $crn->id)->sum('quantity'),
+                'debit' => $netTotal,
+                'credit' => 0,
+                'priority' => 32,
+            ];
+        }
+
+        // 10. Adjustment Vouchers (AV)
+        $avDateCol = $this->getDateColumn('adjustment_vouchers');
+        $avs = $this->ledgerQuery(\App\Models\AdjustmentVoucher::class)->whereIn('status', ['posted', 'Posted'])
+            ->whereBetween(DB::raw($avDateCol), [$start, $end])
+            ->where(function($q) use ($id, $typeArray) {
+                $q->where(function($q1) use ($id, $typeArray) {
+                    $q1->where('party_id', $id)->whereIn('party_type', $typeArray);
+                });
+                $q->orWhere(function($q2) use ($id) {
+                    $q2->whereJsonContains('account_id', (string)$id)
+                       ->orWhereJsonContains('account_id', (int)$id);
+                });
+            })->get();
+
+        foreach ($avs as $av) {
+            $narrIds = json_decode($av->narration_id, true) ?? [];
+            
+            // Header match check
+            if ($av->party_id == $id && in_array($av->party_type, $typeArray)) {
+                $accIds = json_decode($av->account_id, true) ?? [];
+                $accHeads = json_decode($av->account_head, true) ?? [];
+                $amounts = json_decode($av->amount, true) ?? [];
+                
+                foreach ($accIds as $i => $a_id) {
+                    $rType = $accHeads[$i] ?? '';
+                    $destName = '';
+                    if ($rType === 'vendor') {
+                        $destName = \Illuminate\Support\Facades\DB::table('vendors')->where('id', $a_id)->value('name');
+                    } elseif ($rType === 'customer' || $rType === 'walkin') {
+                        $destName = \Illuminate\Support\Facades\DB::table('customers')->where('id', $a_id)->value('customer_name');
+                    } else {
+                        $destName = \Illuminate\Support\Facades\DB::table('accounts')->where('id', $a_id)->value('title');
+                    }
+                    
+                    $headerNarr = '';
+                    if (isset($narrIds[$i])) {
+                        if (is_numeric($narrIds[$i])) {
+                            $headerNarr = \Illuminate\Support\Facades\DB::table('narrations')->where('id', $narrIds[$i])->value('narration');
+                        } else {
+                            $headerNarr = $narrIds[$i];
+                        }
+                    }
+                    
+                    $headerDescParts = [];
+                    if ($headerNarr) $headerDescParts[] = $headerNarr;
+                    if (!empty($av->remarks)) $headerDescParts[] = $av->remarks;
+                    if ($destName) $headerDescParts[] = $destName;
+                    $headerDesc = !empty($headerDescParts) ? implode(' ; ', $headerDescParts) : 'Adjustment Voucher';
+
+                    $rowAmt = (float)($amounts[$i] ?? 0);
+                    if ($rowAmt > 0) {
+                        $transactions[] = [
+                            'created_at' => $av->created_at,
+                            'id' => $av->id . '_h_' . $i,
+                            'date' => $av->entry_date ?: $av->created_at,
+                            'ref' => 'AV',
+                            'inv' => $av->avid,
+                            'desc' => $headerDesc,
+                            'qty' => 0,
+                            'debit' => $rowAmt,
+                            'credit' => 0,
+                            'priority' => 61
+                        ];
+                    }
+                }
+            }
+
+            // Row match check
+            $accIds = json_decode($av->account_id, true) ?? [];
+            $accHeads = json_decode($av->account_head, true) ?? [];
+            $amounts = json_decode($av->amount, true) ?? [];
+
+            foreach ($accIds as $idx => $aid) {
+                $rowType = $accHeads[$idx] ?? '';
+                if ($aid == $id && in_array($rowType, $typeArray)) {
+                    $narrText = '';
+                    if (isset($narrIds[$idx])) {
+                        if (is_numeric($narrIds[$idx])) {
+                            $narrText = \Illuminate\Support\Facades\DB::table('narrations')->where('id', $narrIds[$idx])->value('narration');
+                        } else {
+                            $narrText = $narrIds[$idx];
+                        }
+                    }
+
+                    $descParts = [];
+                    if ($narrText) $descParts[] = $narrText;
+                    if (!empty($av->remarks)) $descParts[] = $av->remarks;
+
+                    $sourceName = '';
+                    $pType = $av->party_type;
+                    $pId = $av->party_id;
+                    if ($pType === 'vendor') {
+                        $sourceName = \Illuminate\Support\Facades\DB::table('vendors')->where('id', $pId)->value('name');
+                    } elseif ($pType === 'customer' || $pType === 'walkin') {
+                        $sourceName = \Illuminate\Support\Facades\DB::table('customers')->where('id', $pId)->value('customer_name');
+                    } else {
+                        $sourceName = \Illuminate\Support\Facades\DB::table('accounts')->where('id', $pId)->value('title');
+                    }
+                    if ($sourceName) $descParts[] = $sourceName;
+
+                    $desc = !empty($descParts) ? implode(' ; ', $descParts) : 'Adjustment Voucher';
+
+                    $transactions[] = [
+                        'created_at' => $av->created_at,
+                        'id' => $av->id,
+                        'date' => $av->entry_date ?: $av->created_at,
+                        'ref' => 'AV',
+                        'inv' => $av->avid,
+                        'desc' => $desc,
+                        'qty' => 0,
+                        'debit' => 0,
+                        'credit' => (float)($amounts[$idx] ?? 0),
+                        'priority' => 61
                     ];
                 }
             }
