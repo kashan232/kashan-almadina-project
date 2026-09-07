@@ -93,6 +93,7 @@
         pointer-events: none !important; opacity: 0.85 !important; background-color: #f1f3f5 !important; cursor: not-allowed !important;
     }
     .form-locked .removeRow, .form-locked #btnAddRow, .form-locked #saveDraftBtn { display: none !important; }
+    .form-locked:not(.view-mode) .removeRow { display: inline-block !important; }
     .form-locked #editInvoiceBtn, .form-locked #newInvoiceBtn, .form-locked #realPrintBtn,
     .form-locked #postBtn, .form-locked #exitBtn, .form-locked #deleteBtn, .form-locked #unpostBtn {
         pointer-events: auto !important; opacity: 1 !important;

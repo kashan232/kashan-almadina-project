@@ -5,6 +5,10 @@
 <style>
 @include('admin_panel.vochers._compact_voucher_styles', ['accentColor' => '#ef4444'])
 </style>
+@php
+    $isViewMode = isset($viewMode) && $viewMode;
+    $isPosted = ($receipt->status ?? '') === 'posted';
+@endphp
 
 <div class="main-content">
     <div class="main-content-inner">
@@ -20,7 +24,7 @@
                             <div class="header-info-box">
                                 <h6 class="mb-0 fw-bold text-dark"><i class="fa fa-file-text-o me-2 text-primary"></i>Payment Voucher</h6>
                             </div>
-                            <span id="statusBadge" class="badge {{ $receipt->status == 'posted' ? 'bg-success' : 'bg-warning text-dark' }} rounded-pill px-3 py-1" style="font-size: 10px;">
+                            <span id="statusBadge" class="badge {{ $isPosted ? 'bg-success' : 'bg-warning text-dark' }} rounded-pill px-3 py-1" style="font-size: 10px;">
                                 {{ strtoupper($receipt->status ?: 'DRAFT') }}
                             </span>
                             <span class="badge bg-light text-primary border rounded-pill px-3 py-1" style="font-size: 10px;">
@@ -39,7 +43,7 @@
                 </div>
             </div>
 
-            <form id="paymentForm" autocomplete="off" class="{{ ($receipt->id && $receipt->status == 'posted') ? 'form-locked' : '' }}">
+            <form id="paymentForm" autocomplete="off" class="{{ ($isViewMode || ($receipt->id && $isPosted)) ? 'form-locked' : '' }}{{ $isViewMode ? ' view-mode' : '' }}">
                 @csrf
                 <input type="hidden" name="id" id="receipt_id" value="{{ $receipt->id }}">
                 <input type="hidden" name="entry_time" id="entry_time" value="{{ $receipt->entry_time ?? date('H:i') }}">
@@ -214,11 +218,11 @@
                     'printRoute' => 'PaymentVoucher.print',
                     'listRoute' => 'all-Payment-vochers',
                     'newRoute' => 'Payment-vochers',
-                    'showUnpost' => true,
+                    'showUnpost' => !$isViewMode,
                 ])
             </form>
 
-            @if($receipt->status == 'posted')
+            @if($isPosted || $isViewMode)
                 <div class="posted-watermark" id="postedWatermark">Posted</div>
             @endif
         </div>
