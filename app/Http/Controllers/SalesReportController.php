@@ -139,10 +139,10 @@ class SalesReportController extends Controller
         $query->where('is_sale_order', 0);
 
         if (!empty($from_date)) {
-            $query->whereDate('created_at', '>=', $from_date);
+            $query->where(DB::raw("COALESCE(NULLIF(entry_date, ''), DATE(created_at))"), '>=', $from_date);
         }
         if (!empty($to_date)) {
-            $query->whereDate('created_at', '<=', $to_date);
+            $query->where(DB::raw("COALESCE(NULLIF(entry_date, ''), DATE(created_at))"), '<=', $to_date);
         }
         if (!empty($invoice_no)) {
             $query->where('invoice_no', 'like', "%{$invoice_no}%");
@@ -192,10 +192,10 @@ class SalesReportController extends Controller
         $user_groups = $filters['user_groups'];
 
         if (!empty($from_date)) {
-            $query->whereDate('current_date', '>=', $from_date);
+            $query->where(DB::raw("COALESCE(NULLIF(entry_date, ''), NULLIF(current_date, ''), DATE(created_at))"), '>=', $from_date);
         }
         if (!empty($to_date)) {
-            $query->whereDate('current_date', '<=', $to_date);
+            $query->where(DB::raw("COALESCE(NULLIF(entry_date, ''), NULLIF(current_date, ''), DATE(created_at))"), '<=', $to_date);
         }
         if (!empty($invoice_no)) {
             $query->where('invoice_no', 'like', "%{$invoice_no}%");
