@@ -611,7 +611,9 @@
                                     <select name="account_head_id[]" class="form-select form-select-sm accountHead">
                                         <option value="" disabled>Select Head</option>
                                         @foreach ($AccountHeads as $head)
-                                            <option value="{{ $head->id }}" {{ $head->id == $acc->account_head_id ? 'selected' : '' }}>{{ $head->name }}</option>
+                                            @if($head->id == 2)
+                                            <option value="{{ $head->id }}" selected>{{ $head->name }}</option>
+                                            @endif
                                         @endforeach
                                     </select>
                                 </td>
@@ -681,9 +683,11 @@
                     <select id="wht_head_id" class="form-select form-select-sm py-0" style="width:80px;">
                       <option value="">Head</option>
                       @foreach($AccountHeads as $head)
-                          <option value="{{ $head->id }}" {{ (isset($purchase) && $purchase->whtAccount && $purchase->whtAccount->head_id == $head->id) ? 'selected' : '' }}>
+                          @if($head->id == 1)
+                          <option value="{{ $head->id }}" {{ (isset($purchase) && $purchase->whtAccount && $purchase->whtAccount->head_id == $head->id) ? 'selected' : (old('wht_head_id', 1) == $head->id ? 'selected' : '') }}>
                               {{ $head->name }}
                           </option>
+                          @endif
                       @endforeach
                     </select>
                     <select name="wht_account_id" id="wht_account_id" class="form-select form-select-sm py-0" style="flex-grow:1;">
@@ -2282,6 +2286,9 @@ $(document).ready(function() {
 
     // Sweep all rows on load to ensure proper enablement state
     $(document).ready(function() {
+        if ($('#wht_head_id').val()) {
+            $('#wht_head_id').trigger('change');
+        }
         setTimeout(function() {
             $('.accountSub').each(function() {
                 var $row = $(this).closest('tr');
@@ -2303,9 +2310,11 @@ $(document).ready(function() {
         var newRow = `<tr>
             <td>
                 <select name="account_head_id[]" class="form-control form-control-sm accountHead">
-                    <option value="" disabled selected>Select Head</option>
+                    <option value="" disabled>Select Head</option>
                     @foreach ($AccountHeads as $head)
-                        <option value="{{ $head->id }}">{{ $head->name }}</option>
+                        @if($head->id == 2)
+                        <option value="{{ $head->id }}" selected>{{ $head->name }}</option>
+                        @endif
                     @endforeach
                 </select>
             </td>
@@ -2321,7 +2330,9 @@ $(document).ready(function() {
                 <button type="button" class="btn btn-sm btn-danger removeAccountRow">X</button>
             </td>
         </tr>`;
-        $('#accountsTable tbody').append(newRow);
+        var $newRow = $(newRow);
+        $('#accountsTable tbody').append($newRow);
+        $newRow.find('.accountHead').trigger('change');
     };
 
     $('#addAccountRow').on('click', function() {
