@@ -141,61 +141,92 @@
     <table>
         <thead>
             <tr>
-                <th width="12%">Type</th>
-                <th width="43%" class="text-left">Item Name</th>
-                <th width="10%">Qty</th>
-                <th width="15%">Retail Price</th>
-                <th width="15%">Retail Value</th>
+                <th width="15%" class="text-left">Category</th>
+                <th width="30%" class="text-left">Item Name</th>
+                <th width="8%">Qty</th>
+                <th width="11%">Retail Price</th>
+                <th width="12%">Retail Value</th>
+                <th width="11%">Sales Price Avg</th>
+                <th width="13%">Sales Value</th>
             </tr>
         </thead>
         <tbody>
-            @php $g_qty = 0; $g_retail_val = 0; @endphp
+            @php 
+                $g_qty = 0; 
+                $g_retail_val = 0; 
+                $g_sales_val = 0; 
+            @endphp
 
             @if($grouped->isEmpty())
                 <tr>
-                    <td colspan="5" style="text-align: center; padding: 50px;">No Data Found</td>
+                    <td colspan="7" style="text-align: center; padding: 50px;">No Data Found</td>
                 </tr>
             @endif
 
             @foreach($grouped as $brandName => $items)
                 @php
-                    $b_qty = 0; $b_retail_val = 0;
+                    $b_qty = 0; 
+                    $b_retail_val = 0;
+                    $b_sales_val = 0;
+
+                    // Group by product_id AND retail_price so different retail prices stay separate, but same product & retail price sum together
+                    $productGroups = $items->groupBy(function($item) {
+                        $pId = $item->product_id;
+                        $rPrice = (float) ($item->retail_price ?? 0);
+                        return $pId . '_' . number_format($rPrice, 2, '.', '');
+                    });
                 @endphp
                 
                 <!-- Brand Heading -->
                 <tr class="brand-heading-row">
-                    <td colspan="5" class="text-left" style="border-top: 2px solid #000; padding-top: 15px;">{{ strtoupper($brandName) }}</td>
+                    <td colspan="7" class="text-left" style="border-top: 2px solid #000; padding-top: 15px; font-weight: bold; color: #0d47a1;">{{ strtoupper($brandName) }}</td>
                 </tr>
 
-                @foreach($items as $item)
+                @foreach($productGroups as $group)
                     @php
-                        $qty = $item->sales_qty;
-                        $price = $item->retail_price ?? 0;
-                        $value = $qty * $price;
+                        $first = $group->first();
+                        $categoryName = $first->product && $first->product->categoryRelation ? $first->product->categoryRelation->name : '-';
+                        $productName = $first->product ? $first->product->name : 'N/A';
+                        
+                        $qty = $group->sum('sales_qty');
+                        $price = (float) ($first->retail_price ?? 0);
+                        $retail_value = $qty * $price;
+
+                        $sales_value = $group->sum('amount');
+                        $sales_price_avg = $qty != 0 ? abs($sales_value / $qty) : 0;
 
                         $b_qty += $qty;
-                        $b_retail_val += $value;
+                        $b_retail_val += $retail_value;
+                        $b_sales_val += $sales_value;
                     @endphp
-                    <tr class="item-row @include('admin_panel.reports.sales.partials.data_row_class', ['item' => $item])">
-                        @include('admin_panel.reports.sales.partials.type_cell', ['item' => $item])
-                        <td class="text-left">{{ $item->product ? $item->product->name : 'N/A' }}</td>
+                    <tr class="item-row">
+                        <td class="text-left">{{ $categoryName }}</td>
+                        <td class="text-left">{{ $productName }}</td>
                         <td class="text-center">{{ number_format($qty) }}</td>
                         <td class="text-right">{{ number_format($price, 0) }}</td>
-                        <td class="text-right"><b>{{ number_format($value, 0) }}</b></td>
+                        <td class="text-right"><b>{{ number_format($retail_value, 0) }}</b></td>
+                        <td class="text-right">{{ number_format($sales_price_avg, 0) }}</td>
+                        <td class="text-right fw-bold"><b>{{ number_format($sales_value, 0) }}</b></td>
                     </tr>
                 @endforeach
 
                 <!-- Brand Total Row -->
                 <tr class="total-row">
-                    <td colspan="2" class="text-right">{{ $brandName }} Total:</td>
+                    <td colspan="2" class="text-right" style="color: #0d47a1;">{{ $brandName }} Total:</td>
                     <td class="qty-box">{{ number_format($b_qty) }}</td>
                     <td style="border:none; background:none;"></td>
                     <td class="val-box">{{ number_format($b_retail_val, 0) }}</td>
+                    <td style="border:none; background:none;"></td>
+                    <td class="val-box" style="background-color: #e1f5fe;">{{ number_format($b_sales_val, 0) }}</td>
                 </tr>
                 <!-- Separation Gap -->
-                <tr style="height: 20px;"><td colspan="5" style="border:none;"></td></tr>
+                <tr style="height: 15px;"><td colspan="7" style="border:none;"></td></tr>
 
-                @php $g_qty += $b_qty; $g_retail_val += $b_retail_val; @endphp
+                @php 
+                    $g_qty += $b_qty; 
+                    $g_retail_val += $b_retail_val; 
+                    $g_sales_val += $b_sales_val;
+                @endphp
             @endforeach
 
             <!-- Grand Total -->
@@ -204,6 +235,8 @@
                 <td class="qty-box" style="background-color: #cfd8dc;">{{ number_format($g_qty) }}</td>
                 <td style="border:none; background:none;"></td>
                 <td class="val-box" style="background-color: #bbdefb;">{{ number_format($g_retail_val, 0) }}</td>
+                <td style="border:none; background:none;"></td>
+                <td class="val-box" style="background-color: #bbdefb;">{{ number_format($g_sales_val, 0) }}</td>
             </tr>
         </tbody>
     </table>
