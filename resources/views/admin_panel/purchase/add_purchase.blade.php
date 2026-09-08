@@ -610,7 +610,7 @@
                                 <td>
                                     <select name="account_head_id[]" class="form-select form-select-sm accountHead">
                                         @foreach ($AccountHeads as $head)
-                                            @if($head->id == 2)
+                                            @if(strtoupper($head->name) == 'INCOME' || $head->id == 2)
                                             <option value="{{ $head->id }}" selected>{{ $head->name }}</option>
                                             @endif
                                         @endforeach
@@ -681,7 +681,7 @@
                   <div class="d-flex gap-1" style="width:190px;">
                     <select id="wht_head_id" class="form-select form-select-sm py-0" style="width:80px;">
                       @foreach($AccountHeads as $head)
-                          @if($head->id == 1)
+                          @if(strtoupper($head->name) == 'EXPENSE' || $head->id == 1)
                           <option value="{{ $head->id }}" selected>
                               {{ $head->name }}
                           </option>
@@ -2313,7 +2313,7 @@ $(document).ready(function() {
             <td>
                 <select name="account_head_id[]" class="form-control form-control-sm accountHead">
                     @foreach ($AccountHeads as $head)
-                        @if($head->id == 2)
+                        @if(strtoupper($head->name) == 'INCOME' || $head->id == 2)
                         <option value="{{ $head->id }}" selected>{{ $head->name }}</option>
                         @endif
                     @endforeach
