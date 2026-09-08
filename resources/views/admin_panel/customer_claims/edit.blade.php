@@ -145,7 +145,8 @@
                             </div>
                             <div class="col-md-2">
                                 <label class="form-label font-weight-bold">Retail Price</label>
-                                <input type="number" step="any" id="retail_price_display" class="form-control input-sm text-end fw-bold text-dark bg-light" placeholder="0.00" readonly disabled value="{{ $claim->product?->latestPrice?->sale_retail_price ?? $claim->product?->latestPrice?->retail_price ?? $claim->sales_price }}">
+                                <input type="number" step="any" id="retail_price_display" class="form-control input-sm text-end fw-bold text-dark bg-light" placeholder="0.00" readonly disabled value="{{ $claim->retail_price > 0 ? $claim->retail_price : ($claim->product?->latestPrice?->sale_retail_price ?? $claim->product?->latestPrice?->retail_price ?? $claim->sales_price) }}">
+                                <input type="hidden" name="retail_price" id="retail_price_hidden" value="{{ $claim->retail_price > 0 ? $claim->retail_price : ($claim->product?->latestPrice?->sale_retail_price ?? $claim->product?->latestPrice?->retail_price ?? $claim->sales_price) }}">
                             </div>
                             <div class="col-md-2">
                                 <label class="form-label font-weight-bold">Sales Price</label>
@@ -346,7 +347,12 @@ $(document).ready(function() {
                             var retail = prod.sale_retail_price || prod.retail_price || 0;
                             var price = prod.sale_price || prod.net_price || retail || 0;
                             $(targetPriceInput).val(parseFloat(price).toFixed(2));
-                            if (retailDisplayId) $(retailDisplayId).val(parseFloat(retail).toFixed(2));
+                            if (retailDisplayId) {
+                                $(retailDisplayId).val(parseFloat(retail).toFixed(2));
+                                if (retailDisplayId === '#retail_price_display') {
+                                    $('#retail_price_hidden').val(parseFloat(retail).toFixed(2));
+                                }
+                            }
                             $input.val(prod.id);
                             if (nextFocus) setTimeout(() => $(nextFocus).focus(), 100);
                         }
@@ -385,7 +391,12 @@ $(document).ready(function() {
                     var retail = prod.sale_retail_price || prod.retail_price || 0;
                     var price = prod.sale_price || prod.net_price || retail || 0;
                     $(targetInputId).val(parseFloat(price).toFixed(2));
-                    if (retailDisplayId) $(retailDisplayId).val(parseFloat(retail).toFixed(2));
+                    if (retailDisplayId) {
+                        $(retailDisplayId).val(parseFloat(retail).toFixed(2));
+                        if (retailDisplayId === '#retail_price_display') {
+                            $('#retail_price_hidden').val(parseFloat(retail).toFixed(2));
+                        }
+                    }
                 }
             }
         });

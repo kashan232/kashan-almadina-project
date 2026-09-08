@@ -146,6 +146,7 @@
                             <div class="col-md-2">
                                 <label class="form-label font-weight-bold">Retail Price</label>
                                 <input type="number" step="any" id="retail_price_display" class="form-control input-sm text-end fw-bold text-dark bg-light" placeholder="0.00" readonly disabled>
+                                <input type="hidden" name="retail_price" id="retail_price_hidden" value="0.00">
                             </div>
                             <div class="col-md-2">
                                 <label class="form-label font-weight-bold">Sales Price</label>
@@ -357,6 +358,9 @@ $(document).ready(function() {
                             $(targetPriceInput).val(parseFloat(price).toFixed(2));
                             if (retailDisplayId) {
                                 $(retailDisplayId).val(parseFloat(retail).toFixed(2));
+                                if(retailDisplayId === '#retail_price_display') {
+                                    $('#retail_price_hidden').val(parseFloat(retail).toFixed(2));
+                                }
                             }
                             $input.val(prod.id);
 
@@ -407,6 +411,9 @@ $(document).ready(function() {
                     $(targetInputId).val(parseFloat(price).toFixed(2));
                     if(retailDisplayId) {
                         $(retailDisplayId).val(parseFloat(retail).toFixed(2));
+                        if(retailDisplayId === '#retail_price_display') {
+                            $('#retail_price_hidden').val(parseFloat(retail).toFixed(2));
+                        }
                     }
                 }
             }

@@ -131,6 +131,7 @@ class CustomerClaimController extends Controller
             $claim->product_id = $request->product_id;
             $claim->mfg_date = $request->mfg_date;
             $claim->sales_price = $request->sales_price ?? 0;
+            $claim->retail_price = $request->retail_price ?? $request->sales_price ?? 0;
             $claim->card_no = $request->card_no;
             $claim->bill_date = $request->bill_date;
             $claim->original_warehouse_id = $request->original_warehouse_id;
