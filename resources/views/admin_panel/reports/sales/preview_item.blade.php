@@ -157,14 +157,15 @@
         <table id="salesReportTable">
             <thead>
                 <tr>
-                    <th width="8%">GSN No.</th>
+                    <th width="7%">TYPE</th>
+                    <th width="8%">INV#</th>
                     <th width="9%">Date</th>
-                    <th width="31%" class="text-left">Party Name</th>
-                    <th width="6%">Qty</th>
-                    <th width="10%">Retail Price</th>
-                    <th width="12%">Retail Amount</th>
+                    <th width="26%" class="text-left">Party Name</th>
+                    <th width="5%">Qty</th>
+                    <th width="9%">Retail Price</th>
+                    <th width="11%">Retail Amount</th>
                     <th width="10%">Sales Price</th>
-                    <th width="14%">Amount</th>
+                    <th width="15%">Amount</th>
                 </tr>
             </thead>
             <tbody>
@@ -176,7 +177,7 @@
 
                 @if($grouped->isEmpty())
                     <tr>
-                        <td colspan="8" style="text-align: center; padding: 40px;">No Data Found</td>
+                        <td colspan="9" style="text-align: center; padding: 40px;">No Data Found</td>
                     </tr>
                 @endif
 
@@ -191,7 +192,7 @@
                     
                     <!-- Item Header Block (Product Name & Brand Name) -->
                     <tr class="item-row-header">
-                        <td colspan="3" class="text-left">
+                        <td colspan="4" class="text-left">
                             <span class="item-title">{{ $product ? strtoupper($product->name) : 'N/A' }}</span>
                         </td>
                         <td colspan="5" class="text-left">
@@ -223,6 +224,7 @@
                             $item_sales_amt += $sales_a;
                         @endphp
                         <tr class="item-row @include('admin_panel.reports.sales.partials.data_row_class', ['item' => $item])">
+                            @include('admin_panel.reports.sales.partials.type_cell', ['item' => $item])
                             <td class="text-center">{{ $invNo }}</td>
                             <td class="text-center">{{ $saleDate }}</td>
                             <td class="text-left">{{ strtoupper($partyName) }}</td>
@@ -236,14 +238,14 @@
 
                     <!-- Item Total Row -->
                     <tr class="subtotal-row">
-                        <td colspan="3" class="text-right"><b>Total:</b></td>
+                        <td colspan="4" class="text-right"><b>Total:</b></td>
                         <td class="qty-box"><b>{{ number_format($item_qty) }}</b></td>
                         <td></td>
                         <td class="val-box"><b>{{ number_format($item_retail_amt, 0) }}</b></td>
                         <td></td>
                         <td class="val-box"><b>{{ number_format($item_sales_amt, 0) }}</b></td>
                     </tr>
-                    <tr style="height: 6px;"><td colspan="8" style="border:none; padding: 0;"></td></tr>
+                    <tr style="height: 6px;"><td colspan="9" style="border:none; padding: 0;"></td></tr>
 
                     @php
                         $grand_qty += $item_qty;
@@ -254,7 +256,7 @@
 
                 <!-- Grand Total -->
                 <tr class="grand-total-row">
-                    <td colspan="3" class="text-right">Grand Total:</td>
+                    <td colspan="4" class="text-right">Grand Total:</td>
                     <td class="qty-box" style="background-color: #cfd8dc;">{{ number_format($grand_qty) }}</td>
                     <td></td>
                     <td class="val-box" style="background-color: #bbdefb;">{{ number_format($grand_retail_amt, 0) }}</td>

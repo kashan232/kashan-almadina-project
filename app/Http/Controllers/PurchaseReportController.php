@@ -397,7 +397,7 @@ class PurchaseReportController extends Controller
     {
         if ($sign === 1) {
             $item->setAttribute('entry_type', 'purchase');
-            $item->setAttribute('entry_type_label', 'Purchase');
+            $item->setAttribute('entry_type_label', 'PJ');
             return $item;
         }
 
@@ -409,7 +409,7 @@ class PurchaseReportController extends Controller
             'form_rate' => $item->form_rate,
             'form_line_total' => $sign * (float) $item->form_line_total,
             'entry_type' => 'purchase',
-            'entry_type_label' => 'Purchase',
+            'entry_type_label' => 'PJ',
         ];
     }
 
@@ -442,7 +442,7 @@ class PurchaseReportController extends Controller
             'form_rate' => $formRate,
             'form_line_total' => $sign * $formLineTotal,
             'entry_type' => 'purchase_return',
-            'entry_type_label' => 'Purchase Return',
+            'entry_type_label' => 'PRJ',
         ];
     }
 
@@ -477,7 +477,7 @@ class PurchaseReportController extends Controller
             'form_rate' => $formRate,
             'form_line_total' => $sign * $formLineTotal,
             'entry_type' => 'claim_credit_note',
-            'entry_type_label' => 'Claim Credit Note',
+            'entry_type_label' => 'CLM-CN',
         ];
     }
 
