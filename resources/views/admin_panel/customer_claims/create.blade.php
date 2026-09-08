@@ -48,7 +48,11 @@
             
             {{-- TOP BAR --}}
             <div class="d-flex justify-content-between align-items-center page-top-bar bg-light rounded shadow-sm">
-                <div style="min-width:80px;"></div>
+                <div class="d-flex align-items-center gap-2" style="min-width:180px;">
+                    <span class="badge bg-secondary px-2 py-1 rounded" style="font-size:11px;">
+                        <i class="fa fa-clock-o me-1"></i> {{ date('h:i A') }}
+                    </span>
+                </div>
                 <div class="d-flex align-items-center gap-2 justify-content-center flex-grow-1">
                     <h6 class="page-title mb-0 fw-bold">Customer Claim Entry</h6>
                     <span id="statusBadge" class="badge bg-warning text-dark px-3 py-2 rounded-pill shadow-sm" style="font-size:12px;">
@@ -69,26 +73,26 @@
                 @csrf
                 <input type="hidden" name="id" id="claim_id" value="">
                 <input type="hidden" name="action" id="formAction" value="save">
+                <input type="hidden" name="entry_time" value="{{ date('H:i') }}">
                 <div class="posted-watermark" id="postedWatermark">Posted</div>
 
-                <div class="card shadow-sm">
+                <!-- SECTION 1: HEADER & PARTY INFO -->
+                <div class="card shadow-sm mb-3">
+                    <div class="card-header py-2 bg-light fw-bold text-primary border-bottom">
+                        <i class="fa fa-info-circle me-1"></i> Section 1: Header & Party Info
+                    </div>
                     <div class="card-body">
-                        <div class="row g-3">
-                            <!-- Row 1: Claim No, Date, Time, Claim Type -->
-                            <div class="col-md-2" style="max-width: 140px;">
+                        <div class="row g-2 align-items-end">
+                            <div class="col-md-2" style="max-width: 130px;">
                                 <label class="form-label">Claim No</label>
                                 <input type="text" class="form-control input-sm bg-light fw-bold text-primary" value="Auto-Generated" readonly style="font-size: 0.8rem;">
                             </div>
-                            <div class="col-md-2" style="max-width: 160px;">
+                            <div class="col-md-2" style="max-width: 140px;">
                                 <label class="form-label">Date</label>
                                 <input type="date" name="claim_date" class="form-control input-sm" value="{{ date('Y-m-d') }}" required>
                                 <input type="hidden" name="entry_date" value="{{ date('Y-m-d') }}">
                             </div>
-                            <div class="col-md-2" style="max-width: 140px;">
-                                <label class="form-label">Time</label>
-                                <input type="time" name="entry_time" class="form-control input-sm" value="{{ date('H:i') }}" required>
-                            </div>
-                            <div class="col-md-3" style="max-width: 220px;">
+                            <div class="col-md-2" style="max-width: 160px;">
                                 <label class="form-label">Claim Type <span class="text-danger">*</span></label>
                                 <select name="claim_type" id="claim_type" class="form-select input-sm fw-bold">
                                     <option value="item_return">Item Return</option>
@@ -96,11 +100,7 @@
                                     <option value="claim_hold">Claim Hold</option>
                                 </select>
                             </div>
-
-                            <div class="col-12"><hr class="my-1 text-muted opacity-25"></div>
-
-                            <!-- Row 2: Party Type, Code/ID, Sub Dealer / Party -->
-                            <div class="col-md-2" style="max-width: 160px;">
+                            <div class="col-md-2" style="max-width: 140px;">
                                 <label class="form-label">Party Type</label>
                                 <select name="party_type" id="party_type" class="form-select input-sm">
                                     <option value="customer">Customer</option>
@@ -108,20 +108,28 @@
                                     <option value="walkin">Walk-in Customer</option>
                                 </select>
                             </div>
-                            <div class="col-md-1" style="max-width: 90px;">
+                            <div class="col-md-1" style="max-width: 80px;">
                                 <label class="form-label">Code/ID</label>
                                 <input type="text" id="party_code_input" class="form-control input-sm border-danger fw-bold text-danger text-center" placeholder="ID">
                             </div>
-                            <div class="col-md-4" style="max-width: 410px;">
+                            <div class="col-md">
                                 <label class="form-label">Sub Dealer / Party <span class="text-danger">*</span></label>
                                 <select name="party_id" id="party_id" class="form-select select2" required>
                                     <option value="">Search Party...</option>
                                 </select>
                             </div>
+                        </div>
+                    </div>
+                </div>
 
-                            <div class="col-12"><hr class="my-1 text-muted opacity-25"></div>
-
-                            <!-- Row 3: Claim Item (with Item ID), MFG Date, Card Number, Retail Price, Sale Price -->
+                <!-- SECTION 2: CLAIM DETAILS -->
+                <div class="card shadow-sm mb-3">
+                    <div class="card-header py-2 bg-light fw-bold text-secondary border-bottom">
+                        <i class="fa fa-list-alt me-1"></i> Section 2: Claim Details
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <!-- Claim Item (with Item ID), MFG Date, Card Number, Retail Price, Sale Price -->
                             <div class="col-md-4">
                                 <div class="row g-1">
                                     <div class="col-3" style="max-width: 80px;">
@@ -159,7 +167,7 @@
 
                             <div class="col-12"><hr class="my-1 text-muted opacity-25"></div>
 
-                            <!-- Row 4: Bill Date, Warehouses -->
+                            <!-- Bill Date, Warehouses -->
                             <div class="col-md-2">
                                 <label class="form-label">Bill Date</label>
                                 <input type="date" name="bill_date" class="form-control input-sm">
@@ -195,7 +203,7 @@
 
                             <div class="col-12"><hr class="my-1 text-muted opacity-25"></div>
 
-                            <!-- Row 5: Fault Found & Remarks -->
+                            <!-- Fault Found & Remarks -->
                             <div class="col-md-6">
                                 <label class="form-label">Fault Found / Analysis</label>
                                 <textarea name="fault_found" class="form-control input-sm" rows="1" placeholder="Detail fault..."></textarea>
