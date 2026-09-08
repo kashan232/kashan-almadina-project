@@ -92,32 +92,51 @@ class SalesReportController extends Controller
         $transactionType = $request->input('transaction_type', 'sale');
         $lines = collect();
 
+        // Helper to extract numeric part for ascending sorting
+        $extractNum = function ($val) {
+            return (int) (preg_replace('/[^0-9]/', '', (string) $val) ?: 0);
+        };
+
+        // 1st Sequence: Sales Invoices from Invoice Numbers, Ascending Order
         if (in_array($transactionType, ['sale', 'both'], true)) {
-            $lines = $lines->merge(
-                $this->fetchSaleLines($request)->map(fn ($item) => $this->wrapSaleLine($item, 1))
-            );
+            $saleLines = $this->fetchSaleLines($request)
+                ->map(fn ($item) => $this->wrapSaleLine($item, 1))
+                ->sortBy(fn ($item) => $extractNum($item->sale->invoice_no ?? ''))
+                ->values();
+            $lines = $lines->merge($saleLines);
         }
 
+        // 2nd Sequence: Sales Return from Invoice Numbers, Ascending Order
         if (in_array($transactionType, ['sale_return', 'both'], true)) {
             $sign = $transactionType === 'both' ? -1 : 1;
-            $lines = $lines->merge(
-                $this->fetchReturnLines($request)->map(fn ($item) => $this->wrapReturnLine($item, $sign))
-            );
+            $returnLines = $this->fetchReturnLines($request)
+                ->map(fn ($item) => $this->wrapReturnLine($item, $sign))
+                ->sortBy(fn ($item) => $extractNum($item->sale->invoice_no ?? ''))
+                ->values();
+            $lines = $lines->merge($returnLines);
         }
 
+        // 3rd Sequence: Claim, Invoice Numbers, Ascending Order
         if (in_array($transactionType, ['customer_credit_note', 'both'], true)) {
             $selectedItems = $request->item ?? [];
             $totalProducts = Product::count();
             $applyItemFilter = $this->shouldApplyFilter($selectedItems, $totalProducts);
 
-            $this->fetchCustomerClaimCreditNoteLines($request)->each(function ($claim) use (&$lines, $transactionType, $applyItemFilter, $selectedItems) {
-                $claimLines = $this->wrapCustomerClaimLines($claim, $transactionType === 'both');
-                foreach ($claimLines as $cl) {
+            $claimLines = collect();
+            $this->fetchCustomerClaimCreditNoteLines($request)->each(function ($claim) use (&$claimLines, $transactionType, $applyItemFilter, $selectedItems) {
+                $wrappedLines = $this->wrapCustomerClaimLines($claim, $transactionType === 'both');
+                foreach ($wrappedLines as $cl) {
                     if (!$applyItemFilter || in_array((int) $cl->product_id, array_map('intval', $selectedItems), true)) {
-                        $lines->push($cl);
+                        $claimLines->push($cl);
                     }
                 }
             });
+
+            $sortedClaimLines = $claimLines
+                ->sortBy(fn ($item) => $extractNum($item->sale->invoice_no ?? ''))
+                ->values();
+
+            $lines = $lines->merge($sortedClaimLines);
         }
 
         return $lines->values();
