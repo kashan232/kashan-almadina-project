@@ -576,46 +576,9 @@
             // Actually, we can pass (price*qty - line_total).
             $discAmts = $items->map(fn($i) => round(($i->price * $i->qty) - $i->line_total, 2))->toArray();
 
-            // Product date-aware historical prices for retail/cost reference
-            $allProductPrices = \App\Models\ProductPrice::orderBy('start_date', 'asc')
-                ->orderBy('created_at', 'asc')
-                ->orderBy('id', 'asc')
-                ->get()
-                ->groupBy('product_id');
-
-            $rawDate = !empty($purchase->entry_date) ? $purchase->entry_date : (!empty($purchase->current_date) ? $purchase->current_date : ($purchase->created_at ? \Carbon\Carbon::parse($purchase->created_at)->toDateString() : now()->toDateString()));
-            $purchaseTime = $purchase->created_at ? \Carbon\Carbon::parse($purchase->created_at) : now();
-
-            $retails = $items->map(function($i) use ($allProductPrices, $rawDate, $purchaseTime) {
-                $retail = 0;
-                $pricesForProd = $allProductPrices->get($i->product_id, collect());
-                if ($pricesForProd->isNotEmpty()) {
-                    $matched = $pricesForProd->filter(function($pr) use ($rawDate) {
-                        $start = $pr->start_date;
-                        $end = $pr->end_date;
-                        if ($start && $rawDate < $start) return false;
-                        if ($end && $rawDate > $end) return false;
-                        return true;
-                    });
-
-                    if ($matched->count() > 1) {
-                        $exact = $matched->filter(fn($pr) => \Carbon\Carbon::parse($pr->created_at) <= $purchaseTime)->last();
-                        $chosen = $exact ?: $matched->last();
-                    } else {
-                        $chosen = $matched->first();
-                    }
-
-                    if (!$chosen) {
-                        $chosen = $pricesForProd->filter(fn($pr) => !$pr->start_date || $pr->start_date <= $rawDate)->last() ?: $pricesForProd->last();
-                    }
-
-                    $retail = (float) ($chosen->purchase_retail_price ?? $chosen->sale_retail_price ?? 0);
-                }
-
-                if ($retail <= 0) {
-                    $retail = (float) (optional(optional($i->product)->latestPrice)->purchase_retail_price ?? optional(optional($i->product)->latestPrice)->sale_retail_price ?? 0);
-                }
-                return $retail;
+            // Product saved retail_price for retail reference
+            $retails = $items->map(function($i) {
+                return (float) ($i->retail_price > 0 ? $i->retail_price : ($i->purchase_retail_price > 0 ? $i->purchase_retail_price : (optional(optional($i->product)->latestPrice)->purchase_retail_price ?? optional(optional($i->product)->latestPrice)->sale_retail_price ?? 0)));
             })->toArray();
 
             $nets    = $items->map(fn($i) => optional(optional($i->product)->latestPrice)->purchase_net_amount ?? 0)->toArray();
