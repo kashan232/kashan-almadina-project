@@ -204,10 +204,11 @@
                                 <div class="col-md-3">
                                     <label class="fw-bold mb-1" style="font-size: 11px;">Transaction Type</label>
                                     <select name="transaction_type[]" class="form-select form-select-sm select2" multiple required style="font-size: 12px;">
-                                        <option value="sale" selected>Sale (SJ)</option>
-                                        <option value="sale_return" selected>Sale Return (SRJ)</option>
-                                        <option value="customer_credit_note" selected>Credit Note (CLM-CN)</option>
-                                        <option value="customer_claim_replacement" selected>Replacement (CLM-Rep)</option>
+                                        <option value="both">All (Return Minus &amp; Credit Plus)</option>
+                                        <option value="sale">Sale (SJ)</option>
+                                        <option value="sale_return">Sale Return (SRJ)</option>
+                                        <option value="customer_credit_note">Credit Note (CLM-CN)</option>
+                                        <option value="customer_claim_replacement">Replacement (CLM-Rep)</option>
                                     </select>
                                 </div>
                                 <div class="col-md-2">
