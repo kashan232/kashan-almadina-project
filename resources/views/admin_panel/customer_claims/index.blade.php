@@ -148,12 +148,14 @@
                                     <label class="column-picker-item"><input type="checkbox" data-column="4" checked> Date</label>
                                     <label class="column-picker-item"><input type="checkbox" data-column="5" checked> Party</label>
                                     <label class="column-picker-item"><input type="checkbox" data-column="6" checked> Product</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="7" checked> Claim Type</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="8" checked> Sales Price</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="9" checked> Replacement</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="10" checked> Fault</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="11" checked> Remarks</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="12" checked> Status</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="7" checked> MFG Date</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="8" checked> Card No</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="9" checked> Claim Type</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="10" checked> Sales Price</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="11" checked> Replacement</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="12" checked> Fault</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="13" checked> Remarks</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="14" checked> Status</label>
                                 </div>
                             </div>
                         </div>
@@ -169,13 +171,15 @@
                                             <th>Date</th>
                                             <th>Party</th>
                                             <th>Product</th>
+                                            <th>MFG Date</th>
+                                            <th>Card No</th>
                                             <th>Claim Type</th>
                                             <th class="text-end">Sales Price</th>
                                             <th>Replacement</th>
                                             <th>Fault</th>
                                             <th>Remarks</th>
                                             <th>Created By</th>
-                                    <th class="text-center">Status</th>
+                                            <th class="text-center">Status</th>
                                             <th class="text-center" style="min-width: 120px;">Action</th>
                                         </tr>
                                     </thead>
@@ -183,8 +187,7 @@
                                         @foreach ($claims as $claim)
                                         <tr>
                                             <td>{{ $claim->id }}</td>
-
-                                    <td class="text-center small">CLM</td>
+                                            <td class="text-center small">CLM</td>
                                             <td class="fw-bold text-success">{{ preg_replace('/[^0-9]/', '', $claim->claim_no) ?: '-' }}</td>
                                             <td class="small">{{ \Carbon\Carbon::parse($claim->claim_date)->format('d-M-Y') }}</td>
                                             <td>
@@ -193,9 +196,18 @@
                                                 </span>
                                             </td>
                                             <td class="small text-dark">{{ $claim->product->name ?? 'N/A' }}</td>
+                                            <td class="small text-secondary">{{ $claim->mfg_date ?: '-' }}</td>
+                                            <td class="small text-secondary">{{ $claim->card_no ?: '-' }}</td>
                                             <td class="small text-muted">{{ $claim->claim_type }}</td>
                                             <td class="text-end fw-bold">{{ number_format((float)($claim->sales_price > 0 ? $claim->sales_price : ($claim->replacement_sales_price ?? 0)), 2) }}</td>
-                                            <td class="small text-dark">{{ $claim->replacementProduct->name ?? '-' }}</td>
+                                            <td class="small text-dark">
+                                                @if($claim->replacementProduct)
+                                                    <span class="fw-bold text-primary">{{ $claim->replacementProduct->name }}</span>
+                                                    <span class="badge bg-light text-danger border ms-1">₨ {{ number_format((float)($claim->replacement_sales_price ?? 0), 2) }}</span>
+                                                @else
+                                                    <span class="text-muted">-</span>
+                                                @endif
+                                            </td>
                                             <td class="small text-muted">{{ Str::limit($claim->fault_found, 15) }}</td>
                                             <td class="small text-muted">{{ Str::limit($claim->remarks, 15) }}</td>
                                             <td>
