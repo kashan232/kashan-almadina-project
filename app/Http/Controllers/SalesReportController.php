@@ -701,14 +701,10 @@ class SalesReportController extends Controller
 
     private function previewInvoiceWise($saleItems, $from_date, $to_date)
     {
-        $grouped = $saleItems->groupBy(function ($item) {
-            return $item->sale->customer_id;
-        })->map(function ($items) {
-            return $items->groupBy(function ($item) {
-                return $item->sale->invoice_no;
-            });
+        $invoices = $saleItems->groupBy(function ($item) {
+            return $item->sale->invoice_no;
         });
 
-        return view('admin_panel.reports.sales.preview_invoice', compact('grouped', 'from_date', 'to_date'));
+        return view('admin_panel.reports.sales.preview_invoice', compact('invoices', 'from_date', 'to_date'));
     }
 }
