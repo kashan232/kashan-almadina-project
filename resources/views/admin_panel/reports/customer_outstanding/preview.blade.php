@@ -9,34 +9,34 @@
         * { box-sizing: border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
         body {
             font-family: Arial, Helvetica, sans-serif;
-            font-size: 9px;
+            font-size: 11px;
             color: #000;
             margin: 0;
-            padding: 4mm;
+            padding: 6mm;
             background: #fff;
         }
         .no-print {
-            padding: 8px;
+            padding: 10px;
             background: #f8f9fa;
             border-bottom: 1px solid #ddd;
             text-align: center;
-            margin-bottom: 10px;
+            margin-bottom: 12px;
         }
         .company-name {
             text-align: center;
             color: #8e24aa;
-            font-size: 14px;
+            font-size: 16px;
             font-weight: bold;
-            margin-bottom: 2px;
+            margin-bottom: 3px;
         }
         .report-header {
             text-align: center;
             position: relative;
-            margin-bottom: 8px;
+            margin-bottom: 10px;
         }
         .report-title {
             color: #0d47a1;
-            font-size: 14px;
+            font-size: 16px;
             font-weight: bold;
             margin: 0;
         }
@@ -44,7 +44,7 @@
             position: absolute;
             right: 0;
             top: 0;
-            font-size: 8px;
+            font-size: 10px;
             color: #555;
         }
         table {
@@ -55,15 +55,15 @@
         th {
             background: #d9d9d9;
             border: 1px solid #000;
-            padding: 4px 3px;
-            font-size: 9px;
+            padding: 6px 5px;
+            font-size: 11px;
             font-weight: bold;
             text-align: center;
         }
         td {
             border: 1px solid #666;
-            padding: 2px 4px;
-            font-size: 9px;
+            padding: 4px 6px;
+            font-size: 11px;
         }
         .sno { width: 4%; text-align: center; }
         .type { width: 8%; text-align: center; }

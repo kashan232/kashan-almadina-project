@@ -9,39 +9,39 @@
         * { box-sizing: border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
         body {
             font-family: Arial, Helvetica, sans-serif;
-            font-size: 7px;
+            font-size: 10px;
             color: #000;
             margin: 0;
-            padding: 3mm;
+            padding: 4mm;
             background: #fff;
         }
         .no-print {
-            padding: 8px;
+            padding: 10px;
             background: #f8f9fa;
             border-bottom: 1px solid #ddd;
             text-align: center;
-            margin-bottom: 8px;
+            margin-bottom: 10px;
         }
         .company-name {
             text-align: center;
             color: #8e24aa;
-            font-size: 12px;
+            font-size: 15px;
             font-weight: bold;
             margin-bottom: 2px;
         }
         .report-header {
             text-align: center;
             position: relative;
-            margin-bottom: 6px;
+            margin-bottom: 8px;
         }
         .report-title {
             color: #0d47a1;
-            font-size: 12px;
+            font-size: 15px;
             font-weight: bold;
             margin: 0;
         }
         .report-sub {
-            font-size: 8px;
+            font-size: 10px;
             font-weight: bold;
             color: #333;
         }
@@ -49,7 +49,7 @@
             position: absolute;
             right: 0;
             top: 0;
-            font-size: 7px;
+            font-size: 9px;
             color: #555;
         }
         table {
@@ -61,16 +61,16 @@
         th {
             background: #d9d9d9;
             border: 1px solid #000;
-            padding: 3px 2px;
-            font-size: 7px;
+            padding: 5px 3px;
+            font-size: 9px;
             font-weight: bold;
             text-align: center;
             line-height: 1.15;
         }
         td {
             border: 1px solid #666;
-            padding: 1px 3px;
-            font-size: 7px;
+            padding: 3px 4px;
+            font-size: 9px;
         }
         .sno { width: 3%; text-align: center; }
         .type { width: 7%; text-align: center; }
@@ -103,13 +103,15 @@
         $toLabel = $to_date ? \Carbon\Carbon::parse($to_date)->format('d-m-y') : '';
         $periodCols = [
             ['key' => 'sales', 'head' => 'Sales', 'class' => ''],
+            ['key' => 'c_rep', 'head' => 'C. Rep', 'class' => ''],
             ['key' => 'payment', 'head' => 'Payment', 'class' => 'col-green'],
-            ['key' => 'oth_inc', 'head' => 'Oth Inc', 'class' => 'col-green'],
+            ['key' => 'income', 'head' => 'Income', 'class' => 'col-green'],
             ['key' => 'jv_dr', 'head' => 'JV-DR.', 'class' => ''],
+            ['key' => 'cir', 'head' => 'Claim CN', 'class' => 'col-green'],
             ['key' => 'purchase', 'head' => 'Purchase', 'class' => 'col-red'],
+            ['key' => 'pur_ret', 'head' => 'Pur Ret', 'class' => 'col-green'],
             ['key' => 's_ret', 'head' => 'S. Ret', 'class' => 'col-red'],
-            ['key' => 'claim_cn', 'head' => 'Claim CN', 'class' => 'col-green'],
-            ['key' => 'purchase_cn', 'head' => 'Pur CN', 'class' => 'col-green'],
+            ['key' => 'clm_cn', 'head' => 'CLM CN', 'class' => 'col-red'],
             ['key' => 'receipts', 'head' => 'Receipts', 'class' => 'col-red'],
             ['key' => 'exp_dis', 'head' => 'Exp / Dis', 'class' => 'col-green'],
             ['key' => 'jv_cr', 'head' => 'JV-CR.', 'class' => 'col-green'],

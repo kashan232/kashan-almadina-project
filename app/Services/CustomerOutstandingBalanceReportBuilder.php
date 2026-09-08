@@ -24,8 +24,8 @@ class CustomerOutstandingBalanceReportBuilder
     private const CUSTOMER_PARTY_TYPES = ['customer', 'walking', 'walkin'];
 
     private const DETAIL_COLS = [
-        'sales', 'payment', 'oth_inc', 'jv_dr',
-        'purchase', 's_ret', 'claim_cn', 'purchase_cn', 'receipts', 'exp_dis', 'jv_cr',
+        'sales', 'c_rep', 'payment', 'income', 'jv_dr', 'cir',
+        'purchase', 'pur_ret', 's_ret', 'clm_cn', 'receipts', 'exp_dis', 'jv_cr',
     ];
 
     public function build(Request $request): array
@@ -177,6 +177,7 @@ class CustomerOutstandingBalanceReportBuilder
         $credit = (float) ($txn['credit'] ?? 0);
         $desc = strtolower((string) ($txn['desc'] ?? ''));
 
+        // 1. Sales (SJ): Sales amounts only
         if ($ref === 'SJ') {
             if ($debit > 0) {
                 $cols['sales'] += $debit;
@@ -191,56 +192,19 @@ class CustomerOutstandingBalanceReportBuilder
             return;
         }
 
-        if ($ref === 'PV') {
+        // 2. Claim Rep (C Rep): claim replacement Amount (CLM Debit)
+        // 4. Customer Claim (CLM CN): customer claim battery return credits (CLM Credit)
+        if ($ref === 'CLM') {
             if ($debit > 0) {
-                $cols['payment'] += $debit;
+                $cols['c_rep'] += $debit;
             }
             if ($credit > 0) {
-                $cols['purchase'] += $credit;
+                $cols['clm_cn'] += $credit;
             }
             return;
         }
 
-        if ($ref === 'PRJ') {
-            if ($debit > 0) {
-                $cols['purchase_cn'] += $debit;
-            }
-            if ($credit > 0) {
-                $cols['purchase'] += $credit;
-            }
-            return;
-        }
-
-        if ($ref === 'IV') {
-            if ($debit > 0) {
-                $cols['oth_inc'] += $debit;
-            }
-            if ($credit > 0) {
-                $cols['receipts'] += $credit;
-            }
-            return;
-        }
-
-        if ($ref === 'JV' || $ref === 'AV') {
-            if ($debit > 0) {
-                $cols['jv_dr'] += $debit;
-            }
-            if ($credit > 0) {
-                $cols['jv_cr'] += $credit;
-            }
-            return;
-        }
-
-        if ($ref === 'PJ') {
-            if ($credit > 0) {
-                $cols['purchase'] += $credit;
-            }
-            if ($debit > 0) {
-                $cols['purchase_cn'] += $debit;
-            }
-            return;
-        }
-
+        // 3. S. Ret (SRJ): Sale Returns only (SRJ / SR)
         if (in_array($ref, ['SRJ', 'SR'], true)) {
             if ($credit > 0) {
                 $cols['s_ret'] += $credit;
@@ -251,26 +215,40 @@ class CustomerOutstandingBalanceReportBuilder
             return;
         }
 
+        // 5. Claim CN (CIR): Customer Claim Credit Notes (CIR Debit / Credit)
         if ($ref === 'CIR') {
             if ($debit > 0) {
-                $cols['claim_cn'] += $debit;
+                $cols['cir'] += $debit;
             }
             if ($credit > 0) {
-                $cols['s_ret'] += $credit;
+                $cols['cir'] -= $credit;
             }
             return;
         }
 
-        if ($ref === 'CLM') {
+        // 6. Purchase (PJ): Direct purchase entries
+        if ($ref === 'PJ') {
             if ($credit > 0) {
-                $cols['s_ret'] += $credit;
+                $cols['purchase'] += $credit;
             }
             if ($debit > 0) {
-                $cols['sales'] += $debit;
+                $cols['pur_ret'] += $debit;
             }
             return;
         }
 
+        // 7. Pur Ret (PRJ): Purchase Return + WHT
+        if ($ref === 'PRJ') {
+            if ($debit > 0) {
+                $cols['pur_ret'] += $debit;
+            }
+            if ($credit > 0) {
+                $cols['purchase'] += $credit;
+            }
+            return;
+        }
+
+        // 8. Receipts (RV): receipts only
         if ($ref === 'RV') {
             if ($credit > 0) {
                 if (str_contains($desc, 'discount')) {
@@ -285,7 +263,30 @@ class CustomerOutstandingBalanceReportBuilder
             return;
         }
 
-        if ($ref === 'EV') {
+        // 9. Income (IV): Income Vouchers only
+        if ($ref === 'IV') {
+            if ($debit > 0) {
+                $cols['income'] += $debit;
+            }
+            if ($credit > 0) {
+                $cols['receipts'] += $credit;
+            }
+            return;
+        }
+
+        // 10. Payment (PV): Payment Vouchers only
+        if ($ref === 'PV') {
+            if ($debit > 0) {
+                $cols['payment'] += $debit;
+            }
+            if ($credit > 0) {
+                $cols['purchase'] += $credit;
+            }
+            return;
+        }
+
+        // 11. Expense (EV) / Voucher Discounts (VO)
+        if ($ref === 'EV' || $ref === 'VO') {
             if ($credit > 0) {
                 $cols['exp_dis'] += $credit;
             }
@@ -295,12 +296,13 @@ class CustomerOutstandingBalanceReportBuilder
             return;
         }
 
-        if ($ref === 'VO') {
-            if ($credit > 0) {
-                $cols['exp_dis'] += $credit;
-            }
+        // 12 & 13. JV-DR / JV-CR
+        if ($ref === 'JV' || $ref === 'AV') {
             if ($debit > 0) {
-                $cols['payment'] += $debit;
+                $cols['jv_dr'] += $debit;
+            }
+            if ($credit > 0) {
+                $cols['jv_cr'] += $credit;
             }
             return;
         }
