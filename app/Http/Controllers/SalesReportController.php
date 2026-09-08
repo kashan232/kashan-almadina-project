@@ -366,7 +366,7 @@ class SalesReportController extends Controller
 
         $item->setAttribute('sales_rate', (float) ($item->sales_rate > 0 ? $item->sales_rate : $item->sales_price));
         $item->setAttribute('entry_type', 'sale');
-        $item->setAttribute('entry_type_label', 'Sale');
+        $item->setAttribute('entry_type_label', 'SJ');
 
         return $item;
     }
@@ -419,7 +419,7 @@ class SalesReportController extends Controller
             'discount_amount' => $sign * $discountAmount,
             'amount' => $sign * $amount,
             'entry_type' => 'sale_return',
-            'entry_type_label' => 'Sale Return',
+            'entry_type_label' => 'SRJ',
         ];
     }
 
