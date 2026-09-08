@@ -78,7 +78,7 @@
         <div id="alertBox" class="alert d-none mb-2" role="alert"></div>
 
         <div class="d-flex justify-content-between align-items-center page-top-bar bg-light rounded shadow-sm border">
-            <div class="d-flex align-items-center gap-3">
+            <div class="d-flex align-items-center gap-2">
                 <h6 class="page-title mb-0 fw-bold text-primary"><i class="fa fa-check-square-o me-2"></i>Claim Acceptance
                     @if($isViewMode)
                         <span class="badge bg-info px-2 py-1 rounded ms-1" style="font-size:10px;"><i class="fa fa-eye"></i> View Only</span>
@@ -90,6 +90,9 @@
                 </span>
                 <span class="badge bg-primary px-3 py-2 rounded-pill shadow-sm">
                     <i class="fa fa-tag me-1"></i> <span id="voucherNoText">{{ isset($voucher) ? $voucher->voucher_no : 'Auto-Generated' }}</span>
+                </span>
+                <span class="badge bg-secondary px-2 py-1 rounded" style="font-size:11px;">
+                    <i class="fa fa-clock-o me-1"></i> {{ isset($voucher->entry_time) ? \Carbon\Carbon::parse($voucher->entry_time)->format('h:i A') : date('h:i A') }}
                 </span>
             </div>
             <div class="d-flex align-items-center gap-2">
@@ -103,71 +106,62 @@
             @csrf
             <input type="hidden" name="id" id="voucher_id" value="{{ $voucher->id ?? '' }}">
             <input type="hidden" name="action" id="formAction" value="save">
+            <input type="hidden" name="entry_time" value="{{ $voucher->entry_time ?? date('H:i') }}">
 
-            <div class="row g-3 mb-2">
-                <div class="col-md-2">
-                    <div class="card border-0 bg-light p-2 shadow-sm h-100">
-                        <label class="form-label text-muted small fw-bold mb-1">Entry Date <span class="text-danger">*</span></label>
-                        <input type="date" name="entry_date" class="form-control form-control-sm" value="{{ $voucher->entry_date ?? date('Y-m-d') }}" required>
-                    </div>
+            <!-- SECTION 1: HEADER & PARTY INFO -->
+            <div class="card border shadow-sm mb-2">
+                <div class="card-header bg-light py-2 fw-bold text-primary border-bottom">
+                    <i class="fa fa-info-circle me-1"></i> Section 1: Header & Party Info
                 </div>
-                <div class="col-md-2">
-                    <div class="card border-0 bg-light p-2 shadow-sm h-100">
-                        <label class="form-label text-muted small fw-bold mb-1">Entry Time <span class="text-danger">*</span></label>
-                        <input type="time" name="entry_time" class="form-control form-control-sm" value="{{ $voucher->entry_time ?? date('H:i') }}" required>
-                    </div>
-                </div>
-                <div class="col-md-2">
-                    <div class="card border-0 bg-light p-2 shadow-sm h-100">
-                        <label class="form-label text-muted small fw-bold mb-1">Claim Date <span class="text-danger">*</span></label>
-                        <input type="date" name="date" class="form-control form-control-sm" value="{{ $voucher->date ?? date('Y-m-d') }}" required>
-                    </div>
-                </div>
-                <div class="col-md-2">
-                    <div class="card border-0 bg-light p-2 shadow-sm h-100">
-                        <label class="form-label text-muted small fw-bold mb-1"><span class="text-danger"><i class="fa fa-minus-circle"></i></span> Claim From <span class="text-danger">*</span></label>
-                        <select name="from_warehouse_id" class="form-select form-select-sm" required>
-                            <option value="">Select Source...</option>
-                            @foreach($customerWarehouses as $w)
-                                <option value="{{ $w->id }}" @selected(isset($voucher) && $voucher->from_warehouse_id == $w->id)>{{ $w->warehouse_name }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                </div>
-                <div class="col-md-2">
-                    <div class="card border-0 bg-light p-2 shadow-sm h-100">
-                        <label class="form-label text-muted small fw-bold mb-1"><span class="text-success"><i class="fa fa-plus-circle"></i></span> Accept In <span class="text-danger">*</span></label>
-                        <select name="to_warehouse_id" class="form-select form-select-sm" required>
-                            <option value="">Select Dest...</option>
-                            @foreach($companyWarehouses as $w)
-                                <option value="{{ $w->id }}" @selected(isset($voucher) && $voucher->to_warehouse_id == $w->id)>{{ $w->warehouse_name }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                </div>
-                <div class="col-md-2">
-                    <div class="card border-0 bg-light p-2 shadow-sm h-100">
-                        <label class="form-label text-muted small fw-bold mb-1">Party Type <span class="text-danger">*</span></label>
-                        <select name="party_type" id="party_type" class="form-select form-select-sm" required>
-                            <option value="vendor" @selected(isset($voucher) && $voucher->party_type == 'vendor')>Vendor</option>
-                            <option value="customer" @selected(isset($voucher) && $voucher->party_type == 'customer')>Customer</option>
-                            <option value="walkin" @selected(isset($voucher) && $voucher->party_type == 'walkin')>Walking customer</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="card border-0 bg-light p-2 shadow-sm h-100">
-                        <label class="form-label text-muted small fw-bold mb-1">Party Details <span class="text-danger">*</span></label>
-                        <select name="party_id" id="party_id" class="form-select select2" required>
-                            @if(isset($voucher))
-                                @php
-                                    $partyName = '';
-                                    if($voucher->party_type == 'vendor') $partyName = $voucher->vendor->id . ' - ' . ($voucher->vendor->name ?? 'N/A');
-                                    else $partyName = $voucher->customer->id . ' - ' . ($voucher->customer->customer_name ?? 'N/A');
-                                @endphp
-                                <option value="{{ $voucher->party_id }}" selected>{{ $partyName }}</option>
-                            @endif
-                        </select>
+                <div class="card-body">
+                    <div class="row g-2 align-items-end">
+                        <div class="col-md-1" style="max-width: 120px;">
+                            <label class="form-label text-muted small fw-bold mb-1">Entry Date <span class="text-danger">*</span></label>
+                            <input type="date" name="entry_date" class="form-control form-control-sm" value="{{ $voucher->entry_date ?? date('Y-m-d') }}" required>
+                        </div>
+                        <div class="col-md-1" style="max-width: 120px;">
+                            <label class="form-label text-muted small fw-bold mb-1">Claim Date <span class="text-danger">*</span></label>
+                            <input type="date" name="date" class="form-control form-control-sm" value="{{ $voucher->date ?? date('Y-m-d') }}" required>
+                        </div>
+                        <div class="col-md-2" style="max-width: 160px;">
+                            <label class="form-label text-muted small fw-bold mb-1"><span class="text-danger"><i class="fa fa-minus-circle"></i></span> Claim From <span class="text-danger">*</span></label>
+                            <select name="from_warehouse_id" class="form-select form-select-sm" required>
+                                <option value="">Select Source...</option>
+                                @foreach($customerWarehouses as $w)
+                                    <option value="{{ $w->id }}" @selected(isset($voucher) && $voucher->from_warehouse_id == $w->id)>{{ $w->warehouse_name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-md-2" style="max-width: 160px;">
+                            <label class="form-label text-muted small fw-bold mb-1"><span class="text-success"><i class="fa fa-plus-circle"></i></span> Accept In <span class="text-danger">*</span></label>
+                            <select name="to_warehouse_id" class="form-select form-select-sm" required>
+                                <option value="">Select Dest...</option>
+                                @foreach($companyWarehouses as $w)
+                                    <option value="{{ $w->id }}" @selected(isset($voucher) && $voucher->to_warehouse_id == $w->id)>{{ $w->warehouse_name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-md-2" style="max-width: 140px;">
+                            <label class="form-label text-muted small fw-bold mb-1">Party Type <span class="text-danger">*</span></label>
+                            <select name="party_type" id="party_type" class="form-select form-select-sm" required>
+                                <option value="vendor" @selected(isset($voucher) && $voucher->party_type == 'vendor')>Vendor</option>
+                                <option value="customer" @selected(isset($voucher) && $voucher->party_type == 'customer')>Customer</option>
+                                <option value="walkin" @selected(isset($voucher) && $voucher->party_type == 'walkin')>Walking customer</option>
+                            </select>
+                        </div>
+                        <div class="col-md">
+                            <label class="form-label text-muted small fw-bold mb-1">Party Details <span class="text-danger">*</span></label>
+                            <select name="party_id" id="party_id" class="form-select select2" required>
+                                @if(isset($voucher))
+                                    @php
+                                        $partyName = '';
+                                        if($voucher->party_type == 'vendor') $partyName = $voucher->vendor->id . ' - ' . ($voucher->vendor->name ?? 'N/A');
+                                        else $partyName = $voucher->customer->id . ' - ' . ($voucher->customer->customer_name ?? 'N/A');
+                                    @endphp
+                                    <option value="{{ $voucher->party_id }}" selected>{{ $partyName }}</option>
+                                @endif
+                            </select>
+                        </div>
                     </div>
                 </div>
             </div>

@@ -74,7 +74,11 @@
             
             {{-- TOP BAR --}}
             <div class="d-flex justify-content-between align-items-center page-top-bar bg-light rounded shadow-sm">
-                <div style="min-width:80px;"></div>
+                <div class="d-flex align-items-center gap-2" style="min-width:180px;">
+                    <span class="badge bg-secondary px-2 py-1 rounded" style="font-size:11px;">
+                        <i class="fa fa-clock-o me-1"></i> {{ isset($voucher->entry_time) ? \Carbon\Carbon::parse($voucher->entry_time)->format('h:i A') : date('h:i A') }}
+                    </span>
+                </div>
                 <div class="d-flex align-items-center gap-2 justify-content-center flex-grow-1">
                     <h6 class="page-title mb-0 fw-bold">Claim Credit Note Management
                         @if($isViewMode)
@@ -99,21 +103,26 @@
                 @csrf
                 <input type="hidden" name="action" id="formAction" value="save">
                 <input type="hidden" name="id" value="{{ $voucher->id ?? '' }}">
+                <input type="hidden" name="entry_time" value="{{ $voucher->entry_time ?? date('H:i') }}">
                 <div class="posted-watermark {{ ($isViewMode && $isPosted) || $isPosted ? 'show' : '' }}" id="postedWatermark">Posted</div>
 
                 {{-- Header Details --}}
-                <div class="card shadow-sm">
+                <div class="card shadow-sm mb-2">
+                    <div class="card-header py-1 bg-light fw-bold text-primary border-bottom" style="font-size:0.82rem;">
+                        <i class="fa fa-info-circle me-1"></i> Section 1: Header & Party Information
+                    </div>
                     <div class="card-body">
-                        <div class="row g-2 align-items-end">
-                            <div class="col-md-2">
+                        <!-- Row 1: Header & Party Info -->
+                        <div class="row g-2 align-items-end mb-2">
+                            <div class="col-md-1" style="max-width: 110px;">
                                 <label class="form-label small fw-bold text-muted mb-1">Date</label>
                                 <input type="date" name="date" class="form-control input-sm" value="{{ $voucher->date ?? date('Y-m-d') }}" required>
                             </div>
-                            <div class="col-md-2">
+                            <div class="col-md-1" style="max-width: 120px;">
                                 <label class="form-label small fw-bold text-muted mb-1">Voucher No</label>
                                 <input type="text" class="form-control input-sm fw-bold text-primary bg-light" value="{{ $voucher->voucher_no ?? $voucherNo }}" readonly>
                             </div>
-                            <div class="col-md-2">
+                            <div class="col-md-2" style="max-width: 150px;">
                                 <label class="form-label small fw-bold text-danger mb-1"><i class="fa fa-minus-circle"></i> Deduct From (-) Cr</label>
                                 <select name="from_warehouse_id" id="from_warehouse_id" class="form-select input-sm" required>
                                     <option value="">Select Stock Source...</option>
@@ -123,7 +132,7 @@
                                     @endforeach
                                 </select>
                             </div>
-                            <div class="col-md-2">
+                            <div class="col-md-2" style="max-width: 150px;">
                                 <label class="form-label small fw-bold text-success mb-1"><i class="fa fa-plus-circle"></i> Add To (+) Dr</label>
                                 <select name="to_warehouse_id" id="to_warehouse_id" class="form-select input-sm" required>
                                     <option value="">Select Target...</option>
@@ -133,14 +142,7 @@
                                     @endforeach
                                 </select>
                             </div>
-                            <div class="col-md-4">
-                                <label class="form-label small fw-bold text-muted mb-1">Remarks</label>
-                                <input type="text" name="remarks" class="form-control input-sm" value="{{ $voucher->remarks ?? '' }}" placeholder="Optional notes...">
-                            </div>
-                        </div>
-
-                        <div class="row g-2 align-items-end">
-                            <div class="col-md-2">
+                            <div class="col-md-2" style="max-width: 130px;">
                                 <label class="form-label small fw-bold text-primary mb-1">Party Type <span class="text-danger">*</span></label>
                                 <select name="party_type" id="party_type" class="form-select input-sm" required>
                                     <option value="">Select Type...</option>
@@ -149,7 +151,7 @@
                                     <option value="walking" {{ (isset($voucher) && $voucher->party_type == 'walking') ? 'selected' : '' }}>Walking Customer</option>
                                 </select>
                             </div>
-                            <div class="col-md-3">
+                            <div class="col-md">
                                 <label class="form-label small fw-bold text-primary mb-1">Supplier / Party Name <span class="text-danger">*</span></label>
                                 <select name="party_id" id="party_id" class="form-select select2" required>
                                     <option value="">Select Party...</option>
@@ -164,9 +166,12 @@
                                     @endif
                                 </select>
                             </div>
-                            
-                            <div class="col-md-3">
-                                <div class="card border-primary border-opacity-25 bg-primary bg-opacity-10 btr-search-card rounded-3 h-100 shadow-sm p-1">
+                        </div>
+
+                        <!-- Row 2: BTR Search & Manual Product Search in 1 single row -->
+                        <div class="row g-2 align-items-center">
+                            <div class="col-md-5">
+                                <div class="card border-primary border-opacity-25 bg-primary bg-opacity-10 btr-search-card rounded-3 shadow-sm p-1">
                                     <div class="row g-1 align-items-center">
                                         <div class="col-auto"><i class="fa fa-barcode text-primary fs-5 ms-1"></i></div>
                                         <div class="col">
@@ -182,8 +187,8 @@
                             </div>
 
                             @if(!$isViewMode)
-                            <div class="col-md-3">
-                                <div class="card border-success border-opacity-25 bg-success bg-opacity-10 p-1 px-2 rounded-3 h-100 shadow-sm">
+                            <div class="col-md-7">
+                                <div class="card border-success border-opacity-25 bg-success bg-opacity-10 p-1 px-2 rounded-3 shadow-sm">
                                     <div class="row g-1 align-items-center">
                                         <div class="col-auto"><i class="fa fa-plus-circle text-success fs-5 ms-1"></i></div>
                                         <div class="col">

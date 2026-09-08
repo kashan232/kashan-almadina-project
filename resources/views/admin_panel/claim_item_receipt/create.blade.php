@@ -117,25 +117,25 @@
 
                         {{-- Header Details --}}
                         <div class="card shadow-sm mb-2">
+                            <div class="card-header py-1 bg-light fw-bold text-primary border-bottom" style="font-size:0.82rem;">
+                                <i class="fa fa-info-circle me-1"></i> Section 1: Header & Party Info
+                            </div>
                             <div class="card-body">
-                                <div class="row g-2 mb-3 align-items-end">
-                                    <div class="col-md-2">
+                                <!-- Row 1: Header & Party Info -->
+                                <div class="row g-2 align-items-end mb-2">
+                                    <div class="col-md-1" style="max-width: 110px;">
                                         <label class="form-label small fw-bold text-muted mb-1">Entry Date</label>
                                         <input type="date" name="entry_date" class="form-control input-sm" value="{{ $voucher->entry_date ?? date('Y-m-d') }}" required>
                                     </div>
-                                    <div class="col-md-1">
-                                        <label class="form-label small fw-bold text-muted mb-1">Entry Time</label>
-                                        <input type="time" name="entry_time" class="form-control input-sm" value="{{ $voucher->entry_time ?? date('H:i') }}" required>
-                                    </div>
-                                    <div class="col-md-2">
+                                    <div class="col-md-1" style="max-width: 110px;">
                                         <label class="form-label small fw-bold text-muted mb-1">Receipt Date</label>
                                         <input type="date" name="date" class="form-control input-sm" value="{{ $voucher->date ?? date('Y-m-d') }}" required>
                                     </div>
-                                    <div class="col-md-1">
+                                    <div class="col-md-1" style="max-width: 120px;">
                                         <label class="form-label small fw-bold text-muted mb-1">Receipt No</label>
                                         <input type="text" class="form-control input-sm fw-bold text-primary bg-light" value="{{ isset($voucher) ? $voucher->voucher_no : 'Auto-Generated' }}" readonly style="font-size: 0.8rem;">
                                     </div>
-                                    <div class="col-md-2">
+                                    <div class="col-md-2" style="max-width: 150px;">
                                         <label class="form-label small fw-bold text-danger mb-1"><i class="fa fa-minus-circle"></i> Deduct From (-) Cr</label>
                                         <select name="from_warehouse_id" id="receipt_from_warehouse_id" class="form-select input-sm" required>
                                             <option value="">Select Stock Source...</option>
@@ -144,7 +144,7 @@
                                             @endforeach
                                         </select>
                                     </div>
-                                    <div class="col-md-2">
+                                    <div class="col-md-2" style="max-width: 150px;">
                                         <label class="form-label small fw-bold text-success mb-1"><i class="fa fa-plus-circle"></i> Add To (+) Dr</label>
                                         <select name="to_warehouse_id" id="receipt_to_warehouse_id" class="form-select input-sm" required>
                                             <option value="">Select Receipt Wh...</option>
@@ -156,14 +156,7 @@
                                             @endforeach
                                         </select>
                                     </div>
-                                    <div class="col-md-2">
-                                        <label class="form-label small fw-bold text-muted mb-1">Remarks</label>
-                                        <input type="text" name="remarks" class="form-control input-sm" value="{{ $voucher->remarks ?? '' }}" placeholder="Optional notes...">
-                                    </div>
-                                </div>
-
-                                <div class="row g-2 align-items-end">
-                                    <div class="col-md-2">
+                                    <div class="col-md-2" style="max-width: 130px;">
                                         <label class="form-label small fw-bold text-primary mb-1">Party Type <span class="text-danger">*</span></label>
                                         <select name="party_type" id="receipt_party_type" class="form-select input-sm" required>
                                             <option value="">Select Type...</option>
@@ -172,7 +165,7 @@
                                             <option value="walking" {{ (isset($voucher) && $voucher->party_type == 'walking') ? 'selected' : '' }}>Walking Customer</option>
                                         </select>
                                     </div>
-                                    <div class="col-md-3">
+                                    <div class="col-md">
                                         <label class="form-label small fw-bold text-primary mb-1">Supplier / Party Name <span class="text-danger">*</span></label>
                                         <select name="party_id" id="receipt_party_id" class="form-select select2" required>
                                             <option value="">Select Party...</option>
@@ -187,9 +180,12 @@
                                             @endif
                                         </select>
                                     </div>
-                                    
-                                    <div class="col-md-3">
-                                        <div class="card border-primary border-opacity-25 bg-primary bg-opacity-10 p-1 px-2 rounded-3 h-100 shadow-sm">
+                                </div>
+
+                                <!-- Row 2: BTR Search & Manual Product Search in 1 single row -->
+                                <div class="row g-2 align-items-center">
+                                    <div class="col-md-5">
+                                        <div class="card border-primary border-opacity-25 bg-primary bg-opacity-10 p-1 px-2 rounded-3 shadow-sm">
                                             <div class="row g-1 align-items-center">
                                                 <div class="col-auto"><i class="fa fa-barcode text-primary fs-5 ms-1"></i></div>
                                                 <div class="col">
@@ -205,8 +201,8 @@
                                     </div>
 
                                     @if(!$isViewMode)
-                                    <div class="col-md-4">
-                                        <div class="card border-success border-opacity-25 bg-success bg-opacity-10 p-1 px-2 rounded-3 h-100 shadow-sm">
+                                    <div class="col-md-7">
+                                        <div class="card border-success border-opacity-25 bg-success bg-opacity-10 p-1 px-2 rounded-3 shadow-sm">
                                             <div class="row g-1 align-items-center">
                                                 <div class="col-auto"><i class="fa fa-plus-circle text-success fs-5 ms-1"></i></div>
                                                 <div class="col">
