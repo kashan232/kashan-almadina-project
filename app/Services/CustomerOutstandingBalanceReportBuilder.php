@@ -226,13 +226,13 @@ class CustomerOutstandingBalanceReportBuilder
             return;
         }
 
-        // 6. Purchase (PJ): Direct purchase entries
+        // 6. Purchase (PJ): Direct purchase entries (Line Totals + WHT - Account Allocations / Discounts)
         if ($ref === 'PJ') {
             if ($credit > 0) {
                 $cols['purchase'] += $credit;
             }
             if ($debit > 0) {
-                $cols['pur_ret'] += $debit;
+                $cols['purchase'] -= $debit;
             }
             return;
         }
