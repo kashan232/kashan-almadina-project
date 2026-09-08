@@ -190,7 +190,11 @@
                 @php
                     $firstItem = $items->first();
                     $sale = $firstItem->sale;
+                    $partyType = strtolower($sale->partyType ?? 'customer');
+                    $isVendor = ($partyType === 'vendor');
+                    $partyLabel = $isVendor ? 'Vendor' : 'Customer';
                     $customer = $sale->customer;
+                    $partyName = $customer ? ($customer->customer_name ?? $customer->name ?? 'CASH CUSTOMER') : 'CASH CUSTOMER';
                     $saleDate = \Carbon\Carbon::parse($sale->created_at)->format('d-m-y');
                     
                     $inv_qty = 0;
@@ -201,15 +205,15 @@
                 
                 <!-- Invoice Heading Row -->
                 <tr class="customer-row">
-                    <td colspan="4" class="text-left">
-                        Customer: <b style="color: #000;">{{ $customer ? strtoupper($customer->customer_name) : 'CASH CUSTOMER' }}</b>
-                        {{ $customer && $customer->cnic ? ' - '.$customer->cnic : '' }}
+                    <td><b>{{ $partyLabel }}</b></td>
+                    <td colspan="3" class="text-left">
+                        <b style="color: #000;">{{ strtoupper($partyName) }}</b>
+                        {{ $customer && !empty($customer->cnic) ? ' - '.$customer->cnic : '' }}
                     </td>
-                    <td colspan="4" class="text-right">
-                        Inv.No: <b style="color: #000;">{{ $invoiceNo }}</b>
-                        &nbsp;&nbsp;&nbsp;
-                        Date: <b style="color: #000;">{{ $saleDate }}</b>
-                    </td>
+                    <td><b>Inv No.</b></td>
+                    <td class="text-center"><b>{{ $invoiceNo }}</b></td>
+                    <td><b>Date.</b></td>
+                    <td class="text-center"><b>{{ $saleDate }}</b></td>
                 </tr>
 
                 <!-- Data Rows -->
@@ -242,12 +246,12 @@
 
                 <!-- Invoice Total Row -->
                 <tr class="subtotal-row">
-                    <td colspan="3" class="text-right">Total:</td>
-                    <td class="qty-box">{{ number_format($inv_qty) }}</td>
-                    <td style="border:none; background:none;"></td>
-                    <td class="val-box">{{ number_format($inv_retail_amt, 0) }}</td>
-                    <td style="border:none; background:none;"></td>
-                    <td class="val-box">{{ number_format($inv_sales_amt, 0) }}</td>
+                    <td colspan="3" class="text-right"><b>Total:</b></td>
+                    <td class="qty-box"><b>{{ number_format($inv_qty) }}</b></td>
+                    <td></td>
+                    <td class="val-box"><b>{{ number_format($inv_retail_amt, 0) }}</b></td>
+                    <td></td>
+                    <td class="val-box"><b>{{ number_format($inv_sales_amt, 0) }}</b></td>
                 </tr>
                 <tr style="height: 6px;"><td colspan="8" style="border:none; padding: 0;"></td></tr>
 
