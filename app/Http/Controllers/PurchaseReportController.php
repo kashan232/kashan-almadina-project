@@ -70,7 +70,11 @@ class PurchaseReportController extends Controller
 
         $purchaseItems = $this->buildReportLines($request);
 
-        if ($report_type == 'Party Wise') {
+        if ($report_type == 'All') {
+            return $this->previewAll($purchaseItems, $from_date, $to_date);
+        } elseif ($report_type == 'Actual Invoice') {
+            return $this->previewActualInvoice($request, $from_date, $to_date);
+        } elseif ($report_type == 'Party Wise') {
             return $this->previewPartyWise($purchaseItems, $from_date, $to_date);
         } elseif ($report_type == 'Item Wise') {
             return $this->previewItemWise($purchaseItems, $from_date, $to_date);
@@ -160,8 +164,12 @@ class PurchaseReportController extends Controller
         $lines->each(function($item) use ($allProductPrices) {
             $pId = $item->product_id;
             $purchase = $item->purchase;
-            $rawDate = !empty($purchase?->entry_date) ? $purchase->entry_date : (!empty($purchase?->current_date) ? $purchase->current_date : ($purchase?->created_at ? \Carbon\Carbon::parse($purchase->created_at)->toDateString() : now()->toDateString()));
-            $purchaseTime = $purchase?->created_at ? \Carbon\Carbon::parse($purchase->created_at) : now();
+            $createdVal = is_object($purchase) && isset($purchase->created_at) ? $purchase->created_at : null;
+            $entryVal = is_object($purchase) && isset($purchase->entry_date) ? $purchase->entry_date : null;
+            $currVal = is_object($purchase) && isset($purchase->current_date) ? $purchase->current_date : null;
+
+            $rawDate = !empty($entryVal) ? $entryVal : (!empty($currVal) ? $currVal : ($createdVal ? \Carbon\Carbon::parse($createdVal)->toDateString() : now()->toDateString()));
+            $purchaseTime = $createdVal ? \Carbon\Carbon::parse($createdVal) : now();
 
             $retailPrice = 0;
             $pricesForProd = $allProductPrices->get($pId, collect());
@@ -542,6 +550,106 @@ class PurchaseReportController extends Controller
             'entry_type' => 'claim_credit_note',
             'entry_type_label' => 'CLM-CN',
         ];
+    }
+
+    private function previewAll($purchaseItems, $from_date, $to_date)
+    {
+        return view('admin_panel.reports.purchase.preview_all', compact('purchaseItems', 'from_date', 'to_date'));
+    }
+
+    private function previewActualInvoice(Request $request, $from_date, $to_date)
+    {
+        $filters = $this->extractFilters($request);
+
+        $query = \App\Models\Purchase::withoutGlobalScopes()
+            ->with([
+                'purchasable',
+                'vendor',
+                'items.product.brandRelation',
+                'items.product.latestPrice',
+                'accountAllocations.account',
+                'accountAllocations.head',
+                'whtAccount',
+            ])
+            ->where('status', 'Posted');
+
+        $this->applyPurchaseDateFilter($query, $from_date, $to_date);
+
+        if (!empty($filters['invoice_no'])) {
+            $invoiceNo = $filters['invoice_no'];
+            $query->where(function ($sub) use ($invoiceNo) {
+                $sub->where('invoice_no', 'like', "%{$invoiceNo}%")
+                    ->orWhere('invoice_no', 'like', '%' . ltrim($invoiceNo, '0') . '%');
+            });
+        }
+
+        if ($this->shouldApplyFilter($filters['parties'], $filters['totalParties'])) {
+            $query->where(function ($sub) use ($filters) {
+                $sub->whereIn('vendor_id', $filters['parties'])
+                    ->orWhereIn('purchasable_id', $filters['parties']);
+            });
+        }
+
+        if ($this->shouldApplyFilter($filters['sales_officers'], $filters['totalUsers'])) {
+            $query->whereIn('created_by', $filters['sales_officers']);
+        }
+
+        if ($this->shouldApplyFilter($filters['warehouses'], $filters['totalWarehouses'])) {
+            $query->whereIn('warehouse_id', $filters['warehouses']);
+        }
+
+        $purchases = $query->get()->sortBy(function ($p) {
+            return (int) (preg_replace('/[^0-9]/', '', (string) $p->invoice_no) ?: 0);
+        })->values();
+
+        // Attach historical date-aware purchase retail price to each item inside each purchase
+        $allProductPrices = \App\Models\ProductPrice::orderBy('start_date', 'asc')
+            ->orderBy('created_at', 'asc')
+            ->orderBy('id', 'asc')
+            ->get()
+            ->groupBy('product_id');
+
+        foreach ($purchases as $p) {
+            $rawDate = !empty($p->entry_date) ? $p->entry_date : (!empty($p->current_date) ? $p->current_date : ($p->created_at ? \Carbon\Carbon::parse($p->created_at)->toDateString() : now()->toDateString()));
+            $purchaseTime = $p->created_at ? \Carbon\Carbon::parse($p->created_at) : now();
+
+            foreach ($p->items as $item) {
+                $pId = $item->product_id;
+                $retailPrice = 0;
+                $pricesForProd = $allProductPrices->get($pId, collect());
+
+                if ($pricesForProd->isNotEmpty()) {
+                    $matched = $pricesForProd->filter(function($pr) use ($rawDate) {
+                        $start = $pr->start_date;
+                        $end = $pr->end_date;
+                        if ($start && $rawDate < $start) return false;
+                        if ($end && $rawDate > $end) return false;
+                        return true;
+                    });
+
+                    if ($matched->count() > 1) {
+                        $exact = $matched->filter(fn($pr) => \Carbon\Carbon::parse($pr->created_at) <= $purchaseTime)->last();
+                        $chosen = $exact ?: $matched->last();
+                    } else {
+                        $chosen = $matched->first();
+                    }
+
+                    if (!$chosen) {
+                        $chosen = $pricesForProd->filter(fn($pr) => !$pr->start_date || $pr->start_date <= $rawDate)->last() ?: $pricesForProd->last();
+                    }
+
+                    $retailPrice = (float) ($chosen->purchase_retail_price ?? $chosen->sale_retail_price ?? 0);
+                }
+
+                if ($retailPrice <= 0) {
+                    $retailPrice = (float) ($item->product?->latestPrice?->purchase_retail_price ?? $item->product?->latestPrice?->sale_retail_price ?? $item->product?->retail_price ?? 0);
+                }
+
+                $item->purchase_retail_price = $retailPrice;
+            }
+        }
+
+        return view('admin_panel.reports.purchase.preview_actual_invoice', compact('purchases', 'from_date', 'to_date'));
     }
 
     private function partyKey($item): string

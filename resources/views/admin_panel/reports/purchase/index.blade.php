@@ -195,6 +195,8 @@
                                     <label class="fw-bold mb-1" style="font-size: 11px;">Report Type</label>
                                     <select name="report_type" id="report_type_select" class="form-select form-select-sm" required style="height: 30px; font-size: 12px;">
                                         <option value="Invoice Wise">Invoice Wise</option>
+                                        <option value="All">All</option>
+                                        <option value="Actual Invoice">Actual Invoice</option>
                                         <option value="Item Wise">Item Wise</option>
                                         <option value="Party Wise">Party Wise</option>
                                     </select>
