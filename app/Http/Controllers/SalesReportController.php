@@ -68,7 +68,9 @@ class SalesReportController extends Controller
 
         $saleItems = $this->buildReportLines($request);
 
-        if ($report_type == 'Party Wise') {
+        if ($report_type == 'All') {
+            return $this->previewAll($saleItems, $from_date, $to_date);
+        } elseif ($report_type == 'Party Wise') {
             return $this->previewPartyWise($saleItems, $from_date, $to_date);
         } elseif ($report_type == 'Item Wise') {
             return $this->previewItemWise($saleItems, $from_date, $to_date);
@@ -759,6 +761,11 @@ class SalesReportController extends Controller
         $grouped = $saleItems->groupBy('product_id');
 
         return view('admin_panel.reports.sales.preview_item', compact('grouped', 'from_date', 'to_date'));
+    }
+
+    private function previewAll($saleItems, $from_date, $to_date)
+    {
+        return view('admin_panel.reports.sales.preview_all', compact('saleItems', 'from_date', 'to_date'));
     }
 
     private function previewInvoiceWise($saleItems, $from_date, $to_date)
