@@ -73,7 +73,7 @@
 
                 <div class="card shadow-sm">
                     <div class="card-body">
-                        <div class="row g-2">
+                        <div class="row g-3">
                             <!-- Row 1: Claim No, Date, Time, Claim Type -->
                             <div class="col-md-2" style="max-width: 140px;">
                                 <label class="form-label">Claim No</label>
@@ -97,6 +97,8 @@
                                 </select>
                             </div>
 
+                            <div class="col-12"><hr class="my-1 text-muted opacity-25"></div>
+
                             <!-- Row 2: Party Type, Code/ID, Sub Dealer / Party -->
                             <div class="col-md-2" style="max-width: 160px;">
                                 <label class="form-label">Party Type</label>
@@ -116,6 +118,8 @@
                                     <option value="">Search Party...</option>
                                 </select>
                             </div>
+
+                            <div class="col-12"><hr class="my-1 text-muted opacity-25"></div>
 
                             <!-- Row 3: Claim Item (with Item ID), MFG Date, Card Number, Retail Price, Sale Price -->
                             <div class="col-md-4">
@@ -153,6 +157,8 @@
                                 <input type="number" step="any" name="sales_price" id="sales_price" class="form-control input-sm text-end fw-bold text-danger" placeholder="0.00" readonly value="{{ $claim->sales_price }}">
                             </div>
 
+                            <div class="col-12"><hr class="my-1 text-muted opacity-25"></div>
+
                             <!-- Row 4: Bill Date, Warehouses -->
                             <div class="col-md-3">
                                 <label class="form-label">Bill Date</label>
@@ -186,6 +192,8 @@
                                     </select>
                                 @endif
                             </div>
+
+                            <div class="col-12"><hr class="my-1 text-muted opacity-25"></div>
 
                             <!-- Row 5: Fault Found & Remarks -->
                             <div class="col-md-6">
