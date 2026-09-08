@@ -106,10 +106,13 @@ class SalesReportController extends Controller
         }
 
         if (in_array($transactionType, ['customer_credit_note', 'both'], true)) {
-            $lines = $lines->merge(
-                $this->fetchCustomerClaimCreditNoteLines($request)
-                    ->map(fn ($claim) => $this->wrapCustomerClaimLine($claim, 1))
-            );
+            $sign = $transactionType === 'both' ? 1 : 1;
+            $this->fetchCustomerClaimCreditNoteLines($request)->each(function ($claim) use (&$lines, $transactionType) {
+                $claimLines = $this->wrapCustomerClaimLines($claim, $transactionType === 'both');
+                foreach ($claimLines as $cl) {
+                    $lines->push($cl);
+                }
+            });
         }
 
         return $lines->values();
@@ -508,18 +511,10 @@ class SalesReportController extends Controller
         return $query->orderBy('claim_date')->orderBy('id')->get();
     }
 
-    private function wrapCustomerClaimLine(CustomerClaim $claim, int $sign): object
+    private function wrapCustomerClaimLines(CustomerClaim $claim, bool $isBothMode): array
     {
-        $amount = (float) $claim->report_amount;
-        $salesPrice = (float) ($claim->sales_price ?? 0);
-        if ($salesPrice <= 0) {
-            $salesPrice = (float) ($claim->replacement_sales_price ?? 0);
-        }
-        if ($salesPrice <= 0 && $amount > 0) {
-            $salesPrice = $amount;
-        }
+        $result = [];
 
-        $retailPrice = (float) ($claim->retail_price > 0 ? $claim->retail_price : ($claim->product?->latestPrice?->sale_retail_price ?? $claim->product?->latestPrice?->retail_price ?? $claim->product?->retail_price ?? $salesPrice));
         $party = $claim->party;
         $reportCustomer = $party;
         if ($claim->party_type === 'vendor' && $party) {
@@ -540,23 +535,57 @@ class SalesReportController extends Controller
             'partyType' => $claim->party_type,
         ];
 
-        return (object) [
+        // 1. Claim Item Received (Section 2: Claim Details) -> MINUS like Sale Return (Customer returns broken battery, reduces net sale)
+        $receivedSalesPrice = (float) ($claim->sales_price ?? 0);
+        $receivedRetailPrice = (float) ($claim->retail_price > 0 ? $claim->retail_price : ($claim->product?->latestPrice?->sale_retail_price ?? $claim->product?->latestPrice?->retail_price ?? $claim->product?->retail_price ?? $receivedSalesPrice));
+        
+        $recSign = $isBothMode ? -1 : 1;
+
+        $result[] = (object) [
             'sale' => $pseudoSale,
             'product_id' => $claim->product_id,
             'product' => $claim->product,
             'warehouse_id' => $claim->claim_warehouse_id,
             'warehouse' => $claim->warehouse,
-            'sales_qty' => $sign * 1,
-            'retail_price' => $retailPrice,
-            'sales_rate' => $salesPrice,
-            'sales_price' => $salesPrice,
+            'sales_qty' => $recSign * 1,
+            'retail_price' => $receivedRetailPrice,
+            'sales_rate' => $receivedSalesPrice,
+            'sales_price' => $receivedSalesPrice,
             'discount_amount' => 0,
-            'amount' => $sign * $amount,
-            'entry_type' => 'customer_credit_note',
-            'entry_type_label' => 'Credit Note',
-            'replacement_product' => $claim->replacementProduct,
-            'replacement_sales_price' => $claim->replacement_sales_price,
+            'amount' => $recSign * $receivedSalesPrice,
+            'entry_type' => 'customer_claim_received',
+            'entry_type_label' => 'Claim Recv',
+            'replacement_product' => null,
+            'replacement_sales_price' => 0,
         ];
+
+        // 2. Replacement Item Given (CREDIT NOTE / REPLACEMENT INFO) -> PLUS like New Sale (New battery given to customer, adds to net sale)
+        if ($claim->replacement_product_id || ($claim->replacement_sales_price ?? 0) > 0) {
+            $replacementSalesPrice = (float) ($claim->replacement_sales_price ?? 0);
+            $replacementRetailPrice = (float) ($claim->replacement_retail_price > 0 ? $claim->replacement_retail_price : ($claim->replacementProduct?->latestPrice?->sale_retail_price ?? $claim->replacementProduct?->latestPrice?->retail_price ?? $claim->replacementProduct?->retail_price ?? $replacementSalesPrice));
+            
+            $repSign = $isBothMode ? 1 : 1;
+
+            $result[] = (object) [
+                'sale' => $pseudoSale,
+                'product_id' => $claim->replacement_product_id ?: $claim->product_id,
+                'product' => $claim->replacementProduct ?: $claim->product,
+                'warehouse_id' => $claim->replacement_from_warehouse_id ?: $claim->claim_warehouse_id,
+                'warehouse' => $claim->replacementFromWarehouse ?: $claim->warehouse,
+                'sales_qty' => $repSign * 1,
+                'retail_price' => $replacementRetailPrice,
+                'sales_rate' => $replacementSalesPrice,
+                'sales_price' => $replacementSalesPrice,
+                'discount_amount' => 0,
+                'amount' => $repSign * $replacementSalesPrice,
+                'entry_type' => 'customer_credit_note',
+                'entry_type_label' => 'Credit Note',
+                'replacement_product' => $claim->replacementProduct,
+                'replacement_sales_price' => $claim->replacement_sales_price,
+            ];
+        }
+
+        return $result;
     }
 
     private function previewSaleVsList($saleItems, $from_date, $to_date)
