@@ -62,11 +62,12 @@ class PurchaseController extends Controller
         $nextInvoice = Purchase::generateInvoiceNo();
 
         $expenseAccounts = Account::where('head_id', 1)->get();
+        $incomeAccounts = Account::where('head_id', 2)->get();
 
         // Pass this to the view
         return view(
             'admin_panel.purchase.add_purchase',
-            compact('Vendor', "Warehouse", 'AccountHeads', 'customers', 'nextInvoice', 'expenseAccounts')
+            compact('Vendor', "Warehouse", 'AccountHeads', 'customers', 'nextInvoice', 'expenseAccounts', 'incomeAccounts')
         );
     }
 
@@ -431,6 +432,7 @@ class PurchaseController extends Controller
         $Warehouse = Warehouse::all();
         $AccountHeads = AccountHead::all();
         $expenseAccounts = Account::where('head_id', 1)->get();
+        $incomeAccounts = Account::where('head_id', 2)->get();
         $nextInvoice = $purchase->invoice_no;
         $viewMode = true;
 
@@ -442,6 +444,7 @@ class PurchaseController extends Controller
             'AccountHeads',
             'nextInvoice',
             'expenseAccounts',
+            'incomeAccounts',
             'viewMode'
         ));
     }
@@ -457,6 +460,7 @@ class PurchaseController extends Controller
         $AccountHeads = AccountHead::all();
         
         $expenseAccounts = Account::where('head_id', 1)->get();
+        $incomeAccounts = Account::where('head_id', 2)->get();
         
         // Use existing invoice number
         $nextInvoice = $purchase->invoice_no;
@@ -468,7 +472,8 @@ class PurchaseController extends Controller
             'Warehouse', 
             'AccountHeads',
             'nextInvoice',
-            'expenseAccounts'
+            'expenseAccounts',
+            'incomeAccounts'
         ));
     }
 

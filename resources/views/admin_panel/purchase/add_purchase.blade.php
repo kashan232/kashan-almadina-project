@@ -703,6 +703,10 @@
                           @foreach($whtHeadAccounts as $whtAcc)
                               <option value="{{ $whtAcc->id }}" {{ (int) $purchase->wht_account_id === (int) $whtAcc->id ? 'selected' : '' }}>{{ $whtAcc->title }}</option>
                           @endforeach
+                      @else
+                          @foreach($expenseAccounts as $whtAcc)
+                              <option value="{{ $whtAcc->id }}">{{ $whtAcc->title }}</option>
+                          @endforeach
                       @endif
                     </select>
                   </div>
@@ -2321,6 +2325,11 @@ $(document).ready(function() {
             <td>
                 <select name="account_id[]" class="form-control form-control-sm accountSub">
                     <option value="" disabled selected>Select Account</option>
+                    @if(isset($incomeAccounts))
+                        @foreach($incomeAccounts as $incAcc)
+                            <option value="{{ $incAcc->id }}">{{ $incAcc->title }}</option>
+                        @endforeach
+                    @endif
                 </select>
             </td>
             <td>
