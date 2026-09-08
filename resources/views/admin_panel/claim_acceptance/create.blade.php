@@ -115,13 +115,10 @@
                 </div>
                 <div class="card-body">
                     <div class="row g-2 align-items-end">
-                        <div class="col-md-1" style="max-width: 120px;">
-                            <label class="form-label text-muted small fw-bold mb-1">Entry Date <span class="text-danger">*</span></label>
-                            <input type="date" name="entry_date" class="form-control form-control-sm" value="{{ $voucher->entry_date ?? date('Y-m-d') }}" required>
-                        </div>
-                        <div class="col-md-1" style="max-width: 120px;">
-                            <label class="form-label text-muted small fw-bold mb-1">Claim Date <span class="text-danger">*</span></label>
+                        <div class="col-md-2" style="max-width: 140px;">
+                            <label class="form-label text-muted small fw-bold mb-1">Date <span class="text-danger">*</span></label>
                             <input type="date" name="date" class="form-control form-control-sm" value="{{ $voucher->date ?? date('Y-m-d') }}" required>
+                            <input type="hidden" name="entry_date" value="{{ $voucher->entry_date ?? date('Y-m-d') }}">
                         </div>
                         <div class="col-md-2" style="max-width: 160px;">
                             <label class="form-label text-muted small fw-bold mb-1"><span class="text-danger"><i class="fa fa-minus-circle"></i></span> Claim From <span class="text-danger">*</span></label>

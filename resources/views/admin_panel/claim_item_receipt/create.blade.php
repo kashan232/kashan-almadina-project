@@ -123,13 +123,10 @@
                             <div class="card-body">
                                 <!-- Row 1: Header & Party Info -->
                                 <div class="row g-2 align-items-end mb-2">
-                                    <div class="col-md-1" style="max-width: 110px;">
-                                        <label class="form-label small fw-bold text-muted mb-1">Entry Date</label>
-                                        <input type="date" name="entry_date" class="form-control input-sm" value="{{ $voucher->entry_date ?? date('Y-m-d') }}" required>
-                                    </div>
-                                    <div class="col-md-1" style="max-width: 110px;">
+                                    <div class="col-md-2" style="max-width: 140px;">
                                         <label class="form-label small fw-bold text-muted mb-1">Receipt Date</label>
                                         <input type="date" name="date" class="form-control input-sm" value="{{ $voucher->date ?? date('Y-m-d') }}" required>
+                                        <input type="hidden" name="entry_date" value="{{ $voucher->entry_date ?? date('Y-m-d') }}">
                                     </div>
                                     <div class="col-md-1" style="max-width: 120px;">
                                         <label class="form-label small fw-bold text-muted mb-1">Receipt No</label>
