@@ -160,127 +160,129 @@
         </button>
     </div>
 
-    <div class="report-header">
-        <h1 class="report-title">Sales Note Report (Invoice Wise)</h1>
-        <div class="date-range">
-            From: <span>{{ \Carbon\Carbon::parse($from_date)->format('d-m-y') }}</span> 
-            To: <span>{{ \Carbon\Carbon::parse($to_date)->format('d-m-y') }}</span>
+    <div id="reportContainer" style="background: #fff; padding: 5px;">
+        <div class="report-header">
+            <h1 class="report-title">Sales Note Report (Invoice Wise)</h1>
+            <div class="date-range">
+                From: <span>{{ \Carbon\Carbon::parse($from_date)->format('d-m-y') }}</span> 
+                To: <span>{{ \Carbon\Carbon::parse($to_date)->format('d-m-y') }}</span>
+            </div>
         </div>
-    </div>
 
-    <table id="salesReportTable">
-        <thead>
-            <tr>
-                <th width="8%">Type</th>
-                <th width="26%" class="text-left">Item Description</th>
-                <th width="10%">Brand</th>
-                <th width="5%">Qty</th>
-                <th width="9%">Retail Price</th>
-                <th width="11%">Retail Amount</th>
-                <th width="9%">Rate</th>
-                <th width="12%">Amount</th>
-            </tr>
-        </thead>
-        <tbody>
-            @php 
-                $grand_qty = 0; 
-                $grand_retail_amt = 0; 
-                $grand_sales_amt = 0; 
-                $grand_invoice_amt = 0; 
-            @endphp
-
-            @foreach($invoices as $invoiceNo => $items)
-                @php
-                    $firstItem = $items->first();
-                    $sale = $firstItem->sale;
-                    $partyType = strtolower($sale->partyType ?? 'customer');
-                    $isVendor = ($partyType === 'vendor');
-                    $partyLabel = $isVendor ? 'Vendor' : 'Customer';
-                    $customer = $sale->customer;
-                    $partyName = $customer ? ($customer->customer_name ?? $customer->name ?? 'CASH CUSTOMER') : 'CASH CUSTOMER';
-                    $saleDate = \Carbon\Carbon::parse($sale->created_at)->format('d-m-y');
-                    
-                    $inv_qty = 0;
-                    $inv_retail_amt = 0;
-                    $inv_sales_amt = 0;
-                    $inv_invoice_amt = 0;
-                @endphp
-                
-                <!-- Invoice Heading Row -->
-                <tr class="customer-row">
-                    <td><b>{{ $partyLabel }}</b></td>
-                    <td colspan="3" class="text-left">
-                        <b style="color: #000;">{{ strtoupper($partyName) }}</b>
-                        {{ $customer && !empty($customer->cnic) ? ' - '.$customer->cnic : '' }}
-                    </td>
-                    <td><b>Inv No.</b></td>
-                    <td class="text-center"><b>{{ $invoiceNo }}</b></td>
-                    <td><b>Date.</b></td>
-                    <td class="text-center"><b>{{ $saleDate }}</b></td>
+        <table id="salesReportTable">
+            <thead>
+                <tr>
+                    <th width="8%">Type</th>
+                    <th width="26%" class="text-left">Item Description</th>
+                    <th width="10%">Brand</th>
+                    <th width="5%">Qty</th>
+                    <th width="9%">Retail Price</th>
+                    <th width="11%">Retail Amount</th>
+                    <th width="9%">Rate</th>
+                    <th width="12%">Amount</th>
                 </tr>
+            </thead>
+            <tbody>
+                @php 
+                    $grand_qty = 0; 
+                    $grand_retail_amt = 0; 
+                    $grand_sales_amt = 0; 
+                    $grand_invoice_amt = 0; 
+                @endphp
 
-                <!-- Data Rows -->
-                @foreach($items as $item)
+                @foreach($invoices as $invoiceNo => $items)
                     @php
-                        $qty = $item->sales_qty;
-                        $retail_p = $item->retail_price ?? 0;
-                        $retail_a = $retail_p * $qty;
-                        $sales_p = $item->sales_rate > 0 ? $item->sales_rate : ($item->sales_qty > 0 ? ($item->sales_price - ($item->discount_amount / $item->sales_qty)) : $item->sales_price);
-                        $sales_a = $item->amount;
-                        $add_disc = $item->discount_amount ?? 0;
-                        $invoice_a = $sales_a - $add_disc;
-
-                        $inv_qty += $qty;
-                        $inv_retail_amt += $retail_a;
-                        $inv_sales_amt += $sales_a;
-                        $inv_invoice_amt += $invoice_a;
+                        $firstItem = $items->first();
+                        $sale = $firstItem->sale;
+                        $partyType = strtolower($sale->partyType ?? 'customer');
+                        $isVendor = ($partyType === 'vendor');
+                        $partyLabel = $isVendor ? 'Vendor' : 'Customer';
+                        $customer = $sale->customer;
+                        $partyName = $customer ? ($customer->customer_name ?? $customer->name ?? 'CASH CUSTOMER') : 'CASH CUSTOMER';
+                        $saleDate = \Carbon\Carbon::parse($sale->created_at)->format('d-m-y');
+                        
+                        $inv_qty = 0;
+                        $inv_retail_amt = 0;
+                        $inv_sales_amt = 0;
+                        $inv_invoice_amt = 0;
                     @endphp
-                    <tr class="item-row @include('admin_panel.reports.sales.partials.data_row_class', ['item' => $item])">
-                        @include('admin_panel.reports.sales.partials.type_cell', ['item' => $item])
-                        <td>{{ $item->product ? $item->product->name : 'N/A' }}</td>
-                        @include('admin_panel.reports.sales.partials.brand_cell', ['item' => $item])
-                        <td class="text-center">{{ number_format($qty) }}</td>
-                        <td class="text-right">{{ number_format($retail_p, 0) }}</td>
-                        <td class="text-right">{{ number_format($retail_a, 0) }}</td>
-                        <td class="text-right">@include('admin_panel.reports.sales.partials.sales_price_cell', ['item' => $item, 'value' => $sales_p])</td>
-                        <td class="text-right bold-val">{{ number_format($sales_a, 0) }}</td>
+                    
+                    <!-- Invoice Heading Row -->
+                    <tr class="customer-row">
+                        <td><b>{{ $partyLabel }}</b></td>
+                        <td colspan="3" class="text-left">
+                            <b style="color: #000;">{{ strtoupper($partyName) }}</b>
+                            {{ $customer && !empty($customer->cnic) ? ' - '.$customer->cnic : '' }}
+                        </td>
+                        <td><b>Inv No.</b></td>
+                        <td class="text-center"><b>{{ $invoiceNo }}</b></td>
+                        <td><b>Date.</b></td>
+                        <td class="text-center"><b>{{ $saleDate }}</b></td>
                     </tr>
+
+                    <!-- Data Rows -->
+                    @foreach($items as $item)
+                        @php
+                            $qty = $item->sales_qty;
+                            $retail_p = $item->retail_price ?? 0;
+                            $retail_a = $retail_p * $qty;
+                            $sales_p = $item->sales_rate > 0 ? $item->sales_rate : ($item->sales_qty > 0 ? ($item->sales_price - ($item->discount_amount / $item->sales_qty)) : $item->sales_price);
+                            $sales_a = $item->amount;
+                            $add_disc = $item->discount_amount ?? 0;
+                            $invoice_a = $sales_a - $add_disc;
+
+                            $inv_qty += $qty;
+                            $inv_retail_amt += $retail_a;
+                            $inv_sales_amt += $sales_a;
+                            $inv_invoice_amt += $invoice_a;
+                        @endphp
+                        <tr class="item-row @include('admin_panel.reports.sales.partials.data_row_class', ['item' => $item])">
+                            @include('admin_panel.reports.sales.partials.type_cell', ['item' => $item])
+                            <td>{{ $item->product ? $item->product->name : 'N/A' }}</td>
+                            @include('admin_panel.reports.sales.partials.brand_cell', ['item' => $item])
+                            <td class="text-center">{{ number_format($qty) }}</td>
+                            <td class="text-right">{{ number_format($retail_p, 0) }}</td>
+                            <td class="text-right">{{ number_format($retail_a, 0) }}</td>
+                            <td class="text-right">@include('admin_panel.reports.sales.partials.sales_price_cell', ['item' => $item, 'value' => $sales_p])</td>
+                            <td class="text-right bold-val">{{ number_format($sales_a, 0) }}</td>
+                        </tr>
+                    @endforeach
+
+                    <!-- Invoice Total Row -->
+                    <tr class="subtotal-row">
+                        <td colspan="3" class="text-right"><b>Total:</b></td>
+                        <td class="qty-box"><b>{{ number_format($inv_qty) }}</b></td>
+                        <td></td>
+                        <td class="val-box"><b>{{ number_format($inv_retail_amt, 0) }}</b></td>
+                        <td></td>
+                        <td class="val-box"><b>{{ number_format($inv_sales_amt, 0) }}</b></td>
+                    </tr>
+                    <tr style="height: 6px;"><td colspan="8" style="border:none; padding: 0;"></td></tr>
+
+                    @php
+                        $grand_qty += $inv_qty;
+                        $grand_retail_amt += $inv_retail_amt;
+                        $grand_sales_amt += $inv_sales_amt;
+                        $grand_invoice_amt += $inv_invoice_amt;
+                    @endphp
                 @endforeach
 
-                <!-- Invoice Total Row -->
-                <tr class="subtotal-row">
-                    <td colspan="3" class="text-right"><b>Total:</b></td>
-                    <td class="qty-box"><b>{{ number_format($inv_qty) }}</b></td>
-                    <td></td>
-                    <td class="val-box"><b>{{ number_format($inv_retail_amt, 0) }}</b></td>
-                    <td></td>
-                    <td class="val-box"><b>{{ number_format($inv_sales_amt, 0) }}</b></td>
+                <!-- Grand Total -->
+                <tr class="grand-total-row">
+                    <td colspan="3" class="text-right">Grand Total:</td>
+                    <td class="grand-qty-box">{{ number_format($grand_qty) }}</td>
+                    <td style="border:none; background:none;"></td>
+                    <td class="grand-val-box">{{ number_format($grand_retail_amt, 0) }}</td>
+                    <td style="border:none; background:none;"></td>
+                    <td class="grand-val-box">{{ number_format($grand_sales_amt, 0) }}</td>
                 </tr>
-                <tr style="height: 6px;"><td colspan="8" style="border:none; padding: 0;"></td></tr>
+            </tbody>
+        </table>
 
-                @php
-                    $grand_qty += $inv_qty;
-                    $grand_retail_amt += $inv_retail_amt;
-                    $grand_sales_amt += $inv_sales_amt;
-                    $grand_invoice_amt += $inv_invoice_amt;
-                @endphp
-            @endforeach
-
-            <!-- Grand Total -->
-            <tr class="grand-total-row">
-                <td colspan="3" class="text-right">Grand Total:</td>
-                <td class="grand-qty-box">{{ number_format($grand_qty) }}</td>
-                <td style="border:none; background:none;"></td>
-                <td class="grand-val-box">{{ number_format($grand_retail_amt, 0) }}</td>
-                <td style="border:none; background:none;"></td>
-                <td class="grand-val-box">{{ number_format($grand_sales_amt, 0) }}</td>
-            </tr>
-        </tbody>
-    </table>
-
-    <div class="footer">
-        <div>{{ now()->format('l, F d, Y') }}</div>
-        <div>Page 1 of 1</div>
+        <div class="footer">
+            <div>{{ now()->format('l, F d, Y') }}</div>
+            <div>Page 1 of 1</div>
+        </div>
     </div>
 
     <!-- SheetJS for Export to Excel -->
@@ -295,13 +297,14 @@
         }
 
         function exportReportToPDF() {
-            var element = document.body;
+            var element = document.getElementById("reportContainer");
             var opt = {
-                margin:       5,
+                margin:       [3, 3, 3, 3],
                 filename:     "Sales_Report_" + "{{ date('Y-m-d') }}" + ".pdf",
                 image:        { type: 'jpeg', quality: 0.98 },
                 html2canvas:  { scale: 2, useCORS: true, logging: false },
-                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
+                pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] }
             };
             html2pdf().set(opt).from(element).save();
         }
