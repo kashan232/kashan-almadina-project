@@ -78,4 +78,23 @@
         color: #ffffff !important;
         font-weight: 600 !important;
     }
+
+    /* 📊 DataTables Export Buttons Clean Alignment & Single Toolbar */
+    .dt-buttons {
+        margin-bottom: 0.5rem !important;
+        display: inline-flex !important;
+        gap: 0.25rem !important;
+    }
+    .dt-buttons .btn,
+    .dt-button {
+        font-size: 0.75rem !important;
+        padding: 0.2rem 0.6rem !important;
+        border-radius: 50rem !important;
+        box-shadow: none !important;
+    }
+    div.dataTables_wrapper div.dataTables_info,
+    div.dataTables_wrapper div.dataTables_paginate {
+        padding-top: 0.4rem !important;
+        font-size: 0.8rem !important;
+    }
 </style>

@@ -54,18 +54,6 @@
                     $(this).select2({ width: '100%' });
                 }
             });
-
-            $('#example').DataTable({
-                dom: 'Bfrtip',
-                order: [[0, "desc"]],
-                buttons: [
-                    'copyHtml5',
-                    'excelHtml5',
-                    'csvHtml5',
-                    'pdfHtml5',
-                    'colvis'
-                ]
-            });
         });
 
         // Initialize column visibility if dataTable is already initialized elsewhere or needs specific config

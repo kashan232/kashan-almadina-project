@@ -39,6 +39,16 @@ class CustomerClaim extends Model
         return $this->belongsTo(\App\Models\Warehouse::class, 'replacement_from_warehouse_id')->withoutGlobalScopes();
     }
 
+    public function vendor()
+    {
+        return $this->belongsTo(\App\Models\Vendor::class, 'party_id');
+    }
+
+    public function customer()
+    {
+        return $this->belongsTo(\App\Models\Customer::class, 'party_id');
+    }
+
     public function party()
     {
         if ($this->party_type === 'vendor') {
@@ -71,6 +81,14 @@ class CustomerClaim extends Model
 
     public function getPartyNameAttribute(): string
     {
+        if ($this->party_type === 'vendor') {
+            return $this->vendor->name ?? 'N/A';
+        }
+        
+        if ($this->party_type === 'customer' || $this->party_type === 'walkin' || !$this->party_type) {
+            return $this->customer->customer_name ?? $this->customer->name ?? 'N/A';
+        }
+
         $party = $this->party;
         if (!$party) {
             return 'N/A';

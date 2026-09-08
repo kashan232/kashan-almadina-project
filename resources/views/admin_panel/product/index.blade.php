@@ -414,13 +414,19 @@
              }
          });
 
-         // Initialize DataTable
+         // Initialize DataTable with Export Buttons
          var table = $('#example').DataTable({
-             destroy: true, // Allow re-initialization if already handled by global layout
+             destroy: true,
              scrollX: true,
              autoWidth: false,
              pageLength: 25,
              order: [[1, 'asc']],
+             dom: 'Bfrtip',
+             buttons: [
+                 { extend: 'copyHtml5', text: '<i class="fa fa-copy me-1"></i> Copy', className: 'btn btn-sm btn-outline-secondary rounded-pill me-1' },
+                 { extend: 'csvHtml5', text: '<i class="fa fa-file-text-o me-1"></i> CSV', className: 'btn btn-sm btn-outline-info rounded-pill me-1' },
+                 { extend: 'excelHtml5', text: '<i class="fa fa-file-excel-o me-1"></i> Excel', className: 'btn btn-sm btn-outline-success rounded-pill me-1' }
+             ],
              language: {
                  search: "_INPUT_",
                  searchPlaceholder: "Search products..."
