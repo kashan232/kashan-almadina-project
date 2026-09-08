@@ -846,7 +846,9 @@
                             <select class="form-select form-select-sm rv-head px-1" style="font-size: 0.75rem;" name="receipt_head_id[]">
                               <option value="" disabled {{ empty($rv['head_id']) ? 'selected' : '' }}>Select Head</option>
                               @foreach ($accountHeads as $head)
+                                @if($head->id == 3 || strtoupper($head->name) == 'ASSETS')
                                 <option value="{{ $head->id }}" {{ $rv['head_id'] == $head->id ? 'selected' : '' }}>{{ $head->name }}</option>
+                                @endif
                               @endforeach
                             </select>
                           </div>
@@ -2386,7 +2388,9 @@
   $('#btnAddRV').on('click', function() {
     let headOptions = '<option value="" disabled selected>Select Head</option>';
     @foreach($accountHeads as $head)
+      @if($head->id == 3 || strtoupper($head->name) == 'ASSETS')
       headOptions += `<option value="{{ $head->id }}">{{ $head->name }}</option>`;
+      @endif
     @endforeach
 
     $('#rvWrapper').append(`
