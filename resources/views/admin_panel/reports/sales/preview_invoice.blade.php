@@ -246,7 +246,7 @@
                     <td style="border:none; background:none;"></td>
                     <td class="val-box">{{ number_format($inv_sales_amt, 0) }}</td>
                 </tr>
-                <tr style="height: 25px;"><td colspan="8" style="border:none;"></td></tr>
+                <tr style="height: 6px;"><td colspan="8" style="border:none; padding: 0;"></td></tr>
 
                 @php
                     $grand_qty += $inv_qty;
