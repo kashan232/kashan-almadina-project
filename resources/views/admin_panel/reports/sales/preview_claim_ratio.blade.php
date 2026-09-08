@@ -76,59 +76,92 @@
 
     <div class="no-print">
         <button onclick="window.print()" style="padding: 10px 25px; background: #c2185b; color: #fff; border: none; cursor: pointer; font-weight: bold; border-radius: 4px;">Print Report</button>
+        <button id="btnExportExcel" onclick="exportReportToExcel()" style="padding: 10px 25px; background: #2e7d32; color: #fff; border: none; cursor: pointer; font-weight: bold; border-radius: 4px; margin-left: 10px;">
+            <i class="fa fa-file-excel-o"></i> Export to Excel
+        </button>
+        <button id="btnExportPDF" onclick="exportReportToPDF()" style="padding: 10px 25px; background: #0288d1; color: #fff; border: none; cursor: pointer; font-weight: bold; border-radius: 4px; margin-left: 10px;">
+            <i class="fa fa-file-pdf-o"></i> Export to PDF
+        </button>
     </div>
 
-    <div class="report-header">
-        <div class="report-title">Sales Report Month Wise with Claim Ratio</div>
-        <div class="report-subtitle">Al-Madina Battery</div>
-    </div>
+    <div id="reportContainer" style="background: #fff; padding: 5px;">
+        <div class="report-header">
+            <div class="report-title">Sales Report Month Wise with Claim Ratio</div>
+            <div class="report-subtitle">Al-Madina Battery</div>
+        </div>
 
-    <table>
-        <thead>
-            <tr>
-                <th width="30%">Month</th>
-                <th width="10%">Qty</th>
-                <th width="15%">Retail Amount</th>
-                <th width="15%">Sales Amount</th>
-                <th width="15%">Claim Qty</th>
-                <th width="15%">Claim Percentage</th>
-            </tr>
-        </thead>
-        <tbody>
-            @php 
-                $t_qty = 0; 
-                $t_retail = 0; 
-                $t_sales = 0; 
-                $t_claims = 0; 
-            @endphp
-
-            @foreach($data as $month => $vals)
-                @php
-                    $t_qty += $vals['qty'];
-                    $t_retail += $vals['retail_amount'];
-                    $t_sales += $vals['sales_amount'];
-                    $t_claims += $vals['claim_qty'];
-                @endphp
+        <table id="salesReportTable">
+            <thead>
                 <tr>
-                    <td class="text-left">{{ $month }}</td>
-                    <td class="text-right">{{ number_format($vals['qty']) }}</td>
-                    <td class="text-right">{{ number_format($vals['retail_amount'], 0) }}</td>
-                    <td class="text-right">{{ number_format($vals['sales_amount'], 0) }}</td>
-                    <td class="text-right">{{ number_format($vals['claim_qty']) }}</td>
-                    <td class="text-right">{{ number_format($vals['claim_percentage'], 2) }}%</td>
+                    <th width="30%">Month</th>
+                    <th width="10%">Qty</th>
+                    <th width="15%">Retail Amount</th>
+                    <th width="15%">Sales Amount</th>
+                    <th width="15%">Claim Qty</th>
+                    <th width="15%">Claim Percentage</th>
                 </tr>
-            @endforeach
+            </thead>
+            <tbody>
+                @php 
+                    $t_qty = 0; 
+                    $t_retail = 0; 
+                    $t_sales = 0; 
+                    $t_claims = 0; 
+                @endphp
 
-            <tr class="total-row">
-                <td class="text-center">Total.</td>
-                <td class="text-right">{{ number_format($t_qty) }}</td>
-                <td class="text-right">{{ number_format($t_retail, 0) }}</td>
-                <td class="text-right">{{ number_format($t_sales, 0) }}</td>
-                <td class="text-right">{{ number_format($t_claims) }}</td>
-                <td></td>
-            </tr>
-        </tbody>
-    </table>
+                @foreach($data as $month => $vals)
+                    @php
+                        $t_qty += $vals['qty'];
+                        $t_retail += $vals['retail_amount'];
+                        $t_sales += $vals['sales_amount'];
+                        $t_claims += $vals['claim_qty'];
+                    @endphp
+                    <tr>
+                        <td class="text-left">{{ $month }}</td>
+                        <td class="text-right">{{ number_format($vals['qty']) }}</td>
+                        <td class="text-right">{{ number_format($vals['retail_amount'], 0) }}</td>
+                        <td class="text-right">{{ number_format($vals['sales_amount'], 0) }}</td>
+                        <td class="text-right">{{ number_format($vals['claim_qty']) }}</td>
+                        <td class="text-right">{{ number_format($vals['claim_percentage'], 2) }}%</td>
+                    </tr>
+                @endforeach
+
+                <tr class="total-row">
+                    <td class="text-center">Total.</td>
+                    <td class="text-right">{{ number_format($t_qty) }}</td>
+                    <td class="text-right">{{ number_format($t_retail, 0) }}</td>
+                    <td class="text-right">{{ number_format($t_sales, 0) }}</td>
+                    <td class="text-right">{{ number_format($t_claims) }}</td>
+                    <td></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- SheetJS for Excel Export -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <!-- html2pdf for PDF Export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+    <script>
+        function exportReportToExcel() {
+            var table = document.getElementById("salesReportTable");
+            var wb = XLSX.utils.table_to_book(table, {sheet: "Claim Ratio Report"});
+            XLSX.writeFile(wb, "Claim_Ratio_Report.xlsx");
+        }
+
+        function exportReportToPDF() {
+            var element = document.getElementById("reportContainer");
+            var opt = {
+                margin:       [5, 5, 5, 5],
+                filename:     'Claim_Ratio_Report.pdf',
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2, useCORS: true },
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+            html2pdf().set(opt).from(element).save();
+        }
+    </script>
 
 </body>
 </html>

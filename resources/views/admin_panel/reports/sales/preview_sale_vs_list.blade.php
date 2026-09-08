@@ -91,16 +91,23 @@
 
     <div class="no-print">
         <button onclick="window.print()" style="padding: 10px 25px; background: #c2185b; color: #fff; border: none; cursor: pointer; font-weight: bold; border-radius: 4px;">Print Report</button>
+        <button id="btnExportExcel" onclick="exportReportToExcel()" style="padding: 10px 25px; background: #2e7d32; color: #fff; border: none; cursor: pointer; font-weight: bold; border-radius: 4px; margin-left: 10px;">
+            <i class="fa fa-file-excel-o"></i> Export to Excel
+        </button>
+        <button id="btnExportPDF" onclick="exportReportToPDF()" style="padding: 10px 25px; background: #0288d1; color: #fff; border: none; cursor: pointer; font-weight: bold; border-radius: 4px; margin-left: 10px;">
+            <i class="fa fa-file-pdf-o"></i> Export to PDF
+        </button>
     </div>
 
-    <div class="report-header">
-        <h1 class="report-title">Sale vs List Comparison Report</h1>
+    <div id="reportContainer" style="background: #fff; padding: 5px;">
+        <div class="report-header">
+            <h1 class="report-title">Sale vs List Comparison Report</h1>
             <div class="date-range">
                 From: {{ \Carbon\Carbon::parse($from_date)->format('d-m-y') }} To: {{ \Carbon\Carbon::parse($to_date)->format('d-m-y') }}
             </div>
         </div>
 
-        <table>
+        <table id="salesReportTable">
             <thead>
                 <tr>
                     <th width="15%">Inv No.</th>
@@ -160,6 +167,32 @@
                 @endforeach
             </tbody>
         </table>
+    </div>
+
+    <!-- SheetJS for Excel Export -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <!-- html2pdf for PDF Export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+    <script>
+        function exportReportToExcel() {
+            var table = document.getElementById("salesReportTable");
+            var wb = XLSX.utils.table_to_book(table, {sheet: "Sale vs List Report"});
+            XLSX.writeFile(wb, "Sale_vs_List_Report.xlsx");
+        }
+
+        function exportReportToPDF() {
+            var element = document.getElementById("reportContainer");
+            var opt = {
+                margin:       [5, 5, 5, 5],
+                filename:     'Sale_vs_List_Report.pdf',
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2, useCORS: true },
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+            html2pdf().set(opt).from(element).save();
+        }
+    </script>
 
 </body>
 </html>

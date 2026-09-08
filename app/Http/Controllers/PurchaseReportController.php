@@ -110,28 +110,91 @@ class PurchaseReportController extends Controller
 
     private function buildReportLines(Request $request): Collection
     {
-        $transactionType = $request->input('transaction_type', 'purchase');
+        $rawTypes = $request->input('transaction_type', ['purchase', 'purchase_return', 'claim_credit_note']);
+        $selectedTypes = is_array($rawTypes) ? $rawTypes : [$rawTypes];
+        if (in_array('both', $selectedTypes, true)) {
+            $selectedTypes = ['purchase', 'purchase_return', 'claim_credit_note'];
+        }
+
         $lines = collect();
 
-        if (in_array($transactionType, ['purchase', 'both'], true)) {
-            $lines = $lines->merge(
-                $this->fetchPurchaseLines($request)->map(fn ($item) => $this->wrapPurchaseLine($item, 1))
-            );
+        $extractNum = function ($val) {
+            return (int) (preg_replace('/[^0-9]/', '', (string) $val) ?: 0);
+        };
+
+        if (in_array('purchase', $selectedTypes, true)) {
+            $purchaseLines = $this->fetchPurchaseLines($request)
+                ->map(fn ($item) => $this->wrapPurchaseLine($item, 1))
+                ->sortBy(fn ($item) => $extractNum($item->purchase->invoice_no ?? ''))
+                ->values();
+            $lines = $lines->merge($purchaseLines);
         }
 
-        if (in_array($transactionType, ['purchase_return', 'both'], true)) {
-            $sign = $transactionType === 'both' ? -1 : 1;
-            $lines = $lines->merge(
-                $this->fetchReturnLines($request)->map(fn ($item) => $this->wrapReturnLine($item, $sign))
-            );
+        if (in_array('purchase_return', $selectedTypes, true)) {
+            $isNetMode = count($selectedTypes) > 1;
+            $sign = $isNetMode ? -1 : 1;
+            $returnLines = $this->fetchReturnLines($request)
+                ->map(fn ($item) => $this->wrapReturnLine($item, $sign))
+                ->sortBy(fn ($item) => $extractNum($item->purchase->invoice_no ?? ''))
+                ->values();
+            $lines = $lines->merge($returnLines);
         }
 
-        if (in_array($transactionType, ['claim_credit_note', 'both'], true)) {
-            $sign = $transactionType === 'both' ? -1 : 1;
-            $lines = $lines->merge(
-                $this->fetchClaimCreditNoteLines($request)->map(fn ($item) => $this->wrapClaimCreditNoteLine($item, $sign))
-            );
+        if (in_array('claim_credit_note', $selectedTypes, true)) {
+            $isNetMode = count($selectedTypes) > 1;
+            $sign = $isNetMode ? -1 : 1;
+            $claimLines = $this->fetchClaimCreditNoteLines($request)
+                ->map(fn ($item) => $this->wrapClaimCreditNoteLine($item, $sign))
+                ->sortBy(fn ($item) => $extractNum($item->purchase->invoice_no ?? ''))
+                ->values();
+            $lines = $lines->merge($claimLines);
         }
+
+        // Attach date-aware purchase_retail_price to each line
+        $allProductPrices = \App\Models\ProductPrice::orderBy('start_date', 'asc')
+            ->orderBy('created_at', 'asc')
+            ->orderBy('id', 'asc')
+            ->get()
+            ->groupBy('product_id');
+
+        $lines->each(function($item) use ($allProductPrices) {
+            $pId = $item->product_id;
+            $purchase = $item->purchase;
+            $rawDate = !empty($purchase?->entry_date) ? $purchase->entry_date : (!empty($purchase?->current_date) ? $purchase->current_date : ($purchase?->created_at ? \Carbon\Carbon::parse($purchase->created_at)->toDateString() : now()->toDateString()));
+            $purchaseTime = $purchase?->created_at ? \Carbon\Carbon::parse($purchase->created_at) : now();
+
+            $retailPrice = 0;
+            $pricesForProd = $allProductPrices->get($pId, collect());
+
+            if ($pricesForProd->isNotEmpty()) {
+                $matched = $pricesForProd->filter(function($pr) use ($rawDate) {
+                    $start = $pr->start_date;
+                    $end = $pr->end_date;
+                    if ($start && $rawDate < $start) return false;
+                    if ($end && $rawDate > $end) return false;
+                    return true;
+                });
+
+                if ($matched->count() > 1) {
+                    $exact = $matched->filter(fn($pr) => \Carbon\Carbon::parse($pr->created_at) <= $purchaseTime)->last();
+                    $chosen = $exact ?: $matched->last();
+                } else {
+                    $chosen = $matched->first();
+                }
+
+                if (!$chosen) {
+                    $chosen = $pricesForProd->filter(fn($pr) => !$pr->start_date || $pr->start_date <= $rawDate)->last() ?: $pricesForProd->last();
+                }
+
+                $retailPrice = (float) ($chosen->purchase_retail_price ?? $chosen->sale_retail_price ?? 0);
+            }
+
+            if ($retailPrice <= 0) {
+                $retailPrice = (float) ($item->product?->latestPrice?->purchase_retail_price ?? $item->product?->latestPrice?->sale_retail_price ?? $item->product?->retail_price ?? 0);
+            }
+
+            $item->purchase_retail_price = $retailPrice;
+        });
 
         return $lines->values();
     }

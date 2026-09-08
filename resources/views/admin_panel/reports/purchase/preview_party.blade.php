@@ -125,122 +125,151 @@
 
     <div class="no-print">
         <button onclick="window.print()" style="padding: 10px 25px; background: #0d47a1; color: #fff; border: none; cursor: pointer; font-weight: bold; border-radius: 4px;">Print Report</button>
+        <button id="btnExportExcel" onclick="exportReportToExcel()" style="padding: 10px 25px; background: #2e7d32; color: #fff; border: none; cursor: pointer; font-weight: bold; border-radius: 4px; margin-left: 10px;">
+            <i class="fa fa-file-excel-o"></i> Export to Excel
+        </button>
+        <button id="btnExportPDF" onclick="exportReportToPDF()" style="padding: 10px 25px; background: #0288d1; color: #fff; border: none; cursor: pointer; font-weight: bold; border-radius: 4px; margin-left: 10px;">
+            <i class="fa fa-file-pdf-o"></i> Export to PDF
+        </button>
     </div>
 
-    <div class="report-header">
-        <h1 class="report-title">Purchase Note Report (Party Wise)</h1>
-        <div class="date-range">
-            From: <span>{{ \Carbon\Carbon::parse($from_date)->format('d-m-y') }}</span> 
-            To: <span>{{ \Carbon\Carbon::parse($to_date)->format('d-m-y') }}</span>
+    <div id="reportContainer" style="background: #fff; padding: 5px;">
+        <div class="report-header">
+            <h1 class="report-title">Purchase Note Report (Party Wise)</h1>
+            <div class="date-range">
+                From: <span>{{ \Carbon\Carbon::parse($from_date)->format('d-m-y') }}</span> 
+                To: <span>{{ \Carbon\Carbon::parse($to_date)->format('d-m-y') }}</span>
+            </div>
         </div>
-    </div>
 
-    <table>
-        <thead>
-            <tr>
-                <th width="9%">PUR No.</th>
-                <th width="9%">Date</th>
-                <th width="10%">Type</th>
-                <th width="18%" class="text-left">Item Description</th>
-                <th width="7%">Qty</th>
-                <th width="11%">Retail Price</th>
-                <th width="12%">Retail Value</th>
-                <th width="11%">Purchase Rate</th>
-                <th width="13%">Net Amount</th>
-            </tr>
-        </thead>
-        <tbody>
-            @php 
-                $grand_qty = 0; 
-                $grand_purchase_amt = 0; 
-                $grand_retail_amt = 0;
-            @endphp
-
-            @if($grouped->isEmpty())
+        <table id="salesReportTable">
+            <thead>
                 <tr>
-                    <td colspan="9" style="text-align: center; padding: 50px;">No Data Found</td>
+                    <th width="9%">PUR No.</th>
+                    <th width="9%">Date</th>
+                    <th width="10%">Type</th>
+                    <th width="18%" class="text-left">Item Description</th>
+                    <th width="7%">Qty</th>
+                    <th width="11%">Retail Price</th>
+                    <th width="12%">Retail Value</th>
+                    <th width="11%">Purchase Rate</th>
+                    <th width="13%">Net Amount</th>
                 </tr>
-            @endif
-
-            @foreach($grouped as $vendorId => $items)
-                @php
-                    $firstPurchase = $items->first()->purchase;
-                    $party = $firstPurchase->purchasable;
-                    $partyName = $party
-                        ? strtoupper($party->name ?? $party->customer_name ?? 'N/A')
-                        : strtoupper($firstPurchase->vendor->name ?? 'N/A');
-                    $party_qty = 0;
-                    $party_purchase_amt = 0;
-                    $party_retail_amt = 0;
+            </thead>
+            <tbody>
+                @php 
+                    $grand_qty = 0; 
+                    $grand_purchase_amt = 0; 
+                    $grand_retail_amt = 0;
                 @endphp
-                
-                <tr class="party-heading-row">
-                    <td colspan="9" class="text-left">
-                        SUPPLIER: {{ $partyName }}
-                    </td>
-                </tr>
 
-                @foreach($items as $item)
-                    @php
-                        $qty = $item->qty;
-                        $purchase_p = $item->form_rate;
-                        $purchase_a = $item->form_line_total;
-                        $purchaseDate = \Carbon\Carbon::parse($item->purchase->current_date)->format('d-m-y');
-                        $displayInv = preg_replace('/[^0-9]/', '', $item->purchase->invoice_no) ?: $item->purchase->invoice_no;
-
-                        $latestPrice = $item->product->latestPrice;
-                        $retail_p = $latestPrice ? $latestPrice->sale_retail_price : 0;
-                        $retail_a = $retail_p * $qty;
-
-                        $party_qty += $qty;
-                        $party_purchase_amt += $purchase_a;
-                        $party_retail_amt += $retail_a;
-                    @endphp
-                    <tr class="data-row {{ ($item->entry_type ?? 'purchase') !== 'purchase' ? 'return-row' : '' }}">
-                        <td class="text-center">{{ $displayInv }}</td>
-                        <td class="text-center">{{ $purchaseDate }}</td>
-                        @include('admin_panel.reports.purchase.partials.type_cell', ['item' => $item])
-                        <td class="text-left">{{ $item->product ? $item->product->name : 'N/A' }}</td>
-                        <td class="text-center">{{ number_format($qty) }}</td>
-                        <td class="text-right">{{ number_format($retail_p, 0) }}</td>
-                        <td class="text-right">{{ number_format($retail_a, 0) }}</td>
-                        <td class="text-right">{{ number_format($purchase_p, 0) }}</td>
-                        <td class="text-right bold-val">{{ number_format($purchase_a, 0) }}</td>
+                @if($grouped->isEmpty())
+                    <tr>
+                        <td colspan="9" style="text-align: center; padding: 50px;">No Data Found</td>
                     </tr>
+                @endif
+
+                @foreach($grouped as $vendorId => $items)
+                    @php
+                        $firstPurchase = $items->first()->purchase;
+                        $party = $firstPurchase->purchasable;
+                        $partyName = $party
+                            ? strtoupper($party->name ?? $party->customer_name ?? 'N/A')
+                            : strtoupper($firstPurchase->vendor->name ?? 'N/A');
+                        $party_qty = 0;
+                        $party_purchase_amt = 0;
+                        $party_retail_amt = 0;
+                    @endphp
+                    
+                    <tr class="party-heading-row">
+                        <td colspan="9" class="text-left">
+                            SUPPLIER: {{ $partyName }}
+                        </td>
+                    </tr>
+
+                    @foreach($items as $item)
+                        @php
+                            $qty = $item->qty;
+                            $purchase_p = $item->form_rate;
+                            $purchase_a = $item->form_line_total;
+                            $purchaseDate = \Carbon\Carbon::parse($item->purchase->current_date)->format('d-m-y');
+                            $displayInv = preg_replace('/[^0-9]/', '', $item->purchase->invoice_no) ?: $item->purchase->invoice_no;
+
+                            $retail_p = $item->purchase_retail_price ?? $item->retail_price ?? 0;
+                            $retail_a = $retail_p * $qty;
+
+                            $party_qty += $qty;
+                            $party_purchase_amt += $purchase_a;
+                            $party_retail_amt += $retail_a;
+                        @endphp
+                        <tr class="data-row {{ ($item->entry_type ?? 'purchase') !== 'purchase' ? 'return-row' : '' }}">
+                            <td class="text-center">{{ $displayInv }}</td>
+                            <td class="text-center">{{ $purchaseDate }}</td>
+                            @include('admin_panel.reports.purchase.partials.type_cell', ['item' => $item])
+                            <td class="text-left">{{ $item->product ? $item->product->name : 'N/A' }}</td>
+                            <td class="text-center">{{ number_format($qty) }}</td>
+                            <td class="text-right">{{ number_format($retail_p, 0) }}</td>
+                            <td class="text-right">{{ number_format($retail_a, 0) }}</td>
+                            <td class="text-right">{{ number_format($purchase_p, 0) }}</td>
+                            <td class="text-right bold-val">{{ number_format($purchase_a, 0) }}</td>
+                        </tr>
+                    @endforeach
+
+                    <!-- Party Total Row -->
+                    <tr class="total-row">
+                        <td colspan="4" class="text-right">Total:</td>
+                        <td class="qty-box">{{ number_format($party_qty) }}</td>
+                        <td style="border:none; background:none;"></td>
+                        <td class="val-box">{{ number_format($party_retail_amt, 0) }}</td>
+                        <td style="border:none; background:none;"></td>
+                        <td class="val-box">{{ number_format($party_purchase_amt, 0) }}</td>
+                    </tr>
+                    <tr style="height: 15px;"><td colspan="9" style="border:none;"></td></tr>
+
+                    @php
+                        $grand_qty += $party_qty;
+                        $grand_retail_amt += $party_retail_amt;
+                        $grand_purchase_amt += $party_purchase_amt;
+                    @endphp
                 @endforeach
 
-                <tr class="total-row">
-                    <td colspan="4" class="text-right">Party Total:</td>
-                    <td class="qty-box">{{ number_format($party_qty) }}</td>
+                <!-- Grand Total -->
+                <tr class="grand-total-row">
+                    <td colspan="4" class="text-right">Grand Total:</td>
+                    <td class="qty-box" style="background-color: #cfd8dc;">{{ number_format($grand_qty) }}</td>
                     <td style="border:none; background:none;"></td>
-                    <td class="val-box">{{ number_format($party_retail_amt, 0) }}</td>
+                    <td class="val-box" style="background-color: #fce4ec;">{{ number_format($grand_retail_amt, 0) }}</td>
                     <td style="border:none; background:none;"></td>
-                    <td class="val-box">{{ number_format($party_purchase_amt, 0) }}</td>
+                    <td class="val-box" style="background-color: #bbdefb;">{{ number_format($grand_purchase_amt, 0) }}</td>
                 </tr>
-                <tr style="height: 25px;"><td colspan="9" style="border:none;"></td></tr>
-
-                @php
-                    $grand_qty += $party_qty;
-                    $grand_purchase_amt += $party_purchase_amt;
-                    $grand_retail_amt += $party_retail_amt;
-                @endphp
-            @endforeach
-
-            <tr class="grand-total-row">
-                <td colspan="4" class="text-right">Grand Total:</td>
-                <td class="qty-box" style="background-color: #cfd8dc;">{{ number_format($grand_qty) }}</td>
-                <td style="border:none; background:none;"></td>
-                <td class="val-box" style="background-color: #fce4ec;">{{ number_format($grand_retail_amt, 0) }}</td>
-                <td style="border:none; background:none;"></td>
-                <td class="val-box" style="background-color: #bbdefb;">{{ number_format($grand_purchase_amt, 0) }}</td>
-            </tr>
-        </tbody>
-    </table>
-
-    <div class="footer">
-        <div>{{ now()->format('l, F d, Y') }}</div>
-        <div>Generated by ERP System</div>
+            </tbody>
+        </table>
     </div>
+
+    <!-- SheetJS for Excel Export -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <!-- html2pdf for PDF Export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+    <script>
+        function exportReportToExcel() {
+            var table = document.getElementById("salesReportTable");
+            var wb = XLSX.utils.table_to_book(table, {sheet: "Party Wise Purchase Report"});
+            XLSX.writeFile(wb, "Party_Wise_Purchase_Report.xlsx");
+        }
+
+        function exportReportToPDF() {
+            var element = document.getElementById("reportContainer");
+            var opt = {
+                margin:       [5, 5, 5, 5],
+                filename:     'Party_Wise_Purchase_Report.pdf',
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2, useCORS: true },
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+            html2pdf().set(opt).from(element).save();
+        }
+    </script>
 
 </body>
 </html>
