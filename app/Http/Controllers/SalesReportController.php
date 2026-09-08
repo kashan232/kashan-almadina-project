@@ -539,20 +539,18 @@ class SalesReportController extends Controller
     {
         $result = [];
 
-        $party = $claim->party;
-        $reportCustomer = $party;
-        if ($claim->party_type === 'vendor' && $party) {
-            $reportCustomer = (object) [
-                'customer_name' => $party->name ?? 'N/A',
-                'cnic' => $party->cnic ?? '',
-                'filer_type' => 'Non Filer',
-            ];
-        }
+        $party = $claim->party_type === 'vendor' ? $claim->vendor : $claim->customer;
+        $partyName = $claim->party_name;
+        $reportCustomer = (object) [
+            'customer_name' => $partyName,
+            'cnic' => $party?->cnic ?? '',
+            'filer_type' => 'Non Filer',
+        ];
 
         $claimDate = $claim->claim_date ?? $claim->entry_date ?? now();
 
         $pseudoSale = (object) [
-            'customer_id' => $claim->party_type !== 'vendor' ? $claim->party_id : null,
+            'customer_id' => $claim->party_id,
             'invoice_no' => $claim->claim_no,
             'created_at' => $claimDate,
             'customer' => $reportCustomer,

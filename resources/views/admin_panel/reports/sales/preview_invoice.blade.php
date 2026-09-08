@@ -152,6 +152,9 @@
 
     <div class="no-print">
         <button onclick="window.print()" style="padding: 10px 25px; background: #c2185b; color: #fff; border: none; cursor: pointer; font-weight: bold; border-radius: 4px;">Print Report</button>
+        <button id="btnExportExcel" onclick="exportReportToExcel()" style="padding: 10px 25px; background: #2e7d32; color: #fff; border: none; cursor: pointer; font-weight: bold; border-radius: 4px; margin-left: 10px;">
+            <i class="fa fa-file-excel-o"></i> Export to Excel
+        </button>
     </div>
 
     <div class="report-header">
@@ -162,7 +165,7 @@
         </div>
     </div>
 
-    <table>
+    <table id="salesReportTable">
         <thead>
             <tr>
                 <th width="8%">Type</th>
@@ -272,6 +275,16 @@
         <div>{{ now()->format('l, F d, Y') }}</div>
         <div>Page 1 of 1</div>
     </div>
+
+    <!-- SheetJS for Export to Excel -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.min.js"></script>
+    <script>
+        function exportReportToExcel() {
+            var table = document.getElementById("salesReportTable");
+            var wb = XLSX.utils.table_to_book(table, {sheet: "Sales Report"});
+            XLSX.writeFile(wb, "Sales_Report_" + "{{ date('Y-m-d') }}" + ".xlsx");
+        }
+    </script>
 
 </body>
 </html>
