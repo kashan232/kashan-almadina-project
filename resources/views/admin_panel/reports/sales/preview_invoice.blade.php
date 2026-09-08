@@ -155,6 +155,9 @@
         <button id="btnExportExcel" onclick="exportReportToExcel()" style="padding: 10px 25px; background: #2e7d32; color: #fff; border: none; cursor: pointer; font-weight: bold; border-radius: 4px; margin-left: 10px;">
             <i class="fa fa-file-excel-o"></i> Export to Excel
         </button>
+        <button id="btnExportPDF" onclick="exportReportToPDF()" style="padding: 10px 25px; background: #0288d1; color: #fff; border: none; cursor: pointer; font-weight: bold; border-radius: 4px; margin-left: 10px;">
+            <i class="fa fa-file-pdf-o"></i> Export to PDF
+        </button>
     </div>
 
     <div class="report-header">
@@ -282,11 +285,25 @@
 
     <!-- SheetJS for Export to Excel -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.min.js"></script>
+    <!-- html2pdf.js for Vector Clean PDF Export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script>
         function exportReportToExcel() {
             var table = document.getElementById("salesReportTable");
             var wb = XLSX.utils.table_to_book(table, {sheet: "Sales Report"});
             XLSX.writeFile(wb, "Sales_Report_" + "{{ date('Y-m-d') }}" + ".xlsx");
+        }
+
+        function exportReportToPDF() {
+            var element = document.body;
+            var opt = {
+                margin:       5,
+                filename:     "Sales_Report_" + "{{ date('Y-m-d') }}" + ".pdf",
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2, useCORS: true, logging: false },
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+            html2pdf().set(opt).from(element).save();
         }
     </script>
 
