@@ -25,7 +25,7 @@ class CustomerOutstandingBalanceReportBuilder
 
     private const DETAIL_COLS = [
         'sales', 'payment', 'oth_inc', 'jv_dr',
-        'purchase', 's_ret', 'claim_cn', 'receipts', 'exp_dis', 'jv_cr',
+        'purchase', 's_ret', 'claim_cn', 'purchase_cn', 'receipts', 'exp_dis', 'jv_cr',
     ];
 
     public function build(Request $request): array
@@ -191,9 +191,19 @@ class CustomerOutstandingBalanceReportBuilder
             return;
         }
 
-        if ($ref === 'PV' || $ref === 'PRJ') {
+        if ($ref === 'PV') {
             if ($debit > 0) {
                 $cols['payment'] += $debit;
+            }
+            if ($credit > 0) {
+                $cols['purchase'] += $credit;
+            }
+            return;
+        }
+
+        if ($ref === 'PRJ') {
+            if ($debit > 0) {
+                $cols['purchase_cn'] += $debit;
             }
             if ($credit > 0) {
                 $cols['purchase'] += $credit;
@@ -226,7 +236,7 @@ class CustomerOutstandingBalanceReportBuilder
                 $cols['purchase'] += $credit;
             }
             if ($debit > 0) {
-                $cols['payment'] += $debit;
+                $cols['purchase_cn'] += $debit;
             }
             return;
         }

@@ -84,7 +84,10 @@
 </head>
 <body>
     <div class="no-print">
-        <button onclick="window.print()" style="padding:8px 20px;font-weight:bold;cursor:pointer;">Print Report</button>
+        <button onclick="window.print()" style="padding:8px 20px;font-weight:bold;cursor:pointer;background:#c2185b;color:#fff;border:none;border-radius:4px;">Print Report</button>
+        <button id="btnExportExcel" onclick="exportReportToExcel()" style="padding:8px 20px;font-weight:bold;cursor:pointer;background:#2e7d32;color:#fff;border:none;border-radius:4px;margin-left:8px;">
+            Export to Excel
+        </button>
         <button onclick="if(window.history.length > 1){ window.history.back(); } else { window.close(); }" style="padding:8px 20px;margin-left:8px;cursor:pointer;">Close</button>
     </div>
 
@@ -94,55 +97,68 @@
         $toLabel = $to_date ? \Carbon\Carbon::parse($to_date)->format('d-m-y') : '';
     @endphp
 
-    <div class="company-name">AL-MADINA TRADERS</div>
-    <div class="report-header">
-        <div class="generated-date">{{ $generated_at->format('l, M j, Y') }}</div>
-        <div class="report-title">Outstanding Balance</div>
-        <div class="report-sub" style="font-size:8px;font-weight:bold;">Short View</div>
+    <div id="reportContainer">
+        <div class="company-name">AL-MADINA TRADERS</div>
+        <div class="report-header">
+            <div class="generated-date">{{ $generated_at->format('l, M j, Y') }}</div>
+            <div class="report-title">Outstanding Balance</div>
+            <div class="report-sub" style="font-size:8px;font-weight:bold;">Short View</div>
+        </div>
+
+        @if(!empty($rows))
+        <table id="outstandingShortTable">
+            <thead>
+                <tr>
+                    <th class="sno" rowspan="2">S#</th>
+                    <th class="type" rowspan="2">Type</th>
+                    <th class="customer" rowspan="2">Party Name</th>
+                    <th rowspan="2">Opening Balance</th>
+                    <th colspan="4" class="period-head">Between {{ $fromLabel }} To. {{ $toLabel }}</th>
+                </tr>
+                <tr>
+                    <th>Sales</th>
+                    <th>SR/ PJ</th>
+                    <th>Receipts</th>
+                    <th>Balance</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($rows as $i => $row)
+                <tr>
+                    <td class="sno">{{ $i + 1 }}</td>
+                    <td class="type">{{ $row['party_type_label'] ?? 'Customer' }}</td>
+                    <td class="customer">{{ $row['party_name'] ?? $row['customer_name'] }}</td>
+                    <td class="num">{{ $fmt($row['opening']) }}</td>
+                    <td class="num">{{ $fmt($row['sales']) }}</td>
+                    <td class="num">{{ $fmt($row['sr_pj']) }}</td>
+                    <td class="num">{{ $fmt($row['receipts']) }}</td>
+                    <td class="num">{{ $fmt($row['balance']) }}</td>
+                </tr>
+                @endforeach
+                <tr class="grand-row">
+                    <td colspan="3" class="grand-label">Grand Total Amount</td>
+                    <td class="num">{{ $fmt($grand['opening']) }}</td>
+                    <td class="num">{{ $fmt($grand['sales']) }}</td>
+                    <td class="num">{{ $fmt($grand['sr_pj']) }}</td>
+                    <td class="num">{{ $fmt($grand['receipts']) }}</td>
+                    <td class="num">{{ $fmt($grand['balance']) }}</td>
+                </tr>
+            </tbody>
+        </table>
+        @else
+        <p class="empty-msg">No outstanding balance found for selected filters.</p>
+        @endif
     </div>
 
-    @if(!empty($rows))
-    <table>
-        <thead>
-            <tr>
-                <th class="sno" rowspan="2">S#</th>
-                <th class="type" rowspan="2">Type</th>
-                <th class="customer" rowspan="2">Party Name</th>
-                <th rowspan="2">Opening Balance</th>
-                <th colspan="4" class="period-head">Between {{ $fromLabel }} To. {{ $toLabel }}</th>
-            </tr>
-            <tr>
-                <th>Sales</th>
-                <th>SR/ PJ</th>
-                <th>Receipts</th>
-                <th>Balance</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach($rows as $i => $row)
-            <tr>
-                <td class="sno">{{ $i + 1 }}</td>
-                <td class="type">{{ $row['party_type_label'] ?? 'Customer' }}</td>
-                <td class="customer">{{ $row['party_name'] ?? $row['customer_name'] }}</td>
-                <td class="num">{{ $fmt($row['opening']) }}</td>
-                <td class="num">{{ $fmt($row['sales']) }}</td>
-                <td class="num">{{ $fmt($row['sr_pj']) }}</td>
-                <td class="num">{{ $fmt($row['receipts']) }}</td>
-                <td class="num">{{ $fmt($row['balance']) }}</td>
-            </tr>
-            @endforeach
-            <tr class="grand-row">
-                <td colspan="3" class="grand-label">Grand Total Amount</td>
-                <td class="num">{{ $fmt($grand['opening']) }}</td>
-                <td class="num">{{ $fmt($grand['sales']) }}</td>
-                <td class="num">{{ $fmt($grand['sr_pj']) }}</td>
-                <td class="num">{{ $fmt($grand['receipts']) }}</td>
-                <td class="num">{{ $fmt($grand['balance']) }}</td>
-            </tr>
-        </tbody>
-    </table>
-    @else
-    <p class="empty-msg">No outstanding balance found for selected filters.</p>
-    @endif
+    <!-- SheetJS for Excel Export -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script>
+        function exportReportToExcel() {
+            var table = document.getElementById("outstandingShortTable");
+            if (!table) return;
+            var wb = XLSX.utils.table_to_book(table, {sheet: "Outstanding Short"});
+            XLSX.writeFile(wb, "Outstanding_Balance_Short.xlsx");
+        }
+    </script>
 </body>
 </html>
