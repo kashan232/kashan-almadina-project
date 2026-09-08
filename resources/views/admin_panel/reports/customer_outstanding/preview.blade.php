@@ -92,7 +92,11 @@
     </div>
 
     @php
-        $fmt = fn($v) => abs((float)$v) < 0.0001 ? '' : number_format((float)$v, 0);
+        $fmt = function($v) {
+            $val = (float)$v;
+            if (abs($val) < 0.0001) return '';
+            return ($val < 0 ? '-' : '') . number_format(abs($val), 0);
+        };
         $fromLabel = $from_date ? \Carbon\Carbon::parse($from_date)->format('d-m-y') : '';
         $toLabel = $to_date ? \Carbon\Carbon::parse($to_date)->format('d-m-y') : '';
     @endphp
