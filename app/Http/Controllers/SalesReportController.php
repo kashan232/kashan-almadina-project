@@ -378,10 +378,13 @@ class SalesReportController extends Controller
         $discountAmount = (float) ($item->discount_amount ?? 0);
         $amount = (float) ($item->amount ?? 0);
         
-        // Sale Return voucher rate input field (`$item->sales_price`) holds exact unit Rate after discount
-        $salesPriceUnit = (float) ($item->sales_price ?? 0);
-        if ($salesPriceUnit <= 0 && $qty > 0 && $amount != 0) {
-            $salesPriceUnit = abs($amount / $qty);
+        // Sale Return screen `RATE` column is calculated as: sales_price - (discount_amount / qty)
+        $salesPriceUnit = 0;
+        if ($qty > 0) {
+            $salesPriceUnit = (float) ($item->sales_price ?? 0) - ($discountAmount / $qty);
+            if ($salesPriceUnit <= 0 && $amount != 0) {
+                $salesPriceUnit = abs($amount / $qty);
+            }
         }
 
         $reportCustomer = $return?->customer;
