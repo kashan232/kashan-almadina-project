@@ -132,14 +132,13 @@
                         $customer = $items->first()->sale->customer;
                         $c_qty = $items->sum('sales_qty');
                         $c_retail = $items->sum(function($item) {
-                            return $item->amount; // Using 'amount' as the base value before tax? 
-                            // Or retail_price * qty?
+                            return ($item->retail_price ?? 0) * $item->sales_qty;
                         });
                         
-                        // Calculating tax per item because tax % might vary
+                        // Calculating tax per item on retail value
                         $c_tax = $items->sum(function($item) {
                             $tax_p = $item->product && $item->product->latestPrice ? $item->product->latestPrice->sale_tax_percent : 18;
-                            return $item->amount * ($tax_p / 100);
+                            return (($item->retail_price ?? 0) * $item->sales_qty) * ($tax_p / 100);
                         });
                         
                         $c_inclusive = $c_retail + $c_tax;
