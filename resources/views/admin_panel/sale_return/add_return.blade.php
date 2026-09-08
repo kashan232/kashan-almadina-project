@@ -1139,34 +1139,30 @@ $(document).ready(function() {
         let salesPrice = parseFloat($row.find('.sales_price').val()) || 0;
         let retail = parseFloat($row.find('.retail_price').val()) || 0;
         let discPercent = parseFloat($row.find('.discount_percent').val()) || 0;
-        let discAmt = parseFloat($row.find('.disc_amount').val()) || 0;
+        let unitDiscAmt = parseFloat($row.find('.disc_amount').val()) || 0;
 
         if ($row.data('manual-disc') === true) {
-            let baseForPercent = retail * qty;
+            let baseForPercent = retail;
             if (baseForPercent > 0) {
-                discPercent = (discAmt / baseForPercent) * 100;
+                discPercent = (unitDiscAmt / baseForPercent) * 100;
             } else {
                 discPercent = 0;
             }
             $row.find('.discount_percent').val(discPercent.toFixed(2));
         } else {
-            discAmt = ((retail * qty) * discPercent) / 100.0;
-            $row.find('.disc_amount').val(discAmt.toFixed(2));
+            unitDiscAmt = (retail * discPercent) / 100.0;
+            $row.find('.disc_amount').val(unitDiscAmt.toFixed(2));
         }
         
-        let rate = 0;
-        if (qty > 0) {
-            rate = salesPrice - (discAmt / qty);
-        } else {
-            rate = salesPrice;
-        }
+        let rate = salesPrice - unitDiscAmt;
+        let totalLineDisc = unitDiscAmt * qty;
 
         let lineGross = salesPrice * qty;
-        let netAmount = Math.max(0, lineGross - discAmt);
+        let netAmount = Math.max(0, lineGross - totalLineDisc);
 
         // Amount = 1 single unit price (Price/Rate column)
         $row.find('.price').val(rate.toFixed(2));
-        // Total = Price * Qty - Discount
+        // Total = Price * Qty - Total Line Discount
         $row.find('.row-total').val(netAmount.toFixed(2));
     }
 
