@@ -106,11 +106,16 @@ class SalesReportController extends Controller
         }
 
         if (in_array($transactionType, ['customer_credit_note', 'both'], true)) {
-            $sign = $transactionType === 'both' ? 1 : 1;
-            $this->fetchCustomerClaimCreditNoteLines($request)->each(function ($claim) use (&$lines, $transactionType) {
+            $selectedItems = $request->item ?? [];
+            $totalProducts = Product::count();
+            $applyItemFilter = $this->shouldApplyFilter($selectedItems, $totalProducts);
+
+            $this->fetchCustomerClaimCreditNoteLines($request)->each(function ($claim) use (&$lines, $transactionType, $applyItemFilter, $selectedItems) {
                 $claimLines = $this->wrapCustomerClaimLines($claim, $transactionType === 'both');
                 foreach ($claimLines as $cl) {
-                    $lines->push($cl);
+                    if (!$applyItemFilter || in_array((int) $cl->product_id, array_map('intval', $selectedItems), true)) {
+                        $lines->push($cl);
+                    }
                 }
             });
         }
