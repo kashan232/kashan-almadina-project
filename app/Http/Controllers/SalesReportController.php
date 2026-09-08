@@ -353,7 +353,7 @@ class SalesReportController extends Controller
             $item->amount = $sign * (float) ($item->amount ?? 0);
         }
 
-        if ($item->sale && $item->sale->partyType === 'vendor') {
+        if ($item->sale && strtolower($item->sale->partyType ?? '') === 'vendor') {
             $vendor = $item->sale->vendor;
             if ($vendor) {
                 $item->sale->setRelation('customer', (object) [
@@ -376,18 +376,23 @@ class SalesReportController extends Controller
         $qty = (float) $item->sales_qty;
         $discountAmount = (float) ($item->discount_amount ?? 0);
         $amount = (float) ($item->amount ?? 0);
-        $salesRate = $qty > 0
-            ? ((float) $item->sales_price - ($discountAmount / $qty))
-            : (float) $item->sales_price;
+        
+        // Sale Return voucher rate input field (`$item->sales_price`) holds exact unit Rate after discount
+        $salesPriceUnit = (float) ($item->sales_price ?? 0);
+        if ($salesPriceUnit <= 0 && $qty > 0 && $amount != 0) {
+            $salesPriceUnit = abs($amount / $qty);
+        }
 
-        $party = $return?->customer;
-        $reportCustomer = $party;
-        if ($return && $return->party_type === 'vendor' && $party) {
-            $reportCustomer = (object) [
-                'customer_name' => $party->name ?? 'N/A',
-                'cnic' => $party->cnic ?? '',
-                'filer_type' => $return->filer_type ?? 'Non Filer',
-            ];
+        $reportCustomer = $return?->customer;
+        if ($return && strtolower($return->party_type ?? '') === 'vendor') {
+            $vendorObj = \App\Models\Vendor::find($return->customer_id);
+            if ($vendorObj) {
+                $reportCustomer = (object) [
+                    'customer_name' => $vendorObj->name ?? 'N/A',
+                    'cnic' => $vendorObj->cnic ?? '',
+                    'filer_type' => $return->filer_type ?? 'Non Filer',
+                ];
+            }
         }
 
         $returnDate = $return?->current_date ?? $return?->entry_date ?? now();
@@ -408,8 +413,8 @@ class SalesReportController extends Controller
             'warehouse' => $item->warehouse,
             'sales_qty' => $sign * $qty,
             'retail_price' => $item->retail_price ?? 0,
-            'sales_rate' => $salesRate,
-            'sales_price' => $item->sales_price ?? 0,
+            'sales_rate' => $salesPriceUnit,
+            'sales_price' => $salesPriceUnit,
             'discount_amount' => $sign * $discountAmount,
             'amount' => $sign * $amount,
             'entry_type' => 'sale_return',

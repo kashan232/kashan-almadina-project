@@ -212,15 +212,16 @@
                             $retail_p = $item->retail_price ?? 0;
                             $retail_a = $retail_p * $qty;
                             
-                            $sales_p = $item->sales_rate > 0 ? $item->sales_rate : ($item->sales_qty != 0 ? ($item->sales_price - ($item->discount_amount / $item->sales_qty)) : $item->sales_price);
+                            $sales_p = $item->sales_rate > 0 ? $item->sales_rate : ($item->sales_qty != 0 ? ($item->sales_price - (($item->discount_amount ?? 0) / $item->sales_qty)) : $item->sales_price);
                             $sales_a = $item->amount;
-                            $add_disc = $item->discount_amount ?? 0;
-                            $invoice_a = $sales_a - $add_disc;
+                            $add_disc = 0; // Header discount level if explicitly present
+                            $invoice_a = $sales_a;
 
                             $sale = $item->sale;
                             $invNo = $sale->invoice_no ?? '-';
                             $saleDate = \Carbon\Carbon::parse($sale->created_at)->format('d-m-y');
-                            $partyName = $sale->customer ? ($sale->customer->customer_name ?? $sale->customer->name ?? 'CASH CUSTOMER') : 'CASH CUSTOMER';
+                            $customerObj = $sale->customer;
+                            $partyName = $customerObj ? ($customerObj->customer_name ?? $customerObj->name ?? 'CASH CUSTOMER') : 'CASH CUSTOMER';
 
                             $item_qty += $qty;
                             $item_retail_amt += $retail_a;
@@ -237,7 +238,7 @@
                             <td class="text-right fw-bold">{{ $retail_a != 0 ? number_format($retail_a, 0) : '' }}</td>
                             <td class="text-right">{{ $sales_p != 0 ? number_format($sales_p, 0) : '' }}</td>
                             <td class="text-right fw-bold">{{ $sales_a != 0 ? number_format($sales_a, 0) : '' }}</td>
-                            <td class="text-right">{{ $add_disc != 0 ? number_format($add_disc, 0) : '' }}</td>
+                            <td class="text-right"></td>
                             <td class="text-right fw-bold">{{ $invoice_a != 0 ? number_format($invoice_a, 0) : '' }}</td>
                         </tr>
                     @endforeach
