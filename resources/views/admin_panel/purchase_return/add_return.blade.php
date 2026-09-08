@@ -351,10 +351,11 @@
                                                 }
                                             @endphp
                                             <select id="wht_head_id" class="form-select form-select-sm py-0" style="width:70px;">
-                                                <option value="">Head</option>
                                                 @if(isset($AccountHeads))
                                                     @foreach($AccountHeads as $head)
-                                                        <option value="{{ $head->id }}" {{ $selectedHeadId == $head->id ? 'selected' : '' }}>{{ $head->name }}</option>
+                                                        @if(strtoupper($head->name) == 'EXPENSE' || $head->id == 1)
+                                                        <option value="{{ $head->id }}" selected>{{ $head->name }}</option>
+                                                        @endif
                                                     @endforeach
                                                 @endif
                                             </select>
