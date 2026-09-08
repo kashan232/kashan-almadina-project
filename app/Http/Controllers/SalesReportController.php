@@ -353,6 +353,10 @@ class SalesReportController extends Controller
             $item->amount = $sign * (float) ($item->amount ?? 0);
         }
 
+        if ($item->sale && !empty($item->sale->entry_date)) {
+            $item->sale->created_at = $item->sale->entry_date;
+        }
+
         if ($item->sale && strtolower($item->sale->partyType ?? '') === 'vendor') {
             $vendor = $item->sale->vendor;
             if ($vendor) {

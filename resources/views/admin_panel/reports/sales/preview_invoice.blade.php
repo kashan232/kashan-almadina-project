@@ -199,7 +199,8 @@
                         $partyLabel = $isVendor ? 'Vendor' : 'Customer';
                         $customer = $sale->customer;
                         $partyName = $customer ? ($customer->customer_name ?? $customer->name ?? 'CASH CUSTOMER') : 'CASH CUSTOMER';
-                        $saleDate = \Carbon\Carbon::parse($sale->created_at)->format('d-m-y');
+                        $rawDate = !empty($sale->entry_date) ? $sale->entry_date : $sale->created_at;
+                        $saleDate = \Carbon\Carbon::parse($rawDate)->format('d-m-y');
                         
                         $inv_qty = 0;
                         $inv_retail_amt = 0;

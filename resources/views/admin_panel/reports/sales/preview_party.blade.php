@@ -219,7 +219,8 @@
                         $invNo = preg_match('/\d+/', $invNoRaw, $matches) ? ltrim($matches[0], '0') : $invNoRaw;
                         if (empty($invNo) || $invNo === '') { $invNo = '0'; }
                         $invNo = str_pad($invNo, 3, '0', STR_PAD_LEFT);
-                        $saleDate = \Carbon\Carbon::parse($sale->created_at)->format('d-m-y');
+                        $rawDate = !empty($sale->entry_date) ? $sale->entry_date : $sale->created_at;
+                        $saleDate = \Carbon\Carbon::parse($rawDate)->format('d-m-y');
 
                         $party_qty += $qty;
                         $party_retail_amt += $retail_a;
