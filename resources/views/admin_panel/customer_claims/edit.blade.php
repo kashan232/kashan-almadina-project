@@ -129,10 +129,10 @@
                     </div>
                     <div class="card-body">
                         <div class="row g-3">
-                            <!-- Claim Item (with Item ID), MFG Date, Card Number, Retail Price, Sale Price -->
-                            <div class="col-md-4">
+                            <!-- Line 1: Claim Item (with Item ID), MFG Date, Card Number, Retail Price, Sale Price, Bill Date -->
+                            <div class="col-md-3">
                                 <div class="row g-1">
-                                    <div class="col-4">
+                                    <div class="col-4" style="max-width: 75px;">
                                         <label class="form-label">Item ID</label>
                                         <input type="text" id="item_id_input" class="form-control input-sm border-primary fw-bold text-primary text-center" placeholder="ID" value="{{ $claim->product_id }}">
                                     </div>
@@ -147,31 +147,29 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-md-2">
+                            <div class="col-md-2" style="max-width: 110px;">
                                 <label class="form-label">MFG Date</label>
                                 <input type="text" name="mfg_date" class="form-control input-sm" placeholder="BH JC BD" value="{{ $claim->mfg_date }}">
                             </div>
-                            <div class="col-md-2">
+                            <div class="col-md-2" style="max-width: 110px;">
                                 <label class="form-label">Card No</label>
                                 <input type="text" name="card_no" class="form-control input-sm" value="{{ $claim->card_no }}">
                             </div>
-                            <div class="col-md-2">
+                            <div class="col-md-2" style="max-width: 130px;">
                                 <label class="form-label font-weight-bold">Retail Price</label>
                                 <input type="number" step="any" id="retail_price_display" class="form-control input-sm text-end fw-bold text-dark bg-light" placeholder="0.00" readonly disabled value="{{ $claim->retail_price > 0 ? $claim->retail_price : ($claim->product?->latestPrice?->sale_retail_price ?? $claim->product?->latestPrice?->retail_price ?? $claim->sales_price) }}">
                                 <input type="hidden" name="retail_price" id="retail_price_hidden" value="{{ $claim->retail_price > 0 ? $claim->retail_price : ($claim->product?->latestPrice?->sale_retail_price ?? $claim->product?->latestPrice?->retail_price ?? $claim->sales_price) }}">
                             </div>
-                            <div class="col-md-2">
+                            <div class="col-md-2" style="max-width: 130px;">
                                 <label class="form-label font-weight-bold">Sales Price</label>
                                 <input type="number" step="any" name="sales_price" id="sales_price" class="form-control input-sm text-end fw-bold text-danger" placeholder="0.00" readonly value="{{ $claim->sales_price }}">
                             </div>
-
-                            <div class="col-12"><hr class="my-1 text-muted opacity-25"></div>
-
-                            <!-- Bill Date, Warehouses -->
-                            <div class="col-md-3">
+                            <div class="col-md-2" style="max-width: 140px;">
                                 <label class="form-label">Bill Date</label>
                                 <input type="date" name="bill_date" class="form-control input-sm" value="{{ $claim->bill_date }}">
                             </div>
+
+                            <!-- Warehouses -->
                             <div class="col-md-4 {{ in_array($claim->claim_type, ['credit_note', 'claim_hold']) ? 'd-none' : '' }}" id="original_warehouse_div">
                                 <label class="form-label border-danger border-bottom"><span class="text-danger"><i class="fa fa-minus-circle"></i></span> Deliver From</label>
                                 <select name="original_warehouse_id" class="form-select input-sm">
@@ -200,8 +198,6 @@
                                     </select>
                                 @endif
                             </div>
-
-                            <div class="col-12"><hr class="my-1 text-muted opacity-25"></div>
 
                             <!-- Fault Found & Remarks -->
                             <div class="col-md-6">
