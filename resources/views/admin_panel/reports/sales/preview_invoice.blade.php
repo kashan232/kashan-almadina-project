@@ -214,8 +214,13 @@
                             <b style="color: #000;">{{ strtoupper($partyName) }}</b>
                             {{ $customer && !empty($customer->cnic) ? ' - '.$customer->cnic : '' }}
                         </td>
+                        @php
+                            $displayInvNo = preg_match('/\d+/', $invoiceNo, $matches) ? ltrim($matches[0], '0') : $invoiceNo;
+                            if (empty($displayInvNo) || $displayInvNo === '') { $displayInvNo = '0'; }
+                            $displayInvNo = str_pad($displayInvNo, 3, '0', STR_PAD_LEFT);
+                        @endphp
                         <td><b>Inv No.</b></td>
-                        <td class="text-center"><b>{{ $invoiceNo }}</b></td>
+                        <td class="text-center"><b>{{ $displayInvNo }}</b></td>
                         <td><b>Date.</b></td>
                         <td class="text-center"><b>{{ $saleDate }}</b></td>
                     </tr>

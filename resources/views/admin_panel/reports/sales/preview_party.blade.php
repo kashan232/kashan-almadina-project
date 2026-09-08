@@ -187,57 +187,58 @@
 
             @foreach($grouped as $customerId => $items)
                 @php
-                    $customer = $items->first()->sale->customer;
+                    $firstCustomer = $items->first()->sale->customer;
+                    $partyCustomerName = $firstCustomer ? strtoupper($firstCustomer->customer_name) : 'CASH CUSTOMER';
+                    $partyCustomerCnic = $firstCustomer?->cnic ?? '';
                     $party_qty = 0;
                     $party_retail_amt = 0;
                     $party_sales_amt = 0;
                     $party_invoice_amt = 0;
                 @endphp
                 
+                <!-- Main Party Heading Row -->
+                @include('admin_panel.reports.sales.partials.heading_customer', [
+                    'colspan' => 8,
+                    'customerName' => $partyCustomerName,
+                    'customerCnic' => $partyCustomerCnic,
+                ])
+                
                 @foreach($items->groupBy(fn ($row) => $row->sale->invoice_no) as $invoiceNo => $invoiceItems)
                     @php
                         $saleDate = \Carbon\Carbon::parse($invoiceItems->first()->sale->created_at)->format('d-m-y');
-                        $invCustomer = $invoiceItems->first()->sale->customer;
-                        $customerName = $invCustomer ? strtoupper($invCustomer->customer_name) : 'CASH CUSTOMER';
-                        $customerCnic = $invCustomer?->cnic ?? '';
                     @endphp
                     @include('admin_panel.reports.sales.partials.heading_inv_date', [
                         'colspan' => 8,
                         'invoiceNo' => $invoiceNo,
                         'saleDate' => $saleDate,
                     ])
-                    @include('admin_panel.reports.sales.partials.heading_customer', [
-                        'colspan' => 8,
-                        'customerName' => $customerName,
-                        'customerCnic' => $customerCnic,
-                    ])
 
-                @foreach($invoiceItems as $item)
-                    @php
-                        $qty = $item->sales_qty;
-                        $retail_p = $item->retail_price ?? 0;
-                        $retail_a = $retail_p * $qty;
-                        $sales_p = (float) ($item->sales_rate > 0 ? $item->sales_rate : ($item->sales_price ?? 0));
-                        $sales_a = $item->amount;
-                        $add_disc = $item->discount_amount ?? 0;
-                        $invoice_a = $sales_a - $add_disc;
+                    @foreach($invoiceItems as $item)
+                        @php
+                            $qty = $item->sales_qty;
+                            $retail_p = $item->retail_price ?? 0;
+                            $retail_a = $retail_p * $qty;
+                            $sales_p = (float) ($item->sales_rate > 0 ? $item->sales_rate : ($item->sales_price ?? 0));
+                            $sales_a = $item->amount;
+                            $add_disc = $item->discount_amount ?? 0;
+                            $invoice_a = $sales_a - $add_disc;
 
-                        $party_qty += $qty;
-                        $party_retail_amt += $retail_a;
-                        $party_sales_amt += $sales_a;
-                        $party_invoice_amt += $invoice_a;
-                    @endphp
-                    <tr class="data-row @include('admin_panel.reports.sales.partials.data_row_class', ['item' => $item])">
-                        @include('admin_panel.reports.sales.partials.type_cell', ['item' => $item])
-                        <td class="text-left">{{ $item->product ? $item->product->name : 'N/A' }}</td>
-                        @include('admin_panel.reports.sales.partials.brand_cell', ['item' => $item])
-                        <td class="text-center">{{ number_format($qty) }}</td>
-                        <td class="text-right">{{ number_format($retail_p, 0) }}</td>
-                        <td class="text-right bold-val">{{ number_format($retail_a, 0) }}</td>
-                        <td class="text-right">@include('admin_panel.reports.sales.partials.sales_price_cell', ['item' => $item, 'value' => $sales_p])</td>
-                        <td class="text-right bold-val">{{ number_format($sales_a, 0) }}</td>
-                    </tr>
-                @endforeach
+                            $party_qty += $qty;
+                            $party_retail_amt += $retail_a;
+                            $party_sales_amt += $sales_a;
+                            $party_invoice_amt += $invoice_a;
+                        @endphp
+                        <tr class="data-row @include('admin_panel.reports.sales.partials.data_row_class', ['item' => $item])">
+                            @include('admin_panel.reports.sales.partials.type_cell', ['item' => $item])
+                            <td class="text-left">{{ $item->product ? $item->product->name : 'N/A' }}</td>
+                            @include('admin_panel.reports.sales.partials.brand_cell', ['item' => $item])
+                            <td class="text-center">{{ number_format($qty) }}</td>
+                            <td class="text-right">{{ number_format($retail_p, 0) }}</td>
+                            <td class="text-right bold-val">{{ number_format($retail_a, 0) }}</td>
+                            <td class="text-right">@include('admin_panel.reports.sales.partials.sales_price_cell', ['item' => $item, 'value' => $sales_p])</td>
+                            <td class="text-right bold-val">{{ number_format($sales_a, 0) }}</td>
+                        </tr>
+                    @endforeach
                 @endforeach
 
                 <!-- Party Total Row -->
