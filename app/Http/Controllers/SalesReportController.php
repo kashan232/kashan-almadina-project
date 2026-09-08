@@ -559,7 +559,7 @@ class SalesReportController extends Controller
             'discount_amount' => 0,
             'amount' => $recSign * $receivedSalesPrice,
             'entry_type' => 'customer_claim_received',
-            'entry_type_label' => 'Claim Recv',
+            'entry_type_label' => 'CLM-CN',
             'replacement_product' => null,
             'replacement_sales_price' => 0,
         ];
@@ -584,7 +584,7 @@ class SalesReportController extends Controller
                 'discount_amount' => 0,
                 'amount' => $repSign * $replacementSalesPrice,
                 'entry_type' => 'customer_credit_note',
-                'entry_type_label' => 'Credit Note',
+                'entry_type_label' => 'CLM-Rep',
                 'replacement_product' => $claim->replacementProduct,
                 'replacement_sales_price' => $claim->replacement_sales_price,
             ];
