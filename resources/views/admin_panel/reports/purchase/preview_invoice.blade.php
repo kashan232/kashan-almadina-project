@@ -30,7 +30,7 @@
             margin-bottom: 15px;
         }
         .report-title {
-            color: #0d47a1;
+            color: #c2185b;
             font-size: 22px;
             font-weight: bold;
             text-decoration: underline;
@@ -51,14 +51,12 @@
         table {
             width: 100%;
             border-collapse: collapse;
-            border: 1px solid #000;
-            margin-bottom: 20px;
         }
         th {
             background-color: #cfd8dc;
             border: 1px solid #000;
             padding: 6px 2px;
-            font-size: 10px;
+            font-size: 11px;
             font-weight: bold;
             text-align: center;
         }
@@ -68,41 +66,71 @@
             vertical-align: middle;
         }
 
+        /* Supplier Row */
+        .customer-row {
+            background-color: #e3f2fd;
+            border-top: 2px solid #000;
+        }
         .customer-row td {
-            background-color: #f1f8e9;
-            border: 1px solid #000;
-            padding: 8px 6px;
+            color: #0d47a1;
             font-weight: bold;
-            font-size: 11px;
+            font-size: 12px;
+            border: 1px solid #000;
         }
 
-        .item-row td { border: 1px solid #999; }
-        .bold-val { font-weight: bold; }
+        /* Invoice Meta Row (Date/InvNo) */
+        .inv-meta-row td {
+            background-color: #fff;
+            border-bottom: none;
+            padding: 2px 6px;
+            font-weight: bold;
+        }
 
+        /* Data Row */
+        .item-row td {
+            border-bottom: 1px solid #ccc;
+        }
+        .item-row .bold-val {
+            font-weight: bold;
+        }
+
+        /* Subtotal Row */
         .subtotal-row td {
             font-weight: bold;
-            border: 1px solid #000;
             padding: 5px 6px;
         }
         .qty-box {
             background-color: #c8e6c9;
             text-align: center;
+            border: 1px solid #000 !important;
         }
         .val-box {
             background-color: #fff;
             text-align: right;
+            border: 1px solid #000 !important;
         }
 
+        /* Grand Total Row */
         .grand-total-row td {
             font-weight: bold;
             font-size: 12px;
-            padding: 10px 6px;
+            padding: 8px 6px;
             border-top: 2px solid #000;
+        }
+        .grand-qty-box {
+            background-color: #cfd8dc;
+            text-align: center;
+            border: 1px solid #000 !important;
+        }
+        .grand-val-box {
+            background-color: #bbdefb;
+            text-align: right;
+            border: 1px solid #000 !important;
         }
 
         .text-right { text-align: right; }
         .text-center { text-align: center; }
-        .text-left { text-align: left; }
+        .text-left { text-left; }
 
         .footer {
             margin-top: 40px;
@@ -123,7 +151,7 @@
 <body>
 
     <div class="no-print">
-        <button onclick="window.print()" style="padding: 10px 25px; background: #0d47a1; color: #fff; border: none; cursor: pointer; font-weight: bold; border-radius: 4px;">Print Report</button>
+        <button onclick="window.print()" style="padding: 10px 25px; background: #c2185b; color: #fff; border: none; cursor: pointer; font-weight: bold; border-radius: 4px;">Print Report</button>
         <button id="btnExportExcel" onclick="exportReportToExcel()" style="padding: 10px 25px; background: #2e7d32; color: #fff; border: none; cursor: pointer; font-weight: bold; border-radius: 4px; margin-left: 10px;">
             <i class="fa fa-file-excel-o"></i> Export to Excel
         </button>
@@ -144,124 +172,119 @@
         <table id="salesReportTable">
             <thead>
                 <tr>
-                    <th width="10%">Type</th>
-                    <th width="22%">Item Description</th>
-                    <th width="11%">Brand</th>
-                    <th width="8%">Qty</th>
-                    <th width="11%">Retail Price</th>
-                    <th width="12%">Retail Value</th>
-                    <th width="13%">Purchase Rate</th>
-                    <th width="13%">Net Amount</th>
+                    <th width="8%">Type</th>
+                    <th width="26%" class="text-left">Item Description</th>
+                    <th width="10%">Brand</th>
+                    <th width="5%">Qty</th>
+                    <th width="9%">Retail Price</th>
+                    <th width="11%">Retail Amount</th>
+                    <th width="9%">Purchase Rate</th>
+                    <th width="12%">Amount</th>
                 </tr>
             </thead>
             <tbody>
                 @php 
                     $grand_qty = 0; 
+                    $grand_retail_amt = 0; 
                     $grand_purchase_amt = 0; 
-                    $grand_retail_amt = 0;
-                    $grand_net_amt = 0; 
                 @endphp
 
-                @if($grouped->isEmpty())
-                    <tr>
-                        <td colspan="8" style="text-align: center; padding: 50px;">No Data Found</td>
-                    </tr>
-                @endif
-
-                @foreach($grouped as $vendorId => $invoices)
-                    @foreach($invoices as $invoiceNo => $items)
-                        @php
-                            $firstItem = $items->first();
-                            $purchase = $firstItem->purchase;
-                            $party = $purchase->purchasable;
-                            $partyName = $party
-                                ? strtoupper($party->name ?? $party->customer_name ?? 'N/A')
-                                : strtoupper($purchase->vendor->name ?? 'N/A');
-                            $purchaseDate = \Carbon\Carbon::parse($purchase->current_date)->format('d-m-y');
-                            $displayInv = preg_replace('/[^0-9]/', '', $invoiceNo) ?: $invoiceNo;
-                            
-                            $inv_qty = 0;
-                            $inv_purchase_amt = 0;
-                            $inv_retail_amt = 0;
-                            $inv_net_amt = 0;
-                        @endphp
+                @foreach($invoices as $invoiceNo => $items)
+                    @php
+                        $firstItem = $items->first();
+                        $purchase = $firstItem->purchase;
+                        $party = $purchase->purchasable;
+                        $partyName = $party ? ($party->name ?? $party->customer_name ?? 'VENDOR / SUPPLIER') : ($purchase->vendor->name ?? 'VENDOR / SUPPLIER');
+                        $rawDate = !empty($purchase->entry_date) ? $purchase->entry_date : ($purchase->current_date ?? $purchase->created_at);
+                        $purchaseDate = \Carbon\Carbon::parse($rawDate)->format('d-m-y');
                         
-                        <!-- Invoice Heading Row -->
-                        <tr class="customer-row">
-                            <td colspan="5" class="text-left">
-                                PUR No: <b style="color: #000;">{{ $displayInv }}</b> &nbsp;&nbsp;&nbsp; 
-                                Date: <b style="color: #000;">{{ $purchaseDate }}</b>
-                                &nbsp;&nbsp;&nbsp;
-                                Type: <b style="color: #000;">{{ $firstItem->entry_type_label ?? 'Purchase' }}</b>
-                            </td>
-                            <td colspan="3" class="text-right">
-                                Supplier: <b style="color: #000;">{{ $partyName }}</b>
-                            </td>
-                        </tr>
-
-                        <!-- Data Rows -->
-                        @foreach($items as $item)
-                            @php
-                                $qty = $item->qty;
-                                $purchase_p = $item->form_rate;
-                                
-                                $retail_p = $item->purchase_retail_price ?? $item->retail_price ?? 0;
-                                $retail_a = $retail_p * $qty;
-
-                                $net_a = $item->form_line_total;
-
-                                $inv_qty += $qty;
-                                $inv_retail_amt += $retail_a;
-                                $inv_net_amt += $net_a;
-                            @endphp
-                            <tr class="item-row {{ ($item->entry_type ?? 'purchase') !== 'purchase' ? 'return-row' : '' }}">
-                                @include('admin_panel.reports.purchase.partials.type_cell', ['item' => $item])
-                                <td>{{ $item->product ? $item->product->name : 'N/A' }}</td>
-                                <td class="text-center">{{ $item->product && $item->product->brandRelation ? $item->product->brandRelation->name : '-' }}</td>
-                                <td class="text-center">{{ number_format($qty) }}</td>
-                                <td class="text-right">{{ number_format($retail_p, 0) }}</td>
-                                <td class="text-right">{{ number_format($retail_a, 0) }}</td>
-                                <td class="text-right">{{ number_format($purchase_p, 0) }}</td>
-                                <td class="text-right bold-val">{{ number_format($net_a, 0) }}</td>
-                            </tr>
-                        @endforeach
-
-                        <!-- Invoice Total Row -->
-                        <tr class="subtotal-row">
-                            <td colspan="3" class="text-right">Total:</td>
-                            <td class="qty-box">{{ number_format($inv_qty) }}</td>
-                            <td style="border:none; background:none;"></td>
-                            <td class="val-box">{{ number_format($inv_retail_amt, 0) }}</td>
-                            <td style="border:none; background:none;"></td>
-                            <td class="val-box">{{ number_format($inv_net_amt, 0) }}</td>
-                        </tr>
-                        <tr style="height: 15px;"><td colspan="8" style="border:none;"></td></tr>
-
+                        $inv_qty = 0;
+                        $inv_retail_amt = 0;
+                        $inv_purchase_amt = 0;
+                    @endphp
+                    
+                    <!-- Supplier / Invoice Heading Row -->
+                    <tr class="customer-row">
+                        <td><b>Vendor</b></td>
+                        <td colspan="3" class="text-left">
+                            <b style="color: #000;">{{ strtoupper($partyName) }}</b>
+                        </td>
                         @php
-                            $grand_qty += $inv_qty;
-                            $grand_retail_amt += $inv_retail_amt;
-                            $grand_net_amt += $inv_net_amt;
+                            $displayInvNo = preg_match('/\d+/', $invoiceNo, $matches) ? ltrim($matches[0], '0') : $invoiceNo;
+                            if (empty($displayInvNo) || $displayInvNo === '') { $displayInvNo = '0'; }
+                            $displayInvNo = str_pad($displayInvNo, 3, '0', STR_PAD_LEFT);
                         @endphp
+                        <td><b>Inv No.</b></td>
+                        <td class="text-center"><b>{{ $displayInvNo }}</b></td>
+                        <td><b>Date.</b></td>
+                        <td class="text-center"><b>{{ $purchaseDate }}</b></td>
+                    </tr>
+
+                    <!-- Data Rows -->
+                    @foreach($items as $item)
+                        @php
+                            $qty = $item->qty;
+                            $retail_p = $item->purchase_retail_price ?? $item->retail_price ?? 0;
+                            $retail_a = $retail_p * $qty;
+                            $purchase_p = (float) $item->form_rate;
+                            $purchase_a = (float) $item->form_line_total;
+
+                            $inv_qty += $qty;
+                            $inv_retail_amt += $retail_a;
+                            $inv_purchase_amt += $purchase_a;
+                        @endphp
+                        <tr class="item-row {{ ($item->entry_type ?? 'purchase') !== 'purchase' ? 'return-row' : '' }}">
+                            @include('admin_panel.reports.purchase.partials.type_cell', ['item' => $item])
+                            <td>{{ $item->product ? $item->product->name : 'N/A' }}</td>
+                            <td class="text-center">{{ $item->product && $item->product->brandRelation ? $item->product->brandRelation->name : '-' }}</td>
+                            <td class="text-center">{{ number_format($qty) }}</td>
+                            <td class="text-right">{{ number_format($retail_p, 0) }}</td>
+                            <td class="text-right">{{ number_format($retail_a, 0) }}</td>
+                            <td class="text-right">{{ number_format($purchase_p, 0) }}</td>
+                            <td class="text-right bold-val">{{ number_format($purchase_a, 0) }}</td>
+                        </tr>
                     @endforeach
+
+                    <!-- Invoice Total Row -->
+                    <tr class="subtotal-row">
+                        <td colspan="3" class="text-right"><b>Total:</b></td>
+                        <td class="qty-box"><b>{{ number_format($inv_qty) }}</b></td>
+                        <td></td>
+                        <td class="val-box"><b>{{ number_format($inv_retail_amt, 0) }}</b></td>
+                        <td></td>
+                        <td class="val-box"><b>{{ number_format($inv_purchase_amt, 0) }}</b></td>
+                    </tr>
+                    <tr style="height: 6px;"><td colspan="8" style="border:none; padding: 0;"></td></tr>
+
+                    @php
+                        $grand_qty += $inv_qty;
+                        $grand_retail_amt += $inv_retail_amt;
+                        $grand_purchase_amt += $inv_purchase_amt;
+                    @endphp
                 @endforeach
 
+                <!-- Grand Total -->
                 <tr class="grand-total-row">
                     <td colspan="3" class="text-right">Grand Total:</td>
-                    <td class="qty-box" style="background-color: #cfd8dc;">{{ number_format($grand_qty) }}</td>
+                    <td class="grand-qty-box">{{ number_format($grand_qty) }}</td>
                     <td style="border:none; background:none;"></td>
-                    <td class="val-box" style="background-color: #fce4ec;">{{ number_format($grand_retail_amt, 0) }}</td>
+                    <td class="grand-val-box">{{ number_format($grand_retail_amt, 0) }}</td>
                     <td style="border:none; background:none;"></td>
-                    <td class="val-box" style="background-color: #bbdefb;">{{ number_format($grand_net_amt, 0) }}</td>
+                    <td class="grand-val-box">{{ number_format($grand_purchase_amt, 0) }}</td>
                 </tr>
             </tbody>
         </table>
+
+        <div class="footer">
+            <div>{{ now()->format('l, F d, Y') }}</div>
+            <div>Page 1 of 1</div>
+        </div>
     </div>
 
-    <!-- SheetJS for Excel Export -->
+    <!-- SheetJS for Export to Excel -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-    <!-- html2pdf for PDF Export -->
+    <!-- html2pdf.js for Vector Clean PDF Export -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-
     <script>
         function exportReportToExcel() {
             var table = document.getElementById("salesReportTable");

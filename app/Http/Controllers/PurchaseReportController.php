@@ -566,11 +566,10 @@ class PurchaseReportController extends Controller
 
     private function previewInvoiceWise($purchaseItems, $from_date, $to_date)
     {
-        $grouped = $purchaseItems->groupBy(fn ($item) => $this->partyKey($item))
-            ->map(function ($items) {
-                return $items->groupBy(fn ($item) => $item->purchase->invoice_no);
-            });
+        $invoices = $purchaseItems->groupBy(function ($item) {
+            return $item->purchase->invoice_no;
+        });
 
-        return view('admin_panel.reports.purchase.preview_invoice', compact('grouped', 'from_date', 'to_date'));
+        return view('admin_panel.reports.purchase.preview_invoice', compact('invoices', 'from_date', 'to_date'));
     }
 }

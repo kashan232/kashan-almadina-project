@@ -14,7 +14,7 @@
             font-size: 11px;
             color: #000;
             margin: 0;
-            padding: 10mm;
+            padding: 5mm;
             background-color: #fff;
         }
         .no-print {
@@ -22,7 +22,7 @@
             background: #f8f9fa;
             border-bottom: 1px solid #ddd;
             text-align: center;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
         }
         .report-header {
             text-align: center;
@@ -30,8 +30,8 @@
             margin-bottom: 15px;
         }
         .report-title {
-            color: #0d47a1;
-            font-size: 22px;
+            color: #c2185b;
+            font-size: 20px;
             font-weight: bold;
             text-decoration: underline;
             margin: 0;
@@ -52,53 +52,65 @@
             width: 100%;
             border-collapse: collapse;
             border: 1px solid #000;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
         }
         th {
             background-color: #cfd8dc;
             border: 1px solid #000;
-            padding: 6px 2px;
-            font-size: 10px;
+            padding: 4px 2px;
+            font-size: 11px;
             font-weight: bold;
             text-align: center;
+            vertical-align: middle;
         }
         td {
-            border: 1px solid #999;
-            padding: 4px 6px;
+            border: 1px solid #777;
+            padding: 3px 5px;
             vertical-align: middle;
         }
 
-        .item-heading-row td {
+        /* Item Header Row (Product Name & Brand) */
+        .item-row-header td {
             background-color: #fff;
-            border: none;
-            padding: 10px 6px 5px 6px;
+            border: 1px solid #000;
             font-weight: bold;
             font-size: 12px;
+            padding: 4px 6px;
+        }
+        .item-title {
+            color: #000;
+            font-weight: bold;
+        }
+        .brand-title {
             color: #0d47a1;
+            font-weight: bold;
         }
 
-        .data-row td { border: 1px solid #999; }
-        .bold-val { font-weight: bold; }
-
-        .total-row td {
+        /* Subtotal Row */
+        .subtotal-row td {
             font-weight: bold;
+            padding: 4px 5px;
             border: 1px solid #000;
-            padding: 5px 6px;
         }
         .qty-box {
-            background-color: #c8e6c9;
+            background-color: #e0e0e0;
             text-align: center;
+            font-weight: bold;
+            border: 1px solid #000 !important;
         }
         .val-box {
-            background-color: #fff;
+            background-color: #e0e0e0;
             text-align: right;
+            font-weight: bold;
+            border: 1px solid #000 !important;
         }
 
+        /* Grand Total Row */
         .grand-total-row td {
             font-weight: bold;
             font-size: 12px;
-            padding: 10px 6px;
-            border-top: 2px solid #000;
+            padding: 6px 5px;
+            border: 2px solid #000;
         }
 
         .text-right { text-align: right; }
@@ -106,7 +118,7 @@
         .text-left { text-align: left; }
 
         .footer {
-            margin-top: 40px;
+            margin-top: 30px;
             display: flex;
             justify-content: space-between;
             font-size: 11px;
@@ -124,7 +136,7 @@
 <body>
 
     <div class="no-print">
-        <button onclick="window.print()" style="padding: 10px 25px; background: #0d47a1; color: #fff; border: none; cursor: pointer; font-weight: bold; border-radius: 4px;">Print Report</button>
+        <button onclick="window.print()" style="padding: 10px 25px; background: #c2185b; color: #fff; border: none; cursor: pointer; font-weight: bold; border-radius: 4px;">Print Report</button>
         <button id="btnExportExcel" onclick="exportReportToExcel()" style="padding: 10px 25px; background: #2e7d32; color: #fff; border: none; cursor: pointer; font-weight: bold; border-radius: 4px; margin-left: 10px;">
             <i class="fa fa-file-excel-o"></i> Export to Excel
         </button>
@@ -145,128 +157,154 @@
         <table id="salesReportTable">
             <thead>
                 <tr>
-                    <th width="9%">PUR No.</th>
+                    <th width="7%">TYPE</th>
+                    <th width="8%">INV#</th>
                     <th width="9%">Date</th>
-                    <th width="10%">Type</th>
-                    <th width="18%" class="text-left">Vendor Name</th>
-                    <th width="7%">Qty</th>
-                    <th width="11%">Retail Price</th>
-                    <th width="12%">Retail Value</th>
-                    <th width="11%">Purchase Rate</th>
-                    <th width="13%">Net Amount</th>
+                    <th width="26%" class="text-left">Party Name</th>
+                    <th width="5%">Qty</th>
+                    <th width="9%">Retail Price</th>
+                    <th width="11%">Retail Amount</th>
+                    <th width="10%">Purchase Rate</th>
+                    <th width="15%">Amount</th>
                 </tr>
             </thead>
             <tbody>
                 @php 
                     $grand_qty = 0; 
+                    $grand_retail_amt = 0; 
                     $grand_purchase_amt = 0; 
-                    $grand_retail_amt = 0;
                 @endphp
 
                 @if($grouped->isEmpty())
                     <tr>
-                        <td colspan="10" style="text-align: center; padding: 50px;">No Data Found</td>
+                        <td colspan="9" style="text-align: center; padding: 40px;">No Data Found</td>
                     </tr>
                 @endif
 
                 @foreach($grouped as $productId => $items)
                     @php
                         $product = $items->first()->product;
+                        $brandName = $product && $product->brandRelation ? $product->brandRelation->name : '-';
                         $item_qty = 0;
-                        $item_purchase_amt = 0;
                         $item_retail_amt = 0;
+                        $item_purchase_amt = 0;
                     @endphp
                     
-                    <tr class="item-heading-row">
-                        <td colspan="10" class="text-left" style="border-top: 2px solid #000;">
-                            ITEM: {{ $product ? strtoupper($product->name) : 'N/A' }} 
-                            <span class="ms-3" style="color: #666;">( {{ $product && $product->brandRelation ? strtoupper($product->brandRelation->name) : '-' }} )</span>
+                    <!-- Item Header Block (Product Name & Brand Name) -->
+                    <tr class="item-row-header">
+                        <td colspan="4" class="text-left">
+                            <span class="item-title">{{ $product ? strtoupper($product->name) : 'N/A' }}</span>
+                        </td>
+                        <td colspan="5" class="text-left">
+                            <span class="brand-title">{{ strtoupper($brandName) }}</span>
                         </td>
                     </tr>
 
+                    <!-- Data Rows -->
                     @foreach($items as $item)
                         @php
                             $qty = $item->qty;
-                            $purchase_p = $item->form_rate;
-                            $purchase_a = $item->form_line_total;
-                            $purchaseDate = \Carbon\Carbon::parse($item->purchase->current_date)->format('d-m-y');
-                            $displayInv = preg_replace('/[^0-9]/', '', $item->purchase->invoice_no) ?: $item->purchase->invoice_no;
-                            $party = $item->purchase->purchasable;
-                            $partyName = $party
-                                ? strtoupper($party->name ?? $party->customer_name ?? 'N/A')
-                                : strtoupper($item->purchase->vendor->name ?? 'N/A');
-
                             $retail_p = $item->purchase_retail_price ?? $item->retail_price ?? 0;
                             $retail_a = $retail_p * $qty;
+                            $purchase_p = $item->form_rate;
+                            $purchase_a = $item->form_line_total;
+
+                            $purchase = $item->purchase;
+                            $invNoRaw = $purchase->invoice_no ?? '-';
+                            $invNo = preg_match('/\d+/', $invNoRaw, $matches) ? ltrim($matches[0], '0') : $invNoRaw;
+                            if (empty($invNo) || $invNo === '') { $invNo = '0'; }
+                            $invNo = str_pad($invNo, 3, '0', STR_PAD_LEFT);
+                            $rawDate = !empty($purchase->current_date) ? $purchase->current_date : $purchase->created_at;
+                            $purchaseDate = \Carbon\Carbon::parse($rawDate)->format('d-m-y');
+                            $party = $purchase->purchasable;
+                            $partyName = $party
+                                ? ($party->name ?? $party->customer_name ?? 'N/A')
+                                : ($purchase->vendor->name ?? 'N/A');
 
                             $item_qty += $qty;
-                            $item_purchase_amt += $purchase_a;
                             $item_retail_amt += $retail_a;
+                            $item_purchase_amt += $purchase_a;
                         @endphp
-                        <tr class="data-row {{ ($item->entry_type ?? 'purchase') !== 'purchase' ? 'return-row' : '' }}">
-                            <td class="text-center">{{ $displayInv }}</td>
-                            <td class="text-center">{{ $purchaseDate }}</td>
+                        <tr class="item-row {{ ($item->entry_type ?? 'purchase') !== 'purchase' ? 'return-row' : '' }}">
                             @include('admin_panel.reports.purchase.partials.type_cell', ['item' => $item])
-                            <td class="text-left">{{ $partyName }}</td>
+                            <td class="text-center">{{ $invNo }}</td>
+                            <td class="text-center">{{ $purchaseDate }}</td>
+                            <td class="text-left">{{ strtoupper($partyName) }}</td>
                             <td class="text-center">{{ number_format($qty) }}</td>
-                            <td class="text-right">{{ number_format($retail_p, 0) }}</td>
-                            <td class="text-right">{{ number_format($retail_a, 0) }}</td>
-                            <td class="text-right">{{ number_format($purchase_p, 0) }}</td>
-                            <td class="text-right bold-val">{{ number_format($purchase_a, 0) }}</td>
+                            <td class="text-right">{{ $retail_p != 0 ? number_format($retail_p, 0) : '' }}</td>
+                            <td class="text-right fw-bold">{{ $retail_a != 0 ? number_format($retail_a, 0) : '' }}</td>
+                            <td class="text-right">{{ $purchase_p != 0 ? number_format($purchase_p, 0) : '' }}</td>
+                            <td class="text-right fw-bold">{{ number_format($purchase_a, 0) }}</td>
                         </tr>
                     @endforeach
 
-                    <tr class="total-row">
-                        <td colspan="4" class="text-right">Total:</td>
-                        <td class="qty-box">{{ number_format($item_qty) }}</td>
-                        <td style="border:none; background:none;"></td>
-                        <td class="val-box">{{ number_format($item_retail_amt, 0) }}</td>
-                        <td style="border:none; background:none;"></td>
-                        <td class="val-box">{{ number_format($item_purchase_amt, 0) }}</td>
+                    <!-- Item Total Row -->
+                    <tr class="subtotal-row">
+                        <td colspan="4" class="text-right"><b>Total:</b></td>
+                        <td class="qty-box"><b>{{ number_format($item_qty) }}</b></td>
+                        <td></td>
+                        <td class="val-box"><b>{{ number_format($item_retail_amt, 0) }}</b></td>
+                        <td></td>
+                        <td class="val-box"><b>{{ number_format($item_purchase_amt, 0) }}</b></td>
                     </tr>
-                    <tr style="height: 25px;"><td colspan="10" style="border:none;"></td></tr>
+                    <tr style="height: 6px;"><td colspan="9" style="border:none; padding: 0;"></td></tr>
 
                     @php
                         $grand_qty += $item_qty;
-                        $grand_purchase_amt += $item_purchase_amt;
                         $grand_retail_amt += $item_retail_amt;
+                        $grand_purchase_amt += $item_purchase_amt;
                     @endphp
                 @endforeach
 
+                <!-- Grand Total -->
                 <tr class="grand-total-row">
                     <td colspan="4" class="text-right">Grand Total:</td>
                     <td class="qty-box" style="background-color: #cfd8dc;">{{ number_format($grand_qty) }}</td>
-                    <td style="border:none; background:none;"></td>
-                    <td class="val-box" style="background-color: #fce4ec;">{{ number_format($grand_retail_amt, 0) }}</td>
-                    <td style="border:none; background:none;"></td>
+                    <td></td>
+                    <td class="val-box" style="background-color: #bbdefb;">{{ number_format($grand_retail_amt, 0) }}</td>
+                    <td></td>
                     <td class="val-box" style="background-color: #bbdefb;">{{ number_format($grand_purchase_amt, 0) }}</td>
                 </tr>
             </tbody>
         </table>
+
+        <div class="footer">
+            <div>{{ now()->format('l, F d, Y') }}</div>
+            <div>Page 1 of 1</div>
+        </div>
     </div>
 
-    <!-- SheetJS for Excel Export -->
+    <!-- SheetJS for Export to Excel -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-    <!-- html2pdf for PDF Export -->
+    <!-- html2pdf.js for Vector Clean PDF Export -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-
     <script>
         function exportReportToExcel() {
             var table = document.getElementById("salesReportTable");
-            var wb = XLSX.utils.table_to_book(table, {sheet: "Item Wise Purchase Report"});
-            XLSX.writeFile(wb, "Item_Wise_Purchase_Report.xlsx");
+            var wb = XLSX.utils.table_to_book(table, {sheet: "Purchase Report Item Wise"});
+            XLSX.writeFile(wb, "Purchase_Report_Item_Wise_" + "{{ date('Y-m-d') }}" + ".xlsx");
         }
 
         function exportReportToPDF() {
             var element = document.getElementById("reportContainer");
+            var originalStyle = element.getAttribute("style") || "";
+            element.style.width = "780px";
+            element.style.margin = "0 auto";
+
             var opt = {
-                margin:       [5, 5, 5, 5],
-                filename:     'Item_Wise_Purchase_Report.pdf',
+                margin:       [3, 3, 3, 3],
+                filename:     "Purchase_Report_Item_Wise_" + "{{ date('Y-m-d') }}" + ".pdf",
                 image:        { type: 'jpeg', quality: 0.98 },
-                html2canvas:  { scale: 2, useCORS: true },
-                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+                html2canvas:  { scale: 2, useCORS: true, logging: false, scrollX: 0, scrollY: 0 },
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
+                pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] }
             };
-            html2pdf().set(opt).from(element).save();
+
+            html2pdf().set(opt).from(element).save().then(function() {
+                element.setAttribute("style", originalStyle);
+            }).catch(function() {
+                element.setAttribute("style", originalStyle);
+            });
         }
     </script>
 
