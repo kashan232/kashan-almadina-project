@@ -178,13 +178,13 @@
                         </div>
                         <div class="card-body p-2">
                             <div class="row g-2 align-items-end">
-                                <div class="col-md-2">
+                                <div class="col-md-3">
                                     <label class="fw-bold mb-1" style="font-size: 11px;">Transaction Type</label>
-                                    <select name="transaction_type" class="form-select form-select-sm" required style="height: 30px; font-size: 12px;">
-                                        <option value="purchase" selected>Purchase</option>
-                                        <option value="purchase_return">Purchase Return</option>
-                                        <option value="claim_credit_note">Claim Credit Note</option>
+                                    <select name="transaction_type[]" class="form-select form-select-sm select2" multiple required style="font-size: 12px;">
                                         <option value="both">All (Return &amp; Credit Minus)</option>
+                                        <option value="purchase">Purchase (PJ)</option>
+                                        <option value="purchase_return">Purchase Return (PRJ)</option>
+                                        <option value="claim_credit_note">Claim Credit Note (CLM-CN)</option>
                                     </select>
                                 </div>
                                 <div class="col-md-2">
@@ -414,6 +414,12 @@
 
         $('#partySearch').on('keyup', function() {
             applyCascadeFilters();
+        });
+
+        $('.select2').select2({
+            placeholder: "Select Transaction Types",
+            allowClear: true,
+            width: '100%'
         });
 
         setTimeout(() => {
