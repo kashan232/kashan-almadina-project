@@ -177,105 +177,129 @@ class CustomerOutstandingBalanceReportBuilder
         $credit = (float) ($txn['credit'] ?? 0);
         $desc = strtolower((string) ($txn['desc'] ?? ''));
 
-        if ($ref === 'SJ' && $debit > 0) {
-            $cols['sales'] += $debit;
-
+        if ($ref === 'SJ') {
+            if ($debit > 0) {
+                $cols['sales'] += $debit;
+            }
+            if ($credit > 0) {
+                if (str_contains($desc, 'discount')) {
+                    $cols['exp_dis'] += $credit;
+                } else {
+                    $cols['receipts'] += $credit;
+                }
+            }
             return;
         }
 
-        if ($ref === 'PV' && $debit > 0) {
-            $cols['payment'] += $debit;
-
+        if ($ref === 'PV' || $ref === 'PRJ') {
+            if ($debit > 0) {
+                $cols['payment'] += $debit;
+            }
+            if ($credit > 0) {
+                $cols['purchase'] += $credit;
+            }
             return;
         }
 
-        if ($ref === 'PRJ' && $debit > 0) {
-            $cols['payment'] += $debit;
-
-            return;
-        }
-
-        if ($ref === 'IV' && $debit > 0) {
-            $cols['oth_inc'] += $debit;
-
-            return;
-        }
-
-        if ($ref === 'JV' && $debit > 0) {
-            $cols['jv_dr'] += $debit;
-
-            return;
-        }
-
-        if ($ref === 'PJ' && $credit > 0) {
-            $cols['purchase'] += $credit;
-
-            return;
-        }
-
-        if (in_array($ref, ['SRJ', 'SR'], true) && $credit > 0) {
-            $cols['s_ret'] += $credit;
-
-            return;
-        }
-
-        if ($ref === 'SRJ' && $debit > 0) {
-            $cols['exp_dis'] += $debit;
-
-            return;
-        }
-
-        if ($ref === 'CIR' && $debit > 0) {
-            $cols['claim_cn'] += $debit;
-
-            return;
-        }
-
-        if ($ref === 'CLM' && $credit > 0) {
-            $cols['s_ret'] += $credit;
-
-            return;
-        }
-
-        if ($ref === 'RV' && $credit > 0) {
-            if (str_contains($desc, 'discount')) {
-                $cols['exp_dis'] += $credit;
-            } else {
+        if ($ref === 'IV') {
+            if ($debit > 0) {
+                $cols['oth_inc'] += $debit;
+            }
+            if ($credit > 0) {
                 $cols['receipts'] += $credit;
             }
-
             return;
         }
 
-        if ($ref === 'EV' && $credit > 0) {
-            $cols['exp_dis'] += $credit;
-
-            return;
-        }
-
-        if ($ref === 'JV' && $credit > 0) {
-            $cols['jv_cr'] += $credit;
-
-            return;
-        }
-
-        if ($ref === 'AV') {
+        if ($ref === 'JV' || $ref === 'AV') {
             if ($debit > 0) {
                 $cols['jv_dr'] += $debit;
             }
             if ($credit > 0) {
                 $cols['jv_cr'] += $credit;
             }
+            return;
+        }
 
+        if ($ref === 'PJ') {
+            if ($credit > 0) {
+                $cols['purchase'] += $credit;
+            }
+            if ($debit > 0) {
+                $cols['payment'] += $debit;
+            }
+            return;
+        }
+
+        if (in_array($ref, ['SRJ', 'SR'], true)) {
+            if ($credit > 0) {
+                $cols['s_ret'] += $credit;
+            }
+            if ($debit > 0) {
+                $cols['s_ret'] -= $debit;
+            }
+            return;
+        }
+
+        if ($ref === 'CIR') {
+            if ($debit > 0) {
+                $cols['claim_cn'] += $debit;
+            }
+            if ($credit > 0) {
+                $cols['s_ret'] += $credit;
+            }
+            return;
+        }
+
+        if ($ref === 'CLM') {
+            if ($credit > 0) {
+                $cols['s_ret'] += $credit;
+            }
+            if ($debit > 0) {
+                $cols['sales'] += $debit;
+            }
+            return;
+        }
+
+        if ($ref === 'RV') {
+            if ($credit > 0) {
+                if (str_contains($desc, 'discount')) {
+                    $cols['exp_dis'] += $credit;
+                } else {
+                    $cols['receipts'] += $credit;
+                }
+            }
+            if ($debit > 0) {
+                $cols['payment'] += $debit;
+            }
+            return;
+        }
+
+        if ($ref === 'EV') {
+            if ($credit > 0) {
+                $cols['exp_dis'] += $credit;
+            }
+            if ($debit > 0) {
+                $cols['payment'] += $debit;
+            }
             return;
         }
 
         if ($ref === 'VO') {
             if ($credit > 0) {
                 $cols['exp_dis'] += $credit;
-            } elseif ($debit > 0 && str_contains($desc, 'discount')) {
-                $cols['exp_dis'] += $debit;
             }
+            if ($debit > 0) {
+                $cols['payment'] += $debit;
+            }
+            return;
+        }
+
+        if ($debit > 0) {
+            $cols['jv_dr'] += $debit;
+        }
+        if ($credit > 0) {
+            $cols['jv_cr'] += $credit;
         }
     }
 
