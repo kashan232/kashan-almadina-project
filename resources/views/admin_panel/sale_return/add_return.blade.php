@@ -333,11 +333,12 @@
                                         <span class="text-dark small fw-bold">Order Discount</span>
                                         <div class="d-flex align-items-center gap-1 flex-wrap justify-content-end">
                                             <select id="discount_head" name="discount_head" class="form-select form-select-sm py-0" style="width:95px;">
-                                                <option value="">Head</option>
                                                 @foreach($accountHeads as $head)
-                                                    <option value="{{ $head->id }}" {{ (isset($returnData) && $returnData->discount_head == $head->id) ? 'selected' : '' }}>
+                                                    @if(strtoupper($head->name) == 'EXPENSE' || $head->id == 1)
+                                                    <option value="{{ $head->id }}" selected>
                                                         {{ $head->name }}
                                                     </option>
+                                                    @endif
                                                 @endforeach
                                             </select>
                                             <select name="discount_account_id" id="discount_account_id" class="form-select form-select-sm py-0" style="width:120px;">
@@ -1089,9 +1090,9 @@ $(document).ready(function() {
         loadDiscountAccounts($(this).val(), null);
     });
 
-    @if(isset($returnData) && $returnData->discount_head)
-        loadDiscountAccounts(@json($returnData->discount_head), @json($returnData->discount_account_id));
-    @endif
+    if ($('#discount_head').val()) {
+        loadDiscountAccounts($('#discount_head').val(), @json($returnData->discount_account_id ?? null));
+    }
 
     function appendInvoiceRow(item) {
         let discAmt = item.qty > 0 ? (item.item_discount / item.qty).toFixed(2) : 0;
