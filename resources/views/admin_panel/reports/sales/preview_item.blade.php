@@ -206,7 +206,10 @@
                             $retail_p = $item->retail_price ?? 0;
                             $retail_a = $retail_p * $qty;
                             
-                            $sales_p = $item->sales_rate > 0 ? $item->sales_rate : ($item->sales_qty != 0 ? ($item->sales_price - (($item->discount_amount ?? 0) / $item->sales_qty)) : $item->sales_price);
+                            $isReturn = ($item->entry_type ?? '') === 'sale_return';
+                            $sales_p = ($isReturn || ($item->sales_rate ?? 0) > 0)
+                                ? (float) ($item->sales_rate ?? $item->sales_price)
+                                : ($item->sales_qty != 0 ? ($item->sales_price - (($item->discount_amount ?? 0) / $item->sales_qty)) : $item->sales_price);
                             $sales_a = $item->amount;
 
                             $sale = $item->sale;
@@ -284,7 +287,7 @@
                 margin:       [3, 3, 3, 3],
                 filename:     "Sales_Report_Item_Wise_" + "{{ date('Y-m-d') }}" + ".pdf",
                 image:        { type: 'jpeg', quality: 0.98 },
-                html2canvas:  { scale: 2, useCORS: true, logging: false },
+                html2canvas:  { scale: 2, useCORS: true, logging: false, windowWidth: 1050 },
                 jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
                 pagebreak:    { mode: ['avoid-all', 'css', 'legacy'] }
             };

@@ -167,7 +167,7 @@
                 <th width="5%">Qty</th>
                 <th width="9%">Retail Price</th>
                 <th width="11%">Retail Amount</th>
-                <th width="9%">Rate</th>
+                <th width="9%">Sales Price</th>
                 <th width="12%">Amount</th>
             </tr>
         </thead>
@@ -217,7 +217,7 @@
                         $qty = $item->sales_qty;
                         $retail_p = $item->retail_price ?? 0;
                         $retail_a = $retail_p * $qty;
-                        $sales_p = $item->sales_rate > 0 ? $item->sales_rate : ($item->sales_qty > 0 ? ($item->sales_price - ($item->discount_amount / $item->sales_qty)) : $item->sales_price);
+                        $sales_p = (float) ($item->sales_rate > 0 ? $item->sales_rate : ($item->sales_price ?? 0));
                         $sales_a = $item->amount;
                         $add_disc = $item->discount_amount ?? 0;
                         $invoice_a = $sales_a - $add_disc;
