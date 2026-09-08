@@ -208,9 +208,7 @@
                             $retail_a = $retail_p * $qty;
                             
                             $isReturn = ($item->entry_type ?? '') === 'sale_return';
-                            $sales_p = ($isReturn || ($item->sales_rate ?? 0) > 0)
-                                ? (float) ($item->sales_rate ?? $item->sales_price)
-                                : ($item->sales_qty != 0 ? ($item->sales_price - (($item->discount_amount ?? 0) / $item->sales_qty)) : $item->sales_price);
+                            $sales_p = (float) (($item->sales_rate ?? 0) > 0 ? $item->sales_rate : ($item->sales_price ?? 0));
                             $sales_a = $item->amount;
 
                             $sale = $item->sale;
