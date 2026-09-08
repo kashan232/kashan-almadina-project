@@ -182,11 +182,15 @@
                     <td colspan="7" class="text-left" style="border-top: 2px solid #000; padding-top: 15px; font-weight: bold; color: #0d47a1;">{{ strtoupper($brandName) }}</td>
                 </tr>
 
-                @foreach($productGroups as $group)
-                    @php
-                        $first = $group->first();
-                        $categoryName = $first->product && $first->product->categoryRelation ? $first->product->categoryRelation->name : '-';
-                        $productName = $first->product ? $first->product->name : 'N/A';
+                    @foreach($productGroups as $group)
+                        @php
+                            $first = $group->first();
+                            $productObj = $first->product;
+                            $categoryName = $productObj?->sub_category_relation?->name 
+                                         ?? $productObj?->subcategory?->name 
+                                         ?? $productObj?->categoryRelation?->name 
+                                         ?? '-';
+                            $productName = $productObj ? $productObj->name : 'N/A';
                         
                         $qty = $group->sum('sales_qty');
                         $price = (float) ($first->retail_price ?? 0);
