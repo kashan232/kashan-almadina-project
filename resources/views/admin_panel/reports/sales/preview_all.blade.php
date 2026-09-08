@@ -129,17 +129,17 @@
         <table id="salesReportTable">
             <thead>
                 <tr>
-                    <th width="6%">Type</th>
-                    <th width="7%">Inv #</th>
-                    <th width="8%">Date</th>
-                    <th width="18%" class="text-left">Party</th>
-                    <th width="18%" class="text-left">Item Description</th>
-                    <th width="10%">Brand</th>
-                    <th width="6%">Qty</th>
-                    <th width="8%">Retail Price</th>
-                    <th width="9%">Retail Amount</th>
-                    <th width="8%">Sales Price</th>
-                    <th width="9%">Amount</th>
+                    <th width="5%">Type</th>
+                    <th width="6%">Inv #</th>
+                    <th width="7%">Date</th>
+                    <th width="17%" class="text-left">Party</th>
+                    <th width="17%" class="text-left">Item Description</th>
+                    <th width="9%">Brand</th>
+                    <th width="5%">Qty</th>
+                    <th width="6%">Retail Price</th>
+                    <th width="14%">Retail Amount</th>
+                    <th width="6%">Sales Price</th>
+                    <th width="8%">Amount</th>
                 </tr>
             </thead>
             <tbody>
