@@ -157,16 +157,14 @@
         <table id="salesReportTable">
             <thead>
                 <tr>
-                    <th width="7%">GSN No.</th>
-                    <th width="8%">Date</th>
-                    <th width="27%" class="text-left">Party Name</th>
-                    <th width="5%">Qty</th>
-                    <th width="9%">Retail Price</th>
-                    <th width="10%">Retail Amount</th>
-                    <th width="9%">Sales Price</th>
-                    <th width="10%">Sales Amount</th>
-                    <th width="7%">Add. Disc</th>
-                    <th width="10%">Invoice Amount</th>
+                    <th width="8%">GSN No.</th>
+                    <th width="9%">Date</th>
+                    <th width="31%" class="text-left">Party Name</th>
+                    <th width="6%">Qty</th>
+                    <th width="10%">Retail Price</th>
+                    <th width="12%">Retail Amount</th>
+                    <th width="10%">Sales Price</th>
+                    <th width="14%">Amount</th>
                 </tr>
             </thead>
             <tbody>
@@ -174,13 +172,11 @@
                     $grand_qty = 0; 
                     $grand_retail_amt = 0; 
                     $grand_sales_amt = 0; 
-                    $grand_add_disc = 0;
-                    $grand_invoice_amt = 0; 
                 @endphp
 
                 @if($grouped->isEmpty())
                     <tr>
-                        <td colspan="10" style="text-align: center; padding: 40px;">No Data Found</td>
+                        <td colspan="8" style="text-align: center; padding: 40px;">No Data Found</td>
                     </tr>
                 @endif
 
@@ -191,8 +187,6 @@
                         $item_qty = 0;
                         $item_retail_amt = 0;
                         $item_sales_amt = 0;
-                        $item_add_disc = 0;
-                        $item_invoice_amt = 0;
                     @endphp
                     
                     <!-- Item Header Block (Product Name & Brand Name) -->
@@ -200,7 +194,7 @@
                         <td colspan="3" class="text-left">
                             <span class="item-title">{{ $product ? strtoupper($product->name) : 'N/A' }}</span>
                         </td>
-                        <td colspan="7" class="text-left">
+                        <td colspan="5" class="text-left">
                             <span class="brand-title">{{ strtoupper($brandName) }}</span>
                         </td>
                     </tr>
@@ -214,8 +208,6 @@
                             
                             $sales_p = $item->sales_rate > 0 ? $item->sales_rate : ($item->sales_qty != 0 ? ($item->sales_price - (($item->discount_amount ?? 0) / $item->sales_qty)) : $item->sales_price);
                             $sales_a = $item->amount;
-                            $add_disc = 0; // Header discount level if explicitly present
-                            $invoice_a = $sales_a;
 
                             $sale = $item->sale;
                             $invNo = $sale->invoice_no ?? '-';
@@ -226,8 +218,6 @@
                             $item_qty += $qty;
                             $item_retail_amt += $retail_a;
                             $item_sales_amt += $sales_a;
-                            $item_add_disc += $add_disc;
-                            $item_invoice_amt += $invoice_a;
                         @endphp
                         <tr class="item-row @include('admin_panel.reports.sales.partials.data_row_class', ['item' => $item])">
                             <td class="text-center">{{ $invNo }}</td>
@@ -238,8 +228,6 @@
                             <td class="text-right fw-bold">{{ $retail_a != 0 ? number_format($retail_a, 0) : '' }}</td>
                             <td class="text-right">{{ $sales_p != 0 ? number_format($sales_p, 0) : '' }}</td>
                             <td class="text-right fw-bold">{{ $sales_a != 0 ? number_format($sales_a, 0) : '' }}</td>
-                            <td class="text-right"></td>
-                            <td class="text-right fw-bold">{{ $invoice_a != 0 ? number_format($invoice_a, 0) : '' }}</td>
                         </tr>
                     @endforeach
 
@@ -251,17 +239,13 @@
                         <td class="val-box"><b>{{ number_format($item_retail_amt, 0) }}</b></td>
                         <td></td>
                         <td class="val-box"><b>{{ number_format($item_sales_amt, 0) }}</b></td>
-                        <td></td>
-                        <td class="val-box"><b>{{ number_format($item_invoice_amt, 0) }}</b></td>
                     </tr>
-                    <tr style="height: 6px;"><td colspan="10" style="border:none; padding: 0;"></td></tr>
+                    <tr style="height: 6px;"><td colspan="8" style="border:none; padding: 0;"></td></tr>
 
                     @php
                         $grand_qty += $item_qty;
                         $grand_retail_amt += $item_retail_amt;
                         $grand_sales_amt += $item_sales_amt;
-                        $grand_add_disc += $item_add_disc;
-                        $grand_invoice_amt += $item_invoice_amt;
                     @endphp
                 @endforeach
 
@@ -273,8 +257,6 @@
                     <td class="val-box" style="background-color: #bbdefb;">{{ number_format($grand_retail_amt, 0) }}</td>
                     <td></td>
                     <td class="val-box" style="background-color: #bbdefb;">{{ number_format($grand_sales_amt, 0) }}</td>
-                    <td></td>
-                    <td class="val-box" style="background-color: #bbdefb;">{{ number_format($grand_invoice_amt, 0) }}</td>
                 </tr>
             </tbody>
         </table>
