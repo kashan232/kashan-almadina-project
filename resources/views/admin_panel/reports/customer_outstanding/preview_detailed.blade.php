@@ -98,27 +98,31 @@
     </div>
 
     @php
-        $fmt = function($v) {
+        $fmt = function($v, $isDeduction = false) {
             $val = (float)$v;
             if (abs($val) < 0.0001) return '';
-            return ($val < 0 ? '-' : '') . number_format(abs($val), 0);
+            $displayVal = abs($val);
+            if ($isDeduction) {
+                return '-' . number_format($displayVal, 0);
+            }
+            return ($val < 0 ? '-' : '') . number_format($displayVal, 0);
         };
         $fromLabel = $from_date ? \Carbon\Carbon::parse($from_date)->format('d-m-y') : '';
         $toLabel = $to_date ? \Carbon\Carbon::parse($to_date)->format('d-m-y') : '';
         $periodCols = [
-            ['key' => 'sales', 'head' => 'Sales', 'class' => ''],
-            ['key' => 'c_rep', 'head' => 'C. Rep', 'class' => ''],
-            ['key' => 'payment', 'head' => 'Payment', 'class' => 'col-green'],
-            ['key' => 'income', 'head' => 'Income', 'class' => 'col-green'],
-            ['key' => 'jv_dr', 'head' => 'JV-DR.', 'class' => ''],
-            ['key' => 'cir', 'head' => 'Claim CN', 'class' => 'col-green'],
-            ['key' => 'purchase', 'head' => 'Purchase', 'class' => 'col-red'],
-            ['key' => 'pur_ret', 'head' => 'Pur Ret', 'class' => 'col-green'],
-            ['key' => 's_ret', 'head' => 'S. Ret', 'class' => 'col-red'],
-            ['key' => 'clm_cn', 'head' => 'CLM CN', 'class' => 'col-red'],
-            ['key' => 'receipts', 'head' => 'Receipts', 'class' => 'col-red'],
-            ['key' => 'exp_dis', 'head' => 'Exp / Dis', 'class' => 'col-green'],
-            ['key' => 'jv_cr', 'head' => 'JV-CR.', 'class' => 'col-green'],
+            ['key' => 'sales', 'head' => 'Sales', 'class' => '', 'is_deduction' => false],
+            ['key' => 'c_rep', 'head' => 'C. Rep', 'class' => '', 'is_deduction' => false],
+            ['key' => 'payment', 'head' => 'Payment', 'class' => 'col-green', 'is_deduction' => false],
+            ['key' => 'income', 'head' => 'Income', 'class' => 'col-green', 'is_deduction' => false],
+            ['key' => 'jv_dr', 'head' => 'JV-DR.', 'class' => '', 'is_deduction' => false],
+            ['key' => 'cir', 'head' => 'Claim CN', 'class' => 'col-green', 'is_deduction' => false],
+            ['key' => 'purchase', 'head' => 'Purchase', 'class' => 'col-red', 'is_deduction' => true],
+            ['key' => 'pur_ret', 'head' => 'Pur Ret', 'class' => 'col-green', 'is_deduction' => false],
+            ['key' => 's_ret', 'head' => 'S. Ret', 'class' => 'col-red', 'is_deduction' => true],
+            ['key' => 'clm_cn', 'head' => 'CLM CN', 'class' => 'col-red', 'is_deduction' => true],
+            ['key' => 'receipts', 'head' => 'Receipts', 'class' => 'col-red', 'is_deduction' => true],
+            ['key' => 'exp_dis', 'head' => 'Exp / Dis', 'class' => 'col-green', 'is_deduction' => true],
+            ['key' => 'jv_cr', 'head' => 'JV-CR.', 'class' => 'col-green', 'is_deduction' => true],
         ];
     @endphp
 
@@ -155,7 +159,7 @@
                     <td class="customer" title="{{ $row['party_name'] ?? $row['customer_name'] }}">{{ $row['party_name'] ?? $row['customer_name'] }}</td>
                     <td class="num">{{ $fmt($row['opening']) }}</td>
                     @foreach($periodCols as $col)
-                    <td class="num {{ $col['class'] }}">{{ $fmt($row[$col['key']] ?? 0) }}</td>
+                    <td class="num {{ $col['class'] }}">{{ $fmt($row[$col['key']] ?? 0, $col['is_deduction']) }}</td>
                     @endforeach
                     <td class="num">{{ $fmt($row['balance']) }}</td>
                 </tr>
@@ -164,7 +168,7 @@
                     <td colspan="3" class="grand-label">Grand Total Amount</td>
                     <td class="num">{{ $fmt($grand['opening']) }}</td>
                     @foreach($periodCols as $col)
-                    <td class="num {{ $col['class'] }}">{{ $fmt($grand[$col['key']] ?? 0) }}</td>
+                    <td class="num {{ $col['class'] }}">{{ $fmt($grand[$col['key']] ?? 0, $col['is_deduction']) }}</td>
                     @endforeach
                     <td class="num">{{ $fmt($grand['balance']) }}</td>
                 </tr>
