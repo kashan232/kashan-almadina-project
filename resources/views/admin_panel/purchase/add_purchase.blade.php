@@ -1056,7 +1056,7 @@
             $restoreQtys = old('qty', $restoreItems->pluck('qty')->toArray());
             $restoreDiscs = old('item_disc', $restoreItems->pluck('item_discount')->toArray());
             $restoreDiscAmts = old('item_disc_amount', $restoreItems->map(fn($i) => round((($i->price ?? 0) * ($i->qty ?? 0)) - ($i->line_total ?? 0), 2))->toArray());
-            $restoreRetails = old('purchase_retail_price', $restoreItems->map(fn($i) => optional(optional($i->product)->latestPrice)->purchase_retail_price ?? 0)->toArray());
+            $restoreRetails = old('purchase_retail_price', $restoreItems->map(fn($i) => (float) ($i->retail_price > 0 ? $i->retail_price : (optional(optional($i->product)->latestPrice)->purchase_retail_price ?? 0)))->toArray());
             $restoreNets = old('purchase_net_amount', $restoreItems->map(fn($i) => optional(optional($i->product)->latestPrice)->purchase_net_amount ?? 0)->toArray());
             $restoreTotals = old('total', $restoreItems->pluck('line_total')->toArray());
             $restoreNames = old('product_name', $restoreItems->map(fn($i) => optional($i->product)->name ?? '')->toArray());
