@@ -14,7 +14,7 @@
             font-size: 11px;
             color: #000;
             margin: 0;
-            padding: 10mm;
+            padding: 5mm;
             background-color: #fff;
         }
         .no-print {
@@ -25,24 +25,23 @@
             margin-bottom: 20px;
         }
         .report-header {
-            text-align: center;
-            position: relative;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
             margin-bottom: 15px;
+            padding: 0 5px;
         }
         .report-title {
             color: #c2185b;
-            font-size: 22px;
+            font-size: 20px;
             font-weight: bold;
             text-decoration: underline;
             margin: 0;
-            display: inline-block;
         }
         .date-range {
-            position: absolute;
-            right: 0;
-            top: 5px;
-            font-size: 12px;
+            font-size: 11px;
             font-weight: bold;
+            white-space: nowrap;
         }
         .date-range span {
             text-decoration: underline;
@@ -57,14 +56,14 @@
             background-color: #90caf9;
             color: #000;
             border: 1px solid #000;
-            padding: 6px 4px;
-            font-size: 11px;
+            padding: 6px 3px;
+            font-size: 10.5px;
             font-weight: bold;
             text-align: center;
         }
         td {
             border: 1px solid #999;
-            padding: 4px 6px;
+            padding: 4px 5px;
             vertical-align: middle;
         }
 
@@ -131,15 +130,15 @@
                 <tr>
                     <th width="5%">Type</th>
                     <th width="6%">Inv #</th>
-                    <th width="7%">Date</th>
-                    <th width="17%" class="text-left">Party</th>
-                    <th width="17%" class="text-left">Item Description</th>
-                    <th width="9%">Brand</th>
+                    <th width="8.5%">Date</th>
+                    <th width="16%" class="text-left">Party</th>
+                    <th width="16%" class="text-left">Item Description</th>
+                    <th width="8.5%">Brand</th>
                     <th width="5%">Qty</th>
-                    <th width="6%">Retail Price</th>
-                    <th width="14%">Retail Amount</th>
-                    <th width="6%">Sales Price</th>
-                    <th width="8%">Amount</th>
+                    <th width="7%">Retail Price</th>
+                    <th width="10.5%">Retail Amount</th>
+                    <th width="7%">Sales Price</th>
+                    <th width="10.5%">Amount</th>
                 </tr>
             </thead>
             <tbody>
