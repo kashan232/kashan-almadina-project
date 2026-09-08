@@ -121,7 +121,7 @@
                     </tr>
                     @foreach($items as $item)
                         @php
-                            $list_p = $item->retail_price ?? 0;
+                            $list_p = $item->list_price ?? $item->retail_price ?? 0;
                             $sale_p = $item->sales_price;
                             $diff = $sale_p - $list_p;
                             $percent = $list_p > 0 ? ($diff / $list_p) * 100 : 0;

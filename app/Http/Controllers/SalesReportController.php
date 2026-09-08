@@ -625,6 +625,55 @@ class SalesReportController extends Controller
 
     private function previewSaleVsList($saleItems, $from_date, $to_date)
     {
+        // Pre-fetch all product_prices sorted by start_date asc, created_at asc, id asc
+        $allPrices = \App\Models\ProductPrice::orderBy('start_date', 'asc')
+            ->orderBy('created_at', 'asc')
+            ->orderBy('id', 'asc')
+            ->get()
+            ->groupBy('product_id');
+
+        $saleItems->each(function($item) use ($allPrices) {
+            $pId = $item->product_id;
+            $sale = $item->sale;
+            $rawDate = !empty($sale?->entry_date) ? $sale->entry_date : ($sale?->created_at ? \Carbon\Carbon::parse($sale->created_at)->toDateString() : now()->toDateString());
+            $saleTime = $sale?->created_at ? \Carbon\Carbon::parse($sale->created_at) : now();
+
+            $listPrice = 0;
+            $pricesForProd = $allPrices->get($pId, collect());
+
+            if ($pricesForProd->isNotEmpty()) {
+                // Find matching price record for $rawDate
+                $matched = $pricesForProd->filter(function($pr) use ($rawDate) {
+                    $start = $pr->start_date;
+                    $end = $pr->end_date;
+                    if ($start && $rawDate < $start) return false;
+                    if ($end && $rawDate > $end) return false;
+                    return true;
+                });
+
+                if ($matched->count() > 1) {
+                    // Same date multiple price changes -> pick closest created_at timestamp <= saleTime, or last created
+                    $exact = $matched->filter(fn($pr) => \Carbon\Carbon::parse($pr->created_at) <= $saleTime)->last();
+                    $chosen = $exact ?: $matched->last();
+                } else {
+                    $chosen = $matched->first();
+                }
+
+                if (!$chosen) {
+                    // Fallback to latest price on or before rawDate
+                    $chosen = $pricesForProd->filter(fn($pr) => !$pr->start_date || $pr->start_date <= $rawDate)->last() ?: $pricesForProd->last();
+                }
+
+                $listPrice = (float) ($chosen->sale_net_amount ?? $chosen->sale_retail_price ?? 0);
+            }
+
+            if ($listPrice <= 0) {
+                $listPrice = (float) ($item->retail_price ?? 0);
+            }
+
+            $item->setAttribute('list_price', $listPrice);
+        });
+
         $grouped = $saleItems->groupBy('product_id');
 
         return view('admin_panel.reports.sales.preview_sale_vs_list', compact('grouped', 'from_date', 'to_date'));
