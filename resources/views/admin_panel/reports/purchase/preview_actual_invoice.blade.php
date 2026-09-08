@@ -220,9 +220,7 @@
                     @if($whtAmt > 0)
                         <tr class="alloc-row">
                             <td class="text-left" style="color: #0d47a1;">WHT :</td>
-                            <td colspan="5"></td>
-                            <td class="text-right bold-val">{{ number_format($whtAmt, 0) }}</td>
-                            <td></td>
+                            <td colspan="7"></td>
                             <td class="text-right bold-val">{{ number_format($whtAmt, 0) }}</td>
                         </tr>
                     @endif
@@ -231,9 +229,7 @@
                     @if($discAmt > 0)
                         <tr class="alloc-row">
                             <td class="text-left" style="color: #0d47a1;">Discount Received:</td>
-                            <td colspan="5"></td>
-                            <td class="text-right bold-val">-{{ number_format($discAmt, 0) }}</td>
-                            <td></td>
+                            <td colspan="7"></td>
                             <td class="text-right bold-val">-{{ number_format($discAmt, 0) }}</td>
                         </tr>
                     @endif
@@ -246,9 +242,7 @@
                         @endphp
                         <tr class="alloc-row">
                             <td class="text-left" style="color: #0d47a1;">{{ $allocTitle }}:</td>
-                            <td colspan="5"></td>
-                            <td class="text-right bold-val">{{ number_format($allocAmt, 0) }}</td>
-                            <td></td>
+                            <td colspan="7"></td>
                             <td class="text-right bold-val">{{ number_format($allocAmt, 0) }}</td>
                         </tr>
                     @endforeach
