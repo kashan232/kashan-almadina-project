@@ -103,12 +103,13 @@
         <table>
             <thead>
                 <tr>
-                    <th width="20%">Inv No.</th>
+                    <th width="15%">Inv No.</th>
                     <th width="30%" class="text-left">Party Name</th>
-                    <th width="12%">List Price</th>
-                    <th width="12%">Sale Price</th>
-                    <th width="12%">Diff</th>
-                    <th width="14%">Status</th>
+                    <th width="10%">Qty</th>
+                    <th width="11%">List Price</th>
+                    <th width="11%">Sale Price</th>
+                    <th width="11%">Diff</th>
+                    <th width="12%">Status</th>
                 </tr>
             </thead>
             <tbody>
@@ -117,7 +118,7 @@
                         $product = $items->first()->product;
                     @endphp
                     <tr class="item-heading-row">
-                        <td colspan="6" class="text-left">ITEM: {{ $product ? $product->name : 'N/A' }}</td>
+                        <td colspan="7" class="text-left">ITEM: {{ $product ? $product->name : 'N/A' }}</td>
                     </tr>
                     @foreach($items as $item)
                         @php
@@ -145,6 +146,7 @@
                         <tr>
                             <td class="text-center">{{ $item->sale->invoice_no }}</td>
                             <td class="text-left">{{ $item->sale->customer ? $item->sale->customer->customer_name : 'CASH CUSTOMER' }}</td>
+                            <td class="text-center">{{ $item->sales_qty }}</td>
                             <td class="text-right">{{ number_format($list_p, 0) }}</td>
                             <td class="text-right">{{ number_format($sale_p, 0) }}</td>
                             <td class="text-right" style="background-color: {{ $bgColor }}; color: {{ $textColor }}; font-weight: bold;">
