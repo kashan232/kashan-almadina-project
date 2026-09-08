@@ -671,7 +671,9 @@ class SalesReportController extends Controller
                 $listPrice = (float) ($item->retail_price ?? 0);
             }
 
-            $item->setAttribute('list_price', $listPrice);
+            if (is_object($item)) {
+                $item->list_price = $listPrice;
+            }
         });
 
         $grouped = $saleItems->groupBy('product_id');
