@@ -609,7 +609,6 @@
                             <tr>
                                 <td>
                                     <select name="account_head_id[]" class="form-select form-select-sm accountHead">
-                                        <option value="" disabled>Select Head</option>
                                         @foreach ($AccountHeads as $head)
                                             @if($head->id == 2)
                                             <option value="{{ $head->id }}" selected>{{ $head->name }}</option>
@@ -681,10 +680,9 @@
                 <div class="d-flex align-items-center gap-2">
                   <div class="d-flex gap-1" style="width:190px;">
                     <select id="wht_head_id" class="form-select form-select-sm py-0" style="width:80px;">
-                      <option value="">Head</option>
                       @foreach($AccountHeads as $head)
                           @if($head->id == 1)
-                          <option value="{{ $head->id }}" {{ (isset($purchase) && $purchase->whtAccount && $purchase->whtAccount->head_id == $head->id) ? 'selected' : (old('wht_head_id', 1) == $head->id ? 'selected' : '') }}>
+                          <option value="{{ $head->id }}" selected>
                               {{ $head->name }}
                           </option>
                           @endif
@@ -2314,7 +2312,6 @@ $(document).ready(function() {
         var newRow = `<tr>
             <td>
                 <select name="account_head_id[]" class="form-control form-control-sm accountHead">
-                    <option value="" disabled>Select Head</option>
                     @foreach ($AccountHeads as $head)
                         @if($head->id == 2)
                         <option value="{{ $head->id }}" selected>{{ $head->name }}</option>
