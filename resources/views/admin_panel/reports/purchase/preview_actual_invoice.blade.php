@@ -225,15 +225,6 @@
                         </tr>
                     @endif
 
-                    <!-- Optional Discount Received Row -->
-                    @if($discAmt > 0)
-                        <tr class="alloc-row">
-                            <td class="text-left" style="color: #0d47a1;">Discount Received:</td>
-                            <td colspan="7"></td>
-                            <td class="text-right bold-val">-{{ number_format($discAmt, 0) }}</td>
-                        </tr>
-                    @endif
-
                     <!-- Account Allocations Rows (Subhead) -->
                     @foreach($p->accountAllocations as $alloc)
                         @php
@@ -243,7 +234,7 @@
                         <tr class="alloc-row">
                             <td class="text-left" style="color: #0d47a1;">{{ $allocTitle }}:</td>
                             <td colspan="7"></td>
-                            <td class="text-right bold-val">{{ number_format($allocAmt, 0) }}</td>
+                            <td class="text-right bold-val">-{{ number_format($allocAmt, 0) }}</td>
                         </tr>
                     @endforeach
 
@@ -274,7 +265,7 @@
                     @endforeach
 
                     @php
-                        $netInvTotal = $inv_purchase_amt + $whtAmt - $discAmt + $p->accountAllocations->sum('amount');
+                        $netInvTotal = $inv_purchase_amt + $whtAmt - $p->accountAllocations->sum('amount');
 
                         $grand_qty += $inv_qty;
                         $grand_retail_amt += $inv_retail_amt;

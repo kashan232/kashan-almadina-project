@@ -246,10 +246,17 @@ class PurchaseController extends Controller
                     $lineTotal = ($price * $qty) - ($unitDisc * $qty);
                     $rate = ($qty > 0) ? ($lineTotal / $qty) : $price;
 
+                    $retail = (float) ($request->purchase_retail_price[$index] ?? 0);
+                    if ($retail <= 0) {
+                        $prod = Product::with('latestPrice')->find($productId);
+                        $retail = (float) ($prod?->latestPrice?->purchase_retail_price ?? $prod?->latestPrice?->sale_retail_price ?? $prod?->retail_price ?? 0);
+                    }
+
                     \App\Models\PurchaseItem::create([
                         'purchase_id'   => $purchase->id,
                         'product_id'    => $productId,
                         'price'         => $price,
+                        'retail_price'  => $retail,
                         'purchase_rate' => $rate,
                         'item_discount' => $disc,
                         'qty'           => $qty,
@@ -301,7 +308,10 @@ class PurchaseController extends Controller
 
             return redirect()->route('Purchase.home')->with('success', $msg);
         } catch (\Throwable $e) {
-            \Log::error('Purchase store error: ' . $e->getMessage());
+            \Log::error('Purchase store error: ' . $e->getMessage(), [
+                'trace'   => $e->getTraceAsString(),
+                'request' => $request->all(),
+            ]);
             if ($request->ajax() || $request->wantsJson()) {
                 return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
             }
@@ -355,6 +365,11 @@ class PurchaseController extends Controller
 
                 $qty       = $request['qty'][$index];
                 $price     = $request['purchase_retail_price'][$index]; // ✅ retail
+                $retail    = (float) ($request['purchase_retail_price'][$index] ?? 0);
+                if ($retail <= 0) {
+                    $prod = Product::with('latestPrice')->find($productId);
+                    $retail = (float) ($prod?->latestPrice?->purchase_retail_price ?? $prod?->latestPrice?->sale_retail_price ?? $prod?->retail_price ?? 0);
+                }
                 $discAmt   = (float) ($request['item_disc_amount'][$index] ?? 0);
                 $lineTotal = ($price * $qty) - ($discAmt * $qty);
                 $rate      = ($qty > 0) ? ($lineTotal / $qty) : $price;
@@ -363,6 +378,7 @@ class PurchaseController extends Controller
                     'purchase_id'   => $purchase->id,
                     'product_id'    => $productId,
                     'price'         => $price,
+                    'retail_price'  => $retail,
                     'purchase_rate' => $rate,
                     'item_discount' => $discAmt,
                     'qty'           => $qty,
@@ -614,10 +630,17 @@ class PurchaseController extends Controller
                     $lineTotal = ($price * $qty) - ($unitDisc * $qty);
                     $rate = ($qty > 0) ? ($lineTotal / $qty) : $price;
 
+                    $retail = (float) ($cleanPurchaseRetail[$index] ?? 0);
+                    if ($retail <= 0) {
+                        $prod = Product::with('latestPrice')->find($productId);
+                        $retail = (float) ($prod?->latestPrice?->purchase_retail_price ?? $prod?->latestPrice?->sale_retail_price ?? $prod?->retail_price ?? 0);
+                    }
+
                     \App\Models\PurchaseItem::create([
                         'purchase_id'   => $purchase->id,
                         'product_id'    => $productId,
                         'price'         => $price,
+                        'retail_price'  => $retail,
                         'purchase_rate' => $rate,
                         'item_discount' => $disc,
                         'qty'           => $qty,

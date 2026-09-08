@@ -29,7 +29,9 @@ class PurchaseItem extends Model
         $discPct = (float) ($this->item_discount ?? 0);
 
         $retail = 0.0;
-        if (isset($this->purchase_retail_price) && (float)$this->purchase_retail_price > 0) {
+        if (isset($this->retail_price) && (float)$this->retail_price > 0) {
+            $retail = (float) $this->retail_price;
+        } elseif (isset($this->purchase_retail_price) && (float)$this->purchase_retail_price > 0) {
             $retail = (float) $this->purchase_retail_price;
         } elseif ($this->product) {
             $purchase = $this->purchase;
