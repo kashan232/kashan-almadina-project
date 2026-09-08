@@ -149,6 +149,20 @@
                                     </div>
                                 </div>
                             </div>
+                            <!-- Trans Type (Multi-select) -->
+                            <div class="col-md-1" style="min-width: 110px;">
+                                <div class="filter-column">
+                                    <div class="filter-header">
+                                        <input type="checkbox" class="select-all" data-target="transtype-list" checked> Trans
+                                    </div>
+                                    <div class="filter-list" id="transtype-list">
+                                        <div class="filter-item"><input type="checkbox" name="transaction_type[]" value="sale" checked><span>Sale (SJ)</span></div>
+                                        <div class="filter-item"><input type="checkbox" name="transaction_type[]" value="sale_return" checked><span>Return (SRJ)</span></div>
+                                        <div class="filter-item"><input type="checkbox" name="transaction_type[]" value="customer_credit_note" checked><span>Credit Note</span></div>
+                                        <div class="filter-item"><input type="checkbox" name="transaction_type[]" value="customer_claim_replacement" checked><span>Replacement</span></div>
+                                    </div>
+                                </div>
+                            </div>
                             <!-- Party Type -->
                             <div class="col-md-1" style="min-width: 90px;">
                                 <div class="filter-column">
@@ -201,15 +215,6 @@
                         </div>
                         <div class="card-body p-2">
                             <div class="row g-2 align-items-end">
-                                <div class="col-md-2">
-                                    <label class="fw-bold mb-1" style="font-size: 11px;">Transaction Type</label>
-                                    <select name="transaction_type" class="form-select form-select-sm" required style="height: 30px; font-size: 12px;">
-                                        <option value="sale" selected>Sale</option>
-                                        <option value="sale_return">Sale Return</option>
-                                        <option value="customer_credit_note">Credit Note</option>
-                                        <option value="both">All (Return Minus &amp; Credit Plus)</option>
-                                    </select>
-                                </div>
                                 <div class="col-md-2">
                                     <label class="fw-bold mb-1" style="font-size: 11px;">Invoice No.</label>
                                     <input type="text" name="invoice_no" class="form-control form-control-sm" placeholder="Invoice No" style="height: 30px; font-size: 12px;">

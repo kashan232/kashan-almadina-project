@@ -56,6 +56,7 @@ class SalesReportController extends Controller
                               !empty($request->item) ||
                               !empty($request->party_type) ||
                               !empty($request->party) ||
+                              !empty($request->transaction_type) ||
                               !empty($request->invoice_no);
 
         if (!$hasSelectedFilters) {
@@ -91,7 +92,12 @@ class SalesReportController extends Controller
 
     private function buildReportLines(Request $request): Collection
     {
-        $transactionType = $request->input('transaction_type', 'sale');
+        $rawTypes = $request->input('transaction_type', ['sale', 'sale_return', 'customer_credit_note', 'customer_claim_replacement']);
+        $selectedTypes = is_array($rawTypes) ? $rawTypes : [$rawTypes];
+        if (in_array('both', $selectedTypes, true)) {
+            $selectedTypes = ['sale', 'sale_return', 'customer_credit_note', 'customer_claim_replacement'];
+        }
+
         $lines = collect();
 
         // Helper to extract numeric part for ascending sorting
@@ -99,8 +105,8 @@ class SalesReportController extends Controller
             return (int) (preg_replace('/[^0-9]/', '', (string) $val) ?: 0);
         };
 
-        // 1st Sequence: Sales Invoices from Invoice Numbers, Ascending Order
-        if (in_array($transactionType, ['sale', 'both'], true)) {
+        // 1. Sales Invoices (SJ)
+        if (in_array('sale', $selectedTypes, true)) {
             $saleLines = $this->fetchSaleLines($request)
                 ->map(fn ($item) => $this->wrapSaleLine($item, 1))
                 ->sortBy(fn ($item) => $extractNum($item->sale->invoice_no ?? ''))
@@ -108,9 +114,10 @@ class SalesReportController extends Controller
             $lines = $lines->merge($saleLines);
         }
 
-        // 2nd Sequence: Sales Return from Invoice Numbers, Ascending Order
-        if (in_array($transactionType, ['sale_return', 'both'], true)) {
-            $sign = $transactionType === 'both' ? -1 : 1;
+        // 2. Sales Returns (SRJ) -> Minus sign if multiple types selected (both/net mode), positive if only return selected
+        if (in_array('sale_return', $selectedTypes, true)) {
+            $isNetMode = count($selectedTypes) > 1;
+            $sign = $isNetMode ? -1 : 1;
             $returnLines = $this->fetchReturnLines($request)
                 ->map(fn ($item) => $this->wrapReturnLine($item, $sign))
                 ->sortBy(fn ($item) => $extractNum($item->sale->invoice_no ?? ''))
@@ -118,16 +125,27 @@ class SalesReportController extends Controller
             $lines = $lines->merge($returnLines);
         }
 
-        // 3rd Sequence: Claim, Invoice Numbers, Ascending Order
-        if (in_array($transactionType, ['customer_credit_note', 'both'], true)) {
+        // 3. Claims (CLM-CN and/or CLM-Rep)
+        $hasCN = in_array('customer_credit_note', $selectedTypes, true);
+        $hasRep = in_array('customer_claim_replacement', $selectedTypes, true);
+
+        if ($hasCN || $hasRep) {
             $selectedItems = $request->item ?? [];
             $totalProducts = Product::count();
             $applyItemFilter = $this->shouldApplyFilter($selectedItems, $totalProducts);
 
             $claimLines = collect();
-            $this->fetchCustomerClaimCreditNoteLines($request)->each(function ($claim) use (&$claimLines, $transactionType, $applyItemFilter, $selectedItems) {
-                $wrappedLines = $this->wrapCustomerClaimLines($claim, $transactionType === 'both');
+            $isNetMode = count($selectedTypes) > 1;
+
+            $this->fetchCustomerClaimCreditNoteLines($request)->each(function ($claim) use (&$claimLines, $isNetMode, $hasCN, $hasRep, $applyItemFilter, $selectedItems) {
+                $wrappedLines = $this->wrapCustomerClaimLines($claim, $isNetMode);
                 foreach ($wrappedLines as $cl) {
+                    if ($cl->entry_type === 'customer_claim_received' && !$hasCN) {
+                        continue;
+                    }
+                    if ($cl->entry_type === 'customer_credit_note' && !$hasRep) {
+                        continue;
+                    }
                     if (!$applyItemFilter || in_array((int) $cl->product_id, array_map('intval', $selectedItems), true)) {
                         $claimLines->push($cl);
                     }
