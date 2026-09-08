@@ -152,10 +152,11 @@
                                     <label class="column-picker-item"><input type="checkbox" data-column="8" checked> Card No</label>
                                     <label class="column-picker-item"><input type="checkbox" data-column="9" checked> Claim Type</label>
                                     <label class="column-picker-item"><input type="checkbox" data-column="10" checked> Sales Price</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="11" checked> Replacement</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="12" checked> Fault</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="13" checked> Remarks</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="14" checked> Status</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="11" checked> Replacement Item</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="12" checked> Replacement Price</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="13" checked> Fault</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="14" checked> Remarks</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="15" checked> Status</label>
                                 </div>
                             </div>
                         </div>
@@ -175,7 +176,8 @@
                                             <th>Card No</th>
                                             <th>Claim Type</th>
                                             <th class="text-end">Sales Price</th>
-                                            <th>Replacement</th>
+                                            <th>Replacement Item</th>
+                                            <th class="text-end">Replacement Price</th>
                                             <th>Fault</th>
                                             <th>Remarks</th>
                                             <th>Created By</th>
@@ -203,9 +205,15 @@
                                             <td class="small text-dark">
                                                 @if($claim->replacementProduct)
                                                     <span class="fw-bold text-primary">{{ $claim->replacementProduct->name }}</span>
-                                                    <span class="badge bg-light text-danger border ms-1">₨ {{ number_format((float)($claim->replacement_sales_price ?? 0), 2) }}</span>
                                                 @else
                                                     <span class="text-muted">-</span>
+                                                @endif
+                                            </td>
+                                            <td class="text-end fw-bold text-danger">
+                                                @if($claim->replacementProduct || ($claim->replacement_sales_price ?? 0) > 0)
+                                                    ₨ {{ number_format((float)($claim->replacement_sales_price ?? 0), 2) }}
+                                                @else
+                                                    <span class="text-muted fw-normal">-</span>
                                                 @endif
                                             </td>
                                             <td class="small text-muted">{{ Str::limit($claim->fault_found, 15) }}</td>

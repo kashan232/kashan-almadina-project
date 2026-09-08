@@ -142,6 +142,7 @@ class CustomerClaimController extends Controller
             
             if ($request->claim_type === 'credit_note') {
                 $claim->replacement_product_id = $request->replacement_product_id;
+                $claim->replacement_retail_price = $request->replacement_retail_price ?? 0;
                 $claim->replacement_sales_price = $request->replacement_sales_price ?? 0;
                 $claim->replacement_from_warehouse_id = $request->replacement_from_warehouse_id;
                 $claim->replacement_to_warehouse_id = $request->replacement_to_warehouse_id;

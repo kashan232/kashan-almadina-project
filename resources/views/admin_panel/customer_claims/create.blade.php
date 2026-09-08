@@ -237,6 +237,7 @@
                             <div class="col-md-2">
                                 <label class="form-label text-secondary fw-bold">Retail Price</label>
                                 <input type="number" step="any" id="replacement_retail_price_display" class="form-control input-sm text-end fw-bold text-dark bg-light" placeholder="0.00" readonly disabled>
+                                <input type="hidden" name="replacement_retail_price" id="replacement_retail_price_hidden" value="0.00">
                             </div>
                             <div class="col-md-2">
                                 <label class="form-label text-primary fw-bold">Sales Price</label>
@@ -425,6 +426,9 @@ $(document).ready(function() {
                         $(retailDisplayId).val(parseFloat(retail).toFixed(2));
                         if(retailDisplayId === '#retail_price_display') {
                             $('#retail_price_hidden').val(parseFloat(retail).toFixed(2));
+                        }
+                        if(retailDisplayId === '#replacement_retail_price_display') {
+                            $('#replacement_retail_price_hidden').val(parseFloat(retail).toFixed(2));
                         }
                     }
                 }
