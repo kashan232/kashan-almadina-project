@@ -75,20 +75,20 @@
                     <div class="card-body">
                         <div class="row g-2">
                             <!-- Row 1: Claim No, Date, Time, Claim Type -->
-                            <div class="col-md-2">
+                            <div class="col-md-2" style="max-width: 140px;">
                                 <label class="form-label">Claim No</label>
                                 <input type="text" class="form-control input-sm bg-light fw-bold text-primary" value="{{ $claim->claim_no }}" readonly style="font-size: 0.8rem;">
                             </div>
-                            <div class="col-md-3">
+                            <div class="col-md-2" style="max-width: 160px;">
                                 <label class="form-label">Date</label>
                                 <input type="date" name="claim_date" class="form-control input-sm" value="{{ $claim->claim_date }}" required>
                                 <input type="hidden" name="entry_date" value="{{ $claim->entry_date ?? date('Y-m-d') }}">
                             </div>
-                            <div class="col-md-3">
+                            <div class="col-md-2" style="max-width: 140px;">
                                 <label class="form-label">Time</label>
                                 <input type="time" name="entry_time" class="form-control input-sm" value="{{ $claim->entry_time ? \Carbon\Carbon::parse($claim->entry_time)->format('H:i') : date('H:i') }}" required>
                             </div>
-                            <div class="col-md-4">
+                            <div class="col-md-3" style="max-width: 220px;">
                                 <label class="form-label">Claim Type <span class="text-danger">*</span></label>
                                 <select name="claim_type" id="claim_type" class="form-select input-sm fw-bold">
                                     <option value="item_return" {{ $claim->claim_type == 'item_return' ? 'selected' : '' }}>Item Return</option>
@@ -98,7 +98,7 @@
                             </div>
 
                             <!-- Row 2: Party Type, Code/ID, Sub Dealer / Party -->
-                            <div class="col-md-3">
+                            <div class="col-md-2" style="max-width: 160px;">
                                 <label class="form-label">Party Type</label>
                                 <select name="party_type" id="party_type" class="form-select input-sm">
                                     <option value="customer" {{ $claim->party_type == 'customer' ? 'selected' : '' }}>Customer</option>
@@ -106,11 +106,11 @@
                                     <option value="walkin" {{ $claim->party_type == 'walkin' ? 'selected' : '' }}>Walk-in Customer</option>
                                 </select>
                             </div>
-                            <div class="col-md-2">
+                            <div class="col-md-1" style="max-width: 90px;">
                                 <label class="form-label">Code/ID</label>
                                 <input type="text" id="party_code_input" class="form-control input-sm border-danger fw-bold text-danger text-center" placeholder="ID" value="{{ $claim->party_id }}">
                             </div>
-                            <div class="col-md-7">
+                            <div class="col-md-4" style="max-width: 410px;">
                                 <label class="form-label">Sub Dealer / Party <span class="text-danger">*</span></label>
                                 <select name="party_id" id="party_id" class="form-select select2" required>
                                     <option value="">Search Party...</option>

@@ -189,16 +189,12 @@
                                             <td class="small">{{ \Carbon\Carbon::parse($claim->claim_date)->format('d-M-Y') }}</td>
                                             <td>
                                                 <span class="fw-semibold text-dark small">
-                                                    @if($claim->party_type == 'vendor')
-                                                        {{ $claim->party->name ?? 'N/A' }}
-                                                    @else
-                                                        {{ $claim->party->customer_name ?? 'N/A' }}
-                                                    @endif
+                                                    {{ $claim->party_name }}
                                                 </span>
                                             </td>
                                             <td class="small text-dark">{{ $claim->product->name ?? 'N/A' }}</td>
                                             <td class="small text-muted">{{ $claim->claim_type }}</td>
-                                            <td class="text-end fw-bold">{{ number_format((float)$claim->sales_price, 0) }}</td>
+                                            <td class="text-end fw-bold">{{ number_format((float)($claim->sales_price > 0 ? $claim->sales_price : ($claim->replacement_sales_price ?? 0)), 2) }}</td>
                                             <td class="small text-dark">{{ $claim->replacementProduct->name ?? '-' }}</td>
                                             <td class="small text-muted">{{ Str::limit($claim->fault_found, 15) }}</td>
                                             <td class="small text-muted">{{ Str::limit($claim->remarks, 15) }}</td>

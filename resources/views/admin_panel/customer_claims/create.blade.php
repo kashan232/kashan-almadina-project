@@ -75,20 +75,20 @@
                     <div class="card-body">
                         <div class="row g-2">
                             <!-- Row 1: Claim No, Date, Time, Claim Type -->
-                            <div class="col-md-2">
+                            <div class="col-md-2" style="max-width: 140px;">
                                 <label class="form-label">Claim No</label>
                                 <input type="text" class="form-control input-sm bg-light fw-bold text-primary" value="Auto-Generated" readonly style="font-size: 0.8rem;">
                             </div>
-                            <div class="col-md-3">
+                            <div class="col-md-2" style="max-width: 160px;">
                                 <label class="form-label">Date</label>
                                 <input type="date" name="claim_date" class="form-control input-sm" value="{{ date('Y-m-d') }}" required>
                                 <input type="hidden" name="entry_date" value="{{ date('Y-m-d') }}">
                             </div>
-                            <div class="col-md-3">
+                            <div class="col-md-2" style="max-width: 140px;">
                                 <label class="form-label">Time</label>
                                 <input type="time" name="entry_time" class="form-control input-sm" value="{{ date('H:i') }}" required>
                             </div>
-                            <div class="col-md-4">
+                            <div class="col-md-3" style="max-width: 220px;">
                                 <label class="form-label">Claim Type <span class="text-danger">*</span></label>
                                 <select name="claim_type" id="claim_type" class="form-select input-sm fw-bold">
                                     <option value="item_return">Item Return</option>
@@ -98,7 +98,7 @@
                             </div>
 
                             <!-- Row 2: Party Type, Code/ID, Sub Dealer / Party -->
-                            <div class="col-md-3">
+                            <div class="col-md-2" style="max-width: 160px;">
                                 <label class="form-label">Party Type</label>
                                 <select name="party_type" id="party_type" class="form-select input-sm">
                                     <option value="customer">Customer</option>
@@ -106,11 +106,11 @@
                                     <option value="walkin">Walk-in Customer</option>
                                 </select>
                             </div>
-                            <div class="col-md-2">
+                            <div class="col-md-1" style="max-width: 90px;">
                                 <label class="form-label">Code/ID</label>
                                 <input type="text" id="party_code_input" class="form-control input-sm border-danger fw-bold text-danger text-center" placeholder="ID">
                             </div>
-                            <div class="col-md-7">
+                            <div class="col-md-4" style="max-width: 410px;">
                                 <label class="form-label">Sub Dealer / Party <span class="text-danger">*</span></label>
                                 <select name="party_id" id="party_id" class="form-select select2" required>
                                     <option value="">Search Party...</option>
@@ -120,11 +120,11 @@
                             <!-- Row 3: Claim Item (with Item ID), MFG Date, Card Number, Retail Price, Sale Price -->
                             <div class="col-md-4">
                                 <div class="row g-1">
-                                    <div class="col-4">
+                                    <div class="col-3" style="max-width: 80px;">
                                         <label class="form-label">Item ID</label>
                                         <input type="text" id="item_id_input" class="form-control input-sm border-primary fw-bold text-primary text-center" placeholder="ID">
                                     </div>
-                                    <div class="col-8">
+                                    <div class="col">
                                         <label class="form-label">Claim Item <span class="text-danger">*</span></label>
                                         <select name="product_id" id="product_id" class="form-select select2" required>
                                             <option value="">Select Battery...</option>
@@ -135,11 +135,11 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-md-2">
+                            <div class="col-md-2" style="max-width: 120px;">
                                 <label class="form-label">MFG Date</label>
                                 <input type="text" name="mfg_date" class="form-control input-sm" placeholder="BH JC BD">
                             </div>
-                            <div class="col-md-2">
+                            <div class="col-md-2" style="max-width: 120px;">
                                 <label class="form-label">Card No</label>
                                 <input type="text" name="card_no" class="form-control input-sm">
                             </div>
@@ -154,7 +154,7 @@
                             </div>
 
                             <!-- Row 4: Bill Date, Warehouses -->
-                            <div class="col-md-3">
+                            <div class="col-md-2">
                                 <label class="form-label">Bill Date</label>
                                 <input type="date" name="bill_date" class="form-control input-sm">
                             </div>
@@ -459,8 +459,7 @@ $(document).ready(function() {
                         $('#postedWatermark').addClass('show');
                         $('#claimForm').addClass('form-locked');
                         $('#editInvoiceBtn, #postBtn').prop('disabled', true);
-                        showToast('Claim Posted! Redirecting...', 'success');
-                        setTimeout(function() { window.location.href = "{{ route('customer-claims.create') }}"; }, 1500);
+                        showToast('Claim Posted Successfully!', 'success');
                     } else {
                         $('#statusBadge').removeClass('bg-warning bg-success').addClass('bg-info text-white').html('<i class="fa fa-pencil"></i> Unposted');
                         $('#claimForm').addClass('form-locked');
@@ -494,8 +493,7 @@ $(document).ready(function() {
                 $('#statusBadge').removeClass('bg-info').addClass('bg-success text-white').html('<i class="fa fa-check"></i> Posted');
                 $('#postedWatermark').addClass('show');
                 $('#editInvoiceBtn, #postBtn').prop('disabled', true);
-                showToast('Claim Posted! Redirecting...', 'success');
-                setTimeout(function() { window.location.href = "{{ route('customer-claims.create') }}"; }, 1500);
+                showToast('Claim Posted Successfully!', 'success');
             },
             error: function() {
                 showToast('Post failed', 'error');
