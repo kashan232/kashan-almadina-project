@@ -846,7 +846,9 @@
                             <select class="form-select form-select-sm rv-head px-1" style="font-size: 0.75rem;" name="receipt_head_id[]">
                               <option value="" disabled {{ empty($rv['head_id']) ? 'selected' : '' }}>Select Head</option>
                               @foreach ($accountHeads as $head)
+                                @if(in_array(strtoupper($head->name), ['CASH', 'BANK']) || in_array($head->id, [3, 4]))
                                 <option value="{{ $head->id }}" {{ $rv['head_id'] == $head->id ? 'selected' : '' }}>{{ $head->name }}</option>
+                                @endif
                               @endforeach
                             </select>
                           </div>
@@ -944,11 +946,12 @@
                 <div class="d-flex align-items-center gap-3">
                   <div class="d-flex gap-1" style="width:230px;">
                     <select id="discount_head" name="discount_head" class="form-select form-select-sm" style="width:100px;">
-                      <option value="">Head</option>
                       @foreach($accountHeads as $head)
-                          <option value="{{ $head->id }}" {{ ($editData && $editData->discount_head == $head->id) ? 'selected' : '' }}>
+                          @if(strtoupper($head->name) == 'EXPENSE' || $head->id == 1)
+                          <option value="{{ $head->id }}" selected>
                               {{ $head->name }}
                           </option>
+                          @endif
                       @endforeach
                     </select>
                     <select name="discount_account_id" id="discount_account_id" class="form-select form-select-sm" style="flex-grow:1;">
@@ -2385,7 +2388,9 @@
   $('#btnAddRV').on('click', function() {
     let headOptions = '<option value="" disabled selected>Select Head</option>';
     @foreach($accountHeads as $head)
+      @if(in_array(strtoupper($head->name), ['CASH', 'BANK']) || in_array($head->id, [3, 4]))
       headOptions += `<option value="{{ $head->id }}">{{ $head->name }}</option>`;
+      @endif
     @endforeach
 
     $('#rvWrapper').append(`
@@ -2986,6 +2991,10 @@
           }
       });
   });
+
+  if ($('#discount_head').val()) {
+      $('#discount_head').trigger('change');
+  }
 
   // Auto-select text on focus so typing immediately replaces existing default value (e.g. 1 -> 5 instead of 15)
   $(document).on('focus', '#salesTableBody input, #rvWrapper input', function() {
