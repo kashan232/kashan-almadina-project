@@ -495,8 +495,8 @@ class RollbackController extends Controller
         $this->validateRollbackDate($claim);
         if ($claim->status !== 'Posted') throw new \Exception("Claim $invoiceNo is not Posted.");
 
-        // Reverse faulty item from claim warehouse (except for claim_hold which doesn't add faulty item to claim WH)
-        if ($claim->claim_type !== 'claim_hold' && isset($claim->claim_warehouse_id)) {
+        // Reverse faulty item from claim warehouse
+        if (isset($claim->claim_warehouse_id)) {
             $this->adjustStock($claim->product_id, $claim->claim_warehouse_id, 1, 'subtract');
         }
 
