@@ -679,6 +679,12 @@ class GeneralLedgerController extends Controller
                 foreach ($discounts as $d) { $totalDisc += (float)$d; }
             }
 
+            $pvPaidAmt = (float)$pv->total_amount;
+            if ($totalDisc > 0 && $pvPaidAmt >= $totalDisc) {
+                // If total_amount was saved including discount, separate net paid amount
+                $pvPaidAmt = $pvPaidAmt - $totalDisc;
+            }
+
             $transactions[] = [
                 'created_at' => $pv->created_at,
                 'id' => $pv->id,
@@ -686,7 +692,7 @@ class GeneralLedgerController extends Controller
                 'ref' => 'PV',
                 'inv' => $pv->pvid,
                 'desc' => $pv->remarks ?? 'Payment Voucher',
-                'qty' => 0, 'debit' => (float)$pv->total_amount + $totalDisc, 'credit' => 0
+                'qty' => 0, 'debit' => $pvPaidAmt, 'credit' => 0
             ];
 
             if ($totalDisc > 0) {
@@ -1164,7 +1170,7 @@ class GeneralLedgerController extends Controller
         // 9. Claim Credit Notes (CIR)
         $crnDateCol = $this->getDateColumn('claim_credit_notes');
         $crNotes = $this->ledgerQuery(\App\Models\ClaimCreditNote::class)->where('party_id', $id)
-            ->where('party_type', $type == 'customer' ? 'customer' : 'vendor')
+            ->whereIn('party_type', $typeArray)
             ->where('status', 'Posted')
             ->whereBetween(DB::raw($crnDateCol), [$start, $end])
             ->get();
