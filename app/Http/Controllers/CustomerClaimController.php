@@ -227,19 +227,23 @@ class CustomerClaimController extends Controller
                 $this->adjustStock($claim->replacement_from_warehouse_id, $claim->replacement_product_id, -1);
             }
         } elseif ($claim->claim_type === 'claim_hold') {
-            // 3. Handle Claim Hold (Reservation)
-            StockHold::create([
-                'entry_date'   => $claim->entry_date,
-                'entry_time'   => $claim->entry_time,
-                'party_type'   => $claim->party_type,
-                'party_id'     => $claim->party_id,
-                'warehouse_id' => $claim->original_warehouse_id ?? $claim->claim_warehouse_id,
-                'product_id'   => $claim->product_id,
-                'hold_qty'     => 1,
-                'remarks'      => 'Reserved via Customer Claim Hold: ' . $claim->claim_no,
-                'status'       => 0,
-                'meta'         => ['claim_id' => $claim->id, 'claim_no' => $claim->claim_no]
-            ]);
+            // 3. Handle Claim Hold (Reservation) - prevent duplicate creation
+            StockHold::updateOrCreate(
+                [
+                    'remarks' => 'Reserved via Customer Claim Hold: ' . $claim->claim_no,
+                ],
+                [
+                    'entry_date'   => $claim->entry_date,
+                    'entry_time'   => $claim->entry_time,
+                    'party_type'   => $claim->party_type,
+                    'party_id'     => $claim->party_id,
+                    'warehouse_id' => $claim->original_warehouse_id ?? $claim->claim_warehouse_id,
+                    'product_id'   => $claim->product_id,
+                    'hold_qty'     => 1,
+                    'status'       => 0,
+                    'meta'         => ['claim_id' => $claim->id, 'claim_no' => $claim->claim_no]
+                ]
+            );
         }
     }
 
