@@ -41,6 +41,11 @@ class StockHold extends Model
         return $this->hasMany(StockRelease::class, 'hold_id');
     }
 
+    public function customerClaim()
+    {
+        return $this->belongsTo(\App\Models\CustomerClaim::class, 'meta->claim_id');
+    }
+
     public static function postedReleasesWithSum(): array
     {
         return [
@@ -109,6 +114,13 @@ class StockHold extends Model
             ->where('hold_qty', '>', 0)
             ->where(function ($q) {
                 $q->where('status', 0)->orWhereNull('status');
+            })
+            ->where(function ($q) {
+                // For Claim Holds, only include if associated CustomerClaim is Posted
+                $q->whereNull('meta->claim_id')
+                  ->orWhereHas('customerClaim', function ($c) {
+                      $c->where('status', 'Posted');
+                  });
             })
             ->when($warehouseId !== null, fn ($q) => $q->where('warehouse_id', $warehouseId))
             ->sum('hold_qty');
