@@ -846,7 +846,7 @@
                             <select class="form-select form-select-sm rv-head px-1" style="font-size: 0.75rem;" name="receipt_head_id[]">
                               <option value="" disabled {{ empty($rv['head_id']) ? 'selected' : '' }}>Select Head</option>
                               @foreach ($accountHeads as $head)
-                                @if(str_contains(strtoupper($head->name), 'CASH') || str_contains(strtoupper($head->name), 'BANK') || $head->id == 2 || $head->id == 3 || $head->id == 4)
+                                @if(str_contains(strtoupper($head->name), 'CASH') || str_contains(strtoupper($head->name), 'BANK') || $head->id == 2 || $head->id == 3 || $head->id == 4 || $head->id == 100000 || strtoupper($head->name) == 'SCRAP')
                                 <option value="{{ $head->id }}" {{ $rv['head_id'] == $head->id ? 'selected' : '' }}>{{ $head->name }}</option>
                                 @endif
                               @endforeach
@@ -890,7 +890,7 @@
                         <select class="form-select form-select-sm rv-head px-1" style="font-size: 0.75rem;" name="receipt_head_id[]">
                           <option value="" disabled selected>Select Head</option>
                           @foreach ($accountHeads as $head)
-                            @if(str_contains(strtoupper($head->name), 'CASH') || str_contains(strtoupper($head->name), 'BANK') || $head->id == 2 || $head->id == 3 || $head->id == 4)
+                            @if(str_contains(strtoupper($head->name), 'CASH') || str_contains(strtoupper($head->name), 'BANK') || $head->id == 2 || $head->id == 3 || $head->id == 4 || $head->id == 100000 || strtoupper($head->name) == 'SCRAP')
                             <option value="{{ $head->id }}">{{ $head->name }}</option>
                             @endif
                           @endforeach
@@ -2390,7 +2390,7 @@
   $('#btnAddRV').on('click', function() {
     let headOptions = '<option value="" disabled selected>Select Head</option>';
     @foreach($accountHeads as $head)
-      @if(str_contains(strtoupper($head->name), 'CASH') || str_contains(strtoupper($head->name), 'BANK') || $head->id == 2 || $head->id == 3 || $head->id == 4)
+      @if(str_contains(strtoupper($head->name), 'CASH') || str_contains(strtoupper($head->name), 'BANK') || $head->id == 2 || $head->id == 3 || $head->id == 4 || $head->id == 100000 || strtoupper($head->name) == 'SCRAP')
       headOptions += `<option value="{{ $head->id }}">{{ $head->name }}</option>`;
       @endif
     @endforeach
