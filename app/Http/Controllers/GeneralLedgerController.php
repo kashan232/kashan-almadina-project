@@ -669,8 +669,15 @@ class GeneralLedgerController extends Controller
         foreach ($payments as $pv) {
             $accIds = json_decode($pv->row_account_id, true) ?? [];
             $amounts = json_decode($pv->amount, true) ?? [];
-            $discounts = json_decode($pv->discount_value, true) ?? [];
+            $discounts = json_decode($pv->discount_value, true);
             $discAccIds = json_decode($pv->discount_account_id, true) ?? [];
+
+            $totalDisc = 0.0;
+            if (is_numeric($pv->discount_value)) {
+                $totalDisc = (float)$pv->discount_value;
+            } elseif (is_array($discounts)) {
+                foreach ($discounts as $d) { $totalDisc += (float)$d; }
+            }
 
             $transactions[] = [
                 'created_at' => $pv->created_at,
@@ -682,19 +689,16 @@ class GeneralLedgerController extends Controller
                 'qty' => 0, 'debit' => (float)$pv->total_amount, 'credit' => 0
             ];
 
-            foreach ($accIds as $idx => $aid) {
-                $rowDiscount = (float)($discounts[$idx] ?? 0);
-                if ($rowDiscount > 0) {
-                    $transactions[] = [
-                        'created_at' => $pv->created_at,
-                        'id' => $pv->id . '_disc_' . $idx,
-                        'date' => $pv->entry_date ?: $pv->created_at,
-                        'ref' => 'IV',
-                        'inv' => $pv->pvid,
-                        'desc' => $this->voucherDiscountDescription($discAccIds[$idx] ?? null) ?: 'Payment Discount Income',
-                        'qty' => 0, 'debit' => 0, 'credit' => $rowDiscount
-                    ];
-                }
+            if ($totalDisc > 0) {
+                $transactions[] = [
+                    'created_at' => $pv->created_at,
+                    'id' => $pv->id . '_disc',
+                    'date' => $pv->entry_date ?: $pv->created_at,
+                    'ref' => 'IV',
+                    'inv' => $pv->pvid,
+                    'desc' => 'Payment Discount (Income)',
+                    'qty' => 0, 'debit' => 0, 'credit' => $totalDisc
+                ];
             }
         }
 
