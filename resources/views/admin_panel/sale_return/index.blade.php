@@ -175,7 +175,7 @@
                                         @foreach ($SaleReturns as $ret)
                                         <tr>
                                             <td class="text-muted small">SRJ</td>
-                                            <td class="fw-bold text-primary">{{ $ret->invoice_no }}</td>
+                                            <td class="fw-bold text-primary">{{ preg_replace('/[^0-9]/', '', $ret->invoice_no) }}</td>
                                             <td>{{ $ret->sale->invoice_no ?? 'N/A' }}</td>
                                             <td class="fw-semibold text-dark small">{{ $ret->party_name }}</td>
                                             <td class="py-1">
