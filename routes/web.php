@@ -576,6 +576,8 @@ Route::middleware('auth')->group(function () {
     Route::post('/reports/income-voucher/preview', [\App\Http\Controllers\IncomeVoucherReportController::class, 'preview'])->name('reports.income-voucher.preview');
     Route::get('/reports/journal-voucher', [\App\Http\Controllers\JournalVoucherReportController::class, 'index'])->name('reports.journal-voucher.index');
     Route::post('/reports/journal-voucher/preview', [\App\Http\Controllers\JournalVoucherReportController::class, 'preview'])->name('reports.journal-voucher.preview');
+    Route::get('/reports/customer-audit', [\App\Http\Controllers\CustomerController::class, 'auditIndex'])->name('customers.audit');
+    Route::get('/reports/vendor-audit', [\App\Http\Controllers\VendorController::class, 'auditIndex'])->name('vendors.audit');
     Route::get('/reports/adjustment-voucher', [\App\Http\Controllers\AdjustmentVoucherReportController::class, 'index'])->name('reports.adjustment-voucher.index');
     Route::post('/reports/adjustment-voucher/preview', [\App\Http\Controllers\AdjustmentVoucherReportController::class, 'preview'])->name('reports.adjustment-voucher.preview');
 

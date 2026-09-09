@@ -123,6 +123,9 @@
                                             <button type="submit" class="btn btn-primary btn-sm rounded-pill px-3 shadow-sm">Filter</button>
                                             <a href="{{ route('customers.index') }}" class="btn btn-outline-secondary btn-sm rounded-pill px-2" title="Reset"><i class="fa fa-refresh"></i></a>
                                         @endif
+                                        <a href="{{ route('customers.audit') }}" class="btn btn-outline-danger btn-sm rounded-pill px-3 me-1" title="Ledger Audit Reconciliation">
+                                            <i class="fa fa-calculator me-1"></i> Audit
+                                        </a>
                                         <a href="{{ route('customers.inactive') }}" class="btn btn-outline-secondary btn-sm rounded-pill px-3 ms-2">Inactive</a>
                                         <a href="{{ route('customers.ledger') }}" class="btn btn-info btn-sm rounded-pill px-3 text-white">Ledger</a>
                                         <a href="{{ route('customer.payments') }}" class="btn btn-primary btn-sm rounded-pill px-3">Payments</a>

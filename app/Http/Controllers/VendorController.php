@@ -51,6 +51,124 @@ class VendorController extends Controller
         return view('admin_panel.vendors.index', compact('vendors', 'userGroups', 'users', 'isAdmin'));
     }
 
+    public function auditIndex(Request $request)
+    {
+        $startDate = $request->start_date ?? '2020-01-01';
+        $endDate = $request->end_date ?? date('Y-m-d');
+        $nextDayDate = \Carbon\Carbon::parse($endDate)->addDay()->toDateString();
+
+        $query = Vendor::with(['creator']);
+        $isAdmin = Auth::user()->roles->pluck('name')->contains('Admin') || Auth::id() == 1;
+        if (!$isAdmin) {
+            $userId = Auth::id();
+            $userGroupIds = Auth::user()->userGroups()->pluck('user_groups.id')->toArray();
+            $query->where(function($q) use ($userId, $userGroupIds) {
+                $q->where('created_by', $userId);
+                if (!empty($userGroupIds)) {
+                    foreach ($userGroupIds as $groupId) {
+                        $q->orWhereJsonContains('user_group_ids', (string)$groupId);
+                    }
+                }
+            });
+        }
+
+        $allVendors = $query->withInactive()->latest()->get();
+        $ledgerController = app(\App\Http\Controllers\GeneralLedgerController::class);
+
+        $auditRows = [];
+        foreach ($allVendors as $vendor) {
+            $partyId = (int)$vendor->id;
+            $opening = (float)$ledgerController->calculateOpeningBalance('vendor', $partyId, $startDate);
+            $txns = $ledgerController->fetchTransactions('vendor', $partyId, $startDate, $endDate);
+            $savedBalance = (float)$ledgerController->calculateOpeningBalance('vendor', $partyId, $nextDayDate);
+
+            $purchases = 0.0;
+            $purRet = 0.0;
+            $payments = 0.0;
+            $receipts = 0.0;
+            $income = 0.0;
+            $sRet = 0.0;
+            $sales = 0.0;
+            $cRep = 0.0;
+            $cir = 0.0;
+            $clmCn = 0.0;
+            $expDis = 0.0;
+            $jvDr = 0.0;
+            $jvCr = 0.0;
+
+            foreach ($txns as $t) {
+                $ref = strtoupper((string)($t['ref'] ?? ''));
+                $debit = (float)($t['debit'] ?? 0);
+                $credit = (float)($t['credit'] ?? 0);
+                $desc = strtolower((string)($t['desc'] ?? ''));
+
+                if ($ref === 'PJ') {
+                    if ($credit > 0) $purchases += $credit;
+                    if ($debit > 0) $purchases -= $debit;
+                } elseif ($ref === 'PRJ') {
+                    if ($debit > 0) $purRet += $debit;
+                    if ($credit > 0) $purchases += $credit;
+                } elseif ($ref === 'PV') {
+                    if ($debit > 0 || $credit > 0) $payments += ($debit + $credit);
+                } elseif ($ref === 'RV') {
+                    if ($credit > 0) {
+                        if (str_contains($desc, 'discount')) $expDis += $credit;
+                        else $receipts += $credit;
+                    }
+                    if ($debit > 0) $payments += $debit;
+                } elseif ($ref === 'IV') {
+                    if ($credit > 0 || $debit > 0) $income += ($credit + $debit);
+                } elseif (in_array($ref, ['SRJ', 'SR'], true)) {
+                    if ($credit > 0) $sRet += $credit;
+                } elseif ($ref === 'SJ') {
+                    if ($debit > 0) $sales += $debit;
+                } elseif ($ref === 'CLM') {
+                    if ($debit > 0) $cRep += $debit;
+                    if ($credit > 0) $clmCn += $credit;
+                } elseif ($ref === 'CIR') {
+                    if ($debit > 0) $cir += $debit;
+                } elseif ($ref === 'EV' || $ref === 'VO') {
+                    if ($credit > 0) $expDis += $credit;
+                    if ($debit > 0) $payments += $debit;
+                } elseif ($ref === 'JV' || $ref === 'AV') {
+                    if ($debit > 0) $jvDr += $debit;
+                    if ($credit > 0) $jvCr += $credit;
+                } else {
+                    if ($debit > 0) $jvDr += $debit;
+                    if ($credit > 0) $jvCr += $credit;
+                }
+            }
+
+            // Vendor formula: Opening + Purchase + Receipts + Income + S_Ret + JV_Cr + CLM_CN - (Payment + Pur_Ret + Sales + C_Rep + CIR + Exp_Dis + JV_Dr)
+            $calculatedTrueBalance = $opening + $purchases + $receipts + $income + $sRet + $jvCr + $clmCn
+                - ($payments + $purRet + $sales + $cRep + $cir + $expDis + $jvDr);
+
+            $diff = $savedBalance - $calculatedTrueBalance;
+
+            $auditRows[] = [
+                'id' => $vendor->id,
+                'vendor_id' => $vendor->vendor_id,
+                'name' => $vendor->name,
+                'opening' => $opening,
+                'purchases' => $purchases,
+                'pur_ret' => $purRet,
+                'payments' => $payments,
+                'receipts' => $receipts,
+                'income' => $income,
+                's_ret' => $sRet,
+                'sales' => $sales,
+                'exp_dis' => $expDis,
+                'jv_dr' => $jvDr,
+                'jv_cr' => $jvCr,
+                'calc_balance' => $calculatedTrueBalance,
+                'saved_balance' => $savedBalance,
+                'diff' => $diff,
+            ];
+        }
+
+        return view('admin_panel.vendors.audit', compact('auditRows', 'startDate', 'endDate'));
+    }
+
 
     public function create()
     {

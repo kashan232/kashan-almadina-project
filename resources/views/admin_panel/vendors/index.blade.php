@@ -129,6 +129,9 @@
                                         @endif
                                         
                                         <div class="btn-group">
+                                            <a href="{{ route('vendors.audit') }}" class="btn btn-outline-danger btn-sm rounded-pill px-3 me-1" title="Vendor Ledger Audit">
+                                                <i class="fa fa-calculator me-1"></i> Audit
+                                            </a>
                                             <a href="{{ route('vendor.ledger') }}" class="btn btn-outline-info btn-sm rounded-pill px-3 me-1">Ledger</a>
                                             <a href="{{ route('vendor.payments.index') }}" class="btn btn-outline-warning btn-sm rounded-pill px-3 text-dark">Payments</a>
                                         </div>

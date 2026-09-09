@@ -142,24 +142,17 @@
                     <th class="type" rowspan="2">Type</th>
                     <th class="customer" rowspan="2">Party Name</th>
                     <th rowspan="2">Opening Balance</th>
-                    <th colspan="{{ count($periodCols) }}" class="period-head">Between {{ $fromLabel }} To. {{ $toLabel }}</th>
-                    <th rowspan="2" style="background:#e3f2fd;color:#0d47a1;">Calculated True Balance</th>
-                    <th rowspan="2" style="background:#ede7f6;color:#4a148c;">System Saved Balance</th>
-                    <th rowspan="2" style="background:#fff3e0;">Difference</th>
-                    <th rowspan="2">Action</th>
+                    <th colspan="{{ count($periodCols) + 1 }}" class="period-head">Between {{ $fromLabel }} To. {{ $toLabel }}</th>
                 </tr>
                 <tr>
                     @foreach($periodCols as $col)
                     <th class="{{ $col['class'] }}">{{ $col['head'] }}</th>
                     @endforeach
+                    <th>Balance</th>
                 </tr>
             </thead>
             <tbody>
                 @foreach($rows as $i => $row)
-                @php
-                    $diffVal = (float)($row['difference'] ?? 0);
-                    $isOk = abs($diffVal) < 0.01;
-                @endphp
                 <tr>
                     <td class="sno">{{ $i + 1 }}</td>
                     <td class="type">{{ $row['party_type_label'] ?? 'Customer' }}</td>
@@ -168,18 +161,7 @@
                     @foreach($periodCols as $col)
                     <td class="num {{ $col['class'] }}">{{ $fmt($row[$col['key']] ?? 0, $col['is_deduction']) }}</td>
                     @endforeach
-                    <td class="num" style="background:#f4f8fb;color:#0d47a1;font-weight:bold;">{{ $fmt($row['calc_balance'] ?? 0) }}</td>
-                    <td class="num" style="background:#faf8fc;color:#4a148c;font-weight:bold;">{{ $fmt($row['balance'] ?? 0) }}</td>
-                    <td class="num" style="background:#fffaf0;font-weight:bold;color:{{ $isOk ? '#2e7d32' : '#c62828' }};">
-                        {{ number_format($diffVal, 2) }}
-                    </td>
-                    <td style="text-align:center;">
-                        @if($isOk)
-                            <span style="background:#4caf50;color:#fff;padding:2px 6px;border-radius:3px;font-size:8px;font-weight:bold;">OK</span>
-                        @else
-                            <span style="background:#f44336;color:#fff;padding:2px 6px;border-radius:3px;font-size:8px;font-weight:bold;">DIFF</span>
-                        @endif
-                    </td>
+                    <td class="num">{{ $fmt($row['balance']) }}</td>
                 </tr>
                 @endforeach
                 <tr class="grand-row">
@@ -188,18 +170,7 @@
                     @foreach($periodCols as $col)
                     <td class="num {{ $col['class'] }}">{{ $fmt($grand[$col['key']] ?? 0, $col['is_deduction']) }}</td>
                     @endforeach
-                    <td class="num" style="background:#e3f2fd;color:#0d47a1;">{{ $fmt($grand['calc_balance'] ?? 0) }}</td>
-                    <td class="num" style="background:#ede7f6;color:#4a148c;">{{ $fmt($grand['balance'] ?? 0) }}</td>
-                    <td class="num" style="background:#fff3e0;color:{{ abs($grand['difference'] ?? 0) < 0.01 ? '#2e7d32' : '#c62828' }};">
-                        {{ number_format($grand['difference'] ?? 0, 2) }}
-                    </td>
-                    <td style="text-align:center;">
-                        @if(abs($grand['difference'] ?? 0) < 0.01)
-                            <span style="background:#4caf50;color:#fff;padding:2px 6px;border-radius:3px;font-size:8px;font-weight:bold;">OK</span>
-                        @else
-                            <span style="background:#f44336;color:#fff;padding:2px 6px;border-radius:3px;font-size:8px;font-weight:bold;">DIFF</span>
-                        @endif
-                    </td>
+                    <td class="num">{{ $fmt($grand['balance']) }}</td>
                 </tr>
             </tbody>
         </table>

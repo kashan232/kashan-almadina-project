@@ -55,6 +55,138 @@ class CustomerController extends Controller
         return view('admin_panel.customers.index', compact('customers', 'userGroups', 'users'));
     }
 
+    public function auditIndex(Request $request)
+    {
+        $startDate = $request->start_date ?? '2020-01-01';
+        $endDate = $request->end_date ?? date('Y-m-d');
+        $nextDayDate = \Carbon\Carbon::parse($endDate)->addDay()->toDateString();
+
+        $query = Customer::with(['creator']);
+        $isAdmin = Auth::user()->roles->pluck('name')->contains('Admin') || Auth::id() == 1;
+        if (!$isAdmin) {
+            $userId = Auth::id();
+            $userGroupIds = Auth::user()->userGroups()->pluck('user_groups.id')->toArray();
+            $query->where(function($q) use ($userId, $userGroupIds) {
+                if (empty($userGroupIds)) {
+                    $q->where('created_by', $userId);
+                } else {
+                    $q->where(function($sub) use ($userGroupIds) {
+                        foreach ($userGroupIds as $groupId) {
+                            $sub->orWhereJsonContains('user_group_ids', (string)$groupId);
+                            $sub->orWhereJsonContains('user_group_ids', (int)$groupId);
+                        }
+                    });
+                }
+            });
+        }
+
+        $allCustomers = $query->latest()->get();
+        $ledgerController = app(\App\Http\Controllers\GeneralLedgerController::class);
+
+        $auditRows = [];
+        foreach ($allCustomers as $customer) {
+            $partyId = (int)$customer->id;
+            $opening = (float)$ledgerController->calculateOpeningBalance('customer', $partyId, $startDate);
+            $txns = $ledgerController->fetchTransactions('customer', $partyId, $startDate, $endDate);
+            $savedBalance = (float)$ledgerController->calculateOpeningBalance('customer', $partyId, $nextDayDate);
+
+            $sales = 0.0;
+            $cRep = 0.0;
+            $sRet = 0.0;
+            $cir = 0.0;
+            $purRet = 0.0;
+            $purchase = 0.0;
+            $clmCn = 0.0;
+            $receipts = 0.0;
+            $payment = 0.0;
+            $income = 0.0;
+            $expDis = 0.0;
+            $jvDr = 0.0;
+            $jvCr = 0.0;
+
+            foreach ($txns as $t) {
+                $ref = strtoupper((string)($t['ref'] ?? ''));
+                $debit = (float)($t['debit'] ?? 0);
+                $credit = (float)($t['credit'] ?? 0);
+                $desc = strtolower((string)($t['desc'] ?? ''));
+
+                if ($ref === 'SJ') {
+                    if ($debit > 0) $sales += $debit;
+                    if ($credit > 0) {
+                        if (str_contains($desc, 'discount')) $expDis += $credit;
+                        else $receipts += $credit;
+                    }
+                } elseif ($ref === 'CLM') {
+                    if ($debit > 0) $cRep += $debit;
+                    if ($credit > 0) $clmCn += $credit;
+                } elseif (in_array($ref, ['SRJ', 'SR'], true)) {
+                    if ($credit > 0) $sRet += $credit;
+                    if ($debit > 0) {
+                        if (str_contains($desc, 'discount')) $expDis -= $debit;
+                        else $sRet -= $debit;
+                    }
+                } elseif ($ref === 'CIR') {
+                    if ($debit > 0) $cir += $debit;
+                    if ($credit > 0) $cir -= $credit;
+                } elseif ($ref === 'PJ') {
+                    if ($credit > 0) $purchase += $credit;
+                    if ($debit > 0) $purchase -= $debit;
+                } elseif ($ref === 'PRJ') {
+                    if ($debit > 0) $purRet += $debit;
+                    if ($credit > 0) $purchase += $credit;
+                } elseif ($ref === 'RV') {
+                    if ($credit > 0) {
+                        if (str_contains($desc, 'discount')) $expDis += $credit;
+                        else $receipts += $credit;
+                    }
+                    if ($debit > 0) $payment += $debit;
+                } elseif ($ref === 'IV') {
+                    if ($credit > 0 || $debit > 0) $income += ($credit + $debit);
+                } elseif ($ref === 'PV') {
+                    if ($debit > 0 || $credit > 0) $payment += ($debit + $credit);
+                } elseif ($ref === 'EV' || $ref === 'VO') {
+                    if ($credit > 0) $expDis += $credit;
+                    if ($debit > 0) $payment += $debit;
+                } elseif ($ref === 'JV' || $ref === 'AV') {
+                    if ($debit > 0) $jvDr += $debit;
+                    if ($credit > 0) $jvCr += $credit;
+                } else {
+                    if ($debit > 0) $jvDr += $debit;
+                    if ($credit > 0) $jvCr += $credit;
+                }
+            }
+
+            // Customer formula: Opening + Sales + C_Rep + JV_Dr + CIR + Pur_Ret - (S_Ret + Receipts + Payment + Income + Exp_Dis + JV_Cr + Purchase + CLM_CN)
+            $calculatedTrueBalance = $opening + $sales + $cRep + $jvDr + $cir + $purRet 
+                - ($sRet + $receipts + $payment + $income + $expDis + $jvCr + $purchase + $clmCn);
+
+            $diff = $savedBalance - $calculatedTrueBalance;
+
+            $auditRows[] = [
+                'id' => $customer->id,
+                'customer_id' => $customer->customer_id,
+                'name' => $customer->customer_name,
+                'type' => $customer->customer_type,
+                'opening' => $opening,
+                'sales' => $sales,
+                'c_rep' => $cRep,
+                's_ret' => $sRet,
+                'cir' => $cir,
+                'receipts' => $receipts,
+                'payments' => $payment,
+                'income' => $income,
+                'exp_dis' => $expDis,
+                'jv_dr' => $jvDr,
+                'jv_cr' => $jvCr,
+                'calc_balance' => $calculatedTrueBalance,
+                'saved_balance' => $savedBalance,
+                'diff' => $diff,
+            ];
+        }
+
+        return view('admin_panel.customers.audit', compact('auditRows', 'startDate', 'endDate'));
+    }
+
     public function toggleStatus($id)
     {
         $customer = Customer::withInactive()->findOrFail($id);
