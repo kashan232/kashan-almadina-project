@@ -686,7 +686,7 @@ class GeneralLedgerController extends Controller
                 'ref' => 'PV',
                 'inv' => $pv->pvid,
                 'desc' => $pv->remarks ?? 'Payment Voucher',
-                'qty' => 0, 'debit' => (float)$pv->total_amount, 'credit' => 0
+                'qty' => 0, 'debit' => (float)$pv->total_amount + $totalDisc, 'credit' => 0
             ];
 
             if ($totalDisc > 0) {
