@@ -100,7 +100,10 @@
             <div class="tab-content" id="claimTabsContent">
                 {{-- ITEM RECEIPT PANE --}}
                 <div class="tab-pane fade {{ $isCreditEdit ? '' : 'show active' }}" id="receipt-pane" role="tabpanel">
-                    <div class="d-flex align-items-center gap-2 mb-2 justify-content-center">
+                    <div class="d-flex align-items-center gap-2 mb-2 justify-content-center flex-wrap">
+                        <span class="badge bg-dark text-white px-3 py-2 rounded-pill shadow-sm" style="font-size:13px; font-weight:bold;">
+                            <i class="fa fa-file-text-o me-1"></i> TYPE: ITEM RECEIPT
+                        </span>
                         <span id="receiptStatusBadge" class="badge bg-warning text-dark px-3 py-2 rounded-pill shadow-sm" style="font-size:12px;">
                             <i class="fa fa-pencil me-1"></i> {{ isset($voucher) ? $voucher->status : 'New Receipt' }}
                         </span>
@@ -293,7 +296,10 @@
 
                 {{-- CREDIT NOTE PANE --}}
                 <div class="tab-pane fade {{ $isCreditEdit ? 'show active' : '' }}" id="credit-pane" role="tabpanel">
-                    <div class="d-flex align-items-center gap-2 mb-2 justify-content-center">
+                    <div class="d-flex align-items-center gap-2 mb-2 justify-content-center flex-wrap">
+                        <span class="badge bg-dark text-white px-3 py-2 rounded-pill shadow-sm" style="font-size:13px; font-weight:bold;">
+                            <i class="fa fa-money me-1"></i> TYPE: CREDIT NOTE
+                        </span>
                         <span id="creditStatusBadge" class="badge bg-warning text-dark px-3 py-2 rounded-pill shadow-sm" style="font-size:12px;">
                             <i class="fa fa-pencil me-1"></i> {{ isset($cVoucher) ? $cVoucher->status : 'New Credit Note' }}
                         </span>
@@ -491,7 +497,9 @@
                                                 <select id="credit_wht_head_id" class="form-select form-select-sm py-0" style="width:80px;">
                                                     <option value="">Head</option>
                                                     @foreach($AccountHeads as $head)
-                                                        <option value="{{ $head->id }}" {{ (isset($cVoucher->whtAccount) && $cVoucher->whtAccount->account_head_id == $head->id) ? 'selected' : '' }}>{{ $head->name }}</option>
+                                                        @if(strtoupper($head->name) === 'EXPENSE')
+                                                            <option value="{{ $head->id }}" {{ (isset($cVoucher->whtAccount) && $cVoucher->whtAccount->account_head_id == $head->id) ? 'selected' : '' }}>{{ $head->name }}</option>
+                                                        @endif
                                                     @endforeach
                                                 </select>
                                                 <select name="wht_account_id" id="credit_wht_account_id" data-selected="{{ $cVoucher->wht_account_id ?? '' }}" class="form-select form-select-sm py-0" style="flex-grow:1;">
