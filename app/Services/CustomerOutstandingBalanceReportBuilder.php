@@ -125,6 +125,21 @@ class CustomerOutstandingBalanceReportBuilder
                 continue;
             }
 
+            $calcBalance = 0.0;
+            if ($party['party_kind'] === 'vendor') {
+                // Vendor: Opening + Purchase + Receipts + Income + S_Ret + JV_Cr + CLM_CN - (Payment + Pur_Ret + Sales + C_Rep + CIR + Exp_Dis + JV_Dr)
+                $calcBalance = $opening 
+                    + $period['purchase'] + $period['receipts'] + $period['income'] + $period['s_ret'] + $period['jv_cr'] + $period['clm_cn']
+                    - ($period['payment'] + $period['pur_ret'] + $period['sales'] + $period['c_rep'] + $period['cir'] + $period['exp_dis'] + $period['jv_dr']);
+            } else {
+                // Customer: Opening + Sales + C_Rep + JV_Dr + CIR + Pur_Ret - (S_Ret + Receipts + Payment + Income + Exp_Dis + JV_Cr + Purchase + CLM_CN)
+                $calcBalance = $opening 
+                    + $period['sales'] + $period['c_rep'] + $period['jv_dr'] + $period['cir'] + $period['pur_ret']
+                    - ($period['s_ret'] + $period['receipts'] + $period['payment'] + $period['income'] + $period['exp_dis'] + $period['jv_cr'] + $period['purchase'] + $period['clm_cn']);
+            }
+
+            $diff = $balance - $calcBalance;
+
             $row = array_merge([
                 'party_id' => $partyId,
                 'party_type' => $party['party_kind'],
@@ -133,13 +148,17 @@ class CustomerOutstandingBalanceReportBuilder
                 'customer_name' => strtoupper($party['name']),
                 'party_name' => strtoupper($party['name']),
                 'opening' => $opening,
+                'calc_balance' => $calcBalance,
                 'balance' => $balance,
+                'difference' => $diff,
             ], $period);
 
             $rows[] = $row;
 
             $grand['opening'] += $opening;
             $grand['balance'] += $balance;
+            $grand['calc_balance'] = ($grand['calc_balance'] ?? 0.0) + $calcBalance;
+            $grand['difference'] = ($grand['difference'] ?? 0.0) + $diff;
             foreach (self::DETAIL_COLS as $col) {
                 $grand[$col] += $period[$col];
             }
