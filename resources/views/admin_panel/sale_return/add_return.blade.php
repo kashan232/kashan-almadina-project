@@ -8,6 +8,7 @@
     .form-locked select,
     .form-locked textarea,
     .form-locked .btn-group,
+    .form-locked .order-disc-btn,
     .form-locked .select2-container,
     .form-locked .select2-selection,
     .form-locked .select2-selection__rendered {
@@ -218,9 +219,9 @@
                                 <label class="form-label text-muted small">Party Type</label>
                                 <select name="vendor_type" id="vendor_type_select" class="form-select form-select-sm py-0">
                                     <option value="" disabled selected>Select</option>
-                                    <option value="vendor" {{ isset($returnData) && $returnData->party_type == 'vendor' ? 'selected' : '' }}>Vendor</option>
-                                    <option value="customer" {{ isset($returnData) && $returnData->party_type == 'customer' ? 'selected' : '' }}>Customer</option>
-                                    <option value="walkin" {{ isset($returnData) && $returnData->party_type == 'walking' ? 'selected' : '' }}>Walking Customer</option>
+                                    <option value="vendor" {{ isset($returnData) && ($returnData->party_type == 'vendor') ? 'selected' : '' }}>Vendor</option>
+                                    <option value="customer" {{ isset($returnData) && ($returnData->party_type == 'customer') ? 'selected' : '' }}>Customer</option>
+                                    <option value="walkin" {{ isset($returnData) && (in_array($returnData->party_type, ['walkin', 'walking'])) ? 'selected' : '' }}>Walking Customer</option>
                                 </select>
                             </div>
 
@@ -229,7 +230,15 @@
                                 <select name="party_id" id="party_select" class="form-select form-select-sm py-0 select2">
                                     <option value="">Select Party</option>
                                     @if(isset($returnData))
-                                        <option value="{{ $returnData->customer_id }}" selected>Selected Party (ID: {{ $returnData->customer_id }})</option>
+                                        @php
+                                            $pName = 'Selected Party';
+                                            if ($returnData->party_type == 'vendor') {
+                                                $pName = \App\Models\Vendor::find($returnData->customer_id)->name ?? 'Selected Party';
+                                            } else {
+                                                $pName = \App\Models\Customer::find($returnData->customer_id)->customer_name ?? 'Selected Party';
+                                            }
+                                        @endphp
+                                        <option value="{{ $returnData->customer_id }}" selected>{{ $pName }}</option>
                                     @endif
                                 </select>
                             </div>
