@@ -533,7 +533,7 @@ class CustomerOutstandingBalanceReportBuilder
             ->whereIn('party_type', self::CUSTOMER_PARTY_TYPES)
             ->whereIn('status', ['posted', 'Posted'])
             ->whereBetween(DB::raw($srDateCol), [$from, $to])
-            ->sum('total_balance');
+            ->sum('sub_total2');
 
         $pjDateCol = $this->getDateColumn('purchases', 'current_date');
         $purchases = (float) Purchase::where('purchasable_id', $customerId)
@@ -552,7 +552,7 @@ class CustomerOutstandingBalanceReportBuilder
             ->where('party_type', 'vendor')
             ->whereIn('status', ['posted', 'Posted'])
             ->whereBetween(DB::raw($srDateCol), [$from, $to])
-            ->sum('total_balance');
+            ->sum('sub_total2');
 
         $prDateCol = $this->getDateColumn('purchase_returns', 'current_date');
         $purchaseReturns = (float) PurchaseReturn::where(function ($q) use ($vendorId) {
