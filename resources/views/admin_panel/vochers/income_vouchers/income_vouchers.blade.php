@@ -61,11 +61,10 @@
                                 <select name="account_head" id="account_head" class="form-select form-select-sm select2">
                                     <option value="">Select Head...</option>
                                     @foreach($AccountHeads as $head)
-                                        <option value="{{ $head->id }}" {{ $receipt->account_head == $head->id ? 'selected' : '' }}>{{ $head->name }}</option>
+                                        @if(strtoupper($head->name) === 'INCOME')
+                                        <option value="{{ $head->id }}" {{ ($receipt->account_head == $head->id || empty($receipt->account_head)) ? 'selected' : '' }}>{{ $head->name }}</option>
+                                        @endif
                                     @endforeach
-                                    <option value="vendor" {{ $receipt->account_head == 'vendor' ? 'selected' : '' }}>Vendor</option>
-                                    <option value="customer" {{ $receipt->account_head == 'customer' ? 'selected' : '' }}>Customer</option>
-                                    <option value="walkin" {{ $receipt->account_head == 'walkin' ? 'selected' : '' }}>Walkin Customer</option>
                                 </select>
                             </div>
                             <div class="col-md-1">

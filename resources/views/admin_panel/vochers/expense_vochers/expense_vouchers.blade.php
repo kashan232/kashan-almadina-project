@@ -121,12 +121,14 @@
                                             </select>
                                         </td>
                                         <td>
-                                            <select name="row_account_head[]" class="form-select form-select-sm rowAccountHead select2">
-                                                <option value="">Select Head...</option>
-                                                @foreach($AccountHeads as $head)
-                                                    <option value="{{ $head->id }}" {{ ($rowHeads[$idx] ?? '') == $head->id ? 'selected' : '' }}>{{ $head->name }}</option>
-                                                @endforeach
-                                            </select>
+                                             <select name="row_account_head[]" class="form-select form-select-sm rowAccountHead select2">
+                                                 <option value="">Select Head...</option>
+                                                 @foreach($AccountHeads as $head)
+                                                     @if(strtoupper($head->name) === 'EXPENSE' || strtoupper($head->name) === 'DRAWING' || str_contains(strtoupper($head->name), 'DRAW'))
+                                                     <option value="{{ $head->id }}" {{ ($rowHeads[$idx] ?? '') == $head->id ? 'selected' : '' }}>{{ $head->name }}</option>
+                                                     @endif
+                                                 @endforeach
+                                             </select>
                                         </td>
                                         <td><input type="text" class="form-control form-control-sm text-center fw-bold text-danger account-id-lookup" placeholder="Code" value="{{ $rowAccs[$idx] ?? '' }}"></td>
                                         <td>
@@ -299,7 +301,7 @@ $(document).ready(function() {
         }
         let newRow = `<tr>
             <td><select name="narration_id[]" class="form-select form-select-sm narrationSelect"><option value="">Narration...</option>@foreach($narrationsList as $lid => $lname)<option value="{{ $lid }}">{{ $lname }}</option>@endforeach</select></td>
-            <td><select name="row_account_head[]" class="form-select form-select-sm rowAccountHead select2"><option value="">Select Head...</option>@foreach($AccountHeads as $head)<option value="{{ $head->id }}">{{ $head->name }}</option>@endforeach</select></td>
+            <td><select name="row_account_head[]" class="form-select form-select-sm rowAccountHead select2"><option value="">Select Head...</option>@foreach($AccountHeads as $head) @if(strtoupper($head->name) === 'EXPENSE' || strtoupper($head->name) === 'DRAWING' || str_contains(strtoupper($head->name), 'DRAW'))<option value="{{ $head->id }}">{{ $head->name }}</option>@endif @endforeach</select></td>
             <td><input type="text" class="form-control form-control-sm text-center fw-bold text-danger account-id-lookup" placeholder="Code"></td>
             <td><select name="row_account_id[]" class="form-select form-select-sm rowAccountSub select2"><option value="">Select Account...</option></select></td>
             <td><input type="number" step="0.01" name="amount[]" class="form-control form-control-sm text-end fw-bold row-amount" placeholder="0.00"></td>
