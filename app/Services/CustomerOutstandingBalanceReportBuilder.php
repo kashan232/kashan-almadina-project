@@ -211,7 +211,7 @@ class CustomerOutstandingBalanceReportBuilder
             }
             if ($debit > 0) {
                 if (str_contains($desc, 'discount')) {
-                    $cols['exp_dis'] += $debit;
+                    $cols['exp_dis'] -= $debit;
                 } else {
                     $cols['s_ret'] -= $debit;
                 }

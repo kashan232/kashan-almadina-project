@@ -121,7 +121,7 @@
             ['key' => 's_ret', 'head' => 'S. Ret', 'class' => 'col-red', 'is_deduction' => false],
             ['key' => 'clm_cn', 'head' => 'CLM CN', 'class' => 'col-red', 'is_deduction' => true],
             ['key' => 'receipts', 'head' => 'Receipts', 'class' => 'col-red', 'is_deduction' => true],
-            ['key' => 'exp_dis', 'head' => 'Exp / Dis', 'class' => 'col-green', 'is_deduction' => false],
+            ['key' => 'exp_dis', 'head' => 'Exp / Dis', 'class' => 'col-green', 'is_deduction' => true],
             ['key' => 'jv_cr', 'head' => 'JV-CR.', 'class' => 'col-green', 'is_deduction' => true],
         ];
     @endphp
