@@ -1924,32 +1924,6 @@ class GeneralLedgerController extends Controller
                 }
             }
 
-            // 9. Claim Credit Notes (CIR)
-            $crnDateCol = $this->getDateColumn('claim_credit_notes');
-            $crNotes = $this->ledgerQuery(\App\Models\ClaimCreditNote::class)->where('party_id', $id)
-                ->whereIn('party_type', $typeArray)
-                ->where('status', 'Posted')
-                ->whereBetween(DB::raw($crnDateCol), [$start, $end])
-                ->get();
-            foreach ($crNotes as $crn) {
-                $crnDate = $crn->date ?? $crn->entry_date ?? substr((string)$crn->created_at, 0, 10);
-                $crnInv = preg_replace('/[^0-9]/', '', $crn->voucher_no ?? '0');
-                $netTotal = (float)($crn->net_total ?? 0);
-
-                $transactions[] = [
-                    'created_at' => $crn->created_at,
-                    'id' => 'crn_' . $crn->id,
-                    'date' => $crnDate,
-                    'ref' => 'CIR',
-                    'inv' => $crnInv,
-                    'desc' => 'Claim Credit Note (' . $crn->voucher_no . ')',
-                    'qty' => (float)DB::table('claim_credit_note_items')->where('claim_credit_note_id', $crn->id)->sum('quantity'),
-                    'debit' => $netTotal,
-                    'credit' => 0,
-                    'priority' => 32,
-                ];
-            }
-
             $this->sortLedgerDetailsByCreatedAt($transactions);
             return $transactions;
         }
@@ -2848,7 +2822,7 @@ class GeneralLedgerController extends Controller
         // 12. Claim Credit Notes (CIR) - item-wise like PRJ
         $crnDateCol = $this->getDateColumn('claim_credit_notes');
         $crNotes = $this->ledgerQuery(\App\Models\ClaimCreditNote::class)->where('party_id', $id)
-            ->where('party_type', $type == 'customer' ? 'customer' : 'vendor')
+            ->whereIn('party_type', $typeArray)
             ->where('status', 'Posted')
             ->whereBetween(DB::raw($crnDateCol), [$start, $end])
             ->with(['items.product.brandRelation'])
