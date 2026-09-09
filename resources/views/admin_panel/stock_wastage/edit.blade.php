@@ -159,7 +159,9 @@
                                 <select name="account_head_id" id="account_head_id" class="form-select select2" required>
                                     <option value="" disabled>Select Head</option>
                                     @foreach($accountHeads as $head)
+                                        @if(strtoupper($head->name) === 'EXPENSE')
                                         <option value="{{ $head->id }}" {{ old('account_head_id', $stock_wastage->account_head_id) == $head->id ? 'selected' : '' }}>{{ $head->name }}</option>
+                                        @endif
                                     @endforeach
                                 </select>
                             </div>

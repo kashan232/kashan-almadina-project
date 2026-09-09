@@ -148,7 +148,9 @@
                                 <select name="account_head_id" id="account_head_id" class="form-select select2" required>
                                     <option value="" disabled selected>Select Head</option>
                                     @foreach($accountHeads as $head)
-                                        <option value="{{ $head->id }}">{{ $head->name }}</option>
+                                        @if(strtoupper($head->name) === 'EXPENSE')
+                                        <option value="{{ $head->id }}" selected>{{ $head->name }}</option>
+                                        @endif
                                     @endforeach
                                 </select>
                             </div>
