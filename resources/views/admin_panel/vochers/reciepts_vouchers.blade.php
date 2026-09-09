@@ -138,12 +138,14 @@
                                         </td>
                                         <td><input name="reference_no[]" type="text" class="form-control form-control-sm" value="{{ $references[$index] ?? '' }}" placeholder="Ref#"></td>
                                         <td>
-                                            <select name="row_account_head[]" class="form-select form-select-sm rowAccountHead select2">
-                                                <option value="">Select Head...</option>
-                                                @foreach($AccountHeads as $head)
-                                                <option value="{{ $head->id }}" {{ ($rowHeads[$index] ?? '') == $head->id ? 'selected' : '' }}>{{ $head->name }}</option>
-                                                @endforeach
-                                            </select>
+                                             <select name="row_account_head[]" class="form-select form-select-sm rowAccountHead select2">
+                                                 <option value="">Select Head...</option>
+                                                 @foreach($AccountHeads as $head)
+                                                 @if(str_contains(strtoupper($head->name), 'CASH') || str_contains(strtoupper($head->name), 'BANK') || $head->id == 100000 || strtoupper($head->name) == 'SCRAP')
+                                                 <option value="{{ $head->id }}" {{ ($rowHeads[$index] ?? '') == $head->id ? 'selected' : '' }}>{{ $head->name }}</option>
+                                                 @endif
+                                                 @endforeach
+                                             </select>
                                         </td>
                                         <td><input type="text" class="form-control form-control-sm text-center fw-bold text-danger rowAccountCode" placeholder="Code"></td>
                                         <td>
@@ -385,7 +387,7 @@ $(document).ready(function() {
         let newRow = `<tr>
             <td><select name="narration_id[]" class="form-select form-select-sm narrationSelect"><option value="">Narration...</option>@foreach($narrations as $id => $name)<option value="{{ $id }}">{{ $name }}</option>@endforeach</select></td>
             <td><input name="reference_no[]" type="text" class="form-control form-control-sm" placeholder="Ref#"></td>
-            <td><select name="row_account_head[]" class="form-select form-select-sm rowAccountHead select2"><option value="">Select Head...</option>@foreach($AccountHeads as $head) <option value="{{ $head->id }}">{{ $head->name }}</option>@endforeach</select></td>
+            <td><select name="row_account_head[]" class="form-select form-select-sm rowAccountHead select2"><option value="">Select Head...</option>@foreach($AccountHeads as $head) @if(str_contains(strtoupper($head->name), 'CASH') || str_contains(strtoupper($head->name), 'BANK') || $head->id == 100000 || strtoupper($head->name) == 'SCRAP')<option value="{{ $head->id }}">{{ $head->name }}</option>@endif @endforeach</select></td>
             <td><input type="text" class="form-control form-control-sm text-center fw-bold text-danger rowAccountCode" placeholder="Code"></td>
             <td><select name="row_account_id[]" class="form-select form-select-sm rowAccountSub select2"><option value="">Select Account...</option></select></td>
             <td><input name="kg[]" type="number" step="any" class="form-control form-control-sm text-center kg"></td>
