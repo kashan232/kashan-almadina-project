@@ -793,7 +793,7 @@ class GeneralLedgerController extends Controller
                     if (str_starts_with($jv->jvid, 'PJ-') || str_starts_with($jv->jvid, 'PRJ-')) {
                         continue;
                     }
-                    if (str_starts_with($jv->jvid, 'SJ-DISC-')) {
+                    if (str_starts_with($jv->jvid, 'SJ-DISC-') || str_starts_with($jv->jvid, 'SR-DISC-')) {
                         continue;
                     }
 
@@ -912,7 +912,7 @@ class GeneralLedgerController extends Controller
                 'credit' => (float)$sr->sub_total2,
                 'priority' => 20
             ];
-            if ((float)$sr->discount_amount > 0 && !$sr->discount_account_id) {
+            if ((float)$sr->discount_amount > 0) {
                 $descDisc = 'Discount';
                 if ($sr->sale) {
                     $descDisc .= ' (SJ ' . $sr->sale->invoice_no . ')';
