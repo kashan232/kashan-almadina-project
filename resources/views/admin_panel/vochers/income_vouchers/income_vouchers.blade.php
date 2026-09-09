@@ -123,14 +123,16 @@
                                         </td>
                                         <td>
                                             <select name="party_type[]" class="form-select form-select-sm rowPartyType select2">
-                                                <option value="">Select Type...</option>
-                                                @foreach($AccountHeads as $head)
-                                                    <option value="{{ $head->id }}" {{ ($types[$idx] ?? '') == $head->id ? 'selected' : '' }}>{{ $head->name }}</option>
-                                                @endforeach
-                                                <option value="vendor" {{ ($types[$idx] ?? '') == 'vendor' ? 'selected' : '' }}>Vendor</option>
-                                                <option value="customer" {{ ($types[$idx] ?? '') == 'customer' ? 'selected' : '' }}>Customer</option>
-                                                <option value="walkin" {{ ($types[$idx] ?? '') == 'walkin' ? 'selected' : '' }}>Walkin Customer</option>
-                                            </select>
+                                                 <option value="">Select Type...</option>
+                                                 @foreach($AccountHeads as $head)
+                                                     @if(strtoupper($head->name) === 'INCOME')
+                                                     <option value="{{ $head->id }}" {{ ($types[$idx] ?? '') == $head->id ? 'selected' : '' }}>{{ $head->name }}</option>
+                                                     @endif
+                                                 @endforeach
+                                                 <option value="vendor" {{ ($types[$idx] ?? '') == 'vendor' ? 'selected' : '' }}>Vendor</option>
+                                                 <option value="customer" {{ ($types[$idx] ?? '') == 'customer' ? 'selected' : '' }}>Customer</option>
+                                                 <option value="walkin" {{ ($types[$idx] ?? '') == 'walkin' ? 'selected' : '' }}>Walkin Customer</option>
+                                             </select>
                                         </td>
                                         <td><input type="text" name="row_party_code[]" class="form-control form-control-sm text-center fw-bold text-danger rowPartyCode" placeholder="Code"></td>
                                         <td>
@@ -309,7 +311,7 @@ $(document).ready(function() {
         if (window.VoucherRowValidation && !window.VoucherRowValidation.validateLastRow($('#voucherTable'))) return;
         let row = `<tr>
             <td><select name="narration_id[]" class="form-select form-select-sm narrationSelect"><option value="">Narration...</option>@foreach($narrationsList as $lid => $lname)<option value="{{ $lid }}">{{ $lname }}</option>@endforeach</select></td>
-            <td><select name="party_type[]" class="form-select form-select-sm rowPartyType select2"><option value="">Select Type...</option>@foreach($AccountHeads as $head)<option value="{{ $head->id }}">{{ $head->name }}</option>@endforeach<option value="vendor">Vendor</option><option value="customer">Customer</option><option value="walkin">Walkin</option></select></td>
+            <td><select name="party_type[]" class="form-select form-select-sm rowPartyType select2"><option value="">Select Type...</option>@foreach($AccountHeads as $head) @if(strtoupper($head->name) === 'INCOME')<option value="{{ $head->id }}">{{ $head->name }}</option>@endif @endforeach<option value="vendor">Vendor</option><option value="customer">Customer</option><option value="walkin">Walkin</option></select></td>
             <td><input type="text" name="row_party_code[]" class="form-control form-control-sm text-center fw-bold text-danger rowPartyCode" placeholder="Code"></td>
             <td><select name="party_id[]" class="form-select form-select-sm rowPartySelect select2"><option value="">Select Party...</option></select></td>
             <td><input type="text" name="reference_no[]" class="form-control form-control-sm" placeholder="Ref#"></td>
