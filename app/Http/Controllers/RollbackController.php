@@ -511,13 +511,14 @@ class RollbackController extends Controller
                 $this->adjustStock($claim->replacement_product_id, $claim->replacement_from_warehouse_id, 1, 'add');
             }
         } elseif ($claim->claim_type === 'claim_hold') {
-            // Reverse Reservation: remove reserved stock hold using ID, claim_no, or remarks
-            StockHold::where(function($q) use ($claim) {
-                $q->where('meta->claim_id', (string)$claim->id)
-                  ->orWhere('meta->claim_id', (int)$claim->id)
-                  ->orWhere('meta->claim_no', (string)$claim->claim_no)
-                  ->orWhere('remarks', 'LIKE', '%' . $claim->claim_no . '%');
-            })->delete();
+            // Reverse Reservation: force delete reserved stock hold so soft-deleted records do not accumulate
+            StockHold::withoutGlobalScopes()
+                ->where(function($q) use ($claim) {
+                    $q->where('meta->claim_id', (string)$claim->id)
+                      ->orWhere('meta->claim_id', (int)$claim->id)
+                      ->orWhere('meta->claim_no', (string)$claim->claim_no)
+                      ->orWhere('remarks', 'LIKE', '%' . $claim->claim_no . '%');
+                })->forceDelete();
         }
 
         app(PartyLedgerService::class)->reverseCustomerClaim($claim);
