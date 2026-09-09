@@ -949,8 +949,8 @@
                   <div class="d-flex gap-1" style="width:230px;">
                     <select id="discount_head" name="discount_head" class="form-select form-select-sm" style="width:100px;">
                       @foreach($accountHeads as $head)
-                          @if(strtoupper($head->name) == 'EXPENSE' || $head->id == 1)
-                          <option value="{{ $head->id }}" selected>
+                          @if(strtoupper($head->name) == 'EXPENSE' || strtoupper($head->name) == 'INCOME' || strtoupper($head->name) == 'SCRAP' || $head->id == 100000)
+                          <option value="{{ $head->id }}" {{ (isset($editData) && $editData->discount_head == $head->id) || (!isset($editData) && strtoupper($head->name) == 'EXPENSE') ? 'selected' : '' }}>
                               {{ $head->name }}
                           </option>
                           @endif

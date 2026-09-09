@@ -184,11 +184,11 @@
                                 <label class="form-label mb-1 fw-bold text-dark"><i class="fa fa-percent text-primary me-1"></i> Disc Head</label>
                                 <select name="discount_head" id="discount_head" class="form-select form-select-sm select2">
                                     <option value="">Select Discount Head...</option>
-                                    @foreach($AccountHeads as $head)
-                                        @if(strtoupper($head->name) === 'EXPENSE')
-                                        <option value="{{ $head->id }}" {{ ($discHeadVal == $head->id || empty($discHeadVal)) ? 'selected' : '' }}>{{ $head->name }}</option>
-                                        @endif
-                                    @endforeach
+                                     @foreach($AccountHeads as $head)
+                                         @if(strtoupper($head->name) === 'EXPENSE' || strtoupper($head->name) === 'INCOME' || strtoupper($head->name) === 'SCRAP' || $head->id == 100000)
+                                         <option value="{{ $head->id }}" {{ ($discHeadVal == $head->id || (empty($discHeadVal) && strtoupper($head->name) === 'EXPENSE')) ? 'selected' : '' }}>{{ $head->name }}</option>
+                                         @endif
+                                     @endforeach
                                 </select>
                             </div>
                             <div class="col-md-5">

@@ -185,8 +185,8 @@
                                 <select name="discount_head" id="discount_head" class="form-select form-select-sm select2">
                                     <option value="">Select Discount Head...</option>
                                     @foreach($AccountHeads as $head)
-                                        @if(strtoupper($head->name) === 'INCOME')
-                                        <option value="{{ $head->id }}" {{ ($discHeadVal == $head->id || empty($discHeadVal)) ? 'selected' : '' }}>{{ $head->name }}</option>
+                                        @if(strtoupper($head->name) === 'INCOME' || strtoupper($head->name) === 'EXPENSE' || strtoupper($head->name) === 'SCRAP' || $head->id == 100000)
+                                        <option value="{{ $head->id }}" {{ ($discHeadVal == $head->id || (empty($discHeadVal) && strtoupper($head->name) === 'INCOME')) ? 'selected' : '' }}>{{ $head->name }}</option>
                                         @endif
                                     @endforeach
                                 </select>
