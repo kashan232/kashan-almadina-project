@@ -689,10 +689,10 @@ class GeneralLedgerController extends Controller
                         'created_at' => $pv->created_at,
                         'id' => $pv->id . '_disc_' . $idx,
                         'date' => $pv->entry_date ?: $pv->created_at,
-                        'ref' => 'PV',
+                        'ref' => 'IV',
                         'inv' => $pv->pvid,
-                        'desc' => $this->voucherDiscountDescription($discAccIds[$idx] ?? null),
-                        'qty' => 0, 'debit' => $rowDiscount, 'credit' => 0
+                        'desc' => $this->voucherDiscountDescription($discAccIds[$idx] ?? null) ?: 'Payment Discount Income',
+                        'qty' => 0, 'debit' => 0, 'credit' => $rowDiscount
                     ];
                 }
             }
