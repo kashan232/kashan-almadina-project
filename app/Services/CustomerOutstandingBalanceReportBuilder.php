@@ -269,11 +269,11 @@ class CustomerOutstandingBalanceReportBuilder
 
         // 9. Income (IV): Income Vouchers only
         if ($ref === 'IV') {
+            if ($credit > 0) {
+                $cols['income'] += $credit;
+            }
             if ($debit > 0) {
                 $cols['income'] += $debit;
-            }
-            if ($credit > 0) {
-                $cols['receipts'] += $credit;
             }
             return;
         }
@@ -284,7 +284,7 @@ class CustomerOutstandingBalanceReportBuilder
                 $cols['payment'] += $debit;
             }
             if ($credit > 0) {
-                $cols['purchase'] += $credit;
+                $cols['payment'] += $credit;
             }
             return;
         }
