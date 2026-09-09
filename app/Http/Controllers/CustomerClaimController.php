@@ -210,9 +210,8 @@ class CustomerClaimController extends Controller
 
     private function syncInventory(CustomerClaim $claim)
     {
-        // 1. Faulty Item Movement
-        // Add to claim warehouse
-        if (isset($claim->claim_warehouse_id)) {
+        // 1. Faulty Item Movement (for item_return and credit_note)
+        if ($claim->claim_type !== 'claim_hold' && isset($claim->claim_warehouse_id)) {
             $this->adjustStock($claim->claim_warehouse_id, $claim->product_id, 1);
         }
 
@@ -233,7 +232,7 @@ class CustomerClaimController extends Controller
                 'entry_time'   => $claim->entry_time,
                 'party_type'   => $claim->party_type,
                 'party_id'     => $claim->party_id,
-                'warehouse_id' => $claim->claim_warehouse_id,
+                'warehouse_id' => $claim->original_warehouse_id ?? $claim->claim_warehouse_id,
                 'product_id'   => $claim->product_id,
                 'hold_qty'     => 1,
                 'remarks'      => 'Reserved via Customer Claim Hold: ' . $claim->claim_no,

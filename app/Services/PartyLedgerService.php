@@ -331,7 +331,7 @@ class PartyLedgerService
     /** CLM — claim received (credit) and optional replacement (debit); matches General Ledger. */
     public function postCustomerClaim(CustomerClaim $claim): void
     {
-        if ($claim->claim_type === 'item_return') {
+        if ($claim->claim_type === 'item_return' || $claim->claim_type === 'claim_hold') {
             return;
         }
 
@@ -372,7 +372,7 @@ class PartyLedgerService
 
     public function reverseCustomerClaim(CustomerClaim $claim, string $labelPrefix = 'Rollback'): void
     {
-        if ($claim->claim_type === 'item_return') {
+        if ($claim->claim_type === 'item_return' || $claim->claim_type === 'claim_hold') {
             return;
         }
 

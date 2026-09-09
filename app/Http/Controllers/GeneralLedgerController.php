@@ -1122,7 +1122,7 @@ class GeneralLedgerController extends Controller
             ->get();
             
         foreach ($claims as $claim) {
-            if ($claim->claim_type === 'item_return') {
+            if ($claim->claim_type === 'item_return' || $claim->claim_type === 'claim_hold') {
                 continue;
             }
 
@@ -2775,7 +2775,7 @@ class GeneralLedgerController extends Controller
             ->get();
             
         foreach ($claims as $claim) {
-            if ($claim->claim_type === 'item_return') {
+            if ($claim->claim_type === 'item_return' || $claim->claim_type === 'claim_hold') {
                 continue;
             }
 
