@@ -585,10 +585,21 @@ class PurchaseController extends Controller
                 $typeMap = [
                     'Vendor'       => \App\Models\Vendor::class,
                     'Customer'     => \App\Models\Customer::class,
+                    'Walkin'       => \App\Models\Customer::class,
+                    'Walking'      => \App\Models\Customer::class,
+                    'Subcustomer'  => \App\Models\SubCustomer::class,
                     'SubCustomer'  => \App\Models\SubCustomer::class,
                 ];
                 
-                $typeKey = ucfirst(strtolower($request['vendor_type']));
+                $vendorType = $request->input('vendor_type');
+                $purchasableType = null;
+                if (!empty($vendorType)) {
+                    $typeKey = ucfirst(strtolower($vendorType));
+                    $purchasableType = $typeMap[$typeKey] ?? null;
+                }
+                if (!$purchasableType) {
+                    $purchasableType = $purchase->purchasable_type ?: \App\Models\Vendor::class;
+                }
 
                 if ($purchase->status === 'Posted') {
                     // Reverse the previous posting before updating
@@ -600,7 +611,7 @@ class PurchaseController extends Controller
                     'status'           => 'Unposted',
                     'warehouse_id'     => $request['warehouse_id'],
                     'vendor_id'        => $request['vendor_id'],
-                    'purchasable_type' => $typeMap[$typeKey] ?? null,
+                    'purchasable_type' => $purchasableType,
                     'purchasable_id'   => $request['vendor_id'],
                     'entry_date'       => $request['entry_date'] ?? date('Y-m-d'),
                     'entry_time'       => $request['entry_time'] ?? date('H:i'),
