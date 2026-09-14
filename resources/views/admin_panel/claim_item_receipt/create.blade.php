@@ -617,7 +617,14 @@ $(document).ready(function() {
                         $('#editBtn, #postBtn').prop('disabled', false);
                         showToast('Draft Saved — Ctrl+E to edit');
                     }
-                } else { showToast(res.message, 'error'); }
+                } else { 
+                    var errMsg = res.message;
+                    if (res.errors) {
+                        var errList = Object.values(res.errors).flat().join(', ');
+                        errMsg += ': ' + errList;
+                    }
+                    showToast(errMsg, 'error'); 
+                }
             },
             error: () => showToast('Server Error', 'error'),
             complete: function() {

@@ -148,9 +148,12 @@ class ClaimItemReceiptController extends Controller
         try {
             DB::beginTransaction();
 
-            $voucher = $id ? ClaimItemReceipt::findOrFail($id) : new ClaimItemReceipt();
+            $voucher = $id ? ClaimItemReceipt::find($id) : null;
+            if (!$voucher) {
+                $voucher = new ClaimItemReceipt();
+            }
             
-            if ($voucher->status === 'Posted') {
+            if ($voucher->exists && $voucher->status === 'Posted') {
                 return response()->json(['success' => false, 'message' => 'Already posted'], 422);
             }
 

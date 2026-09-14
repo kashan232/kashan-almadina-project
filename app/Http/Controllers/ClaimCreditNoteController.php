@@ -114,9 +114,12 @@ class ClaimCreditNoteController extends Controller
         try {
             DB::beginTransaction();
 
-            $voucher = $id ? ClaimCreditNote::findOrFail($id) : new ClaimCreditNote();
+            $voucher = $id ? ClaimCreditNote::find($id) : null;
+            if (!$voucher) {
+                $voucher = new ClaimCreditNote();
+            }
             
-            if ($voucher->status === 'Posted') {
+            if ($voucher->exists && $voucher->status === 'Posted') {
                 return response()->json(['success' => false, 'message' => 'Already posted'], 422);
             }
 
