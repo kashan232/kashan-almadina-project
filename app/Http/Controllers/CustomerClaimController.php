@@ -18,9 +18,21 @@ use Illuminate\Support\Facades\Validator;
 
 class CustomerClaimController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $claims = CustomerClaim::with(['party', 'vendor', 'customer', 'product', 'warehouse', 'originalWarehouse', 'replacementProduct', 'replacementFromWarehouse', 'creator'])->latest()->get();
+        $query = CustomerClaim::with(['party', 'vendor', 'customer', 'product', 'warehouse', 'originalWarehouse', 'replacementProduct', 'replacementFromWarehouse', 'creator']);
+
+        if ($request->start_date) {
+            $query->whereDate('claim_date', '>=', $request->start_date);
+        }
+        if ($request->end_date) {
+            $query->whereDate('claim_date', '<=', $request->end_date);
+        }
+        if ($request->status) {
+            $query->where('status', $request->status);
+        }
+
+        $claims = $query->latest()->get();
         return view('admin_panel.customer_claims.index', compact('claims'));
     }
 
