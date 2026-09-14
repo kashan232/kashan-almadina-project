@@ -428,8 +428,17 @@ $(document).ready(function() {
 
     applyClaimTypeLayout($('#claim_type').val());
 
+    var initialVoucherId = "{{ $activeVoucher->id ?? '' }}";
+    var initialType = "{{ $initialClaimType }}";
+
     $('#claim_type').on('change', function() {
-        applyClaimTypeLayout($(this).val());
+        var newType = $(this).val();
+        applyClaimTypeLayout(newType);
+        if (newType !== initialType) {
+            $('#voucher_id').val('');
+        } else {
+            $('#voucher_id').val(initialVoucherId);
+        }
     });
 
     // --- PARTY LIST LOADING ---
