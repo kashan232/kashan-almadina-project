@@ -85,7 +85,11 @@ trait VoucherReportHelpers
             })
             ->orderBy('name')
             ->get();
-        $accounts = Account::with('head')->orderBy('title')->get();
+        $headIds = $accountHeads->pluck('id')->toArray();
+        $accounts = Account::with('head')
+            ->whereIn('head_id', $headIds)
+            ->orderBy('title')
+            ->get();
         $customers = Customer::orderBy('customer_name')->get();
         $vendors = Vendor::orderBy('name')->get();
         $shopGroupIds = $userGroups->where('allow_shop', 1)->pluck('id')->implode(',');
