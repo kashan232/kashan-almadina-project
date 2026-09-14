@@ -56,10 +56,13 @@ class ClaimCreditNoteController extends Controller
     {
         $voucher = ClaimCreditNote::with(['items.product.brandRelation', 'vendor', 'customer', 'whtAccount'])->findOrFail($id);
         $warehouses = Warehouse::orderBy('warehouse_name')->get();
+        $companyWarehouses = Warehouse::withoutGlobalScope('exclude_claims')->where('claim_type', 'company')->orderBy('warehouse_name')->get();
         $AccountHeads = AccountHead::where('status', 1)->get();
+        $products = Product::select('id', 'name')->orderBy('name')->get();
         $viewMode = true;
+        $creditVoucher = $voucher;
 
-        return view('admin_panel.claim_credit_note.create', compact('voucher', 'warehouses', 'AccountHeads', 'viewMode'));
+        return view('admin_panel.claim_item_receipt.create', compact('creditVoucher', 'warehouses', 'companyWarehouses', 'AccountHeads', 'products', 'viewMode'));
     }
 
     public function fetchByBTR(Request $request)
