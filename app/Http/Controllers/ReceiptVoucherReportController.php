@@ -76,7 +76,15 @@ class ReceiptVoucherReportController extends Controller
             ->get();
 
         $users = User::with('userGroups')->orderBy('name')->get();
-        $accountHeads = AccountHead::where('status', 1)->orderBy('name')->get();
+        $accountHeads = AccountHead::where('status', 1)
+            ->where(function ($q) {
+                $q->where('name', 'like', '%CASH%')
+                  ->orWhere('name', 'like', '%BANK%')
+                  ->orWhere('id', 100000)
+                  ->orWhere('name', 'SCRAP');
+            })
+            ->orderBy('name')
+            ->get();
         $accounts = Account::with('head')->orderBy('title')->get();
         $customers = Customer::orderBy('customer_name')->get();
         $vendors = Vendor::orderBy('name')->get();
