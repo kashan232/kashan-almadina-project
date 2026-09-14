@@ -82,6 +82,11 @@ class ClaimItemReceiptReportController extends Controller
         $from_date = $request->from_date;
         $to_date = $request->to_date;
         $transaction_type = $request->input('transaction_type', 'all');
+
+        if ($transaction_type === 'btr_wise') {
+            return $this->buildBtrWiseReport($request);
+        }
+
         $grouped = $this->buildReportLines($request)->groupBy('group_key');
 
         return view('admin_panel.reports.claim_item_receipt.preview', compact(
@@ -324,4 +329,216 @@ class ClaimItemReceiptReportController extends Controller
             'form_line_total' => $formLineTotal,
         ];
     }
+
+    private function buildBtrWiseReport(Request $request)
+    {
+        $from_date = $request->from_date;
+        $to_date = $request->to_date;
+        $selectedUserGroups = array_map('intval', (array) $request->input('user_group', []));
+        $totalUserGroups = UserGroup::count();
+        $applyGroupFilter = $this->shouldApplyFilter($selectedUserGroups, $totalUserGroups);
+
+        $selectedUsers = array_map('intval', (array) $request->input('sales_officer', []));
+        $totalUsers = User::count();
+        $applyUserFilter = $this->shouldApplyFilter($selectedUsers, $totalUsers);
+
+        $selectedDeductFrom = (array) $request->input('from_warehouse', []);
+        $totalDeductFrom = Warehouse::withoutGlobalScopes()->where('claim_type', 'company')->count();
+        $applyDeductFromFilter = $this->shouldApplyFilter($selectedDeductFrom, $totalDeductFrom);
+
+        $selectedAddTo = (array) $request->input('to_warehouse', []);
+        $totalAddTo = Warehouse::withoutGlobalScopes()->count() + 1; // + Shop Stock (0)
+        $applyAddToFilter = $this->shouldApplyFilter($selectedAddTo, $totalAddTo);
+
+        $selectedItems = array_map('intval', (array) $request->input('item', []));
+        $totalItems = Product::count();
+        $applyItemFilter = $this->shouldApplyFilter($selectedItems, $totalItems);
+
+        $selectedCustomers = array_map('intval', (array) $request->input('customer', []));
+        $totalCustomers = Customer::count();
+        $applyCustomerFilter = $this->shouldApplyFilter($selectedCustomers, $totalCustomers);
+
+        $selectedVendors = array_map('intval', (array) $request->input('vendor', []));
+        $totalVendors = Vendor::count();
+        $applyVendorFilter = $this->shouldApplyFilter($selectedVendors, $totalVendors);
+
+        $btrFilter = trim((string) $request->input('btr_no', ''));
+        $voucherNoFilter = trim((string) $request->input('voucher_no', ''));
+
+        // Query ClaimAcceptanceItem
+        $acceptanceItemsQuery = \App\Models\ClaimAcceptanceItem::with(['voucher.fromWarehouse', 'voucher.toWarehouse', 'voucher.vendor', 'voucher.customer', 'product.brand'])
+            ->whereHas('voucher', function ($q) use (
+                $from_date, $to_date,
+                $applyGroupFilter, $selectedUserGroups,
+                $applyUserFilter, $selectedUsers,
+                $applyDeductFromFilter, $selectedDeductFrom,
+                $applyAddToFilter, $selectedAddTo,
+                $applyCustomerFilter, $selectedCustomers,
+                $applyVendorFilter, $selectedVendors,
+                $voucherNoFilter
+            ) {
+                $this->applyDateFilter($q, $from_date, $to_date, 'date');
+
+                if ($applyGroupFilter) {
+                    $q->where(function ($sub) use ($selectedUserGroups) {
+                        foreach ($selectedUserGroups as $gid) {
+                            $sub->orWhereJsonContains('user_group_ids', (int) $gid)
+                                ->orWhereJsonContains('user_group_ids', (string) $gid);
+                        }
+                    });
+                }
+                if ($applyUserFilter) {
+                    $q->whereIn('created_by', $selectedUsers);
+                }
+                if ($applyDeductFromFilter) {
+                    $q->whereIn('from_warehouse_id', $selectedDeductFrom);
+                }
+                if ($applyAddToFilter) {
+                    $q->whereIn('to_warehouse_id', $selectedAddTo);
+                }
+
+                if ($applyCustomerFilter || $applyVendorFilter) {
+                    $q->where(function ($pQ) use ($applyCustomerFilter, $selectedCustomers, $applyVendorFilter, $selectedVendors) {
+                        if ($applyCustomerFilter && $applyVendorFilter) {
+                            $pQ->where(function ($cQ) use ($selectedCustomers) {
+                                $cQ->where('party_type', 'customer')->whereIn('party_id', $selectedCustomers);
+                            })->orWhere(function ($vQ) use ($selectedVendors) {
+                                $vQ->where('party_type', 'vendor')->whereIn('party_id', $selectedVendors);
+                            });
+                        } elseif ($applyCustomerFilter) {
+                            $pQ->where('party_type', 'customer')->whereIn('party_id', $selectedCustomers);
+                        } else {
+                            $pQ->where('party_type', 'vendor')->whereIn('party_id', $selectedVendors);
+                        }
+                    });
+                }
+
+                if ($voucherNoFilter !== '') {
+                    $q->where('voucher_no', 'like', "%{$voucherNoFilter}%");
+                }
+            });
+
+        if ($applyItemFilter) {
+            $acceptanceItemsQuery->whereIn('product_id', $selectedItems);
+        }
+        if ($btrFilter !== '') {
+            $acceptanceItemsQuery->where('btr_no', 'like', "%{$btrFilter}%");
+        }
+
+        $acceptanceItems = $acceptanceItemsQuery->get();
+
+        // Query ClaimItemReceiptItem
+        $receiptItemsQuery = \App\Models\ClaimItemReceiptItem::with(['receipt.fromWarehouse', 'receipt.toWarehouse', 'receipt.vendor', 'receipt.customer', 'product.brand'])
+            ->whereHas('receipt', function ($q) use (
+                $from_date, $to_date,
+                $applyGroupFilter, $selectedUserGroups,
+                $applyUserFilter, $selectedUsers,
+                $applyDeductFromFilter, $selectedDeductFrom,
+                $applyAddToFilter, $selectedAddTo,
+                $applyCustomerFilter, $selectedCustomers,
+                $applyVendorFilter, $selectedVendors,
+                $voucherNoFilter
+            ) {
+                $this->applyDateFilter($q, $from_date, $to_date, 'date');
+
+                if ($applyGroupFilter) {
+                    $q->where(function ($sub) use ($selectedUserGroups) {
+                        foreach ($selectedUserGroups as $gid) {
+                            $sub->orWhereJsonContains('user_group_ids', (int) $gid)
+                                ->orWhereJsonContains('user_group_ids', (string) $gid);
+                        }
+                    });
+                }
+                if ($applyUserFilter) {
+                    $q->whereIn('created_by', $selectedUsers);
+                }
+                if ($applyDeductFromFilter) {
+                    $q->whereIn('from_warehouse_id', $selectedDeductFrom);
+                }
+                if ($applyAddToFilter) {
+                    $q->whereIn('to_warehouse_id', $selectedAddTo);
+                }
+
+                if ($applyCustomerFilter || $applyVendorFilter) {
+                    $q->where(function ($pQ) use ($applyCustomerFilter, $selectedCustomers, $applyVendorFilter, $selectedVendors) {
+                        if ($applyCustomerFilter && $applyVendorFilter) {
+                            $pQ->where(function ($cQ) use ($selectedCustomers) {
+                                $cQ->where('party_type', 'customer')->whereIn('party_id', $selectedCustomers);
+                            })->orWhere(function ($vQ) use ($selectedVendors) {
+                                $vQ->where('party_type', 'vendor')->whereIn('party_id', $selectedVendors);
+                            });
+                        } elseif ($applyCustomerFilter) {
+                            $pQ->where('party_type', 'customer')->whereIn('party_id', $selectedCustomers);
+                        } else {
+                            $pQ->where('party_type', 'vendor')->whereIn('party_id', $selectedVendors);
+                        }
+                    });
+                }
+
+                if ($voucherNoFilter !== '') {
+                    $q->where('voucher_no', 'like', "%{$voucherNoFilter}%");
+                }
+            });
+
+        if ($applyItemFilter) {
+            $receiptItemsQuery->whereIn('product_id', $selectedItems);
+        }
+        if ($btrFilter !== '') {
+            $receiptItemsQuery->where('btr_no', 'like', "%{$btrFilter}%");
+        }
+
+        $receiptItems = $receiptItemsQuery->get();
+
+        // Build data structure grouped by btr_no -> product_id
+        $btrGroups = [];
+
+        foreach ($acceptanceItems as $ai) {
+            $btrNo = trim((string) $ai->btr_no);
+            if ($btrNo === '') {
+                $btrNo = 'N/A';
+            }
+            $productId = $ai->product_id;
+            if (!isset($btrGroups[$btrNo])) {
+                $btrGroups[$btrNo] = [];
+            }
+            if (!isset($btrGroups[$btrNo][$productId])) {
+                $btrGroups[$btrNo][$productId] = [
+                    'brand_name' => $ai->product?->brand?->name ?? 'N/A',
+                    'product_name' => $ai->product?->name ?? 'N/A',
+                    'clm_acp' => 0.0,
+                    'cir' => 0.0,
+                ];
+            }
+            $btrGroups[$btrNo][$productId]['clm_acp'] += (float) ($ai->quantity ?? 0);
+        }
+
+        foreach ($receiptItems as $ri) {
+            $btrNo = trim((string) $ri->btr_no);
+            if ($btrNo === '') {
+                $btrNo = 'N/A';
+            }
+            $productId = $ri->product_id;
+            if (!isset($btrGroups[$btrNo])) {
+                $btrGroups[$btrNo] = [];
+            }
+            if (!isset($btrGroups[$btrNo][$productId])) {
+                $btrGroups[$btrNo][$productId] = [
+                    'brand_name' => $ri->product?->brand?->name ?? 'N/A',
+                    'product_name' => $ri->product?->name ?? 'N/A',
+                    'clm_acp' => 0.0,
+                    'cir' => 0.0,
+                ];
+            }
+            $btrGroups[$btrNo][$productId]['cir'] += (float) ($ri->quantity ?? 0);
+        }
+
+        ksort($btrGroups);
+
+        return view('admin_panel.reports.claim_item_receipt.preview_btr_wise', compact(
+            'btrGroups',
+            'from_date',
+            'to_date'
+        ));
+    }
 }
+

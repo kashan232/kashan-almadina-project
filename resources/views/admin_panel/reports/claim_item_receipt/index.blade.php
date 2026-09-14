@@ -158,6 +158,7 @@
                                         <option value="all" selected>All</option>
                                         <option value="item_receipt">Item Receipt</option>
                                         <option value="credit_note">Credit Note</option>
+                                        <option value="btr_wise">BTR Wise Report</option>
                                     </select>
                                 </div>
                                 <div class="col-md-2">
