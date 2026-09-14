@@ -72,6 +72,6 @@ class StockHoldVoucher extends Model
     {
         $num = (int) preg_replace('/[^0-9]/', '', (string) $this->voucher_no);
 
-        return 'SH-' . str_pad((string) max(0, $num), 3, '0', STR_PAD_LEFT);
+        return str_pad((string) max(0, $num), 3, '0', STR_PAD_LEFT);
     }
 }
