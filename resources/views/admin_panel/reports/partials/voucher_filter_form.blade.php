@@ -72,21 +72,6 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-md-1" style="min-width: 110px;">
-                                <div class="filter-column">
-                                    <div class="filter-header">
-                                        <input type="checkbox" class="select-all" data-target="sub-head-list"> Sub Head
-                                    </div>
-                                    <div class="filter-list" id="sub-head-list">
-                                        @foreach($accountHeads as $head)
-                                            <div class="filter-item" data-head-id="{{ $head->id }}">
-                                                <input type="checkbox" name="sub_head[]" value="{{ $head->id }}">
-                                                <span>{{ $head->name }}</span>
-                                            </div>
-                                        @endforeach
-                                    </div>
-                                </div>
-                            </div>
                             <div class="col-md-2" style="min-width: 130px;">
                                 <div class="filter-column">
                                     <div class="filter-header">
@@ -97,11 +82,32 @@
                                     </div>
                                     <div class="filter-list" id="account-list">
                                         @foreach($accounts as $acc)
-                                            <div class="filter-item" data-head-id="{{ $acc->head_id }}" data-search="{{ strtolower($acc->title) }}">
+                                            <div class="filter-item" data-head-id="{{ $acc->head_id }}" data-search="{{ strtolower($acc->title) }}" data-groups="{{ is_array($acc->user_group_ids) ? implode(',', $acc->user_group_ids) : '' }}">
                                                 <input type="checkbox" name="account[]" value="{{ $acc->id }}">
                                                 <span>{{ $acc->title }}</span>
                                             </div>
                                         @endforeach
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-1" style="min-width: 110px;">
+                                <div class="filter-column">
+                                    <div class="filter-header">
+                                        <input type="checkbox" class="select-all" data-target="party-type-list"> Party Type
+                                    </div>
+                                    <div class="filter-list" id="party-type-list">
+                                        <div class="filter-item">
+                                            <input type="checkbox" name="party_type[]" value="vendor">
+                                            <span>Vendor</span>
+                                        </div>
+                                        <div class="filter-item">
+                                            <input type="checkbox" name="party_type[]" value="customer">
+                                            <span>Customer</span>
+                                        </div>
+                                        <div class="filter-item">
+                                            <input type="checkbox" name="party_type[]" value="walkin">
+                                            <span>Walking Customer</span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -115,13 +121,16 @@
                                     </div>
                                     <div class="filter-list" id="party-list">
                                         @foreach($customers as $cust)
-                                            <div class="filter-item" data-search="{{ strtolower($cust->customer_name) }}" data-groups="{{ is_array($cust->user_group_ids) ? implode(',', $cust->user_group_ids) : '' }}">
-                                                <input type="checkbox" name="party[]" value="{{ $cust->customer_type === 'Walking Customer' ? 'walkin' : 'customer' }}:{{ $cust->id }}">
+                                            @php
+                                                $partyTypeKey = $cust->customer_type === 'Walking Customer' ? 'walkin' : 'customer';
+                                            @endphp
+                                            <div class="filter-item" data-party-type="{{ $partyTypeKey }}" data-search="{{ strtolower($cust->customer_name) }}" data-groups="{{ is_array($cust->user_group_ids) ? implode(',', $cust->user_group_ids) : '' }}">
+                                                <input type="checkbox" name="party[]" value="{{ $partyTypeKey }}:{{ $cust->id }}">
                                                 <span>{{ $cust->customer_name }}</span>
                                             </div>
                                         @endforeach
                                         @foreach($vendors as $vendor)
-                                            <div class="filter-item" data-search="{{ strtolower($vendor->name) }}" data-groups="{{ is_array($vendor->user_group_ids) ? implode(',', $vendor->user_group_ids) : '' }}">
+                                            <div class="filter-item" data-party-type="vendor" data-search="{{ strtolower($vendor->name) }}" data-groups="{{ is_array($vendor->user_group_ids) ? implode(',', $vendor->user_group_ids) : '' }}">
                                                 <input type="checkbox" name="party[]" value="vendor:{{ $vendor->id }}">
                                                 <span>{{ $vendor->name }}</span>
                                             </div>
