@@ -254,6 +254,8 @@
                         html += '<th style="border:1px solid #ccc; padding:6px; text-align:left;">Voucher Type</th>';
                         html += '<th style="border:1px solid #ccc; padding:6px; text-align:center;">Voucher #</th>';
                         html += '<th style="border:1px solid #ccc; padding:6px; text-align:center;">Date</th>';
+                        html += '<th style="border:1px solid #ccc; padding:6px; text-align:center;">DO #</th>';
+                        html += '<th style="border:1px solid #ccc; padding:6px; text-align:center;">DO Date</th>';
                         html += '<th style="border:1px solid #ccc; padding:6px; text-align:left;">Party Name</th>';
                         html += '<th style="border:1px solid #ccc; padding:6px; text-align:right;">Clm Acp</th>';
                         html += '<th style="border:1px solid #ccc; padding:6px; text-align:right;">CIR</th>';
@@ -274,6 +276,8 @@
                                 html += '<td style="border:1px solid #ccc; padding:6px;">' + (entry.type || 'N/A') + '</td>';
                                 html += '<td style="border:1px solid #ccc; padding:6px; text-align:center; font-weight:bold;">' + (entry.voucher_no || 'N/A') + '</td>';
                                 html += '<td style="border:1px solid #ccc; padding:6px; text-align:center;">' + (entry.date || 'N/A') + '</td>';
+                                html += '<td style="border:1px solid #ccc; padding:6px; text-align:center;">' + (entry.do_no || '-') + '</td>';
+                                html += '<td style="border:1px solid #ccc; padding:6px; text-align:center;">' + (entry.do_date || '-') + '</td>';
                                 html += '<td style="border:1px solid #ccc; padding:6px;">' + (entry.party_name || 'N/A') + '</td>';
                                 html += '<td style="border:1px solid #ccc; padding:6px; text-align:right;">' + clmAcp + '</td>';
                                 html += '<td style="border:1px solid #ccc; padding:6px; text-align:right;">' + cir + '</td>';
@@ -281,12 +285,12 @@
                             });
 
                             html += '<tr style="font-weight:bold; background:#e3f2fd;">';
-                            html += '<td colspan="5" style="border:1px solid #ccc; padding:6px; text-align:right;">Total:</td>';
+                            html += '<td colspan="7" style="border:1px solid #ccc; padding:6px; text-align:right;">Total:</td>';
                             html += '<td style="border:1px solid #ccc; padding:6px; text-align:right;">' + sumClmAcp + '</td>';
                             html += '<td style="border:1px solid #ccc; padding:6px; text-align:right;">' + sumCir + '</td>';
                             html += '</tr>';
                         } else {
-                            html += '<tr><td colspan="7" style="border:1px solid #ccc; padding:15px; text-align:center; color:#777;">No voucher entries available.</td></tr>';
+                            html += '<tr><td colspan="9" style="border:1px solid #ccc; padding:15px; text-align:center; color:#777;">No voucher entries available.</td></tr>';
                         }
 
                         html += '</tbody></table>';
