@@ -83,13 +83,13 @@
                                             @php
                                                 $partyTypeKey = $cust->customer_type === 'Walking Customer' ? 'walkin' : 'customer';
                                             @endphp
-                                            <div class="filter-item" data-party-type="{{ $partyTypeKey }}" data-search="{{ strtolower($cust->customer_name) }}">
+                                            <div class="filter-item" data-party-type="{{ $partyTypeKey }}" data-search="{{ strtolower($cust->customer_name) }}" data-groups="{{ is_array($cust->user_group_ids) ? implode(',', $cust->user_group_ids) : '' }}">
                                                 <input type="checkbox" name="party[]" value="{{ $partyTypeKey }}:{{ $cust->id }}">
                                                 <span>{{ $cust->customer_name }}</span>
                                             </div>
                                         @endforeach
                                         @foreach($vendors as $vendor)
-                                            <div class="filter-item" data-party-type="vendor" data-search="{{ strtolower($vendor->name) }}">
+                                            <div class="filter-item" data-party-type="vendor" data-search="{{ strtolower($vendor->name) }}" data-groups="{{ is_array($vendor->user_group_ids) ? implode(',', $vendor->user_group_ids) : '' }}">
                                                 <input type="checkbox" name="party[]" value="vendor:{{ $vendor->id }}">
                                                 <span>{{ $vendor->name }}</span>
                                             </div>
@@ -232,39 +232,39 @@
     .filter-item input[type="checkbox"] { display: none; }
     #partySearch, #accountSearch { height: 24px; font-size: 11px; }
 
-    .report-settings-card .card-body { background: #fafbfc; }
+    .report-settings-card {
+        border-color: #0d47a1 !important;
+    }
+
+    .report-settings-card .card-header {
+        background-color: #0d47a1 !important;
+        letter-spacing: 0.5px;
+    }
+
     .report-field-label {
-        display: block;
         font-size: 11px;
         font-weight: 700;
-        color: #37474f;
-        margin-bottom: 4px;
-        text-transform: uppercase;
-        letter-spacing: 0.3px;
+        color: #2c3e50;
+        margin-bottom: 3px;
+        display: block;
     }
+
     .report-field-input {
-        height: 34px !important;
-        min-height: 34px !important;
+        height: 30px !important;
         font-size: 12px !important;
-        border-radius: 4px;
-        border: 1px solid #ced4da;
-        background: #fff;
+        padding-top: 2px !important;
+        padding-bottom: 2px !important;
     }
-    .report-field-input:focus {
-        border-color: #0d47a1;
-        box-shadow: 0 0 0 0.15rem rgba(13, 71, 161, 0.15);
-    }
+
     .report-date-group-label {
         display: inline-block;
-        font-size: 10px;
-        font-weight: 800;
+        font-size: 11px;
+        font-weight: 700;
         color: #0d47a1;
         text-transform: uppercase;
-        letter-spacing: 0.6px;
-        padding: 2px 8px;
-        background: #e3f2fd;
-        border-radius: 3px;
-        border-left: 3px solid #0d47a1;
+        letter-spacing: 0.5px;
+        border-bottom: 2px solid #0d47a1;
+        padding-bottom: 2px;
     }
 </style>
 @endsection
@@ -291,12 +291,29 @@
             $cb.prop('checked', !$cb.prop('checked'));
             $(this).toggleClass('selected', $cb.prop('checked'));
 
-            if ($(this).closest('#account-list').length && $cb.prop('checked')) {
-                autoSelectMainHeadForAccount($(this));
+            const listId = $(this).closest('.filter-list').attr('id');
+            if (listId === 'party-list') {
+                autoSelectPartyType($(this));
+            } else if (listId === 'account-list') {
+                autoSelectMainHead($(this));
             }
         });
 
-        function autoSelectMainHeadForAccount($accountItem) {
+        function autoSelectPartyType($partyItem) {
+            if (!$partyItem.find('input[type="checkbox"]').is(':checked')) return;
+            const partyType = String($partyItem.data('party-type') || '');
+            if (!partyType) return;
+            $('#party-type-list .filter-item').each(function() {
+                const $typeCb = $(this).find('input[name="party_type[]"]');
+                if (String($typeCb.val()) === partyType) {
+                    $typeCb.prop('checked', true);
+                    $(this).addClass('selected');
+                }
+            });
+        }
+
+        function autoSelectMainHead($accountItem) {
+            if (!$accountItem.find('input[type="checkbox"]').is(':checked')) return;
             const headId = String($accountItem.data('head-id') || '');
             if (!headId) return;
             $('#main-head-list .filter-item').each(function() {
@@ -369,14 +386,16 @@
         function filterByGroup() {
             const selectedGroups = getCheckedValues('group-list', 'user_group[]');
             if (selectedGroups.length === 0) {
-                $('#officer-list .filter-item').show();
+                $('#officer-list .filter-item, #party-list .filter-item').show();
                 return;
             }
-            $('#officer-list .filter-item').each(function() {
-                const groups = String($(this).data('groups') || '').split(',').filter(Boolean);
-                const visible = groups.length === 0 || groups.some(g => selectedGroups.includes(g));
-                $(this).toggle(visible);
-                if (!visible) uncheckItem($(this));
+            ['officer-list', 'party-list'].forEach(function(listId) {
+                $('#' + listId + ' .filter-item').each(function() {
+                    const groups = String($(this).data('groups') || '').split(',').filter(Boolean);
+                    const visible = groups.length === 0 || groups.some(g => selectedGroups.includes(g));
+                    $(this).toggle(visible);
+                    if (!visible) uncheckItem($(this));
+                });
             });
         }
 

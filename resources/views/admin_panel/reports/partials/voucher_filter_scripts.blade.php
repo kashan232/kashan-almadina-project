@@ -78,14 +78,16 @@
         function filterByGroup() {
             const selectedGroups = getCheckedValues('group-list', 'user_group[]');
             if (selectedGroups.length === 0) {
-                $('#officer-list .filter-item').show();
+                $('#officer-list .filter-item, #party-list .filter-item').show();
                 return;
             }
-            $('#officer-list .filter-item').each(function() {
-                const groups = String($(this).data('groups') || '').split(',').filter(Boolean);
-                const visible = groups.length === 0 || groups.some(g => selectedGroups.includes(g));
-                $(this).toggle(visible);
-                if (!visible) uncheckItem($(this));
+            ['officer-list', 'party-list'].forEach(function(listId) {
+                $('#' + listId + ' .filter-item').each(function() {
+                    const groups = String($(this).data('groups') || '').split(',').filter(Boolean);
+                    const visible = groups.length === 0 || groups.some(g => selectedGroups.includes(g));
+                    $(this).toggle(visible);
+                    if (!visible) uncheckItem($(this));
+                });
             });
         }
 
