@@ -150,12 +150,12 @@
             </tr>
             @foreach($group['rows'] as $i => $row)
             @php
-                $detailsJson = json_encode([
+                $detailsB64 = base64_encode(json_encode([
                     'party_name' => $group['party_name'],
                     'product_name' => $row['product_name'],
                     'opening' => $row['opening'],
-                    'entries' => $row['item_details'] ?? [],
-                ]);
+                    'entries' => array_values($row['item_details'] ?? []),
+                ], JSON_UNESCAPED_UNICODE));
             @endphp
             <tr>
                 <td class="sno">{{ $i + 1 }}</td>
@@ -163,7 +163,7 @@
                 <td class="num">{{ $fmt($row['opening']) }}</td>
                 <td class="num">
                     @if(abs($row['hold']) > 0.0001)
-                        <a href="javascript:void(0)" class="qty-detail-link" data-details="{{ htmlspecialchars($detailsJson, ENT_QUOTES, 'UTF-8') }}" style="color: #0d47a1; text-decoration: underline; font-weight: bold;">
+                        <a href="javascript:void(0)" class="qty-detail-link" data-details="{{ $detailsB64 }}" style="color: #0d47a1; text-decoration: underline; font-weight: bold;">
                             {{ $fmt($row['hold']) }}
                         </a>
                     @else
@@ -172,7 +172,7 @@
                 </td>
                 <td class="num">
                     @if(abs($row['rel']) > 0.0001)
-                        <a href="javascript:void(0)" class="qty-detail-link" data-details="{{ htmlspecialchars($detailsJson, ENT_QUOTES, 'UTF-8') }}" style="color: #0d47a1; text-decoration: underline; font-weight: bold;">
+                        <a href="javascript:void(0)" class="qty-detail-link" data-details="{{ $detailsB64 }}" style="color: #0d47a1; text-decoration: underline; font-weight: bold;">
                             {{ $fmt($row['rel']) }}
                         </a>
                     @else
@@ -181,7 +181,7 @@
                 </td>
                 <td class="num">
                     @if(abs($row['payable']) > 0.0001)
-                        <a href="javascript:void(0)" class="qty-detail-link" data-details="{{ htmlspecialchars($detailsJson, ENT_QUOTES, 'UTF-8') }}" style="color: #0d47a1; text-decoration: underline; font-weight: bold;">
+                        <a href="javascript:void(0)" class="qty-detail-link" data-details="{{ $detailsB64 }}" style="color: #0d47a1; text-decoration: underline; font-weight: bold;">
                             {{ $fmt($row['payable']) }}
                         </a>
                     @else
@@ -253,7 +253,8 @@
                     if (!rawData) return;
 
                     try {
-                        const data = JSON.parse(rawData);
+                        const jsonStr = decodeURIComponent(escape(atob(rawData)));
+                        const data = JSON.parse(jsonStr);
                         modalTitle.innerHTML = `<span style="color:#800080;">${data.party_name}</span> &mdash; <span style="color:#0d47a1;">${data.product_name}</span>`;
 
                         let html = `<table style="width:100%; border-collapse:collapse; border:1px solid #000; margin-top:10px;">
