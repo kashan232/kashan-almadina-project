@@ -176,6 +176,8 @@ class ClaimItemReceiptController extends Controller
             $voucher->date              = $request->date;
             $voucher->entry_date        = $request->entry_date ?? date('Y-m-d');
             $voucher->entry_time        = $request->entry_time ?? date('H:i');
+            $voucher->do_no             = $request->do_no;
+            $voucher->do_date           = $request->do_date;
             $voucher->from_warehouse_id = $request->from_warehouse_id;
             $voucher->to_warehouse_id   = $request->to_warehouse_id;
             $voucher->party_type        = $request->party_type;

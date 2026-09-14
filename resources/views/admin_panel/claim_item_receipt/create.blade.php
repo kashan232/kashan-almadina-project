@@ -115,7 +115,19 @@
                                 <label class="form-label small fw-bold text-muted mb-1">Voucher No</label>
                                 <input type="text" class="form-control input-sm fw-bold text-primary bg-light" value="{{ isset($activeVoucher) ? $activeVoucher->voucher_no : 'Auto-Generated' }}" readonly style="font-size: 0.8rem;">
                             </div>
-                            <div class="col-md-2" style="max-width: 150px;">
+                            <div class="col-md-2" style="max-width: 140px;">
+                                <label class="form-label small fw-bold text-muted mb-1">DO Number</label>
+                                <input type="text" name="do_no" class="form-control input-sm" value="{{ $activeVoucher->do_no ?? '' }}" placeholder="Enter DO #...">
+                            </div>
+                            <div class="col-md-2" style="max-width: 140px;">
+                                <label class="form-label small fw-bold text-muted mb-1">DO Date</label>
+                                <input type="date" name="do_date" class="form-control input-sm" value="{{ $activeVoucher->do_date ?? '' }}">
+                            </div>
+                        </div>
+
+                        <!-- Row 2: Warehouse & Party Info -->
+                        <div class="row g-2 align-items-end mb-2">
+                            <div class="col-md-2" style="max-width: 170px;">
                                 <label class="form-label small fw-bold text-danger mb-1"><i class="fa fa-minus-circle"></i> Deduct From (-) Cr</label>
                                 <select name="from_warehouse_id" id="from_warehouse_id" class="form-select input-sm" required>
                                     <option value="">Select Stock Source...</option>
@@ -124,7 +136,7 @@
                                     @endforeach
                                 </select>
                             </div>
-                            <div class="col-md-2" id="to_warehouse_col" style="max-width: 150px;">
+                            <div class="col-md-2" id="to_warehouse_col" style="max-width: 170px;">
                                 <label class="form-label small fw-bold text-success mb-1"><i class="fa fa-plus-circle"></i> Add To (+) Dr</label>
                                 <select name="to_warehouse_id" id="to_warehouse_id" class="form-select input-sm">
                                     <option value="">Select Receipt Wh...</option>
@@ -136,7 +148,7 @@
                                     @endforeach
                                 </select>
                             </div>
-                            <div class="col-md-2" style="max-width: 130px;">
+                            <div class="col-md-2" style="max-width: 140px;">
                                 <label class="form-label small fw-bold text-primary mb-1">Party Type <span class="text-danger">*</span></label>
                                 <select name="party_type" id="party_type" class="form-select input-sm" required>
                                     <option value="">Select Type...</option>
