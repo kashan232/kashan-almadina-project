@@ -89,11 +89,14 @@ class JournalVoucherReportController extends Controller
                 continue;
             }
 
-            $groupKey = 'party_' . $pType . '_' . $pId;
+            $displayVouc = preg_replace('/[^0-9]/', '', $voucher->jvid) ?: $voucher->jvid;
+            $groupKey = 'voucher_' . $voucher->id;
+            $groupLabel = 'Voucher No: ' . $displayVouc . ($voucher->entry_date ? ' | Date: ' . \Carbon\Carbon::parse($voucher->entry_date)->format('d-m-Y') : '');
+
             $lines->push((object) [
                 'group_key' => $groupKey,
-                'group_label' => $partyName,
-                'sort_group' => $partyName,
+                'group_label' => $groupLabel,
+                'sort_group' => sprintf('%s-%s', $voucher->entry_date ?? '', str_pad((string)$displayVouc, 10, '0', STR_PAD_LEFT)),
                 'voucher_no' => $voucher->jvid,
                 'voucher_date' => $voucher->entry_date,
                 'reference_no' => $voucher->reference_no ?? '',
