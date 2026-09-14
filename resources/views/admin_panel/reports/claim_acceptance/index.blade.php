@@ -118,22 +118,24 @@
                                         <input type="text" class="form-control form-control-sm" id="partySearch" placeholder="Search party..." style="height: 24px; font-size: 11px;">
                                     </div>
                                     <div class="filter-list" id="party-list">
-                                        @foreach($customers as $cust)
-                                            <div class="filter-item"
-                                                 data-search="{{ strtolower($cust->customer_name) }}"
-                                                 data-party-type="customer">
-                                                <input type="checkbox" name="party[]" value="customer:{{ $cust->id }}">
-                                                <span>{{ $cust->customer_name }}</span>
-                                            </div>
-                                        @endforeach
-                                        @foreach($vendors as $vendor)
-                                            <div class="filter-item"
-                                                 data-search="{{ strtolower($vendor->name) }}"
-                                                 data-party-type="vendor">
-                                                <input type="checkbox" name="party[]" value="vendor:{{ $vendor->id }}">
-                                                <span>{{ $vendor->name }}</span>
-                                            </div>
-                                        @endforeach
+                                         @foreach($customers as $cust)
+                                             <div class="filter-item"
+                                                  data-search="{{ strtolower($cust->customer_name) }}"
+                                                  data-party-type="customer"
+                                                  data-groups="{{ is_array($cust->user_group_ids) ? implode(',', $cust->user_group_ids) : '' }}">
+                                                 <input type="checkbox" name="party[]" value="customer:{{ $cust->id }}">
+                                                 <span>{{ $cust->customer_name }}</span>
+                                             </div>
+                                         @endforeach
+                                         @foreach($vendors as $vendor)
+                                             <div class="filter-item"
+                                                  data-search="{{ strtolower($vendor->name) }}"
+                                                  data-party-type="vendor"
+                                                  data-groups="{{ is_array($vendor->user_group_ids) ? implode(',', $vendor->user_group_ids) : '' }}">
+                                                 <input type="checkbox" name="party[]" value="vendor:{{ $vendor->id }}">
+                                                 <span>{{ $vendor->name }}</span>
+                                             </div>
+                                         @endforeach
                                     </div>
                                 </div>
                             </div>
@@ -281,23 +283,44 @@
 
         function filterByGroup() {
             const selectedGroups = getCheckedValues('group-list', 'user_group[]');
-            if (selectedGroups.length === 0) {
-                $('#officer-list .filter-item, #claimfrom-list .filter-item, #acceptin-list .filter-item').show();
-                return;
-            }
+            const selectedPartyTypes = getCheckedValues('partytype-list', 'party_type[]');
+            const partyTerm = ($('#partySearch').val() || '').toLowerCase();
+
             ['officer-list', 'claimfrom-list', 'acceptin-list'].forEach(function(listId) {
                 $('#' + listId + ' .filter-item').each(function() {
                     const groups = String($(this).data('groups') || '').split(',').filter(Boolean);
-                    const visible = groups.length === 0 || groups.some(g => selectedGroups.includes(g));
+                    const visible = selectedGroups.length === 0 || groups.length === 0 || groups.some(g => selectedGroups.includes(g));
                     $(this).toggle(visible);
                     if (!visible) uncheckItem($(this));
                 });
             });
+
+            $('#party-list .filter-item').each(function() {
+                const $item = $(this);
+                const groups = String($item.data('groups') || '').split(',').filter(Boolean);
+                const partyType = String($item.data('party-type') || '');
+                const searchText = String($item.data('search') || '');
+
+                const groupMatch = selectedGroups.length === 0 || groups.length === 0 || groups.some(g => selectedGroups.includes(g));
+                const typeMatch = selectedPartyTypes.length === 0 || selectedPartyTypes.includes(partyType);
+                const searchMatch = !partyTerm || searchText.includes(partyTerm);
+                const visible = groupMatch && typeMatch && searchMatch;
+
+                $item.toggle(visible);
+                if (!visible) uncheckItem($item);
+            });
         }
 
-        $('#group-list .filter-item').on('click', function() {
+        $('#group-list .filter-item, #partytype-list .filter-item').on('click', function() {
             setTimeout(filterByGroup, 50);
         });
+
+        $('#partySearch').on('keyup', filterByGroup);
+
+        setTimeout(() => {
+            $('#globalSelectAll').prop('checked', true).trigger('change');
+            filterByGroup();
+        }, 300);
     });
 </script>
 @endsection
