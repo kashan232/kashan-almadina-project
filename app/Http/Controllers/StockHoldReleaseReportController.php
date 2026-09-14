@@ -45,13 +45,21 @@ class StockHoldReleaseReportController extends Controller
         $request->validate([
             'from_date' => 'required|date',
             'to_date' => 'required|date|after_or_equal:from_date',
-            'report_type' => 'required|in:party,item,detailed',
+            'report_type' => 'required|in:party,item,detailed,hold_only,release_only',
         ]);
 
         $data = $builder->build($request);
 
         if ($request->report_type === 'detailed') {
             return view('admin_panel.reports.stock_hold_release.preview_detailed', $data);
+        }
+
+        if ($request->report_type === 'hold_only') {
+            return view('admin_panel.reports.stock_hold_release.preview_hold_only', $data);
+        }
+
+        if ($request->report_type === 'release_only') {
+            return view('admin_panel.reports.stock_hold_release.preview_release_only', $data);
         }
 
         return view('admin_panel.reports.stock_hold_release.preview', $data);

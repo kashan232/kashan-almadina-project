@@ -134,6 +134,8 @@
                                         <option value="party" selected>Customer / Party Wise (Main: Party, Sub: Item)</option>
                                         <option value="item">Hold and Summary Report</option>
                                         <option value="detailed">Detailed Stock Hold and Release Statement</option>
+                                        <option value="hold_only">Stock Hold Report</option>
+                                        <option value="release_only">Stock Release Report</option>
                                     </select>
                                 </div>
                                 <div class="col-md-2">

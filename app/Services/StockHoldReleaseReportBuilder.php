@@ -27,6 +27,14 @@ class StockHoldReleaseReportBuilder
             return $this->buildDetailedStatement($fromDate, $toDate);
         }
 
+        if ($reportType === 'hold_only') {
+            return $this->buildHoldOnlyReport($fromDate, $toDate);
+        }
+
+        if ($reportType === 'release_only') {
+            return $this->buildReleaseOnlyReport($fromDate, $toDate);
+        }
+
         $buckets = [];
 
         $this->collectHoldMovements($buckets, $fromDate, $toDate);
@@ -54,7 +62,7 @@ class StockHoldReleaseReportBuilder
     private function extractFilters(Request $request): array
     {
         return [
-            'report_type' => in_array($request->report_type, ['party', 'item', 'detailed'], true) ? $request->report_type : 'party',
+            'report_type' => in_array($request->report_type, ['party', 'item', 'detailed', 'hold_only', 'release_only'], true) ? $request->report_type : 'party',
             'user_groups' => $request->user_group ?? [],
             'warehouses' => $request->warehouse ?? [],
             'parties' => $request->party ?? [],
@@ -881,6 +889,195 @@ class StockHoldReleaseReportBuilder
             'from_date' => $fromDate,
             'to_date' => $toDate,
             'report_type' => 'detailed',
+            'generated_at' => now(),
+        ];
+    }
+
+    private function resolveHoldTypeLabel(StockHold $hold): string
+    {
+        if (!empty(data_get($hold->meta, 'claim_no')) || !empty(data_get($hold->meta, 'claim_id')) || str_contains((string) $hold->remarks, 'Customer Claim Hold')) {
+            return 'Claim';
+        }
+        if ($hold->sale || $hold->sale_id) {
+            return 'Sale';
+        }
+
+        return 'Hold';
+    }
+
+    private function buildHoldOnlyReport(?string $fromDate, ?string $toDate): array
+    {
+        $rawHolds = collect();
+
+        StockHold::withoutGlobalScopes()
+            ->whereNull('deleted_at')
+            ->with([
+                'voucher.partyVendor:id,name',
+                'voucher.partyCustomer:id,customer_name',
+                'partyVendor:id,name',
+                'partyCustomer:id,customer_name',
+                'product:id,name',
+                'sale:id,invoice_no',
+            ])
+            ->where(function ($q) {
+                $q->whereHas('voucher', function ($v) {
+                    $v->withoutGlobalScopes()->where('status', 'Posted');
+                    $this->applyUserGroupFilter($v);
+                })->orWhere(function ($sub) {
+                    $sub->whereNull('stock_hold_voucher_id')
+                        ->where(function ($s) {
+                            $s->whereIn('status', ['Posted', 'posted', '0', 0])
+                              ->orWhereNotNull('meta->claim_id')
+                              ->orWhereNotNull('sale_id');
+                        });
+                });
+            })
+            ->chunkById(300, function ($items) use (&$rawHolds, $fromDate, $toDate) {
+                foreach ($items as $hold) {
+                    if (!$hold->product_id) continue;
+                    $qty = $hold->grossHoldQty();
+                    if ($qty <= 0) continue;
+
+                    [$partyType, $partyId, $partyName] = $this->resolvePartyFromHold($hold);
+                    if (!$this->partyMatches($partyType, $partyId) || !$this->productMatches((int) $hold->product_id) || !$this->warehouseMatches((int) ($hold->warehouse_id ?? $hold->voucher?->warehouse_id ?? 0))) {
+                        continue;
+                    }
+
+                    $voucher = $hold->voucher;
+                    $dateStr = $this->pickDate($voucher ?: $hold, ['entry_date', 'date']);
+                    if (!$this->dateInPeriod($dateStr, $fromDate, $toDate)) {
+                        continue;
+                    }
+
+                    [$refType, $refNo] = $this->resolveDetailedRefCode($hold);
+                    $typeLabel = $this->resolveHoldTypeLabel($hold);
+                    $invoiceNo = $hold->sale?->invoice_no ?? ($hold->voucher?->voucher_no ?? 0);
+
+                    $rawHolds->push([
+                        'party_key' => $partyType . ':' . $partyId,
+                        'party_name' => $partyName,
+                        'hold_id' => $refNo,
+                        'hold_date' => Carbon::parse($dateStr)->format('d-m-y'),
+                        'invoice_no' => $invoiceNo ?: 0,
+                        'type' => $typeLabel,
+                        'product_name' => $hold->product->name ?? ('Item #' . $hold->product_id),
+                        'qty' => $qty,
+                    ]);
+                }
+            });
+
+        $groupedParties = $rawHolds->groupBy('party_key');
+        $parties = [];
+        $grandQty = 0;
+        $serialCounter = 1;
+
+        foreach ($groupedParties as $partyKey => $rows) {
+            $partyName = $rows->first()['party_name'];
+            $partyRows = [];
+
+            foreach ($rows as $r) {
+                $r['sno'] = $serialCounter++;
+                $partyRows[] = $r;
+                $grandQty += (int) $r['qty'];
+            }
+
+            $parties[] = [
+                'party_name' => $partyName,
+                'rows' => $partyRows,
+            ];
+        }
+
+        return [
+            'parties' => $parties,
+            'grand_qty' => $grandQty,
+            'from_date' => $fromDate,
+            'to_date' => $toDate,
+            'report_type' => 'hold_only',
+            'generated_at' => now(),
+        ];
+    }
+
+    private function buildReleaseOnlyReport(?string $fromDate, ?string $toDate): array
+    {
+        $rawReleases = collect();
+
+        StockRelease::withoutGlobalScopes()
+            ->with([
+                'voucher.partyVendor:id,name',
+                'voucher.partyCustomer:id,customer_name',
+                'hold.voucher.partyVendor:id,name',
+                'hold.voucher.partyCustomer:id,customer_name',
+                'hold.partyVendor:id,name',
+                'hold.partyCustomer:id,customer_name',
+                'product:id,name',
+            ])
+            ->where(function ($q) {
+                $q->whereHas('voucher', function ($v) {
+                    $v->withoutGlobalScopes()->where('status', 'Posted');
+                    $this->applyUserGroupFilter($v);
+                })->orWhere(function ($sub) {
+                    $sub->whereNull('stock_release_voucher_id')
+                        ->whereIn('status', ['Posted', 'posted']);
+                });
+            })
+            ->chunkById(300, function ($items) use (&$rawReleases, $fromDate, $toDate) {
+                foreach ($items as $release) {
+                    $qty = (float) $release->release_qty;
+                    if ($qty <= 0 || !$release->product_id) continue;
+
+                    [$partyType, $partyId, $partyName] = $this->resolvePartyFromRelease($release);
+                    if (!$this->partyMatches($partyType, $partyId) || !$this->productMatches((int) $release->product_id) || !$this->warehouseMatches((int) ($release->warehouse_id ?? $release->voucher?->warehouse_id ?? $release->hold?->warehouse_id ?? 0))) {
+                        continue;
+                    }
+
+                    $voucher = $release->voucher;
+                    $dateStr = $this->pickDate($voucher ?: $release, ['date', 'entry_date']);
+                    if (!$this->dateInPeriod($dateStr, $fromDate, $toDate)) {
+                        continue;
+                    }
+
+                    [$refType, $refNo] = $this->resolveReleaseRefCode($release);
+                    $holdId = $release->hold?->voucher?->voucher_no ?? ($release->hold_id ?? 0);
+
+                    $rawReleases->push([
+                        'party_key' => $partyType . ':' . $partyId,
+                        'party_name' => $partyName,
+                        'release_id' => $refNo,
+                        'release_date' => Carbon::parse($dateStr)->format('d-m-y'),
+                        'hold_id' => $holdId ?: 0,
+                        'product_name' => $release->product->name ?? ('Item #' . $release->product_id),
+                        'qty' => $qty,
+                    ]);
+                }
+            });
+
+        $groupedParties = $rawReleases->groupBy('party_key');
+        $parties = [];
+        $grandQty = 0;
+        $serialCounter = 1;
+
+        foreach ($groupedParties as $partyKey => $rows) {
+            $partyName = $rows->first()['party_name'];
+            $partyRows = [];
+
+            foreach ($rows as $r) {
+                $r['sno'] = $serialCounter++;
+                $partyRows[] = $r;
+                $grandQty += (int) $r['qty'];
+            }
+
+            $parties[] = [
+                'party_name' => $partyName,
+                'rows' => $partyRows,
+            ];
+        }
+
+        return [
+            'parties' => $parties,
+            'grand_qty' => $grandQty,
+            'from_date' => $fromDate,
+            'to_date' => $toDate,
+            'report_type' => 'release_only',
             'generated_at' => now(),
         ];
     }
