@@ -403,7 +403,7 @@ $(document).ready(function() {
     function applyClaimTypeLayout(type) {
         if(type === 'credit') {
             $('#docTypeBadge').html('<i class="fa fa-money me-1"></i> TYPE: CREDIT NOTE');
-            $('.credit-only-field').show();
+            $('.credit-only-field').show().css('display', '');
             $('#to_warehouse_col').addClass('d-none');
             $('#to_warehouse_id').prop('required', false);
             $('#mainClaimForm').attr('action', "{{ route('claim-credit-note.ajax-save') }}");
@@ -488,9 +488,9 @@ $(document).ready(function() {
             <td class="text-center"><input type="text" name="btr_no[]" class="form-control input-sm text-center bg-light" value="${btr}" readonly></td>
             <td class="text-center fw-bold text-primary">${pid} <input type="hidden" name="product_id[]" value="${pid}"></td>
             <td>${name}</td>
-            <td class="credit-only-field" style="${isCredit ? '' : 'display:none;'}"><input type="number" name="price[]" class="form-control input-sm text-center line-input price" value="${parseFloat(price).toFixed(2)}" step="any"></td>
-            <td class="credit-only-field" style="${isCredit ? '' : 'display:none;'}"><input type="number" name="retail_price[]" class="form-control input-sm text-center line-input retail_price" value="${parseFloat(retail).toFixed(2)}" step="any"></td>
-            <td class="credit-only-field" style="${isCredit ? '' : 'display:none;'}">
+            <td class="credit-only-field"><input type="number" name="price[]" class="form-control input-sm text-center line-input price" value="${parseFloat(price).toFixed(2)}" step="any"></td>
+            <td class="credit-only-field"><input type="number" name="retail_price[]" class="form-control input-sm text-center line-input retail_price" value="${parseFloat(retail).toFixed(2)}" step="any"></td>
+            <td class="credit-only-field">
                 <div class="input-group input-group-sm">
                     <input type="number" name="discount_percent[]" class="form-control text-center line-input discount_percent" value="0" step="any" placeholder="%">
                     <span class="input-group-text px-1" style="font-size: 0.7rem;">%</span>
@@ -498,8 +498,8 @@ $(document).ready(function() {
                 </div>
             </td>
             <td class="text-center"><input type="number" name="${isCredit ? 'qty[]' : 'quantity[]'}" class="form-control input-sm text-center border-success line-input quantity" value="${qty}" step="any" min="0"></td>
-            <td class="credit-only-field" style="${isCredit ? '' : 'display:none;'}"><input type="text" name="line_amount[]" class="form-control input-sm text-end bg-light row-rate" value="0.00" readonly></td>
-            <td class="credit-only-field" style="${isCredit ? '' : 'display:none;'}"><input type="text" name="line_total[]" class="form-control input-sm text-end fw-bold bg-light row-total" value="0.00" readonly></td>
+            <td class="credit-only-field"><input type="text" name="line_amount[]" class="form-control input-sm text-end bg-light row-rate" value="0.00" readonly></td>
+            <td class="credit-only-field"><input type="text" name="line_total[]" class="form-control input-sm text-end fw-bold bg-light row-total" value="0.00" readonly></td>
             <td class="text-center"><button type="button" class="btn btn-sm btn-link text-danger remove-row p-0"><i class="fa fa-trash fs-5"></i></button></td>
         </tr>`;
         $('#claimItemRows').append(row);
