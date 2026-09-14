@@ -152,7 +152,7 @@ class StockHold extends Model
             ->when($warehouseId !== null, fn ($q) => $q->where('warehouse_id', $warehouseId))
             ->sum('release_qty');
 
-        return max(0, $totalGrossHolds - $totalReleases);
+        return $totalGrossHolds - $totalReleases;
     }
 
     /** Original qty on the hold document (never reduced when release is posted). */
