@@ -507,9 +507,20 @@ class ClaimItemReceiptReportController extends Controller
                     'product_name' => $ai->product?->name ?? 'N/A',
                     'clm_acp' => 0.0,
                     'cir' => 0.0,
+                    'entries' => [],
                 ];
             }
-            $btrGroups[$btrNo][$productId]['clm_acp'] += (float) ($ai->quantity ?? 0);
+            $qty = (float) ($ai->quantity ?? 0);
+            $btrGroups[$btrNo][$productId]['clm_acp'] += $qty;
+            $btrGroups[$btrNo][$productId]['entries'][] = [
+                'type' => 'Claim Acceptance',
+                'voucher_no' => $ai->voucher?->voucher_no ?? 'N/A',
+                'date' => $ai->voucher?->date ? date('d-m-Y', strtotime($ai->voucher->date)) : 'N/A',
+                'party_name' => $ai->voucher ? $ai->voucher->partyName() : 'N/A',
+                'btr_no' => $ai->btr_no,
+                'clm_acp' => $qty,
+                'cir' => 0,
+            ];
         }
 
         foreach ($receiptItems as $ri) {
@@ -527,9 +538,20 @@ class ClaimItemReceiptReportController extends Controller
                     'product_name' => $ri->product?->name ?? 'N/A',
                     'clm_acp' => 0.0,
                     'cir' => 0.0,
+                    'entries' => [],
                 ];
             }
-            $btrGroups[$btrNo][$productId]['cir'] += (float) ($ri->quantity ?? 0);
+            $qty = (float) ($ri->quantity ?? 0);
+            $btrGroups[$btrNo][$productId]['cir'] += $qty;
+            $btrGroups[$btrNo][$productId]['entries'][] = [
+                'type' => 'Claim Item Receipt',
+                'voucher_no' => $ri->receipt?->voucher_no ?? 'N/A',
+                'date' => $ri->receipt?->date ? date('d-m-Y', strtotime($ri->receipt->date)) : 'N/A',
+                'party_name' => $ri->receipt ? $ri->receipt->partyName() : 'N/A',
+                'btr_no' => $ri->btr_no,
+                'clm_acp' => 0,
+                'cir' => $qty,
+            ];
         }
 
         ksort($btrGroups);

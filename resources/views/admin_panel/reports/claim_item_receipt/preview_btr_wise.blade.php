@@ -92,6 +92,12 @@
             cursor: pointer;
             font-weight: bold;
         }
+        .qty-link {
+            color: #0d47a1;
+            text-decoration: underline;
+            font-weight: bold;
+            cursor: pointer;
+        }
         @media print {
             .no-print { display: none; }
             body { padding: 0; }
@@ -142,13 +148,44 @@
                         $totClmAcp += $item['clm_acp'];
                         $totCir += $item['cir'];
                         $totBal += $bal;
+
+                        $detailsB64 = base64_encode(json_encode([
+                            'btr_no' => $btrNo,
+                            'brand_name' => $item['brand_name'],
+                            'product_name' => $item['product_name'],
+                            'entries' => array_values($item['entries'] ?? []),
+                        ], JSON_UNESCAPED_UNICODE));
                     @endphp
                     <tr>
                         <td>{{ $item['brand_name'] }}</td>
                         <td>{{ $item['product_name'] }}</td>
-                        <td style="text-align: right;">{{ number_format($item['clm_acp'], 0) }}</td>
-                        <td style="text-align: right;">{{ number_format($item['cir'], 0) }}</td>
-                        <td style="text-align: right;">{{ number_format($bal, 0) }}</td>
+                        <td style="text-align: right;">
+                            @if($item['clm_acp'] > 0)
+                                <a href="javascript:void(0)" class="qty-link qty-detail-link" data-details="{{ $detailsB64 }}">
+                                    {{ number_format($item['clm_acp'], 0) }}
+                                </a>
+                            @else
+                                0
+                            @endif
+                        </td>
+                        <td style="text-align: right;">
+                            @if($item['cir'] > 0)
+                                <a href="javascript:void(0)" class="qty-link qty-detail-link" data-details="{{ $detailsB64 }}">
+                                    {{ number_format($item['cir'], 0) }}
+                                </a>
+                            @else
+                                0
+                            @endif
+                        </td>
+                        <td style="text-align: right;">
+                            @if(abs($bal) > 0)
+                                <a href="javascript:void(0)" class="qty-link qty-detail-link" data-details="{{ $detailsB64 }}">
+                                    {{ number_format($bal, 0) }}
+                                </a>
+                            @else
+                                0
+                            @endif
+                        </td>
                     </tr>
                 @endforeach
             </tbody>
@@ -169,5 +206,99 @@
         </table>
     @endforelse
 
+    <!-- Detail Modal -->
+    <div id="detailModal" style="display:none; position:fixed; z-index:9999; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.5);">
+        <div style="background:#fff; width:80%; max-width:850px; margin:50px auto; padding:20px; border-radius:6px; box-shadow:0 5px 15px rgba(0,0,0,0.3); max-height:85vh; overflow-y:auto;">
+            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:2px solid #0d47a1; padding-bottom:10px; margin-bottom:15px;">
+                <h3 id="modalTitle" style="margin:0; color:#0d47a1; font-size:16px;">BTR Voucher Details</h3>
+                <span id="closeModal" style="font-size:24px; font-weight:bold; cursor:pointer; color:#888;">&times;</span>
+            </div>
+            <div id="modalContent"></div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const modal = document.getElementById('detailModal');
+            const closeModalBtn = document.getElementById('closeModal');
+            const modalTitle = document.getElementById('modalTitle');
+            const modalContent = document.getElementById('modalContent');
+
+            closeModalBtn.onclick = function() {
+                modal.style.display = 'none';
+            };
+
+            window.onclick = function(event) {
+                if (event.target === modal) {
+                    modal.style.display = 'none';
+                }
+            };
+
+            document.querySelectorAll('.qty-detail-link').forEach(function(link) {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const rawB64 = this.getAttribute('data-details');
+                    if (!rawB64) return;
+
+                    try {
+                        const binaryStr = atob(rawB64);
+                        const bytes = Uint8Array.from(binaryStr, c => c.charCodeAt(0));
+                        const decodedStr = new TextDecoder('utf-8').decode(bytes);
+                        const data = JSON.parse(decodedStr);
+
+                        modalTitle.textContent = 'BTR Details - BTR #' + data.btr_no + ' (' + data.brand_name + ' - ' + data.product_name + ')';
+
+                        let html = '<table style="width:100%; border-collapse:collapse; font-size:11px; margin-top:10px;">';
+                        html += '<thead><tr style="background:#0d47a1; color:#fff;">';
+                        html += '<th style="border:1px solid #ccc; padding:6px; text-align:center;">#</th>';
+                        html += '<th style="border:1px solid #ccc; padding:6px; text-align:left;">Voucher Type</th>';
+                        html += '<th style="border:1px solid #ccc; padding:6px; text-align:center;">Voucher #</th>';
+                        html += '<th style="border:1px solid #ccc; padding:6px; text-align:center;">Date</th>';
+                        html += '<th style="border:1px solid #ccc; padding:6px; text-align:left;">Party Name</th>';
+                        html += '<th style="border:1px solid #ccc; padding:6px; text-align:right;">Clm Acp</th>';
+                        html += '<th style="border:1px solid #ccc; padding:6px; text-align:right;">CIR</th>';
+                        html += '</tr></thead><tbody>';
+
+                        let sumClmAcp = 0;
+                        let sumCir = 0;
+
+                        if (data.entries && data.entries.length > 0) {
+                            data.entries.forEach(function(entry, idx) {
+                                const clmAcp = parseFloat(entry.clm_acp || 0);
+                                const cir = parseFloat(entry.cir || 0);
+                                sumClmAcp += clmAcp;
+                                sumCir += cir;
+
+                                html += '<tr>';
+                                html += '<td style="border:1px solid #ccc; padding:6px; text-align:center;">' + (idx + 1) + '</td>';
+                                html += '<td style="border:1px solid #ccc; padding:6px;">' + (entry.type || 'N/A') + '</td>';
+                                html += '<td style="border:1px solid #ccc; padding:6px; text-align:center; font-weight:bold;">' + (entry.voucher_no || 'N/A') + '</td>';
+                                html += '<td style="border:1px solid #ccc; padding:6px; text-align:center;">' + (entry.date || 'N/A') + '</td>';
+                                html += '<td style="border:1px solid #ccc; padding:6px;">' + (entry.party_name || 'N/A') + '</td>';
+                                html += '<td style="border:1px solid #ccc; padding:6px; text-align:right;">' + clmAcp + '</td>';
+                                html += '<td style="border:1px solid #ccc; padding:6px; text-align:right;">' + cir + '</td>';
+                                html += '</tr>';
+                            });
+
+                            html += '<tr style="font-weight:bold; background:#e3f2fd;">';
+                            html += '<td colspan="5" style="border:1px solid #ccc; padding:6px; text-align:right;">Total:</td>';
+                            html += '<td style="border:1px solid #ccc; padding:6px; text-align:right;">' + sumClmAcp + '</td>';
+                            html += '<td style="border:1px solid #ccc; padding:6px; text-align:right;">' + sumCir + '</td>';
+                            html += '</tr>';
+                        } else {
+                            html += '<tr><td colspan="7" style="border:1px solid #ccc; padding:15px; text-align:center; color:#777;">No voucher entries available.</td></tr>';
+                        }
+
+                        html += '</tbody></table>';
+                        modalContent.innerHTML = html;
+                        modal.style.display = 'block';
+                    } catch(err) {
+                        console.error('Error parsing BTR details:', err);
+                        alert('Unable to load details.');
+                    }
+                });
+            });
+        });
+    </script>
 </body>
 </html>
