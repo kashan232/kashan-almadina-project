@@ -97,6 +97,13 @@
 @section('scripts')
 <script>
     $(document).ready(function() {
+        $('#exampleModal').on('shown.bs.modal', function () {
+            $('#category_id').select2({
+                dropdownParent: $('#exampleModal'),
+                width: '100%'
+            });
+        });
+
         $(document).on('click', '#reset', function() {
             $('#edit_id').val('');
             $('#name').val('');
