@@ -92,8 +92,11 @@ class ExpenseVoucherReportController extends Controller
             }
 
             $account = !empty($accountId) ? Account::find($accountId) : null;
-            $groupKey = $reportType === 'sub_head' ? 'head_' . ($headId ?: '0') : 'party_' . $voucher->type . '_' . $voucher->party_id;
-            $groupLabel = $reportType === 'sub_head' ? strtoupper($headName) : $partyName;
+            $subHeadLabel = strtoupper($account->title ?? $headName);
+            $groupKey = in_array($reportType, ['sub_head', 'main_head'], true)
+                ? 'account_' . ($accountId ?: '0')
+                : 'party_' . $voucher->type . '_' . $voucher->party_id;
+            $groupLabel = in_array($reportType, ['sub_head', 'main_head'], true) ? $subHeadLabel : $partyName;
 
             $lines->push((object) [
                 'group_key' => $groupKey,
@@ -102,7 +105,7 @@ class ExpenseVoucherReportController extends Controller
                 'voucher_no' => $voucher->evid,
                 'voucher_date' => $voucher->entry_date,
                 'narration' => $this->resolveNarration($narrId),
-                'sub_head_name' => $headName,
+                'sub_head_name' => $subHeadLabel,
                 'party_name' => $partyName,
                 'bank_details' => $account->title ?? '-',
                 'amount' => $amount,
