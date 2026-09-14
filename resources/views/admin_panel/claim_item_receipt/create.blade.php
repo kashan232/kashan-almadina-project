@@ -67,7 +67,7 @@
                         <label class="form-label mb-0 fw-bold text-primary" style="font-size:0.9rem;">
                             <i class="fa fa-list-alt me-1"></i> Claim Type:
                         </label>
-                        <select id="claim_type" class="form-select form-select-sm fw-bold border-primary" style="width:180px;" {{ ($isViewMode || isset($activeVoucher)) ? 'disabled' : '' }}>
+                        <select id="claim_type" class="form-select form-select-sm fw-bold border-primary" style="width:180px;" {{ $isViewMode ? 'disabled' : '' }}>
                             <option value="receipt" {{ $initialClaimType === 'receipt' ? 'selected' : '' }}>Item Receipt</option>
                             <option value="credit" {{ $initialClaimType === 'credit' ? 'selected' : '' }}>Credit Note</option>
                         </select>
