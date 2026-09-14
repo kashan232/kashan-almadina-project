@@ -118,7 +118,8 @@
                                         @foreach($customers as $cust)
                                             <div class="filter-item"
                                                  data-search="{{ strtolower($cust->customer_name) }}"
-                                                 data-party-type="customer">
+                                                 data-party-type="customer"
+                                                 data-groups="{{ is_array($cust->user_group_ids) ? implode(',', $cust->user_group_ids) : '' }}">
                                                 <input type="checkbox" name="party[]" value="customer:{{ $cust->id }}">
                                                 <span>{{ $cust->customer_name }}</span>
                                             </div>
@@ -126,7 +127,8 @@
                                         @foreach($vendors as $vendor)
                                             <div class="filter-item"
                                                  data-search="{{ strtolower($vendor->name) }}"
-                                                 data-party-type="vendor">
+                                                 data-party-type="vendor"
+                                                 data-groups="{{ is_array($vendor->user_group_ids) ? implode(',', $vendor->user_group_ids) : '' }}">
                                                 <input type="checkbox" name="party[]" value="vendor:{{ $vendor->id }}">
                                                 <span>{{ $vendor->name }}</span>
                                             </div>
@@ -269,9 +271,20 @@
             const itemSearch = ($('#itemSearch').val() || '').toLowerCase();
             const partySearch = ($('#partySearch').val() || '').toLowerCase();
 
-            $('#officer-list .filter-item, #claimwh-list .filter-item').each(function() {
+            $('#officer-list .filter-item, #claimwh-list .filter-item, #party-list .filter-item').each(function() {
                 const $item = $(this);
-                const show = matchesGroups($item, selectedGroups);
+                const partyType = String($item.data('party-type') || '');
+                const searchText = String($item.data('search') || '');
+                const isPartyItem = $item.closest('#party-list').length > 0;
+                
+                let show = matchesGroups($item, selectedGroups);
+
+                if (isPartyItem) {
+                    const typeMatch = !selectedPartyTypes.length || selectedPartyTypes.includes(partyType);
+                    const searchMatch = !partySearch || searchText.indexOf(partySearch) > -1;
+                    show = show && typeMatch && searchMatch;
+                }
+
                 $item.toggle(show);
                 if (!show) uncheckItem($item);
             });
@@ -284,15 +297,6 @@
                 if (!show) uncheckItem($item);
             });
 
-            $('#party-list .filter-item').each(function() {
-                const $item = $(this);
-                const partyType = String($item.data('party-type') || '');
-                const searchText = String($item.data('search') || '');
-                const typeMatch = !selectedPartyTypes.length || selectedPartyTypes.includes(partyType);
-                const searchMatch = !partySearch || searchText.indexOf(partySearch) > -1;
-                const show = typeMatch && searchMatch;
-                $item.toggle(show);
-                if (!show) uncheckItem($item);
             });
         }
 
