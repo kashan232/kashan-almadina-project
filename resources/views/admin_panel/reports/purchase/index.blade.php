@@ -366,8 +366,6 @@
                 $item.toggle(show);
                 if (!show) uncheckItem($item);
             });
-
-            });
         }
 
         $(document).on('click', '.filter-item', function(e) {
