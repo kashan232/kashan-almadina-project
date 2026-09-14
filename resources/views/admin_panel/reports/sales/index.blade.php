@@ -172,22 +172,24 @@
                                         <input type="text" class="form-control form-control-sm" id="partySearch" placeholder="Search party..." style="height: 24px; font-size: 11px;">
                                     </div>
                                     <div class="filter-list" id="party-list">
-                                        @foreach($customers as $cust)
-                                            <div class="filter-item"
-                                                 data-search="{{ strtolower($cust->customer_name) }}"
-                                                 data-party-type="{{ $cust->customer_type }}">
-                                                <input type="checkbox" name="party[]" value="{{ $cust->id }}">
-                                                <span>{{ $cust->customer_name }}</span>
-                                            </div>
-                                        @endforeach
-                                        @foreach($vendors as $vendor)
-                                            <div class="filter-item"
-                                                 data-search="{{ strtolower($vendor->name) }}"
-                                                 data-party-type="Vendor">
-                                                <input type="checkbox" name="party[]" value="{{ $vendor->id }}">
-                                                <span>{{ $vendor->name }}</span>
-                                            </div>
-                                        @endforeach
+                                         @foreach($customers as $cust)
+                                             <div class="filter-item"
+                                                  data-search="{{ strtolower($cust->customer_name) }}"
+                                                  data-party-type="{{ $cust->customer_type }}"
+                                                  data-groups="{{ is_array($cust->user_group_ids) ? implode(',', $cust->user_group_ids) : '' }}">
+                                                 <input type="checkbox" name="party[]" value="{{ $cust->id }}">
+                                                 <span>{{ $cust->customer_name }}</span>
+                                             </div>
+                                         @endforeach
+                                         @foreach($vendors as $vendor)
+                                             <div class="filter-item"
+                                                  data-search="{{ strtolower($vendor->name) }}"
+                                                  data-party-type="Vendor"
+                                                  data-groups="{{ is_array($vendor->user_group_ids) ? implode(',', $vendor->user_group_ids) : '' }}">
+                                                 <input type="checkbox" name="party[]" value="{{ $vendor->id }}">
+                                                 <span>{{ $vendor->name }}</span>
+                                             </div>
+                                         @endforeach
                                     </div>
                                 </div>
                             </div>
@@ -397,9 +399,20 @@
             const itemSearch = ($('#itemSearch').val() || '').toLowerCase();
             const partySearch = ($('#partySearch').val() || '').toLowerCase();
 
-            $('#officer-list .filter-item, #warehouse-list .filter-item').each(function() {
+            $('#officer-list .filter-item, #warehouse-list .filter-item, #party-list .filter-item').each(function() {
                 const $item = $(this);
-                const show = matchesGroups($item, selectedGroups);
+                const partyType = String($item.data('party-type') || '');
+                const searchText = String($item.data('search') || '');
+                const isPartyItem = $item.closest('#party-list').length > 0;
+                
+                let show = matchesGroups($item, selectedGroups);
+
+                if (isPartyItem) {
+                    const typeMatch = !selectedPartyTypes.length || selectedPartyTypes.includes(partyType);
+                    const searchMatch = !partySearch || searchText.indexOf(partySearch) > -1;
+                    show = show && typeMatch && searchMatch;
+                }
+
                 $item.toggle(show);
                 if (!show) uncheckItem($item);
             });
@@ -423,15 +436,6 @@
                 if (!show) uncheckItem($item);
             });
 
-            $('#party-list .filter-item').each(function() {
-                const $item = $(this);
-                const partyType = String($item.data('party-type') || '');
-                const searchText = String($item.data('search') || '');
-                const typeMatch = !selectedPartyTypes.length || selectedPartyTypes.includes(partyType);
-                const searchMatch = !partySearch || searchText.indexOf(partySearch) > -1;
-                const show = typeMatch && searchMatch;
-                $item.toggle(show);
-                if (!show) uncheckItem($item);
             });
         }
 
