@@ -161,19 +161,27 @@
                                         <option value="btr_wise">BTR Wise Report</option>
                                     </select>
                                 </div>
-                                <div class="col-md-2">
+                                <div class="col-md-1" style="min-width: 110px;">
                                     <label class="fw-bold mb-1" style="font-size: 11px;">Voucher No.</label>
                                     <input type="text" name="voucher_no" class="form-control form-control-sm" placeholder="0001..." style="height: 30px; font-size: 12px;">
                                 </div>
-                                <div class="col-md-2">
+                                <div class="col-md-1" style="min-width: 110px;">
+                                    <label class="fw-bold mb-1" style="font-size: 11px;">DO No.</label>
+                                    <input type="text" name="do_no" class="form-control form-control-sm" placeholder="DO #..." style="height: 30px; font-size: 12px;">
+                                </div>
+                                <div class="col-md-2" style="min-width: 130px;">
+                                    <label class="fw-bold mb-1" style="font-size: 11px;">DO Date</label>
+                                    <input type="date" name="do_date" class="form-control form-control-sm" style="height: 30px; font-size: 12px;">
+                                </div>
+                                <div class="col-md-1" style="min-width: 110px;">
                                     <label class="fw-bold mb-1" style="font-size: 11px;">BTR #</label>
                                     <input type="text" name="btr_no" class="form-control form-control-sm" placeholder="BTR..." style="height: 30px; font-size: 12px;">
                                 </div>
-                                <div class="col-md-2">
+                                <div class="col-md-2" style="min-width: 130px;">
                                     <label class="fw-bold mb-1" style="font-size: 11px;">From Date</label>
                                     <input type="date" name="from_date" class="form-control form-control-sm" value="{{ date('Y-01-01') }}" style="height: 30px; font-size: 12px;">
                                 </div>
-                                <div class="col-md-2">
+                                <div class="col-md-2" style="min-width: 130px;">
                                     <label class="fw-bold mb-1" style="font-size: 11px;">To Date</label>
                                     <input type="date" name="to_date" class="form-control form-control-sm" value="{{ date('Y-m-d') }}" style="height: 30px; font-size: 12px;">
                                 </div>

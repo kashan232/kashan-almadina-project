@@ -133,6 +133,8 @@ class ClaimItemReceiptReportController extends Controller
             'party_types' => $request->party_type ?? [],
             'parties' => $request->party ?? [],
             'voucher_no' => $request->voucher_no,
+            'do_no' => $request->do_no,
+            'do_date' => $request->do_date,
             'btr_no' => $request->btr_no,
             'from_date' => $request->from_date,
             'to_date' => $request->to_date,
@@ -157,6 +159,14 @@ class ClaimItemReceiptReportController extends Controller
                 $sub->where('voucher_no', 'like', "%{$voucherNo}%")
                     ->orWhere('voucher_no', 'like', '%' . ltrim($voucherNo, '0') . '%');
             });
+        }
+
+        if (!empty($filters['do_no'])) {
+            $query->where('do_no', 'like', '%' . trim((string) $filters['do_no']) . '%');
+        }
+
+        if (!empty($filters['do_date'])) {
+            $query->whereDate('do_date', $filters['do_date']);
         }
 
         if ($this->shouldApplyFilter($filters['officers'], $filters['totalUsers'])) {
