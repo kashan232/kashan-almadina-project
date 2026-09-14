@@ -134,7 +134,7 @@ class ClaimItemReceiptController extends Controller
         $rules = [
             'date'              => 'required|date',
             'from_warehouse_id' => 'required',
-            'to_warehouse_id'   => 'required',
+            'to_warehouse_id'   => 'nullable',
             'party_type'        => 'required',
             'party_id'          => 'required',
             'product_id'        => 'required|array',
