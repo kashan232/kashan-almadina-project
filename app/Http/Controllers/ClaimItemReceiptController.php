@@ -138,7 +138,6 @@ class ClaimItemReceiptController extends Controller
             'party_type'        => 'required',
             'party_id'          => 'required',
             'product_id'        => 'required|array',
-            'quantity'          => 'required|array',
         ];
 
         $validator = Validator::make($request->all(), $rules);
@@ -176,7 +175,7 @@ class ClaimItemReceiptController extends Controller
             }
 
             foreach ($request->product_id as $index => $pid) {
-                $qty = (float)($request->quantity[$index] ?? 0);
+                $qty = (float)($request->quantity[$index] ?? $request->qty[$index] ?? 0);
                 if ($qty <= 0) continue;
 
                 ClaimItemReceiptItem::create([

@@ -106,7 +106,6 @@ class ClaimCreditNoteController extends Controller
             'party_type'        => 'required',
             'party_id'          => 'required',
             'product_id'        => 'required|array',
-            'qty'               => 'required|array',
         ];
 
         $validator = Validator::make($request->all(), $rules);
@@ -151,7 +150,7 @@ class ClaimCreditNoteController extends Controller
             }
 
             foreach ($request->product_id as $index => $pid) {
-                $qty = (float)($request->qty[$index] ?? 0);
+                $qty = (float)($request->qty[$index] ?? $request->quantity[$index] ?? 0);
                 if ($qty <= 0) continue;
 
                 $price = (float)($request->price[$index] ?? 0);
