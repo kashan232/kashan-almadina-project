@@ -366,7 +366,7 @@ class ClaimItemReceiptReportController extends Controller
         $voucherNoFilter = trim((string) $request->input('voucher_no', ''));
 
         // Query ClaimAcceptanceItem
-        $acceptanceItemsQuery = \App\Models\ClaimAcceptanceItem::with(['voucher.fromWarehouse', 'voucher.toWarehouse', 'voucher.vendor', 'voucher.customer', 'product.brand'])
+        $acceptanceItemsQuery = \App\Models\ClaimAcceptanceItem::with(['voucher.fromWarehouse', 'voucher.toWarehouse', 'voucher.vendor', 'voucher.customer', 'product.brandRelation'])
             ->whereHas('voucher', function ($q) use (
                 $from_date, $to_date,
                 $applyGroupFilter, $selectedUserGroups,
@@ -428,7 +428,7 @@ class ClaimItemReceiptReportController extends Controller
         $acceptanceItems = $acceptanceItemsQuery->get();
 
         // Query ClaimItemReceiptItem
-        $receiptItemsQuery = \App\Models\ClaimItemReceiptItem::with(['receipt.fromWarehouse', 'receipt.toWarehouse', 'receipt.vendor', 'receipt.customer', 'product.brand'])
+        $receiptItemsQuery = \App\Models\ClaimItemReceiptItem::with(['receipt.fromWarehouse', 'receipt.toWarehouse', 'receipt.vendor', 'receipt.customer', 'product.brandRelation'])
             ->whereHas('receipt', function ($q) use (
                 $from_date, $to_date,
                 $applyGroupFilter, $selectedUserGroups,
@@ -503,7 +503,7 @@ class ClaimItemReceiptReportController extends Controller
             }
             if (!isset($btrGroups[$btrNo][$productId])) {
                 $btrGroups[$btrNo][$productId] = [
-                    'brand_name' => $ai->product?->brand?->name ?? 'N/A',
+                    'brand_name' => $ai->product?->brandRelation?->name ?? 'N/A',
                     'product_name' => $ai->product?->name ?? 'N/A',
                     'clm_acp' => 0.0,
                     'cir' => 0.0,
@@ -523,7 +523,7 @@ class ClaimItemReceiptReportController extends Controller
             }
             if (!isset($btrGroups[$btrNo][$productId])) {
                 $btrGroups[$btrNo][$productId] = [
-                    'brand_name' => $ri->product?->brand?->name ?? 'N/A',
+                    'brand_name' => $ri->product?->brandRelation?->name ?? 'N/A',
                     'product_name' => $ri->product?->name ?? 'N/A',
                     'clm_acp' => 0.0,
                     'cir' => 0.0,
