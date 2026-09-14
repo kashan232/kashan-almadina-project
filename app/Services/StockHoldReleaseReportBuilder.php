@@ -147,6 +147,7 @@ class StockHoldReleaseReportBuilder
                 'hold' => 0.0,
                 'rel' => 0.0,
                 'sources' => [],
+                'item_details' => [],
             ];
         }
     }
@@ -286,6 +287,9 @@ class StockHoldReleaseReportBuilder
 
         if ($this->dateInPeriod($date, $fromDate, $toDate)) {
             $buckets[$key][$kind === 'hold' ? 'hold' : 'rel'] += $qty;
+            if (!empty($meta['entry_detail'])) {
+                $buckets[$key]['item_details'][] = $meta['entry_detail'];
+            }
             if ($kind === 'hold' && !empty($meta['source'])) {
                 if (!in_array($meta['source'], $buckets[$key]['sources'], true)) {
                     $buckets[$key]['sources'][] = $meta['source'];
@@ -391,13 +395,23 @@ class StockHoldReleaseReportBuilder
 
                     [$partyType, $partyId, $partyName] = $this->resolvePartyFromHold($hold);
 
+                    [$refType, $refNo] = $this->resolveDetailedRefCode($hold);
+                    $dateStr = $this->pickDate($voucher ?: $hold, ['entry_date', 'date']);
+
                     $this->applyQtyToBucket($buckets, [
                         'party' => [$partyType, $partyId, $partyName],
                         'product_id' => (int) $hold->product_id,
                         'product_name' => $hold->product->name ?? ('Item #' . $hold->product_id),
                         'warehouse_id' => (int) ($hold->warehouse_id ?? $voucher?->warehouse_id ?? 0),
-                        'date' => $this->pickDate($voucher ?: $hold, ['entry_date', 'date']),
+                        'date' => $dateStr,
                         'source' => $this->resolveHoldSource($hold),
+                        'entry_detail' => [
+                            'date' => Carbon::parse($dateStr)->format('d-m-Y'),
+                            'ref_type' => $refType,
+                            'ref_no' => (string) $refNo,
+                            'kind' => 'hold',
+                            'qty' => $qty,
+                        ],
                     ], $qty, $fromDate, $toDate, 'hold');
                 }
             });
@@ -433,13 +447,22 @@ class StockHoldReleaseReportBuilder
 
                     [$partyType, $partyId, $partyName] = $this->resolvePartyFromRelease($release);
                     $voucher = $release->voucher;
+                    [$refType, $refNo] = $this->resolveReleaseRefCode($release);
+                    $dateStr = $this->pickDate($voucher ?: $release, ['date', 'entry_date']);
 
                     $this->applyQtyToBucket($buckets, [
                         'party' => [$partyType, $partyId, $partyName],
                         'product_id' => (int) $release->product_id,
                         'product_name' => $release->product->name ?? ('Item #' . $release->product_id),
                         'warehouse_id' => (int) ($release->warehouse_id ?? $voucher?->warehouse_id ?? $release->hold?->warehouse_id ?? 0),
-                        'date' => $this->pickDate($voucher ?: $release, ['date', 'entry_date']),
+                        'date' => $dateStr,
+                        'entry_detail' => [
+                            'date' => Carbon::parse($dateStr)->format('d-m-Y'),
+                            'ref_type' => $refType,
+                            'ref_no' => (string) $refNo,
+                            'kind' => 'release',
+                            'qty' => $qty,
+                        ],
                     ], $qty, $fromDate, $toDate, 'rel');
                 }
             });
@@ -563,6 +586,7 @@ class StockHoldReleaseReportBuilder
             'rel' => $row['rel'],
             'payable' => $payable,
             'sources' => $row['sources'] ?? [],
+            'item_details' => $row['item_details'] ?? [],
         ];
 
         $partyGroups[$partyKey]['totals']['opening'] += $row['opening'];
