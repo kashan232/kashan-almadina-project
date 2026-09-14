@@ -17,7 +17,7 @@ class AdjustmentVoucherReportController extends Controller
 
     public function index()
     {
-        return view('admin_panel.reports.adjustment_voucher.index', $this->loadVoucherReportFilters());
+        return view('admin_panel.reports.adjustment_voucher.index', $this->loadVoucherReportFilters([]));
     }
 
     public function preview(Request $request)
@@ -93,10 +93,10 @@ class AdjustmentVoucherReportController extends Controller
 
             $account = !empty($accountId) ? Account::find($accountId) : null;
             $destLabel = strtoupper($account->title ?? $headName);
-            $groupKey = $reportType === 'destination_account'
-                ? 'head_' . ($headId ?: '0') . '_' . ($accountId ?: '0')
+            $groupKey = in_array($reportType, ['sub_head', 'destination_account', 'main_head'], true)
+                ? 'account_' . ($accountId ?: '0')
                 : 'party_' . $voucher->party_type . '_' . $voucher->party_id;
-            $groupLabel = $reportType === 'destination_account' ? $destLabel : $partyName;
+            $groupLabel = in_array($reportType, ['sub_head', 'destination_account', 'main_head'], true) ? $destLabel : $partyName;
 
             $lines->push((object) [
                 'group_key' => $groupKey,
