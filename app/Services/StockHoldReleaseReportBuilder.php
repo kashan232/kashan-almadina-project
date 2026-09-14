@@ -430,6 +430,11 @@ class StockHoldReleaseReportBuilder
 
     private function seedCustomerItemBuckets(array &$buckets): void
     {
+        // Only seed empty 0 rows if NO specific items are filtered (or all items selected)
+        if ($this->shouldApplyFilter($this->filters['items'], $this->filters['totalProducts'])) {
+            return;
+        }
+
         $customerIds = $this->selectedCustomerIds();
         if (empty($customerIds)) {
             return;
@@ -477,6 +482,10 @@ class StockHoldReleaseReportBuilder
 
     private function shouldIncludeRow(array $row, float $payable): bool
     {
+        if (!$this->productMatches((int) $row['product_id'])) {
+            return false;
+        }
+
         if (!$this->isZeroRow($row['opening'], $row['hold'], $row['rel'], $payable)) {
             return true;
         }
