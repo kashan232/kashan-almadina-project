@@ -63,7 +63,7 @@ trait VoucherReportHelpers
         return (string) $narrId;
     }
 
-    protected function loadVoucherReportFilters(): array
+    protected function loadVoucherReportFilters(?array $headTypes = null): array
     {
         $user = auth()->user();
         $isAdmin = !$user || $user->roles->pluck('name')->contains('Admin') || $user->id == 1;
@@ -77,11 +77,19 @@ trait VoucherReportHelpers
 
         $users = User::with('userGroups')->orderBy('name')->get();
         $accountHeads = AccountHead::where('status', 1)
-            ->where(function ($q) {
-                $q->where('name', 'like', '%CASH%')
-                  ->orWhere('name', 'like', '%BANK%')
-                  ->orWhere('id', 100000)
-                  ->orWhere('name', 'SCRAP');
+            ->when($headTypes !== null, function ($q) use ($headTypes) {
+                $q->where(function ($sub) use ($headTypes) {
+                    foreach ($headTypes as $type) {
+                        $sub->orWhere('name', 'like', '%' . $type . '%');
+                    }
+                });
+            }, function ($q) {
+                $q->where(function ($sub) {
+                    $sub->where('name', 'like', '%CASH%')
+                        ->orWhere('name', 'like', '%BANK%')
+                        ->orWhere('id', 100000)
+                        ->orWhere('name', 'SCRAP');
+                });
             })
             ->orderBy('name')
             ->get();

@@ -15,7 +15,7 @@ class ExpenseVoucherReportController extends Controller
 
     public function index()
     {
-        return view('admin_panel.reports.expense_voucher.index', $this->loadVoucherReportFilters());
+        return view('admin_panel.reports.expense_voucher.index', $this->loadVoucherReportFilters(['EXPENSE', 'DRAW']));
     }
 
     public function preview(Request $request)
