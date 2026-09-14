@@ -132,7 +132,8 @@
                                     <label class="fw-bold mb-1" style="font-size: 11px;">Report Type</label>
                                     <select name="report_type" id="reportType" class="form-select form-select-sm" required style="height: 30px; font-size: 12px;">
                                         <option value="party" selected>Customer / Party Wise (Main: Party, Sub: Item)</option>
-                                        <option value="item">Item Wise (Main: Customer, Sub: Item) — select Customer</option>
+                                        <option value="item">Hold and Summary Report</option>
+                                        <option value="detailed">Detailed Stock Hold and Release Statement</option>
                                     </select>
                                 </div>
                                 <div class="col-md-2">

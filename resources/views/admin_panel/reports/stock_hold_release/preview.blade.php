@@ -121,7 +121,7 @@
         <div class="report-title">
             Stock Hold and Release Summary Report
             @if(($report_type ?? 'party') === 'item')
-                <div style="font-size: 12px; font-weight: bold; margin-top: 4px;">Item Wise</div>
+                <div style="font-size: 12px; font-weight: bold; margin-top: 4px;">Hold and Summary Report</div>
             @else
                 <div style="font-size: 12px; font-weight: bold; margin-top: 4px;">Customer / Party Wise</div>
             @endif

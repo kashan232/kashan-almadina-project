@@ -23,6 +23,10 @@ class StockHoldReleaseReportBuilder
         $toDate = $request->to_date;
         $reportType = $this->filters['report_type'];
 
+        if ($reportType === 'detailed') {
+            return $this->buildDetailedStatement($fromDate, $toDate);
+        }
+
         $buckets = [];
 
         $this->collectHoldMovements($buckets, $fromDate, $toDate);
@@ -50,7 +54,7 @@ class StockHoldReleaseReportBuilder
     private function extractFilters(Request $request): array
     {
         return [
-            'report_type' => in_array($request->report_type, ['party', 'item'], true) ? $request->report_type : 'party',
+            'report_type' => in_array($request->report_type, ['party', 'item', 'detailed'], true) ? $request->report_type : 'party',
             'user_groups' => $request->user_group ?? [],
             'warehouses' => $request->warehouse ?? [],
             'parties' => $request->party ?? [],
@@ -646,5 +650,238 @@ class StockHoldReleaseReportBuilder
         }
 
         return $grand;
+    }
+
+    private function resolveDetailedRefCode(StockHold $hold): array
+    {
+        if (!empty(data_get($hold->meta, 'claim_no')) || !empty(data_get($hold->meta, 'claim_id')) || str_contains((string) $hold->remarks, 'Customer Claim Hold')) {
+            $claimNo = data_get($hold->meta, 'claim_no') ?? ltrim((string) $hold->meta['claim_id'] ?? '', '0');
+            return ['CH', $claimNo ?: ($hold->id)];
+        }
+        if ($hold->sale || $hold->sale_id) {
+            $inv = $hold->sale?->invoice_no ?? $hold->sale_id;
+            return ['SJ', $inv];
+        }
+        if ($hold->voucher) {
+            return ['SH', $hold->voucher->voucher_no];
+        }
+
+        return ['HLD', $hold->id];
+    }
+
+    private function resolveReleaseRefCode(StockRelease $release): array
+    {
+        $vouc = $release->voucher;
+        if ($vouc) {
+            return ['REL', $vouc->voucher_no];
+        }
+        if (!empty(data_get($release->meta, 'claim_no'))) {
+            return ['CR', data_get($release->meta, 'claim_no')];
+        }
+
+        return ['REL', $release->id];
+    }
+
+    private function buildDetailedStatement(?string $fromDate, ?string $toDate): array
+    {
+        $movements = collect();
+
+        // Collect Holds
+        StockHold::withoutGlobalScopes()
+            ->whereNull('deleted_at')
+            ->with([
+                'voucher.partyVendor:id,name',
+                'voucher.partyCustomer:id,customer_name',
+                'partyVendor:id,name',
+                'partyCustomer:id,customer_name',
+                'product:id,name',
+                'sale:id,invoice_no',
+            ])
+            ->where(function ($q) {
+                $q->whereHas('voucher', function ($v) {
+                    $v->withoutGlobalScopes()->where('status', 'Posted');
+                    $this->applyUserGroupFilter($v);
+                })->orWhere(function ($sub) {
+                    $sub->whereNull('stock_hold_voucher_id')
+                        ->where(function ($s) {
+                            $s->whereIn('status', ['Posted', 'posted', '0', 0])
+                              ->orWhereNotNull('meta->claim_id')
+                              ->orWhereNotNull('sale_id');
+                        });
+                });
+            })
+            ->chunkById(300, function ($items) use (&$movements) {
+                foreach ($items as $hold) {
+                    if (!$hold->product_id) continue;
+                    $qty = $hold->grossHoldQty();
+                    if ($qty <= 0) continue;
+
+                    [$partyType, $partyId, $partyName] = $this->resolvePartyFromHold($hold);
+                    if (!$this->partyMatches($partyType, $partyId) || !$this->productMatches((int) $hold->product_id) || !$this->warehouseMatches((int) ($hold->warehouse_id ?? $hold->voucher?->warehouse_id ?? 0))) {
+                        continue;
+                    }
+
+                    [$refType, $refNo] = $this->resolveDetailedRefCode($hold);
+                    $voucher = $hold->voucher;
+                    $dateStr = $this->pickDate($voucher ?: $hold, ['entry_date', 'date']);
+
+                    $movements->push([
+                        'party_key' => $partyType . ':' . $partyId,
+                        'party_name' => $partyName,
+                        'product_id' => (int) $hold->product_id,
+                        'product_name' => $hold->product->name ?? ('Item #' . $hold->product_id),
+                        'date' => $dateStr,
+                        'type' => 'hold',
+                        'ref_type' => $refType,
+                        'ref_no' => (string) $refNo,
+                        'qty' => $qty,
+                    ]);
+                }
+            });
+
+        // Collect Releases
+        StockRelease::withoutGlobalScopes()
+            ->with([
+                'voucher.partyVendor:id,name',
+                'voucher.partyCustomer:id,customer_name',
+                'hold.voucher.partyVendor:id,name',
+                'hold.voucher.partyCustomer:id,customer_name',
+                'hold.partyVendor:id,name',
+                'hold.partyCustomer:id,customer_name',
+                'product:id,name',
+            ])
+            ->where(function ($q) {
+                $q->whereHas('voucher', function ($v) {
+                    $v->withoutGlobalScopes()->where('status', 'Posted');
+                    $this->applyUserGroupFilter($v);
+                })->orWhere(function ($sub) {
+                    $sub->whereNull('stock_release_voucher_id')
+                        ->whereIn('status', ['Posted', 'posted']);
+                });
+            })
+            ->chunkById(300, function ($items) use (&$movements) {
+                foreach ($items as $release) {
+                    $qty = (float) $release->release_qty;
+                    if ($qty <= 0 || !$release->product_id) continue;
+
+                    [$partyType, $partyId, $partyName] = $this->resolvePartyFromRelease($release);
+                    if (!$this->partyMatches($partyType, $partyId) || !$this->productMatches((int) $release->product_id) || !$this->warehouseMatches((int) ($release->warehouse_id ?? $release->voucher?->warehouse_id ?? $release->hold?->warehouse_id ?? 0))) {
+                        continue;
+                    }
+
+                    [$refType, $refNo] = $this->resolveReleaseRefCode($release);
+                    $voucher = $release->voucher;
+                    $dateStr = $this->pickDate($voucher ?: $release, ['date', 'entry_date']);
+
+                    $movements->push([
+                        'party_key' => $partyType . ':' . $partyId,
+                        'party_name' => $partyName,
+                        'product_id' => (int) $release->product_id,
+                        'product_name' => $release->product->name ?? ('Item #' . $release->product_id),
+                        'date' => $dateStr,
+                        'type' => 'release',
+                        'ref_type' => $refType,
+                        'ref_no' => (string) $refNo,
+                        'qty' => $qty,
+                    ]);
+                }
+            });
+
+        // Group by Party -> Product
+        $groupedParties = $movements->groupBy('party_key');
+
+        $resultParties = [];
+        $grandTotalHold = 0.0;
+        $grandTotalRel = 0.0;
+        $grandTotalBal = 0.0;
+
+        foreach ($groupedParties as $partyKey => $pMovements) {
+            $partyName = $pMovements->first()['party_name'];
+            $groupedProducts = $pMovements->groupBy('product_id');
+
+            $partyProducts = [];
+            $partySubTotalHold = 0.0;
+            $partySubTotalRel = 0.0;
+
+            foreach ($groupedProducts as $productId => $prodMovements) {
+                $productName = $prodMovements->first()['product_name'];
+
+                // Separate prior movements (opening) vs in-period entries
+                $priorMovements = $prodMovements->filter(fn ($m) => $fromDate && $m['date'] < $fromDate);
+                $periodMovements = $prodMovements->filter(fn ($m) => $this->dateInPeriod($m['date'], $fromDate, $toDate))
+                    ->sortBy(fn ($m) => $m['date'] . '-' . ($m['type'] === 'hold' ? '1' : '2'));
+
+                $openingQty = 0.0;
+                foreach ($priorMovements as $pm) {
+                    $openingQty += ($pm['type'] === 'hold' ? $pm['qty'] : -$pm['qty']);
+                }
+
+                if ($periodMovements->isEmpty() && abs($openingQty) < 0.0001) {
+                    continue;
+                }
+
+                $entries = [];
+                $runningBalance = $openingQty;
+                $prodHoldSum = 0.0;
+                $prodRelSum = 0.0;
+
+                foreach ($periodMovements as $pm) {
+                    $holdQty = $pm['type'] === 'hold' ? $pm['qty'] : 0.0;
+                    $relQty = $pm['type'] === 'release' ? $pm['qty'] : 0.0;
+
+                    $prodHoldSum += $holdQty;
+                    $prodRelSum += $relQty;
+                    $runningBalance += ($holdQty - $relQty);
+
+                    $entries[] = [
+                        'date' => Carbon::parse($pm['date'])->format('d-m-Y'),
+                        'ref_type' => $pm['ref_type'],
+                        'ref_no' => $pm['ref_no'],
+                        'hold' => $holdQty,
+                        'release' => $relQty,
+                        'balance' => $runningBalance,
+                    ];
+                }
+
+                $partySubTotalHold += $prodHoldSum;
+                $partySubTotalRel += $prodRelSum;
+
+                $partyProducts[] = [
+                    'product_id' => $productId,
+                    'product_name' => $productName,
+                    'opening' => $openingQty,
+                    'entries' => $entries,
+                    'sub_hold' => $prodHoldSum,
+                    'sub_release' => $prodRelSum,
+                    'final_balance' => $runningBalance,
+                ];
+            }
+
+            if (!empty($partyProducts)) {
+                $grandTotalHold += $partySubTotalHold;
+                $grandTotalRel += $partySubTotalRel;
+                $grandTotalBal += collect($partyProducts)->sum('final_balance');
+
+                $resultParties[] = [
+                    'party_name' => $partyName,
+                    'products' => $partyProducts,
+                    'sub_hold' => $partySubTotalHold,
+                    'sub_release' => $partySubTotalRel,
+                ];
+            }
+        }
+
+        return [
+            'parties' => $resultParties,
+            'grand' => [
+                'hold' => $grandTotalHold,
+                'release' => $grandTotalRel,
+                'balance' => $grandTotalBal,
+            ],
+            'from_date' => $fromDate,
+            'to_date' => $toDate,
+            'report_type' => 'detailed',
+            'generated_at' => now(),
+        ];
     }
 }
