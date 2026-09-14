@@ -151,7 +151,14 @@
             @foreach($group['rows'] as $i => $row)
             <tr>
                 <td class="sno">{{ $i + 1 }}</td>
-                <td class="item-desc">{{ $row['product_name'] }}</td>
+                <td class="item-desc">
+                    <span class="fw-bold">{{ $row['product_name'] }}</span>
+                    @if(!empty($row['sources']))
+                        <div style="font-size: 10px; color: #555; margin-top: 2px;">
+                            <span style="font-weight: bold; color: #0d47a1;">[Source: {{ implode(', ', $row['sources']) }}]</span>
+                        </div>
+                    @endif
+                </td>
                 <td class="num">{{ $fmt($row['opening']) }}</td>
                 <td class="num">{{ $fmt($row['hold']) }}</td>
                 <td class="num">{{ $fmt($row['rel']) }}</td>

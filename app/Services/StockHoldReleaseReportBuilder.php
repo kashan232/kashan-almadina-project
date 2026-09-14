@@ -134,6 +134,7 @@ class StockHoldReleaseReportBuilder
                 'opening' => 0.0,
                 'hold' => 0.0,
                 'rel' => 0.0,
+                'sources' => [],
             ];
         }
     }
@@ -214,6 +215,31 @@ class StockHoldReleaseReportBuilder
         return Carbon::parse($model->created_at ?? now())->toDateString();
     }
 
+    private function resolveHoldSource(StockHold $hold): string
+    {
+        if (!empty(data_get($hold->meta, 'claim_no'))) {
+            return 'Claim #' . data_get($hold->meta, 'claim_no');
+        }
+        if (!empty(data_get($hold->meta, 'claim_id'))) {
+            return 'Claim Hold';
+        }
+        if (!empty($hold->remarks) && str_contains($hold->remarks, 'Customer Claim Hold')) {
+            return 'Claim Hold';
+        }
+        if ($hold->sale || $hold->sale_id) {
+            $invoiceNo = $hold->sale?->invoice_no ?? $hold->sale_id;
+            return 'Sales Inv #' . $invoiceNo;
+        }
+        if ($hold->voucher) {
+            return 'Stock Hold Vouc #' . $hold->voucher->voucher_no;
+        }
+        if (!empty($hold->remarks)) {
+            return $hold->remarks;
+        }
+
+        return 'Stock Hold';
+    }
+
     private function applyQtyToBucket(array &$buckets, array $meta, float $qty, ?string $fromDate, ?string $toDate, string $kind): void
     {
         if ($qty <= 0) {
@@ -248,6 +274,11 @@ class StockHoldReleaseReportBuilder
 
         if ($this->dateInPeriod($date, $fromDate, $toDate)) {
             $buckets[$key][$kind === 'hold' ? 'hold' : 'rel'] += $qty;
+            if ($kind === 'hold' && !empty($meta['source'])) {
+                if (!in_array($meta['source'], $buckets[$key]['sources'], true)) {
+                    $buckets[$key]['sources'][] = $meta['source'];
+                }
+            }
         }
     }
 
@@ -319,6 +350,7 @@ class StockHoldReleaseReportBuilder
                 'partyVendor:id,name',
                 'partyCustomer:id,customer_name',
                 'product:id,name',
+                'sale:id,invoice_no',
             ])
             ->where(function ($q) {
                 $q->whereHas('voucher', function ($v) {
@@ -353,6 +385,7 @@ class StockHoldReleaseReportBuilder
                         'product_name' => $hold->product->name ?? ('Item #' . $hold->product_id),
                         'warehouse_id' => (int) ($hold->warehouse_id ?? $voucher?->warehouse_id ?? 0),
                         'date' => $this->pickDate($voucher ?: $hold, ['entry_date', 'date']),
+                        'source' => $this->resolveHoldSource($hold),
                     ], $qty, $fromDate, $toDate, 'hold');
                 }
             });
@@ -517,6 +550,7 @@ class StockHoldReleaseReportBuilder
             'hold' => $row['hold'],
             'rel' => $row['rel'],
             'payable' => $payable,
+            'sources' => $row['sources'] ?? [],
         ];
 
         $partyGroups[$partyKey]['totals']['opening'] += $row['opening'];
