@@ -221,10 +221,7 @@
                                 <tbody id="itemRows">
                                     @foreach($voucher->items as $item)
                                         @php
-                                            $holdQty = (float) $item->sale_qty;
-                                            if ($item->hold) {
-                                                $holdQty = (float) $item->hold->hold_qty + (float) $item->release_qty;
-                                            }
+                                            $holdQty = $item->hold ? (float) $item->hold->hold_qty : (float) $item->sale_qty;
                                         @endphp
                                         <tr>
                                             <td class="text-center font-weight-bold text-primary">{{ $item->product_id }} <input type="hidden" name="product_id[]" value="{{ $item->product_id }}"><input type="hidden" name="hold_id[]" value="{{ $item->hold_id }}"></td>
