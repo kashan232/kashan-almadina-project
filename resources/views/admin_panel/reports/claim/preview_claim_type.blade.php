@@ -121,18 +121,22 @@
             <th width="8%">Item ID</th>
             <th width="18%">Item Description</th>
             <th width="14%">Party</th>
-            <th width="12%">Fault Found</th>
+            <th width="10%">Fault Found</th>
             <th width="8%">Mfg Date</th>
-            <th width="10%">Card No.</th>
-            <th width="14%">Amount</th>
+            <th width="8%">Card No.</th>
+            <th width="6%">Qty</th>
+            <th width="12%">Amount</th>
         </tr>
     </thead>
     <tbody>
-        @php $grand_amount = 0; @endphp
+        @php 
+            $grand_qty = 0;
+            $grand_amount = 0; 
+        @endphp
 
         @if($grouped->isEmpty())
             <tr>
-                <td colspan="10" style="text-align: center; padding: 50px;">No Data Found</td>
+                <td colspan="11" style="text-align: center; padding: 50px;">No Data Found</td>
             </tr>
         @endif
 
@@ -140,12 +144,13 @@
             @php
                 $first = $items->first();
                 $typeName = strtoupper($first->claim_type_label);
+                $type_qty = $items->count();
                 $type_total = 0;
                 $sn = 0;
             @endphp
 
             <tr class="type-heading-row">
-                <td colspan="10" class="text-left">{{ $typeName }}</td>
+                <td colspan="11" class="text-left">{{ $typeName }}</td>
             </tr>
 
             @foreach($items as $claim)
@@ -165,21 +170,27 @@
                     <td class="text-left">{{ $claim->fault_found ?: '-' }}</td>
                     <td class="text-center">{{ $claim->mfg_date ?: '-' }}</td>
                     <td class="text-center">{{ $claim->card_no ?: '-' }}</td>
+                    <td class="text-center">1</td>
                     <td class="text-right">{{ number_format($amount, 2) }}</td>
                 </tr>
             @endforeach
 
             <tr class="total-row">
                 <td colspan="9" class="text-right">{{ $typeName }} Total:</td>
+                <td class="text-center">{{ number_format($type_qty) }}</td>
                 <td class="val-box">{{ number_format($type_total, 2) }}</td>
             </tr>
-            <tr style="height: 20px;"><td colspan="10" style="border:none;"></td></tr>
+            <tr style="height: 20px;"><td colspan="11" style="border:none;"></td></tr>
 
-            @php $grand_amount += $type_total; @endphp
+            @php 
+                $grand_qty += $type_qty;
+                $grand_amount += $type_total; 
+            @endphp
         @endforeach
 
         <tr class="grand-total-row">
             <td colspan="9" class="text-right">Grand Total:</td>
+            <td class="text-center" style="background-color: #cfd8dc;">{{ number_format($grand_qty) }}</td>
             <td class="val-box" style="background-color: #cfd8dc;">{{ number_format($grand_amount, 2) }}</td>
         </tr>
     </tbody>

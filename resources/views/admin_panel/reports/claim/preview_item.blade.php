@@ -49,23 +49,28 @@
             <th>Fault Found</th>
             <th>Mfg Date</th>
             <th>Card No.</th>
+            <th>Qty</th>
             <th>Amount</th>
         </tr>
     </thead>
     <tbody>
-        @php $grand_amount = 0; @endphp
+        @php 
+            $grand_qty = 0;
+            $grand_amount = 0; 
+        @endphp
 
         @if($grouped->isEmpty())
-            <tr><td colspan="8" style="text-align: center; padding: 50px;">No Data Found</td></tr>
+            <tr><td colspan="9" style="text-align: center; padding: 50px;">No Data Found</td></tr>
         @endif
 
         @foreach($grouped as $productId => $items)
             @php
                 $product = $items->first()->product;
+                $item_qty = $items->count();
                 $item_total = 0;
             @endphp
             <tr class="item-heading-row">
-                <td colspan="8" class="text-left">
+                <td colspan="9" class="text-left">
                     ITEM: {{ strtoupper($product->name ?? 'N/A') }}
                     @if($product && $product->brandRelation)
                         <span style="color:#666;">( {{ strtoupper($product->brandRelation->name) }} )</span>
@@ -87,20 +92,26 @@
                     <td class="text-left">{{ $claim->fault_found ?: '-' }}</td>
                     <td class="text-center">{{ $claim->mfg_date ?: '-' }}</td>
                     <td class="text-center">{{ $claim->card_no ?: '-' }}</td>
+                    <td class="text-center">1</td>
                     <td class="text-right">{{ number_format($amount, 2) }}</td>
                 </tr>
             @endforeach
 
             <tr class="total-row">
                 <td colspan="7" class="text-right">Item Total:</td>
+                <td class="text-center">{{ number_format($item_qty) }}</td>
                 <td class="val-box">{{ number_format($item_total, 2) }}</td>
             </tr>
-            <tr style="height: 20px;"><td colspan="8" style="border:none;"></td></tr>
-            @php $grand_amount += $item_total; @endphp
+            <tr style="height: 20px;"><td colspan="9" style="border:none;"></td></tr>
+            @php 
+                $grand_qty += $item_qty;
+                $grand_amount += $item_total; 
+            @endphp
         @endforeach
 
         <tr class="grand-total-row">
             <td colspan="7" class="text-right">Grand Total:</td>
+            <td class="text-center" style="background-color: #cfd8dc;">{{ number_format($grand_qty) }}</td>
             <td class="val-box" style="background-color: #cfd8dc;">{{ number_format($grand_amount, 2) }}</td>
         </tr>
     </tbody>

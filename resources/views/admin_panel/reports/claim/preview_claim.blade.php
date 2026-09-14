@@ -51,20 +51,25 @@
             <th>Fault Found</th>
             <th>Mfg Date</th>
             <th>Card No.</th>
+            <th>Qty</th>
             <th>Amount</th>
         </tr>
     </thead>
     <tbody>
-        @php $grand_amount = 0; @endphp
+        @php 
+            $grand_qty = 0;
+            $grand_amount = 0; 
+        @endphp
 
         @if($grouped->isEmpty())
-            <tr><td colspan="10" style="text-align: center; padding: 50px;">No Data Found</td></tr>
+            <tr><td colspan="11" style="text-align: center; padding: 50px;">No Data Found</td></tr>
         @endif
 
         @foreach($grouped as $claimNo => $items)
             @php
                 $claim = $items->first();
                 $amount = $claim->report_amount;
+                $grand_qty += 1;
                 $grand_amount += $amount;
                 $displayId = preg_replace('/[^0-9]/', '', $claimNo) ?: $claimNo;
             @endphp
@@ -84,12 +89,14 @@
                 <td class="text-left">{{ $claim->fault_found ?: '-' }}</td>
                 <td class="text-center">{{ $claim->mfg_date ?: '-' }}</td>
                 <td class="text-center">{{ $claim->card_no ?: '-' }}</td>
+                <td class="text-center">1</td>
                 <td class="text-right">{{ number_format($amount, 2) }}</td>
             </tr>
         @endforeach
 
         <tr class="grand-total-row">
             <td colspan="9" class="text-right">Grand Total:</td>
+            <td class="text-center" style="background-color: #cfd8dc;">{{ number_format($grand_qty) }}</td>
             <td class="val-box" style="background-color: #cfd8dc;">{{ number_format($grand_amount, 2) }}</td>
         </tr>
     </tbody>

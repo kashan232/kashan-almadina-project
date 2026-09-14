@@ -129,18 +129,23 @@
 <table>
     <thead>
         <tr>
-            <th width="10%">CLM #</th>
-            <th width="10%">Date</th>
-            <th width="22%">Item</th>
-            <th width="28%">Customer Name</th>
-            <th width="15%">Mfg Date</th>
-            <th width="15%">Card No.</th>
+            <th width="8%">CLM #</th>
+            <th width="9%">Date</th>
+            <th width="20%">Item</th>
+            <th width="25%">Customer Name</th>
+            <th width="12%">Mfg Date</th>
+            <th width="12%">Card No.</th>
+            <th width="14%">QTY</th>
         </tr>
     </thead>
     <tbody>
+        @php 
+            $grand_count = 0; 
+        @endphp
+
         @if($grouped->isEmpty())
             <tr>
-                <td colspan="6" style="text-align: center; padding: 50px;">No Data Found</td>
+                <td colspan="7" style="text-align: center; padding: 50px;">No Data Found</td>
             </tr>
         @endif
 
@@ -148,7 +153,7 @@
             @php $brand_count = 0; @endphp
 
             <tr class="brand-heading-row">
-                <td colspan="6" class="text-left">{{ strtoupper($brandName) }}</td>
+                <td colspan="7" class="text-left">{{ strtoupper($brandName) }}</td>
             </tr>
 
             @foreach($itemGroups as $productId => $claims)
@@ -170,21 +175,32 @@
                         <td class="text-left">{{ $claim->party_name }}</td>
                         <td class="text-center">{{ $claim->mfg_date ?: '-' }}</td>
                         <td class="text-center">{{ $claim->card_no ?: '-' }}</td>
+                        <td class="text-center">1</td>
                     </tr>
                 @endforeach
 
                 <tr class="item-total-row">
-                    <td colspan="5" class="text-right">Total. {{ $itemName }}</td>
-                    <td class="text-center">{{ $item_count }}</td>
+                    <td colspan="6" class="text-right">Total. {{ $itemName }}</td>
+                    <td class="text-center">{{ number_format($item_count) }}</td>
                 </tr>
             @endforeach
 
             <tr class="brand-total-row">
-                <td colspan="5" class="text-right">{{ $brandName }} Total. >>></td>
-                <td class="text-center">{{ $brand_count }}</td>
+                <td colspan="6" class="text-right">{{ $brandName }} Total. >>></td>
+                <td class="text-center">{{ number_format($brand_count) }}</td>
             </tr>
-            <tr style="height: 15px;"><td colspan="6" style="border:none;"></td></tr>
+            @php
+                $grand_count += $brand_count;
+            @endphp
+            <tr style="height: 15px;"><td colspan="7" style="border:none;"></td></tr>
         @endforeach
+
+        @if($grouped->isNotEmpty())
+            <tr class="brand-total-row" style="background-color: #cfd8dc; font-size: 13px;">
+                <td colspan="6" class="text-right" style="font-weight: bold;">Grand Total Qty:</td>
+                <td class="text-center" style="font-weight: bold;">{{ number_format($grand_count) }}</td>
+            </tr>
+        @endif
     </tbody>
 </table>
 
