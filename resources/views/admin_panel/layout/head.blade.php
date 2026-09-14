@@ -266,9 +266,47 @@
  <meta http-equiv="x-ua-compatible" content="ie=edge">
  <meta name="viewport" content="width=device-width, initial-scale=1">
  <meta name="description" content="Zare Bootstrap 4 Admin Template">
- <title>{{ ucwords(str_replace(['-', '_'], ' ', (in_array(request()->segment(1), ['add', 'edit', 'create', 'view']) && request()->segment(2)) ? request()->segment(1) . ' ' . request()->segment(2) : (request()->segment(1) ?: 'Home'))) }} | Al-Madina</title>
+@php
+    $routePath = request()->path();
+    $seg1 = request()->segment(1) ?? '';
+    $seg2 = request()->segment(2) ?? '';
+    $seg3 = request()->segment(3) ?? '';
 
- <link rel="shortcut icon" type="image/png" href="{{ asset('amt-logo.png') }}">
+    $shortTitle = '';
+
+    if (str_contains($routePath, 'sale-return') || str_contains($routePath, 'salereturn')) {
+        $shortTitle = 'SRJ';
+    } elseif (str_contains($routePath, 'purchase-return') || str_contains($routePath, 'purchasereturn')) {
+        $shortTitle = 'PRJ';
+    } elseif (str_contains($routePath, 'sale')) {
+        $shortTitle = 'SJ';
+    } elseif (str_contains($routePath, 'purchase')) {
+        $shortTitle = 'PJ';
+    } elseif (str_contains($routePath, 'claim-item-receipt')) {
+        $shortTitle = 'CIR';
+    } elseif (str_contains($routePath, 'claim-credit-note')) {
+        $shortTitle = 'CCN';
+    } elseif (str_contains($routePath, 'customer-claim')) {
+        $shortTitle = 'CLM';
+    } elseif (str_contains($routePath, 'stock-release')) {
+        $shortTitle = 'SR';
+    } elseif (str_contains($routePath, 'stock-hold')) {
+        $shortTitle = 'SH';
+    } elseif (str_contains($routePath, 'inward')) {
+        $shortTitle = 'INW';
+    } else {
+        $shortTitle = ucwords(str_replace(['-', '_'], ' ', $seg1 ?: 'Home'));
+    }
+
+    if ($seg2 && in_array($seg1, ['add', 'edit', 'create', 'view'])) {
+        $shortTitle = strtoupper($seg1) . ' ' . $shortTitle;
+    } elseif ($seg2 === 'create' || $seg2 === 'add') {
+        $shortTitle = 'ADD ' . $shortTitle;
+    } elseif ($seg2 === 'edit') {
+        $shortTitle = 'EDIT ' . $shortTitle;
+    }
+@endphp
+ <title>{{ $shortTitle }} | Al-Madina</title>
  <link rel="stylesheet" href="{{ asset('assets/css/bootstrap.min.css') }}">
  <link rel="stylesheet" href="{{ asset('assets/css/style.css') }}">
  <link rel="stylesheet" href="{{ asset('assets/css/compact-listing.css') }}">
