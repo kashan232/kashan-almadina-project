@@ -155,22 +155,22 @@
                                 </div>
                                 <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6">
                                     <label class="report-field-label">From</label>
-                                    <input type="date" name="receipt_from" class="form-control form-control-sm report-field-input">
+                                    <input type="date" name="receipt_from" class="form-control form-control-sm report-field-input" value="{{ date('Y-m-d') }}">
                                 </div>
                                 <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6">
                                     <label class="report-field-label">To</label>
-                                    <input type="date" name="receipt_to" class="form-control form-control-sm report-field-input">
+                                    <input type="date" name="receipt_to" class="form-control form-control-sm report-field-input" value="{{ date('Y-m-d') }}">
                                 </div>
                                 <div class="col-12 mt-1">
                                     <span class="report-date-group-label">Entry Date</span>
                                 </div>
                                 <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6">
                                     <label class="report-field-label">From</label>
-                                    <input type="date" name="entry_from" class="form-control form-control-sm report-field-input">
+                                    <input type="date" name="entry_from" class="form-control form-control-sm report-field-input" value="{{ date('Y-m-d') }}">
                                 </div>
                                 <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6">
                                     <label class="report-field-label">To</label>
-                                    <input type="date" name="entry_to" class="form-control form-control-sm report-field-input">
+                                    <input type="date" name="entry_to" class="form-control form-control-sm report-field-input" value="{{ date('Y-m-d') }}">
                                 </div>
                             </div>
                         </div>

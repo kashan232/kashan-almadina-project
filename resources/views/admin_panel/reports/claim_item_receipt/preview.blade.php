@@ -126,7 +126,7 @@
 @php
     $showAmounts = in_array($transaction_type, ['credit_note', 'all'], true);
     $showType = in_array($transaction_type, ['all'], true);
-    $baseCols = 8 + ($showType ? 1 : 0);
+    $baseCols = 10 + ($showType ? 1 : 0);
     $totalCols = $baseCols + ($showAmounts ? 4 : 0);
 @endphp
 
@@ -146,22 +146,24 @@
 <table>
     <thead>
         <tr>
-            <th width="7%">Voucher</th>
+            <th width="6%">Voucher</th>
             @if($showType)
-                <th width="9%">Type</th>
+                <th width="7%">Type</th>
             @endif
-            <th width="11%"><span class="wh-icon wh-minus">−</span> Deduct From</th>
-            <th width="11%"><span class="wh-icon wh-plus">+</span> Add To</th>
-            <th width="8%">BTR #</th>
-            <th width="8%">Date</th>
-            <th width="16%">Supplier</th>
-            <th width="16%">Item</th>
-            <th width="7%">Qty</th>
+            <th width="9%"><span class="wh-icon wh-minus">−</span> Deduct From</th>
+            <th width="9%"><span class="wh-icon wh-plus">+</span> Add To</th>
+            <th width="7%">BTR #</th>
+            <th width="7%">Date</th>
+            <th width="7%">DO #</th>
+            <th width="7%">DO Date</th>
+            <th width="14%">Supplier</th>
+            <th width="14%">Item</th>
+            <th width="6%">Qty</th>
             @if($showAmounts)
-                <th width="8%">Retail Price</th>
-                <th width="8%">Retail Value</th>
-                <th width="8%">Purchase Rate</th>
-                <th width="9%">Net Amount</th>
+                <th width="7%">Retail Price</th>
+                <th width="7%">Retail Value</th>
+                <th width="7%">Purchase Rate</th>
+                <th width="8%">Net Amount</th>
             @endif
         </tr>
     </thead>
@@ -193,6 +195,7 @@
                     $voucher_qty += $qty;
                     $grand_qty += $qty;
                     $itemDate = \Carbon\Carbon::parse($item->date)->format('d-m-y');
+                    $doDateFormatted = !empty($item->do_date) ? \Carbon\Carbon::parse($item->do_date)->format('d-m-y') : '-';
                     $isCredit = ($item->entry_type ?? '') === 'credit_note';
                     if ($isCredit) {
                         $voucher_retail += (float) ($item->retail_value ?? 0);
@@ -210,6 +213,8 @@
                     <td class="text-left"><span class="wh-cell"><span class="wh-icon wh-plus">+</span>{{ $item->to_warehouse_name ?: '-' }}</span></td>
                     <td class="text-center">{{ $item->btr_no ?: '-' }}</td>
                     <td class="text-center">{{ $itemDate }}</td>
+                    <td class="text-center">{{ $item->do_no ?: '-' }}</td>
+                    <td class="text-center">{{ $doDateFormatted }}</td>
                     <td class="text-left">{{ $item->party_name }}</td>
                     <td class="text-left">{{ $item->product->name ?? 'N/A' }}</td>
                     <td class="text-right">{{ number_format($qty, 2) }}</td>

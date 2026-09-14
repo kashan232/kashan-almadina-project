@@ -105,21 +105,21 @@
                     <div class="card-body">
                         <!-- Row 1: Header Info -->
                         <div class="row g-2 align-items-end mb-2">
-                            <div class="col-md-2" style="max-width: 140px;">
+                            <div class="col-md-3">
                                 <label class="form-label small fw-bold text-muted mb-1">Date</label>
                                 <input type="date" name="date" class="form-control input-sm" value="{{ $activeVoucher->date ?? date('Y-m-d') }}" required>
                                 <input type="hidden" name="entry_date" value="{{ $activeVoucher->entry_date ?? date('Y-m-d') }}">
                                 <input type="hidden" name="entry_time" value="{{ $activeVoucher->entry_time ?? date('H:i') }}">
                             </div>
-                            <div class="col-md-1" style="max-width: 120px;">
+                            <div class="col-md-3">
                                 <label class="form-label small fw-bold text-muted mb-1">Voucher No</label>
                                 <input type="text" class="form-control input-sm fw-bold text-primary bg-light" value="{{ isset($activeVoucher) ? $activeVoucher->voucher_no : 'Auto-Generated' }}" readonly style="font-size: 0.8rem;">
                             </div>
-                            <div class="col-md-2" style="max-width: 140px;">
+                            <div class="col-md-3">
                                 <label class="form-label small fw-bold text-muted mb-1">DO Number</label>
                                 <input type="text" name="do_no" class="form-control input-sm" value="{{ $activeVoucher->do_no ?? '' }}" placeholder="Enter DO #...">
                             </div>
-                            <div class="col-md-2" style="max-width: 140px;">
+                            <div class="col-md-3">
                                 <label class="form-label small fw-bold text-muted mb-1">DO Date</label>
                                 <input type="date" name="do_date" class="form-control input-sm" value="{{ $activeVoucher->do_date ?? '' }}">
                             </div>
