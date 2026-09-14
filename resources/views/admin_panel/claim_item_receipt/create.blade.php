@@ -232,12 +232,16 @@
                                 <tbody id="claimItemRows">
                                     @if($initialClaimType === 'receipt' && isset($voucher))
                                         @foreach($voucher->items as $item)
+                                            @php
+                                                $priceVal = $item->product->latestPrice->sale_net_amount ?? 0;
+                                                $retailVal = $item->product->latestPrice->sale_retail_price ?? $priceVal;
+                                            @endphp
                                             <tr>
                                                 <td class="text-center"><input type="text" name="btr_no[]" class="form-control input-sm text-center bg-light" value="{{ $item->btr_no }}" readonly></td>
                                                 <td class="text-center fw-bold text-primary">{{ $item->product_id }} <input type="hidden" name="product_id[]" value="{{ $item->product_id }}"></td>
                                                 <td>{{ $item->product->name ?? 'N/A' }}</td>
-                                                <td class="credit-only-field"><input type="number" name="price[]" class="form-control input-sm text-center line-input price" value="0.00" step="any"></td>
-                                                <td class="credit-only-field"><input type="number" name="retail_price[]" class="form-control input-sm text-center line-input retail_price" value="0.00" step="any"></td>
+                                                <td class="credit-only-field"><input type="number" name="price[]" class="form-control input-sm text-center line-input price" value="{{ number_format($priceVal, 2, '.', '') }}" step="any"></td>
+                                                <td class="credit-only-field"><input type="number" name="retail_price[]" class="form-control input-sm text-center line-input retail_price" value="{{ number_format($retailVal, 2, '.', '') }}" step="any"></td>
                                                 <td class="credit-only-field">
                                                     <div class="input-group input-group-sm">
                                                         <input type="number" name="discount_percent[]" class="form-control text-center line-input discount_percent" value="0" step="any" placeholder="%">
@@ -448,24 +452,17 @@ $(document).ready(function() {
         let opt = select.find('option:selected');
         let pName = opt.data('name') || '';
 
-        let type = $('#claim_type').val();
-        if(type === 'credit') {
-            $.get("{{ url('/get-stock') }}/" + pId, function(res) {
-                let priceVal = res && res.sales_price ? parseFloat(res.sales_price) : 0;
-                let retailVal = res && res.retail_price ? parseFloat(res.retail_price) : priceVal;
-                addRow('MANUAL', pId, pName, 1, priceVal, retailVal);
-                select.val('').trigger('change');
-                showToast('Manual product added.');
-            }).fail(function() {
-                addRow('MANUAL', pId, pName, 1, 0, 0);
-                select.val('').trigger('change');
-                showToast('Manual product added.');
-            });
-        } else {
+        $.get("{{ url('/get-stock') }}/" + pId, function(res) {
+            let priceVal = res && res.sales_price ? parseFloat(res.sales_price) : 0;
+            let retailVal = res && res.retail_price ? parseFloat(res.retail_price) : priceVal;
+            addRow('MANUAL', pId, pName, 1, priceVal, retailVal);
+            select.val('').trigger('change');
+            showToast('Manual product added.');
+        }).fail(function() {
             addRow('MANUAL', pId, pName, 1, 0, 0);
             select.val('').trigger('change');
             showToast('Manual product added.');
-        }
+        });
     });
 
     $('#btr_search_btn').on('click', function() {

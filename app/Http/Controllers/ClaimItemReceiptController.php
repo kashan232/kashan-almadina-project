@@ -71,7 +71,7 @@ class ClaimItemReceiptController extends Controller
 
     public function edit($id)
     {
-        $voucher = ClaimItemReceipt::with('items.product')->find($id);
+        $voucher = ClaimItemReceipt::with(['items.product.latestPrice'])->find($id);
         if (!$voucher) {
             // Check if it's a ClaimCreditNote
             $creditVoucher = ClaimCreditNote::find($id);
