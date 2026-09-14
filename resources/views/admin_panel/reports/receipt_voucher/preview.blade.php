@@ -118,7 +118,7 @@
 @php
     $isPartyWise = ($report_type ?? 'source_party') === 'source_party';
     $isHeadWise = in_array($report_type ?? '', ['sub_head', 'main_head'], true);
-    $extraColLabel = $isPartyWise ? 'Main Head' : 'Source Party Name';
+    $extraColLabel = $isPartyWise ? 'Sub Head' : 'Source Party Name';
     $totalCols = 8;
 @endphp
 

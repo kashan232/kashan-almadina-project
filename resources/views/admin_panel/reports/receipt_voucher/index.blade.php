@@ -143,7 +143,7 @@
                                     <label class="report-field-label">Report Type</label>
                                     <select name="report_type" class="form-select form-select-sm report-field-input" required>
                                         <option value="source_party" selected>Source Party Name</option>
-                                        <option value="main_head">Main Head</option>
+                                        <option value="sub_head">Sub Head</option>
                                     </select>
                                 </div>
                                 <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6">
