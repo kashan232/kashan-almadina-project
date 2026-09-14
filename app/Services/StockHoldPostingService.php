@@ -181,10 +181,10 @@ class StockHoldPostingService
 
             if (!$reserveOnly) {
                 $wh = (int) ($item->warehouse_id ?? $voucher->warehouse_id ?? 0);
-                $this->stock->subtract((int) $item->product_id, $wh, $qty, false);
+                $this->stock->subtract((int) $item->product_id, $wh, $qty, true);
             }
 
-            $item->update(['status' => 1]);
+            $item->update(['status' => 0]);
         }
 
         $voucher->update(['status' => 'Unposted']);

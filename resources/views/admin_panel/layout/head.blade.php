@@ -301,6 +301,8 @@
     }
 @endphp
  <title>{{ $title }}</title>
+ <link rel="icon" href="data:,">
+ <link rel="shortcut icon" href="data:,">
  <link rel="stylesheet" href="{{ asset('assets/css/bootstrap.min.css') }}">
  <link rel="stylesheet" href="{{ asset('assets/css/style.css') }}">
  <link rel="stylesheet" href="{{ asset('assets/css/compact-listing.css') }}">
