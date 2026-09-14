@@ -48,8 +48,7 @@ class ClaimCreditNoteController extends Controller
         $companyWarehouses = Warehouse::withoutGlobalScope('exclude_claims')->where('claim_type', 'company')->orderBy('warehouse_name')->get();
         $AccountHeads = AccountHead::where('status', 1)->get();
         $products = Product::select('id', 'name')->orderBy('name')->get();
-        $creditVoucher = $voucher;
-        return view('admin_panel.claim_item_receipt.create', compact('creditVoucher', 'warehouses', 'companyWarehouses', 'AccountHeads', 'products'));
+        return view('admin_panel.claim_credit_note.create', compact('voucher', 'warehouses', 'companyWarehouses', 'AccountHeads', 'products'));
     }
 
     public function show($id)
@@ -60,9 +59,8 @@ class ClaimCreditNoteController extends Controller
         $AccountHeads = AccountHead::where('status', 1)->get();
         $products = Product::select('id', 'name')->orderBy('name')->get();
         $viewMode = true;
-        $creditVoucher = $voucher;
 
-        return view('admin_panel.claim_item_receipt.create', compact('creditVoucher', 'warehouses', 'companyWarehouses', 'AccountHeads', 'products', 'viewMode'));
+        return view('admin_panel.claim_credit_note.create', compact('voucher', 'warehouses', 'companyWarehouses', 'AccountHeads', 'products', 'viewMode'));
     }
 
     public function fetchByBTR(Request $request)

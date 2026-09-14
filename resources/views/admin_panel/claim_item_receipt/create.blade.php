@@ -403,7 +403,7 @@ $(document).ready(function() {
     function applyClaimTypeLayout(type) {
         if(type === 'credit') {
             $('#docTypeBadge').html('<i class="fa fa-money me-1"></i> TYPE: CREDIT NOTE');
-            $('.credit-only-field').show().css('display', '');
+            $('.credit-only-field').removeAttr('style');
             $('#to_warehouse_col').addClass('d-none');
             $('#to_warehouse_id').prop('required', false);
             $('#mainClaimForm').attr('action', "{{ route('claim-credit-note.ajax-save') }}");
