@@ -320,19 +320,26 @@ class StockHoldReleaseReportBuilder
                 'partyCustomer:id,customer_name',
                 'product:id,name',
             ])
-            ->withSum(StockHold::postedReleasesWithSum(), 'release_qty')
-            ->whereHas('voucher', function ($q) {
-                $q->withoutGlobalScopes()->where('status', 'Posted');
-                $this->applyUserGroupFilter($q);
+            ->where(function ($q) {
+                $q->whereHas('voucher', function ($v) {
+                    $v->withoutGlobalScopes()->where('status', 'Posted');
+                    $this->applyUserGroupFilter($v);
+                })->orWhere(function ($sub) {
+                    $sub->whereNull('stock_hold_voucher_id')
+                        ->where(function ($s) {
+                            $s->whereIn('status', ['Posted', 'posted', '0', 0])
+                              ->orWhereNotNull('meta->claim_id')
+                              ->orWhereNotNull('sale_id');
+                        });
+                });
             })
             ->chunkById(300, function ($items) use (&$buckets, $fromDate, $toDate) {
                 foreach ($items as $hold) {
                     $voucher = $hold->voucher;
-                    if (!$voucher || !$hold->product_id) {
+                    if (!$hold->product_id) {
                         continue;
                     }
 
-                    // Report Hold column = original posted hold qty (e.g. 15), not net after release.
                     $qty = $hold->grossHoldQty();
                     if ($qty <= 0) {
                         continue;
@@ -344,8 +351,8 @@ class StockHoldReleaseReportBuilder
                         'party' => [$partyType, $partyId, $partyName],
                         'product_id' => (int) $hold->product_id,
                         'product_name' => $hold->product->name ?? ('Item #' . $hold->product_id),
-                        'warehouse_id' => (int) ($hold->warehouse_id ?? $voucher->warehouse_id ?? 0),
-                        'date' => $this->pickDate($voucher, ['date', 'entry_date']),
+                        'warehouse_id' => (int) ($hold->warehouse_id ?? $voucher?->warehouse_id ?? 0),
+                        'date' => $this->pickDate($voucher ?: $hold, ['entry_date', 'date']),
                     ], $qty, $fromDate, $toDate, 'hold');
                 }
             });
