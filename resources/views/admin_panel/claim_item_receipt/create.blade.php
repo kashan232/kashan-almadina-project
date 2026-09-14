@@ -403,14 +403,16 @@ $(document).ready(function() {
     function applyClaimTypeLayout(type) {
         if(type === 'credit') {
             $('#docTypeBadge').html('<i class="fa fa-money me-1"></i> TYPE: CREDIT NOTE');
-            $('.credit-only-field').removeAttr('style');
+            $('.credit-only-field').css('display', '');
+            $('th.credit-only-field, td.credit-only-field').css('display', 'table-cell');
+            $('div.credit-only-field, .row.credit-only-field').css('display', 'flex');
             $('#to_warehouse_col').addClass('d-none');
             $('#to_warehouse_id').prop('required', false);
             $('#mainClaimForm').attr('action', "{{ route('claim-credit-note.ajax-save') }}");
             $('#receipt_tfoot_row').hide();
         } else {
             $('#docTypeBadge').html('<i class="fa fa-file-text-o me-1"></i> TYPE: ITEM RECEIPT');
-            $('.credit-only-field').hide();
+            $('.credit-only-field').css('display', 'none');
             $('#to_warehouse_col').removeClass('d-none');
             $('#to_warehouse_id').prop('required', true);
             $('#mainClaimForm').attr('action', "{{ route('claim-item-receipt.ajax-save') }}");
