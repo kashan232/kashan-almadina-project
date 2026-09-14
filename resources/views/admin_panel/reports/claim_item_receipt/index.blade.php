@@ -125,7 +125,8 @@
                                         @foreach($customers as $cust)
                                             <div class="filter-item"
                                                  data-search="{{ strtolower($cust->customer_name) }}"
-                                                 data-party-type="customer">
+                                                 data-party-type="customer"
+                                                 data-groups="{{ is_array($cust->user_group_ids) ? implode(',', $cust->user_group_ids) : '' }}">
                                                 <input type="checkbox" name="party[]" value="customer:{{ $cust->id }}">
                                                 <span>{{ $cust->customer_name }}</span>
                                             </div>
@@ -133,7 +134,8 @@
                                         @foreach($vendors as $vendor)
                                             <div class="filter-item"
                                                  data-search="{{ strtolower($vendor->name) }}"
-                                                 data-party-type="vendor">
+                                                 data-party-type="vendor"
+                                                 data-groups="{{ is_array($vendor->user_group_ids) ? implode(',', $vendor->user_group_ids) : '' }}">
                                                 <input type="checkbox" name="party[]" value="vendor:{{ $vendor->id }}">
                                                 <span>{{ $vendor->name }}</span>
                                             </div>
@@ -294,10 +296,10 @@
         function filterByGroup() {
             const selectedGroups = getCheckedValues('group-list', 'user_group[]');
             if (selectedGroups.length === 0) {
-                $('#officer-list .filter-item, #deductfrom-list .filter-item, #addto-list .filter-item').show();
+                $('#officer-list .filter-item, #deductfrom-list .filter-item, #addto-list .filter-item, #party-list .filter-item').show();
                 return;
             }
-            ['officer-list', 'deductfrom-list', 'addto-list'].forEach(function(listId) {
+            ['officer-list', 'deductfrom-list', 'addto-list', 'party-list'].forEach(function(listId) {
                 $('#' + listId + ' .filter-item').each(function() {
                     const groups = String($(this).data('groups') || '').split(',').filter(Boolean);
                     const visible = groups.length === 0 || groups.some(g => selectedGroups.includes(g));
