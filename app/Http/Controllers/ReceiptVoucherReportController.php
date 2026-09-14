@@ -268,11 +268,13 @@ class ReceiptVoucherReportController extends Controller
                 continue;
             }
 
+            $subHeadLabel = strtoupper($account->title ?? $headName);
+
             $groupKey = in_array($reportType, ['sub_head', 'main_head'], true)
-                ? 'head_' . ($headId ?: '0')
+                ? 'account_' . ($accountId ?: '0')
                 : 'party_' . $voucher->type . '_' . $voucher->party_id;
 
-            $groupLabel = in_array($reportType, ['sub_head', 'main_head'], true) ? strtoupper($headName) : $partyName;
+            $groupLabel = in_array($reportType, ['sub_head', 'main_head'], true) ? $subHeadLabel : $partyName;
 
             $lines->push((object) [
                 'group_key' => $groupKey,
@@ -283,7 +285,7 @@ class ReceiptVoucherReportController extends Controller
                 'receipt_date' => $voucher->receipt_date,
                 'reference_no' => $references[$index] ?? '',
                 'narration' => $narrationText,
-                'sub_head_name' => $headName,
+                'sub_head_name' => $subHeadLabel,
                 'party_name' => $partyName,
                 'bank_details' => $account->title ?? '-',
                 'amount' => $amount,
