@@ -108,7 +108,7 @@ class StockHold extends Model
             ->when($warehouseId !== null, fn ($q) => $q->where('warehouse_id', $warehouseId))
             ->sum('release_qty');
 
-        $informalPositive = (float) static::withoutGlobalScopes()
+        $informalPositiveQuery = static::withoutGlobalScopes()
             ->where('product_id', $productId)
             ->whereNull('stock_hold_voucher_id')
             ->where('hold_qty', '>', 0)
@@ -121,11 +121,45 @@ class StockHold extends Model
                   ->orWhereHas('customerClaim', function ($c) {
                       $c->where('status', 'Posted');
                   });
-            })
-            ->when($warehouseId !== null, fn ($q) => $q->where('warehouse_id', $warehouseId))
-            ->sum('hold_qty');
+            });
 
-        return $formalGross - $released + $informalPositive;
+        if ($warehouseId !== null) {
+            $informalPositiveQuery->where(function($q) use ($warehouseId) {
+                $q->where('warehouse_id', $warehouseId)
+                  ->orWhereHas('releases', function($r) use ($warehouseId) {
+                      $r->withoutGlobalScopes()->where('warehouse_id', $warehouseId);
+                  });
+            });
+        }
+
+        $informalPositiveHolds = $informalPositiveQuery->get();
+
+        $informalGross = 0.0;
+        foreach ($informalPositiveHolds as $h) {
+            $hWh = $h->warehouse_id;
+            $hReleasedAtWh = (float) StockRelease::withoutGlobalScopes()
+                ->where('hold_id', $h->id)
+                ->where(function ($q) {
+                    $q->whereHas('voucher', function ($v) {
+                        $v->withoutGlobalScopes()->where('status', 'Posted');
+                    })->orWhereIn('status', ['Posted', 'posted']);
+                })
+                ->when($warehouseId !== null, fn ($q) => $q->where('warehouse_id', $warehouseId))
+                ->sum('release_qty');
+
+            if ($warehouseId === null) {
+                // Global total: add gross minus released
+                $informalGross += max(0, (float)$h->hold_qty - $h->postedReleaseQty());
+            } else {
+                // Per warehouse filter:
+                // If this is the hold's warehouse, add gross hold minus releases performed at this warehouse
+                if ($hWh == $warehouseId) {
+                    $informalGross += (float)$h->hold_qty;
+                }
+            }
+        }
+
+        return $formalGross - $released + $informalGross;
     }
 
     /** Original qty on the hold document (never reduced when release is posted). */
