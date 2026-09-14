@@ -387,7 +387,7 @@
         function matchesGroups($item, selectedGroups) {
             if (!selectedGroups.length) return true;
             const itemGroups = parseDataList($item.data('groups'));
-            if (!itemGroups.length) return true;
+            if (!itemGroups.length) return false;
             return selectedGroups.some(g => itemGroups.includes(g));
         }
 

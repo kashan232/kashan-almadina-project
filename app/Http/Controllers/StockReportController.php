@@ -75,7 +75,15 @@ class StockReportController extends Controller
 
     private function filterView(string $view, array $extra = [])
     {
-        $userGroups = UserGroup::orderBy('group_name')->get();
+        $user = auth()->user();
+        $isAdmin = !$user || $user->roles->pluck('name')->contains('Admin') || $user->id == 1;
+
+        $userGroups = UserGroup::orderBy('group_name')
+            ->when(!$isAdmin, function ($q) use ($user) {
+                $groupIds = $user ? $user->userGroups()->pluck('user_groups.id')->toArray() : [];
+                $q->whereIn('id', $groupIds);
+            })
+            ->get();
         $warehouses = Warehouse::withoutGlobalScopes()->orderBy('warehouse_name')->get();
         $categories = Category::orderBy('name')->get();
         $subcategories = Subcategory::orderBy('name')->get();

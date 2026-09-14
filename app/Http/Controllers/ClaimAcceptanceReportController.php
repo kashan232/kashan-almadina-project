@@ -31,7 +31,15 @@ class ClaimAcceptanceReportController extends Controller
 
     public function index()
     {
-        $userGroups = UserGroup::orderBy('group_name')->get();
+        $user = auth()->user();
+        $isAdmin = !$user || $user->roles->pluck('name')->contains('Admin') || $user->id == 1;
+
+        $userGroups = UserGroup::orderBy('group_name')
+            ->when(!$isAdmin, function ($q) use ($user) {
+                $groupIds = $user ? $user->userGroups()->pluck('user_groups.id')->toArray() : [];
+                $q->whereIn('id', $groupIds);
+            })
+            ->get();
         $users = User::with('userGroups')->orderBy('name')->get();
         $claimFromWarehouses = Warehouse::withoutGlobalScopes()
             ->where('claim_type', 'customer')
