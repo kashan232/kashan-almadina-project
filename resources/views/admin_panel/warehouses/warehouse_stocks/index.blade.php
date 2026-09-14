@@ -326,12 +326,12 @@
                                                 </td>
                                             @endforeach
 
-                                            {{-- Total Reserved Column ($holdSum: e.g. hold 10 → +10, release 5 → -5) --}}
+                                            {{-- Total Reserved Column ($holdSum) --}}
                                             @php $displayReserved = $holdSum; @endphp
                                             <td class="text-center" style="background-color: #fffcfc; border-left: 2px solid #f1f5f9;">
                                                 @if(abs($holdSum) >= 0.0001)
                                                     <span class="stock-badge fw-bold {{ $displayReserved < 0 ? 'text-danger' : 'text-primary' }}">
-                                                        {{ $displayReserved > 0 ? '+' : '' }}{{ number_format($displayReserved, 0) }}
+                                                        {{ number_format($displayReserved, 0) }}
                                                     </span>
                                                 @else
                                                     <span class="text-muted" style="opacity: 0.2;">0</span>
