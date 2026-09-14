@@ -241,6 +241,8 @@ class StockHoldReleaseReportBuilder
         $date = $meta['date'];
 
         if ($fromDate && $date < $fromDate) {
+            // Movements prior to fromDate accumulate into Opening balance (Hold adds, Release subtracts)
+            $buckets[$key]['opening'] += ($kind === 'hold' ? $qty : -$qty);
             return;
         }
 
@@ -521,15 +523,9 @@ class StockHoldReleaseReportBuilder
     }
     private function compilePartyGroups(array $buckets): array
     {
-        $productIds = collect($buckets)->pluck('product_id')->unique()->filter()->values();
-        $products = $this->loadProductsByIds($productIds);
-
         $partyGroups = [];
 
         foreach ($buckets as $row) {
-            $product = $products->get($row['product_id']);
-            $row['opening'] = $product ? $this->resolveProductOpening($product) : 0.0;
-
             $payable = $row['opening'] + $row['hold'] - $row['rel'];
             if (!$this->shouldIncludeRow($row, $payable)) {
                 continue;
@@ -552,15 +548,9 @@ class StockHoldReleaseReportBuilder
             return [];
         }
 
-        $productIds = collect($customerBuckets)->pluck('product_id')->unique()->filter()->values();
-        $products = $this->loadProductsByIds($productIds);
-
         $partyGroups = [];
 
         foreach ($customerBuckets as $row) {
-            $product = $products->get($row['product_id']);
-            $row['opening'] = $product ? $this->resolveProductOpening($product) : 0.0;
-
             $payable = $row['opening'] + $row['hold'] - $row['rel'];
             if (!$this->shouldIncludeRow($row, $payable)) {
                 continue;
