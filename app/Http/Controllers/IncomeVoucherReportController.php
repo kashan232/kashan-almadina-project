@@ -17,7 +17,7 @@ class IncomeVoucherReportController extends Controller
 
     public function index()
     {
-        return view('admin_panel.reports.income_voucher.index', $this->loadVoucherReportFilters());
+        return view('admin_panel.reports.income_voucher.index', $this->loadVoucherReportFilters(['INCOME']));
     }
 
     public function preview(Request $request)
@@ -74,7 +74,7 @@ class IncomeVoucherReportController extends Controller
     ): Collection {
         $destHeadName = AccountHead::find($voucher->account_head)?->name ?? 'N/A';
         $destAccount = Account::find($voucher->account_id);
-        $destLabel = strtoupper($destAccount->title ?? $destHeadName);
+        $subHeadLabel = strtoupper($destAccount->title ?? $destHeadName);
 
         $narrationIds = json_decode($voucher->narration_id, true) ?? [];
         $partyTypes = json_decode($voucher->party_type, true) ?? [];
@@ -116,8 +116,8 @@ class IncomeVoucherReportController extends Controller
 
             $groupKey = $reportType === 'source_party'
                 ? 'party_' . $pType . '_' . $pId
-                : 'head_' . ($voucher->account_head ?: '0') . '_' . ($voucher->account_id ?: '0');
-            $groupLabel = $reportType === 'source_party' ? $partyName : $destLabel;
+                : 'account_' . ($voucher->account_id ?: '0');
+            $groupLabel = $reportType === 'source_party' ? $partyName : $subHeadLabel;
 
             $lines->push((object) [
                 'group_key' => $groupKey,
@@ -128,7 +128,7 @@ class IncomeVoucherReportController extends Controller
                 'reference_no' => $references[$index] ?? '',
                 'narration' => $this->resolveNarration($narrId),
                 'party_name' => $partyName,
-                'account_name' => $destLabel,
+                'account_name' => $subHeadLabel,
                 'amount' => $amount,
             ]);
         }
