@@ -71,6 +71,7 @@
                                             @endphp
                                             <div class="filter-item"
                                                  data-party-type="{{ $partyTypeKey }}"
+                                                 data-groups="{{ is_array($customer->user_group_ids) ? implode(',', $customer->user_group_ids) : '' }}"
                                                  data-search="{{ strtolower($customer->customer_name . ' ' . $partyTypeLabel) }}">
                                                 <input type="checkbox" name="party[]" value="{{ $partyTypeKey }}:{{ $customer->id }}">
                                                 <span>{{ $customer->customer_name }} <small class="text-muted">({{ $partyTypeLabel }})</small></span>
@@ -79,6 +80,7 @@
                                         @foreach($vendors as $vendor)
                                             <div class="filter-item"
                                                  data-party-type="vendor"
+                                                 data-groups="{{ is_array($vendor->user_group_ids) ? implode(',', $vendor->user_group_ids) : '' }}"
                                                  data-search="{{ strtolower($vendor->name . ' vendor') }}">
                                                 <input type="checkbox" name="party[]" value="vendor:{{ $vendor->id }}">
                                                 <span>{{ $vendor->name }} <small class="text-muted">(Vendor)</small></span>
@@ -179,13 +181,25 @@
             $item.removeClass('selected');
         }
 
+        function parseDataList(value) {
+            return String(value || '').split(',').map(v => v.trim()).filter(Boolean);
+        }
+
+        function matchesGroups($item, selectedGroups) {
+            if (!selectedGroups.length) return true;
+            const itemGroups = parseDataList($item.data('groups'));
+            if (!itemGroups.length) return true;
+            return selectedGroups.some(g => itemGroups.includes(g));
+        }
+
         $('.filter-item').on('click', function(e) {
             if ($(e.target).is('input')) return;
             const $cb = $(this).find('input[type="checkbox"]');
             $cb.prop('checked', !$cb.prop('checked'));
             $(this).toggleClass('selected', $cb.prop('checked'));
 
-            if ($(this).closest('#partytype-list').length) {
+            const listId = $(this).closest('.filter-list').attr('id');
+            if (['group-list', 'partytype-list'].includes(listId)) {
                 setTimeout(applyPartyFilters, 0);
             }
         });
@@ -197,13 +211,19 @@
                 $(this).find('input[type="checkbox"]').prop('checked', checked);
                 $(this).toggleClass('selected', checked);
             });
-            if (target === 'partytype-list') {
+            if (['group-list', 'partytype-list'].includes(target)) {
                 applyPartyFilters();
             }
         });
 
         $('#globalSelectAll').on('change', function() {
-            $('.select-all').prop('checked', $(this).is(':checked')).trigger('change');
+            const checked = $(this).is(':checked');
+            $('.select-all').prop('checked', checked);
+            $('.filter-item').each(function() {
+                $(this).find('input[type="checkbox"]').prop('checked', checked);
+                $(this).toggleClass('selected', checked);
+            });
+            applyPartyFilters();
         });
 
         function getCheckedValues(listId, inputName) {
@@ -217,6 +237,7 @@
         }
 
         function applyPartyFilters() {
+            const selectedGroups = getCheckedValues('group-list', 'user_group[]');
             const selectedTypes = getCheckedValues('partytype-list', 'party_type[]');
             const term = ($('#partySearch').val() || '').toLowerCase();
 
@@ -224,9 +245,10 @@
                 const $item = $(this);
                 const partyType = String($item.data('party-type') || '');
                 const searchText = String($item.data('search') || '');
+                const groupMatch = matchesGroups($item, selectedGroups);
                 const typeMatch = selectedTypes.length === 0 || selectedTypes.includes(partyType);
                 const searchMatch = !term || searchText.includes(term);
-                const show = typeMatch && searchMatch;
+                const show = groupMatch && typeMatch && searchMatch;
 
                 $item.toggle(show);
                 if (!show) uncheckItem($item);
@@ -234,7 +256,9 @@
         }
 
         $('#partySearch').on('keyup', applyPartyFilters);
-        applyPartyFilters();
+        setTimeout(() => {
+            $('#globalSelectAll').prop('checked', true).trigger('change');
+        }, 300);
     });
 </script>
 @endsection
