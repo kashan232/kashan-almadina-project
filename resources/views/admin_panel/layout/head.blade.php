@@ -267,46 +267,40 @@
  <meta name="viewport" content="width=device-width, initial-scale=1">
  <meta name="description" content="Zare Bootstrap 4 Admin Template">
 @php
-    $routePath = request()->path();
-    $seg1 = request()->segment(1) ?? '';
-    $seg2 = request()->segment(2) ?? '';
-    $seg3 = request()->segment(3) ?? '';
+    $path = request()->path(); // e.g. sale/edit/1 or sale-return or purchase
+    $title = '';
 
-    $shortTitle = '';
-
-    if (str_contains($routePath, 'sale-return') || str_contains($routePath, 'salereturn')) {
-        $shortTitle = 'SRJ';
-    } elseif (str_contains($routePath, 'purchase-return') || str_contains($routePath, 'purchasereturn')) {
-        $shortTitle = 'PRJ';
-    } elseif (str_contains($routePath, 'sale')) {
-        $shortTitle = 'SJ';
-    } elseif (str_contains($routePath, 'purchase')) {
-        $shortTitle = 'PJ';
-    } elseif (str_contains($routePath, 'claim-item-receipt')) {
-        $shortTitle = 'CIR';
-    } elseif (str_contains($routePath, 'claim-credit-note')) {
-        $shortTitle = 'CCN';
-    } elseif (str_contains($routePath, 'customer-claim')) {
-        $shortTitle = 'CLM';
-    } elseif (str_contains($routePath, 'stock-release')) {
-        $shortTitle = 'SR';
-    } elseif (str_contains($routePath, 'stock-hold')) {
-        $shortTitle = 'SH';
-    } elseif (str_contains($routePath, 'inward')) {
-        $shortTitle = 'INW';
+    if (str_contains($path, 'sale-return') || str_contains($path, 'salereturn')) {
+        $title = 'SRJ';
+    } elseif (str_contains($path, 'purchase-return') || str_contains($path, 'purchasereturn')) {
+        $title = 'PRJ';
+    } elseif (str_contains($path, 'sale')) {
+        $title = 'SJ';
+    } elseif (str_contains($path, 'purchase')) {
+        $title = 'PJ';
+    } elseif (str_contains($path, 'claim-item-receipt')) {
+        $title = 'CIR';
+    } elseif (str_contains($path, 'claim-credit-note')) {
+        $title = 'CCN';
+    } elseif (str_contains($path, 'customer-claim')) {
+        $title = 'CLM';
+    } elseif (str_contains($path, 'stock-release')) {
+        $title = 'SR';
+    } elseif (str_contains($path, 'stock-hold')) {
+        $title = 'SH';
+    } elseif (str_contains($path, 'inward')) {
+        $title = 'INW';
     } else {
-        $shortTitle = ucwords(str_replace(['-', '_'], ' ', $seg1 ?: 'Home'));
+        $title = strtoupper(str_replace(['-', '_'], ' ', request()->segment(1) ?: 'HOME'));
     }
 
-    if ($seg2 && in_array($seg1, ['add', 'edit', 'create', 'view'])) {
-        $shortTitle = strtoupper($seg1) . ' ' . $shortTitle;
-    } elseif ($seg2 === 'create' || $seg2 === 'add') {
-        $shortTitle = 'ADD ' . $shortTitle;
-    } elseif ($seg2 === 'edit') {
-        $shortTitle = 'EDIT ' . $shortTitle;
+    if (str_contains($path, 'edit')) {
+        $title = 'EDIT ' . $title;
+    } elseif (str_contains($path, 'create') || str_contains($path, 'add')) {
+        $title = 'ADD ' . $title;
     }
 @endphp
- <title>{{ $shortTitle }} | Al-Madina</title>
+ <title>{{ $title }}</title>
  <link rel="stylesheet" href="{{ asset('assets/css/bootstrap.min.css') }}">
  <link rel="stylesheet" href="{{ asset('assets/css/style.css') }}">
  <link rel="stylesheet" href="{{ asset('assets/css/compact-listing.css') }}">
