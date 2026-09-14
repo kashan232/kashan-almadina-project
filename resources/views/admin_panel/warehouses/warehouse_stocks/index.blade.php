@@ -272,19 +272,13 @@
                                 </thead>
                                 <tbody>
                                     @foreach($products as $product)
-                                        @php
-                                            $shopHoldSum = $canAccessShop
-                                                ? \App\Models\StockHold::netReservedForProduct($product->id, 0)
-                                                : 0;
-                                            $whSum = 0;
-                                            $holdSum = 0;
-                                            if ($canAccessShop) {
-                                                $holdSum += \App\Models\StockHold::netReservedForProduct($product->id, 0);
-                                            }
-                                            foreach ($allWarehouses as $visibleWh) {
-                                                $holdSum += \App\Models\StockHold::netReservedForProduct($product->id, (int) $visibleWh->id);
-                                            }
-                                        @endphp
+                                         @php
+                                             $shopHoldSum = $canAccessShop
+                                                 ? \App\Models\StockHold::netReservedForProduct($product->id, 0)
+                                                 : 0;
+                                             $whSum = 0;
+                                             $holdSum = \App\Models\StockHold::netReservedForProduct($product->id, null);
+                                         @endphp
                                         <tr>
                                             <td class="text-muted small">#{{ $product->id }}</td>
                                             <td class="fw-bold text-dark">{{ $product->name }}</td>

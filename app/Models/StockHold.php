@@ -108,7 +108,8 @@ class StockHold extends Model
             ->when($warehouseId !== null, fn ($q) => $q->where('warehouse_id', $warehouseId))
             ->sum('release_qty');
 
-        $informalPositive = (float) static::withoutGlobalScopes()
+        // Informal positive holds (e.g. Customer Claim Holds without stock_hold_voucher_id)
+        $informalHolds = static::withoutGlobalScopes()
             ->where('product_id', $productId)
             ->whereNull('stock_hold_voucher_id')
             ->where('hold_qty', '>', 0)
@@ -122,7 +123,17 @@ class StockHold extends Model
                   });
             })
             ->when($warehouseId !== null, fn ($q) => $q->where('warehouse_id', $warehouseId))
-            ->sum('hold_qty');
+            ->get();
+
+        $informalPositive = 0.0;
+        foreach ($informalHolds as $holdLine) {
+            $informalPositive += max(0, (float)$holdLine->hold_qty - $holdLine->postedReleaseQty());
+        }
+
+        // If warehouseId filter is not specified (global product reserved balance)
+        if ($warehouseId === null) {
+            return $formalGross - $released + $informalPositive;
+        }
 
         return $formalGross - $released + $informalPositive;
     }
