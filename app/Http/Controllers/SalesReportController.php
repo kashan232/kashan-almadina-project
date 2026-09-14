@@ -574,10 +574,14 @@ class SalesReportController extends Controller
 
         $party = $claim->party_type === 'vendor' ? $claim->vendor : $claim->customer;
         $partyName = $claim->party_name;
+        $filerType = $party?->filer_type ?? $claim->customer?->filer_type ?? 'Non Filer';
+
         $reportCustomer = (object) [
+            'id' => $claim->party_id,
+            'customer_id' => $claim->party_id,
             'customer_name' => $partyName,
             'cnic' => $party?->cnic ?? '',
-            'filer_type' => 'Non Filer',
+            'filer_type' => $filerType,
         ];
 
         $claimDate = $claim->claim_date ?? $claim->entry_date ?? now();
@@ -704,11 +708,12 @@ class SalesReportController extends Controller
     private function previewTaxSummary($saleItems, $from_date, $to_date)
     {
         $grouped = $saleItems->groupBy(function ($item) {
-            $type = $item->sale->customer?->filer_type ?? 'Non Filer';
-            return ucwords(strtolower($type));
+            $customer = $item->sale?->customer;
+            $filerType = $customer?->filer_type ?? $item->sale?->filer_type ?? 'Non Filer';
+            return ucwords(strtolower($filerType));
         })->map(function ($items) {
             return $items->groupBy(function ($item) {
-                return $item->sale->customer_id;
+                return $item->sale?->customer_id ?? 0;
             });
         });
 
