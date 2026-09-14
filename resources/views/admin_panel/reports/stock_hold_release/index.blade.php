@@ -53,30 +53,54 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-md-2" style="min-width: 160px;">
+                            <!-- Party Type -->
+                            <div class="col-md-1" style="min-width: 90px;">
                                 <div class="filter-column">
                                     <div class="filter-header">
-                                        <input type="checkbox" class="select-all" data-target="party-list"> Customer / Party
+                                        <input type="checkbox" class="select-all" data-target="partytype-list"> Type
+                                    </div>
+                                    <div class="filter-list" id="partytype-list">
+                                        <div class="filter-item"><input type="checkbox" name="party_type[]" value="Main Customer"><span>Main</span></div>
+                                        <div class="filter-item"><input type="checkbox" name="party_type[]" value="Walking Customer"><span>Walk-in</span></div>
+                                        <div class="filter-item"><input type="checkbox" name="party_type[]" value="Vendor"><span>Vendor</span></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Party -->
+                            <div class="col-md-2" style="min-width: 150px;">
+                                <div class="filter-column">
+                                    <div class="filter-header">
+                                        <input type="checkbox" class="select-all" data-target="party-list"> Party
                                     </div>
                                     <div class="p-1 bg-light border-bottom">
                                         <input type="text" class="form-control form-control-sm" id="partySearch" placeholder="Search party..." style="height: 24px; font-size: 11px;">
                                     </div>
                                     <div class="filter-list" id="party-list">
-                                        @foreach($vendors as $vendor)
-                                            <div class="filter-item" data-search="{{ strtolower($vendor->name) }}">
-                                                <input type="checkbox" name="party[]" value="vendor:{{ $vendor->id }}">
-                                                <span>{{ $vendor->name }} <small class="text-muted">(Vendor)</small></span>
+                                        @foreach($customers as $customer)
+                                            @php
+                                                $partyTypeKey = $customer->customer_type === 'Walking Customer' ? 'walkin' : 'customer';
+                                            @endphp
+                                            <div class="filter-item"
+                                                 data-search="{{ strtolower($customer->customer_name) }}"
+                                                 data-party-type="{{ $customer->customer_type }}"
+                                                 data-groups="{{ is_array($customer->user_group_ids) ? implode(',', $customer->user_group_ids) : '' }}">
+                                                <input type="checkbox" name="party[]" value="{{ $partyTypeKey }}:{{ $customer->id }}">
+                                                <span>{{ $customer->customer_name }}</span>
                                             </div>
                                         @endforeach
-                                        @foreach($customers as $customer)
-                                            <div class="filter-item" data-search="{{ strtolower($customer->customer_name) }}">
-                                                <input type="checkbox" name="party[]" value="customer:{{ $customer->id }}">
-                                                <span>{{ $customer->customer_name }} <small class="text-muted">(Customer)</small></span>
+                                        @foreach($vendors as $vendor)
+                                            <div class="filter-item"
+                                                 data-search="{{ strtolower($vendor->name) }}"
+                                                 data-party-type="Vendor"
+                                                 data-groups="{{ is_array($vendor->user_group_ids) ? implode(',', $vendor->user_group_ids) : '' }}">
+                                                <input type="checkbox" name="party[]" value="vendor:{{ $vendor->id }}">
+                                                <span>{{ $vendor->name }}</span>
                                             </div>
                                         @endforeach
                                     </div>
                                 </div>
                             </div>
+                            <!-- Item -->
                             <div class="col-md-2">
                                 <div class="filter-column">
                                     <div class="filter-header">
@@ -217,10 +241,13 @@
             $('.select-all').prop('checked', checked).trigger('change');
         });
 
-        $('#itemSearch, #partySearch').on('keyup', function() {
-            const listId = $(this).attr('id') === 'itemSearch' ? 'item-list' : 'party-list';
+        $('#partySearch').on('keyup', function() {
+            filterByPartyType();
+        });
+
+        $('#itemSearch').on('keyup', function() {
             const term = ($(this).val() || '').toLowerCase();
-            $('#' + listId + ' .filter-item').each(function() {
+            $('#item-list .filter-item').each(function() {
                 const $item = $(this);
                 const show = !term || String($item.data('search') || '').includes(term);
                 $item.toggle(show);
@@ -228,17 +255,37 @@
             });
         });
 
+        function filterByPartyType() {
+            const selectedTypes = getCheckedValues('partytype-list', 'party_type[]');
+            const searchTerm = ($('#partySearch').val() || '').toLowerCase();
+
+            $('#party-list .filter-item').each(function() {
+                const partyType = String($(this).data('party-type') || '');
+                const matchesType = selectedTypes.length === 0 || selectedTypes.includes(partyType);
+                const matchesSearch = !searchTerm || ($(this).data('search') || '').includes(searchTerm);
+                const visible = matchesType && matchesSearch;
+                $(this).toggle(visible);
+                if (!visible) uncheckItem($(this));
+            });
+        }
+
+        $('#partytype-list .filter-item').on('click', function() {
+            setTimeout(filterByPartyType, 50);
+        });
+
         function filterByGroup() {
             const selectedGroups = getCheckedValues('group-list', 'user_group[]');
             if (selectedGroups.length === 0) {
-                $('#warehouse-list .filter-item').show();
+                $('#warehouse-list .filter-item, #party-list .filter-item').show();
                 return;
             }
-            $('#warehouse-list .filter-item').each(function() {
-                const groups = String($(this).data('groups') || '').split(',').filter(Boolean);
-                const visible = groups.length === 0 || groups.some(g => selectedGroups.includes(g));
-                $(this).toggle(visible);
-                if (!visible) uncheckItem($(this));
+            ['warehouse-list', 'party-list'].forEach(function(listId) {
+                $('#' + listId + ' .filter-item').each(function() {
+                    const groups = String($(this).data('groups') || '').split(',').filter(Boolean);
+                    const visible = groups.length === 0 || groups.some(g => selectedGroups.includes(g));
+                    $(this).toggle(visible);
+                    if (!visible) uncheckItem($(this));
+                });
             });
         }
 
