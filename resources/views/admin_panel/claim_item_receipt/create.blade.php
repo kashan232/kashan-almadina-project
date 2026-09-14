@@ -93,6 +93,8 @@
                 @csrf
                 <input type="hidden" name="action" id="formAction" value="save">
                 <input type="hidden" name="id" id="voucher_id" value="{{ $activeVoucher->id ?? '' }}">
+                <input type="hidden" name="original_id" id="original_id" value="{{ $activeVoucher->id ?? '' }}">
+                <input type="hidden" name="original_type" id="original_type" value="{{ $initialClaimType }}">
                 <div class="posted-watermark {{ ($isViewMode && $isPosted) || $isPosted ? 'show' : '' }}" id="postedWatermark">Posted</div>
 
                 {{-- Header Details --}}

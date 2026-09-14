@@ -157,6 +157,18 @@ class ClaimItemReceiptController extends Controller
                 return response()->json(['success' => false, 'message' => 'Already posted'], 422);
             }
 
+            // If converting from ClaimCreditNote to ClaimItemReceipt, cleanup old ClaimCreditNote
+            if ($request->original_id && $request->original_type === 'credit') {
+                $oldCredit = \App\Models\ClaimCreditNote::find($request->original_id);
+                if ($oldCredit) {
+                    if ($oldCredit->status === 'Posted') {
+                        return response()->json(['success' => false, 'message' => 'Cannot convert a posted Credit Note.'], 422);
+                    }
+                    \App\Models\ClaimCreditNoteItem::where('claim_credit_note_id', $oldCredit->id)->delete();
+                    $oldCredit->delete();
+                }
+            }
+
             if (!$id) {
                 $voucher->voucher_no = ClaimItemReceipt::generateVoucherNo();
             }
