@@ -434,9 +434,6 @@
                 const show = brandMatch && searchMatch;
                 $item.toggle(show);
                 if (!show) uncheckItem($item);
-            });
-
-            });
         }
 
         // Toggle item selection
