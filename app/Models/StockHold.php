@@ -98,8 +98,13 @@ class StockHold extends Model
             ->when($warehouseId !== null, fn ($q) => $q->where('warehouse_id', $warehouseId))
             ->sum('hold_qty');
 
-        $released = (float) StockRelease::withoutGlobalScopes()
+        // Releases linked to formal vouchers
+        $releasedFormal = (float) StockRelease::withoutGlobalScopes()
             ->where('product_id', $productId)
+            ->whereNotNull('hold_id')
+            ->whereHas('hold', function ($h) {
+                $h->withoutGlobalScopes()->whereNotNull('stock_hold_voucher_id');
+            })
             ->where(function ($q) {
                 $q->whereHas('voucher', function ($v) {
                     $v->withoutGlobalScopes()->where('status', 'Posted');
@@ -108,7 +113,7 @@ class StockHold extends Model
             ->when($warehouseId !== null, fn ($q) => $q->where('warehouse_id', $warehouseId))
             ->sum('release_qty');
 
-        // Informal positive holds (e.g. Customer Claim Holds without stock_hold_voucher_id)
+        // Informal positive holds (e.g. Customer Claim Holds)
         $informalHolds = static::withoutGlobalScopes()
             ->where('product_id', $productId)
             ->whereNull('stock_hold_voucher_id')
@@ -125,17 +130,30 @@ class StockHold extends Model
             ->when($warehouseId !== null, fn ($q) => $q->where('warehouse_id', $warehouseId))
             ->get();
 
-        $informalPositive = 0.0;
+        $informalNet = 0.0;
         foreach ($informalHolds as $holdLine) {
-            $informalPositive += max(0, (float)$holdLine->hold_qty - $holdLine->postedReleaseQty());
+            $claimId = $holdLine->meta['claim_id'] ?? null;
+            
+            $relQty = (float) StockRelease::withoutGlobalScopes()
+                ->where(function($q) use ($holdLine, $claimId) {
+                    $q->where('hold_id', $holdLine->id);
+                    if ($claimId) {
+                        $q->orWhereHas('voucher', function($v) use ($claimId) {
+                            $v->withoutGlobalScopes()->where('claim_id', $claimId);
+                        });
+                    }
+                })
+                ->where(function ($q) {
+                    $q->whereHas('voucher', function ($v) {
+                        $v->withoutGlobalScopes()->where('status', 'Posted');
+                    })->orWhereIn('status', ['Posted', 'posted']);
+                })
+                ->sum('release_qty');
+
+            $informalNet += max(0, (float)$holdLine->hold_qty - $relQty);
         }
 
-        // If warehouseId filter is not specified (global product reserved balance)
-        if ($warehouseId === null) {
-            return $formalGross - $released + $informalPositive;
-        }
-
-        return $formalGross - $released + $informalPositive;
+        return max(0, ($formalGross - $releasedFormal) + $informalNet);
     }
 
     /** Original qty on the hold document (never reduced when release is posted). */
