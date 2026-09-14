@@ -78,11 +78,13 @@ trait VoucherReportHelpers
         $users = User::with('userGroups')->orderBy('name')->get();
         $accountHeads = AccountHead::where('status', 1)
             ->when($headTypes !== null, function ($q) use ($headTypes) {
-                $q->where(function ($sub) use ($headTypes) {
-                    foreach ($headTypes as $type) {
-                        $sub->orWhere('name', 'like', '%' . $type . '%');
-                    }
-                });
+                if (!empty($headTypes)) {
+                    $q->where(function ($sub) use ($headTypes) {
+                        foreach ($headTypes as $type) {
+                            $sub->orWhere('name', 'like', '%' . $type . '%');
+                        }
+                    });
+                }
             }, function ($q) {
                 $q->where(function ($sub) {
                     $sub->where('name', 'like', '%CASH%')

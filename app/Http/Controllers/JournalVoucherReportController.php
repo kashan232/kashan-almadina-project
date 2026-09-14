@@ -15,7 +15,7 @@ class JournalVoucherReportController extends Controller
 
     public function index()
     {
-        return view('admin_panel.reports.journal_voucher.index', $this->loadVoucherReportFilters());
+        return view('admin_panel.reports.journal_voucher.index', $this->loadVoucherReportFilters([]));
     }
 
     public function preview(Request $request)
