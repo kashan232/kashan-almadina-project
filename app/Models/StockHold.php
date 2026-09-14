@@ -98,12 +98,15 @@ class StockHold extends Model
             ->when($warehouseId !== null, fn ($q) => $q->where('warehouse_id', $warehouseId))
             ->sum('hold_qty');
 
-        // Releases linked to formal vouchers
+        // Releases linked to formal vouchers (either via hold_id or via stock_release_vouchers.hold_voucher_id)
         $releasedFormal = (float) StockRelease::withoutGlobalScopes()
             ->where('product_id', $productId)
-            ->whereNotNull('hold_id')
-            ->whereHas('hold', function ($h) {
-                $h->withoutGlobalScopes()->whereNotNull('stock_hold_voucher_id');
+            ->where(function ($q) {
+                $q->whereHas('hold', function ($h) {
+                    $h->withoutGlobalScopes()->whereNotNull('stock_hold_voucher_id');
+                })->orWhereHas('voucher', function ($v) {
+                    $v->withoutGlobalScopes()->whereNotNull('hold_voucher_id');
+                });
             })
             ->where(function ($q) {
                 $q->whereHas('voucher', function ($v) {
