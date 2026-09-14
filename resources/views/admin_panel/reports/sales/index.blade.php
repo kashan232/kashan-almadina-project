@@ -205,7 +205,7 @@
                             <div class="row g-2 align-items-end">
                                 <div class="col-md-3">
                                     <label class="fw-bold mb-1" style="font-size: 11px;">Transaction Type</label>
-                                    <select name="transaction_type[]" class="form-select form-select-sm select2" multiple required style="font-size: 12px;">
+                                    <select name="transaction_type[]" class="form-select form-select-sm select2" multiple style="font-size: 12px;">
                                         <option value="both">All (Return Minus &amp; Credit Plus)</option>
                                         <option value="sale">Sale (SJ)</option>
                                         <option value="sale_return">Sale Return (SRJ)</option>
