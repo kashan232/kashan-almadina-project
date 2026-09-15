@@ -547,6 +547,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/sub_customers/inactive', [SubCustomerController::class, 'inactive'])->name('sub_customers.inactive');
     // Reports Routes
     Route::get('/reports/dashboard', [HomeController::class, 'dashboardReport'])->name('reports.dashboard');
+    Route::get('/reports/daily-activity', [\App\Http\Controllers\DailyReportController::class, 'index'])->name('reports.daily-activity.index');
+    Route::post('/reports/daily-activity/preview', [\App\Http\Controllers\DailyReportController::class, 'preview'])->name('reports.daily-activity.preview');
     Route::get('/reports/sales', [\App\Http\Controllers\SalesReportController::class, 'index'])->name('reports.sales.index');
     Route::post('/reports/sales/preview', [\App\Http\Controllers\SalesReportController::class, 'preview'])->name('reports.sales.preview');
     Route::get('/reports/customer-outstanding', [\App\Http\Controllers\CustomerOutstandingBalanceReportController::class, 'index'])->name('reports.customer-outstanding.index');

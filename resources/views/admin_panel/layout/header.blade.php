@@ -707,6 +707,12 @@
                                       </a>
                                   </li>
                                   @endcan
+                                  <li class="nav-item">
+                                      <a class="nav-link" href="{{ route('reports.daily-activity.index') }}">
+                                          <i class="fa-solid fa-calendar-day mr-2"></i>
+                                          <span>Daily Activity Report</span>
+                                      </a>
+                                  </li>
                                   @can('Sales Report')
                                   <li class="nav-item">
                                       <a class="nav-link" href="{{ route('reports.sales.index') }}">
