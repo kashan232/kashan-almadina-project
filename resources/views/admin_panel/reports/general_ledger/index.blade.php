@@ -62,21 +62,26 @@
                                         <label class="form-label small fw-bold">A/c Title (Account/Vendor/Customer)</label>
                                         <select name="ac_id" id="ac_id" class="form-control form-control-sm select2">
                                             <option value="">Search by Title or Name...</option>
-                                            <optgroup label="Accounts">
-                                                @foreach($accounts as $acc)
-                                                    <option value="{{ $acc->id }}" data-type="account" data-code="{{ $acc->account_code }}" data-tel="">{{ $acc->title }} ({{ $acc->account_code }})</option>
-                                                @endforeach
-                                            </optgroup>
-                                            <optgroup label="Customers">
-                                                @foreach($customers as $cust)
-                                                    <option value="{{ $cust->id }}" data-type="customer" data-code="{{ $cust->customer_id }}" data-tel="{{ $cust->mobile }}">{{ $cust->customer_name }} ({{ $cust->customer_id }})</option>
-                                                @endforeach
-                                            </optgroup>
-                                            <optgroup label="Vendors">
-                                                @foreach($vendors as $vend)
-                                                    <option value="{{ $vend->id }}" data-type="vendor" data-code="{{ $vend->vendor_id }}" data-tel="{{ $vend->mobile }}">{{ $vend->name }} ({{ $vend->vendor_id }})</option>
-                                                @endforeach
-                                            </optgroup>
+                                             <optgroup label="Bulk / All Options">
+                                                 <option value="all_head_accounts" data-type="all_head" data-code="" data-tel="">-- ALL ACCOUNTS UNDER SELECTED MAIN HEAD --</option>
+                                                 <option value="all_customers" data-type="all_customers" data-code="" data-tel="">-- ALL CUSTOMERS --</option>
+                                                 <option value="all_vendors" data-type="all_vendors" data-code="" data-tel="">-- ALL VENDORS --</option>
+                                             </optgroup>
+                                             <optgroup label="Accounts">
+                                                 @foreach($accounts as $acc)
+                                                     <option value="{{ $acc->id }}" data-type="account" data-code="{{ $acc->account_code }}" data-tel="">{{ $acc->title }} ({{ $acc->account_code }})</option>
+                                                 @endforeach
+                                             </optgroup>
+                                             <optgroup label="Customers">
+                                                 @foreach($customers as $cust)
+                                                     <option value="{{ $cust->id }}" data-type="customer" data-code="{{ $cust->customer_id }}" data-tel="{{ $cust->mobile }}">{{ $cust->customer_name }} ({{ $cust->customer_id }})</option>
+                                                 @endforeach
+                                             </optgroup>
+                                             <optgroup label="Vendors">
+                                                 @foreach($vendors as $vend)
+                                                     <option value="{{ $vend->id }}" data-type="vendor" data-code="{{ $vend->vendor_id }}" data-tel="{{ $vend->mobile }}">{{ $vend->name }} ({{ $vend->vendor_id }})</option>
+                                                 @endforeach
+                                             </optgroup>
                                         </select>
                                         <input type="hidden" name="ac_type" id="ac_type">
                                     </div>

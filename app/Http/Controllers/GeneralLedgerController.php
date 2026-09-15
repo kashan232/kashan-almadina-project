@@ -586,6 +586,63 @@ class GeneralLedgerController extends Controller
             return back()->with('error', 'Please select an account/party first.');
         }
 
+        // Handle Grouped / Bulk Ledgers (Main Head Accounts, All Customers, All Vendors)
+        if (in_array($id, ['all_head_accounts', 'all_customers', 'all_vendors']) || in_array($type, ['all_head', 'all_customers', 'all_vendors'])) {
+            $groupedData = [];
+            $mainTitle = '';
+
+            if ($id === 'all_head_accounts' || $type === 'all_head') {
+                $headId = $request->nature_id ?: $request->head_id;
+                $head = AccountHead::find($headId);
+                $mainTitle = $head ? ($head->account_code . ' - ' . $head->name . ', AL- MADINA TRADERS') : 'ALL HEAD ACCOUNTS';
+                $subAccounts = Account::when($headId, fn($q) => $q->where('head_id', $headId))->orderBy('title')->get();
+                foreach ($subAccounts as $acc) {
+                    $op = $this->calculateOpeningBalance('account', $acc->id, $startDate);
+                    $txs = ($report_mode == 'summary') 
+                        ? $this->fetchSummaryTransactions('account', $acc->id, $startDate, $endDate)
+                        : $this->fetchTransactions('account', $acc->id, $startDate, $endDate);
+                    $groupedData[] = [
+                        'title' => $acc->title,
+                        'code' => $acc->account_code,
+                        'openingBalance' => $op,
+                        'transactions' => $txs,
+                    ];
+                }
+            } elseif ($id === 'all_customers' || $type === 'all_customers') {
+                $mainTitle = 'ALL CUSTOMERS LEDGER, AL- MADINA TRADERS';
+                $customers = Customer::orderBy('customer_name')->get();
+                foreach ($customers as $cust) {
+                    $op = $this->calculateOpeningBalance('customer', $cust->id, $startDate);
+                    $txs = ($report_mode == 'summary') 
+                        ? $this->fetchSummaryTransactions('customer', $cust->id, $startDate, $endDate)
+                        : $this->fetchTransactions('customer', $cust->id, $startDate, $endDate);
+                    $groupedData[] = [
+                        'title' => $cust->customer_name . ' (' . $cust->customer_id . ')',
+                        'code' => $cust->customer_id,
+                        'openingBalance' => $op,
+                        'transactions' => $txs,
+                    ];
+                }
+            } elseif ($id === 'all_vendors' || $type === 'all_vendors') {
+                $mainTitle = 'ALL VENDORS LEDGER, AL- MADINA TRADERS';
+                $vendors = Vendor::orderBy('name')->get();
+                foreach ($vendors as $vend) {
+                    $op = $this->calculateOpeningBalance('vendor', $vend->id, $startDate);
+                    $txs = ($report_mode == 'summary') 
+                        ? $this->fetchSummaryTransactions('vendor', $vend->id, $startDate, $endDate)
+                        : $this->fetchTransactions('vendor', $vend->id, $startDate, $endDate);
+                    $groupedData[] = [
+                        'title' => $vend->name . ' (' . $vend->vendor_id . ')',
+                        'code' => $vend->vendor_id,
+                        'openingBalance' => $op,
+                        'transactions' => $txs,
+                    ];
+                }
+            }
+
+            return view('admin_panel.reports.general_ledger.preview_grouped', compact('groupedData', 'mainTitle', 'startDate', 'endDate', 'orientation'));
+        }
+
         if ($type == 'account') {
             $account_info = $this->ledgerQuery(Account::class)->with('head')->findOrFail($id);
         } elseif ($type == 'customer') {
