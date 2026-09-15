@@ -337,7 +337,7 @@ $(document).ready(function() {
         $.get("{{ url('stock-holds/party') }}/" + partyId + "/invoices", { type: type }, function(res) {
             var $inv = $('#invoice_id').empty().append('<option value="">Select Invoice</option>');
             res.forEach(function(item) {
-                $inv.append('<option value="' + item.id + '">' + item.text + '</option>');
+                $inv.append('<option value="' + item.id + '" data-is_order="' + (item.is_sale_order || 0) + '">' + item.text + '</option>');
             });
             if (selectInvoiceId) {
                 $inv.val(String(selectInvoiceId));
@@ -473,6 +473,20 @@ $(document).ready(function() {
     $('#invoice_id').on('change', function() {
         var id = $(this).val();
         if(!id || isViewMode || isPosted) return;
+
+        var $selectedOpt = $(this).find('option:selected');
+        if ($selectedOpt.data('is_order') == 1) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Order Mode Sale',
+                text: 'Yeh Sale Form Order Mode par hai, isko Manual Stock Hold me select nahi kiya ja sakta!'
+            });
+            $(this).val('');
+            $('#sale_id').val('');
+            $('#itemRows').empty();
+            return;
+        }
+
         $('#sale_id').val(id);
         $('#itemRows').empty();
         $.get("{{ url('stock-holds/invoice') }}/" + id + "/items", function(items) {

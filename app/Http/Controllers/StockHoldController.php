@@ -109,14 +109,18 @@ class StockHoldController extends Controller
             $type = 'walking';
         }
         
-        // In this project, 'sales' table uses 'customer_id' and 'partyType' (camelCase)
+        // Exclude order mode sales (is_sale_order = 1) from manual hold selection
         $invoices = Sale::where('customer_id', $partyId)
             ->where('partyType', $type)
+            ->where(function($q) {
+                $q->where('is_sale_order', 0)->orWhereNull('is_sale_order');
+            })
             ->latest()
             ->get();
 
         return $invoices->map(fn($s) => [
             'id' => $s->id, 
+            'is_sale_order' => (int)$s->is_sale_order,
             'text' => $s->invoice_no . ' (' . ($s->created_at ? $s->created_at->format('Y-m-d') : '-') . ')'
         ]);
     }
