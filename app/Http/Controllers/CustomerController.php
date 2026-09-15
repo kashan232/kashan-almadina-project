@@ -332,9 +332,13 @@ class CustomerController extends Controller
         $filename = 'customer_import_template_' . date('Y-m-d') . '.xlsx';
 
         return response()->streamDownload(function () {
+            if (ob_get_level()) {
+                ob_end_clean();
+            }
             app(CustomerImportService::class)->downloadTemplate();
         }, $filename, [
             'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Cache-Control' => 'max-age=0',
         ]);
     }
 
