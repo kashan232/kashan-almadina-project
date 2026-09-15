@@ -240,6 +240,10 @@ Route::middleware('auth')->group(function () {
     Route::post('/products/bulk-action', [ProductController::class, 'bulkAction'])->name('products.bulkAction');
     Route::get('/products/toggle-status/{id}', [ProductController::class, 'toggleStatus'])->name('products.toggleStatus');
 
+    Route::get('/products/import', [ProductController::class, 'showImport'])->name('products.import');
+    Route::get('/products/import/template', [ProductController::class, 'downloadImportTemplate'])->name('products.import.template');
+    Route::post('/products/import/store', [ProductController::class, 'processImport'])->name('products.import.store');
+
     Route::get('/products', [ProductController::class, 'index'])->name('products.index');
     Route::get('/products/create', [ProductController::class, 'create'])->name('products.create');
     Route::post('/products', [ProductController::class, 'store'])->name('products.store');

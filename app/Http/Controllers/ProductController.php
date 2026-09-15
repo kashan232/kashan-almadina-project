@@ -106,7 +106,7 @@ class ProductController extends Controller
     {
         $categories = Category::get();
         $brands = Brand::get();
-        $warehouses = Warehouse::all();
+        $warehouses = Warehouse::withoutGlobalScopes()->orderBy('warehouse_name')->get();
         return view('admin_panel.product.create', compact('categories', 'brands', 'warehouses'));
     }
 
@@ -204,7 +204,7 @@ class ProductController extends Controller
 
         $categories = Category::get();
         $brands = Brand::get();
-        $warehouses = Warehouse::all();
+        $warehouses = Warehouse::withoutGlobalScopes()->orderBy('warehouse_name')->get();
 
         $subCategories = collect();
         if (!empty($product->category_id)) {
@@ -594,5 +594,36 @@ class ProductController extends Controller
             'sale_discount_amount' => parse_num($request->sale_discount_amount),
             'sale_net_amount' => parse_num($request->sale_net_amount),
         ];
+    }
+
+    public function showImport()
+    {
+        return view('admin_panel.product.import');
+    }
+
+    public function downloadImportTemplate(\App\Services\ProductImportService $service)
+    {
+        return $service->downloadTemplateResponse();
+    }
+
+    public function processImport(Request $request, \App\Services\ProductImportService $service)
+    {
+        $request->validate([
+            'excel_file' => 'required|file|mimes:xlsx,xls,csv|max:10240',
+        ]);
+
+        $file = $request->file('excel_file');
+        $result = $service->importFromFile($file->getRealPath());
+
+        if ($result['imported'] === 0 && !empty($result['errors'])) {
+            return redirect()->back()->with('error', 'Import failed: ' . implode(' | ', array_slice($result['errors'], 0, 5)));
+        }
+
+        $message = "Successfully imported {$result['imported']} products.";
+        if ($result['skipped'] > 0) {
+            $message .= " {$result['skipped']} rows skipped. Errors: " . implode(' | ', array_slice($result['errors'], 0, 3));
+        }
+
+        return redirect()->route('products.index')->with('success', $message);
     }
 }

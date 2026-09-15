@@ -154,6 +154,9 @@
                                     </div>
                                 </div>
 
+                                <a class="btn btn-success btn-sm px-3 rounded-pill" href="{{ route('products.import') }}">
+                                    <i class="fa fa-file-excel-o me-1"></i> Bulk Import
+                                </a>
                                 <a class="btn btn-primary btn-sm px-4 rounded-pill" href="{{ route('products.create') }}">
                                     <i class="fa fa-plus me-1"></i> Add Product
                                 </a>
