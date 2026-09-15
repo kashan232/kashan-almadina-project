@@ -158,7 +158,7 @@
 
     @php
         $fmt = fn($v) => abs($v) < 0.0001 ? '' : number_format($v, 0);
-        $outCols = ['pur_ret', 'sales', 'claim_out', 'trf_out', 'waste', 'release'];
+        $outCols = ['pur_ret', 'sales', 'clm_rep', 'clm_out', 'cla_out', 'cli_out', 'trf_out', 'waste', 'release'];
         $cellClass = function ($key, $value) use ($outCols) {
             if ($key === 'hold' && abs((float)$value) >= 0.0001) {
                 return 'col-hold-cell';
@@ -172,19 +172,24 @@
             return 'num';
         };
         $cols = [
-            ['key' => 'opening', 'head' => $opening_label, 'th' => '', 'w' => '7%'],
-            ['key' => 'closing', 'head' => $closing_label, 'th' => '', 'w' => '7%'],
-            ['key' => 'pur', 'head' => 'PJ', 'th' => '', 'w' => '5%'],
-            ['key' => 'pur_ret', 'head' => 'PRJ', 'th' => 'col-out', 'w' => '5%'],
-            ['key' => 'sales', 'head' => 'SJ', 'th' => 'col-out', 'w' => '5%'],
-            ['key' => 'sales_ret', 'head' => 'SRJ', 'th' => '', 'w' => '5%'],
-            ['key' => 'claim_in', 'head' => 'CLM IN', 'th' => '', 'w' => '5%'],
-            ['key' => 'claim_out', 'head' => 'CLM Out', 'th' => 'col-out', 'w' => '5%'],
-            ['key' => 'trf_in', 'head' => 'TOG In', 'th' => '', 'w' => '5%'],
-            ['key' => 'trf_out', 'head' => 'TOG Out', 'th' => 'col-out', 'w' => '5%'],
-            ['key' => 'waste', 'head' => 'WOG', 'th' => 'col-out', 'w' => '5%'],
-            ['key' => 'hold', 'head' => 'SH', 'th' => 'col-hold', 'w' => '5%'],
-            ['key' => 'release', 'head' => 'SR', 'th' => 'col-out', 'w' => '5%'],
+            ['key' => 'opening', 'head' => $opening_label, 'th' => ''],
+            ['key' => 'closing', 'head' => $closing_label, 'th' => ''],
+            ['key' => 'pur', 'head' => 'PJ', 'th' => ''],
+            ['key' => 'pur_ret', 'head' => 'PRJ', 'th' => 'col-out'],
+            ['key' => 'sales', 'head' => 'SJ', 'th' => 'col-out'],
+            ['key' => 'sales_ret', 'head' => 'SRJ', 'th' => ''],
+            ['key' => 'clm_rep', 'head' => 'CLM-REP', 'th' => 'col-out'],
+            ['key' => 'clm_in', 'head' => 'CLM-IN', 'th' => ''],
+            ['key' => 'clm_out', 'head' => 'CLM-OUT', 'th' => 'col-out'],
+            ['key' => 'cla_in', 'head' => 'CLM-IN', 'th' => ''],
+            ['key' => 'cla_out', 'head' => 'CLM-OUT', 'th' => 'col-out'],
+            ['key' => 'cli_in', 'head' => 'CLM-IN', 'th' => ''],
+            ['key' => 'cli_out', 'head' => 'CLM-OUT', 'th' => 'col-out'],
+            ['key' => 'trf_in', 'head' => 'TOG In', 'th' => ''],
+            ['key' => 'trf_out', 'head' => 'TOG Out', 'th' => 'col-out'],
+            ['key' => 'waste', 'head' => 'WOG', 'th' => 'col-out'],
+            ['key' => 'hold', 'head' => 'SH', 'th' => 'col-hold'],
+            ['key' => 'release', 'head' => 'SR', 'th' => 'col-out'],
         ];
     @endphp
 
@@ -204,10 +209,30 @@
             <table>
                 <thead>
                     <tr>
-                        <th style="width:18%;">Item</th>
-                        @foreach($cols as $col)
-                        <th class="{{ $col['th'] }}" style="width:{{ $col['w'] }};">{{ $col['head'] }}</th>
-                        @endforeach
+                        <th rowspan="2" style="width:14%;">Item</th>
+                        <th rowspan="2">{{ $opening_label }}</th>
+                        <th rowspan="2">{{ $closing_label }}</th>
+                        <th rowspan="2">PJ</th>
+                        <th rowspan="2" class="col-out">PRJ</th>
+                        <th rowspan="2" class="col-out">SJ</th>
+                        <th rowspan="2">SRJ</th>
+                        <th colspan="3">Customer Claim</th>
+                        <th colspan="2">Claim Acceptance</th>
+                        <th colspan="2">Claim Item Receipt</th>
+                        <th rowspan="2">TOG In</th>
+                        <th rowspan="2" class="col-out">TOG Out</th>
+                        <th rowspan="2" class="col-out">WOG</th>
+                        <th rowspan="2" class="col-hold">SH</th>
+                        <th rowspan="2" class="col-out">SR</th>
+                    </tr>
+                    <tr>
+                        <th class="col-out">CLM-REP</th>
+                        <th>CLM-IN</th>
+                        <th class="col-out">CLM-OUT</th>
+                        <th>CLM-IN</th>
+                        <th class="col-out">CLM-OUT</th>
+                        <th>CLM-IN</th>
+                        <th class="col-out">CLM-OUT</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -228,7 +253,7 @@
                             </tr>
                         @endforeach
                         <tr class="subtotal-row">
-                            <td style="text-align:right;">{{ $warehouseId }} Total:</td>
+                            <td style="text-align:right;">{{ $rows->first()['warehouse_label'] ?? ('WH #' . $warehouseId) }} Total:</td>
                             @foreach($cols as $col)
                             <td class="{{ $cellClass($col['key'], $whTotal[$col['key']]) }}">{{ $fmt($whTotal[$col['key']]) }}</td>
                             @endforeach

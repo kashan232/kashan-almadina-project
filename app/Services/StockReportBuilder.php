@@ -38,7 +38,10 @@ class StockReportBuilder
 
     private const COLS = [
         'pur', 'pur_ret', 'sales', 'sales_ret',
-        'claim_in', 'claim_out', 'trf_in', 'trf_out',
+        'clm_rep', 'clm_in', 'clm_out',
+        'cla_in', 'cla_out',
+        'cli_in', 'cli_out',
+        'trf_in', 'trf_out',
         'waste', 'hold', 'release',
     ];
 
@@ -500,11 +503,12 @@ class StockReportBuilder
                     $ref = (string) ($claim->claim_no ?? '');
                     $claimId = (int) ($claim->id ?? 0);
 
+                    // Customer Claim Receipt (Claim In)
                     $this->addMovement(
                         (int) $claim->product_id,
                         (int) $claim->claim_warehouse_id,
                         $date,
-                        'claim_in',
+                        'clm_in',
                         1,
                         1,
                         $ref,
@@ -515,29 +519,13 @@ class StockReportBuilder
                         $claimId
                     );
 
-                    if ($claim->claim_type === 'item_return' && $claim->original_warehouse_id) {
-                        $this->addMovement(
-                            (int) $claim->product_id,
-                            (int) $claim->original_warehouse_id,
-                            $date,
-                            'claim_out',
-                            1,
-                            -1,
-                            $ref,
-                            'CLM',
-                            $party,
-                            $price,
-                            $price,
-                            $claimId
-                        );
-                    }
-
+                    // If replacement given to customer
                     if ($claim->claim_type === 'credit_note' && $claim->replacement_from_warehouse_id && $claim->replacement_product_id) {
                         $this->addMovement(
                             (int) $claim->replacement_product_id,
                             (int) $claim->replacement_from_warehouse_id,
                             $date,
-                            'claim_out',
+                            'clm_rep',
                             1,
                             -1,
                             $ref,
@@ -545,6 +533,23 @@ class StockReportBuilder
                             $party,
                             (float) ($claim->replacement_sales_price ?? $price),
                             (float) ($claim->replacement_sales_price ?? $price),
+                            $claimId
+                        );
+                    }
+
+                    if ($claim->claim_type === 'item_return' && $claim->original_warehouse_id) {
+                        $this->addMovement(
+                            (int) $claim->product_id,
+                            (int) $claim->original_warehouse_id,
+                            $date,
+                            'clm_out',
+                            1,
+                            -1,
+                            $ref,
+                            'CLM',
+                            $party,
+                            $price,
+                            $price,
                             $claimId
                         );
                     }
@@ -587,8 +592,8 @@ class StockReportBuilder
                     $pid = (int) $item->product_id;
                     $ref = (string) ($v->voucher_no ?? $v->id ?? '');
                     $party = method_exists($v, 'partyName') ? $v->partyName() : '';
-                    $this->addMovement($pid, (int) $v->from_warehouse_id, $date, 'claim_out', $qty, -$qty, $ref, 'CLA', $party, 0, 0);
-                    $this->addMovement($pid, (int) $v->to_warehouse_id, $date, 'claim_in', $qty, $qty, $ref, 'CLA', $party, 0, 0);
+                    $this->addMovement($pid, (int) $v->from_warehouse_id, $date, 'cla_out', $qty, -$qty, $ref, 'CLA', $party, 0, 0);
+                    $this->addMovement($pid, (int) $v->to_warehouse_id, $date, 'cla_in', $qty, $qty, $ref, 'CLA', $party, 0, 0);
                 }
             });
     }
@@ -611,8 +616,8 @@ class StockReportBuilder
                     $pid = (int) $item->product_id;
                     $ref = (string) ($v->voucher_no ?? $v->id ?? '');
                     $party = method_exists($v, 'partyName') ? $v->partyName() : '';
-                    $this->addMovement($pid, (int) $v->from_warehouse_id, $date, 'claim_out', $qty, -$qty, $ref, 'CLI', $party, 0, 0);
-                    $this->addMovement($pid, (int) $v->to_warehouse_id, $date, 'claim_in', $qty, $qty, $ref, 'CLI', $party, 0, 0);
+                    $this->addMovement($pid, (int) $v->from_warehouse_id, $date, 'cli_out', $qty, -$qty, $ref, 'CLI', $party, 0, 0);
+                    $this->addMovement($pid, (int) $v->to_warehouse_id, $date, 'cli_in', $qty, $qty, $ref, 'CLI', $party, 0, 0);
                 }
             });
     }
@@ -636,8 +641,8 @@ class StockReportBuilder
                     $ref = (string) ($note->voucher_no ?? $note->id ?? '');
                     $party = method_exists($note, 'partyName') ? $note->partyName() : '';
                     $price = (float) ($item->price ?? 0);
-                    $this->addMovement($pid, (int) $note->from_warehouse_id, $date, 'claim_out', $qty, -$qty, $ref, 'CLM', $party, $price, $price * $qty);
-                    $this->addMovement($pid, (int) $note->to_warehouse_id, $date, 'claim_in', $qty, $qty, $ref, 'CLM', $party, $price, $price * $qty);
+                    $this->addMovement($pid, (int) $note->from_warehouse_id, $date, 'cli_out', $qty, -$qty, $ref, 'CLM', $party, $price, $price * $qty);
+                    $this->addMovement($pid, (int) $note->to_warehouse_id, $date, 'cli_in', $qty, $qty, $ref, 'CLM', $party, $price, $price * $qty);
                 }
             });
     }
