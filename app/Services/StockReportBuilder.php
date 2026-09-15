@@ -519,9 +519,9 @@ class StockReportBuilder
                         $claimId
                     );
 
-                    // If replacement given to customer (Credit Note)
-                    if ($claim->claim_type === 'credit_note') {
-                        $repProdId = (int) ($claim->replacement_product_id ?: $claim->product_id);
+                    // If replacement product is actually selected for Credit Note
+                    if ($claim->claim_type === 'credit_note' && !empty($claim->replacement_product_id)) {
+                        $repProdId = (int) $claim->replacement_product_id;
                         $repWhId   = (int) ($claim->replacement_from_warehouse_id ?? $claim->original_warehouse_id ?? 0);
 
                         $this->addMovement(
