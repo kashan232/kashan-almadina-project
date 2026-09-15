@@ -135,6 +135,7 @@
                                         <option value="detailed">Detailed</option>
                                         <option value="hold_only">Hold Report</option>
                                         <option value="release_only">Release Report</option>
+                                        <option value="hold_balance_only">Hold Balance Only</option>
                                     </select>
                                 </div>
                                 <div class="col-md-2">

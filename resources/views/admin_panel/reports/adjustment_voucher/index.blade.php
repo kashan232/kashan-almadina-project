@@ -8,6 +8,7 @@
     'reportTypeOptions' => [
         'source_party' => 'Source Party Name',
         'destination_account' => 'Destination Account',
+        'all' => 'All (Voucher Wise)',
     ],
     'defaultReportType' => 'source_party',
 ])

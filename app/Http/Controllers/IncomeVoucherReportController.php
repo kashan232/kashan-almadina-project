@@ -114,15 +114,26 @@ class IncomeVoucherReportController extends Controller
                 continue;
             }
 
-            $groupKey = $reportType === 'source_party'
-                ? 'party_' . $pType . '_' . $pId
-                : 'account_' . ($voucher->account_id ?: '0');
-            $groupLabel = $reportType === 'source_party' ? $partyName : $subHeadLabel;
+            $displayVouc = preg_replace('/[^0-9]/', '', $voucher->ivid) ?: $voucher->ivid;
+
+            if ($reportType === 'all') {
+                $groupKey = 'voucher_' . $voucher->id;
+                $groupLabel = 'Voucher No: ' . $displayVouc . ($voucher->entry_date ? ' | Date: ' . \Carbon\Carbon::parse($voucher->entry_date)->format('d-m-Y') : '');
+                $sortGroup = sprintf('%s-%s', $voucher->entry_date ?? '', str_pad((string)$displayVouc, 10, '0', STR_PAD_LEFT));
+            } elseif ($reportType === 'source_party') {
+                $groupKey = 'party_' . $pType . '_' . $pId;
+                $groupLabel = $partyName;
+                $sortGroup = $partyName;
+            } else {
+                $groupKey = 'account_' . ($voucher->account_id ?: '0');
+                $groupLabel = $subHeadLabel;
+                $sortGroup = $subHeadLabel;
+            }
 
             $lines->push((object) [
                 'group_key' => $groupKey,
                 'group_label' => $groupLabel,
-                'sort_group' => $groupLabel,
+                'sort_group' => $sortGroup,
                 'voucher_no' => $voucher->ivid,
                 'voucher_date' => $voucher->entry_date,
                 'reference_no' => $references[$index] ?? '',

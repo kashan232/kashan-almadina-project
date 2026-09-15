@@ -35,6 +35,10 @@ class StockHoldReleaseReportBuilder
             return $this->buildReleaseOnlyReport($fromDate, $toDate);
         }
 
+        if ($reportType === 'hold_balance_only') {
+            return $this->buildHoldBalanceOnlyReport($fromDate, $toDate);
+        }
+
         $buckets = [];
 
         $this->collectHoldMovements($buckets, $fromDate, $toDate);
@@ -62,7 +66,7 @@ class StockHoldReleaseReportBuilder
     private function extractFilters(Request $request): array
     {
         return [
-            'report_type' => in_array($request->report_type, ['party', 'item', 'detailed', 'hold_only', 'release_only'], true) ? $request->report_type : 'party',
+            'report_type' => in_array($request->report_type, ['party', 'item', 'detailed', 'hold_only', 'release_only', 'hold_balance_only'], true) ? $request->report_type : 'party',
             'user_groups' => $request->user_group ?? [],
             'warehouses' => $request->warehouse ?? [],
             'parties' => $request->party ?? [],
@@ -1102,6 +1106,62 @@ class StockHoldReleaseReportBuilder
             'from_date' => $fromDate,
             'to_date' => $toDate,
             'report_type' => 'release_only',
+            'generated_at' => now(),
+        ];
+    }
+
+    private function buildHoldBalanceOnlyReport(?string $fromDate, ?string $toDate): array
+    {
+        $buckets = [];
+        $this->collectHoldMovements($buckets, $fromDate, $toDate);
+        $this->collectReleaseMovements($buckets, $fromDate, $toDate);
+
+        $customerGroups = [];
+        $grandPayable = 0.0;
+
+        foreach ($buckets as $row) {
+            if (!str_starts_with($row['party_key'], 'customer:')) {
+                continue;
+            }
+
+            $payable = $row['opening'] + $row['hold'] - $row['rel'];
+            if (abs($payable) < 0.0001) {
+                continue;
+            }
+
+            $partyKey = $row['party_key'];
+            if (!isset($customerGroups[$partyKey])) {
+                $customerGroups[$partyKey] = [
+                    'party_name' => $row['party_name'],
+                    'total_payable' => 0.0,
+                    'last_time' => null,
+                ];
+            }
+
+            $customerGroups[$partyKey]['total_payable'] += $payable;
+            $grandPayable += $payable;
+
+            // Resolve latest transaction time from item_details if available
+            if (!empty($row['item_details'])) {
+                foreach ($row['item_details'] as $detail) {
+                    if (!empty($detail['date'])) {
+                        $customerGroups[$partyKey]['last_time'] = $detail['date'];
+                    }
+                }
+            }
+        }
+
+        $sortedGroups = collect($customerGroups)
+            ->sortBy('party_name', SORT_NATURAL | SORT_FLAG_CASE)
+            ->values()
+            ->all();
+
+        return [
+            'customers' => $sortedGroups,
+            'grand_payable' => $grandPayable,
+            'from_date' => $fromDate,
+            'to_date' => $toDate,
+            'report_type' => 'hold_balance_only',
             'generated_at' => now(),
         ];
     }

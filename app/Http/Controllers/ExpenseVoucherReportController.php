@@ -93,15 +93,26 @@ class ExpenseVoucherReportController extends Controller
 
             $account = !empty($accountId) ? Account::find($accountId) : null;
             $subHeadLabel = strtoupper($account->title ?? $headName);
-            $groupKey = in_array($reportType, ['sub_head', 'main_head'], true)
-                ? 'account_' . ($accountId ?: '0')
-                : 'party_' . $voucher->type . '_' . $voucher->party_id;
-            $groupLabel = in_array($reportType, ['sub_head', 'main_head'], true) ? $subHeadLabel : $partyName;
+            $displayVouc = preg_replace('/[^0-9]/', '', $voucher->evid) ?: $voucher->evid;
+
+            if ($reportType === 'all') {
+                $groupKey = 'voucher_' . $voucher->id;
+                $groupLabel = 'Voucher No: ' . $displayVouc . ($voucher->entry_date ? ' | Date: ' . \Carbon\Carbon::parse($voucher->entry_date)->format('d-m-Y') : '');
+                $sortGroup = sprintf('%s-%s', $voucher->entry_date ?? '', str_pad((string)$displayVouc, 10, '0', STR_PAD_LEFT));
+            } elseif (in_array($reportType, ['sub_head', 'main_head'], true)) {
+                $groupKey = 'account_' . ($accountId ?: '0');
+                $groupLabel = $subHeadLabel;
+                $sortGroup = $subHeadLabel;
+            } else {
+                $groupKey = 'party_' . $voucher->type . '_' . $voucher->party_id;
+                $groupLabel = $partyName;
+                $sortGroup = $partyName;
+            }
 
             $lines->push((object) [
                 'group_key' => $groupKey,
                 'group_label' => $groupLabel,
-                'sort_group' => $groupLabel,
+                'sort_group' => $sortGroup,
                 'voucher_no' => $voucher->evid,
                 'voucher_date' => $voucher->entry_date,
                 'narration' => $this->resolveNarration($narrId),

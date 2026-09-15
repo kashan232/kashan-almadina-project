@@ -5,6 +5,11 @@
     'filterTitle' => 'Expense Voucher Report Filters',
     'previewRoute' => 'reports.expense-voucher.preview',
     'showReceiptDates' => false,
+    'reportTypeOptions' => [
+        'source_party' => 'Source Party Name',
+        'sub_head' => 'Sub Head',
+        'all' => 'All (Voucher Wise)',
+    ],
 ])
 @endsection
 

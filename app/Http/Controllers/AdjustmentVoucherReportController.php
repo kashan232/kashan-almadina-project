@@ -93,15 +93,26 @@ class AdjustmentVoucherReportController extends Controller
 
             $account = !empty($accountId) ? Account::find($accountId) : null;
             $destLabel = strtoupper($account->title ?? $headName);
-            $groupKey = in_array($reportType, ['sub_head', 'destination_account', 'main_head'], true)
-                ? 'account_' . ($accountId ?: '0')
-                : 'party_' . $voucher->party_type . '_' . $voucher->party_id;
-            $groupLabel = in_array($reportType, ['sub_head', 'destination_account', 'main_head'], true) ? $destLabel : $partyName;
+            $displayVouc = preg_replace('/[^0-9]/', '', $voucher->avid) ?: $voucher->avid;
+
+            if ($reportType === 'all') {
+                $groupKey = 'voucher_' . $voucher->id;
+                $groupLabel = 'Voucher No: ' . $displayVouc . ($voucher->entry_date ? ' | Date: ' . \Carbon\Carbon::parse($voucher->entry_date)->format('d-m-Y') : '');
+                $sortGroup = sprintf('%s-%s', $voucher->entry_date ?? '', str_pad((string)$displayVouc, 10, '0', STR_PAD_LEFT));
+            } elseif (in_array($reportType, ['sub_head', 'destination_account', 'main_head'], true)) {
+                $groupKey = 'account_' . ($accountId ?: '0');
+                $groupLabel = $destLabel;
+                $sortGroup = $destLabel;
+            } else {
+                $groupKey = 'party_' . $voucher->party_type . '_' . $voucher->party_id;
+                $groupLabel = $partyName;
+                $sortGroup = $partyName;
+            }
 
             $lines->push((object) [
                 'group_key' => $groupKey,
                 'group_label' => $groupLabel,
-                'sort_group' => $groupLabel,
+                'sort_group' => $sortGroup,
                 'voucher_no' => $voucher->avid,
                 'voucher_date' => $voucher->entry_date,
                 'reference_no' => $references[$index] ?? '',
