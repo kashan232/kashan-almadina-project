@@ -797,6 +797,7 @@ class StockReportBuilder
                 'partyVendor',
             ])
             ->withSum(StockHold::postedReleasesWithSum(), 'release_qty')
+            ->whereNull('sale_id')
             ->whereHas('voucher', function ($q) {
                 $q->withoutGlobalScopes()->where('status', 'Posted');
             })
