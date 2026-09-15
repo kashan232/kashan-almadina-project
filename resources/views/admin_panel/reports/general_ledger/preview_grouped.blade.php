@@ -72,6 +72,13 @@
                     $subQty = 0;
                 @endphp
 
+                {{-- Sub-head Section Title Banner --}}
+                <tr style="background-color: #f8fafc; border-top: 2px solid #000; border-bottom: 1.5px solid #000;">
+                    <td colspan="9" style="padding: 6px 10px; font-weight: bold; font-size: 12px; color: #1e3a8a;">
+                        <i class="fas fa-folder-open me-1"></i> {{ $sub['code'] ? $sub['code'] . ' - ' : '' }}{{ $sub['title'] }}
+                    </td>
+                </tr>
+
                 {{-- Sub-head / Account B/F Row --}}
                 <tr class="bg-light">
                     <td></td>
