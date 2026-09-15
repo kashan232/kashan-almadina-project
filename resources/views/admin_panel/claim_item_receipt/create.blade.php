@@ -322,7 +322,9 @@
                                         <select id="credit_wht_head_id" class="form-select form-select-sm py-0" style="width:80px;">
                                             <option value="">Head</option>
                                             @foreach($AccountHeads as $head)
-                                                <option value="{{ $head->id }}" {{ (isset($activeVoucher->whtAccount) && $activeVoucher->whtAccount->account_head_id == $head->id) ? 'selected' : '' }}>{{ $head->name }}</option>
+                                                @if(strtoupper($head->name) === 'EXPENSE')
+                                                    <option value="{{ $head->id }}" {{ ((isset($activeVoucher->whtAccount) && $activeVoucher->whtAccount->account_head_id == $head->id) || old('credit_wht_head_id') == $head->id) ? 'selected' : (!isset($activeVoucher->whtAccount) ? 'selected' : '') }}>{{ $head->name }}</option>
+                                                @endif
                                             @endforeach
                                         </select>
                                         <select name="wht_account_id" id="credit_wht_account_id" data-selected="{{ $activeVoucher->wht_account_id ?? '' }}" class="form-select form-select-sm py-0" style="flex-grow:1;">
