@@ -1120,10 +1120,6 @@ class StockHoldReleaseReportBuilder
         $grandPayable = 0.0;
 
         foreach ($buckets as $row) {
-            if (!str_starts_with($row['party_key'], 'customer:')) {
-                continue;
-            }
-
             $payable = $row['opening'] + $row['hold'] - $row['rel'];
             if (abs($payable) < 0.0001) {
                 continue;
