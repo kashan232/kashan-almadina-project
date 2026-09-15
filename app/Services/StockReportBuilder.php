@@ -613,27 +613,7 @@ class StockReportBuilder
 
     private function collectClaimCreditNotes(): void
     {
-        ClaimCreditNoteItem::with(['creditNote' => fn ($q) => $q->withoutGlobalScopes()])
-            ->whereHas('creditNote', function ($q) {
-                $q->withoutGlobalScopes()->where('status', 'Posted');
-                $this->applyUserGroupFilter($q);
-            })
-            ->chunkById(500, function ($items) {
-                foreach ($items as $item) {
-                    $note = $item->creditNote;
-                    if (!$note) {
-                        continue;
-                    }
-                    $date = $this->pickDate($note, ['date', 'entry_date']);
-                    $qty = (float) $item->quantity;
-                    $pid = (int) $item->product_id;
-                    $ref = (string) ($note->voucher_no ?? $note->id ?? '');
-                    $party = method_exists($note, 'partyName') ? $note->partyName() : '';
-                    $price = (float) ($item->price ?? 0);
-                    $this->addMovement($pid, (int) $note->from_warehouse_id, $date, 'cli_out', $qty, -$qty, $ref, 'CLM', $party, $price, $price * $qty);
-                    $this->addMovement($pid, (int) $note->to_warehouse_id, $date, 'cli_in', $qty, $qty, $ref, 'CLM', $party, $price, $price * $qty);
-                }
-            });
+        // Credit Notes are purely financial vouchers and do not affect physical warehouse stock or CLI-IN/CLI-OUT columns.
     }
 
     private function collectTransfers(): void

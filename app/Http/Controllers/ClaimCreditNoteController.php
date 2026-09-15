@@ -189,10 +189,7 @@ class ClaimCreditNoteController extends Controller
                 ]);
 
                 if ($status === 'Posted') {
-                    // Stock: credit note only adds to destination warehouse (+ Dr)
-                    if ($voucher->to_warehouse_id !== null) {
-                        $this->adjustStock($voucher->to_warehouse_id, $pid, $qty);
-                    }
+                    // Credit note does not affect physical warehouse stock (financial credit note only)
                 }
             }
 
@@ -225,9 +222,7 @@ class ClaimCreditNoteController extends Controller
             $voucher->update(['status' => 'Posted']);
             foreach ($voucher->items as $item) {
                 $item->update(['status' => 'Posted']);
-                if ($voucher->to_warehouse_id !== null) {
-                    $this->adjustStock($voucher->to_warehouse_id, $item->product_id, $item->quantity);
-                }
+                // Credit note does not affect physical warehouse stock
             }
 
             $this->updateLedger($voucher);
