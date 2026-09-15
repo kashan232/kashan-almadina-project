@@ -3,7 +3,7 @@
 <head>
     @include('admin_panel.reports.partials.report_global_zoom')
     <meta charset="UTF-8">
-    <title>Daily Activity Report — Ledger View</title>
+    <title>Daily Activity Report — Form Wise</title>
     <style>
         @page { size: A4 landscape; margin: 3mm; }
         * { box-sizing: border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
@@ -72,19 +72,18 @@
             padding: 3px 4px;
             font-size: 9px;
         }
-        .col-date { width: 7%; text-align: center; }
-        .col-ref { width: 9%; text-align: center; }
-        .col-desc { width: 34%; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .col-date { width: 8%; text-align: center; }
+        .col-ref { width: 10%; text-align: center; }
+        .col-desc { width: 42%; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .col-price { width: 8%; text-align: right; }
-        .col-qty { width: 6%; text-align: center; }
-        .col-amt { width: 11%; text-align: right; }
-        .col-bal { width: 13%; text-align: right; font-weight: 600; }
+        .col-qty { width: 7%; text-align: center; }
+        .col-amt { width: 12%; text-align: right; }
         
-        .account-header-row td {
+        .form-header-row td {
             background: #e0f2fe;
             border-top: 2px solid #0284c7;
             font-weight: bold;
-            font-size: 10px;
+            font-size: 11px;
             color: #0369a1;
         }
         .subtotal-row td {
@@ -127,7 +126,7 @@
         <div class="company-name">AL-MADINA TRADERS</div>
         <div class="report-header">
             <div class="generated-date">{{ $generated_at->format('l, M j, Y h:i A') }}</div>
-            <div class="report-title">Daily Activity Report</div>
+            <div class="report-title">Daily Activity Report (Form Wise)</div>
             <div class="report-sub">From: {{ $fromLabel }} To: {{ $toLabel }}</div>
         </div>
 
@@ -137,11 +136,10 @@
                 <tr>
                     <th class="col-date" rowspan="2">Date</th>
                     <th class="col-ref" rowspan="2">Reference</th>
-                    <th class="col-desc" rowspan="2">Description</th>
+                    <th class="col-desc" rowspan="2">Description / Particulars</th>
                     <th class="col-price" rowspan="2">Price</th>
                     <th colspan="2">Debit</th>
                     <th colspan="2">Credit</th>
-                    <th class="col-bal" rowspan="2">Balance</th>
                 </tr>
                 <tr>
                     <th class="col-qty">Qty</th>
@@ -152,24 +150,11 @@
             </thead>
             <tbody>
                 @foreach($sections as $sec)
-                    {{-- Account Main Header --}}
-                    <tr class="account-header-row">
-                        <td colspan="9">
-                            Ledger of:- {{ $sec['code'] }} - {{ $sec['title'] }} ({{ $sec['head_name'] }})
+                    {{-- Form Type Header --}}
+                    <tr class="form-header-row">
+                        <td colspan="8">
+                            Form / Module: {{ $sec['title'] }}
                         </td>
-                    </tr>
-
-                    {{-- Brought Forward (B/F) --}}
-                    <tr>
-                        <td class="col-date"></td>
-                        <td class="col-ref"></td>
-                        <td class="col-desc" style="font-weight:bold; font-style:italic;">B/F:</td>
-                        <td class="col-price"></td>
-                        <td class="col-qty"></td>
-                        <td class="col-amt"></td>
-                        <td class="col-qty"></td>
-                        <td class="col-amt"></td>
-                        <td class="col-bal">{{ $fmtNum($sec['opening']) }} {{ $sec['opening_type'] }}</td>
                     </tr>
 
                     {{-- Transactions --}}
@@ -183,36 +168,31 @@
                         <td class="col-amt num">{{ $fmtNum($txn['debit_amt']) }}</td>
                         <td class="col-qty num">{{ $fmtNum($txn['credit_qty']) }}</td>
                         <td class="col-amt num">{{ $fmtNum($txn['credit_amt']) }}</td>
-                        <td class="col-bal num">{{ $fmtNum($txn['balance']) }} {{ $txn['balance_type'] }}</td>
                     </tr>
                     @endforeach
 
-                    {{-- Account Subtotal Row --}}
+                    {{-- Section Subtotal Row --}}
                     <tr class="subtotal-row">
-                        <td colspan="3" style="text-align:right;">{{ $sec['title'] }} Total >>></td>
-                        <td class="col-price"></td>
+                        <td colspan="4" style="text-align:right;">{{ $sec['title'] }} Sub Total >>></td>
                         <td class="col-qty num">{{ $fmtNum($sec['subtotal']['debit_qty']) }}</td>
                         <td class="col-amt num">{{ $fmtNum($sec['subtotal']['debit_amt']) }}</td>
                         <td class="col-qty num">{{ $fmtNum($sec['subtotal']['credit_qty']) }}</td>
                         <td class="col-amt num">{{ $fmtNum($sec['subtotal']['credit_amt']) }}</td>
-                        <td class="col-bal num">{{ $fmtNum($sec['subtotal']['closing']) }} {{ $sec['subtotal']['closing_type'] }}</td>
                     </tr>
                 @endforeach
 
                 {{-- Grand Total --}}
                 <tr class="grand-row">
-                    <td colspan="3" style="text-align:right;">Grand Total Amount >>></td>
-                    <td class="col-price"></td>
+                    <td colspan="4" style="text-align:right;">Grand Total Amount >>></td>
                     <td class="col-qty num">{{ $fmtNum($grand_total['debit_qty']) }}</td>
                     <td class="col-amt num">{{ $fmtNum($grand_total['debit_amt']) }}</td>
                     <td class="col-qty num">{{ $fmtNum($grand_total['credit_qty']) }}</td>
                     <td class="col-amt num">{{ $fmtNum($grand_total['credit_amt']) }}</td>
-                    <td class="col-bal num">{{ $fmtNum($grand_total['closing']) }}</td>
                 </tr>
             </tbody>
         </table>
         @else
-        <p class="empty-msg">No transactions found for the selected date and filters.</p>
+        <p class="empty-msg">No transactions found for the selected date range.</p>
         @endif
     </div>
 

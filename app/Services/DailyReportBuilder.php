@@ -2,126 +2,392 @@
 
 namespace App\Services;
 
-use App\Http\Controllers\GeneralLedgerController;
-use App\Models\Account;
-use App\Models\Customer;
-use App\Models\Vendor;
+use App\Models\Sale;
+use App\Models\SaleReturn;
+use App\Models\Purchase;
+use App\Models\PurchaseReturn;
+use App\Models\ReceiptsVoucher;
+use App\Models\PaymentVoucher;
+use App\Models\ExpenseVoucher;
+use App\Models\IncomeVoucher;
+use App\Models\JournalVoucher;
+use App\Models\CustomerClaim;
+use App\Models\ClaimAcceptance;
+use App\Models\ClaimItemReceipt;
+use App\Models\ClaimCreditNote;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 
 class DailyReportBuilder
 {
     /**
-     * Build daily activity report grouped by accounts/heads.
+     * Build daily activity report grouped by Form / Module Types (Sales, Sale Return, Purchase, Purchase Return, Vouchers, etc.)
      */
     public function build(Request $request): array
     {
         $fromDate = $request->input('from_date', date('Y-m-d'));
         $toDate = $request->input('to_date', date('Y-m-d'));
-        $closingDate = Carbon::parse($toDate)->addDay()->toDateString();
-
-        /** @var GeneralLedgerController $ledger */
-        $ledger = app(GeneralLedgerController::class);
-
-        $selectedAccounts = $request->input('accounts', []);
-        $selectedPartyTypes = $request->input('party_types', []);
-
-        // Determine which accounts to include
-        $accountsToProcess = $this->getAccountsToProcess($selectedAccounts, $selectedPartyTypes);
 
         $sections = [];
         $grandTotal = [
-            'opening' => 0.0,
             'debit_qty' => 0.0,
             'debit_amt' => 0.0,
             'credit_qty' => 0.0,
             'credit_amt' => 0.0,
-            'closing' => 0.0,
         ];
 
-        foreach ($accountsToProcess as $accInfo) {
-            $ledgerType = $accInfo['type'];
-            $entityId = $accInfo['id'];
-            $title = $accInfo['title'];
-            $code = $accInfo['code'];
-            $headName = $accInfo['head_name'];
+        // Defined Modules order:
+        // 1. Sales
+        // 2. Sale Return
+        // 3. Purchase
+        // 4. Purchase Return
+        // 5. Receipts Voucher
+        // 6. Payment Voucher
+        // 7. Expense Voucher
+        // 8. Income Voucher
+        // 9. Journal Voucher
+        // 10. Customer Claims & Acceptance
 
-            // Fetch opening balance
-            $opening = (float) $ledger->calculateOpeningBalance($ledgerType, $entityId, $fromDate);
+        $modules = [
+            [
+                'key' => 'sales',
+                'title' => 'Sales Invoices',
+                'fetch' => function() use ($fromDate, $toDate) {
+                    $sales = Sale::withoutGlobalScopes()
+                        ->with(['customer', 'vendor', 'items.product'])
+                        ->whereDate('created_at', '>=', $fromDate)
+                        ->whereDate('created_at', '<=', $toDate)
+                        ->latest()
+                        ->get();
 
-            // Fetch period transactions
-            $txns = $ledger->fetchTransactions($ledgerType, $entityId, $fromDate, $toDate);
+                    $txns = [];
+                    foreach ($sales as $s) {
+                        $partyName = strtoupper($s->customer?->customer_name ?? $s->vendor?->name ?? 'WALK IN');
+                        $dateStr = Carbon::parse($s->created_at)->format('d-m-Y');
+                        
+                        foreach ($s->items as $it) {
+                            $qty = (float)$it->sales_qty;
+                            $price = (float)$it->sales_price;
+                            $amt = (float)$it->amount;
 
-            if (empty($txns) && abs($opening) < 0.001) {
-                continue; // Skip accounts with no activity and zero opening
+                            $txns[] = [
+                                'date' => $dateStr,
+                                'ref' => 'SJ',
+                                'inv_no' => $s->invoice_no,
+                                'desc' => ($it->product->name ?? 'Item') . ' — ' . $partyName,
+                                'price' => $price,
+                                'debit_qty' => null,
+                                'debit_amt' => null,
+                                'credit_qty' => $qty,
+                                'credit_amt' => $amt,
+                            ];
+                        }
+                    }
+                    return $txns;
+                }
+            ],
+            [
+                'key' => 'sale_returns',
+                'title' => 'Sale Returns',
+                'fetch' => function() use ($fromDate, $toDate) {
+                    $returns = SaleReturn::withoutGlobalScopes()
+                        ->with(['customer', 'items.product'])
+                        ->whereDate('date', '>=', $fromDate)
+                        ->whereDate('date', '<=', $toDate)
+                        ->latest('id')
+                        ->get();
+
+                    $txns = [];
+                    foreach ($returns as $sr) {
+                        $partyName = strtoupper($sr->party_name ?? 'CUSTOMER');
+                        $dateStr = !empty($sr->date) ? Carbon::parse($sr->date)->format('d-m-Y') : '';
+
+                        foreach ($sr->items as $it) {
+                            $qty = (float)$it->quantity;
+                            $price = (float)$it->price;
+                            $amt = $qty * $price;
+
+                            $txns[] = [
+                                'date' => $dateStr,
+                                'ref' => 'SRJ',
+                                'inv_no' => $sr->invoice_no,
+                                'desc' => ($it->product->name ?? 'Item') . ' — ' . $partyName,
+                                'price' => $price,
+                                'debit_qty' => $qty,
+                                'debit_amt' => $amt,
+                                'credit_qty' => null,
+                                'credit_amt' => null,
+                            ];
+                        }
+                    }
+                    return $txns;
+                }
+            ],
+            [
+                'key' => 'purchases',
+                'title' => 'Purchase Invoices',
+                'fetch' => function() use ($fromDate, $toDate) {
+                    $purchases = Purchase::withoutGlobalScopes()
+                        ->with(['vendor', 'items.product'])
+                        ->whereDate('entry_date', '>=', $fromDate)
+                        ->whereDate('entry_date', '<=', $toDate)
+                        ->latest('id')
+                        ->get();
+
+                    $txns = [];
+                    foreach ($purchases as $p) {
+                        $partyName = strtoupper($p->vendor?->name ?? 'VENDOR');
+                        $dateStr = !empty($p->entry_date) ? Carbon::parse($p->entry_date)->format('d-m-Y') : '';
+
+                        foreach ($p->items as $it) {
+                            $qty = (float)$it->qty;
+                            $price = (float)$it->price;
+                            $amt = (float)$it->subtotal;
+
+                            $txns[] = [
+                                'date' => $dateStr,
+                                'ref' => 'PJ',
+                                'inv_no' => $p->invoice_no,
+                                'desc' => ($it->product->name ?? 'Item') . ' — ' . $partyName,
+                                'price' => $price,
+                                'debit_qty' => $qty,
+                                'debit_amt' => $amt,
+                                'credit_qty' => null,
+                                'credit_amt' => null,
+                            ];
+                        }
+                    }
+                    return $txns;
+                }
+            ],
+            [
+                'key' => 'purchase_returns',
+                'title' => 'Purchase Returns',
+                'fetch' => function() use ($fromDate, $toDate) {
+                    $returns = PurchaseReturn::withoutGlobalScopes()
+                        ->with(['items.product'])
+                        ->whereDate('entry_date', '>=', $fromDate)
+                        ->whereDate('entry_date', '<=', $toDate)
+                        ->latest('id')
+                        ->get();
+
+                    $txns = [];
+                    foreach ($returns as $pr) {
+                        $partyName = 'VENDOR';
+                        $dateStr = !empty($pr->entry_date) ? Carbon::parse($pr->entry_date)->format('d-m-Y') : '';
+
+                        foreach ($pr->items as $it) {
+                            $qty = (float)$it->qty;
+                            $price = (float)$it->price;
+                            $amt = (float)$it->subtotal;
+
+                            $txns[] = [
+                                'date' => $dateStr,
+                                'ref' => 'PRJ',
+                                'inv_no' => $pr->invoice_no,
+                                'desc' => ($it->product->name ?? 'Item') . ' — ' . $partyName,
+                                'price' => $price,
+                                'debit_qty' => null,
+                                'debit_amt' => null,
+                                'credit_qty' => $qty,
+                                'credit_amt' => $amt,
+                            ];
+                        }
+                    }
+                    return $txns;
+                }
+            ],
+            [
+                'key' => 'receipts',
+                'title' => 'Receipt Vouchers',
+                'fetch' => function() use ($fromDate, $toDate) {
+                    $vouchers = ReceiptsVoucher::withoutGlobalScopes()
+                        ->with(['Account'])
+                        ->whereDate('date', '>=', $fromDate)
+                        ->whereDate('date', '<=', $toDate)
+                        ->latest('id')
+                        ->get();
+
+                    $txns = [];
+                    foreach ($vouchers as $rv) {
+                        $dateStr = !empty($rv->date) ? Carbon::parse($rv->date)->format('d-m-Y') : '';
+                        $amt = (float)($rv->receipt_amount ?? 0);
+                        $accName = $rv->Account->title ?? 'Account';
+
+                        $txns[] = [
+                            'date' => $dateStr,
+                            'ref' => 'RV',
+                            'inv_no' => $rv->rvid,
+                            'desc' => ($rv->remarks ? $rv->remarks . ' ; ' : '') . $accName,
+                            'price' => null,
+                            'debit_qty' => null,
+                            'debit_amt' => null,
+                            'credit_qty' => null,
+                            'credit_amt' => $amt,
+                        ];
+                    }
+                    return $txns;
+                }
+            ],
+            [
+                'key' => 'payments',
+                'title' => 'Payment Vouchers',
+                'fetch' => function() use ($fromDate, $toDate) {
+                    $vouchers = PaymentVoucher::withoutGlobalScopes()
+                        ->with(['Account'])
+                        ->whereDate('date', '>=', $fromDate)
+                        ->whereDate('date', '<=', $toDate)
+                        ->latest('id')
+                        ->get();
+
+                    $txns = [];
+                    foreach ($vouchers as $pv) {
+                        $dateStr = !empty($pv->date) ? Carbon::parse($pv->date)->format('d-m-Y') : '';
+                        $amt = (float)($pv->payment_amount ?? 0);
+                        $accName = $pv->Account->title ?? 'Account';
+
+                        $txns[] = [
+                            'date' => $dateStr,
+                            'ref' => 'PV',
+                            'inv_no' => $pv->pvid,
+                            'desc' => ($pv->remarks ? $pv->remarks . ' ; ' : '') . $accName,
+                            'price' => null,
+                            'debit_qty' => null,
+                            'debit_amt' => $amt,
+                            'credit_qty' => null,
+                            'credit_amt' => null,
+                        ];
+                    }
+                    return $txns;
+                }
+            ],
+            [
+                'key' => 'expenses',
+                'title' => 'Expense Vouchers',
+                'fetch' => function() use ($fromDate, $toDate) {
+                    $vouchers = ExpenseVoucher::withoutGlobalScopes()
+                        ->whereDate('date', '>=', $fromDate)
+                        ->whereDate('date', '<=', $toDate)
+                        ->latest('id')
+                        ->get();
+
+                    $txns = [];
+                    foreach ($vouchers as $ev) {
+                        $dateStr = !empty($ev->date) ? Carbon::parse($ev->date)->format('d-m-Y') : '';
+                        $amt = (float)($ev->amount ?? 0);
+
+                        $txns[] = [
+                            'date' => $dateStr,
+                            'ref' => 'EV',
+                            'inv_no' => $ev->voucher_no ?? $ev->id,
+                            'desc' => $ev->remarks ?? 'Expense Voucher',
+                            'price' => null,
+                            'debit_qty' => null,
+                            'debit_amt' => $amt,
+                            'credit_qty' => null,
+                            'credit_amt' => null,
+                        ];
+                    }
+                    return $txns;
+                }
+            ],
+            [
+                'key' => 'incomes',
+                'title' => 'Income Vouchers',
+                'fetch' => function() use ($fromDate, $toDate) {
+                    $vouchers = IncomeVoucher::withoutGlobalScopes()
+                        ->whereDate('date', '>=', $fromDate)
+                        ->whereDate('date', '<=', $toDate)
+                        ->latest('id')
+                        ->get();
+
+                    $txns = [];
+                    foreach ($vouchers as $iv) {
+                        $dateStr = !empty($iv->date) ? Carbon::parse($iv->date)->format('d-m-Y') : '';
+                        $amt = (float)($iv->amount ?? 0);
+
+                        $txns[] = [
+                            'date' => $dateStr,
+                            'ref' => 'IV',
+                            'inv_no' => $iv->voucher_no ?? $iv->id,
+                            'desc' => $iv->remarks ?? 'Income Voucher',
+                            'price' => null,
+                            'debit_qty' => null,
+                            'debit_amt' => null,
+                            'credit_qty' => null,
+                            'credit_amt' => $amt,
+                        ];
+                    }
+                    return $txns;
+                }
+            ],
+            [
+                'key' => 'journals',
+                'title' => 'Journal Vouchers',
+                'fetch' => function() use ($fromDate, $toDate) {
+                    $vouchers = JournalVoucher::withoutGlobalScopes()
+                        ->whereDate('date', '>=', $fromDate)
+                        ->whereDate('date', '<=', $toDate)
+                        ->latest('id')
+                        ->get();
+
+                    $txns = [];
+                    foreach ($vouchers as $jv) {
+                        $dateStr = !empty($jv->date) ? Carbon::parse($jv->date)->format('d-m-Y') : '';
+                        $amt = (float)($jv->amount ?? 0);
+
+                        $txns[] = [
+                            'date' => $dateStr,
+                            'ref' => 'JV',
+                            'inv_no' => $jv->voucher_no ?? $jv->id,
+                            'desc' => $jv->remarks ?? 'Journal Voucher',
+                            'price' => null,
+                            'debit_qty' => null,
+                            'debit_amt' => $amt,
+                            'credit_qty' => null,
+                            'credit_amt' => null,
+                        ];
+                    }
+                    return $txns;
+                }
+            ]
+        ];
+
+        foreach ($modules as $mod) {
+            $fetcher = $mod['fetch'];
+            $formattedTxns = $fetcher();
+
+            if (empty($formattedTxns)) {
+                continue; // Skip form types with zero activity
             }
 
-            $runningBalance = $opening;
             $secDebitQty = 0.0;
             $secDebitAmt = 0.0;
             $secCreditQty = 0.0;
             $secCreditAmt = 0.0;
 
-            $formattedTxns = [];
-            foreach ($txns as $t) {
-                $debit = (float)($t['debit'] ?? 0);
-                $credit = (float)($t['credit'] ?? 0);
-                $debitQty = (float)($t['debit_qty'] ?? $t['qty'] ?? 0);
-                $creditQty = (float)($t['credit_qty'] ?? 0);
-
-                // Update running balance based on nature
-                if (in_array($ledgerType, ['customer', 'walkin', 'asset', 'bank', 'cash', 'expense'])) {
-                    $runningBalance += ($debit - $credit);
-                } else {
-                    $runningBalance += ($credit - $debit);
-                }
-
-                $secDebitAmt += $debit;
-                $secCreditAmt += $credit;
-                $secDebitQty += $debitQty;
-                $secCreditQty += $creditQty;
-
-                $formattedTxns[] = [
-                    'date' => !empty($t['date']) ? Carbon::parse($t['date'])->format('d-m-y') : '',
-                    'ref' => $t['ref'] ?? '',
-                    'inv_no' => $t['inv_no'] ?? $t['voucher_no'] ?? '',
-                    'desc' => $t['desc'] ?? '',
-                    'price' => $t['price'] ?? null,
-                    'debit_qty' => $debitQty > 0 ? $debitQty : null,
-                    'debit_amt' => $debit > 0 ? $debit : null,
-                    'credit_qty' => $creditQty > 0 ? $creditQty : null,
-                    'credit_amt' => $credit > 0 ? $credit : null,
-                    'balance' => $runningBalance,
-                    'balance_type' => $runningBalance >= 0 ? 'DR.' : 'CR.',
-                ];
+            foreach ($formattedTxns as $t) {
+                $secDebitQty += (float)($t['debit_qty'] ?? 0);
+                $secDebitAmt += (float)($t['debit_amt'] ?? 0);
+                $secCreditQty += (float)($t['credit_qty'] ?? 0);
+                $secCreditAmt += (float)($t['credit_amt'] ?? 0);
             }
 
-            $closing = (float) $ledger->calculateOpeningBalance($ledgerType, $entityId, $closingDate);
-
             $sections[] = [
-                'code' => $code,
-                'title' => $title,
-                'head_name' => $headName,
-                'type' => $ledgerType,
-                'opening' => $opening,
-                'opening_type' => $opening >= 0 ? 'DR.' : 'CR.',
+                'title' => $mod['title'],
                 'transactions' => $formattedTxns,
                 'subtotal' => [
                     'debit_qty' => $secDebitQty,
                     'debit_amt' => $secDebitAmt,
                     'credit_qty' => $secCreditQty,
                     'credit_amt' => $secCreditAmt,
-                    'closing' => $closing,
-                    'closing_type' => $closing >= 0 ? 'DR.' : 'CR.',
                 ]
             ];
 
-            $grandTotal['opening'] += $opening;
             $grandTotal['debit_qty'] += $secDebitQty;
             $grandTotal['debit_amt'] += $secDebitAmt;
             $grandTotal['credit_qty'] += $secCreditQty;
             $grandTotal['credit_amt'] += $secCreditAmt;
-            $grandTotal['closing'] += $closing;
         }
 
         return [
@@ -131,107 +397,5 @@ class DailyReportBuilder
             'grand_total' => $grandTotal,
             'generated_at' => now(),
         ];
-    }
-
-    private function getAccountsToProcess(array $selectedAccounts, array $selectedPartyTypes): array
-    {
-        $list = [];
-
-        if (!empty($selectedAccounts)) {
-            foreach ($selectedAccounts as $item) {
-                $parts = explode(':', $item);
-                if (count($parts) === 2) {
-                    $type = $parts[0];
-                    $id = (int)$parts[1];
-                    $info = $this->resolveEntityInfo($type, $id);
-                    if ($info) $list[] = $info;
-                }
-            }
-            return $list;
-        }
-
-        if (empty($selectedPartyTypes) || in_array('customer', $selectedPartyTypes) || in_array('walkin', $selectedPartyTypes)) {
-            $customers = Customer::orderBy('customer_name')->get();
-            foreach ($customers as $c) {
-                $type = $c->customer_type === 'Walking Customer' ? 'walkin' : 'customer';
-                $list[] = [
-                    'type' => $type,
-                    'id' => $c->id,
-                    'code' => $c->id,
-                    'title' => strtoupper($c->customer_name),
-                    'head_name' => 'CUSTOMER / WALKING ACCOUNTS',
-                ];
-            }
-        }
-
-        if (empty($selectedPartyTypes) || in_array('vendor', $selectedPartyTypes)) {
-            $vendors = Vendor::orderBy('name')->get();
-            foreach ($vendors as $v) {
-                $list[] = [
-                    'type' => 'vendor',
-                    'id' => $v->id,
-                    'code' => $v->id,
-                    'title' => strtoupper($v->name),
-                    'head_name' => 'VENDOR ACCOUNTS',
-                ];
-            }
-        }
-
-        if (empty($selectedPartyTypes) || in_array('account', $selectedPartyTypes) || in_array('bank', $selectedPartyTypes) || in_array('expense', $selectedPartyTypes)) {
-            $accounts = Account::with('head')->orderBy('account_code')->get();
-            foreach ($accounts as $acc) {
-                $headName = strtoupper($acc->head->name ?? 'GENERAL ACCOUNTS');
-                $list[] = [
-                    'type' => 'account',
-                    'id' => $acc->id,
-                    'code' => $acc->account_code ?: $acc->id,
-                    'title' => strtoupper($acc->title),
-                    'head_name' => $headName,
-                ];
-            }
-        }
-
-        return $list;
-    }
-
-    private function resolveEntityInfo(string $type, int $id): ?array
-    {
-        if (in_array($type, ['customer', 'walkin'])) {
-            $c = Customer::find($id);
-            if (!$c) return null;
-            return [
-                'type' => $type,
-                'id' => $c->id,
-                'code' => $c->id,
-                'title' => strtoupper($c->customer_name),
-                'head_name' => 'CUSTOMER ACCOUNTS',
-            ];
-        }
-
-        if ($type === 'vendor') {
-            $v = Vendor::find($id);
-            if (!$v) return null;
-            return [
-                'type' => 'vendor',
-                'id' => $v->id,
-                'code' => $v->id,
-                'title' => strtoupper($v->name),
-                'head_name' => 'VENDOR ACCOUNTS',
-            ];
-        }
-
-        if ($type === 'account') {
-            $acc = Account::with('head')->find($id);
-            if (!$acc) return null;
-            return [
-                'type' => 'account',
-                'id' => $acc->id,
-                'code' => $acc->account_code ?: $acc->id,
-                'title' => strtoupper($acc->title),
-                'head_name' => strtoupper($acc->head->name ?? 'GENERAL ACCOUNTS'),
-            ];
-        }
-
-        return null;
     }
 }
