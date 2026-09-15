@@ -88,10 +88,15 @@ class Warehouse extends Model
         return $query->exists();
     }
 
-    /** All warehouses for cross-location transfers (no group or claim-type filter). */
+    /** All normal warehouses for cross-location transfers (no group filter, exclude claims). */
     public static function allForSelection()
     {
-        return static::withoutGlobalScopes()->orderBy('warehouse_name')->get();
+        return static::withoutGlobalScope(\App\Scopes\GroupIsolationScope::class)
+            ->where(function ($query) {
+                $query->where('claim_type', 'none')->orWhereNull('claim_type');
+            })
+            ->orderBy('warehouse_name')
+            ->get();
     }
 
 }
