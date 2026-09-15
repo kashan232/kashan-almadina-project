@@ -179,8 +179,9 @@
                                             <th>Product Name</th>
                                             <th>Brand</th>
                                             <th>Weight</th>
+                                            <th>Opening Stock</th>
                                             @if(auth()->user()->canAccessShop())
-                                                <th>Stock</th>
+                                                <th>Current Stock</th>
                                             @endif
                                             <th>Base Price (PKR)</th>
                                             <th>Discount (%)</th>
@@ -203,6 +204,7 @@
                                             <td class="fw-bold">{{ $product->name }}</td>
                                             <td>{{ $product->brandRelation->name ?? 'N/A' }}</td>
                                             <td>{{ $product->weight }}</td>
+                                            <td class="text-center fw-bold text-primary">{{ number_format((float)($product->opening_total_stock ?? 0), 0) }}</td>
                                             @if(auth()->user()->canAccessShop())
                                                 <td>{{ $product->stock }}</td>
                                             @endif

@@ -62,7 +62,6 @@ class ProductController extends Controller
             'category_id' => $request->category,
             'sub_category_id' => $request->sub_category,
             'brand_id' => $request->brand,
-            'stock' => $shopStock,
             'alert_qty' => $request->alert_qty,
             'status' => $request->status ?? $product->status,
             'weight' => $request->weight,
@@ -97,7 +96,7 @@ class ProductController extends Controller
             ]));
         }
 
-        $this->syncWarehouseStocksFromForm($product, $request);
+        // Save opening stock values separately for report/opening records without overwriting live stock balance
         $this->saveOpeningStockFromForm($product, $request);
 
         return redirect()->route('products.index')->with('success', 'Product Updated');
