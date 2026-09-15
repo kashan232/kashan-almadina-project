@@ -5,6 +5,11 @@
     'filterTitle' => 'Payment Voucher Report Filters',
     'previewRoute' => 'reports.payment-voucher.preview',
     'showReceiptDates' => true,
+    'reportTypeOptions' => [
+        'source_party' => 'Source Party Name',
+        'sub_head' => 'Sub Head',
+        'all' => 'All (Voucher Wise)',
+    ],
 ])
 @endsection
 
