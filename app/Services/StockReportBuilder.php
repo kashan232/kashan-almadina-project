@@ -519,11 +519,14 @@ class StockReportBuilder
                         $claimId
                     );
 
-                    // If replacement given to customer
-                    if ($claim->claim_type === 'credit_note' && $claim->replacement_from_warehouse_id && $claim->replacement_product_id) {
+                    // If replacement given to customer (Credit Note)
+                    if ($claim->claim_type === 'credit_note') {
+                        $repProdId = (int) ($claim->replacement_product_id ?: $claim->product_id);
+                        $repWhId   = (int) ($claim->replacement_from_warehouse_id ?? $claim->original_warehouse_id ?? 0);
+
                         $this->addMovement(
-                            (int) $claim->replacement_product_id,
-                            (int) $claim->replacement_from_warehouse_id,
+                            $repProdId,
+                            $repWhId,
                             $date,
                             'clm_rep',
                             1,
