@@ -403,7 +403,11 @@ class StockReportBuilder
                     $date = $this->pickDate($purchase, ['current_date', 'entry_date']);
                     $qty = (float) $item->qty;
                     $price = (float) ($item->price ?? 0);
-                    $party = $purchase->vendor->name ?? $purchase->purchasable->name ?? '';
+                    $party = $this->resolveStockPartyLabel(
+                        $purchase->purchasable_type ?: 'vendor',
+                        $purchase->purchasable_id ?: $purchase->vendor_id,
+                        $purchase
+                    );
                     $this->addMovement(
                         (int) $item->product_id,
                         $wh,
@@ -439,7 +443,11 @@ class StockReportBuilder
                     $date = $this->pickDate($ret, ['current_date', 'entry_date']);
                     $qty = (float) $item->qty;
                     $price = (float) ($item->price ?? 0);
-                    $party = $ret->purchasable->name ?? $ret->purchasable->customer_name ?? '';
+                    $party = $this->resolveStockPartyLabel(
+                        $ret->purchasable_type ?: 'vendor',
+                        $ret->purchasable_id ?: $ret->vendor_id,
+                        $ret
+                    );
                     $this->addMovement(
                         (int) $item->product_id,
                         $wh,
