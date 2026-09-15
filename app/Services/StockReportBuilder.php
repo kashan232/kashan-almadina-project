@@ -561,7 +561,7 @@ class StockReportBuilder
                     if ($claim->claim_type === 'claim_hold') {
                         $this->addMovement(
                             (int) $claim->product_id,
-                            (int) ($claim->original_warehouse_id ?? $claim->claim_warehouse_id),
+                            (int) $claim->claim_warehouse_id,
                             $date,
                             'hold',
                             1,
