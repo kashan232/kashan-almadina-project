@@ -92,15 +92,19 @@ class DailyReportBuilder
                 'fetch' => function() use ($fromDate, $toDate) {
                     $returns = SaleReturn::withoutGlobalScopes()
                         ->with(['customer', 'items.product'])
-                        ->whereDate('date', '>=', $fromDate)
-                        ->whereDate('date', '<=', $toDate)
+                        ->where(function($q) use ($fromDate, $toDate) {
+                            $q->whereBetween('current_date', [$fromDate, $toDate])
+                              ->orWhereBetween('entry_date', [$fromDate, $toDate])
+                              ->orWhereDate('created_at', '>=', $fromDate)->whereDate('created_at', '<=', $toDate);
+                        })
                         ->latest('id')
                         ->get();
 
                     $txns = [];
                     foreach ($returns as $sr) {
                         $partyName = strtoupper($sr->party_name ?? 'CUSTOMER');
-                        $dateStr = !empty($sr->date) ? Carbon::parse($sr->date)->format('d-m-Y') : '';
+                        $srDate = $sr->current_date ?? $sr->entry_date ?? $sr->created_at;
+                        $dateStr = !empty($srDate) ? Carbon::parse($srDate)->format('d-m-Y') : '';
 
                         foreach ($sr->items as $it) {
                             $qty = (float)$it->quantity;
