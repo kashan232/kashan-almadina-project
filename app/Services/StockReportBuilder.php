@@ -140,7 +140,21 @@ class StockReportBuilder
         $data = $this->build($request);
         $grouped = $data['grouped'];
         
-        $mergedRows = [];
+        $selectedWhIds = $request->warehouse ?? [];
+        $whNames = [];
+        if (!empty($selectedWhIds)) {
+            foreach ($selectedWhIds as $wId) {
+                if ((string)$wId === '0') {
+                    $whNames[] = 'Shop';
+                } else {
+                    $name = Warehouse::withoutGlobalScopes()->where('id', $wId)->value('warehouse_name');
+                    if ($name) $whNames[] = $name;
+                }
+            }
+        }
+
+        $mergedLabel = !empty($whNames) ? implode(' + ', $whNames) : 'Shop + Warehouses (Merged)';
+
         $itemsMap = [];
 
         foreach ($grouped as $whId => $rows) {
@@ -149,7 +163,7 @@ class StockReportBuilder
                 if (!isset($itemsMap[$pid])) {
                     $itemsMap[$pid] = $row;
                     $itemsMap[$pid]['warehouse_id'] = 99999;
-                    $itemsMap[$pid]['warehouse_label'] = 'Shop + Warehouses (Merged)';
+                    $itemsMap[$pid]['warehouse_label'] = $mergedLabel;
                 } else {
                     $itemsMap[$pid]['opening'] += $row['opening'];
                     $itemsMap[$pid]['closing'] += $row['closing'];
