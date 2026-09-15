@@ -147,49 +147,63 @@
 
         <table>
             <colgroup>
-                <col style="width:5%;">
+                <col style="width:4%;">
                 <col style="width:5%;">
                 <col style="width:4%;">
-                <col style="width:12%;">
+                <col style="width:11%;">
                 <col style="width:5%;">
                 <col style="width:6%;">
                 <col style="width:5%;">
-                <col style="width:5%;">
-                <col style="width:5%;">
-                <col style="width:5%;">
-                <col style="width:5%;">
-                <col style="width:5%;">
                 <col style="width:4%;">
                 <col style="width:4%;">
-                <col style="width:5%;">
-                <col style="width:5%;">
-                <col style="width:5%;">
-                <col style="width:5%;">
+                <col style="width:4%;">
+                <col style="width:4%;">
+                <col style="width:4%;">
+                <col style="width:4%;">
+                <col style="width:4%;">
+                <col style="width:4%;">
+                <col style="width:4%;">
+                <col style="width:4%;">
+                <col style="width:4%;">
+                <col style="width:4%;">
+                <col style="width:4%;">
+                <col style="width:4%;">
+                <col style="width:4%;">
                 <col style="width:4%;">
                 <col style="width:5%;">
             </colgroup>
             <thead>
                 <tr>
-                    <th>ID</th>
-                    <th>Date</th>
-                    <th>Type</th>
-                    <th>Party Name</th>
-                    <th>Price</th>
-                    <th>Amount</th>
-                    <th>OPN Balance</th>
-                    <th>Trn IN (OPB)</th>
-                    <th>Purchase</th>
-                    <th>Purchase Return</th>
-                    <th>Sales Qty</th>
-                    <th>Sales Return</th>
-                    <th>Hold</th>
-                    <th>Rel</th>
-                    <th>Claim IN</th>
-                    <th>Claim Out</th>
-                    <th>TRN IN</th>
-                    <th>TRN Out</th>
-                    <th>Waste</th>
-                    <th>Balance</th>
+                    <th rowspan="2" style="width:4%;">ID</th>
+                    <th rowspan="2" style="width:5%;">Date</th>
+                    <th rowspan="2" style="width:4%;">Type</th>
+                    <th rowspan="2" style="width:12%;">Party Name</th>
+                    <th rowspan="2" style="width:5%;">Price</th>
+                    <th rowspan="2" style="width:6%;">Amount</th>
+                    <th rowspan="2" style="width:5%;">OPN Balance</th>
+                    <th rowspan="2" style="width:4%;">Trn IN (OPB)</th>
+                    <th rowspan="2" style="width:5%;">Purchase</th>
+                    <th rowspan="2" style="width:5%;">Purchase Return</th>
+                    <th rowspan="2" style="width:5%;">Sales Qty</th>
+                    <th rowspan="2" style="width:5%;">Sales Return</th>
+                    <th rowspan="2" style="width:4%;">Hold</th>
+                    <th rowspan="2" style="width:4%;">Rel</th>
+                    <th colspan="3" style="background:#0d47a1;">Customer Claim</th>
+                    <th colspan="2" style="background:#0d47a1;">Claim Acceptance</th>
+                    <th colspan="2" style="background:#0d47a1;">Claim Item Receipt</th>
+                    <th rowspan="2" style="width:4%;">TRN IN</th>
+                    <th rowspan="2" style="width:4%;">TRN Out</th>
+                    <th rowspan="2" style="width:4%;">Waste</th>
+                    <th rowspan="2" style="width:5%;">Balance</th>
+                </tr>
+                <tr>
+                    <th style="background:#e65100;">CLM-REP</th>
+                    <th>CLM-IN</th>
+                    <th style="background:#e65100;">CLM-OUT</th>
+                    <th>CLM-IN</th>
+                    <th style="background:#e65100;">CLM-OUT</th>
+                    <th>CLM-IN</th>
+                    <th style="background:#e65100;">CLM-OUT</th>
                 </tr>
             </thead>
             <tbody>
@@ -209,8 +223,13 @@
                     <td>{{ $fmt($row['cols']['sales_ret'] ?? 0) }}</td>
                     <td>{{ $fmt($row['cols']['hold'] ?? 0) }}</td>
                     <td>{{ $fmt($row['cols']['release'] ?? 0) }}</td>
-                    <td>{{ $fmt($row['cols']['cli_in'] ?? $row['cols']['clm_in'] ?? 0) }}</td>
-                    <td class="{{ (($row['cols']['cli_out'] ?? $row['cols']['clm_out'] ?? 0) > 0) ? 'sales-red' : '' }}">{{ $fmt($row['cols']['cli_out'] ?? $row['cols']['clm_out'] ?? 0) }}</td>
+                    <td>{{ $fmt($row['cols']['clm_rep'] ?? 0) }}</td>
+                    <td>{{ $fmt($row['cols']['clm_in'] ?? 0) }}</td>
+                    <td class="{{ (($row['cols']['clm_out'] ?? 0) > 0) ? 'sales-red' : '' }}">{{ $fmt($row['cols']['clm_out'] ?? 0) }}</td>
+                    <td>{{ $fmt($row['cols']['cla_in'] ?? 0) }}</td>
+                    <td class="{{ (($row['cols']['cla_out'] ?? 0) > 0) ? 'sales-red' : '' }}">{{ $fmt($row['cols']['cla_out'] ?? 0) }}</td>
+                    <td>{{ $fmt($row['cols']['cli_in'] ?? 0) }}</td>
+                    <td class="{{ (($row['cols']['cli_out'] ?? 0) > 0) ? 'sales-red' : '' }}">{{ $fmt($row['cols']['cli_out'] ?? 0) }}</td>
                     <td>{{ $fmt($row['cols']['trf_in'] ?? 0) }}</td>
                     <td>{{ $fmt($row['cols']['trf_out'] ?? 0) }}</td>
                     <td>{{ $fmt($row['cols']['waste'] ?? 0) }}</td>
@@ -228,8 +247,13 @@
                     <td>{{ $fmt($ledger['totals']['sales_ret']) }}</td>
                     <td>{{ $fmt($ledger['totals']['hold']) }}</td>
                     <td>{{ $fmt($ledger['totals']['release']) }}</td>
-                    <td>{{ $fmt($ledger['totals']['cli_in'] ?? $ledger['totals']['clm_in'] ?? 0) }}</td>
-                    <td class="sales-red">{{ $fmt($ledger['totals']['cli_out'] ?? $ledger['totals']['clm_out'] ?? 0) }}</td>
+                    <td>{{ $fmt($ledger['totals']['clm_rep'] ?? 0) }}</td>
+                    <td>{{ $fmt($ledger['totals']['clm_in'] ?? 0) }}</td>
+                    <td class="sales-red">{{ $fmt($ledger['totals']['clm_out'] ?? 0) }}</td>
+                    <td>{{ $fmt($ledger['totals']['cla_in'] ?? 0) }}</td>
+                    <td class="sales-red">{{ $fmt($ledger['totals']['cla_out'] ?? 0) }}</td>
+                    <td>{{ $fmt($ledger['totals']['cli_in'] ?? 0) }}</td>
+                    <td class="sales-red">{{ $fmt($ledger['totals']['cli_out'] ?? 0) }}</td>
                     <td>{{ $fmt($ledger['totals']['trf_in']) }}</td>
                     <td>{{ $fmt($ledger['totals']['trf_out']) }}</td>
                     <td>{{ $fmt($ledger['totals']['waste']) }}</td>
