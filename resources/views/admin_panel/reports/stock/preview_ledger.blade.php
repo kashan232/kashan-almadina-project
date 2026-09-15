@@ -237,7 +237,8 @@
                 </tr>
                 @endforeach
                 <tr class="total-row">
-                    <td colspan="5" style="text-align:right;">Total:</td>
+                    <td colspan="4" style="text-align:right;">Total:</td>
+                    <td class="num-r"></td>
                     <td class="num-r">{{ $fmtAmt($ledger['totals']['amount']) }}</td>
                     <td>{{ $fmt($ledger['totals']['opn_balance']) }}</td>
                     <td></td>
