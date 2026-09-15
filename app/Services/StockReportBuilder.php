@@ -817,19 +817,27 @@ class StockReportBuilder
                 'voucher.partyVendor',
                 'partyCustomer',
                 'partyVendor',
+                'sale.customer',
+                'sale.vendor',
             ])
             ->withSum(StockHold::postedReleasesWithSum(), 'release_qty')
-            ->whereNull('sale_id')
-            ->whereHas('voucher', function ($q) {
-                $q->withoutGlobalScopes()->where('status', 'Posted');
+            ->where(function ($q) {
+                $q->whereHas('voucher', function ($v) {
+                    $v->withoutGlobalScopes()->where('status', 'Posted');
+                })->orWhere(function ($sub) {
+                    $sub->whereNull('stock_hold_voucher_id')
+                        ->where(function ($s) {
+                            $s->whereIn('status', ['Posted', 'posted', '0', 0])
+                              ->orWhereNotNull('meta->claim_id')
+                              ->orWhereNotNull('sale_id');
+                        });
+                });
             })
             ->when(true, fn ($q) => $this->applyUserGroupFilter($q))
             ->chunkById(500, function ($items) {
                 foreach ($items as $item) {
                     $voucher = $item->voucher;
-                    if (!$voucher) {
-                        continue;
-                    }
+                    $sale = $item->sale;
 
                     // Original posted hold qty — release does not reduce this ledger movement.
                     $qty = $item->grossHoldQty();
@@ -837,17 +845,24 @@ class StockReportBuilder
                         continue;
                     }
 
-                    $date = $this->pickDate($voucher, ['date', 'entry_date']);
+                    $date = $this->pickDate($voucher ?: $sale ?: $item, ['date', 'entry_date']);
                     $wh = $this->resolveHoldWarehouseId($item);
-                    $ref = (string) ($voucher->voucher_no ?? '');
+                    $ref = (string) ($voucher->voucher_no ?? $sale->invoice_no ?? $item->id ?? '');
+                    $partyType = $item->party_type ?: ($voucher->party_type ?? ($sale->partyType ?? ($sale->party_type ?? null)));
+                    $partyId = (int) ($item->party_id ?: ($voucher->party_id ?? ($sale->customer_id ?? ($sale->vendor_id ?? 0))));
+
                     $party = $this->resolveStockPartyLabel(
-                        $item->party_type,
-                        $item->party_id ? (int) $item->party_id : null,
+                        $partyType,
+                        $partyId ?: null,
                         $voucher,
                         $item
                     );
+                    if (!$party && $sale) {
+                        $party = strtoupper($sale->customer?->customer_name ?? $sale->vendor?->name ?? 'SALE ORDER');
+                    }
+
                     // Hold: reserve tracked separately in hold column (0 balance_effect on physical stock).
-                    $this->addMovement((int) $item->product_id, $wh, $date, 'hold', $qty, 0, $ref, 'SH', $party, 0, 0, (int) ($voucher->id ?? 0));
+                    $this->addMovement((int) $item->product_id, $wh, $date, 'hold', $qty, 0, $ref, 'SH', $party, 0, 0, (int) ($voucher->id ?? $sale->id ?? $item->id ?? 0));
                 }
             });
     }
