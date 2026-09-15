@@ -537,10 +537,11 @@ class StockReportBuilder
                         );
                     }
 
-                    if ($claim->claim_type === 'item_return' && $claim->original_warehouse_id) {
+                    if ($claim->claim_type === 'item_return') {
+                        $outWh = (int) ($claim->original_warehouse_id ?? 0);
                         $this->addMovement(
                             (int) $claim->product_id,
-                            (int) $claim->original_warehouse_id,
+                            $outWh,
                             $date,
                             'clm_out',
                             1,
