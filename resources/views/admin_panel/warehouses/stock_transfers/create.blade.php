@@ -114,24 +114,17 @@
                             </div>
 
                             {{-- To Warehouse --}}
-                            <div class="col-md-2">
-                                <label class="form-label small fw-bold">To Warehouse <span class="text-danger">*</span></label>
+                            <div class="col-md-3">
+                                <label class="form-label small fw-bold">To Location <span class="text-danger">*</span></label>
                                 <select name="to_warehouse_id" id="to_warehouse_id" class="form-select select2" required>
-                                    <option value="" disabled selected>Select Warehouse</option>
+                                    <option value="" disabled selected>Select Location</option>
+                                    @if(auth()->user()->canAccessShop())
+                                        <option value="shop">Shop</option>
+                                    @endif
                                     @foreach ($warehouses as $warehouse)
                                         <option value="{{ $warehouse->id }}">{{ $warehouse->warehouse_name }}</option>
                                     @endforeach
                                 </select>
-                            </div>
-
-                            {{-- To Shop --}}
-                            <div class="col-md-1 d-flex align-items-end pb-1">
-                                @if(auth()->user()->canAccessShop())
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" name="to_shop" value="1" id="toShop">
-                                        <label class="form-check-label fw-bold small" for="toShop">To Shop</label>
-                                    </div>
-                                @endif
                             </div>
 
                             {{-- Remarks --}}

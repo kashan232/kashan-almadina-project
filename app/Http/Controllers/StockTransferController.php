@@ -42,7 +42,7 @@ class StockTransferController extends Controller
     {
         $request->validate([
             'from_warehouse_id' => 'required',
-            'to_warehouse_id'   => 'required|exists:warehouses,id',
+            'to_warehouse_id'   => 'required',
             'product_id'        => 'required|array|min:1',
             'product_id.*'      => 'required|exists:products,id',
             'quantity'          => 'required|array',
@@ -53,12 +53,13 @@ class StockTransferController extends Controller
         try {
             $transferId = DB::transaction(function () use ($request) {
                 $isFromShop = $request->from_warehouse_id === 'shop';
+                $isToShop   = $request->to_warehouse_id === 'shop';
 
                 $transfer = StockTransfer::create([
                     'from_warehouse_id' => $isFromShop ? null : $request->from_warehouse_id,
                     'from_shop'         => $isFromShop ? 1 : 0,
-                    'to_warehouse_id'   => $request->to_warehouse_id,
-                    'to_shop'           => $request->has('to_shop') ? 1 : 0,
+                    'to_warehouse_id'   => $isToShop ? null : $request->to_warehouse_id,
+                    'to_shop'           => $isToShop ? 1 : 0,
                     'entry_date'        => $request->entry_date ?? date('Y-m-d'),
                     'entry_time'        => $request->entry_time ?? date('H:i'),
                     'remarks'           => $request->remarks,
@@ -126,7 +127,7 @@ class StockTransferController extends Controller
 
         $request->validate([
             'from_warehouse_id' => 'required',
-            'to_warehouse_id'   => 'required|exists:warehouses,id',
+            'to_warehouse_id'   => 'required',
             'product_id'        => 'required|array|min:1',
             'product_id.*'      => 'required|exists:products,id',
             'quantity'          => 'required|array',
@@ -137,12 +138,13 @@ class StockTransferController extends Controller
         try {
             DB::transaction(function () use ($request, $transfer) {
                 $isFromShop = $request->from_warehouse_id === 'shop';
+                $isToShop   = $request->to_warehouse_id === 'shop';
 
                 $transfer->update([
                     'from_warehouse_id' => $isFromShop ? null : $request->from_warehouse_id,
                     'from_shop'         => $isFromShop ? 1 : 0,
-                    'to_warehouse_id'   => $request->to_warehouse_id,
-                    'to_shop'           => $request->has('to_shop') ? 1 : 0,
+                    'to_warehouse_id'   => $isToShop ? null : $request->to_warehouse_id,
+                    'to_shop'           => $isToShop ? 1 : 0,
                     'entry_date'        => $request->entry_date ?? date('Y-m-d'),
                     'entry_time'        => $request->entry_time ?? date('H:i'),
                     'remarks'           => $request->remarks,
