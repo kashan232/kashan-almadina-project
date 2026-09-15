@@ -244,8 +244,8 @@
                                     </tr>
                                 </thead>
                                 <tbody id="claimItemRows">
-                                    @if($initialClaimType === 'receipt' && isset($voucher))
-                                        @foreach($voucher->items as $item)
+                                    @if($initialClaimType === 'receipt' && isset($activeVoucher) && $activeVoucher->relationLoaded('items'))
+                                        @foreach($activeVoucher->items as $item)
                                             @php
                                                 $priceVal = $item->product->latestPrice->sale_net_amount ?? 0;
                                                 $retailVal = $item->product->latestPrice->sale_retail_price ?? $priceVal;
@@ -269,8 +269,8 @@
                                                 <td class="text-center"><button type="button" class="btn btn-sm btn-link text-danger remove-row p-0"><i class="fa fa-trash fs-5"></i></button></td>
                                             </tr>
                                         @endforeach
-                                    @elseif($initialClaimType === 'credit' && isset($cVoucher))
-                                        @foreach($cVoucher->items as $cItem)
+                                    @elseif($initialClaimType === 'credit' && isset($activeVoucher) && $activeVoucher->relationLoaded('items'))
+                                        @foreach($activeVoucher->items as $cItem)
                                             <tr>
                                                 <td class="text-center"><input type="text" name="btr_no[]" class="form-control input-sm text-center bg-light" value="{{ $cItem->btr_no }}" readonly></td>
                                                 <td class="text-center fw-bold text-primary">{{ $cItem->product_id }} <input type="hidden" name="product_id[]" value="{{ $cItem->product_id }}"></td>
@@ -284,7 +284,7 @@
                                                         <input type="text" name="discount_amount[]" class="form-control text-center bg-light discount_amount" value="{{ number_format($cItem->discount_amount, 2, '.', '') }}" readonly>
                                                     </div>
                                                 </td>
-                                                <td class="text-center"><input type="number" name="qty[]" class="form-control input-sm text-center border-success line-input quantity" value="{{ $cItem->quantity }}" step="any" min="0"></td>
+                                                <td class="text-center"><input type="number" name="quantity[]" class="form-control input-sm text-center border-success line-input quantity" value="{{ $cItem->quantity }}" step="any" min="0"></td>
                                                 <td class="credit-only-field"><input type="text" name="line_amount[]" class="form-control input-sm text-end bg-light row-rate" value="{{ number_format($cItem->amount, 2, '.', '') }}" readonly></td>
                                                 <td class="credit-only-field"><input type="text" name="line_total[]" class="form-control input-sm text-end fw-bold bg-light row-total" value="{{ number_format($cItem->line_total, 2, '.', '') }}" readonly></td>
                                                 <td class="text-center"><button type="button" class="btn btn-sm btn-link text-danger remove-row p-0"><i class="fa fa-trash fs-5"></i></button></td>
