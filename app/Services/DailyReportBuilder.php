@@ -178,9 +178,9 @@ class DailyReportBuilder
         }
 
         if (empty($selectedPartyTypes) || in_array('account', $selectedPartyTypes) || in_array('bank', $selectedPartyTypes) || in_array('expense', $selectedPartyTypes)) {
-            $accounts = Account::with('accountHead')->orderBy('account_code')->get();
+            $accounts = Account::with('head')->orderBy('account_code')->get();
             foreach ($accounts as $acc) {
-                $headName = strtoupper($acc->accountHead->name ?? 'GENERAL ACCOUNTS');
+                $headName = strtoupper($acc->head->name ?? 'GENERAL ACCOUNTS');
                 $list[] = [
                     'type' => 'account',
                     'id' => $acc->id,
@@ -221,14 +221,14 @@ class DailyReportBuilder
         }
 
         if ($type === 'account') {
-            $acc = Account::with('accountHead')->find($id);
+            $acc = Account::with('head')->find($id);
             if (!$acc) return null;
             return [
                 'type' => 'account',
                 'id' => $acc->id,
                 'code' => $acc->account_code ?: $acc->id,
                 'title' => strtoupper($acc->title),
-                'head_name' => strtoupper($acc->accountHead->name ?? 'GENERAL ACCOUNTS'),
+                'head_name' => strtoupper($acc->head->name ?? 'GENERAL ACCOUNTS'),
             ];
         }
 

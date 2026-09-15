@@ -25,7 +25,7 @@ class DailyReportController extends Controller
 
         $customers = Customer::orderBy('customer_name')->get();
         $vendors = Vendor::orderBy('name')->get();
-        $accounts = Account::with('accountHead')->orderBy('account_code')->get();
+        $accounts = Account::with('head')->orderBy('account_code')->get();
 
         return view('admin_panel.reports.daily_activity.index', compact('userGroups', 'customers', 'vendors', 'accounts'));
     }
