@@ -151,9 +151,22 @@
     </style>
 </head>
 <body>
-    <div class="no-print">
-        <button onclick="window.print()" style="padding:8px 20px;font-weight:bold;cursor:pointer;">Print Report</button>
-        <button onclick="if(window.history.length > 1){ window.history.back(); } else { window.close(); }" style="padding:8px 20px;margin-left:8px;cursor:pointer;">Close</button>
+    <div class="no-print d-flex align-items-center justify-content-center gap-2" style="padding:8px;background:#f8f9fa;border-bottom:1px solid #ddd;margin-bottom:8px;">
+        <button onclick="window.print()" style="padding:6px 16px;font-weight:bold;cursor:pointer;background:#0d6efd;color:#fff;border:none;border-radius:4px;">Print Report</button>
+        <button onclick="if(window.history.length > 1){ window.history.back(); } else { window.close(); }" style="padding:6px 16px;margin-left:6px;cursor:pointer;background:#6c757d;color:#fff;border:none;border-radius:4px;">Close</button>
+        
+        <span style="border-left:1px solid #ccc;height:20px;margin:0 10px;display:inline-block;"></span>
+        
+        <button onclick="adjustPageZoom(0.1)" style="padding:6px 12px;font-weight:bold;cursor:pointer;background:#198754;color:#fff;border:none;border-radius:4px;" title="Zoom In Page Only">
+            <i class="fa fa-search-plus"></i> Zoom In (+)
+        </button>
+        <button onclick="adjustPageZoom(-0.1)" style="padding:6px 12px;font-weight:bold;cursor:pointer;background:#ffc107;color:#000;border:none;border-radius:4px;" title="Zoom Out Page Only">
+            <i class="fa fa-search-minus"></i> Zoom Out (-)
+        </button>
+        <button onclick="resetPageZoom()" style="padding:6px 12px;cursor:pointer;background:#0dcaf0;color:#000;border:none;border-radius:4px;" title="Reset Zoom">
+            Reset (100%)
+        </button>
+        <span id="zoom-level-badge" style="font-weight:bold;font-size:12px;margin-left:6px;color:#333;">100%</span>
     </div>
 
     @php
@@ -273,5 +286,31 @@
             </table>
         </div>
     </div>
+
+    <script>
+        let currentZoomLevel = 1.0;
+
+        function adjustPageZoom(delta) {
+            currentZoomLevel = Math.max(0.5, Math.min(2.5, currentZoomLevel + delta));
+            applyPageZoom();
+        }
+
+        function resetPageZoom() {
+            currentZoomLevel = 1.0;
+            applyPageZoom();
+        }
+
+        function applyPageZoom() {
+            const printSheet = document.querySelector('.print-sheet');
+            if (printSheet) {
+                printSheet.style.transform = `scale(${currentZoomLevel})`;
+                printSheet.style.transformOrigin = 'top center';
+            }
+            const badge = document.getElementById('zoom-level-badge');
+            if (badge) {
+                badge.innerText = Math.round(currentZoomLevel * 100) + '%';
+            }
+        }
+    </script>
 </body>
 </html>
