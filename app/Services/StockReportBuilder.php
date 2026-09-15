@@ -558,22 +558,7 @@ class StockReportBuilder
                         );
                     }
 
-                    if ($claim->claim_type === 'claim_hold') {
-                        $this->addMovement(
-                            (int) $claim->product_id,
-                            (int) $claim->claim_warehouse_id,
-                            $date,
-                            'hold',
-                            1,
-                            0,
-                            $ref,
-                            'SH',
-                            $party,
-                            $price,
-                            $price,
-                            $claimId
-                        );
-                    }
+                    // Customer Claim entries do not add to SH (Stock Hold) column
                 }
             });
     }
