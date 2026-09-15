@@ -94,8 +94,7 @@ class DailyReportBuilder
                         ->with(['customer', 'items.product'])
                         ->where(function($q) use ($fromDate, $toDate) {
                             $q->whereBetween('current_date', [$fromDate, $toDate])
-                              ->orWhereBetween('entry_date', [$fromDate, $toDate])
-                              ->orWhereDate('created_at', '>=', $fromDate)->whereDate('created_at', '<=', $toDate);
+                              ->orWhereBetween('entry_date', [$fromDate, $toDate]);
                         })
                         ->latest('id')
                         ->get();
@@ -103,7 +102,7 @@ class DailyReportBuilder
                     $txns = [];
                     foreach ($returns as $sr) {
                         $partyName = strtoupper($sr->party_name ?? 'CUSTOMER');
-                        $srDate = $sr->current_date ?? $sr->entry_date ?? $sr->created_at;
+                        $srDate = $sr->current_date ?? $sr->entry_date;
                         $dateStr = !empty($srDate) ? Carbon::parse($srDate)->format('d-m-Y') : '';
 
                         foreach ($sr->items as $it) {
