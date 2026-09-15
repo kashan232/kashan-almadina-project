@@ -209,8 +209,8 @@
                     <td>{{ $fmt($row['cols']['sales_ret'] ?? 0) }}</td>
                     <td>{{ $fmt($row['cols']['hold'] ?? 0) }}</td>
                     <td>{{ $fmt($row['cols']['release'] ?? 0) }}</td>
-                    <td>{{ $fmt($row['cols']['claim_in'] ?? 0) }}</td>
-                    <td class="{{ ($row['cols']['claim_out'] ?? 0) > 0 ? 'sales-red' : '' }}">{{ $fmt($row['cols']['claim_out'] ?? 0) }}</td>
+                    <td>{{ $fmt($row['cols']['cli_in'] ?? $row['cols']['clm_in'] ?? 0) }}</td>
+                    <td class="{{ (($row['cols']['cli_out'] ?? $row['cols']['clm_out'] ?? 0) > 0) ? 'sales-red' : '' }}">{{ $fmt($row['cols']['cli_out'] ?? $row['cols']['clm_out'] ?? 0) }}</td>
                     <td>{{ $fmt($row['cols']['trf_in'] ?? 0) }}</td>
                     <td>{{ $fmt($row['cols']['trf_out'] ?? 0) }}</td>
                     <td>{{ $fmt($row['cols']['waste'] ?? 0) }}</td>
@@ -228,8 +228,8 @@
                     <td>{{ $fmt($ledger['totals']['sales_ret']) }}</td>
                     <td>{{ $fmt($ledger['totals']['hold']) }}</td>
                     <td>{{ $fmt($ledger['totals']['release']) }}</td>
-                    <td>{{ $fmt($ledger['totals']['claim_in']) }}</td>
-                    <td class="sales-red">{{ $fmt($ledger['totals']['claim_out']) }}</td>
+                    <td>{{ $fmt($ledger['totals']['cli_in'] ?? $ledger['totals']['clm_in'] ?? 0) }}</td>
+                    <td class="sales-red">{{ $fmt($ledger['totals']['cli_out'] ?? $ledger['totals']['clm_out'] ?? 0) }}</td>
                     <td>{{ $fmt($ledger['totals']['trf_in']) }}</td>
                     <td>{{ $fmt($ledger['totals']['trf_out']) }}</td>
                     <td>{{ $fmt($ledger['totals']['waste']) }}</td>
