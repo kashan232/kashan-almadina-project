@@ -558,18 +558,7 @@ class StockHoldReleaseReportBuilder
             return false;
         }
 
-        if (!$this->isZeroRow($row['opening'], $row['hold'], $row['rel'], $payable)) {
-            return true;
-        }
-
-        if (str_starts_with($row['party_key'], 'customer:')) {
-            $customerId = (int) substr($row['party_key'], strlen('customer:'));
-            if (in_array($customerId, $this->selectedCustomerIds(), true)) {
-                return true;
-            }
-        }
-
-        return false;
+        return !$this->isZeroRow($row['opening'], $row['hold'], $row['rel'], $payable);
     }
 
     private function appendPartyRow(array &$partyGroups, array $row, float $payable): void
