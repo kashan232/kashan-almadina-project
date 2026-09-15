@@ -135,6 +135,39 @@ class StockReportBuilder
         ];
     }
 
+    public function buildMerged(Request $request): array
+    {
+        $data = $this->build($request);
+        $grouped = $data['grouped'];
+        
+        $mergedRows = [];
+        $itemsMap = [];
+
+        foreach ($grouped as $whId => $rows) {
+            foreach ($rows as $row) {
+                $pid = $row['product_id'];
+                if (!isset($itemsMap[$pid])) {
+                    $itemsMap[$pid] = $row;
+                    $itemsMap[$pid]['warehouse_id'] = 99999;
+                    $itemsMap[$pid]['warehouse_label'] = 'Shop + Warehouses (Merged)';
+                } else {
+                    $itemsMap[$pid]['opening'] += $row['opening'];
+                    $itemsMap[$pid]['closing'] += $row['closing'];
+                    foreach (self::COLS as $col) {
+                        $itemsMap[$pid][$col] += $row[$col] ?? 0;
+                    }
+                }
+            }
+        }
+
+        $mergedGrouped = collect([99999 => collect(array_values($itemsMap))]);
+
+        return array_merge($data, [
+            'grouped' => $mergedGrouped,
+            'is_merged' => true,
+        ]);
+    }
+
     private function extractFilters(Request $request): array
     {
         return [
