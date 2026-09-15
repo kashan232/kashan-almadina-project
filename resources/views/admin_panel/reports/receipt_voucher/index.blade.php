@@ -5,6 +5,11 @@
     'filterTitle' => 'Receipt Voucher Report Filters',
     'previewRoute' => 'reports.receipt-voucher.preview',
     'showReceiptDates' => true,
+    'reportTypeOptions' => [
+        'source_party' => 'Source Party Name',
+        'sub_head' => 'Sub Head',
+        'all' => 'All (Voucher Wise)',
+    ],
 ])
 @endsection
 

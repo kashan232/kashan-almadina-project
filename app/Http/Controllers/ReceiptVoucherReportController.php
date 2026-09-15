@@ -269,17 +269,26 @@ class ReceiptVoucherReportController extends Controller
             }
 
             $subHeadLabel = strtoupper($account->title ?? $headName);
+            $displayVouc = preg_replace('/[^0-9]/', '', $voucher->rvid) ?: $voucher->rvid;
 
-            $groupKey = in_array($reportType, ['sub_head', 'main_head'], true)
-                ? 'account_' . ($accountId ?: '0')
-                : 'party_' . $voucher->type . '_' . $voucher->party_id;
-
-            $groupLabel = in_array($reportType, ['sub_head', 'main_head'], true) ? $subHeadLabel : $partyName;
+            if ($reportType === 'all') {
+                $groupKey = 'voucher_' . $voucher->id;
+                $groupLabel = 'Voucher No: ' . $displayVouc . ($voucher->receipt_date ? ' | Date: ' . \Carbon\Carbon::parse($voucher->receipt_date)->format('d-m-Y') : '');
+                $sortGroup = sprintf('%s-%s', $voucher->receipt_date ?? '', str_pad((string)$displayVouc, 10, '0', STR_PAD_LEFT));
+            } elseif (in_array($reportType, ['sub_head', 'main_head'], true)) {
+                $groupKey = 'account_' . ($accountId ?: '0');
+                $groupLabel = $subHeadLabel;
+                $sortGroup = $subHeadLabel;
+            } else {
+                $groupKey = 'party_' . $voucher->type . '_' . $voucher->party_id;
+                $groupLabel = $partyName;
+                $sortGroup = $partyName;
+            }
 
             $lines->push((object) [
                 'group_key' => $groupKey,
                 'group_label' => $groupLabel,
-                'sort_group' => $groupLabel,
+                'sort_group' => $sortGroup,
                 'voucher_id' => $voucher->id,
                 'rvid' => $voucher->rvid,
                 'receipt_date' => $voucher->receipt_date,
