@@ -360,30 +360,44 @@ class StockReportBuilder
         $voucher = null,
         ?StockHold $holdLine = null
     ): string {
-        $partyType = strtolower((string) ($partyType ?: $voucher?->party_type ?: $holdLine?->party_type ?: ''));
-        $partyId = (int) ($partyId ?: $voucher?->party_id ?: $holdLine?->party_id ?: 0);
-
-        if (in_array($partyType, ['walkin', 'walking', 'walk-in'], true)) {
+        $rawType = strtolower((string) ($partyType ?: $voucher?->party_type ?: $holdLine?->party_type ?: ''));
+        if (str_contains($rawType, 'customer')) {
+            $partyType = 'customer';
+        } elseif (str_contains($rawType, 'vendor')) {
+            $partyType = 'vendor';
+        } elseif (in_array($rawType, ['walkin', 'walking', 'walk-in'], true)) {
             return 'WALK IN CUSTOMER';
+        } else {
+            $partyType = $rawType;
         }
 
-        $name = '';
-        $code = $partyId;
+        $partyId = (int) ($partyId ?: $voucher?->party_id ?: $voucher?->purchasable_id ?: $voucher?->vendor_id ?: $holdLine?->party_id ?: 0);
 
-        if ($partyType === 'vendor' && $partyId) {
-            $vendor = $holdLine?->partyVendor ?? $voucher?->partyVendor ?? Vendor::find($partyId);
-            $name = strtoupper($vendor?->name ?? 'VENDOR');
-        } elseif ($partyType === 'customer' && $partyId) {
-            $customer = $holdLine?->partyCustomer ?? $voucher?->partyCustomer ?? Customer::find($partyId);
-            $name = strtoupper($customer?->customer_name ?? 'CUSTOMER');
-            $code = $customer?->customer_id ?? $partyId;
+        if ($partyType === 'customer' && $partyId) {
+            $customer = $holdLine?->partyCustomer ?? $voucher?->partyCustomer ?? $voucher?->customer ?? Customer::find($partyId);
+            if ($customer) {
+                $name = strtoupper($customer->customer_name ?? 'CUSTOMER');
+                $code = $customer->customer_id ?? $partyId;
+                return $code ? $name . ' (' . $code . ')' : $name;
+            }
         }
 
-        if ($name === '') {
-            return strtoupper($partyType ?: 'UNKNOWN PARTY');
+        if (($partyType === 'vendor' || !$partyType) && $partyId) {
+            $vendor = $holdLine?->partyVendor ?? $voucher?->partyVendor ?? $voucher?->vendor ?? Vendor::find($partyId);
+            if ($vendor) {
+                $name = strtoupper($vendor->name ?? 'VENDOR');
+                $code = $vendor->vendor_id ?? $partyId;
+                return $code ? $name . ' (' . $code . ')' : $name;
+            }
         }
 
-        return $code ? $name . ' (' . $code . ')' : $name;
+        if ($voucher && method_exists($voucher, 'purchasable') && $voucher->purchasable) {
+            $p = $voucher->purchasable;
+            $name = strtoupper($p->name ?? $p->customer_name ?? '');
+            if ($name) return $name;
+        }
+
+        return 'UNKNOWN PARTY';
     }
 
     private function collectPurchases(): void
