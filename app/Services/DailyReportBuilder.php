@@ -203,22 +203,25 @@ class DailyReportBuilder
                 'fetch' => function() use ($fromDate, $toDate) {
                     $vouchers = ReceiptsVoucher::withoutGlobalScopes()
                         ->with(['Account'])
-                        ->whereDate('date', '>=', $fromDate)
-                        ->whereDate('date', '<=', $toDate)
+                        ->where(function($q) use ($fromDate, $toDate) {
+                            $q->whereBetween('receipt_date', [$fromDate, $toDate])
+                              ->orWhereBetween('entry_date', [$fromDate, $toDate]);
+                        })
                         ->latest('id')
                         ->get();
 
                     $txns = [];
                     foreach ($vouchers as $rv) {
-                        $dateStr = !empty($rv->date) ? Carbon::parse($rv->date)->format('d-m-Y') : '';
-                        $amt = (float)($rv->receipt_amount ?? 0);
-                        $accName = $rv->Account->title ?? 'Account';
+                        $vDate = $rv->receipt_date ?? $rv->entry_date ?? $rv->created_at;
+                        $dateStr = !empty($vDate) ? Carbon::parse($vDate)->format('d-m-Y') : '';
+                        $amt = (float)($rv->total_amount ?? $rv->receipt_amount ?? 0);
+                        $accName = $rv->Account->title ?? '';
 
                         $txns[] = [
                             'date' => $dateStr,
                             'ref' => 'RV',
-                            'inv_no' => $rv->rvid,
-                            'desc' => ($rv->remarks ? $rv->remarks . ' ; ' : '') . $accName,
+                            'inv_no' => $rv->rvid ?? $rv->id,
+                            'desc' => trim(($rv->remarks ? $rv->remarks . ' ' : '') . $accName),
                             'price' => null,
                             'debit_qty' => null,
                             'debit_amt' => null,
@@ -235,22 +238,25 @@ class DailyReportBuilder
                 'fetch' => function() use ($fromDate, $toDate) {
                     $vouchers = PaymentVoucher::withoutGlobalScopes()
                         ->with(['Account'])
-                        ->whereDate('date', '>=', $fromDate)
-                        ->whereDate('date', '<=', $toDate)
+                        ->where(function($q) use ($fromDate, $toDate) {
+                            $q->whereBetween('receipt_date', [$fromDate, $toDate])
+                              ->orWhereBetween('entry_date', [$fromDate, $toDate]);
+                        })
                         ->latest('id')
                         ->get();
 
                     $txns = [];
                     foreach ($vouchers as $pv) {
-                        $dateStr = !empty($pv->date) ? Carbon::parse($pv->date)->format('d-m-Y') : '';
-                        $amt = (float)($pv->payment_amount ?? 0);
-                        $accName = $pv->Account->title ?? 'Account';
+                        $vDate = $pv->receipt_date ?? $pv->entry_date ?? $pv->created_at;
+                        $dateStr = !empty($vDate) ? Carbon::parse($vDate)->format('d-m-Y') : '';
+                        $amt = (float)($pv->total_amount ?? $pv->payment_amount ?? 0);
+                        $accName = $pv->Account->title ?? '';
 
                         $txns[] = [
                             'date' => $dateStr,
                             'ref' => 'PV',
-                            'inv_no' => $pv->pvid,
-                            'desc' => ($pv->remarks ? $pv->remarks . ' ; ' : '') . $accName,
+                            'inv_no' => $pv->pvid ?? $pv->id,
+                            'desc' => trim(($pv->remarks ? $pv->remarks . ' ' : '') . $accName),
                             'price' => null,
                             'debit_qty' => null,
                             'debit_amt' => $amt,
@@ -266,20 +272,23 @@ class DailyReportBuilder
                 'title' => 'Expense Vouchers',
                 'fetch' => function() use ($fromDate, $toDate) {
                     $vouchers = ExpenseVoucher::withoutGlobalScopes()
-                        ->whereDate('date', '>=', $fromDate)
-                        ->whereDate('date', '<=', $toDate)
+                        ->where(function($q) use ($fromDate, $toDate) {
+                            $q->whereBetween('entry_date', [$fromDate, $toDate])
+                              ->orWhereDate('created_at', '>=', $fromDate)->whereDate('created_at', '<=', $toDate);
+                        })
                         ->latest('id')
                         ->get();
 
                     $txns = [];
                     foreach ($vouchers as $ev) {
-                        $dateStr = !empty($ev->date) ? Carbon::parse($ev->date)->format('d-m-Y') : '';
-                        $amt = (float)($ev->amount ?? 0);
+                        $vDate = $ev->entry_date ?? $ev->created_at;
+                        $dateStr = !empty($vDate) ? Carbon::parse($vDate)->format('d-m-Y') : '';
+                        $amt = (float)($ev->total_amount ?? $ev->amount ?? 0);
 
                         $txns[] = [
                             'date' => $dateStr,
                             'ref' => 'EV',
-                            'inv_no' => $ev->voucher_no ?? $ev->id,
+                            'inv_no' => $ev->evid ?? $ev->voucher_no ?? $ev->id,
                             'desc' => $ev->remarks ?? 'Expense Voucher',
                             'price' => null,
                             'debit_qty' => null,
@@ -296,20 +305,23 @@ class DailyReportBuilder
                 'title' => 'Income Vouchers',
                 'fetch' => function() use ($fromDate, $toDate) {
                     $vouchers = IncomeVoucher::withoutGlobalScopes()
-                        ->whereDate('date', '>=', $fromDate)
-                        ->whereDate('date', '<=', $toDate)
+                        ->where(function($q) use ($fromDate, $toDate) {
+                            $q->whereBetween('entry_date', [$fromDate, $toDate])
+                              ->orWhereDate('created_at', '>=', $fromDate)->whereDate('created_at', '<=', $toDate);
+                        })
                         ->latest('id')
                         ->get();
 
                     $txns = [];
                     foreach ($vouchers as $iv) {
-                        $dateStr = !empty($iv->date) ? Carbon::parse($iv->date)->format('d-m-Y') : '';
-                        $amt = (float)($iv->amount ?? 0);
+                        $vDate = $iv->entry_date ?? $iv->created_at;
+                        $dateStr = !empty($vDate) ? Carbon::parse($vDate)->format('d-m-Y') : '';
+                        $amt = (float)($iv->total_amount ?? $iv->amount ?? 0);
 
                         $txns[] = [
                             'date' => $dateStr,
                             'ref' => 'IV',
-                            'inv_no' => $iv->voucher_no ?? $iv->id,
+                            'inv_no' => $iv->ivid ?? $iv->voucher_no ?? $iv->id,
                             'desc' => $iv->remarks ?? 'Income Voucher',
                             'price' => null,
                             'debit_qty' => null,
@@ -326,20 +338,23 @@ class DailyReportBuilder
                 'title' => 'Journal Vouchers',
                 'fetch' => function() use ($fromDate, $toDate) {
                     $vouchers = JournalVoucher::withoutGlobalScopes()
-                        ->whereDate('date', '>=', $fromDate)
-                        ->whereDate('date', '<=', $toDate)
+                        ->where(function($q) use ($fromDate, $toDate) {
+                            $q->whereBetween('entry_date', [$fromDate, $toDate])
+                              ->orWhereDate('created_at', '>=', $fromDate)->whereDate('created_at', '<=', $toDate);
+                        })
                         ->latest('id')
                         ->get();
 
                     $txns = [];
                     foreach ($vouchers as $jv) {
-                        $dateStr = !empty($jv->date) ? Carbon::parse($jv->date)->format('d-m-Y') : '';
-                        $amt = (float)($jv->amount ?? 0);
+                        $vDate = $jv->entry_date ?? $jv->created_at;
+                        $dateStr = !empty($vDate) ? Carbon::parse($vDate)->format('d-m-Y') : '';
+                        $amt = (float)($jv->total_debit ?? $jv->amount ?? 0);
 
                         $txns[] = [
                             'date' => $dateStr,
                             'ref' => 'JV',
-                            'inv_no' => $jv->voucher_no ?? $jv->id,
+                            'inv_no' => $jv->jvid ?? $jv->voucher_no ?? $jv->id,
                             'desc' => $jv->remarks ?? 'Journal Voucher',
                             'price' => null,
                             'debit_qty' => null,
