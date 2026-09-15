@@ -600,8 +600,7 @@
         });
 
         // Account Head Logic (AJAX load accounts)
-        $('#account_head_id').on('change', function() {
-            var headId = $(this).val();
+        function loadAccountsByHead(headId, selectedAccId) {
             var $accSelect = $('#account_id');
             $accSelect.html('<option value="" disabled selected>Loading...</option>');
             $.ajax({
@@ -611,17 +610,29 @@
                     var options = '<option value="" disabled selected>Select Account</option>';
                     if(Array.isArray(res)) {
                         res.forEach(function(acc) {
-                            options += `<option value="${acc.id}">${acc.code || ''} - ${acc.title}</option>`;
+                            var codeStr = acc.account_code || acc.code || '';
+                            var isSel = (selectedAccId && acc.id == selectedAccId) ? 'selected' : '';
+                            options += `<option value="${acc.id}" ${isSel}>${codeStr ? codeStr + ' - ' : ''}${acc.title}</option>`;
                         });
                     }
                     $accSelect.html(options);
-                    if ($accSelect.hasClass('select2-hidden-accessible')) $accSelect.trigger('change');
+                    if ($accSelect.hasClass('select2-hidden-accessible')) $accSelect.trigger('change.select2');
                 },
-                error: function() {
-                    $accSelect.html('<option value="" disabled selected>Error loading</option>');
-                }
+                error: function() { $accSelect.html('<option value="" disabled selected>Error loading</option>'); }
             });
+        }
+
+        $('#account_head_id').on('change', function() {
+            var headId = $(this).val();
+            if (headId) {
+                loadAccountsByHead(headId);
+            }
         });
+
+        // Trigger on load if head is selected
+        if ($('#account_head_id').val()) {
+            loadAccountsByHead($('#account_head_id').val());
+        }
 
         // Add Row Function
         function addRow(focus = true) {

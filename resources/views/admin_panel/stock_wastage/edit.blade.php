@@ -630,8 +630,7 @@
         // Add row via Ctrl+I
 
         // Account Head Logic
-        $('#account_head_id').on('change', function() {
-            var headId = $(this).val();
+        function loadAccountsByHead(headId, selectedAccId) {
             var $accSelect = $('#account_id');
             $accSelect.html('<option value="" disabled selected>Loading...</option>');
             $.ajax({
@@ -641,15 +640,31 @@
                     var options = '<option value="" disabled selected>Select Account</option>';
                     if(Array.isArray(res)) {
                         res.forEach(function(acc) {
-                            options += `<option value="${acc.id}">${acc.code || ''} - ${acc.title}</option>`;
+                            var codeStr = acc.account_code || acc.code || '';
+                            var isSel = (selectedAccId && acc.id == selectedAccId) ? 'selected' : '';
+                            options += `<option value="${acc.id}" ${isSel}>${codeStr ? codeStr + ' - ' : ''}${acc.title}</option>`;
                         });
                     }
                     $accSelect.html(options);
-                    if ($accSelect.hasClass('select2-hidden-accessible')) $accSelect.trigger('change');
+                    if ($accSelect.hasClass('select2-hidden-accessible')) $accSelect.trigger('change.select2');
                 },
                 error: function() { $accSelect.html('<option value="" disabled selected>Error loading</option>'); }
             });
+        }
+
+        $('#account_head_id').on('change', function() {
+            var headId = $(this).val();
+            if (headId) {
+                loadAccountsByHead(headId);
+            }
         });
+
+        // Load accounts on initial load while preserving current selected account
+        var initialHeadId = $('#account_head_id').val();
+        var initialAccId = '{{ $stock_wastage->account_id }}';
+        if (initialHeadId) {
+            loadAccountsByHead(initialHeadId, initialAccId);
+        }
 
         // Calculation Helpers
         function calcRow($row) {
