@@ -631,7 +631,6 @@ class StockReportBuilder
                     $party = method_exists($note, 'partyName') ? $note->partyName() : '';
                     $price = (float) ($item->price ?? 0);
                     $this->addMovement($pid, (int) $note->from_warehouse_id, $date, 'cli_out', $qty, -$qty, $ref, 'CLM', $party, $price, $price * $qty);
-                    $this->addMovement($pid, (int) $note->to_warehouse_id, $date, 'cli_in', $qty, $qty, $ref, 'CLM', $party, $price, $price * $qty);
                 }
             });
     }
