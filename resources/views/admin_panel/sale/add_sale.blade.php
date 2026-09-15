@@ -514,6 +514,7 @@
             </div>
           </div>
 
+          {{--
           <div class="mb-2">
             <div class="sale-order-mode p-2 border rounded shadow-sm d-flex align-items-center justify-content-between transition-all" 
                  id="saleOrderContainer" 
@@ -533,6 +534,7 @@
                 </div>
             </div>
           </div>
+          --}}
 
           <style>
             .sale-order-mode.active-mode {
@@ -1859,6 +1861,7 @@
     loadCustomersByType(this.value);
   });
 
+  /*
   // Sale Order Toggle UI Sync
   function updateSaleOrderUI() {
     const isChecked = $('#isSaleOrder').is(':checked');
@@ -1900,6 +1903,7 @@
         $('#salesTableBody tr:last-child .wh-cell').hide();
     }
   };
+  */
 
   // Party ID Lookup
   $('#partyIdInput').on('keydown', function(e) {
