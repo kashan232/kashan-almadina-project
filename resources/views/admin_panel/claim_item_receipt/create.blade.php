@@ -322,9 +322,7 @@
                                         <select id="credit_wht_head_id" class="form-select form-select-sm py-0" style="width:80px;">
                                             <option value="">Head</option>
                                             @foreach($AccountHeads as $head)
-                                                @if(strtoupper($head->name) === 'EXPENSE')
-                                                    <option value="{{ $head->id }}" {{ (isset($activeVoucher->whtAccount) && $activeVoucher->whtAccount->account_head_id == $head->id) ? 'selected' : '' }}>{{ $head->name }}</option>
-                                                @endif
+                                                <option value="{{ $head->id }}" {{ (isset($activeVoucher->whtAccount) && $activeVoucher->whtAccount->account_head_id == $head->id) ? 'selected' : '' }}>{{ $head->name }}</option>
                                             @endforeach
                                         </select>
                                         <select name="wht_account_id" id="credit_wht_account_id" data-selected="{{ $activeVoucher->wht_account_id ?? '' }}" class="form-select form-select-sm py-0" style="flex-grow:1;">
@@ -584,8 +582,7 @@ $(document).ready(function() {
         }
     }
 
-    $(document).on('change', '#credit_wht_head_id', function() {
-        var headId = $(this).val();
+    function loadWhtAccounts(headId, selectedAccId) {
         var $accSelect = $('#credit_wht_account_id');
         if (!headId) { $accSelect.html('<option value="">Account</option>'); return; }
 
@@ -595,12 +592,27 @@ $(document).ready(function() {
             success: function(res) {
                 var html = '<option value="">Account</option>';
                 if (res && res.length) {
-                    res.forEach(function(acc) { html += '<option value="' + acc.id + '">' + acc.title + '</option>'; });
+                    res.forEach(function(acc) {
+                        var isSel = (selectedAccId && selectedAccId == acc.id) ? ' selected' : '';
+                        html += '<option value="' + acc.id + '"' + isSel + '>' + acc.title + '</option>';
+                    });
                 } else { html = '<option value="">No Accounts</option>'; }
                 $accSelect.html(html);
             }
         });
+    }
+
+    $(document).on('change', '#credit_wht_head_id', function() {
+        var headId = $(this).val();
+        var currentAcc = $('#credit_wht_account_id').data('selected') || $('#credit_wht_account_id').val();
+        loadWhtAccounts(headId, currentAcc);
     });
+
+    if ($('#credit_wht_head_id').val()) {
+        var initHeadId = $('#credit_wht_head_id').val();
+        var initAccId = $('#credit_wht_account_id').data('selected') || $('#credit_wht_account_id').val();
+        loadWhtAccounts(initHeadId, initAccId);
+    }
 
     // --- FORM SUBMIT (SAVE & POST) ---
     function submitClaim(act) {
