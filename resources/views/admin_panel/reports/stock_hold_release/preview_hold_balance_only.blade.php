@@ -25,69 +25,78 @@
         .company-name {
             text-align: center;
             color: #000;
-            font-size: 24px;
+            font-size: 22px;
             font-weight: bold;
             margin-bottom: 4px;
         }
         .report-header {
             text-align: center;
             position: relative;
-            margin-bottom: 16px;
+            margin-bottom: 12px;
         }
         .report-title {
             color: #000;
-            font-size: 16px;
+            font-size: 18px;
             font-weight: bold;
-            margin: 0 0 10px 0;
-        }
-        .header-meta-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 11px;
-            font-weight: bold;
-            margin-bottom: 6px;
+            margin: 0 0 8px 0;
         }
         .date-range {
+            font-size: 12px;
+            font-weight: bold;
             text-align: left;
         }
         .date-range span { text-decoration: underline; }
         .generated-date {
-            text-align: right;
+            position: absolute;
+            right: 0;
+            top: 0;
+            font-size: 11px;
             color: #333;
         }
         table {
             width: 100%;
             border-collapse: collapse;
             border: 1px solid #000;
-            margin-bottom: 14px;
+            margin-bottom: 0;
         }
         th {
-            background-color: #dcdcdc;
+            background-color: #cfd8dc;
             border: 1px solid #000;
-            padding: 6px 8px;
+            padding: 6px 4px;
             font-size: 11px;
             font-weight: bold;
             text-align: center;
         }
         td {
             border: 1px solid #000;
-            padding: 6px 8px;
+            padding: 4px 6px;
             vertical-align: middle;
             font-size: 11px;
         }
-        .num { text-align: right; font-weight: bold; }
-        .center { text-align: center; }
+        .party-title td {
+            font-weight: bold;
+            font-size: 13px;
+            color: #0d47a1;
+            border: none;
+            padding: 10px 4px 4px;
+            background: #fff;
+        }
+        .item-desc { text-align: left; }
+        .num { text-align: center; font-weight: bold; }
+        .sno { text-align: center; width: 40px; }
+        .subtotal-row td,
+        .grand-row td {
+            font-weight: bold;
+            background: #eceff1;
+        }
+        .grand-row td {
+            background: #cfd8dc;
+            border-top: 2px solid #000;
+        }
         .empty-msg {
             text-align: center;
             padding: 30px;
             font-size: 14px;
-        }
-        .grand-row td {
-            background: #cfd8dc;
-            font-weight: bold;
-            font-size: 12px;
-            border-top: 2px solid #000;
         }
         @media print {
             .no-print { display: none !important; }
@@ -102,45 +111,63 @@
         <button onclick="if(window.history.length > 1){ window.history.back(); } else { window.close(); }" style="padding:10px 25px;margin-left:8px;cursor:pointer;">Close</button>
     </div>
 
-    <div class="company-name">Al-Madina Traders</div>
+    @php
+        $fmt = fn($v) => abs((float)$v) < 0.0001 ? '' : number_format((float)$v, 0);
+    @endphp
+
+    <div class="company-name">AL-MADINA TRADERS</div>
     <div class="report-header">
-        <div class="report-title">Stock Hold Balance Only Report</div>
-        <div class="header-meta-row">
-            <div class="date-range">
-                From: <span>{{ $from_date ? \Carbon\Carbon::parse($from_date)->format('d-m-y') : '01-01-01' }}</span>
-                To: <span>{{ $to_date ? \Carbon\Carbon::parse($to_date)->format('d-m-y') : '' }}</span>
-            </div>
-            <div class="generated-date">{{ $generated_at->format('l, F j, Y') }}</div>
+        <div class="generated-date">{{ $generated_at->format('l, F j, Y') }}</div>
+        <div class="report-title">
+            Stock Hold Balance Only Report
+            <div style="font-size: 12px; font-weight: bold; margin-top: 4px;">Customer / Party Wise</div>
+        </div>
+        <div class="date-range">
+            From: <span>{{ $from_date ? \Carbon\Carbon::parse($from_date)->format('d-m-y') : '' }}</span>
+            To: <span>{{ $to_date ? \Carbon\Carbon::parse($to_date)->format('d-m-y') : '' }}</span>
         </div>
     </div>
 
-    @if(!empty($customers))
-        <table>
-            <thead>
-                <tr>
-                    <th style="width: 8%;">S#</th>
-                    <th style="width: 52%; text-align: left;">Customer Name</th>
-                    <th style="width: 22%;">Last Date / Time</th>
-                    <th style="width: 18%;" class="num">Hold Balance</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach($customers as $idx => $cust)
-                    <tr>
-                        <td class="center">{{ $idx + 1 }}</td>
-                        <td style="font-weight: bold;">{{ $cust['party_name'] }}</td>
-                        <td class="center">{{ $cust['last_time'] ?: '-' }}</td>
-                        <td class="num">{{ number_format($cust['total_payable'], 0) }}</td>
-                    </tr>
-                @endforeach
-                <tr class="grand-row">
-                    <td colspan="3" style="text-align: right;">Grand Total Hold Balance:</td>
-                    <td class="num">{{ number_format($grand_payable, 0) }}</td>
-                </tr>
-            </tbody>
-        </table>
-    @else
-        <p class="empty-msg">No active stock hold balance records found for selected filters.</p>
+    @forelse($groups as $group)
+    <table>
+        <thead>
+            <tr>
+                <th class="sno">S#</th>
+                <th style="width: 70%;">Item Description</th>
+                <th style="width: 30%;">Payable</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr class="party-title">
+                <td colspan="3">{{ $group['party_name'] }}</td>
+            </tr>
+            @foreach($group['rows'] as $i => $row)
+            <tr>
+                <td class="sno">{{ $i + 1 }}</td>
+                <td class="item-desc">{{ $row['product_name'] }}</td>
+                <td class="num">{{ $fmt($row['payable']) }}</td>
+            </tr>
+            @endforeach
+            <tr class="subtotal-row">
+                <td colspan="2" style="text-align:right;">Sub Total.</td>
+                <td class="num">{{ $fmt($group['total_payable']) }}</td>
+            </tr>
+        </tbody>
+    </table>
+    @empty
+    <p class="empty-msg">No active hold balance found for selected filters.</p>
+    @endforelse
+
+    @if(!empty($groups))
+    <table>
+        <tbody>
+            <tr class="grand-row">
+                <td class="sno"></td>
+                <td style="text-align:right; width: 70%;">Grand Total</td>
+                <td class="num" style="width: 30%;">{{ $fmt($grand_payable) }}</td>
+            </tr>
+        </tbody>
+    </table>
     @endif
 </body>
 </html>

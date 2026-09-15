@@ -1133,31 +1133,31 @@ class StockHoldReleaseReportBuilder
             if (!isset($customerGroups[$partyKey])) {
                 $customerGroups[$partyKey] = [
                     'party_name' => $row['party_name'],
+                    'rows' => [],
                     'total_payable' => 0.0,
-                    'last_time' => null,
                 ];
             }
 
+            $customerGroups[$partyKey]['rows'][] = [
+                'product_name' => $row['product_name'],
+                'payable' => $payable,
+            ];
+
             $customerGroups[$partyKey]['total_payable'] += $payable;
             $grandPayable += $payable;
-
-            // Resolve latest transaction time from item_details if available
-            if (!empty($row['item_details'])) {
-                foreach ($row['item_details'] as $detail) {
-                    if (!empty($detail['date'])) {
-                        $customerGroups[$partyKey]['last_time'] = $detail['date'];
-                    }
-                }
-            }
         }
 
         $sortedGroups = collect($customerGroups)
+            ->map(function ($group) {
+                usort($group['rows'], fn ($a, $b) => strnatcasecmp($a['product_name'], $b['product_name']));
+                return $group;
+            })
             ->sortBy('party_name', SORT_NATURAL | SORT_FLAG_CASE)
             ->values()
             ->all();
 
         return [
-            'customers' => $sortedGroups,
+            'groups' => $sortedGroups,
             'grand_payable' => $grandPayable,
             'from_date' => $fromDate,
             'to_date' => $toDate,
