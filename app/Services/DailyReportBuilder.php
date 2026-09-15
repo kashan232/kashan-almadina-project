@@ -54,7 +54,7 @@ class DailyReportBuilder
                 'title' => 'Sales Invoices',
                 'fetch' => function() use ($fromDate, $toDate) {
                     $sales = Sale::withoutGlobalScopes()
-                        ->with(['customer', 'vendor', 'items.product'])
+                        ->with(['customer', 'vendor'])
                         ->whereDate('created_at', '>=', $fromDate)
                         ->whereDate('created_at', '<=', $toDate)
                         ->latest()
@@ -64,24 +64,22 @@ class DailyReportBuilder
                     foreach ($sales as $s) {
                         $partyName = strtoupper($s->customer?->customer_name ?? $s->vendor?->name ?? 'WALK IN');
                         $dateStr = Carbon::parse($s->created_at)->format('d-m-Y');
-                        
-                        foreach ($s->items as $it) {
-                            $qty = (float)$it->sales_qty;
-                            $price = (float)$it->sales_price;
-                            $amt = (float)$it->amount;
-
-                            $txns[] = [
-                                'date' => $dateStr,
-                                'ref' => 'SJ',
-                                'inv_no' => $s->invoice_no,
-                                'desc' => ($it->product->name ?? 'Item') . ' — ' . $partyName,
-                                'price' => $price,
-                                'debit_qty' => null,
-                                'debit_amt' => null,
-                                'credit_qty' => $qty,
-                                'credit_amt' => $amt,
-                            ];
+                        $totalAmt = (float)($s->total_amount ?? $s->grand_total ?? $s->total_balance ?? $s->net_amount ?? 0);
+                        if ($totalAmt == 0 && count($s->items) > 0) {
+                            $totalAmt = (float)$s->items->sum('amount');
                         }
+
+                        $txns[] = [
+                            'date' => $dateStr,
+                            'ref' => 'SJ',
+                            'inv_no' => $s->invoice_no,
+                            'desc' => 'Sale Invoice — ' . $partyName,
+                            'price' => null,
+                            'debit_qty' => null,
+                            'debit_amt' => null,
+                            'credit_qty' => null,
+                            'credit_amt' => $totalAmt,
+                        ];
                     }
                     return $txns;
                 }
@@ -91,7 +89,7 @@ class DailyReportBuilder
                 'title' => 'Sale Returns',
                 'fetch' => function() use ($fromDate, $toDate) {
                     $returns = SaleReturn::withoutGlobalScopes()
-                        ->with(['customer', 'items.product'])
+                        ->with(['customer'])
                         ->where(function($q) use ($fromDate, $toDate) {
                             $q->whereBetween('current_date', [$fromDate, $toDate])
                               ->orWhereBetween('entry_date', [$fromDate, $toDate]);
@@ -104,24 +102,22 @@ class DailyReportBuilder
                         $partyName = strtoupper($sr->party_name ?? 'CUSTOMER');
                         $srDate = $sr->current_date ?? $sr->entry_date;
                         $dateStr = !empty($srDate) ? Carbon::parse($srDate)->format('d-m-Y') : '';
-
-                        foreach ($sr->items as $it) {
-                            $qty = (float)$it->quantity;
-                            $price = (float)$it->price;
-                            $amt = $qty * $price;
-
-                            $txns[] = [
-                                'date' => $dateStr,
-                                'ref' => 'SRJ',
-                                'inv_no' => $sr->invoice_no,
-                                'desc' => ($it->product->name ?? 'Item') . ' — ' . $partyName,
-                                'price' => $price,
-                                'debit_qty' => $qty,
-                                'debit_amt' => $amt,
-                                'credit_qty' => null,
-                                'credit_amt' => null,
-                            ];
+                        $totalAmt = (float)($sr->total_balance ?? $sr->sub_total2 ?? 0);
+                        if ($totalAmt == 0 && count($sr->items) > 0) {
+                            $totalAmt = (float)$sr->items->sum(fn($it) => $it->quantity * $it->price);
                         }
+
+                        $txns[] = [
+                            'date' => $dateStr,
+                            'ref' => 'SRJ',
+                            'inv_no' => $sr->invoice_no,
+                            'desc' => 'Sale Return — ' . $partyName,
+                            'price' => null,
+                            'debit_qty' => null,
+                            'debit_amt' => $totalAmt,
+                            'credit_qty' => null,
+                            'credit_amt' => null,
+                        ];
                     }
                     return $txns;
                 }
@@ -131,7 +127,7 @@ class DailyReportBuilder
                 'title' => 'Purchase Invoices',
                 'fetch' => function() use ($fromDate, $toDate) {
                     $purchases = Purchase::withoutGlobalScopes()
-                        ->with(['vendor', 'items.product'])
+                        ->with(['vendor'])
                         ->whereDate('entry_date', '>=', $fromDate)
                         ->whereDate('entry_date', '<=', $toDate)
                         ->latest('id')
@@ -141,24 +137,22 @@ class DailyReportBuilder
                     foreach ($purchases as $p) {
                         $partyName = strtoupper($p->vendor?->name ?? 'VENDOR');
                         $dateStr = !empty($p->entry_date) ? Carbon::parse($p->entry_date)->format('d-m-Y') : '';
-
-                        foreach ($p->items as $it) {
-                            $qty = (float)$it->qty;
-                            $price = (float)$it->price;
-                            $amt = (float)$it->subtotal;
-
-                            $txns[] = [
-                                'date' => $dateStr,
-                                'ref' => 'PJ',
-                                'inv_no' => $p->invoice_no,
-                                'desc' => ($it->product->name ?? 'Item') . ' — ' . $partyName,
-                                'price' => $price,
-                                'debit_qty' => $qty,
-                                'debit_amt' => $amt,
-                                'credit_qty' => null,
-                                'credit_amt' => null,
-                            ];
+                        $totalAmt = (float)($p->total_amount ?? $p->grand_total ?? 0);
+                        if ($totalAmt == 0 && count($p->items) > 0) {
+                            $totalAmt = (float)$p->items->sum('subtotal');
                         }
+
+                        $txns[] = [
+                            'date' => $dateStr,
+                            'ref' => 'PJ',
+                            'inv_no' => $p->invoice_no,
+                            'desc' => 'Purchase Invoice — ' . $partyName,
+                            'price' => null,
+                            'debit_qty' => null,
+                            'debit_amt' => $totalAmt,
+                            'credit_qty' => null,
+                            'credit_amt' => null,
+                        ];
                     }
                     return $txns;
                 }
@@ -168,7 +162,6 @@ class DailyReportBuilder
                 'title' => 'Purchase Returns',
                 'fetch' => function() use ($fromDate, $toDate) {
                     $returns = PurchaseReturn::withoutGlobalScopes()
-                        ->with(['items.product'])
                         ->whereDate('entry_date', '>=', $fromDate)
                         ->whereDate('entry_date', '<=', $toDate)
                         ->latest('id')
@@ -178,24 +171,22 @@ class DailyReportBuilder
                     foreach ($returns as $pr) {
                         $partyName = 'VENDOR';
                         $dateStr = !empty($pr->entry_date) ? Carbon::parse($pr->entry_date)->format('d-m-Y') : '';
-
-                        foreach ($pr->items as $it) {
-                            $qty = (float)$it->qty;
-                            $price = (float)$it->price;
-                            $amt = (float)$it->subtotal;
-
-                            $txns[] = [
-                                'date' => $dateStr,
-                                'ref' => 'PRJ',
-                                'inv_no' => $pr->invoice_no,
-                                'desc' => ($it->product->name ?? 'Item') . ' — ' . $partyName,
-                                'price' => $price,
-                                'debit_qty' => null,
-                                'debit_amt' => null,
-                                'credit_qty' => $qty,
-                                'credit_amt' => $amt,
-                            ];
+                        $totalAmt = (float)($pr->total_amount ?? $pr->grand_total ?? 0);
+                        if ($totalAmt == 0 && count($pr->items) > 0) {
+                            $totalAmt = (float)$pr->items->sum('subtotal');
                         }
+
+                        $txns[] = [
+                            'date' => $dateStr,
+                            'ref' => 'PRJ',
+                            'inv_no' => $pr->invoice_no,
+                            'desc' => 'Purchase Return — ' . $partyName,
+                            'price' => null,
+                            'debit_qty' => null,
+                            'debit_amt' => null,
+                            'credit_qty' => null,
+                            'credit_amt' => $totalAmt,
+                        ];
                     }
                     return $txns;
                 }
