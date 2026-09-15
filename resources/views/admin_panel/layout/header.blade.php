@@ -510,6 +510,7 @@
                                   @endcan
                                   @can('Stock Hold')
                                   <li><a href="{{ route('stock-hold-list') }}"><i class="fas fa-pause mr-2"></i> Stock Hold</a></li>
+                                  <li><a href="{{ route('stock-holds.import') }}"><i class="fas fa-file-import mr-2"></i> Import Stock Hold</a></li>
                                   @endcan
                                   @can('Stock Release')
                                   <li><a href="{{ route('stock-relase-list') }}"><i class="fas fa-play mr-2"></i> Stock Release</a></li>

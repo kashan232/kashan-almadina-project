@@ -457,6 +457,10 @@ Route::middleware('auth')->group(function () {
     Route::post('stock-holds/claim/invoice/{invoice}', [StockHoldController::class, 'claimByInvoice'])->name('stock-holds.claim.invoice');
     Route::post('stock-holds/claim/item', [StockHoldController::class, 'claimItem'])->name('stock-holds.claim.item');
 
+    Route::get('/stock-holds/import', [StockHoldController::class, 'showImport'])->name('stock-holds.import');
+    Route::get('/stock-holds/import/template', [StockHoldController::class, 'downloadImportTemplate'])->name('stock-holds.import.template');
+    Route::post('/stock-holds/import/store', [StockHoldController::class, 'processImport'])->name('stock-holds.import.store');
+
     Route::get('/stock-hold-list', [StockHoldController::class, 'stockholdlist'])->name('stock-hold-list');
     Route::get('/stock-holds/{id}/release', [StockHoldController::class, 'createFromHold'])->name('stock-holds.release');
     Route::post('/stock-holds/{id}/release', [StockHoldController::class, 'storeFromHold'])->name('stock-holds.release.store');

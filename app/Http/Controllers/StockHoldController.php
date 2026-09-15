@@ -1039,5 +1039,37 @@ class StockHoldController extends Controller
             return redirect()->back()->with('error', $e->getMessage());
         }
     }
+
+    public function showImport()
+    {
+        return view('admin_panel.stock_hold.import');
+    }
+
+    public function downloadImportTemplate(\App\Services\StockHoldImportService $service)
+    {
+        return $service->downloadTemplateResponse();
+    }
+
+    public function processImport(Request $request, \App\Services\StockHoldImportService $service)
+    {
+        $request->validate([
+            'excel_file' => 'required|file|mimes:xlsx,xls,csv|max:10240',
+        ]);
+
+        $file = $request->file('excel_file');
+        $result = $service->importFromFile($file->getRealPath());
+
+        if (empty($result['imported_vouchers']) && !empty($result['errors'])) {
+            return redirect()->back()->with('error', 'Import failed: ' . implode(' | ', array_slice($result['errors'], 0, 5)));
+        }
+
+        $message = "Successfully imported {$result['imported_vouchers']} Stock Hold Vouchers ({$result['imported_items']} items).";
+        if ($result['skipped'] > 0) {
+            $message .= " {$result['skipped']} rows skipped. Errors: " . implode(' | ', array_slice($result['errors'], 0, 3));
+        }
+
+        return redirect()->route('stock-hold-list')->with('success', $message);
+    }
 }
+
 

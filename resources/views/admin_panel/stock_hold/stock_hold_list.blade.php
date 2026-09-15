@@ -120,7 +120,13 @@
                                     <div class="d-flex gap-1 justify-content-end align-items-center">
                                         <button type="submit" class="btn btn-primary btn-sm rounded-pill px-3 shadow-sm">Filter</button>
                                         <a href="{{ route('stock-hold-list') }}" class="btn btn-outline-secondary btn-sm rounded-pill px-2" title="Reset"><i class="fa fa-refresh"></i></a>
-                                        <a class="btn btn-primary btn-sm rounded-pill px-4 shadow-sm ms-2" href="{{ route('create-stock-hold') }}">
+                                        <a class="btn btn-success btn-sm rounded-pill px-3 shadow-sm ms-1" href="{{ route('stock-holds.import.template') }}">
+                                            <i class="fa fa-file-excel-o me-1"></i> Excel Template
+                                        </a>
+                                        <a class="btn btn-info btn-sm text-white rounded-pill px-3 shadow-sm ms-1" href="{{ route('stock-holds.import') }}">
+                                            <i class="fa fa-upload me-1"></i> Import Excel
+                                        </a>
+                                        <a class="btn btn-primary btn-sm rounded-pill px-4 shadow-sm ms-1" href="{{ route('create-stock-hold') }}">
                                             <i class="fa fa-plus me-1"></i> Add Stock Hold
                                         </a>
                                     </div>
