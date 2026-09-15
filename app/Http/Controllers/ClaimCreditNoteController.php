@@ -40,27 +40,27 @@ class ClaimCreditNoteController extends Controller
 
     public function edit($id)
     {
-        $voucher = ClaimCreditNote::with(['items.product', 'whtAccount'])->findOrFail($id);
-        if ($voucher->status === 'Posted') {
+        $creditVoucher = ClaimCreditNote::with(['items.product', 'whtAccount'])->findOrFail($id);
+        if ($creditVoucher->status === 'Posted') {
             return redirect()->route('claim-item-receipt.index')->with('error', 'Posted vouchers cannot be edited.');
         }
         $warehouses = Warehouse::orderBy('warehouse_name')->get();
         $companyWarehouses = Warehouse::withoutGlobalScope('exclude_claims')->where('claim_type', 'company')->orderBy('warehouse_name')->get();
         $AccountHeads = AccountHead::where('status', 1)->get();
         $products = Product::select('id', 'name')->orderBy('name')->get();
-        return view('admin_panel.claim_credit_note.create', compact('voucher', 'warehouses', 'companyWarehouses', 'AccountHeads', 'products'));
+        return view('admin_panel.claim_item_receipt.create', compact('creditVoucher', 'warehouses', 'companyWarehouses', 'AccountHeads', 'products'));
     }
 
     public function show($id)
     {
-        $voucher = ClaimCreditNote::with(['items.product.brandRelation', 'vendor', 'customer', 'whtAccount'])->findOrFail($id);
+        $creditVoucher = ClaimCreditNote::with(['items.product.brandRelation', 'vendor', 'customer', 'whtAccount'])->findOrFail($id);
         $warehouses = Warehouse::orderBy('warehouse_name')->get();
         $companyWarehouses = Warehouse::withoutGlobalScope('exclude_claims')->where('claim_type', 'company')->orderBy('warehouse_name')->get();
         $AccountHeads = AccountHead::where('status', 1)->get();
         $products = Product::select('id', 'name')->orderBy('name')->get();
         $viewMode = true;
 
-        return view('admin_panel.claim_credit_note.create', compact('voucher', 'warehouses', 'companyWarehouses', 'AccountHeads', 'products', 'viewMode'));
+        return view('admin_panel.claim_item_receipt.create', compact('creditVoucher', 'warehouses', 'companyWarehouses', 'AccountHeads', 'products', 'viewMode'));
     }
 
     public function fetchByBTR(Request $request)
