@@ -260,7 +260,7 @@ class ProductImportService
                         'sale_discount_percent'    => $saleDiscPct,
                         'sale_discount_amount'     => $saleDiscAmt,
                         'sale_net_amount'          => $saleNet,
-                        'wht_percent'              => $whtPct,
+                        'sale_wht_percent'          => $whtPct,
                     ]);
                 } else {
                     $product->prices()->create([
@@ -276,7 +276,7 @@ class ProductImportService
                         'sale_discount_percent'    => $saleDiscPct,
                         'sale_discount_amount'     => $saleDiscAmt,
                         'sale_net_amount'          => $saleNet,
-                        'wht_percent'              => $whtPct,
+                        'sale_wht_percent'          => $whtPct,
                         'start_date'               => date('Y-m-d'),
                     ]);
                 }
