@@ -92,13 +92,17 @@
         
         /* Force Toggler Visibility */
         .navbar-toggler {
-            display: block !important;
-            border: none;
-            background: transparent;
-            padding: 8px 12px;
-            cursor: pointer;
-            z-index: 1001;
+            display: inline-flex !important;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid rgba(255, 255, 255, 0.4) !important;
+            background: rgba(255, 255, 255, 0.1) !important;
+            padding: 6px 12px !important;
+            border-radius: 4px;
+            cursor: pointer !important;
+            z-index: 1001 !important;
             opacity: 1 !important;
+            visibility: visible !important;
         }
         .rt_nav_header.horizontal-layout .nav-bottom {
             display: none !important;
