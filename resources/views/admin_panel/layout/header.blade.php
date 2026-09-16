@@ -367,15 +367,25 @@
             opacity: 0.9;
             display: inline-block !important;
         }
-        /* Hide any default arrows from the nav-link itself */
-        .page-navigation .nav-item .nav-link::after,
-        .page-navigation .nav-item .nav-link::before {
-            content: none !important;
-            display: none !important;
-        }
-        
+        /* Hide toggler on desktop */
         .navbar-toggler {
             display: none !important;
+        }
+    }
+    
+    @media (max-width: 991px) {
+        .navbar-toggler {
+            display: inline-flex !important;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid rgba(255, 255, 255, 0.5) !important;
+            background: rgba(255, 255, 255, 0.15) !important;
+            padding: 8px 12px !important;
+            border-radius: 5px;
+            cursor: pointer !important;
+            z-index: 1001 !important;
+            opacity: 1 !important;
+            visibility: visible !important;
         }
     }
     
