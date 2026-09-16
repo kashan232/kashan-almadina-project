@@ -252,7 +252,6 @@ class StockHoldImportService
 
                 StockHold::create([
                     'stock_hold_voucher_id' => $voucher->id,
-                    'date'                  => $entryDate,
                     'entry_date'            => $entryDate,
                     'party_type'            => $partyType,
                     'party_id'              => $partyId,
