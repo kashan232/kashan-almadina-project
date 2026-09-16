@@ -418,17 +418,18 @@
 <div class="container-scroller">
       <nav class="rt_nav_header horizontal-layout col-lg-12 col-12 p-0" style="opacity: 1 !important; overflow: visible !important;">
           <div class="top_nav flex-grow-1" style="overflow: visible !important;">
-              <div class="container-fluid px-2 d-flex flex-row h-100 align-items-center justify-content-between">
-                  <!-- BRAND NAME & MOBILE TOGGLE -->
-                  <div class="d-flex align-items-center justify-content-between w-100 me-2" style="min-height: 50px;">
+              <div class="container-fluid px-3 d-flex flex-row h-100 align-items-center justify-content-between position-relative">
+                  <!-- BRAND NAME -->
+                  <div class="d-flex align-items-center me-2">
                       <a class="nav_logo rt_logo text-decoration-none d-flex align-items-center" href="{{ url('/home') }}">
                           <x-amt-logo height="42px" style="background:#fff;border-radius:4px;padding:2px 6px;" />
                       </a>
-                      
-                      <button class="navbar-toggler align-self-center ms-auto" type="button" onclick="var nb = document.querySelector('.nav-bottom'); if(nb){ nb.classList.toggle('header-toggled'); } event.stopPropagation();" style="display: inline-flex !important; padding: 6px 12px; background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.4); border-radius: 4px; cursor: pointer;">
-                          <i class="fa-solid fa-bars text-white" style="font-size: 22px;"></i>
-                      </button>
                   </div>
+
+                  <!-- MOBILE TOGGLE BUTTON (FAR RIGHT CORNER) -->
+                  <button class="navbar-toggler align-self-center d-lg-none ms-auto" type="button" onclick="var nb = document.querySelector('.nav-bottom'); if(nb){ nb.classList.toggle('header-toggled'); } event.stopPropagation();" style="display: inline-flex !important; padding: 6px 12px; background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.4); border-radius: 4px; cursor: pointer;">
+                      <i class="fa-solid fa-bars text-white" style="font-size: 22px;"></i>
+                  </button>
 
                   <!-- MAIN NAVIGATION -->
                   <div class="nav-bottom flex-grow-1">
