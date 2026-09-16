@@ -101,43 +101,47 @@
                 <div class="col-12">
                     <div class="card border-0 shadow-sm">
                         <div class="card-body p-2">
-                            <form action="{{ route('customers.index') }}" method="GET" class="row g-2 align-items-center">
-                                <div class="col-md-3">
-                                    <h6 class="mb-0 fw-bold text-dark ms-2"><i class="fa fa-users me-2 text-primary"></i>Customer List</h6>
-                                </div>
-                                <div class="col-md-2">
-                                    <select name="customer_type" class="form-select form-select-sm fw-bold" onchange="this.form.submit()">
-                                        <option value="">All Types (Main & Walking)</option>
-                                        <option value="Main Customer" {{ request('customer_type') == 'Main Customer' ? 'selected' : '' }}>Main Customer</option>
-                                        <option value="Walking Customer" {{ request('customer_type') == 'Walking Customer' ? 'selected' : '' }}>Walking Customer</option>
-                                    </select>
-                                </div>
-                                @if($isAdmin)
-                                <div class="col-md-2">
-                                    <select name="created_by" class="form-select form-select-sm select2" onchange="this.form.submit()">
-                                        <option value="">All Users (Created By)</option>
-                                        @foreach($users as $user)
-                                            <option value="{{ $user->id }}" {{ request('created_by') == $user->id ? 'selected' : '' }}>
-                                                {{ $user->name }}
-                                            </option>
-                                        @endforeach
-                                    </select>
-                                </div>
-                                @endif
-                                <div class="col-md-{{ $isAdmin ? '5' : '7' }} text-end">
-                                    <div class="d-flex gap-1 justify-content-end align-items-center">
+                            <form action="{{ route('customers.index') }}" method="GET">
+                                <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+                                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                                        <h6 class="mb-0 fw-bold text-dark me-2"><i class="fa fa-users me-2 text-primary"></i>Customer List</h6>
+                                        
+                                        <div style="min-width: 180px;">
+                                            <select name="customer_type" class="form-select form-select-sm fw-bold" onchange="this.form.submit()">
+                                                <option value="">All Types (Main & Walking)</option>
+                                                <option value="Main Customer" {{ request('customer_type') == 'Main Customer' ? 'selected' : '' }}>Main Customer</option>
+                                                <option value="Walking Customer" {{ request('customer_type') == 'Walking Customer' ? 'selected' : '' }}>Walking Customer</option>
+                                            </select>
+                                        </div>
+
+                                        @if($isAdmin)
+                                        <div style="min-width: 170px;">
+                                            <select name="created_by" class="form-select form-select-sm select2" onchange="this.form.submit()">
+                                                <option value="">All Users (Created By)</option>
+                                                @foreach($users as $user)
+                                                    <option value="{{ $user->id }}" {{ request('created_by') == $user->id ? 'selected' : '' }}>
+                                                        {{ $user->name }}
+                                                    </option>
+                                                @endforeach
+                                            </select>
+                                        </div>
+                                        @endif
+
                                         <button type="submit" class="btn btn-primary btn-sm rounded-pill px-3 shadow-sm">Filter</button>
                                         <a href="{{ route('customers.index') }}" class="btn btn-outline-secondary btn-sm rounded-pill px-2" title="Reset (All)"><i class="fa fa-refresh"></i> Reset</a>
-                                        <a href="{{ route('customers.audit') }}" class="btn btn-outline-danger btn-sm rounded-pill px-3 me-1" title="Ledger Audit Reconciliation">
+                                    </div>
+
+                                    <div class="d-flex align-items-center gap-1 flex-wrap">
+                                        <a href="{{ route('customers.audit') }}" class="btn btn-outline-danger btn-sm rounded-pill px-3" title="Ledger Audit Reconciliation">
                                             <i class="fa fa-calculator me-1"></i> Audit
                                         </a>
-                                        <a href="{{ route('customers.inactive') }}" class="btn btn-outline-secondary btn-sm rounded-pill px-3 ms-2">Inactive</a>
+                                        <a href="{{ route('customers.inactive') }}" class="btn btn-outline-secondary btn-sm rounded-pill px-3">Inactive</a>
                                         <a href="{{ route('customers.ledger') }}" class="btn btn-info btn-sm rounded-pill px-3 text-white">Ledger</a>
                                         <a href="{{ route('customer.payments') }}" class="btn btn-primary btn-sm rounded-pill px-3">Payments</a>
                                         <a href="{{ route('customers.import') }}" class="btn btn-outline-success btn-sm rounded-pill px-3">
                                             <i class="fa fa-file-excel-o me-1"></i> Import Excel
                                         </a>
-                                        <a href="{{ route('customers.create') }}" class="btn btn-success btn-sm rounded-pill px-3 ms-2 shadow-sm">+ Add Customer</a>
+                                        <a href="{{ route('customers.create') }}" class="btn btn-success btn-sm rounded-pill px-3 shadow-sm">+ Add Customer</a>
                                     </div>
                                 </div>
                             </form>
