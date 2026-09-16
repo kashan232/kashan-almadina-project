@@ -259,7 +259,7 @@ class StockHoldImportService
                     'product_id'            => $product->id,
                     'sale_qty'              => 0,
                     'hold_qty'              => $holdQty,
-                    'status'                => 'Posted',
+                    'status'                => 0, // 0 = Active Hold item in database schema
                     'created_by'            => $userId,
                     'user_group_ids'        => Auth::user()?->userGroups()?->pluck('user_groups.id')->toArray() ?? [],
                 ]);
