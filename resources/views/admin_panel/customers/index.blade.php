@@ -105,9 +105,16 @@
                                 <div class="col-md-3">
                                     <h6 class="mb-0 fw-bold text-dark ms-2"><i class="fa fa-users me-2 text-primary"></i>Customer List</h6>
                                 </div>
+                                <div class="col-md-2">
+                                    <select name="customer_type" class="form-select form-select-sm fw-bold" onchange="this.form.submit()">
+                                        <option value="">All Types (Main & Walking)</option>
+                                        <option value="Main Customer" {{ request('customer_type') == 'Main Customer' ? 'selected' : '' }}>Main Customer</option>
+                                        <option value="Walking Customer" {{ request('customer_type') == 'Walking Customer' ? 'selected' : '' }}>Walking Customer</option>
+                                    </select>
+                                </div>
                                 @if($isAdmin)
-                                <div class="col-md-3">
-                                    <select name="created_by" class="form-select form-select-sm select2">
+                                <div class="col-md-2">
+                                    <select name="created_by" class="form-select form-select-sm select2" onchange="this.form.submit()">
                                         <option value="">All Users (Created By)</option>
                                         @foreach($users as $user)
                                             <option value="{{ $user->id }}" {{ request('created_by') == $user->id ? 'selected' : '' }}>
@@ -117,12 +124,10 @@
                                     </select>
                                 </div>
                                 @endif
-                                <div class="col-md-{{ $isAdmin ? '6' : '9' }} text-end">
+                                <div class="col-md-{{ $isAdmin ? '5' : '7' }} text-end">
                                     <div class="d-flex gap-1 justify-content-end align-items-center">
-                                        @if($isAdmin)
-                                            <button type="submit" class="btn btn-primary btn-sm rounded-pill px-3 shadow-sm">Filter</button>
-                                            <a href="{{ route('customers.index') }}" class="btn btn-outline-secondary btn-sm rounded-pill px-2" title="Reset"><i class="fa fa-refresh"></i></a>
-                                        @endif
+                                        <button type="submit" class="btn btn-primary btn-sm rounded-pill px-3 shadow-sm">Filter</button>
+                                        <a href="{{ route('customers.index') }}" class="btn btn-outline-secondary btn-sm rounded-pill px-2" title="Reset (All)"><i class="fa fa-refresh"></i> Reset</a>
                                         <a href="{{ route('customers.audit') }}" class="btn btn-outline-danger btn-sm rounded-pill px-3 me-1" title="Ledger Audit Reconciliation">
                                             <i class="fa fa-calculator me-1"></i> Audit
                                         </a>

@@ -48,6 +48,17 @@ class CustomerController extends Controller
             }
         }
 
+        if ($request->filled('customer_type')) {
+            if ($request->customer_type === 'Main Customer') {
+                $query->where(function($q) {
+                    $q->where('customer_type', 'Main Customer')
+                      ->orWhereNull('customer_type');
+                });
+            } elseif ($request->customer_type === 'Walking Customer') {
+                $query->where('customer_type', 'Walking Customer');
+            }
+        }
+
         $customers = $query->withCount('sales')->latest()->get();
         $userGroups = UserGroup::all()->keyBy('id');
         $users = User::all(); // To populate filter dropdown
