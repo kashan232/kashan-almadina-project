@@ -12,10 +12,10 @@
         }
         .page-navigation .nav-item {
             width: 100%;
-            border-bottom: 1px solid rgba(255,255,255,0.05);
+            border-bottom: 1px solid rgba(255,255,255,0.08);
         }
         .page-navigation .nav-item .nav-link {
-            padding: 15px 20px !important;
+            padding: 12px 20px !important;
             display: flex;
             justify-content: flex-start;
             align-items: center;
@@ -41,7 +41,7 @@
             position: static !important;
             width: 100% !important;
             display: none;
-            background: #1e2630 !important;
+            background: #19222c !important;
             box-shadow: none !important;
             border: none !important;
         }
@@ -95,25 +95,28 @@
             display: block !important;
             border: none;
             background: transparent;
-            padding: 10px;
+            padding: 8px 12px;
             cursor: pointer;
             z-index: 1001;
             opacity: 1 !important;
         }
-        .nav-bottom {
+        .rt_nav_header.horizontal-layout .nav-bottom {
             display: none !important;
             opacity: 1 !important;
-            background-color: #212b36 !important; /* solid background to prevent transparency */
+            background-color: #0f2c42 !important; /* solid background to prevent transparency */
             position: absolute !important;
-            top: 100%;
-            left: 0;
-            width: 100%;
-            z-index: 9999 !important;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+            top: 100% !important;
+            left: 0 !important;
+            right: 0 !important;
+            width: 100% !important;
+            max-height: calc(100vh - 60px);
+            overflow-y: auto;
+            z-index: 99999 !important;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.6);
+            border-top: 1px solid rgba(255,255,255,0.1);
         }
-        .nav-bottom.header-toggled {
+        .rt_nav_header.horizontal-layout .nav-bottom.header-toggled {
             display: block !important;
-            height: auto !important;
         }
     }
     
@@ -903,7 +906,7 @@
                           </li>
                       </ul>
                       
-                      <button class="navbar-toggler align-self-center d-lg-none ms-3" type="button" onclick="var nb = document.querySelector('.nav-bottom'); if(nb.style.display==='block'){nb.style.setProperty('display', 'none', 'important');}else{nb.style.setProperty('display', 'block', 'important');} event.stopPropagation();">
+                      <button class="navbar-toggler align-self-center d-lg-none ms-3" type="button" onclick="var nb = document.querySelector('.nav-bottom'); if(nb){ nb.classList.toggle('header-toggled'); } event.stopPropagation();">
                           <i class="fa-solid fa-bars text-white" style="font-size: 20px;"></i>
                       </button>
                   </div>
