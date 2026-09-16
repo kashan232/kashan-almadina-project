@@ -36,6 +36,16 @@ class ModuleIdSequence
                 ->lockForUpdate()
                 ->max('id');
 
+            // For tables like customers where customer_id might hold numbers like 20071 while auto-inc id was small
+            if (DB::getSchemaBuilder()->hasColumn($table, 'customer_id')) {
+                $maxStrId = DB::table($table)
+                    ->whereRaw("CAST(customer_id AS UNSIGNED) BETWEEN ? AND ?", [$min, $max])
+                    ->max(DB::raw("CAST(customer_id AS UNSIGNED)"));
+                if ($maxStrId) {
+                    $maxInRange = max((int)$maxInRange, (int)$maxStrId);
+                }
+            }
+
             $next = $maxInRange ? ((int) $maxInRange + 1) : $min;
 
             if ($next > $max) {
@@ -51,6 +61,15 @@ class ModuleIdSequence
         $maxInRange = DB::table($table)
             ->whereBetween('id', [$min, $max])
             ->max('id');
+
+        if (DB::getSchemaBuilder()->hasColumn($table, 'customer_id')) {
+            $maxStrId = DB::table($table)
+                ->whereRaw("CAST(customer_id AS UNSIGNED) BETWEEN ? AND ?", [$min, $max])
+                ->max(DB::raw("CAST(customer_id AS UNSIGNED)"));
+            if ($maxStrId) {
+                $maxInRange = max((int)$maxInRange, (int)$maxStrId);
+            }
+        }
 
         $next = $maxInRange ? ((int) $maxInRange + 1) : $min;
 
