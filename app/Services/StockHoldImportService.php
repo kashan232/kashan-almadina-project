@@ -264,8 +264,15 @@ class StockHoldImportService
                     'user_group_ids'        => Auth::user()?->userGroups()?->pluck('user_groups.id')->toArray() ?? [],
                 ]);
 
-                // Sync posting ledger/stock if needed
-                $postingService->postVoucher($voucher->id);
+                // Sync posting ledger/stock
+                $postingService->applyHoldEffects(
+                    (int) $warehouse->id,
+                    (int) $product->id,
+                    (float) $holdQty,
+                    $partyType,
+                    (int) $partyId,
+                    (int) $voucher->id
+                );
 
                 $importedVouchersCount++;
                 $importedItemsCount++;
