@@ -367,7 +367,7 @@
             opacity: 0.9;
             display: inline-block !important;
         }
-        /* Hide toggler on desktop */
+    @media (min-width: 992px) {
         .navbar-toggler {
             display: none !important;
         }
@@ -426,8 +426,8 @@
                       </a>
                   </div>
 
-                  <!-- MOBILE TOGGLE BUTTON (FAR RIGHT CORNER) -->
-                  <button class="navbar-toggler align-self-center d-lg-none ms-auto" type="button" onclick="var nb = document.querySelector('.nav-bottom'); if(nb){ nb.classList.toggle('header-toggled'); } event.stopPropagation();" style="display: inline-flex !important; padding: 6px 12px; background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.4); border-radius: 4px; cursor: pointer;">
+                  <!-- MOBILE TOGGLE BUTTON (ONLY VISIBLE ON MOBILE) -->
+                  <button class="navbar-toggler align-self-center d-lg-none ms-auto" type="button" onclick="var nb = document.querySelector('.nav-bottom'); if(nb){ nb.classList.toggle('header-toggled'); } event.stopPropagation();" style="padding: 6px 12px; background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.4); border-radius: 4px; cursor: pointer;">
                       <i class="fa-solid fa-bars text-white" style="font-size: 22px;"></i>
                   </button>
 
