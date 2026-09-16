@@ -420,7 +420,7 @@
           <div class="top_nav flex-grow-1" style="overflow: visible !important;">
               <div class="container-fluid px-2 d-flex flex-row h-100 align-items-center justify-content-between">
                   <!-- BRAND NAME & MOBILE TOGGLE -->
-                  <div class="d-flex align-items-center justify-content-between w-100-mobile me-2" style="min-height: 50px;">
+                  <div class="d-flex align-items-center justify-content-between w-100 me-2" style="min-height: 50px;">
                       <a class="nav_logo rt_logo text-decoration-none d-flex align-items-center" href="{{ url('/home') }}">
                           <x-amt-logo height="42px" style="background:#fff;border-radius:4px;padding:2px 6px;" />
                       </a>
