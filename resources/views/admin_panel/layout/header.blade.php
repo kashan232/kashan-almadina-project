@@ -126,11 +126,22 @@
             padding: 5px 0;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
-        .rt_nav_header .nav-bottom {
+        .rt_nav_header .nav-bottom,
+        .rt_nav_header.horizontal-layout .nav-bottom,
+        .rt_nav_header.horizontal-layout.fixed-on-scroll .nav-bottom {
             display: flex !important;
             align-items: center;
+            position: static !important;
+            top: auto !important;
+            left: auto !important;
+            right: auto !important;
+            width: auto !important;
             background: transparent !important;
             border: none !important;
+            box-shadow: none !important;
+            margin-left: 10px;
+            margin-right: 10px;
+        }
             box-shadow: none !important;
             margin-left: 10px;
             margin-right: 10px;
@@ -382,22 +393,11 @@
         overflow: visible !important;
     }
 
-    /* Keep menu inside header — theme was fixing only .nav-bottom and losing blue bar */
-    .rt_nav_header.horizontal-layout .nav-bottom,
-    .rt_nav_header.horizontal-layout.fixed-on-scroll .nav-bottom {
-        position: static !important;
-        top: auto !important;
-        left: auto !important;
-        right: auto !important;
-        width: auto !important;
-        background: transparent !important;
-        box-shadow: none !important;
-        border: none !important;
-    }
-
     @media (max-width: 991px) {
         .rt_nav_header.horizontal-layout {
-            position: fixed !important;
+            position: sticky !important;
+            top: 0 !important;
+            z-index: 1030 !important;
         }
     }
 </style>
