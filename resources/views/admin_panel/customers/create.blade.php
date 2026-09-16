@@ -43,7 +43,7 @@
                         </div>
 
                         <div class="row mb-3">
-                            <div class="col-md-3">
+                            <div class="col-md-3 main-only-field">
                                 <label><strong>Zone:</strong></label>
                                 <select class="form-control" name="zone">
                                     @foreach ($zones as $zone)
@@ -59,11 +59,11 @@
                                     @endforeach
                                 </select>
                             </div>
-                            <div class="col-md-3">
+                            <div class="col-md-3 main-only-field">
                                 <label><strong>NTN / CNIC no:</strong></label>
                                 <input type="text" class="form-control" name="cnic" value="{{ old('cnic') }}">
                             </div>
-                            <div class="col-md-3">
+                            <div class="col-md-3 main-only-field">
                                 <label><strong>Filer Type:</strong></label>
                                 <select class="form-control" name="filer_type">
                                     <option value="filer">Filer</option>
@@ -88,7 +88,7 @@
                             </div>
                         </div>
 
-                        <div class="row mb-3">
+                        <div class="row mb-3 main-only-field">
                             <div class="col-md-4">
                                 <label><strong>Contact Person-2:</strong></label>
                                 <input type="text" class="form-control" name="contact_person_2" value="{{ old('contact_person_2') }}">
@@ -175,10 +175,22 @@
         var walkinId = @json($nextWalkinId ?? $latestId);
         var preview = document.getElementById('customerIdPreview');
         var typeSelect = document.getElementById('customerTypeSelect');
-        if (!preview || !typeSelect) return;
-        typeSelect.addEventListener('change', function () {
-            preview.value = this.value === 'Walking Customer' ? walkinId : mainId;
-        });
+        var mainOnlyFields = document.querySelectorAll('.main-only-field');
+
+        function toggleFields() {
+            var isWalking = typeSelect.value === 'Walking Customer';
+            if (preview) {
+                preview.value = isWalking ? walkinId : mainId;
+            }
+            mainOnlyFields.forEach(function (el) {
+                el.style.display = isWalking ? 'none' : '';
+            });
+        }
+
+        if (typeSelect) {
+            typeSelect.addEventListener('change', toggleFields);
+            toggleFields(); // initial run
+        }
     })();
 </script>
 @endsection
