@@ -304,16 +304,16 @@ $(document).ready(function() {
         if (window.VoucherRowValidation && !window.VoucherRowValidation.validateLastRow($('#voucherTable'))) {
             return;
         }
-        let row = `<tr>
-            <td><select name="narration_id[]" class="form-select form-select-sm narrationSelect"><option value="">Narration...</option>@foreach($narrationsList as $lid => $lname)<option value="{{ $lid }}">{{ $lname }}</option>@endforeach</select></td>
-            <td><select name="account_head[]" class="form-select form-select-sm rowAccountHead select2"><option value="">Select Head...</option>@foreach($AccountHeads as $head)<option value="{{ $head->id }}">{{ $head->name }}</option>@endforeach<option value="vendor">Vendor</option><option value="customer">Customer</option><option value="walkin">Walkin</option></select></td>
-            <td><input type="text" name="row_account_code[]" class="form-control form-control-sm text-center fw-bold text-danger rowAccountCode" placeholder="Code"></td>
-            <td><select name="account_id[]" class="form-select form-select-sm rowAccountSelect select2"><option value="">Select Account...</option></select></td>
-            <td><input type="text" name="reference_no[]" class="form-control form-control-sm" placeholder="Ref#"></td>
-            <td><input type="number" step="any" name="qty[]" class="form-control form-control-sm text-end row-qty" placeholder="0"></td>
-            <td><input type="number" step="0.01" name="amount[]" class="form-control form-control-sm text-end fw-bold row-amount" placeholder="0.00"></td>
-            <td class="text-center"><button type="button" class="btn btn-outline-danger btn-xs removeRow px-1 py-0" title="Delete Row" style="line-height:1;"><i class="fa fa-trash"></i> <i class="fa fa-trash-o"></i><span style="font-size:10px; font-weight:bold;">&times;</span></button></td>
-        </tr>`;
+        let row = '<tr>' +
+            '<td><select name="narration_id[]" class="form-select form-select-sm narrationSelect"><option value="">Narration...</option>@foreach($narrationsList as $lid => $lname)<option value="{{ $lid }}">{{ addslashes($lname) }}</option>@endforeach</select></td>' +
+            '<td><select name="account_head[]" class="form-select form-select-sm rowAccountHead select2"><option value="">Select Head...</option>@foreach($AccountHeads as $head)<option value="{{ $head->id }}">{{ addslashes($head->name) }}</option>@endforeach<option value="vendor">Vendor</option><option value="customer">Customer</option><option value="walkin">Walkin</option></select></td>' +
+            '<td><input type="text" name="row_account_code[]" class="form-control form-control-sm text-center fw-bold text-danger rowAccountCode" placeholder="Code"></td>' +
+            '<td><select name="account_id[]" class="form-select form-select-sm rowAccountSelect select2"><option value="">Select Account...</option></select></td>' +
+            '<td><input type="text" name="reference_no[]" class="form-control form-control-sm" placeholder="Ref#"></td>' +
+            '<td><input type="number" step="any" name="qty[]" class="form-control form-control-sm text-end row-qty" placeholder="0"></td>' +
+            '<td><input type="number" step="0.01" name="amount[]" class="form-control form-control-sm text-end fw-bold row-amount" placeholder="0.00"></td>' +
+            '<td class="text-center"><button type="button" class="btn btn-outline-danger btn-xs removeRow px-1 py-0" title="Delete Row" style="line-height:1;"><i class="fa fa-trash"></i> <i class="fa fa-trash-o"></i><span style="font-size:10px; font-weight:bold;">&times;</span></button></td>' +
+        '</tr>';
         $('#voucherTable tbody').append(row);
         initSelectors($('#voucherTable tbody tr').last());
     });
