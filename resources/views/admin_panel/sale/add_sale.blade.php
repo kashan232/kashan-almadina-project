@@ -950,16 +950,15 @@
                 <div class="d-flex align-items-center gap-3">
                   <div class="d-flex gap-1" style="width:230px;">
                     <select id="discount_head" name="discount_head" class="form-select form-select-sm" style="width:100px;">
-                      <option value="" disabled {{ !isset($editData) || !$editData->discount_head ? 'selected' : '' }}>Select Head</option>
                       @foreach($accountHeads as $head)
-                          @if(strtoupper($head->name) == 'EXPENSE' || strtoupper($head->name) == 'INCOME' || strtoupper($head->name) == 'SCRAP' || $head->id == 100000)
-                          <option value="{{ $head->id }}" {{ (isset($editData) && $editData->discount_head == $head->id) ? 'selected' : '' }}>
+                          @if(strtoupper($head->name) == 'EXPENSE')
+                          <option value="{{ $head->id }}" selected>
                               {{ $head->name }}
                           </option>
                           @endif
                       @endforeach
                     </select>
-                    <select name="discount_account_id" id="discount_account_id" class="form-select form-select-sm" style="flex-grow:1;" {{ !isset($editData) || !$editData->discount_account_id ? 'disabled' : '' }}>
+                    <select name="discount_account_id" id="discount_account_id" class="form-select form-select-sm" style="flex-grow:1;">
                       <option value="" disabled selected>Select Account</option>
                       @if($editData && $editData->discount_account_id)
                           @php
