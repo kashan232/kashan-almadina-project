@@ -950,15 +950,16 @@
                 <div class="d-flex align-items-center gap-3">
                   <div class="d-flex gap-1" style="width:230px;">
                     <select id="discount_head" name="discount_head" class="form-select form-select-sm" style="width:100px;">
+                      <option value="" selected disabled>Select Head</option>
                       @foreach($accountHeads as $head)
                           @if(strtoupper($head->name) == 'EXPENSE')
-                          <option value="{{ $head->id }}" selected>
+                          <option value="{{ $head->id }}" {{ old('discount_head', $editData->discount_head ?? '') == $head->id ? 'selected' : '' }}>
                               {{ $head->name }}
                           </option>
                           @endif
                       @endforeach
                     </select>
-                    <select name="discount_account_id" id="discount_account_id" class="form-select form-select-sm" style="flex-grow:1;">
+                    <select name="discount_account_id" id="discount_account_id" class="form-select form-select-sm" style="flex-grow:1;" {{ ($editData && $editData->discount_account_id) ? '' : 'disabled' }}>
                       <option value="" disabled selected>Select Account</option>
                       @if($editData && $editData->discount_account_id)
                           @php
@@ -973,7 +974,8 @@
                   <div class="d-flex align-items-center gap-1">
                     <input type="number" step="0.01" class="form-control form-control-sm text-end" 
                            id="orderDiscountValue" name="order_discount_value" 
-                           value="{{ old('order_discount_value', $eOrderDiscValue) }}" style="width:70px">
+                           value="{{ old('order_discount_value', $eOrderDiscValue) }}" style="width:70px"
+                           {{ ($editData && $editData->discount_account_id) ? '' : 'disabled' }}>
                     <div class="btn-group btn-group-sm">
                       <button type="button" class="btn btn-outline-primary order-disc-btn {{ old('order_discount_mode', $eOrderDiscMode) == 'percent' ? 'active' : '' }}" data-mode="percent">%</button>
                       <button type="button" class="btn btn-outline-primary order-disc-btn {{ old('order_discount_mode', $eOrderDiscMode) == 'amount' ? 'active' : '' }}" data-mode="amount">₨</button>
@@ -2522,6 +2524,11 @@
     $(document).on('change', '#discount_head', function() {
       const headId = $(this).val();
       const $accSelect = $('#discount_account_id');
+      const $valInput = $('#orderDiscountValue');
+      
+      $valInput.prop('disabled', true).val('');
+      updateGrandTotals();
+
       if (!headId) {
         $accSelect.prop('disabled', true).empty().append('<option value="" disabled selected>Select Account</option>');
         return;
@@ -2529,10 +2536,25 @@
       loadAccountsByHead(headId, $accSelect);
     });
 
-    // If discount_head has value on load (edit mode), load accounts
+    // Order Discount Account change handler
+    $(document).on('change', '#discount_account_id', function() {
+      const accId = $(this).val();
+      const $valInput = $('#orderDiscountValue');
+      if (accId) {
+        $valInput.prop('disabled', false);
+      } else {
+        $valInput.prop('disabled', true).val('');
+        updateGrandTotals();
+      }
+    });
+
+    // If discount_head has value on load (edit mode / old input), load accounts
     const initialDiscHead = $('#discount_head').val();
     if (initialDiscHead) {
       loadAccountsByHead(initialDiscHead, $('#discount_account_id'));
+      if ($('#discount_account_id').val() || $('#discount_account_id').attr('data-selected')) {
+        $('#orderDiscountValue').prop('disabled', false);
+      }
     }
 
     recomputeReceipts();
