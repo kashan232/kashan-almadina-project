@@ -2148,6 +2148,7 @@ class VoucherController extends Controller
             $data['narration_id'] = json_encode($narrationIds);
             $data['party_type'] = json_encode($request->party_type);
             $data['party_id'] = json_encode($request->party_id);
+            $data['qty'] = json_encode($request->qty);
             
             // Strip commas from row debits and credits
             $debits = array_map(function($val) { return (float)str_replace(',', '', $val); }, $request->debit ?? []);
@@ -2309,6 +2310,7 @@ class VoucherController extends Controller
         $narrs = json_decode($voucher->narration_id, true) ?? [];
         $pTypes = json_decode($voucher->party_type, true) ?? [];
         $pIds = json_decode($voucher->party_id, true) ?? [];
+        $qtys = json_decode($voucher->qty, true) ?? [];
         $debits = json_decode($voucher->debit, true) ?? [];
         $credits = json_decode($voucher->credit, true) ?? [];
 
@@ -2338,6 +2340,7 @@ class VoucherController extends Controller
                 'narration' => DB::table('narrations')->where('id', $narrs[$i] ?? null)->value('narration'),
                 'account_name' => $pName,
                 'account_code' => $pCode,
+                'qty' => $qtys[$i] ?? '',
                 'debit' => (float)($debits[$i] ?? 0),
                 'credit' => (float)($credits[$i] ?? 0)
             ];

@@ -70,14 +70,17 @@
                 <tr>
                     <th width="5%">#</th>
                     <th width="20%" class="text-left">Narration</th>
-                    <th width="30%" class="text-left">Account Title</th>
-                    <th width="15%">A/C Code</th>
+                    <th width="25%" class="text-left">Account Title</th>
+                    <th width="12%">A/C Code</th>
+                    <th width="8%" class="text-right">Qty</th>
                     <th width="15%" class="text-right">Debit</th>
                     <th width="15%" class="text-right">Credit</th>
                 </tr>
             </thead>
             <tbody>
+                @php $totalQty = 0; @endphp
                 @foreach($rows as $i => $row)
+                @php $totalQty += floatval($row['qty'] ?? 0); @endphp
                 <tr>
                     <td>{{ $i + 1 }}</td>
                     <td class="text-left">{{ $row['narration'] ?: '-' }}</td>
@@ -85,6 +88,7 @@
                         <strong>{{ $row['account_name'] }}</strong>
                     </td>
                     <td>{{ $row['account_code'] }}</td>
+                    <td class="text-right">{{ $row['qty'] ? $row['qty'] : '-' }}</td>
                     <td class="text-right">{{ $row['debit'] > 0 ? number_format($row['debit'], 2) : '-' }}</td>
                     <td class="text-right">{{ $row['credit'] > 0 ? number_format($row['credit'], 2) : '-' }}</td>
                 </tr>
@@ -93,6 +97,7 @@
             <tfoot>
                 <tr style="font-weight: bold; background: #f9f9f9;">
                     <td colspan="4" class="text-right">TOTALS</td>
+                    <td class="text-right">{{ $totalQty > 0 ? $totalQty : '-' }}</td>
                     <td class="text-right">{{ number_format($voucher->total_debit, 2) }}</td>
                     <td class="text-right">{{ number_format($voucher->total_credit, 2) }}</td>
                 </tr>

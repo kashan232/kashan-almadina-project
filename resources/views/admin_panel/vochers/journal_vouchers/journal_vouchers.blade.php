@@ -76,7 +76,8 @@
                                         <th width="20%">Narration / Memo</th>
                                         <th width="15%">Account Head</th>
                                         <th width="8%" class="text-center">Code</th>
-                                        <th width="25%">Party / Account Name</th>
+                                        <th width="22%">Party / Account Name</th>
+                                        <th width="8%" class="text-end">Qty</th>
                                         <th width="12%" class="text-end">Debit</th>
                                         <th width="12%" class="text-end">Credit</th>
                                         <th width="3%" class="text-center">Act</th>
@@ -87,6 +88,7 @@
                                         $narrs = json_decode($receipt->narration_id, true) ?? ['',''];
                                         $pTypes = json_decode($receipt->party_type, true) ?? ['',''];
                                         $pIds = json_decode($receipt->party_id, true) ?? ['',''];
+                                        $qtys = json_decode($receipt->qty, true) ?? ['',''];
                                         $debits = json_decode($receipt->debit, true) ?? ['',''];
                                         $credits = json_decode($receipt->credit, true) ?? ['',''];
                                     @endphp
@@ -117,15 +119,23 @@
                                                 <option value="">Select Party...</option>
                                             </select>
                                         </td>
+                                        <td><input type="number" step="any" name="qty[]" class="form-control form-control-sm text-end row-qty" value="{{ $qtys[$idx] ?? '' }}" placeholder="0"></td>
                                         <td><input type="number" step="0.01" name="debit[]" class="form-control form-control-sm text-end fw-bold row-debit" value="{{ $debits[$idx] ?? '' }}" placeholder="0.00"></td>
                                         <td><input type="number" step="0.01" name="credit[]" class="form-control form-control-sm text-end fw-bold row-credit" value="{{ $credits[$idx] ?? '' }}" placeholder="0.00"></td>
-                                        <td class="text-center"><button type="button" class="btn text-danger btn-xs removeRow p-0"><i class="fa fa-trash-o fs-6"></i></button></td>
+                                        <td class="text-center">
+                                            <button type="button" class="btn btn-outline-danger btn-xs removeRow px-1 py-0" title="Delete Row" style="line-height:1;">
+                                                <i class="fa fa-trash"></i> <i class="fa fa-trash-o"></i><span style="font-size:10px; font-weight:bold;">&times;</span>
+                                            </button>
+                                        </td>
                                     </tr>
                                     @endforeach
                                 </tbody>
                                 <tfoot class="bg-light">
                                     <tr class="fw-bold">
                                         <td colspan="4" class="text-end py-2 text-muted small">GRAND TOTALS (BALANCED)</td>
+                                        <td class="text-end py-1">
+                                            <input type="text" name="total_qty" id="totalQty" class="form-control form-control-sm text-end border-0 bg-transparent fw-bold text-dark fs-6 py-0" readonly value="0">
+                                        </td>
                                         <td class="text-end py-1">
                                             <input type="text" name="total_debit" id="totalDebit" class="form-control form-control-sm text-end border-0 bg-transparent fw-bold text-primary fs-6 py-0" readonly value="{{ $receipt->total_debit ?? '0.00' }}">
                                         </td>
@@ -215,12 +225,17 @@ $(document).ready(function() {
     });
 
     function calc() {
-        let dr = 0, cr = 0;
+        let qty = 0, dr = 0, cr = 0;
+        $('.row-qty').each(function() { qty += parseFloat($(this).val()) || 0; });
         $('.row-debit').each(function() { dr += parseFloat($(this).val()) || 0; });
         $('.row-credit').each(function() { cr += parseFloat($(this).val()) || 0; });
+        $('#totalQty').val(qty > 0 ? qty : 0);
         $('#totalDebit').val(dr.toLocaleString('en-US', {minimumFractionDigits: 2}));
         $('#totalCredit').val(cr.toLocaleString('en-US', {minimumFractionDigits: 2}));
     }
+    $(document).on('input change keyup', '.row-qty, .row-debit, .row-credit', function() {
+        calc();
+    });
     $(document).on('keydown', '.row-debit, .row-credit', function(e) {
         if (e.key === 'Enter') {
             e.preventDefault();
@@ -238,9 +253,14 @@ $(document).ready(function() {
             <td><select name="party_type[]" class="form-select form-select-sm rowPartyType select2" required><option value="">Select Type...</option>@foreach($AccountHeads as $head)<option value="{{ $head->id }}">{{ $head->name }}</option>@endforeach<option value="vendor">Vendor</option><option value="customer">Customer</option><option value="walkin">Walkin</option></select></td>
             <td><input type="text" class="form-control form-control-sm text-center fw-bold text-danger rowPartyCode" placeholder="Code"></td>
             <td><select name="party_id[]" class="form-select form-select-sm rowPartyName select2" required><option value="">Select Party...</option></select></td>
+            <td><input type="number" step="any" name="qty[]" class="form-control form-control-sm text-end row-qty" placeholder="0"></td>
             <td><input type="number" step="0.01" name="debit[]" class="form-control form-control-sm text-end fw-bold row-debit" placeholder="0.00"></td>
             <td><input type="number" step="0.01" name="credit[]" class="form-control form-control-sm text-end fw-bold row-credit" placeholder="0.00"></td>
-            <td class="text-center"><button type="button" class="btn text-danger btn-xs removeRow p-0"><i class="fa fa-trash-o fs-6"></i></button></td>
+            <td class="text-center">
+                <button type="button" class="btn btn-outline-danger btn-xs removeRow px-1 py-0" title="Delete Row" style="line-height:1;">
+                    <i class="fa fa-trash"></i> <i class="fa fa-trash-o"></i><span style="font-size:10px; font-weight:bold;">&times;</span>
+                </button>
+            </td>
         </tr>`;
         $('#voucherTable tbody').append(row);
         initRowSelectors($('#voucherTable tbody tr').last());
