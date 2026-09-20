@@ -75,9 +75,10 @@
             <thead>
                 <tr>
                     <th width="5%">#</th>
-                    <th width="35%" class="text-left">Narration</th>
+                    <th width="30%" class="text-left">Narration</th>
                     <th width="30%" class="text-left">Account (Deposit To)</th>
-                    <th width="15%">Ref#</th>
+                    <th width="12%">Ref#</th>
+                    <th width="8%">Qty</th>
                     <th width="15%" class="text-right">Amount</th>
                 </tr>
             </thead>
@@ -91,13 +92,14 @@
                         <div style="font-size: 10px; color: #666;">Head: {{ $row['head_name'] }}</div>
                     </td>
                     <td>{{ $row['reference'] }}</td>
+                    <td>{{ $row['qty'] }}</td>
                     <td class="text-right">{{ number_format($row['amount'], 2) }}</td>
                 </tr>
                 @endforeach
             </tbody>
             <tfoot>
                 <tr style="font-weight: bold; background: #f9f9f9;">
-                    <td colspan="4" class="text-right">GRAND TOTAL</td>
+                    <td colspan="5" class="text-right">GRAND TOTAL</td>
                     <td class="text-right">{{ number_format($voucher->total_amount, 2) }}</td>
                 </tr>
             </tfoot>

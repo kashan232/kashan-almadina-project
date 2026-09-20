@@ -1829,6 +1829,7 @@ class VoucherController extends Controller
         $accHeads = json_decode($voucher->account_head, true) ?? [];
         $accIds = json_decode($voucher->account_id, true) ?? [];
         $refs = json_decode($voucher->reference_no, true) ?? [];
+        $qtys = json_decode($voucher->qty, true) ?? [];
         $amounts = json_decode($voucher->amount, true) ?? [];
 
         $rows = [];
@@ -1845,6 +1846,7 @@ class VoucherController extends Controller
                 'account_name' => $accName,
                 'head_name' => $headName,
                 'reference' => $refs[$i] ?? '',
+                'qty' => $qtys[$i] ?? '',
                 'amount' => (float)($amounts[$i] ?? 0)
             ];
         }
@@ -1925,6 +1927,7 @@ class VoucherController extends Controller
             $data['account_head'] = json_encode($request->account_head);
             $data['account_id'] = json_encode($request->account_id);
             $data['reference_no'] = json_encode($request->reference_no);
+            $data['qty'] = json_encode($request->qty);
             $data['amount'] = json_encode($request->amount);
 
             if ($request->id) {

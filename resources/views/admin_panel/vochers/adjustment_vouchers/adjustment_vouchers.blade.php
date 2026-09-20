@@ -91,12 +91,13 @@
                             <table class="table table-sm table-hover table-bordered mb-0" id="voucherTable">
                                 <thead>
                                     <tr>
-                                        <th width="18%">Narration / Description</th>
+                                        <th width="16%">Narration / Description</th>
                                         <th width="15%">Account Head / Party Type</th>
                                         <th width="8%" class="text-center">Code</th>
-                                        <th width="28%">Destination Account (Credit)</th>
-                                        <th width="12%">Reference#</th>
-                                        <th width="14%" class="text-end">Amount</th>
+                                        <th width="25%">Destination Account (Credit)</th>
+                                        <th width="11%">Reference#</th>
+                                        <th width="8%" class="text-end">Qty</th>
+                                        <th width="12%" class="text-end">Amount</th>
                                         <th width="5%" class="text-center">Act</th>
                                     </tr>
                                 </thead>
@@ -106,6 +107,7 @@
                                         $accHeads = json_decode($receipt->account_head, true) ?? [''];
                                         $accIds = json_decode($receipt->account_id, true) ?? [''];
                                         $refs = json_decode($receipt->reference_no, true) ?? [''];
+                                        $qtys = json_decode($receipt->qty, true) ?? [''];
                                         $amounts = json_decode($receipt->amount, true) ?? [''];
                                     @endphp
                                     @foreach($narrs as $idx => $nId)
@@ -136,14 +138,18 @@
                                             </select>
                                         </td>
                                         <td><input type="text" name="reference_no[]" class="form-control form-control-sm" value="{{ $refs[$idx] ?? '' }}" placeholder="Ref#"></td>
+                                        <td><input type="number" step="any" name="qty[]" class="form-control form-control-sm text-end row-qty" value="{{ $qtys[$idx] ?? '' }}" placeholder="0"></td>
                                         <td><input type="number" step="0.01" name="amount[]" class="form-control form-control-sm text-end fw-bold row-amount" value="{{ $amounts[$idx] ?? '' }}" placeholder="0.00"></td>
-                                        <td class="text-center"><button type="button" class="btn text-danger btn-xs removeRow p-0"><i class="fa fa-trash-o fs-6"></i></button></td>
+                                        <td class="text-center"><button type="button" class="btn btn-outline-danger btn-xs removeRow px-1 py-0" title="Delete Row" style="line-height:1;"><i class="fa fa-trash"></i> <i class="fa fa-trash-o"></i><span style="font-size:10px; font-weight:bold;">&times;</span></button></td>
                                     </tr>
                                     @endforeach
                                 </tbody>
                                 <tfoot class="bg-light">
                                     <tr class="fw-bold">
-                                        <td colspan="5" class="text-end py-2 text-muted small">TOTAL ADJUSTMENT AMOUNT</td>
+                                        <td colspan="5" class="text-end py-2 text-muted small">TOTALS</td>
+                                        <td class="text-end py-1">
+                                            <input type="text" id="totalQty" class="form-control form-control-sm text-end border-0 bg-transparent fw-bold text-dark fs-6 py-0" readonly value="0">
+                                        </td>
                                         <td class="text-end py-1">
                                             <input type="text" name="total_amount" id="totalAmount" class="form-control form-control-sm text-end border-0 bg-transparent fw-bold text-primary fs-6 py-0" readonly value="{{ $receipt->total_amount }}">
                                         </td>
@@ -277,10 +283,15 @@ $(document).ready(function() {
 
     // ➕ Table Math & Action
     function calc() {
-        let t = 0;
-        $('.row-amount').each(function() { t += parseFloat($(this).val()) || 0; });
-        $('#totalAmount').val(t.toLocaleString('en-US', {minimumFractionDigits: 2}));
+        let tAmt = 0;
+        let tQty = 0;
+        $('.row-amount').each(function() { tAmt += parseFloat($(this).val()) || 0; });
+        $('.row-qty').each(function() { tQty += parseFloat($(this).val()) || 0; });
+        $('#totalAmount').val(tAmt.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}));
+        $('#totalQty').val(tQty.toLocaleString('en-US', {maximumFractionDigits: 2}));
     }
+    $(document).on('input change', '.row-amount, .row-qty', calc);
+    calc();
     $(document).on('keydown', '.row-amount', function(e) {
         if (e.key === 'Enter') {
             e.preventDefault();
@@ -299,8 +310,9 @@ $(document).ready(function() {
             <td><input type="text" name="row_account_code[]" class="form-control form-control-sm text-center fw-bold text-danger rowAccountCode" placeholder="Code"></td>
             <td><select name="account_id[]" class="form-select form-select-sm rowAccountSelect select2"><option value="">Select Account...</option></select></td>
             <td><input type="text" name="reference_no[]" class="form-control form-control-sm" placeholder="Ref#"></td>
+            <td><input type="number" step="any" name="qty[]" class="form-control form-control-sm text-end row-qty" placeholder="0"></td>
             <td><input type="number" step="0.01" name="amount[]" class="form-control form-control-sm text-end fw-bold row-amount" placeholder="0.00"></td>
-            <td class="text-center"><button type="button" class="btn text-danger btn-xs removeRow p-0"><i class="fa fa-trash-o fs-6"></i></button></td>
+            <td class="text-center"><button type="button" class="btn btn-outline-danger btn-xs removeRow px-1 py-0" title="Delete Row" style="line-height:1;"><i class="fa fa-trash"></i> <i class="fa fa-trash-o"></i><span style="font-size:10px; font-weight:bold;">&times;</span></button></td>
         </tr>`;
         $('#voucherTable tbody').append(row);
         initSelectors($('#voucherTable tbody tr').last());
