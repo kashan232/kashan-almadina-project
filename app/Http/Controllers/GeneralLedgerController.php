@@ -93,6 +93,21 @@ class GeneralLedgerController extends Controller
         return $acc ? ('Discount ; ' . $acc->title) : $fallback;
     }
 
+    private function sumVoucherDiscounts(object $voucher): float
+    {
+        $discountList = json_decode($voucher->discount_value ?? '', true);
+        $total = 0;
+        if (is_array($discountList)) {
+            foreach ($discountList as $disc) {
+                $total += (float) $disc;
+            }
+        } elseif (is_numeric($voucher->discount_value ?? null)) {
+            $total = (float) $voucher->discount_value;
+        }
+
+        return $total;
+    }
+
     /** Details report: first created entry first (created_at ascending). */
     private function sortLedgerDetailsByCreatedAt(array &$transactions): void
     {

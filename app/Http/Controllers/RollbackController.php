@@ -467,7 +467,7 @@ class RollbackController extends Controller
         if ((float) $wastage->total_amount > 0 && $wastage->account_id) {
             $account = Account::find($wastage->account_id);
             if ($account) {
-                $account->opening_balance = ($account->opening_balance ?? 0) - (float) $wastage->total_amount;
+                $account->current_balance = ($account->current_balance ?? 0) - (float) $wastage->total_amount;
                 $account->save();
             }
         }
@@ -754,7 +754,7 @@ class RollbackController extends Controller
     {
         $acc = Account::find($id);
         if ($acc) {
-            $acc->opening_balance = $action === 'add' ? (($acc->opening_balance ?? 0) + $amount) : (($acc->opening_balance ?? 0) - $amount);
+            $acc->current_balance = $action === 'add' ? (($acc->current_balance ?? 0) + $amount) : (($acc->current_balance ?? 0) - $amount);
             $acc->save();
         }
     }
