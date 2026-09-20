@@ -105,15 +105,13 @@
                             {{-- From Warehouse --}}
                             <div class="col-md-2">
                                 <label class="form-label small fw-bold">From Location <span class="text-danger">*</span></label>
-                                <select name="from_warehouse_id" id="from_warehouse_id" class="form-select select2" required>
-                                    <option value="" disabled>Select Location</option>
-                                    @if(auth()->user()->canAccessShop())
-                                        <option value="shop" {{ $transfer->from_shop ? 'selected' : '' }}>Shop</option>
-                                    @endif
-                                    @foreach ($warehouses as $warehouse)
-                                        <option value="{{ $warehouse->id }}" {{ $transfer->from_warehouse_id == $warehouse->id ? 'selected' : '' }}>{{ $warehouse->warehouse_name }}</option>
-                                    @endforeach
-                                </select>
+                                 <select name="from_warehouse_id" id="from_warehouse_id" class="form-select select2" required>
+                                     <option value="" disabled>Select Location</option>
+                                     <option value="shop" {{ $transfer->from_shop ? 'selected' : '' }}>Shop</option>
+                                     @foreach ($warehouses as $warehouse)
+                                         <option value="{{ $warehouse->id }}" {{ $transfer->from_warehouse_id == $warehouse->id ? 'selected' : '' }}>{{ $warehouse->warehouse_name }}</option>
+                                     @endforeach
+                                 </select>
                             </div>
 
                             {{-- To Warehouse --}}
@@ -121,9 +119,7 @@
                                 <label class="form-label small fw-bold">To Location <span class="text-danger">*</span></label>
                                 <select name="to_warehouse_id" id="to_warehouse_id" class="form-select select2" required>
                                     <option value="" disabled>Select Location</option>
-                                    @if(auth()->user()->canAccessShop())
-                                        <option value="shop" {{ $transfer->to_shop ? 'selected' : '' }}>Shop</option>
-                                    @endif
+                                    <option value="shop" {{ $transfer->to_shop ? 'selected' : '' }}>Shop</option>
                                     @foreach ($warehouses as $warehouse)
                                         <option value="{{ $warehouse->id }}" {{ ($transfer->to_warehouse_id == $warehouse->id && !$transfer->to_shop) ? 'selected' : '' }}>{{ $warehouse->warehouse_name }}</option>
                                     @endforeach

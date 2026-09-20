@@ -104,9 +104,7 @@
                                 <label class="form-label small fw-bold">From Location <span class="text-danger">*</span></label>
                                 <select name="from_warehouse_id" id="from_warehouse_id" class="form-select select2" required>
                                     <option value="" disabled selected>Select Location</option>
-                                    @if(auth()->user()->canAccessShop())
-                                        <option value="shop">Shop</option>
-                                    @endif
+                                    <option value="shop">Shop</option>
                                     @foreach ($warehouses as $warehouse)
                                         <option value="{{ $warehouse->id }}">{{ $warehouse->warehouse_name }}</option>
                                     @endforeach
@@ -118,9 +116,7 @@
                                 <label class="form-label small fw-bold">To Location <span class="text-danger">*</span></label>
                                 <select name="to_warehouse_id" id="to_warehouse_id" class="form-select select2" required>
                                     <option value="" disabled selected>Select Location</option>
-                                    @if(auth()->user()->canAccessShop())
-                                        <option value="shop">Shop</option>
-                                    @endif
+                                    <option value="shop">Shop</option>
                                     @foreach ($warehouses as $warehouse)
                                         <option value="{{ $warehouse->id }}">{{ $warehouse->warehouse_name }}</option>
                                     @endforeach
