@@ -1196,10 +1196,13 @@
       const $currentRow = $(this).closest('tr');
       updateRowWithProductData($currentRow, data);
       
+      // Auto add new row at the bottom without shifting focus
       if ($currentRow.is(':last-child')) {
           addNewRow(false);
       }
-      setTimeout(() => $currentRow.find('.sales-qty').focus().select(), 50);
+      
+      // Focus Sales Price on the current row
+      setTimeout(() => $currentRow.find('.sales-price').focus().select(), 50);
     });
 
     $select.on('select2:clear', function(e) {
@@ -1277,7 +1280,9 @@
     initProductSelect($newRow);
     
     if (focusNewRow) {
-        $newRow.find('.item-id-input').focus();
+        setTimeout(() => {
+            $newRow.find('.product-select').select2('open');
+        }, 80);
     }
     refreshPostedState();
   }
@@ -2047,8 +2052,8 @@
                         addNewRow(false);
                     }
                     
-                    // 3. Focus Quantity of current row
-                    setTimeout(() => $row.find('.sales-qty').focus().select(), 50);
+                    // 3. Focus Sales Price of current row
+                    setTimeout(() => $row.find('.sales-price').focus().select(), 50);
                 } else {
                     Swal.fire({
                         icon: 'error',
@@ -2299,21 +2304,39 @@
     refreshPostedState();
   });
 
+  /* ---------- Enter key navigation inside row fields ---------- */
+  $('#salesTableBody').on('keydown', '.sales-price', function(e) {
+    if (e.key === 'Enter' || e.keyCode === 13) {
+      e.preventDefault();
+      const $row = $(this).closest('tr');
+      $row.find('.sales-qty').focus().select();
+    }
+  });
+
+  $('#salesTableBody').on('keydown', '.sales-qty', function(e) {
+    if (e.key === 'Enter' || e.keyCode === 13) {
+      e.preventDefault();
+      const $row = $(this).closest('tr');
+      $row.find('.discount-value').focus().select();
+    }
+  });
+
   /* ---------- Add new row when user presses Enter in Discount field ---------- */
   $('#salesTableBody').on('keydown', '.discount-value', function(e) {
     if (e.key === 'Enter' || e.keyCode === 13) {
-      e.preventDefault(); // prevent accidental form submit
+      e.preventDefault();
       const $current = $(this).closest('tr');
 
-      // compute current row first
       computeRow($current);
       updateGrandTotals();
       refreshPostedState();
 
-      // Add new row and focus on product search
-      addNewRow();
-      const $newRow = $('#salesTableBody tr:last-child');
-      setTimeout(() => $newRow.find('.item-id-input').focus(), 100);
+      if ($current.is(':last-child')) {
+          addNewRow(true);
+      } else {
+          const $nextRow = $current.next('tr');
+          setTimeout(() => $nextRow.find('.product-select').select2('open'), 80);
+      }
     }
   });
 
