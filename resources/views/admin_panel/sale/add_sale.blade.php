@@ -950,16 +950,17 @@
                 <div class="d-flex align-items-center gap-3">
                   <div class="d-flex gap-1" style="width:230px;">
                     <select id="discount_head" name="discount_head" class="form-select form-select-sm" style="width:100px;">
+                      <option value="" disabled {{ !isset($editData) || !$editData->discount_head ? 'selected' : '' }}>Select Head</option>
                       @foreach($accountHeads as $head)
                           @if(strtoupper($head->name) == 'EXPENSE' || strtoupper($head->name) == 'INCOME' || strtoupper($head->name) == 'SCRAP' || $head->id == 100000)
-                          <option value="{{ $head->id }}" {{ (isset($editData) && $editData->discount_head == $head->id) || (!isset($editData) && strtoupper($head->name) == 'EXPENSE') ? 'selected' : '' }}>
+                          <option value="{{ $head->id }}" {{ (isset($editData) && $editData->discount_head == $head->id) ? 'selected' : '' }}>
                               {{ $head->name }}
                           </option>
                           @endif
                       @endforeach
                     </select>
-                    <select name="discount_account_id" id="discount_account_id" class="form-select form-select-sm" style="flex-grow:1;">
-                      <option value="">Select Account</option>
+                    <select name="discount_account_id" id="discount_account_id" class="form-select form-select-sm" style="flex-grow:1;" {{ !isset($editData) || !$editData->discount_account_id ? 'disabled' : '' }}>
+                      <option value="" disabled selected>Select Account</option>
                       @if($editData && $editData->discount_account_id)
                           @php
                               $acc = \App\Models\Account::find($editData->discount_account_id);
@@ -1190,6 +1191,14 @@
     });
 
 
+
+    // Auto open dropdown search on focus
+    $select.on('select2:open', function() {
+      setTimeout(() => {
+        const searchInput = document.querySelector('.select2-container--open .select2-search__field');
+        if (searchInput) searchInput.focus();
+      }, 10);
+    });
 
     $select.on('select2:select', function(e) {
       const data = e.params.data;
@@ -1520,6 +1529,16 @@
 
       function ajaxSaveDraft(showMsg = true) {
           if (_saveInFlight) return;
+
+          const v = validateFormAll();
+          if (!v.ok) {
+              showToast(v.message, 'error');
+              if (v.el && v.el.length) {
+                  v.el.focus();
+              }
+              return;
+          }
+
           // Remove empty rows before save
           $('#salesTableBody tr').each(function() {
               const pid = $(this).find('.product-select').val();
@@ -2500,6 +2519,23 @@
       }
     });
 
+    // Order Discount Head change handler
+    $(document).on('change', '#discount_head', function() {
+      const headId = $(this).val();
+      const $accSelect = $('#discount_account_id');
+      if (!headId) {
+        $accSelect.prop('disabled', true).empty().append('<option value="" disabled selected>Select Account</option>');
+        return;
+      }
+      loadAccountsByHead(headId, $accSelect);
+    });
+
+    // If discount_head has value on load (edit mode), load accounts
+    const initialDiscHead = $('#discount_head').val();
+    if (initialDiscHead) {
+      loadAccountsByHead(initialDiscHead, $('#discount_account_id'));
+    }
+
     recomputeReceipts();
     updateGrandTotals();
     refreshPostedState();
@@ -2659,7 +2695,64 @@
   }
 
   /**
-   * validateFormAll() -> run header, rows, receipts
+   * validateOrderDiscount() -> validation rules for Order Discount
+   * 1) If Head selected, Account is mandatory
+   * 2) If Account selected, Amount > 0 is mandatory
+   * 3) If Amount > 0, Head & Account are mandatory
+   */
+  function validateOrderDiscount() {
+    let ok = true, firstMessage = null, firstEl = null;
+    const $head = $('#discount_head');
+    const $acc = $('#discount_account_id');
+    const $val = $('#orderDiscountValue');
+    
+    const headVal = $head.val();
+    const accVal = $acc.val();
+    const amountVal = parseFloat($val.val() || '0') || 0;
+
+    // Rule 1: If amount > 0, both Head and Account are mandatory
+    if (amountVal > 0) {
+      if (!headVal) {
+        ok = false;
+        firstMessage = 'Please select Order Discount Head when discount amount is entered.';
+        firstEl = $head;
+        markInvalid($head);
+      }
+      if (!accVal) {
+        ok = false;
+        if (!firstMessage) {
+          firstMessage = 'Please select Order Discount Account when discount amount is entered.';
+          firstEl = $acc;
+        }
+        markInvalid($acc);
+      }
+    }
+
+    // Rule 2: If Head selected, Account is mandatory
+    if (headVal && !accVal) {
+      ok = false;
+      if (!firstMessage) {
+        firstMessage = 'Please select Order Discount Account for the chosen Head.';
+        firstEl = $acc;
+      }
+      markInvalid($acc);
+    }
+
+    // Rule 3: If Account selected, Amount > 0 is mandatory
+    if (accVal && amountVal <= 0) {
+      ok = false;
+      if (!firstMessage) {
+        firstMessage = 'Please enter a valid Order Discount Amount (> 0) for the selected Account.';
+        firstEl = $val;
+      }
+      markInvalid($val);
+    }
+
+    return { ok, firstMessage, firstEl };
+  }
+
+  /**
+   * validateFormAll() -> run header, rows, receipts, order discount
    * returns { ok, message, el }
    */
   function validateFormAll() {
@@ -2692,6 +2785,16 @@
         ok: false,
         message: rec.firstMessage,
         el: rec.firstEl
+      };
+    }
+
+    // order discount
+    const od = validateOrderDiscount();
+    if (!od.ok) {
+      return {
+        ok: false,
+        message: od.firstMessage,
+        el: od.firstEl
       };
     }
 
