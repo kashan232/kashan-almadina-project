@@ -95,6 +95,10 @@ class UnpostEntriesReportBuilder
             ? $modelClass::withoutGlobalScopes()
             : $modelClass::query();
 
+        if (in_array(\Illuminate\Database\Eloquent\SoftDeletes::class, class_uses_recursive($modelClass), true)) {
+            $query->whereNull('deleted_at');
+        }
+
         $this->applyUnpostedScope($query, $source['scope']);
 
         $rows = collect();

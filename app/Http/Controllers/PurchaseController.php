@@ -732,7 +732,7 @@ class PurchaseController extends Controller
             return redirect()->back()->with('error', 'Cannot delete a posted purchase. Unpost it first.');
         }
 
-        $purchase->delete();
+        $purchase->forceDelete();
 
         return redirect()->back()->with('success', 'Purchase deleted successfully.');
     }
