@@ -77,7 +77,7 @@
         : ($voucher->hold_voucher_id ? 'hold:' . $voucher->hold_voucher_id : '');
     $holdSelectText = $voucher->claim_id
         ? 'Claim: ' . ($voucher->claim_id) . ' (Date: ' . ($voucher->date ?? '') . ')'
-        : ($voucher->holdVoucher
+        : ($voucher->hold_voucher_id && $voucher->holdVoucher
             ? 'Hold: ' . $voucher->holdVoucher->voucher_no . ' (Date: ' . ($voucher->holdVoucher->date ?? '') . ')'
             : '');
 @endphp

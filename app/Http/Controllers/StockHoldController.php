@@ -822,18 +822,6 @@ class StockHoldController extends Controller
             }
         }
 
-        if ($request->filled('vendor_type') && $request->filled('vendor_id')) {
-            $hold = (clone $query)
-                ->where('party_type', $request->vendor_type)
-                ->where('party_id', $request->vendor_id)
-                ->orderByDesc('id')
-                ->first();
-
-            if ($hold) {
-                return $hold;
-            }
-        }
-
         return null;
     }
 
