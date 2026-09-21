@@ -307,15 +307,15 @@ $(document).ready(function() {
 
     $('#btnAddRow').click(function() {
         if (window.VoucherRowValidation && !window.VoucherRowValidation.validateLastRow($('#voucherTable'))) return;
-        let row = `<tr>
-            <td><select name="narration_id[]" class="form-select form-select-sm narrationSelect"><option value="">Narration...</option>@foreach($narrationsList as $lid => $lname)<option value="{{ $lid }}">{{ $lname }}</option>@endforeach</select></td>
-            <td><select name="party_type[]" class="form-select form-select-sm rowPartyType select2"><option value="">Select Type...</option>@foreach($AccountHeads as $head) @if(strtoupper($head->name) === 'INCOME')<option value="{{ $head->id }}">{{ $head->name }}</option>@endif @endforeach</select></td>
-            <td><input type="text" name="row_party_code[]" class="form-control form-control-sm text-center fw-bold text-danger rowPartyCode" placeholder="Code"></td>
-            <td><select name="party_id[]" class="form-select form-select-sm rowPartySelect select2"><option value="">Select Party...</option></select></td>
-            <td><input type="text" name="reference_no[]" class="form-control form-control-sm" placeholder="Ref#"></td>
-            <td><input type="number" step="0.01" name="amount[]" class="form-control form-control-sm text-end fw-bold row-amount" placeholder="0.00"></td>
-            <td class="text-center"><button type="button" class="btn text-danger btn-xs removeRow p-0" title="Remove Line"><i class="fa fa-trash-o fs-5"></i></button></td>
-        </tr>`;
+        let row = '<tr>' +
+            '<td><select name="narration_id[]" class="form-select form-select-sm narrationSelect"><option value="">Narration...</option>@foreach($narrationsList as $lid => $lname)<option value="{{ $lid }}">{{ addslashes($lname) }}</option>@endforeach</select></td>' +
+            '<td><select name="party_type[]" class="form-select form-select-sm rowPartyType select2"><option value="">Select Type...</option>@foreach($AccountHeads as $head) @if(strtoupper($head->name) === 'INCOME')<option value="{{ $head->id }}">{{ addslashes($head->name) }}</option>@endif @endforeach</select></td>' +
+            '<td><input type="text" name="row_party_code[]" class="form-control form-control-sm text-center fw-bold text-danger rowPartyCode" placeholder="Code"></td>' +
+            '<td><select name="party_id[]" class="form-select form-select-sm rowPartySelect select2"><option value="">Select Party...</option></select></td>' +
+            '<td><input type="text" name="reference_no[]" class="form-control form-control-sm" placeholder="Ref#"></td>' +
+            '<td><input type="number" step="0.01" name="amount[]" class="form-control form-control-sm text-end fw-bold row-amount" placeholder="0.00"></td>' +
+            '<td class="text-center"><button type="button" class="btn text-danger btn-xs removeRow p-0" title="Remove Line"><i class="fa fa-trash-o fs-5"></i></button></td>' +
+        '</tr>';
         $('#voucherTable tbody').append(row);
         initSelectors($('#voucherTable tbody tr').last());
     });

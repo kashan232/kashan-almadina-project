@@ -372,17 +372,17 @@ $(document).ready(function() {
         if (window.VoucherRowValidation && !window.VoucherRowValidation.validateLastRow($('#voucherTable'))) {
             return;
         }
-        let row = `<tr>
-            <td><select name="narration_id[]" class="form-select form-select-sm narrationSelect"><option value="">Narration...</option>@foreach($narrations as $id => $name)<option value="{{ $id }}">{{ $name }}</option>@endforeach</select></td>
-            <td><input name="reference_no[]" type="text" class="form-control form-control-sm" placeholder="Ref#"></td>
-            <td><select name="row_account_head[]" class="form-select form-select-sm rowAccountHead select2"><option value="">Select Head...</option>@foreach($AccountHeads as $head) @if(str_contains(strtoupper($head->name), 'CASH') || str_contains(strtoupper($head->name), 'BANK') || $head->id == 100000 || strtoupper($head->name) == 'SCRAP')<option value="{{ $head->id }}">{{ $head->name }}</option>@endif @endforeach</select></td>
-            <td><input type="text" name="row_account_code[]" class="form-control form-control-sm text-center fw-bold text-danger rowAccountCode" placeholder="Code"></td>
-            <td><select name="row_account_id[]" class="form-select form-select-sm rowAccountSelect select2"><option value="">Select Account...</option></select></td>
-            <td><input name="kg[]" type="number" step="any" class="form-control form-control-sm text-center kg"></td>
-            <td><input name="rate[]" type="number" step="any" class="form-control form-control-sm text-end rate"></td>
-            <td><input name="amount[]" type="text" class="form-control form-control-sm text-end fw-bold amount"></td>
-            <td class="text-center"><button type="button" class="btn btn-xs btn-outline-danger removeRow"><i class="fa fa-times"></i></button></td>
-        </tr>`;
+        let row = '<tr>' +
+            '<td><select name="narration_id[]" class="form-select form-select-sm narrationSelect"><option value="">Narration...</option>@foreach($narrations as $id => $name)<option value="{{ $id }}">{{ addslashes($name) }}</option>@endforeach</select></td>' +
+            '<td><input name="reference_no[]" type="text" class="form-control form-control-sm" placeholder="Ref#"></td>' +
+            '<td><select name="row_account_head[]" class="form-select form-select-sm rowAccountHead select2"><option value="">Select Head...</option>@foreach($AccountHeads as $head) @if(str_contains(strtoupper($head->name), 'CASH') || str_contains(strtoupper($head->name), 'BANK') || $head->id == 100000 || strtoupper($head->name) == 'SCRAP')<option value="{{ $head->id }}">{{ addslashes($head->name) }}</option>@endif @endforeach</select></td>' +
+            '<td><input type="text" name="row_account_code[]" class="form-control form-control-sm text-center fw-bold text-danger rowAccountCode" placeholder="Code"></td>' +
+            '<td><select name="row_account_id[]" class="form-select form-select-sm rowAccountSelect select2"><option value="">Select Account...</option></select></td>' +
+            '<td><input name="kg[]" type="number" step="any" class="form-control form-control-sm text-center kg"></td>' +
+            '<td><input name="rate[]" type="number" step="any" class="form-control form-control-sm text-end rate"></td>' +
+            '<td><input name="amount[]" type="text" class="form-control form-control-sm text-end fw-bold amount"></td>' +
+            '<td class="text-center"><button type="button" class="btn btn-xs btn-outline-danger removeRow"><i class="fa fa-times"></i></button></td>' +
+        '</tr>';
         $('#voucherTable tbody').append(row);
         initSelectors($('#voucherTable tbody tr').last());
     });

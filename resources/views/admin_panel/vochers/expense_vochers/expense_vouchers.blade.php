@@ -299,14 +299,14 @@ $(document).ready(function() {
         if (window.VoucherRowValidation && !window.VoucherRowValidation.validateLastRow($('#voucherTable'))) {
             return;
         }
-        let newRow = `<tr>
-            <td><select name="narration_id[]" class="form-select form-select-sm narrationSelect"><option value="">Narration...</option>@foreach($narrationsList as $lid => $lname)<option value="{{ $lid }}">{{ $lname }}</option>@endforeach</select></td>
-            <td><select name="row_account_head[]" class="form-select form-select-sm rowAccountHead select2"><option value="">Select Head...</option>@foreach($AccountHeads as $head) @if(strtoupper($head->name) === 'EXPENSE' || strtoupper($head->name) === 'DRAWING' || str_contains(strtoupper($head->name), 'DRAW'))<option value="{{ $head->id }}">{{ $head->name }}</option>@endif @endforeach</select></td>
-            <td><input type="text" class="form-control form-control-sm text-center fw-bold text-danger account-id-lookup" placeholder="Code"></td>
-            <td><select name="row_account_id[]" class="form-select form-select-sm rowAccountSub select2"><option value="">Select Account...</option></select></td>
-            <td><input type="number" step="0.01" name="amount[]" class="form-control form-control-sm text-end fw-bold row-amount" placeholder="0.00"></td>
-            <td class="text-center"><button type="button" class="btn text-danger btn-xs removeRow p-0"><i class="fa fa-trash-o fs-6"></i></button></td>
-        </tr>`;
+        let newRow = '<tr>' +
+            '<td><select name="narration_id[]" class="form-select form-select-sm narrationSelect"><option value="">Narration...</option>@foreach($narrationsList as $lid => $lname)<option value="{{ $lid }}">{{ addslashes($lname) }}</option>@endforeach</select></td>' +
+            '<td><select name="row_account_head[]" class="form-select form-select-sm rowAccountHead select2"><option value="">Select Head...</option>@foreach($AccountHeads as $head) @if(strtoupper($head->name) === 'EXPENSE' || strtoupper($head->name) === 'DRAWING' || str_contains(strtoupper($head->name), 'DRAW'))<option value="{{ $head->id }}">{{ addslashes($head->name) }}</option>@endif @endforeach</select></td>' +
+            '<td><input type="text" class="form-control form-control-sm text-center fw-bold text-danger account-id-lookup" placeholder="Code"></td>' +
+            '<td><select name="row_account_id[]" class="form-select form-select-sm rowAccountSub select2"><option value="">Select Account...</option></select></td>' +
+            '<td><input type="number" step="0.01" name="amount[]" class="form-control form-control-sm text-end fw-bold row-amount" placeholder="0.00"></td>' +
+            '<td class="text-center"><button type="button" class="btn text-danger btn-xs removeRow p-0"><i class="fa fa-trash-o fs-6"></i></button></td>' +
+        '</tr>';
         $('#voucherTable tbody').append(newRow);
         initSelectors($('#voucherTable tbody tr').last());
     });
