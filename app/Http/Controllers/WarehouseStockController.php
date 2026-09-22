@@ -62,6 +62,9 @@ class WarehouseStockController extends Controller
             $warehouses = $warehouses->where('claim_type', $filter_claim_type)->values();
         }
 
+        $filter_brand_id = $request->filled('filter_brand_id') ? (int) $request->filter_brand_id : null;
+        $brands = \App\Models\Brand::orderBy('name')->get();
+
         if ($view === 'history') {
             $query = \App\Models\StockAdjustment::with(['warehouse', 'items.product'])
                 ->whereIn('warehouse_id', $accessibleWarehouseIds)
@@ -87,12 +90,17 @@ class WarehouseStockController extends Controller
                     $q->where('product_id', $filter_product_id);
                 });
             }
+            if ($filter_brand_id) {
+                $query->whereHas('items.product', function ($q) use ($filter_brand_id) {
+                    $q->where('brand', $filter_brand_id);
+                });
+            }
 
             $stocks = $query->get();
 
             return view('admin_panel.warehouses.warehouse_stocks.index', compact(
                 'stocks', 'warehouses', 'allWarehouses', 'view', 'isAdmin', 'canAccessShop',
-                'filter_product_id', 'filterProduct'
+                'filter_product_id', 'filterProduct', 'brands', 'filter_brand_id'
             ));
         }
 
@@ -120,11 +128,15 @@ class WarehouseStockController extends Controller
             $productsQuery->where('id', $filter_product_id);
         }
 
+        if ($filter_brand_id) {
+            $productsQuery->where('brand', $filter_brand_id);
+        }
+
         $products = $productsQuery->get();
 
         return view('admin_panel.warehouses.warehouse_stocks.index', compact(
             'products', 'warehouses', 'allWarehouses', 'view', 'filter_warehouse_ids',
-            'filter_claim_type', 'filter_product_id', 'filterProduct', 'isAdmin', 'canAccessShop'
+            'filter_claim_type', 'filter_product_id', 'filterProduct', 'brands', 'filter_brand_id', 'isAdmin', 'canAccessShop'
         ));
     }
 

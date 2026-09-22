@@ -208,22 +208,28 @@
                             <div class="col-md-2">
                                 <span class="fw-bold text-muted small text-uppercase">Stock Balance Matrix</span>
                             </div>
-                            <div class="col-md-6">
-                                <form action="{{ route('warehouse_stocks.index') }}" method="GET" class="d-flex align-items-center flex-wrap gap-2 m-0">
+                            <div class="col-md-7">
+                                <form action="{{ route('warehouse_stocks.index') }}" method="GET" class="d-flex align-items-center flex-wrap gap-1 m-0">
                                     <input type="hidden" name="view" value="balances">
-                                    <select name="claim_type" class="form-select form-select-sm" style="width: 130px; font-size: 11px;">
+                                    <select name="claim_type" class="form-select form-select-sm" style="width: 115px; font-size: 11px;">
                                         <option value="none" {{ $filter_claim_type == 'none' ? 'selected' : '' }}>Normal</option>
                                         <option value="company" {{ $filter_claim_type == 'company' ? 'selected' : '' }}>Company Claim</option>
                                         <option value="customer" {{ $filter_claim_type == 'customer' ? 'selected' : '' }}>Customer Claim</option>
                                         <option value="all" {{ $filter_claim_type == 'all' ? 'selected' : '' }}>All Types</option>
                                     </select>
-                                    <select name="filter_product_id" id="filter_product_id" class="form-select form-select-sm" style="width: 180px; font-size: 11px;">
+                                    <select name="filter_brand_id" id="filter_brand_id" class="form-select form-select-sm" style="width: 120px; font-size: 11px;">
+                                        <option value="">All Brands</option>
+                                        @foreach($brands as $b)
+                                            <option value="{{ $b->id }}" {{ $filter_brand_id == $b->id ? 'selected' : '' }}>{{ $b->name }}</option>
+                                        @endforeach
+                                    </select>
+                                    <select name="filter_product_id" id="filter_product_id" class="form-select form-select-sm" style="width: 150px; font-size: 11px;">
                                         <option value="">All Products</option>
                                         @if(!empty($filterProduct))
                                             <option value="{{ $filterProduct->id }}" selected>{{ $filterProduct->id }} - {{ $filterProduct->name }}</option>
                                         @endif
                                     </select>
-                                    <select name="filter_warehouse_id[]" class="form-select form-select-sm select2" multiple="multiple" data-placeholder="All Warehouses" style="min-width: 160px;">
+                                    <select name="filter_warehouse_id[]" class="form-select form-select-sm select2" multiple="multiple" data-placeholder="All Warehouses" style="min-width: 140px;">
                                         @foreach($allWarehouses as $aw)
                                             <option value="{{ $aw->id }}" {{ in_array($aw->id, request('filter_warehouse_id', [])) ? 'selected' : '' }}>{{ $aw->warehouse_name }}</option>
                                         @endforeach
@@ -232,7 +238,7 @@
                                     <a href="{{ route('warehouse_stocks.index', ['view' => 'balances']) }}" class="btn btn-outline-secondary btn-sm py-1 px-2" style="font-size: 11px;">Reset</a>
                                 </form>
                             </div>
-                            <div class="col-md-4 text-end">
+                            <div class="col-md-3 text-end">
                                 <div class="column-picker-dropdown">
                                     <button class="btn btn-outline-secondary btn-sm px-2 py-1 rounded-pill" style="font-size: 11px;" type="button" id="columnPickerBtn">
                                         <i class="fa fa-columns me-1"></i> Columns
@@ -530,7 +536,7 @@
 
         @if($view == 'balances')
             var dt = $('#stockBalancesTable').DataTable({
-                pageLength: 50,
+                paging: false,
                 order: [[1, 'asc']],
                 autoWidth: false,
                 language: { searchPlaceholder: "Search products..." },
