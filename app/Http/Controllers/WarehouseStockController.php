@@ -92,7 +92,7 @@ class WarehouseStockController extends Controller
             }
             if ($filter_brand_id) {
                 $query->whereHas('items.product', function ($q) use ($filter_brand_id) {
-                    $q->where('brand', $filter_brand_id);
+                    $q->where('brand_id', $filter_brand_id);
                 });
             }
 
@@ -129,7 +129,7 @@ class WarehouseStockController extends Controller
         }
 
         if ($filter_brand_id) {
-            $productsQuery->where('brand', $filter_brand_id);
+            $productsQuery->where('brand_id', $filter_brand_id);
         }
 
         $products = $productsQuery->get();
