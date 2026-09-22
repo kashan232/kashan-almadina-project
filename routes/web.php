@@ -301,6 +301,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/warehouse', [WarehouseController::class, 'index']);
     Route::post('/warehouse/store', [WarehouseController::class, 'store']);
     Route::get('/warehouse/delete/{id}', [WarehouseController::class, 'delete']);
+    Route::get('warehouse_stocks/export', [WarehouseStockController::class, 'export'])->name('warehouse_stocks.export');
+    Route::get('warehouse_stocks/import', [WarehouseStockController::class, 'showImport'])->name('warehouse_stocks.import');
+    Route::post('warehouse_stocks/import/process', [WarehouseStockController::class, 'processImport'])->name('warehouse_stocks.import.process');
     Route::resource('warehouse_stocks', WarehouseStockController::class);
     Route::post('warehouse_stocks/{id}/post', [WarehouseStockController::class, 'post'])->name('warehouse_stocks.post');
     Route::get('warehouse_stocks/{id}/print', [WarehouseStockController::class, 'print'])->name('warehouse_stocks.print');

@@ -165,7 +165,13 @@
                                 <div class="col-md-6">
                                     <h6 class="mb-0 fw-bold text-dark ms-2"><i class="fa fa-cubes me-2 text-primary"></i>Warehouse Stock Management</h6>
                                 </div>
-                                <div class="col-md-6 text-end">
+                                <div class="col-md-6 text-end d-flex justify-content-end gap-1">
+                                    <a class="btn btn-success btn-sm rounded-pill px-3 shadow-sm py-1" href="{{ route('warehouse_stocks.export') }}" style="font-size: 11px;">
+                                        <i class="fa fa-file-excel-o me-1"></i> Export Excel
+                                    </a>
+                                    <a class="btn btn-outline-success btn-sm rounded-pill px-3 shadow-sm py-1" href="{{ route('warehouse_stocks.import') }}" style="font-size: 11px;">
+                                        <i class="fa fa-upload me-1"></i> Import Excel
+                                    </a>
                                     <a class="btn btn-primary btn-sm rounded-pill px-3 shadow-sm py-1" href="{{ route('warehouse_stocks.create') }}" style="font-size: 11px;">
                                         <i class="fa fa-plus me-1"></i> Manual Update
                                     </a>

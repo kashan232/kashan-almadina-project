@@ -351,4 +351,35 @@ class WarehouseStockController extends Controller
         $adjustment->delete();
         return redirect()->route('warehouse_stocks.index')->with('success', 'Adjustment deleted successfully.');
     }
+
+    public function export(\App\Services\WarehouseStockImportService $service)
+    {
+        return $service->downloadExportResponse();
+    }
+
+    public function showImport()
+    {
+        return view('admin_panel.warehouses.warehouse_stocks.import');
+    }
+
+    public function processImport(Request $request, \App\Services\WarehouseStockImportService $service)
+    {
+        $request->validate([
+            'excel_file' => 'required|file|mimes:xlsx,xls,csv|max:10240',
+        ]);
+
+        $file = $request->file('excel_file');
+        $result = $service->importFromFile($file->getRealPath());
+
+        if ($result['imported'] === 0 && !empty($result['errors'])) {
+            return redirect()->back()->with('error', 'Import failed: ' . implode(' | ', array_slice($result['errors'], 0, 5)));
+        }
+
+        $message = "Successfully imported stock balances for {$result['imported']} products.";
+        if ($result['skipped'] > 0) {
+            $message .= " {$result['skipped']} rows skipped. Errors: " . implode(' | ', array_slice($result['errors'], 0, 3));
+        }
+
+        return redirect()->route('warehouse_stocks.index')->with('success', $message);
+    }
 }
