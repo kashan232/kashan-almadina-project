@@ -90,14 +90,17 @@ class WarehouseStockImportService
     public function downloadExportResponse()
     {
         $spreadsheet = $this->buildExportSpreadsheet();
-        $writer = new Xlsx($spreadsheet);
+        $filename = 'warehouse_stock_export_' . date('Y_m_d_His') . '.xlsx';
 
-        $filename = 'warehouse_stock_export_' . date('Y-m-d_H-i') . '.xlsx';
-
-        return response()->streamDownload(function () use ($writer) {
+        return response()->streamDownload(function () use ($spreadsheet) {
+            if (ob_get_length()) {
+                ob_end_clean();
+            }
+            $writer = new Xlsx($spreadsheet);
             $writer->save('php://output');
         }, $filename, [
-            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Content-Type'  => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Cache-Control' => 'max-age=0',
         ]);
     }
 
