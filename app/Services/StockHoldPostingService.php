@@ -367,7 +367,7 @@ class StockHoldPostingService
                 return $formalHold;
             }
 
-            return $this->applyReleaseOverflow($productId, $releaseQty, $partyType, $partyId, null);
+            return null;
         }
 
         if ($explicitHoldId) {
@@ -394,15 +394,13 @@ class StockHoldPostingService
         }
 
         if ($remaining > 0) {
-            $overflowHold = $primaryHold ?? $explicitHold ?? $this->findReleaseOverflowHold($productId, $partyType, $partyId);
-            if (!$overflowHold) {
-                $overflowHold = $this->createReleaseOverflowHold($productId, $partyType, $partyId, $explicitHold?->warehouse_id);
+            $overflowHold = ($primaryHold && !$primaryHold->isFormalHoldLine()) ? $primaryHold : (($explicitHold && !$explicitHold->isFormalHoldLine()) ? $explicitHold : $this->findReleaseOverflowHold($productId, $partyType, $partyId));
+            if ($overflowHold && !$overflowHold->isFormalHoldLine()) {
+                $overflowHold->hold_qty = (float) $overflowHold->hold_qty - $remaining;
+                $overflowHold->status = (float) $overflowHold->hold_qty < 0 ? 0 : (((float) $overflowHold->hold_qty == 0) ? 1 : 0);
+                $overflowHold->save();
+                $primaryHold = $primaryHold ?? $overflowHold;
             }
-
-            $overflowHold->hold_qty = (float) $overflowHold->hold_qty - $remaining;
-            $overflowHold->status = (float) $overflowHold->hold_qty < 0 ? 0 : (((float) $overflowHold->hold_qty == 0) ? 1 : 0);
-            $overflowHold->save();
-            $primaryHold = $primaryHold ?? $overflowHold;
         }
 
         return $primaryHold;
