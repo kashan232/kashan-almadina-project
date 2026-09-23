@@ -2237,10 +2237,20 @@ class GeneralLedgerController extends Controller
                 if ($this->saleDiscountJvExists($inv)) {
                     continue;
                 }
-                $ref = 'SJ';
-                
                 $sale = $this->ledgerQuery(\App\Models\Sale::class)->where('invoice_no', $inv)->first();
-                if ($sale && $sale->discount_account_id) {
+                if (!$sale) {
+                    continue;
+                }
+
+                // If sale exists, verify that the voucher amount matches current sale discount
+                $vAmt = round((float)$v->amount, 2);
+                $saleDisc = round((float)($sale->discount_amount ?? 0), 2);
+                if (abs($vAmt - $saleDisc) > 0.01) {
+                    continue; // Skip orphan / legacy voucher with old discount amount
+                }
+
+                $ref = 'SJ';
+                if ($sale->discount_account_id) {
                     $acc = $this->ledgerQuery(\App\Models\Account::class)->with('head')->find($sale->discount_account_id);
                     if ($acc) {
                         $desc = 'Discount ; ' . $acc->title;
