@@ -342,6 +342,13 @@ class StockHoldPostingService
             ->where('hold_qty', '>', 0);
 
         if ($claimId) {
+            $claimHold = StockHold::withoutGlobalScopes()
+                ->where('product_id', $productId)
+                ->where('meta->claim_id', (string) $claimId)
+                ->first();
+            if ($claimHold) {
+                return $claimHold;
+            }
             $query->where('meta->claim_id', (string) $claimId);
         } elseif ($partyType && $partyId) {
             $query->where('party_type', $partyType)->where('party_id', $partyId);
@@ -495,7 +502,7 @@ class StockHoldPostingService
             $hold = StockHold::withoutGlobalScopes()->find($item->hold_id);
         }
 
-        if ($hold && $hold->isFormalHoldLine()) {
+        if ($hold && ($hold->isFormalHoldLine() || !empty(data_get($hold->meta, 'claim_id')))) {
             return;
         }
 
