@@ -2199,7 +2199,7 @@
     const $row = $(this).closest('.row');
     const $amount = $row.find('.rv-amount');
     if ($(this).val()) {
-        $amount.prop('disabled', false).focus();
+        $amount.prop('disabled', false);
     } else {
         $amount.prop('disabled', true).val('');
         updateGrandTotals();
@@ -2407,7 +2407,9 @@
     if (!headId) return;
 
     loadAccountsByHead(headId, $accSelect);
-    $amtInput.prop('disabled', true).val(''); 
+    if (!$accSelect.val()) {
+        $amtInput.prop('disabled', true).val(''); 
+    }
     recomputeReceipts();
   });
 
@@ -2425,8 +2427,10 @@
       // If we have a pre-selected value (from old() or edit)
       const selected = $select.attr('data-selected');
       if (selected) {
-        $select.val(selected).trigger('change');
+        $select.val(selected);
         $select.removeAttr('data-selected');
+        const $row = $select.closest('.rv-row, .row');
+        $row.find('.rv-amount').prop('disabled', false);
       }
     }).fail(function() {
       $select.empty().append('<option value="">Error loading</option>').prop('disabled', false);
