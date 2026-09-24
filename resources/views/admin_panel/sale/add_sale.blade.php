@@ -17,8 +17,8 @@
   $eTel = $editData ? $editData->tel : '';
   $ePrevBal = $editData ? $editData->previous_balance : '0.00';
   $eRemarks = $editData ? $editData->remarks : '';
-  $eOrderDiscValue = $editData ? ($editData->discount_amount > 0 ? $editData->discount_amount : $editData->discount_percent) : 0;
-  $eOrderDiscMode = $editData && $editData->discount_amount > 0 ? 'amount' : 'percent';
+  $eOrderDiscMode = ($editData && $editData->discount_percent > 0) ? 'percent' : (($editData && $editData->discount_amount > 0) ? 'amount' : 'percent');
+  $eOrderDiscValue = $editData ? ($eOrderDiscMode === 'percent' ? $editData->discount_percent : $editData->discount_amount) : 0;
   
   // Try to find the exact receipt variables
   $receiptAccs = $editData ? json_decode($editData->receipt_accounts ?? '[]', true) : [];
@@ -949,11 +949,20 @@
                 <span class="text-muted small">Order Discount</span>
                 <div class="d-flex align-items-center gap-3">
                   <div class="d-flex gap-1" style="width:230px;">
+                    @php
+                      $savedDiscHead = old('discount_head', $editData->discount_head ?? '');
+                      if (!$savedDiscHead && $editData && $editData->discount_account_id) {
+                          $accTemp = \App\Models\Account::find($editData->discount_account_id);
+                          if ($accTemp) {
+                              $savedDiscHead = $accTemp->head_id;
+                          }
+                      }
+                    @endphp
                     <select id="discount_head" name="discount_head" class="form-select form-select-sm" style="width:100px;">
-                      <option value="" selected disabled>Select Head</option>
+                      <option value="" disabled {{ empty($savedDiscHead) ? 'selected' : '' }}>Select Head</option>
                       @foreach($accountHeads as $head)
                           @if(strtoupper($head->name) == 'EXPENSE')
-                          <option value="{{ $head->id }}" {{ old('discount_head', $editData->discount_head ?? '') == $head->id ? 'selected' : '' }}>
+                          <option value="{{ $head->id }}" {{ ($savedDiscHead == $head->id || empty($savedDiscHead)) ? 'selected' : '' }}>
                               {{ $head->name }}
                           </option>
                           @endif
@@ -2550,9 +2559,13 @@
 
     // If discount_head has value on load (edit mode / old input), load accounts
     const initialDiscHead = $('#discount_head').val();
+    const currentAccVal = $('#discount_account_id').val();
     if (initialDiscHead) {
+      if (currentAccVal) {
+        $('#discount_account_id').attr('data-selected', currentAccVal);
+      }
       loadAccountsByHead(initialDiscHead, $('#discount_account_id'));
-      if ($('#discount_account_id').val() || $('#discount_account_id').attr('data-selected')) {
+      if (currentAccVal || $('#discount_account_id').attr('data-selected')) {
         $('#orderDiscountValue').prop('disabled', false);
       }
     }

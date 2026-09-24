@@ -41,6 +41,8 @@ class Productbooking extends Model
         'final_balance1',
         'final_balance2',
         'weight',
+        'discount_head',
+        'discount_account_id',
         'is_sale_order',
         'entry_date',
         'entry_time',
