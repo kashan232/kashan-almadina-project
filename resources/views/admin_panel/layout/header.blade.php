@@ -889,15 +889,15 @@
 
                       @can('Rollback Posting')
                       <li class="nav-item">
-                          <a href="{{ route('rollback.index') }}" class="nav-link px-2 py-1 bg-warning text-dark fw-bold rounded shadow-sm hover-scale" style="margin-right: 4px; font-size: 13px !important; line-height: 1.4;">
-                              <i class="fas fa-undo-alt me-1 text-dark"></i> <span class="menu-title text-dark">Rollback Posting</span>
+                          <a href="{{ route('rollback.index') }}" class="nav-link">
+                              <span class="menu-title text-white">Rollback Posting</span>
                           </a>
                       </li>
                       @endcan
 
                       <li class="nav-item">
-                          <a href="{{ route('reports.unpost-entries.index') }}" class="nav-link px-2 py-1 bg-info text-white fw-bold rounded shadow-sm hover-scale" style="font-size: 13px !important; line-height: 1.4;">
-                              <i class="fa-solid fa-list-check me-1 text-white"></i> <span class="menu-title text-white">Un Post Entries</span>
+                          <a href="{{ route('reports.unpost-entries.index') }}" class="nav-link">
+                              <span class="menu-title text-white">Un Post Entries</span>
                           </a>
                       </li>
 

@@ -19,17 +19,13 @@ class LoginLockdown
         SystemSetting::set(self::SETTING_KEY, $active);
     }
 
-    /** Admin accounts that may login while lockdown is active. */
+    /** Only super admin account (ID 1 or admin@admin.com) may bypass lockdown. */
     public static function canBypass(?User $user): bool
     {
         if (!$user) {
             return false;
         }
 
-        if ($user->email === 'admin@admin.com' || $user->usertype === 'admin') {
-            return true;
-        }
-
-        return $user->hasRole('Admin');
+        return (int) $user->id === 1 || strtolower((string) $user->email) === 'admin@admin.com';
     }
 }

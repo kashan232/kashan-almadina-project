@@ -30,6 +30,15 @@ class AuthenticatedSessionController extends Controller
     {
         $request->authenticate();
 
+        $user = Auth::user();
+        if (LoginLockdown::isActive() && (! $user || ! LoginLockdown::canBypass($user))) {
+            Auth::guard('web')->logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+
+            return redirect()->route('login')->with('lockdown', 'Login is temporarily disabled for system maintenance. Please try again later.');
+        }
+
         $request->session()->regenerate();
 
         return redirect()->intended(RouteServiceProvider::HOME);
