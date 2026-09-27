@@ -100,7 +100,7 @@ class StockHold extends Model
             ->sum('hold_qty');
 
         // 2. Informal Holds (Customer Claim Holds, etc.)
-        $informalHolds = static::withoutGlobalScopes()
+        $informalGross = (float) static::withoutGlobalScopes()
             ->where('product_id', $productId)
             ->whereNull('stock_hold_voucher_id')
             ->where('hold_qty', '>', 0)
@@ -114,29 +114,7 @@ class StockHold extends Model
                   });
             })
             ->when($warehouseId !== null, fn ($q) => $q->where('warehouse_id', $warehouseId))
-            ->get();
-
-        $informalGross = 0.0;
-        foreach ($informalHolds as $h) {
-            $claimId = $h->meta['claim_id'] ?? null;
-            $relQty = (float) StockRelease::withoutGlobalScopes()
-                ->where(function($q) use ($h, $claimId) {
-                    $q->where('hold_id', $h->id);
-                    if ($claimId) {
-                        $q->orWhereHas('voucher', function($v) use ($claimId) {
-                            $v->withoutGlobalScopes()->where('claim_id', $claimId);
-                        });
-                    }
-                })
-                ->where(function ($q) {
-                    $q->whereHas('voucher', function ($v) {
-                        $v->withoutGlobalScopes()->where('status', 'Posted');
-                    })->orWhereIn('status', ['Posted', 'posted']);
-                })
-                ->sum('release_qty');
-
-            $informalGross += max(0, (float) $h->hold_qty - $relQty);
-        }
+            ->sum('hold_qty');
 
         // Total All Holds Gross
         $totalGrossHolds = $formalGross + $informalGross;
@@ -169,7 +147,7 @@ class StockHold extends Model
 
     public function isFormalHoldLine(): bool
     {
-        return !empty($this->stock_hold_voucher_id);
+        return !empty($this->stock_hold_voucher_id) || !empty(data_get($this->meta, 'claim_id'));
     }
 
     public static function isPostedRelease(StockRelease $release): bool
