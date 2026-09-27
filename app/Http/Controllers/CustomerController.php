@@ -59,6 +59,10 @@ class CustomerController extends Controller
             }
         }
 
+        if ($request->filled('customer_name')) {
+            $query->where('customer_name', 'like', '%' . $request->customer_name . '%');
+        }
+
         $customers = $query->withCount('sales')->latest()->get();
         $userGroups = UserGroup::all()->keyBy('id');
         $users = User::all(); // To populate filter dropdown

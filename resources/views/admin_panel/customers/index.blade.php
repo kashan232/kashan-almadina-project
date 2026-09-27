@@ -17,7 +17,7 @@
         color: #333 !important;
         font-weight: 600;
         vertical-align: middle;
-        padding: 8px 10px !important;
+        padding: 6px 10px !important;
         font-size: 12px;
         text-transform: uppercase;
     }
@@ -39,7 +39,7 @@
         position: absolute;
         top: 100%;
         right: 0;
-        z-index: 1000;
+        z-index: 1050;
         display: none;
         min-width: 220px;
         padding: 5px 0;
@@ -104,8 +104,12 @@
                             <form action="{{ route('customers.index') }}" method="GET">
                                 <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
                                     <div class="d-flex align-items-center gap-2 flex-wrap">
-                                        <h6 class="mb-0 fw-bold text-dark me-2"><i class="fa fa-users me-2 text-primary"></i>Customer List</h6>
+                                        <h6 class="mb-0 fw-bold text-dark me-2"><i class="fa fa-users me-2 text-primary"></i>Customers</h6>
                                         
+                                        <div style="min-width: 170px;">
+                                            <input type="text" name="customer_name" class="form-select form-select-sm" placeholder="Customer Name..." value="{{ request('customer_name') }}">
+                                        </div>
+
                                         <div style="min-width: 180px;">
                                             <select name="customer_type" class="form-select form-select-sm fw-bold" onchange="this.form.submit()">
                                                 <option value="">All Types (Main & Walking)</option>
@@ -151,31 +155,6 @@
             </div>
 
             <div class="card shadow-sm border-0">
-                <div class="card-header bg-white d-flex justify-content-between align-items-center py-2 border-bottom">
-                    <span class="fw-bold text-muted small text-uppercase">Customer Registry</span>
-                    <div class="column-picker-dropdown">
-                        <button class="btn btn-outline-secondary btn-sm px-3 rounded-pill" type="button" id="columnPickerBtn">
-                            <i class="fa fa-columns me-1"></i> Columns
-                        </button>
-                        <div class="column-picker-menu shadow" id="columnPickerMenu">
-                            <div class="p-2 border-bottom fw-bold small text-muted">Show/Hide Columns</div>
-                            <label class="column-picker-item"><input type="checkbox" data-column="1" checked> DB ID</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="2" checked> ID</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="3" checked> Type</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="4" checked> Name</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="5" checked> Groups</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="6" checked> Mobile</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="7" checked> Zone</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="8" checked> Address Eng</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="9" checked> Address Urdu</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="10" checked> Opening</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="11" checked> Closing</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="12" checked> Filer</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="13" checked> Status</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="14" checked> Created By</label>
-                        </div>
-                    </div>
-                </div>
                 <div class="card-body p-0">
                     <div class="table-responsive">
                         <table id="customerTable" class="table table-sm table-striped table-bordered w-100 mb-0">
@@ -274,6 +253,32 @@
         </div>
     </div>
 </div>
+
+<!-- Hidden Column Picker Template to be placed dynamically in DataTable Header -->
+<div id="columnPickerMenuContainer" class="d-none">
+    <div class="column-picker-dropdown ms-2">
+        <button class="btn btn-outline-secondary btn-sm px-3 rounded-pill" type="button" id="columnPickerBtn">
+            <i class="fa fa-columns me-1"></i> Columns
+        </button>
+        <div class="column-picker-menu shadow" id="columnPickerMenu">
+            <div class="p-2 border-bottom fw-bold small text-muted">Show/Hide Columns</div>
+            <label class="column-picker-item"><input type="checkbox" data-column="1" checked> DB ID</label>
+            <label class="column-picker-item"><input type="checkbox" data-column="2" checked> ID</label>
+            <label class="column-picker-item"><input type="checkbox" data-column="3" checked> Type</label>
+            <label class="column-picker-item"><input type="checkbox" data-column="4" checked> Name</label>
+            <label class="column-picker-item"><input type="checkbox" data-column="5" checked> Groups</label>
+            <label class="column-picker-item"><input type="checkbox" data-column="6" checked> Mobile</label>
+            <label class="column-picker-item"><input type="checkbox" data-column="7" checked> Zone</label>
+            <label class="column-picker-item"><input type="checkbox" data-column="8" checked> Address Eng</label>
+            <label class="column-picker-item"><input type="checkbox" data-column="9" checked> Address Urdu</label>
+            <label class="column-picker-item"><input type="checkbox" data-column="10" checked> Opening</label>
+            <label class="column-picker-item"><input type="checkbox" data-column="11" checked> Closing</label>
+            <label class="column-picker-item"><input type="checkbox" data-column="12" checked> Filer</label>
+            <label class="column-picker-item"><input type="checkbox" data-column="13" checked> Status</label>
+            <label class="column-picker-item"><input type="checkbox" data-column="14" checked> Created By</label>
+        </div>
+    </div>
+</div>
 @endsection
 
 @section('scripts')
@@ -286,7 +291,7 @@
             autoWidth: false,
             pageLength: 25,
             lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
-            dom: '<"d-flex justify-content-between align-items-center p-2"lBf>rt<"d-flex justify-content-between align-items-center p-2"ip>',
+            dom: '<"d-flex justify-content-between align-items-center p-2"lB<"d-flex align-items-center"f<"column-picker-slot">>>rt<"d-flex justify-content-between align-items-center p-2"ip>',
             order: [[0, "desc"]],
             buttons: [
                 { extend: 'copy', className: 'btn btn-outline-secondary btn-sm rounded-pill px-3 me-1' },
@@ -295,7 +300,10 @@
             ]
         });
 
-        $('#columnPickerBtn').on('click', function(e) {
+        // Inject Column Picker dropdown right next to Search filter box
+        $('.column-picker-slot').html($('#columnPickerMenuContainer').html());
+
+        $(document).on('click', '#columnPickerBtn', function(e) {
             e.stopPropagation();
             $('#columnPickerMenu').toggleClass('show');
         });
@@ -321,7 +329,7 @@
             });
         }
 
-        $('#columnPickerMenu input').on('change', function() {
+        $(document).on('change', '#columnPickerMenu input', function() {
             const colIdx = parseInt($(this).data('column'));
             const isChecked = $(this).is(':checked');
             dt.column(colIdx - 1).visible(isChecked);

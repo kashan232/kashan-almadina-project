@@ -16,14 +16,14 @@
         color: #333;
         font-weight: 600;
         vertical-align: middle;
-        padding: 8px 10px !important;
+        padding: 6px 10px !important;
         font-size: 13px;
     }
     
     #vendorTable tbody td {
         white-space: nowrap;
         vertical-align: middle;
-        padding: 6px 10px !important;
+        padding: 4px 10px !important;
         font-size: 12px;
         color: #333;
     }
@@ -37,7 +37,7 @@
         position: absolute;
         top: 100%;
         right: 0;
-        z-index: 1000;
+        z-index: 1050;
         display: none;
         min-width: 200px;
         padding: 5px 0;
@@ -106,33 +106,37 @@
                     <div class="card border-0 shadow-sm">
                         <div class="card-body p-2">
                             <div class="row g-2 align-items-center">
-                                <div class="col-md-4">
-                                    <h5 class="mb-0 fw-bold text-dark ms-2"><i class="fa fa-users me-2 text-primary"></i>Vendor Management</h5>
+                                <div class="col-md-3">
+                                    <h5 class="mb-0 fw-bold text-dark ms-2"><i class="fa fa-users me-2 text-primary"></i>Vendors</h5>
                                 </div>
-                                <div class="col-md-8 text-end">
+                                <div class="col-md-9 text-end">
                                     <div class="d-flex gap-2 justify-content-end align-items-center flex-wrap">
-                                        <form action="{{ url('vendor') }}" method="GET" class="d-flex gap-2 align-items-center me-1">
-                                            <select name="group_id" class="form-select form-select-sm select2" style="min-width: 140px;">
-                                                <option value="">All Groups</option>
-                                                @foreach($userGroups as $group)
-                                                    <option value="{{ $group->id }}" {{ request('group_id') == $group->id ? 'selected' : '' }}>
-                                                        {{ $group->name }}
-                                                    </option>
-                                                @endforeach
-                                            </select>
+                                        <form action="{{ url('vendor') }}" method="GET" class="d-flex gap-2 align-items-center me-1 flex-wrap">
+                                            <div style="min-width: 220px;">
+                                                <select name="group_id" class="form-select form-select-sm select2" style="width: 100%;">
+                                                    <option value="">All Groups</option>
+                                                    @foreach($userGroups as $group)
+                                                        <option value="{{ $group->id }}" {{ request('group_id') == $group->id ? 'selected' : '' }}>
+                                                            {{ $group->name }}
+                                                        </option>
+                                                    @endforeach
+                                                </select>
+                                            </div>
                                             @if($isAdmin)
-                                            <select name="created_by" class="form-select form-select-sm select2" style="min-width: 130px;">
-                                                <option value="">All Users</option>
-                                                @foreach($users as $user)
-                                                    <option value="{{ $user->id }}" {{ request('created_by') == $user->id ? 'selected' : '' }}>
-                                                        {{ $user->name }}
-                                                    </option>
-                                                @endforeach
-                                            </select>
+                                            <div style="min-width: 180px;">
+                                                <select name="created_by" class="form-select form-select-sm select2" style="width: 100%;">
+                                                    <option value="">All Users</option>
+                                                    @foreach($users as $user)
+                                                        <option value="{{ $user->id }}" {{ request('created_by') == $user->id ? 'selected' : '' }}>
+                                                            {{ $user->name }}
+                                                        </option>
+                                                    @endforeach
+                                                </select>
+                                            </div>
                                             @endif
                                             <button type="submit" class="btn btn-primary btn-sm rounded-pill px-3 shadow-sm">Filter</button>
                                             @if(request('group_id') || request('created_by'))
-                                                <a href="{{ url('vendor') }}" class="btn btn-outline-secondary btn-sm rounded-pill px-2" title="Reset"><i class="fa fa-refresh"></i></a>
+                                                <a href="{{ url('vendor') }}" class="btn btn-outline-secondary btn-sm rounded-pill px-2" title="Reset"><i class="fa fa-refresh"></i> Reset</a>
                                             @endif
                                         </form>
                                         
@@ -141,7 +145,7 @@
                                                 <i class="fa fa-calculator me-1"></i> Audit
                                             </a>
                                             <a href="{{ route('vendor.ledger') }}" class="btn btn-outline-info btn-sm rounded-pill px-3 me-1">Ledger</a>
-                                            <a href="{{ route('vendor.payments.index') }}" class="btn btn-outline-warning btn-sm rounded-pill px-3 text-dark">Payments</a>
+                                            <a href="{{ route('vendor.payments.index') }}" class="btn btn-outline-warning btn-sm rounded-pill px-3 text-dark me-1">Payments</a>
                                         </div>
 
                                         <a href="{{ route('vendor.create') }}" class="btn btn-primary btn-sm rounded-pill px-4 shadow-sm">
@@ -158,25 +162,6 @@
             <div class="row">
                 <div class="col-12">
                     <div class="card border-0 shadow-sm">
-                        <div class="card-header bg-white d-flex justify-content-between align-items-center py-2 border-bottom">
-                            <span class="fw-bold text-muted small text-uppercase">Vendor List</span>
-                            <div class="column-picker-dropdown">
-                                <button class="btn btn-outline-secondary btn-sm px-3 rounded-pill" type="button" id="columnPickerBtn">
-                                    <i class="fa fa-columns me-1"></i> Columns
-                                </button>
-                                <div class="column-picker-menu shadow" id="columnPickerMenu">
-                                    <div class="p-2 border-bottom fw-bold small text-muted">Show/Hide Columns</div>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="1" checked> Vendor ID</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="2" checked> Name</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="3" checked> Groups</label>
-                                    @if($isAdmin)<label class="column-picker-item"><input type="checkbox" data-column="4" checked> Created By</label>@endif
-                                    <label class="column-picker-item"><input type="checkbox" data-column="5" checked> Phone</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="6" checked> Opening Balance</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="7" checked> Closing Balance</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="8" checked> Address</label>
-                                </div>
-                            </div>
-                        </div>
                         <div class="card-body p-0">
                             <div class="table-responsive">
                                 <table id="vendorTable" class="table table-sm table-striped table-bordered w-100 mb-0">
@@ -258,24 +243,31 @@
     </div>
 </div>
 
+<!-- Hidden Column Picker Template to be placed dynamically in DataTable Header -->
+<div id="columnPickerMenuContainer" class="d-none">
+    <div class="column-picker-dropdown ms-2">
+        <button class="btn btn-outline-secondary btn-sm px-3 rounded-pill" type="button" id="columnPickerBtn">
+            <i class="fa fa-columns me-1"></i> Columns
+        </button>
+        <div class="column-picker-menu shadow" id="columnPickerMenu">
+            <div class="p-2 border-bottom fw-bold small text-muted">Show/Hide Columns</div>
+            <label class="column-picker-item"><input type="checkbox" data-column="1" checked> Vendor ID</label>
+            <label class="column-picker-item"><input type="checkbox" data-column="2" checked> Name</label>
+            <label class="column-picker-item"><input type="checkbox" data-column="3" checked> Groups</label>
+            @if($isAdmin)<label class="column-picker-item"><input type="checkbox" data-column="4" checked> Created By</label>@endif
+            <label class="column-picker-item"><input type="checkbox" data-column="5" checked> Phone</label>
+            <label class="column-picker-item"><input type="checkbox" data-column="6" checked> Opening Balance</label>
+            <label class="column-picker-item"><input type="checkbox" data-column="7" checked> Closing Balance</label>
+            <label class="column-picker-item"><input type="checkbox" data-column="8" checked> Address</label>
+        </div>
+    </div>
+</div>
 
 @endsection
 
 @section('scripts')
 <script>
 $(document).ready(function() {
-    // Toggle Column Picker Menu
-    $('#columnPickerBtn').on('click', function(e) {
-        e.stopPropagation();
-        $('#columnPickerMenu').toggleClass('show');
-    });
-
-    $(document).on('click', function(e) {
-        if (!$(e.target).closest('.column-picker-dropdown').length) {
-            $('#columnPickerMenu').removeClass('show');
-        }
-    });
-
     const storageKey = 'vendor_table_cols_v1';
     
     // Initialize DataTable
@@ -285,7 +277,7 @@ $(document).ready(function() {
         autoWidth: false,
         pageLength: 25,
         lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
-        dom: '<"d-flex justify-content-between align-items-center p-2"lBf>rt<"d-flex justify-content-between align-items-center p-2"ip>',
+        dom: '<"d-flex justify-content-between align-items-center p-2"lB<"d-flex align-items-center"f<"column-picker-slot">>>rt<"d-flex justify-content-between align-items-center p-2"ip>',
         buttons: [
             { extend: 'copy', className: 'btn btn-outline-secondary btn-sm rounded-pill px-3 me-1' },
             { extend: 'csv', className: 'btn btn-outline-success btn-sm rounded-pill px-3 me-1' },
@@ -295,6 +287,21 @@ $(document).ready(function() {
         language: {
             search: "_INPUT_",
             searchPlaceholder: "Search vendors..."
+        }
+    });
+
+    // Inject Column Picker dropdown right next to Search filter box
+    $('.column-picker-slot').html($('#columnPickerMenuContainer').html());
+
+    // Toggle Column Picker Menu
+    $(document).on('click', '#columnPickerBtn', function(e) {
+        e.stopPropagation();
+        $('#columnPickerMenu').toggleClass('show');
+    });
+
+    $(document).on('click', function(e) {
+        if (!$(e.target).closest('.column-picker-dropdown').length) {
+            $('#columnPickerMenu').removeClass('show');
         }
     });
 
@@ -312,7 +319,7 @@ $(document).ready(function() {
     }
 
     // Handle Checkbox Change
-    $('#columnPickerMenu input').on('change', function() {
+    $(document).on('change', '#columnPickerMenu input', function() {
         const colIdx = parseInt($(this).data('column'));
         const isChecked = $(this).is(':checked');
         

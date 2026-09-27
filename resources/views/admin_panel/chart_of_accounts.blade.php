@@ -178,8 +178,8 @@
                             
                             <div class="d-flex gap-1 align-items-center">
                                 <form action="{{ route('view_all') }}" method="GET" class="d-flex gap-1 align-items-center">
-                                    <select name="head_id" class="form-select form-select-sm select2" style="min-width: 170px;">
-                                        <option value="">All Heads</option>
+                                    <select name="head_id" class="form-select form-select-sm select2" style="min-width: 220px;">
+                                        <option value="">All Sub Heads</option>
                                         @foreach($heads as $h)
                                             <option value="{{ $h->id }}" {{ request('head_id') == $h->id ? 'selected' : '' }}>
                                                 {{ $h->id }} - {{ $h->name }}
@@ -518,6 +518,7 @@
             scrollX: true,
             autoWidth: false,
             pageLength: 25,
+            lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
             dom: '<"d-flex justify-content-between align-items-center p-2"lBf>rt<"d-flex justify-content-between align-items-center p-2"ip>',
             buttons: [
                 { extend: 'copy', className: 'btn btn-outline-secondary btn-sm rounded-pill px-3 me-1' },
