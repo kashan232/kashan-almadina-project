@@ -443,6 +443,38 @@
                       </li>
                       @endcan
 
+                      {{-- User Management Section --}}
+                      @canany(['Users', 'Roles', 'Permissions', 'Branches'])
+                      <li class="nav-item">
+                          <a href="#" class="nav-link"><span
+                                  class="menu-title">User</span><i class="menu-arrow"></i></a>
+                          <div class="submenu">
+                              <ul class="submenu-item">
+                                  @can('Users')
+                                  <li class="nav-item"><a class="nav-link" href="{{ route('users.index') }}"><i
+                                              class="fa-solid fa-users mr-2"></i><span>Users</span></a></li>
+                                  @endcan
+                                  @can('Roles')
+                                  <li class="nav-item"><a class="nav-link" href="{{ route('roles.index') }}"><i
+                                              class="fa-solid fa-user-lock mr-2"></i><span>Roles</span></a></li>
+                                  @endcan
+                                  @can('Permissions')
+                                  <li class="nav-item"><a class="nav-link" href="{{ route('permissions.index') }}"><i
+                                              class="fa-solid fa-user-lock mr-2"></i><span>Permissions</span></a></li>
+                                  @endcan
+                                  @can('Branches')
+                                  <li class="nav-item"><a class="nav-link" href="{{ route('branch.index') }}"><i
+                                              class="fa-solid fa-code-branch mr-2"></i><span>Branches</span></a></li>
+                                  @endcan
+                                  @can('User Groups')
+                                  <li class="nav-item"><a class="nav-link" href="{{ route('user-group.index') }}"><i
+                                              class="fa-solid fa-users-rectangle mr-2"></i><span>User Groups</span></a></li>
+                                  @endcan
+                              </ul>
+                          </div>
+                      </li>
+                      @endcanany
+
                       {{-- Setup Section --}}
                       @canany(['Products', 'Category', 'Sub Category', 'Brands', 'Units', 'Chart Of Accounts', 'Narrations', 'Vendor', 'Customer', 'Warehouse', 'Sales Officer', 'Zone'])
                       <li class="nav-item">
@@ -583,37 +615,6 @@
                       </li>
                       @endcanany
 
-                      {{-- User Management Section --}}
-                      @canany(['Users', 'Roles', 'Permissions', 'Branches'])
-                      <li class="nav-item">
-                          <a href="#" class="nav-link"><span
-                                  class="menu-title">User</span><i class="menu-arrow"></i></a>
-                          <div class="submenu">
-                              <ul class="submenu-item">
-                                  @can('Users')
-                                  <li class="nav-item"><a class="nav-link" href="{{ route('users.index') }}"><i
-                                              class="fa-solid fa-users mr-2"></i><span>Users</span></a></li>
-                                  @endcan
-                                  @can('Roles')
-                                  <li class="nav-item"><a class="nav-link" href="{{ route('roles.index') }}"><i
-                                              class="fa-solid fa-user-lock mr-2"></i><span>Roles</span></a></li>
-                                  @endcan
-                                  @can('Permissions')
-                                  <li class="nav-item"><a class="nav-link" href="{{ route('permissions.index') }}"><i
-                                              class="fa-solid fa-user-lock mr-2"></i><span>Permissions</span></a></li>
-                                  @endcan
-                                  @can('Branches')
-                                  <li class="nav-item"><a class="nav-link" href="{{ route('branch.index') }}"><i
-                                              class="fa-solid fa-code-branch mr-2"></i><span>Branches</span></a></li>
-                                  @endcan
-                                  @can('User Groups')
-                                  <li class="nav-item"><a class="nav-link" href="{{ route('user-group.index') }}"><i
-                                              class="fa-solid fa-users-rectangle mr-2"></i><span>User Groups</span></a></li>
-                                  @endcan
-                              </ul>
-                          </div>
-                      </li>
-                      @endcanany
 
                       {{-- Vouchers Section --}}
                       @canany(['Receipts Voucher', 'Payment Voucher', 'Expense Voucher', 'Income Voucher', 'Journal Voucher', 'Adjustment Voucher'])
@@ -678,27 +679,6 @@
                       </li>
                       @endcanany
 
-                      {{-- Tools Section --}}
-                      @can('General Ledger')
-                      <li class="nav-item">
-                          <a href="#" class="nav-link">
-                              <span class="menu-title">Tools</span>
-                              <i class="menu-arrow"></i>
-                          </a>
-                          <div class="submenu">
-                              <ul class="submenu-item">
-                                  @can('General Ledger')
-                                  <li class="nav-item">
-                                      <a class="nav-link" href="{{ route('general-ledger.index') }}">
-                                          <i class="fas fa-book mr-2"></i>
-                                          <span>General Ledger</span>
-                                      </a>
-                                  </li>
-                                  @endcan
-                              </ul>
-                          </div>
-                      </li>
-                      @endcan
 
                       {{-- Reports Section --}}
                       @canany(['Reports Dashboard', 'Sales Report', 'Purchase Report', 'Claim Report', 'Claim Acceptance Report', 'Claim Receipt Report', 'Stock Wastage Report', 'Stock Transfer Report', 'Receipt Voucher Report', 'Payment Voucher Report', 'Expense Voucher Report', 'Income Voucher Report', 'Journal Voucher Report', 'Adjustment Voucher Report'])
@@ -886,6 +866,14 @@
                           </div>
                       </li>
                       @endcanany
+
+                      @can('General Ledger')
+                      <li class="nav-item">
+                          <a href="{{ route('general-ledger.index') }}" class="nav-link">
+                              <span class="menu-title text-white">General Ledger</span>
+                          </a>
+                      </li>
+                      @endcan
 
                       @can('Rollback Posting')
                       <li class="nav-item">
