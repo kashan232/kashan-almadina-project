@@ -149,57 +149,71 @@
             @endif
 
             <!-- Filter Section -->
-            <div class="row mb-3">
+            <div class="row mb-2">
                 <div class="col-12">
                     <div class="card border-0 shadow-sm">
                         <div class="card-body p-2" style="overflow: visible;">
-                            <form action="{{ route('Purchase.home') }}" method="GET" class="row g-2 align-items-center">
-                                <div class="col-md-2">
-                                    <h6 class="mb-0 fw-bold text-dark ms-1"><i class="fa fa-shopping-cart me-2 text-primary"></i>Purchase List</h6>
-                                </div>
-                                <div class="col-md-3">
-                                    <div class="input-group input-group-sm">
-                                        <span class="input-group-text bg-white border-end-0 small fw-bold text-muted">Range</span>
-                                        <input type="date" name="start_date" class="form-control border-start-0" value="{{ request('start_date') }}">
-                                        <input type="date" name="end_date" class="form-control" value="{{ request('end_date') }}">
-                                    </div>
-                                </div>
-                                <div class="col-md-2">
-                                    <div class="input-group input-group-sm">
-                                        <span class="input-group-text bg-white border-end-0 small fw-bold text-muted">Customer</span>
-                                        <select name="customer_id" class="form-select form-select-sm select2 border-start-0">
-                                            <option value="">All</option>
-                                            @foreach($customers as $c)
-                                                <option value="{{ $c->id }}" {{ request('customer_id') == $c->id ? 'selected' : '' }}>{{ $c->customer_name }}</option>
-                                            @endforeach
-                                        </select>
-                                    </div>
-                                </div>
-                                <div class="col-md-2">
-                                    <div class="input-group input-group-sm">
-                                        <span class="input-group-text bg-white border-end-0 small fw-bold text-muted">Cashier</span>
-                                        <select name="user_id" class="form-select form-select-sm select2 border-start-0">
-                                            <option value="">All</option>
-                                            @foreach($users as $user)
-                                                <option value="{{ $user->id }}" {{ request('user_id') == $user->id ? 'selected' : '' }}>{{ $user->name }}</option>
-                                            @endforeach
-                                        </select>
-                                    </div>
-                                </div>
-                                <div class="col-md-3 text-end">
-                                    <div class="d-flex gap-1 justify-content-end align-items-center">
-                                        <div class="input-group input-group-sm me-1" style="max-width: 130px;">
+                            <form action="{{ route('Purchase.home') }}" method="GET">
+                                <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+                                    <div class="d-flex align-items-center gap-1 flex-wrap">
+                                        <span class="badge bg-success text-white px-3 py-2 fs-6 rounded-pill"><i class="fa fa-shopping-cart me-1"></i> Purchase List</span>
+                                        
+                                        <div class="input-group input-group-sm" style="width: 220px;">
+                                            <span class="input-group-text bg-white border-end-0 small fw-bold text-muted">Range</span>
+                                            <input type="date" name="start_date" class="form-control border-start-0" value="{{ request('start_date') }}">
+                                            <input type="date" name="end_date" class="form-control" value="{{ request('end_date') }}">
+                                        </div>
+
+                                        <div style="min-width: 130px;">
+                                            <select name="party_type" class="form-select form-select-sm" onchange="this.form.submit()">
+                                                <option value="">Party Type: All</option>
+                                                <option value="Vendor" {{ request('party_type') == 'Vendor' ? 'selected' : '' }}>Vendor</option>
+                                                <option value="Customer" {{ request('party_type') == 'Customer' ? 'selected' : '' }}>Customer</option>
+                                            </select>
+                                        </div>
+
+                                        <div style="min-width: 140px;">
+                                            <select name="vendor_id" class="form-select form-select-sm select2">
+                                                <option value="">All Vendors</option>
+                                                @foreach($vendors as $v)
+                                                    <option value="{{ $v->id }}" {{ request('vendor_id') == $v->id ? 'selected' : '' }}>{{ $v->name }}</option>
+                                                @endforeach
+                                            </select>
+                                        </div>
+
+                                        <div style="min-width: 140px;">
+                                            <select name="customer_id" class="form-select form-select-sm select2">
+                                                <option value="">All Customers</option>
+                                                @foreach($customers as $c)
+                                                    <option value="{{ $c->id }}" {{ request('customer_id') == $c->id ? 'selected' : '' }}>{{ $c->customer_name }}</option>
+                                                @endforeach
+                                            </select>
+                                        </div>
+
+                                        <div style="min-width: 130px;">
+                                            <select name="user_id" class="form-select form-select-sm select2">
+                                                <option value="">All Cashiers</option>
+                                                @foreach($users as $user)
+                                                    <option value="{{ $user->id }}" {{ request('user_id') == $user->id ? 'selected' : '' }}>{{ $user->name }}</option>
+                                                @endforeach
+                                            </select>
+                                        </div>
+
+                                        <div style="min-width: 120px;">
                                             <select name="status" class="form-select form-select-sm select2">
                                                 <option value="">Status: All</option>
                                                 <option value="Unposted" {{ request('status') == 'Unposted' ? 'selected' : '' }}>Unposted</option>
                                                 <option value="Posted" {{ request('status') == 'Posted' ? 'selected' : '' }}>Posted</option>
                                             </select>
                                         </div>
+
                                         <button type="submit" class="btn btn-primary btn-sm rounded-pill px-3 shadow-sm">Filter</button>
-                                        <a href="{{ route('Purchase.home') }}" class="btn btn-outline-secondary btn-sm rounded-pill px-2" title="Reset"><i class="fa fa-refresh"></i></a>
-                                        
-                                        <a class="btn btn-primary btn-sm rounded-pill px-3 shadow-sm ms-1" href="{{ route('add_purchase') }}">
-                                            <i class="fa fa-plus me-1"></i> Add
+                                        <a href="{{ route('Purchase.home') }}" class="btn btn-outline-secondary btn-sm rounded-pill px-2" title="Reset"><i class="fa fa-refresh"></i> Reset</a>
+                                    </div>
+
+                                    <div>
+                                        <a class="btn btn-primary btn-sm rounded-pill px-3 shadow-sm" href="{{ route('add_purchase') }}">
+                                            <i class="fa fa-plus me-1"></i> Add Purchase
                                         </a>
                                     </div>
                                 </div>
@@ -210,35 +224,6 @@
             </div>
 
             <div class="card shadow-sm border-0">
-                <div class="card-header bg-white d-flex justify-content-between align-items-center py-2 border-bottom">
-                    <span class="fw-bold text-muted small text-uppercase"><i class="fa fa-shopping-cart me-1"></i> Purchase Ledger</span>
-                    <div class="column-picker-dropdown">
-                        <button class="btn btn-outline-secondary btn-sm px-3 rounded-pill" type="button" id="columnPickerBtn">
-                            <i class="fa fa-columns me-1"></i> Columns
-                        </button>
-                        <div class="column-picker-menu shadow" id="columnPickerMenu">
-                            <div class="p-2 border-bottom fw-bold small text-muted">Show/Hide Columns</div>
-                            <label class="column-picker-item"><input type="checkbox" data-column="1" checked> #</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="2" checked> Type</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="3" checked> Inv#</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="4" checked> DC #</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="5" checked> DC Date</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="6" checked> Date</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="7" checked> Party Type</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="8" checked> Party / Customer</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="9" checked> Warehouse</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="10" checked> Items</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="11" checked> Item Qty</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="12" checked> T. Qty</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="13" checked> Inv Total</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="14" checked> Disc</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="15" checked> WHT</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="16" checked> Net</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="17" checked> Created</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="18" checked> Status</label>
-                        </div>
-                    </div>
-                </div>
 
                 <div class="card-body p-0">
                     <div class="table-responsive">
@@ -361,24 +346,42 @@
     </div>
 </div>
 
+<!-- Hidden Column Picker Template to be placed dynamically in DataTable Header -->
+<div id="columnPickerMenuContainer" class="d-none">
+    <div class="column-picker-dropdown ms-2">
+        <button class="btn btn-outline-secondary btn-sm px-3 rounded-pill" type="button" id="columnPickerBtn">
+            <i class="fa fa-columns me-1"></i> Columns
+        </button>
+        <div class="column-picker-menu shadow" id="columnPickerMenu">
+            <div class="p-2 border-bottom fw-bold small text-muted">Show/Hide Columns</div>
+            <label class="column-picker-item"><input type="checkbox" data-column="1" checked> #</label>
+            <label class="column-picker-item"><input type="checkbox" data-column="2" checked> Type</label>
+            <label class="column-picker-item"><input type="checkbox" data-column="3" checked> Inv#</label>
+            <label class="column-picker-item"><input type="checkbox" data-column="4" checked> DC #</label>
+            <label class="column-picker-item"><input type="checkbox" data-column="5" checked> DC Date</label>
+            <label class="column-picker-item"><input type="checkbox" data-column="6" checked> Date</label>
+            <label class="column-picker-item"><input type="checkbox" data-column="7" checked> Party Type</label>
+            <label class="column-picker-item"><input type="checkbox" data-column="8" checked> Party / Customer</label>
+            <label class="column-picker-item"><input type="checkbox" data-column="9" checked> Warehouse</label>
+            <label class="column-picker-item"><input type="checkbox" data-column="10" checked> Items</label>
+            <label class="column-picker-item"><input type="checkbox" data-column="11" checked> Item Qty</label>
+            <label class="column-picker-item"><input type="checkbox" data-column="12" checked> T. Qty</label>
+            <label class="column-picker-item"><input type="checkbox" data-column="13" checked> Inv Total</label>
+            <label class="column-picker-item"><input type="checkbox" data-column="14" checked> Disc</label>
+            <label class="column-picker-item"><input type="checkbox" data-column="15" checked> WHT</label>
+            <label class="column-picker-item"><input type="checkbox" data-column="16" checked> Net</label>
+            <label class="column-picker-item"><input type="checkbox" data-column="17" checked> Created</label>
+            <label class="column-picker-item"><input type="checkbox" data-column="18" checked> Status</label>
+        </div>
+    </div>
+</div>
+
 @endsection
 
 @section('scripts')
 <script>
     $(document).ready(function() {
         $('.select2').select2({ width: '100%' });
-
-        // Toggle Column Picker Menu
-        $('#columnPickerBtn').on('click', function(e) {
-            e.stopPropagation();
-            $('#columnPickerMenu').toggleClass('show');
-        });
-
-        $(document).on('click', function(e) {
-            if (!$(e.target).closest('.column-picker-dropdown').length) {
-                $('#columnPickerMenu').removeClass('show');
-            }
-        });
 
         const storageKey = 'purchase_table_cols_v5';
         
@@ -396,12 +399,27 @@
                 "search": "_INPUT_",
                 "searchPlaceholder": "Search purchases..."
             },
-            dom: '<"d-flex justify-content-between align-items-center p-2"lBf>rt<"d-flex justify-content-between align-items-center p-2"ip>',
+            dom: '<"d-flex justify-content-between align-items-center p-2"lB<"d-flex align-items-center"f<"column-picker-slot">>>rt<"d-flex justify-content-between align-items-center p-2"ip>',
             buttons: [
                 { extend: 'copy', className: 'btn btn-outline-secondary btn-sm rounded-pill px-3 me-1' },
                 { extend: 'csv', className: 'btn btn-outline-success btn-sm rounded-pill px-3 me-1' },
                 { extend: 'excel', className: 'btn btn-outline-primary btn-sm rounded-pill px-3 me-1' }
             ]
+        });
+
+        // Inject Column Picker dropdown right next to Search filter box
+        $('.column-picker-slot').html($('#columnPickerMenuContainer').html());
+
+        // Toggle Column Picker Menu
+        $(document).on('click', '#columnPickerBtn', function(e) {
+            e.stopPropagation();
+            $('#columnPickerMenu').toggleClass('show');
+        });
+
+        $(document).on('click', function(e) {
+            if (!$(e.target).closest('.column-picker-dropdown').length) {
+                $('#columnPickerMenu').removeClass('show');
+            }
         });
 
         // Apply saved column visibility
@@ -418,7 +436,7 @@
         }
 
         // Handle Checkbox Change
-        $('#columnPickerMenu input').on('change', function() {
+        $(document).on('change', '#columnPickerMenu input', function() {
             const colIdx = parseInt($(this).data('column'));
             const isChecked = $(this).is(':checked');
             

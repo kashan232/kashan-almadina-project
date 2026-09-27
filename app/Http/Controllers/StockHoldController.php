@@ -96,14 +96,22 @@ class StockHoldController extends Controller
 
     public function partyList(Request $request)
     {
-        $type = $request->type; // vendor, customer, walkin
+        $type = strtolower($request->type ?? 'vendor'); // vendor, customer, walkin, walking
         if ($type === 'vendor') {
-            return Vendor::orderBy('name')->get()->map(fn($v) => ['id' => $v->id, 'text' => $v->name]);
+            return Vendor::withInactive()->orderBy('name')->get()->map(fn($v) => ['id' => $v->id, 'text' => $v->name]);
         }
         
         $customerType = ($type === 'walkin' || $type === 'walking') ? 'Walking Customer' : 'Main Customer';
         
-        return Customer::where('customer_type', $customerType)
+        return Customer::withInactive()
+            ->where(function($q) use ($customerType, $type) {
+                if ($type === 'walkin' || $type === 'walking') {
+                    $q->where('customer_type', 'Walking Customer');
+                } else {
+                    $q->where('customer_type', 'Main Customer')
+                      ->orWhereNull('customer_type');
+                }
+            })
             ->orderBy('customer_name')
             ->get()
             ->map(fn($c) => ['id' => $c->id, 'text' => $c->customer_name]);

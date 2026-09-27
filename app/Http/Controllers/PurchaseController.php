@@ -47,6 +47,19 @@ class PurchaseController extends Controller
             $query->where('created_by', $request->user_id);
         }
 
+        if ($request->filled('party_type')) {
+            if ($request->party_type === 'Vendor') {
+                $query->where('purchasable_type', 'App\\Models\\Vendor');
+            } elseif (in_array($request->party_type, ['Customer', 'Walking Customer'])) {
+                $query->where('purchasable_type', 'App\\Models\\Customer');
+            }
+        }
+
+        if ($request->filled('vendor_id')) {
+            $query->where('purchasable_type', 'App\\Models\\Vendor')
+                  ->where('purchasable_id', $request->vendor_id);
+        }
+
         if ($request->filled('customer_id')) {
             $query->where('purchasable_type', 'App\\Models\\Customer')
                   ->where('purchasable_id', $request->customer_id);
@@ -55,7 +68,8 @@ class PurchaseController extends Controller
         $Purchase = $query->orderByDesc('id')->get();
         $users = User::orderBy('name')->get();
         $customers = Customer::orderBy('customer_name')->get();
-        return view("admin_panel.purchase.index", compact('Purchase', 'users', 'customers'));
+        $vendors = Vendor::orderBy('name')->get();
+        return view("admin_panel.purchase.index", compact('Purchase', 'users', 'customers', 'vendors'));
     }
     public function add_purchase()
     {
@@ -775,17 +789,20 @@ class PurchaseController extends Controller
         $type = strtolower($request->query('type', 'vendor'));
 
         if ($type === 'vendor') {
-            $data = Vendor::orderBy('name')->get();
+            $data = Vendor::withInactive()->orderBy('name')->get();
             return response()->json($data->map(function($v) {
                 return ['id' => $v->id, 'text' => $v->name];
             }));
         }
 
-        $query = Customer::query();
-        if ($type === 'walkin') {
+        $query = Customer::withInactive();
+        if ($type === 'walkin' || $type === 'walking') {
             $query->where('customer_type', 'Walking Customer');
         } elseif ($type === 'customer') {
-            $query->where('customer_type', '!=', 'Walking Customer');
+            $query->where(function($q) {
+                $q->where('customer_type', 'Main Customer')
+                  ->orWhereNull('customer_type');
+            });
         }
 
         $data = $query->orderBy('customer_name')->get();

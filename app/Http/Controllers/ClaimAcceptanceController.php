@@ -234,23 +234,26 @@ class ClaimAcceptanceController extends Controller
 
     public function partyList(Request $request)
     {
-        $type = $request->type;
+        $type = strtolower($request->type ?? 'vendor');
         $q = $request->q;
         
         if ($type === 'vendor') {
-            $data = Vendor::when($q, function($query) use ($q) {
+            $data = Vendor::withInactive()->when($q, function($query) use ($q) {
                 $query->where('name', 'like', "%$q%")->orWhere('id', 'like', "%$q%");
-            })->limit(15)->get()->map(fn($v) => ['id' => $v->id, 'text' => $v->id . ' - ' . $v->name]);
-        } elseif ($type === 'walkin') {
-            $data = Customer::where('customer_type', 'Walking Customer')
+            })->limit(30)->get()->map(fn($v) => ['id' => $v->id, 'text' => $v->id . ' - ' . $v->name]);
+        } elseif ($type === 'walkin' || $type === 'walking') {
+            $data = Customer::withInactive()->where('customer_type', 'Walking Customer')
                 ->when($q, function($query) use ($q) {
                     $query->where('customer_name', 'like', "%$q%")->orWhere('id', 'like', "%$q%");
-                })->limit(15)->get()->map(fn($c) => ['id' => $c->id, 'text' => $c->id . ' - ' . $c->customer_name]);
+                })->limit(30)->get()->map(fn($c) => ['id' => $c->id, 'text' => $c->id . ' - ' . $c->customer_name]);
         } else {
-            $data = Customer::where('customer_type', 'Main Customer')
+            $data = Customer::withInactive()->where(function($sub) {
+                    $sub->where('customer_type', 'Main Customer')
+                        ->orWhereNull('customer_type');
+                })
                 ->when($q, function($query) use ($q) {
                     $query->where('customer_name', 'like', "%$q%")->orWhere('id', 'like', "%$q%");
-                })->limit(15)->get()->map(fn($c) => ['id' => $c->id, 'text' => $c->id . ' - ' . $c->customer_name]);
+                })->limit(30)->get()->map(fn($c) => ['id' => $c->id, 'text' => $c->id . ' - ' . $c->customer_name]);
         }
         return response()->json($data);
     }

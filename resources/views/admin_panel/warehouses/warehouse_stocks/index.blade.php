@@ -161,11 +161,9 @@
                 <div class="col-12">
                     <div class="card border-0 shadow-sm">
                         <div class="card-body py-1 px-2">
-                            <div class="row g-1 align-items-center">
-                                <div class="col-md-6">
-                                    <h6 class="mb-0 fw-bold text-dark ms-2"><i class="fa fa-cubes me-2 text-primary"></i>Warehouse Stock Management</h6>
-                                </div>
-                                <div class="col-md-6 text-end d-flex justify-content-end gap-1">
+                            <div class="d-flex align-items-center justify-content-between flex-wrap gap-1">
+                                <h6 class="mb-0 fw-bold text-dark ms-2"><i class="fa fa-cubes me-2 text-primary"></i>Warehouse Stock Management</h6>
+                                <div class="d-flex align-items-center gap-1">
                                     <a class="btn btn-success btn-sm rounded-pill px-3 shadow-sm py-1" href="{{ route('warehouse_stocks.export') }}" style="font-size: 11px;">
                                         <i class="fa fa-file-excel-o me-1"></i> Export Excel
                                     </a>
@@ -201,37 +199,37 @@
                 {{-- Live Balances Matrix View --}}
                 <div class="card shadow-sm">
                     <div class="card-header bg-white py-1 border-bottom">
-                        <div class="row align-items-center">
-                            <div class="col-md-9">
-                                <form action="{{ route('warehouse_stocks.index') }}" method="GET" class="d-flex align-items-center flex-wrap gap-1 m-0">
-                                    <input type="hidden" name="view" value="balances">
-                                    <select name="claim_type" class="form-select form-select-sm" style="width: 110px; font-size: 11px;">
-                                        <option value="none" {{ $filter_claim_type == 'none' ? 'selected' : '' }}>Normal</option>
-                                        <option value="company" {{ $filter_claim_type == 'company' ? 'selected' : '' }}>Company Claim</option>
-                                        <option value="customer" {{ $filter_claim_type == 'customer' ? 'selected' : '' }}>Customer Claim</option>
-                                        <option value="all" {{ $filter_claim_type == 'all' ? 'selected' : '' }}>All Types</option>
-                                    </select>
-                                    <select name="filter_brand_id" id="filter_brand_id" class="form-select form-select-sm" style="width: 120px; font-size: 11px;">
-                                        <option value="">All Brands</option>
-                                        @foreach($brands as $b)
-                                            <option value="{{ $b->id }}" {{ $filter_brand_id == $b->id ? 'selected' : '' }}>{{ $b->name }}</option>
-                                        @endforeach
-                                    </select>
-                                    <select name="filter_product_id[]" id="filter_product_id" class="form-select form-select-sm select2" multiple="multiple" data-placeholder="Select Items" style="min-width: 180px; font-size: 11px;">
-                                        @foreach($filterProducts as $fp)
-                                            <option value="{{ $fp->id }}" selected>{{ $fp->id }} - {{ $fp->name }}</option>
-                                        @endforeach
-                                    </select>
-                                    <select name="filter_warehouse_id[]" class="form-select form-select-sm select2" multiple="multiple" data-placeholder="All Warehouses" style="min-width: 140px;">
-                                        @foreach($allWarehouses as $aw)
-                                            <option value="{{ $aw->id }}" {{ in_array($aw->id, request('filter_warehouse_id', [])) ? 'selected' : '' }}>{{ $aw->warehouse_name }}</option>
-                                        @endforeach
-                                    </select>
-                                    <button type="submit" class="btn btn-primary btn-sm py-1 px-2" style="font-size: 11px;"><i class="fa fa-filter"></i> Filter</button>
-                                    <a href="{{ route('warehouse_stocks.index', ['view' => 'balances']) }}" class="btn btn-outline-secondary btn-sm py-1 px-2" style="font-size: 11px;">Reset</a>
-                                </form>
-                            </div>
-                            <div class="col-md-3 text-end">
+                        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                            <form action="{{ route('warehouse_stocks.index') }}" method="GET" class="d-flex align-items-center flex-wrap gap-1 m-0">
+                                <input type="hidden" name="view" value="balances">
+                                <select name="claim_type" class="form-select form-select-sm" style="width: 110px; font-size: 11px;">
+                                    <option value="none" {{ $filter_claim_type == 'none' ? 'selected' : '' }}>Normal</option>
+                                    <option value="company" {{ $filter_claim_type == 'company' ? 'selected' : '' }}>Company Claim</option>
+                                    <option value="customer" {{ $filter_claim_type == 'customer' ? 'selected' : '' }}>Customer Claim</option>
+                                    <option value="all" {{ $filter_claim_type == 'all' ? 'selected' : '' }}>All Types</option>
+                                </select>
+                                <select name="filter_brand_id" id="filter_brand_id" class="form-select form-select-sm" style="width: 120px; font-size: 11px;">
+                                    <option value="">All Brands</option>
+                                    @foreach($brands as $b)
+                                        <option value="{{ $b->id }}" {{ $filter_brand_id == $b->id ? 'selected' : '' }}>{{ $b->name }}</option>
+                                    @endforeach
+                                </select>
+                                <select name="filter_product_id[]" id="filter_product_id" class="form-select form-select-sm select2" multiple="multiple" data-placeholder="Select Items" style="min-width: 180px; font-size: 11px;">
+                                    @foreach($filterProducts as $fp)
+                                        <option value="{{ $fp->id }}" selected>{{ $fp->id }} - {{ $fp->name }}</option>
+                                    @endforeach
+                                </select>
+                                <select name="filter_warehouse_id[]" class="form-select form-select-sm select2" multiple="multiple" data-placeholder="All Warehouses" style="min-width: 140px;">
+                                    @foreach($allWarehouses as $aw)
+                                        <option value="{{ $aw->id }}" {{ in_array($aw->id, request('filter_warehouse_id', [])) ? 'selected' : '' }}>{{ $aw->warehouse_name }}</option>
+                                    @endforeach
+                                </select>
+                                <button type="submit" class="btn btn-primary btn-sm py-1 px-2" style="font-size: 11px;"><i class="fa fa-filter"></i> Filter</button>
+                                <a href="{{ route('warehouse_stocks.index', ['view' => 'balances']) }}" class="btn btn-outline-secondary btn-sm py-1 px-2" style="font-size: 11px;">Reset</a>
+                            </form>
+
+                            <div class="d-flex align-items-center gap-1">
+                                <div id="dtButtonsSlot"></div>
                                 <div class="column-picker-dropdown">
                                     <button class="btn btn-outline-secondary btn-sm px-2 py-1 rounded-pill" style="font-size: 11px;" type="button" id="columnPickerBtn">
                                         <i class="fa fa-columns me-1"></i> Columns
@@ -529,17 +527,18 @@
 
         @if($view == 'balances')
             var dt = $('#stockBalancesTable').DataTable({
-                paging: false,
+                paging: true,
+                pageLength: 25,
+                lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
                 order: [[1, 'asc']],
                 autoWidth: false,
                 language: { searchPlaceholder: "Search products..." },
-                dom: 'Bfrtip',
+                dom: '<"d-flex justify-content-between align-items-center p-2"lBf>rt<"d-flex justify-content-between align-items-center p-2"ip>',
                 buttons: [
-                    'copyHtml5',
-                    'excelHtml5',
-                    'csvHtml5',
-                    'pdfHtml5',
-                    'print'
+                    { extend: 'copyHtml5', className: 'btn btn-outline-secondary btn-sm rounded-pill px-2 py-0 me-1' },
+                    { extend: 'excelHtml5', className: 'btn btn-outline-primary btn-sm rounded-pill px-2 py-0 me-1' },
+                    { extend: 'csvHtml5', className: 'btn btn-outline-success btn-sm rounded-pill px-2 py-0 me-1' },
+                    { extend: 'pdfHtml5', className: 'btn btn-outline-danger btn-sm rounded-pill px-2 py-0 me-1' }
                 ],
                 footerCallback: function (row, data, start, end, display) {
                     var api = this.api();
@@ -574,6 +573,9 @@
                 }
             });
 
+            // Move buttons into header slot
+            $('#dtButtonsSlot').append($('.dt-buttons'));
+
             // Apply saved column visibility
             const savedState = localStorage.getItem(storageKey);
             if (savedState) {
@@ -604,6 +606,7 @@
         @else
             $('#adjustmentTable').DataTable({
                 pageLength: 50,
+                lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
                 order: [[0, 'desc']],
                 autoWidth: false,
                 language: { searchPlaceholder: "Search history..." }
