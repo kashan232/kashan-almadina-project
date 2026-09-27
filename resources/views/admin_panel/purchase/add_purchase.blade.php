@@ -608,7 +608,7 @@
                         @foreach($purchase->accountAllocations as $index => $acc)
                             <tr>
                                 <td>
-                                    <select name="account_head_id[]" class="form-select form-select-sm accountHead">
+                                    <select name="account_head_id[]" class="form-select form-select-sm accountHead select2" style="width:100%;">
                                         @foreach ($AccountHeads as $head)
                                             @if(strtoupper($head->name) == 'INCOME' || $head->id == 2)
                                             <option value="{{ $head->id }}" selected>{{ $head->name }}</option>
@@ -617,7 +617,7 @@
                                     </select>
                                 </td>
                                 <td>
-                                    <select name="account_id[]" class="form-select form-select-sm accountSub">
+                                    <select name="account_id[]" class="form-select form-select-sm accountSub select2" style="width:100%;">
                                         <option value="" disabled>Select Account</option>
                                         @php
                                             $headAccounts = \App\Models\Account::where('head_id', $acc->account_head_id)->where('status', 1)->get();
@@ -678,8 +678,8 @@
               <div class="d-flex justify-content-between align-items-center py-1 border-bottom px-1">
                 <span class="text-dark small fw-bold">WHT (Tax)</span>
                 <div class="d-flex align-items-center gap-2">
-                  <div class="d-flex gap-1" style="width:190px;">
-                    <select id="wht_head_id" class="form-select form-select-sm py-0" style="width:80px;">
+                  <div class="d-flex gap-1" style="width:230px;">
+                    <select id="wht_head_id" class="form-select form-select-sm py-0 select2" style="width:90px;">
                       @foreach($AccountHeads as $head)
                           @if(strtoupper($head->name) == 'EXPENSE' || $head->id == 1)
                           <option value="{{ $head->id }}" selected>
@@ -688,7 +688,7 @@
                           @endif
                       @endforeach
                     </select>
-                    <select name="wht_account_id" id="wht_account_id" class="form-select form-select-sm py-0" style="flex-grow:1;">
+                    <select name="wht_account_id" id="wht_account_id" class="form-select form-select-sm py-0 select2" style="flex-grow:1;">
                       <option value="">Account</option>
                       @if(isset($purchase) && $purchase->whtAccount)
                           @php
@@ -1297,20 +1297,20 @@
                 const row = `
                     <tr>
                         <td>
-                            <select name="account_head_id[]" class="form-control form-control-sm accountHead">
+                            <select name="account_head_id[]" class="form-control form-control-sm accountHead select2" style="width:100%;">
                                 <option value="" disabled>Select Head</option>
                                 ${headsOptions}
                             </select>
                             ${getError('account_head_id')}
                         </td>
                         <td>
-                            <select name="account_id[]" class="form-control form-control-sm accountSub">
+                            <select name="account_id[]" class="form-control form-control-sm accountSub select2" style="width:100%;">
                                 <option value="${acc}" selected>${accName}</option>
                             </select>
                             ${getError('account_id')}
                         </td>
                         <td>
-                            <input type="number" step="0.01" name="account_amount[]" class="form-control form-control-sm accountAmount" value="${amt}" disabled>
+                            <input type="number" step="0.01" name="account_amount[]" class="form-control form-control-sm accountAmount text-end" value="${amt}" disabled>
                             ${getError('account_amount')}
                         </td>
                         <td>
@@ -1318,7 +1318,11 @@
                         </td>
                     </tr>
                 `;
-                $('#accountsTable tbody').append(row);
+                const $row = $(row);
+                $('#accountsTable tbody').append($row);
+                if ($.fn.select2) {
+                    $row.find('.select2').select2({ width: '100%' });
+                }
                 
                 if(head) {
                      const $lastRow = $('#accountsTable tbody tr:last');
@@ -1343,7 +1347,11 @@
                                 });
                             }
                             $accountSelect.html(html);
-                            $accountSelect.trigger('change');
+                            if ($.fn.select2) {
+                                $accountSelect.select2({ width: '100%' }).trigger('change');
+                            } else {
+                                $accountSelect.trigger('change');
+                            }
                             if (typeof recalcAccountsTotal === 'function') recalcAccountsTotal();
                         }
                     });
@@ -1410,6 +1418,7 @@
     $(document).ready(function() {
         if ($.fn.select2) {
             $('#vendor_id_select').select2({ placeholder: 'Select Party', width: '100%', allowClear: true });
+            $('.accounts-section .select2, #wht_head_id, #wht_account_id').select2({ width: '100%' });
         }
         $('.vendor-type-radio').on('change', function() {
             // Handled in the footer script to ensure loadParties is defined
@@ -2233,6 +2242,11 @@ $(document).ready(function() {
                     html = '<option value="" disabled>No Accounts Found</option>';
                 }
                 $accSelect.html(html);
+                if ($.fn.select2) {
+                    $accSelect.select2({ width: '100%' }).trigger('change');
+                } else {
+                    $accSelect.trigger('change');
+                }
                 
                 // When head changes, disable amount until new account is selected
                 var $amt = $row.find('.accountAmount');
@@ -2250,6 +2264,9 @@ $(document).ready(function() {
 
         if (!headId) {
             $accSelect.html('<option value="">Select Account</option>');
+            if ($.fn.select2) {
+                $accSelect.select2({ width: '100%' }).trigger('change');
+            }
             return;
         }
 
@@ -2266,6 +2283,9 @@ $(document).ready(function() {
                     html = '<option value="">No Accounts Found</option>';
                 }
                 $accSelect.html(html);
+                if ($.fn.select2) {
+                    $accSelect.select2({ width: '100%' }).trigger('change');
+                }
             },
             error: function(err) {
                 console.error('AJAX Error:', err.statusText);
@@ -2311,7 +2331,7 @@ $(document).ready(function() {
     window.appendAccountRow = function() {
         var newRow = `<tr>
             <td>
-                <select name="account_head_id[]" class="form-control form-control-sm accountHead">
+                <select name="account_head_id[]" class="form-control form-control-sm accountHead select2" style="width:100%;">
                     @foreach ($AccountHeads as $head)
                         @if(strtoupper($head->name) == 'INCOME' || $head->id == 2)
                         <option value="{{ $head->id }}" selected>{{ $head->name }}</option>
@@ -2320,7 +2340,7 @@ $(document).ready(function() {
                 </select>
             </td>
             <td>
-                <select name="account_id[]" class="form-control form-control-sm accountSub">
+                <select name="account_id[]" class="form-control form-control-sm accountSub select2" style="width:100%;">
                     <option value="" disabled selected>Select Account</option>
                     @if(isset($incomeAccounts))
                         @foreach($incomeAccounts as $incAcc)
@@ -2330,7 +2350,7 @@ $(document).ready(function() {
                 </select>
             </td>
             <td>
-                <input type="number" step="0.01" name="account_amount[]" class="form-control form-control-sm accountAmount" value="0" disabled>
+                <input type="number" step="0.01" name="account_amount[]" class="form-control form-control-sm accountAmount text-end" value="0" disabled>
             </td>
             <td>
                 <button type="button" class="btn btn-sm btn-danger removeAccountRow">X</button>
@@ -2338,6 +2358,9 @@ $(document).ready(function() {
         </tr>`;
         var $newRow = $(newRow);
         $('#accountsTable tbody').append($newRow);
+        if ($.fn.select2) {
+            $newRow.find('.select2').select2({ width: '100%' });
+        }
         $newRow.find('.accountHead').trigger('change');
     };
 
@@ -2355,14 +2378,15 @@ $(document).ready(function() {
     window.recalcAccountsTotal = function() {
         var total = 0;
         $('.accountAmount').each(function() {
-            total += parseFloat($(this).val()) || 0;
+            var rawVal = ($(this).val() + '').replace(/,/g, '');
+            total += parseFloat(rawVal) || 0;
         });
         $('#accountsTotal').val(total.toFixed(2));
         // Responsibility to update overallDiscount is now in recalcSummary
         if (typeof window.recalcSummary === 'function') window.recalcSummary();
     }
 
-    $(document).on('input', '.accountAmount', function() {
+    $(document).on('input change', '.accountAmount', function() {
         window.recalcAccountsTotal();
     });
 
