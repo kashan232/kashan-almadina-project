@@ -2282,7 +2282,12 @@ class VoucherController extends Controller
 
     public function all_journal_vochers(Request $request)
     {
-        $query = JournalVoucher::query();
+        $query = JournalVoucher::where('jvid', 'NOT LIKE', 'SR-DISC-%')
+            ->where('jvid', 'NOT LIKE', 'SJ-DISC-%')
+            ->where('jvid', 'NOT LIKE', 'PJ-%')
+            ->where('jvid', 'NOT LIKE', 'PRJ-%')
+            ->where('jvid', 'NOT LIKE', 'SJ-%')
+            ->where('jvid', 'NOT LIKE', 'SR-%');
         $dateCol = $this->getDateColumn('journal_vouchers');
         if ($request->filled('start_date')) $query->whereDate(DB::raw($dateCol), '>=', $request->start_date);
         if ($request->filled('end_date')) $query->whereDate(DB::raw($dateCol), '<=', $request->end_date);
