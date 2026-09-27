@@ -23,36 +23,82 @@ class BasicPermissionsSeeder extends Seeder
         \DB::table('roles')->truncate();
         \DB::statement('SET FOREIGN_KEY_CHECKS=1;');
 
-        // One permission per module only.
+        // Comprehensive list of module and report permissions
         $permissions = [
+            // Core & Setup
             'Dashboard',
+            'Users',
+            'Roles',
+            'Permissions',
+            'Branches',
+            'User Groups',
             'Products',
             'Category',
             'Sub Category',
             'Brands',
             'Units',
-            'Inward Gatepass',
-            'Purchase',
-            'Stock Wastage',
-            'Vendor',
-            'Warehouse',
-            'Stock Transfer',
-            'Sales',
-            'Sale Return',
-            'Stock Hold',
-            'Customer',
-            'Sales Officer',
-            'Zone',
             'Chart Of Accounts',
             'Narrations',
+            'Vendor',
+            'Customer',
+            'Warehouse',
+            'Sales Officer',
+            'Zone',
+
+            // Purchase & Inventory
+            'Purchase',
+            'Purchase Return',
+            'Inward Gatepass',
+            'Add Gatepass',
+            'Warehouse Stock',
+
+            // Sales
+            'Sales',
+            'Sale Return',
+
+            // General & Hold
+            'Stock Transfer',
+            'Stock Wastage',
+            'Stock Hold',
+            'Stock Release',
+            'Rollback Posting',
+            'Un Post Entries',
+            'General Ledger',
+
+            // Claims
+            'Customer Claim',
+            'Claim Acceptance',
+            'Claim Receipt',
+
+            // Vouchers
             'Receipts Voucher',
             'Payment Voucher',
             'Expense Voucher',
+            'Income Voucher',
             'Journal Voucher',
+            'Adjustment Voucher',
+
+            // Reports
             'Reports',
-            'Users',
-            'Roles',
-            'Branches'
+            'Reports Dashboard',
+            'Daily Activity Report',
+            'Sales Report',
+            'Customer Outstanding Balance',
+            'Purchase Report',
+            'Claim Report',
+            'Claim Acceptance Report',
+            'Claim Receipt Report',
+            'Stock Report',
+            'Item Stock Ledger',
+            'Hold & Release Summary',
+            'Stock Wastage Report',
+            'Stock Transfer Report',
+            'Receipt Voucher Report',
+            'Payment Voucher Report',
+            'Expense Voucher Report',
+            'Income Voucher Report',
+            'Journal Voucher Report',
+            'Adjustment Voucher Report'
         ];
 
         foreach ($permissions as $p) {
