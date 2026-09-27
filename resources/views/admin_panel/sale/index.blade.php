@@ -152,49 +152,58 @@
         <div class="container-fluid pt-0">
             
             <!-- Filters Section -->
-            <div class="row mb-3">
+            <div class="row mb-2">
                 <div class="col-12">
                     <div class="card border-0 shadow-sm">
-                        <div class="card-body p-2" style="overflow: visible;">
-                            <form action="{{ route('sale.index') }}" method="GET" class="row g-2 align-items-center">
+                        <div class="card-body p-1" style="overflow: visible;">
+                            <form action="{{ route('sale.index') }}" method="GET" class="row g-1 align-items-center">
                                 <div class="col-md-2">
-                                    <h6 class="mb-0 fw-bold text-dark ms-2 small"><i class="fa fa-shopping-cart me-2 text-primary"></i>Sales & Bookings</h6>
+                                    <h6 class="mb-0 fw-bold text-dark ms-1 small"><i class="fa fa-shopping-cart me-1 text-primary"></i>Sales List</h6>
                                 </div>
                                 <div class="col-md-3">
                                     <div class="input-group input-group-sm">
-                                        <span class="input-group-text bg-white border-end-0 small fw-bold text-muted">Range</span>
-                                        <input type="date" name="start_date" class="form-control border-start-0" value="{{ request('start_date') }}">
-                                        <input type="date" name="end_date" class="form-control" value="{{ request('end_date') }}">
+                                        <span class="input-group-text bg-white border-end-0 small fw-bold text-muted px-1">Range</span>
+                                        <input type="date" name="start_date" class="form-control border-start-0 px-1" value="{{ request('start_date') }}">
+                                        <input type="date" name="end_date" class="form-control px-1" value="{{ request('end_date') }}">
                                     </div>
                                 </div>
                                 <div class="col-md-2">
                                     <div class="input-group input-group-sm">
-                                        <span class="input-group-text bg-white border-end-0 small fw-bold text-muted">Status</span>
-                                        <select name="status" class="form-select form-select-sm select2 border-start-0">
+                                        <span class="input-group-text bg-white border-end-0 small fw-bold text-muted px-1">Customer</span>
+                                        <select name="customer_id" class="form-select form-select-sm select2 border-start-0">
                                             <option value="">All</option>
-                                            <option value="Unposted" {{ request('status') == 'Unposted' ? 'selected' : '' }}>Unposted</option>
-                                            <option value="Posted" {{ request('status') == 'Posted' ? 'selected' : '' }}>Posted</option>
+                                            @foreach($customers as $c)
+                                                <option value="{{ $c->id }}" {{ request('customer_id') == $c->id ? 'selected' : '' }}>{{ $c->customer_name }}</option>
+                                            @endforeach
                                         </select>
                                     </div>
                                 </div>
                                 <div class="col-md-2">
                                     <div class="input-group input-group-sm">
-                                        <span class="input-group-text bg-white border-end-0 small fw-bold text-muted">User</span>
-                                        <select name="created_by" class="form-select form-select-sm select2 border-start-0">
+                                        <span class="input-group-text bg-white border-end-0 small fw-bold text-muted px-1">Group</span>
+                                        <select name="user_group_id" class="form-select form-select-sm select2 border-start-0">
                                             <option value="">All</option>
-                                            @foreach($users as $user)
-                                                <option value="{{ $user->id }}" {{ request('created_by') == $user->id ? 'selected' : '' }}>{{ $user->name }}</option>
+                                            @foreach($userGroups as $grp)
+                                                <option value="{{ $grp->id }}" {{ request('user_group_id') == $grp->id ? 'selected' : '' }}>{{ $grp->name }}</option>
                                             @endforeach
                                         </select>
                                     </div>
                                 </div>
                                 <div class="col-md-3 text-end">
                                     <div class="d-flex gap-1 justify-content-end align-items-center">
-                                        <button type="submit" class="btn btn-primary btn-sm rounded-pill px-3 shadow-sm">Filter</button>
+                                        <div class="input-group input-group-sm me-1" style="max-width: 110px;">
+                                            <select name="created_by" class="form-select form-select-sm select2">
+                                                <option value="">User: All</option>
+                                                @foreach($users as $user)
+                                                    <option value="{{ $user->id }}" {{ request('created_by') == $user->id ? 'selected' : '' }}>{{ $user->name }}</option>
+                                                @endforeach
+                                            </select>
+                                        </div>
+                                        <button type="submit" class="btn btn-primary btn-sm rounded-pill px-2 shadow-sm" style="font-size: 11px;">Filter</button>
                                         <a href="{{ route('sale.index') }}" class="btn btn-outline-secondary btn-sm rounded-pill px-2" title="Reset"><i class="fa fa-refresh"></i></a>
                                         
                                         <a class="btn btn-primary btn-sm rounded-pill px-2 shadow-sm ms-1" href="{{ route('sale.add') }}" style="font-size: 10px;">
-                                            <i class="fa fa-plus me-1"></i> Add Sale
+                                            <i class="fa fa-plus me-1"></i> Add
                                         </a>
                                     </div>
                                 </div>
@@ -205,7 +214,7 @@
             </div>
 
             <div class="card shadow-sm border-0">
-                <div class="card-header bg-white d-flex justify-content-between align-items-center py-2 border-bottom">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center py-1 border-bottom">
                     <span class="fw-bold text-muted small text-uppercase"><i class="fa fa-shopping-cart me-1"></i> Sales Ledger</span>
                     <div class="column-picker-dropdown">
                         <button class="btn btn-outline-secondary btn-sm px-3 rounded-pill" type="button" id="columnPickerBtn">
@@ -218,21 +227,18 @@
                             <label class="column-picker-item"><input type="checkbox" data-column="3" checked> Inv#</label>
                             <label class="column-picker-item"><input type="checkbox" data-column="4" checked> Manual Inv</label>
                             <label class="column-picker-item"><input type="checkbox" data-column="5" checked> Date</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="6" checked> Sale Type</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="7" checked> Source</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="8" checked> Party Type</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="9" checked> Customer</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="10" checked> Warehouse</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="11" checked> Items</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="12" checked> Item Qty</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="13" checked> T. Qty</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="14" checked> Inv Total</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="15" checked> Disc</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="16" checked> Receipts</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="17" checked> A/C Allocation</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="18" checked> Net Payble</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="19" checked> Created</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="20" checked> Status</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="6" checked> Party Type</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="7" checked> Customer</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="8" checked> Warehouse</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="9" checked> Items</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="10" checked> Item Qty</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="11" checked> T. Qty</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="12" checked> Inv Total</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="13" checked> Disc</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="14" checked> A/C Allocation</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="15" checked> Net Payable</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="16" checked> Created</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="17" checked> Status</label>
                         </div>
                     </div>
                 </div>
@@ -247,8 +253,6 @@
                                     <th>Inv#</th>
                                     <th>Manual Inv</th>
                                     <th>Date</th>
-                                    <th>Sale Type</th>
-                                    <th>Source</th>
                                     <th>Party Type</th>
                                     <th>Customer</th>
                                     <th>Warehouse</th>
@@ -257,9 +261,8 @@
                                     <th class="text-center">T. Qty</th>
                                     <th class="text-end">Inv Total</th>
                                     <th class="text-end">Disc</th>
-                                    <th class="text-end text-success">Receipts</th>
                                     <th class="text-end">A/C Allocation</th>
-                                    <th class="text-end text-primary">Net Payble</th>
+                                    <th class="text-end text-primary">Net Payable</th>
                                     <th>Created</th>
                                     <th class="text-center">Status</th>
                                     <th class="text-center" style="min-width: 120px;">Action</th>
@@ -282,20 +285,6 @@
                                     <td class="fw-bold text-primary">{{ (int) preg_replace('/[^0-9]/', '', $sale->invoice_no) }}</td>
                                     <td>{{ $sale->manual_invoice ?? '-' }}</td>
                                     <td class="small">{{ \Carbon\Carbon::parse($sale->entry_date ?? $sale->created_at)->format('d-M-Y') }}</td>
-                                    <td>
-                                        @if($sale->is_sale_order)
-                                            <span class="badge bg-danger rounded-pill px-2" style="font-size: 9px;"><i class="fa fa-calendar-check-o me-1"></i> Order</span>
-                                        @else
-                                            <span class="badge bg-success rounded-pill px-2" style="font-size: 9px;"><i class="fa fa-check-circle me-1"></i> Proper</span>
-                                        @endif
-                                    </td>
-                                    <td>
-                                        @if($sale->entry_status === 'Posted')
-                                            <span class="badge bg-success-subtle text-success border border-success px-1 py-0" style="font-size: 10px;">Direct</span>
-                                        @else
-                                            <span class="badge bg-info-subtle text-info border border-info px-1 py-0" style="font-size: 10px;">Booking</span>
-                                        @endif
-                                    </td>
                                     <td>
                                         @if($sale->p_type === 'vendor')
                                             <span class="badge bg-info-subtle text-info border border-info px-1 py-0" style="font-size: 10px;">Vendor</span>
@@ -325,7 +314,6 @@
 
                                     <td class="text-end fw-bold">{{ number_format($sale->sub_total2 ?? ($sale->items->sum('amount') ?? 0), 0) }}</td>
                                     <td class="text-end text-danger">{{ number_format($sale->discount_amount ?? 0, 0) }}</td>
-                                    <td class="text-end text-success">{{ number_format($saleReceipts, 0) }}</td>
                                     <td class="text-end">{{ number_format($saleReceipts, 0) }}</td>
                                     <td class="text-end fw-bold text-primary">{{ number_format($sale->total_balance, 0) }}</td>
 
@@ -410,14 +398,18 @@
         var dt = $('#saleListingTable').DataTable({
             "order": [[2, 'desc']], // Default sort by Inv#
             "pageLength": 25,
+            "lengthMenu": [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
+            "scrollX": true,
             "autoWidth": false,
             "language": {
                 "search": "_INPUT_",
                 "searchPlaceholder": "Search sales..."
             },
-            dom: 'Bfrtip',
+            dom: '<"d-flex justify-content-between align-items-center p-2"lBf>rt<"d-flex justify-content-between align-items-center p-2"ip>',
             buttons: [
-                'copyHtml5', 'excelHtml5', 'csvHtml5'
+                { extend: 'copy', className: 'btn btn-outline-secondary btn-sm rounded-pill px-3 me-1' },
+                { extend: 'csv', className: 'btn btn-outline-success btn-sm rounded-pill px-3 me-1' },
+                { extend: 'excel', className: 'btn btn-outline-primary btn-sm rounded-pill px-3 me-1' }
             ]
         });
 

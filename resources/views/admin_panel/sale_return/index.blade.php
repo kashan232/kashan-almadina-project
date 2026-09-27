@@ -142,14 +142,19 @@
                                 </button>
                                 <div class="column-picker-menu shadow" id="columnPickerMenu">
                                     <div class="p-2 border-bottom fw-bold small text-muted">Show/Hide Columns</div>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="1" checked> Type</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="2" checked> Inv#</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="0" checked> Type</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="1" checked> Inv#</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="2" checked> Date</label>
                                     <label class="column-picker-item"><input type="checkbox" data-column="3" checked> Original Sale</label>
                                     <label class="column-picker-item"><input type="checkbox" data-column="4" checked> Party Name</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="5" checked> Items</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="6" checked> Date</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="7" checked> Net Amount</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="8" checked> Status</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="5" checked> Warehouse</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="6" checked> Item</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="7" checked> Qty</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="8" checked> Total Qty</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="9" checked> Disc</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="10" checked> Net Amount</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="11" checked> Created By</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="12" checked> Status</label>
                                 </div>
                             </div>
                         </div>
@@ -161,41 +166,59 @@
                                         <tr>
                                             <th>Type</th>
                                             <th>Inv#</th>
+                                            <th>Date</th>
                                             <th>Original Sale</th>
                                             <th>Party Name</th>
-                                            <th>Items</th>
-                                            <th>Date</th>
+                                            <th>Warehouse</th>
+                                            <th>Item</th>
+                                            <th class="text-center">Qty</th>
+                                            <th class="text-center">Total Qty</th>
+                                            <th class="text-end">Disc</th>
                                             <th class="text-end">Net Amount</th>
                                             <th>Created By</th>
-                                    <th class="text-center">Status</th>
+                                            <th class="text-center">Status</th>
                                             <th class="text-center">Action</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         @foreach ($SaleReturns as $ret)
+                                        @php
+                                            $totalQty = $ret->items->sum('sales_qty');
+                                            $whNames = $ret->items->pluck('warehouse.warehouse_name')->filter()->unique()->implode(', ');
+                                            if (empty($whNames)) { $whNames = 'N/A'; }
+                                        @endphp
                                         <tr>
                                             <td class="text-muted small">SRJ</td>
                                             <td class="fw-bold text-primary">{{ preg_replace('/[^0-9]/', '', $ret->invoice_no) }}</td>
+                                            <td class="small">{{ \Carbon\Carbon::parse($ret->current_date)->format('d-M-Y') }}</td>
                                             <td>{{ $ret->sale->invoice_no ?? 'N/A' }}</td>
                                             <td class="fw-semibold text-dark small">{{ $ret->party_name }}</td>
+                                            <td class="small text-muted">{{ $whNames }}</td>
                                             <td class="py-1">
                                                 @foreach($ret->items as $item)
-                                                    <div class="item-detail-row">
+                                                    <div class="item-detail-row text-truncate" style="max-width: 180px;">
                                                         {{ $item->product->name ?? 'Unknown' }}
-                                                        <span class="text-primary fw-bold ms-1">({{ (float)$item->sales_qty }})</span>
                                                     </div>
                                                 @endforeach
                                             </td>
-                                            <td class="small">{{ \Carbon\Carbon::parse($ret->current_date)->format('d-M-Y') }}</td>
+                                            <td class="py-1 text-center">
+                                                @foreach($ret->items as $item)
+                                                    <div class="item-detail-row fw-bold text-primary">
+                                                        {{ (float)$item->sales_qty }}
+                                                    </div>
+                                                @endforeach
+                                            </td>
+                                            <td class="text-center fw-bold">{{ (float)$totalQty }}</td>
+                                            <td class="text-end text-muted">{{ number_format($ret->discount_amount ?? 0, 2) }}</td>
                                             <td class="text-end fw-bold">{{ number_format($ret->total_balance, 0) }}</td>
                                             <td>
-                                        @if($ret->creator)
-                                            <span class="text-dark small">{{ $ret->creator->name }}</span>
-                                        @else
-                                            <span class="text-muted small">System</span>
-                                        @endif
-                                    </td>
-                                    <td class="text-center">
+                                                @if($ret->creator)
+                                                    <span class="text-dark small">{{ $ret->creator->name }}</span>
+                                                @else
+                                                    <span class="text-muted small">System</span>
+                                                @endif
+                                            </td>
+                                            <td class="text-center">
                                                 @if($ret->status === 'Posted')
                                                     <span class="badge bg-success rounded-pill px-3">Posted</span>
                                                 @else
@@ -223,15 +246,15 @@
                                                                 <i class="fa fa-trash"></i>
                                                             </button>
                                                         </form>
-                                            @else
-                                                <a href="{{ route('sale.return.view', $ret->id) }}" class="btn btn-outline-info btn-xs px-1 py-0" title="View Return" style="height: 20px;">
-                                                    <i class="fa fa-eye"></i>
-                                                </a>
-                                            @endif
-                                        </div>
-                                    </td>
-                                </tr>
-                                @endforeach
+                                                    @else
+                                                        <a href="{{ route('sale.return.view', $ret->id) }}" class="btn btn-outline-info btn-xs px-1 py-0" title="View Return" style="height: 20px;">
+                                                            <i class="fa fa-eye"></i>
+                                                        </a>
+                                                    @endif
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        @endforeach
                                     </tbody>
                                 </table>
                             </div>
@@ -261,13 +284,20 @@
             }
         });
 
-        const storageKey = 'sale_return_table_cols_v1';
+        const storageKey = 'sale_return_table_cols_v2';
         
         var dt = $('#saleReturnTable').DataTable({
             destroy: true,
             scrollX: true,
             autoWidth: false,
             pageLength: 25,
+            lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
+            dom: '<"d-flex justify-content-between align-items-center mb-2"<"d-flex align-items-center gap-2"lB>f>rt<"d-flex justify-content-between align-items-center mt-2"ip>',
+            buttons: [
+                { extend: 'excel', className: 'btn btn-sm btn-outline-success', text: '<i class="fa fa-file-excel-o me-1"></i> Excel' },
+                { extend: 'csv', className: 'btn btn-sm btn-outline-info', text: '<i class="fa fa-file-text-o me-1"></i> CSV' },
+                { extend: 'copy', className: 'btn btn-sm btn-outline-secondary', text: '<i class="fa fa-copy me-1"></i> Copy' }
+            ],
             order: [], // Let backend sorting take precedence
             language: {
                 search: "_INPUT_",
@@ -283,7 +313,7 @@
                 const colIdx = parseInt($(this).data('column'));
                 const checked = columns.hasOwnProperty(colIdx) ? columns[colIdx] : true;
                 $(this).prop('checked', checked);
-                dt.column(colIdx - 1).visible(checked);
+                dt.column(colIdx).visible(checked);
             });
             dt.columns.adjust().draw(false);
         }
@@ -293,7 +323,7 @@
             const colIdx = parseInt($(this).data('column'));
             const isChecked = $(this).is(':checked');
             
-            dt.column(colIdx - 1).visible(isChecked);
+            dt.column(colIdx).visible(isChecked);
             dt.columns.adjust().draw(false);
             
             const state = {};

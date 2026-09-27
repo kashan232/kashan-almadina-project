@@ -44,6 +44,7 @@ class WarehouseStockController extends Controller
         $filter_claim_type = $request->get('claim_type', 'none'); // Default to 'none' (Normal)
         $filter_product_ids = (array) $request->get('filter_product_id', []);
         $filter_product_ids = array_filter(array_map('intval', $filter_product_ids));
+        $filter_product_id = !empty($filter_product_ids) ? $filter_product_ids[0] : null;
         $filterProducts = !empty($filter_product_ids) ? Product::whereIn('id', $filter_product_ids)->get() : collect();
         $filterProduct = $filterProducts->first();
 

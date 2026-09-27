@@ -278,7 +278,14 @@
             scrollX: true,
             autoWidth: false,
             pageLength: 25,
-            order: [[1, 'desc']],
+            lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
+            dom: '<"d-flex justify-content-between align-items-center mb-2"<"d-flex align-items-center gap-2"lB>f>rt<"d-flex justify-content-between align-items-center mt-2"ip>',
+            buttons: [
+                { extend: 'excel', className: 'btn btn-sm btn-outline-success', text: '<i class="fa fa-file-excel-o me-1"></i> Excel' },
+                { extend: 'csv', className: 'btn btn-sm btn-outline-info', text: '<i class="fa fa-file-text-o me-1"></i> CSV' },
+                { extend: 'copy', className: 'btn btn-sm btn-outline-secondary', text: '<i class="fa fa-copy me-1"></i> Copy' }
+            ],
+            order: [[1, 'desc']], // Sort by Voucher # (Inv#)
             language: {
                 search: "_INPUT_",
                 searchPlaceholder: "Search transfers..."

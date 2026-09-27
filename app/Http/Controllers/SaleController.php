@@ -55,6 +55,15 @@ class SaleController extends Controller
             $salesQuery->where('created_by', $request->created_by);
             $bookingsQuery->where('created_by', $request->created_by);
         }
+        if ($request->filled('customer_id')) {
+            $salesQuery->where('customer_id', $request->customer_id);
+            $bookingsQuery->where('customer_id', $request->customer_id);
+        }
+        if ($request->filled('user_group_id')) {
+            $groupId = (string) $request->user_group_id;
+            $salesQuery->whereJsonContains('user_group_ids', $groupId);
+            $bookingsQuery->whereJsonContains('user_group_ids', $groupId);
+        }
 
         $salesRows = $salesQuery->get()->map(function($s) {
             $s->entry_status = 'Posted';
@@ -74,9 +83,14 @@ class SaleController extends Controller
             $combined = $combined->where('entry_status', $request->status);
         }
 
+        $customers = Customer::orderBy('customer_name')->get();
+        $userGroups = \App\Models\UserGroup::all();
+
         return view('admin_panel.sale.index', [
             'sales' => $combined,
-            'users' => $users
+            'users' => $users,
+            'customers' => $customers,
+            'userGroups' => $userGroups
         ]);
     }
 

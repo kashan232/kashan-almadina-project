@@ -21,7 +21,7 @@ class SaleReturnController extends Controller
 {
     public function index(Request $request)
     {
-        $query = SaleReturn::with(['items.product']);
+        $query = SaleReturn::with(['items.product', 'items.warehouse', 'creator']);
 
         if ($request->filled('start_date')) {
             $query->whereDate('current_date', '>=', $request->start_date);
