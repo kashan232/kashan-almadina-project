@@ -3,99 +3,136 @@
 @section('content')
 <style>
     @include('admin_panel.vochers._compact_list_styles')
-    /* Table Responsive & Scroll Enhancements */
-    .table-responsive {
-        width: 100%;
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
-        margin-bottom: 1rem;
-    }
+    /* Ultra-High Density Design System */
+    .main-content-inner { background: #f4f7fa; min-height: 100vh; }
     
-    #incomeTable thead th {
-        white-space: nowrap;
-        background-color: #f8f9fa !important;
-        color: #333 !important;
-        font-weight: 600;
-        vertical-align: middle;
-        padding: 8px 10px !important;
-        font-size: 12px;
+    /* Table Density */
+    #incomeTable { font-size: 11px !important; border-collapse: separate !important; border-spacing: 0; width: 100% !important; }
+    #incomeTable thead th { 
+        padding: 4px 10px !important; 
+        font-size: 11px !important; 
+        height: 24px !important;
+        line-height: 1.2 !important;
+        background: #fff !important;
+        color: #444 !important;
+        font-weight: 700 !important;
         text-transform: uppercase;
+        letter-spacing: 0.3px;
+        border-bottom: 2px solid #ebedef !important;
+        vertical-align: middle !important;
     }
     
-    #incomeTable tbody td {
-        white-space: nowrap;
-        vertical-align: middle;
-        padding: 4px 10px !important;
-        font-size: 12px;
-        color: #333;
+    /* DataTables Sorting Arrow Fix */
+    table.dataTable thead .sorting:before, table.dataTable thead .sorting:after,
+    table.dataTable thead .sorting_asc:before, table.dataTable thead .sorting_asc:after,
+    table.dataTable thead .sorting_desc:before, table.dataTable thead .sorting_desc:after {
+        bottom: 2px !important;
+        font-size: 0.7rem !important;
+        opacity: 0.3;
     }
 
-    /* Column Picker Styles */
-    .column-picker-dropdown {
-        position: relative;
-        display: inline-block;
+    #incomeTable tbody td { 
+        padding: 4px 10px !important; 
+        vertical-align: middle !important; 
+        border-bottom: 1px solid #f0f2f5 !important;
+        white-space: nowrap;
     }
+    #incomeTable tbody tr:hover { background-color: #f8f9ff !important; }
+
+    /* Compact Buttons */
+    .btn-xs { padding: 1px 5px; font-size: 10px; line-height: 1.2; border-radius: 3px; }
+    .btn-mini { padding: 0px 4px; font-size: 9px; height: 18px; display: inline-flex; align-items: center; justify-content: center; }
+    
+    /* DataTables Export Buttons styling */
+    .dt-buttons { margin-bottom: 0px !important; display: inline-flex; gap: 4px; }
+    .dt-button { 
+        padding: 2px 10px !important; 
+        font-size: 10px !important; 
+        border-radius: 4px !important; 
+        background: #fff !important;
+        border: 1px solid #dee2e6 !important;
+        box-shadow: none !important;
+        transition: all 0.2s;
+    }
+    .dt-button:hover { background: #f8f9fa !important; border-color: #adb5bd !important; }
+
+    /* Filter Bar Compact */
+    .form-control-sm, .form-select-sm { font-size: 11px !important; height: calc(1.5em + 0.5rem + 2px) !important; padding: 0.25rem 0.5rem !important; }
+    
+    /* Column Picker Styles */
+    .column-picker-dropdown { position: relative; display: inline-block; margin-left: 8px; }
     .column-picker-menu {
         position: absolute;
         top: 100%;
         right: 0;
-        z-index: 1000;
+        z-index: 10000;
         display: none;
-        min-width: 200px;
-        padding: 5px 0;
-        margin: 2px 0 0;
-        font-size: 14px;
+        min-width: 220px;
+        padding: 8px 0;
+        margin-top: 5px;
+        font-size: 13px;
         text-align: left;
         list-style: none;
         background-color: #fff;
         background-clip: padding-box;
-        border: 1px solid rgba(0,0,0,.15);
-        border-radius: 4px;
-        box-shadow: 0 6px 12px rgba(0,0,0,.175);
+        border: 1px solid rgba(0,0,0,.1);
+        border-radius: 8px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.1);
         max-height: 400px;
         overflow-y: auto;
     }
-    .column-picker-menu.show {
-        display: block;
-    }
+    .column-picker-menu.show { display: block; }
     .column-picker-item {
-        display: block;
-        padding: 5px 15px;
+        display: flex;
+        align-items: center;
+        padding: 6px 16px;
         clear: both;
         font-weight: 400;
-        line-height: 1.42857143;
-        color: #333;
+        line-height: 1.5;
+        color: #444;
         white-space: nowrap;
         cursor: pointer;
+        transition: background 0.2s;
     }
-    .column-picker-item:hover {
-        background-color: #f5f5f5;
-    }
-    .column-picker-item input {
-        margin-right: 10px;
-        cursor: pointer;
-    }
+    .column-picker-item:hover { background-color: #f8f9fa; color: #000; }
+    .column-picker-item input { margin-right: 12px; cursor: pointer; width: 16px; height: 16px; }
 
-    /* Card styling */
-    .card {
-        border-radius: 8px;
-        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
-        border: none;
-    }
+    .card { border-radius: 8px; box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075); border: none; margin-bottom: 0.5rem; }
+
+    /* Stacked Pill Badges for Destination Accounts & Income Amounts */
+    .deposit-acc-badge { display: inline-block; background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; padding: 1px 6px; border-radius: 4px; font-weight: 600; font-size: 10px; }
+    .dest-acc-badge { display: inline-block; background: #eef2ff; color: #3730a3; border: 1px solid #c7d2fe; padding: 1px 6px; border-radius: 4px; font-weight: 600; font-size: 10px; margin: 1px 0; }
+    .dest-amt-badge { display: inline-block; background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; padding: 1px 6px; border-radius: 4px; font-weight: 700; font-size: 10px; margin: 1px 0; }
 </style>
 
 <div class="main-content">
     <div class="main-content-inner">
         <div class="container-fluid stock-hold-page">
             
+            @if(session('success'))
+                <div class="alert alert-success alert-dismissible fade show my-2" role="alert">
+                    <i class="fa fa-check-circle me-1"></i> {{ session('success') }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            @endif
+
+            @if(session('error'))
+                <div class="alert alert-danger alert-dismissible fade show my-2" role="alert">
+                    <i class="fa fa-exclamation-circle me-1"></i> {{ session('error') }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            @endif
+
             <!-- Filters Section -->
             <div class="row mb-2">
                 <div class="col-12">
                     <div class="card border-0 shadow-sm">
-                        <div class="card-body p-2">
+                        <div class="card-body p-2" style="overflow: visible;">
                             <form action="{{ route('all-income-vochers') }}" method="GET" class="row g-2 align-items-center">
                                 <div class="col-md-3">
-                                    <h6 class="mb-0 fw-bold text-dark ms-2"><i class="fa fa-line-chart me-2 text-success"></i>Income Vouchers</h6>
+                                    <span class="badge bg-success text-white px-3 py-2 rounded-pill fs-6 fw-bold shadow-sm d-inline-flex align-items-center">
+                                        <i class="fa fa-line-chart me-2"></i>INCOME VOUCHER LIST
+                                    </span>
                                 </div>
                                 <div class="col-md-3">
                                     <div class="input-group input-group-sm">
@@ -115,7 +152,7 @@
                                     <div class="d-flex gap-1 justify-content-end align-items-center">
                                         <button type="submit" class="btn btn-primary btn-sm rounded-pill px-3 shadow-sm">Filter</button>
                                         <a href="{{ route('all-income-vochers') }}" class="btn btn-outline-secondary btn-sm rounded-pill px-2" title="Reset"><i class="fa fa-refresh"></i></a>
-                                        <a class="btn btn-success btn-sm rounded-pill px-4 shadow-sm ms-2" href="{{ route('income-vochers') }}">
+                                        <a class="btn btn-success btn-sm rounded-pill px-3 shadow-sm ms-1" href="{{ route('income-vochers') }}">
                                             <i class="fa fa-plus me-1"></i> Add Income
                                         </a>
                                     </div>
@@ -126,129 +163,180 @@
                 </div>
             </div>
 
-            <div class="row">
-                <div class="col-12">
-                    <div class="card border-0 shadow-sm">
-                        <div class="card-header bg-white d-flex justify-content-between align-items-center py-2 border-bottom">
-                            <span class="fw-bold text-muted small text-uppercase">Income Registry</span>
-                            <div class="column-picker-dropdown">
-                                <button class="btn btn-outline-secondary btn-sm px-3 rounded-pill" type="button" id="columnPickerBtn">
-                                    <i class="fa fa-columns me-1"></i> Columns
-                                </button>
-                                <div class="column-picker-menu shadow" id="columnPickerMenu">
-                                    <div class="p-2 border-bottom fw-bold small text-muted">Show/Hide Columns</div>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="1" checked> ID</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="2" checked> Type</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="3" checked> Inv#</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="4" checked> Date</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="5" checked> Entry Date</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="6" checked> Party Type</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="7" checked> Party</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="8" checked> Ref#</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="9" checked> Remarks</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="10" checked> Discount</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="11" checked> Total Amount</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="12" checked> Created By</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="13" checked> Status</label>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="card-body p-0">
-                            <div class="table-responsive">
-                                <table id="incomeTable" class="table table-sm table-striped table-bordered w-100 mb-0">
-                                    <thead>
-                                        <tr>
-                                            <th>ID</th>
-                                            <th>Type</th>
-                                            <th>Inv#</th>
-                                            <th>Date</th>
-                                            <th>Entry Date</th>
-                                            <th>Party Type</th>
-                                            <th>Party</th>
-                                            <th>Ref#</th>
-                                            <th>Remarks</th>
-                                            <th class="text-end">Disc.</th>
-                                            <th class="text-end">Total Amount</th>
-                                            <th>Created By</th>
+            <div class="card shadow-sm border-0">
+                <div class="card-body p-2">
+                    <div class="table-responsive">
+                        <table id="incomeTable" class="table table-sm table-striped table-bordered w-100 mb-0">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Type</th>
+                                    <th>Inv#</th>
+                                    <th>Date</th>
+                                    <th>Entry Date</th>
+                                    <th>Account Deposit To</th>
+                                    <th>Party Type</th>
+                                    <th>Party</th>
+                                    <th>Destination Account</th>
+                                    <th>Income Amount</th>
+                                    <th>Ref#</th>
+                                    <th>Remarks</th>
+                                    <th class="text-end">Disc.</th>
+                                    <th class="text-end">Total Amount</th>
+                                    <th>Created By</th>
                                     <th class="text-center">Status</th>
-                                            <th class="text-center" style="min-width: 120px;">Action</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        @foreach($incomes as $item)
-                                        @php
-                                            $refs = json_decode($item->reference_no, true);
-                                            $reference = is_array($refs) ? implode(', ', array_filter($refs)) : $item->reference_no;
-                                        @endphp
-                                        <tr>
-                                            <td class="text-muted small">{{ $item->id }}</td>
-                                            <td class="text-center small">IV</td>
-                                            <td class="fw-bold text-success">{{ $item->ivid ?? '-' }}</td>
-                                            <td class="small">{{ $item->entry_date ? \Carbon\Carbon::parse($item->entry_date)->format('d-M-Y') : '-' }}</td>
-                                            <td class="small">{{ $item->entry_date ? \Carbon\Carbon::parse($item->entry_date)->format('d-M-Y') : '-' }}</td>
-                                            <td class="text-center">
-                                                <span class="badge bg-light text-success border-0 rounded-pill px-2" style="font-size: 9px;">{{ $item->type_label ?? '-' }}</span>
-                                            </td>
-                                            <td class="fw-semibold text-dark small">{{ Str::limit($item->party_name ?? '-', 25) }}</td>
-                                            <td class="small text-muted">{{ Str::limit($reference, 15) }}</td>
-                                            <td class="small text-muted">{{ Str::limit($item->remarks, 15) }}</td>
-                                            <td class="text-end fw-bold text-danger">{{ number_format((float)$item->total_discount, 0) }}</td>
-                                            <td class="text-end fw-bold">{{ number_format((float)$item->total_amount, 0) }}</td>
-                                            <td>
-                                                @if($item->creator)
-                                                    <span class="text-dark small">{{ $item->creator->name }}</span>
-                                                @else
-                                                    <span class="text-muted small">System</span>
-                                                @endif
-                                            </td>
-                                            <td class="text-center">
-                                                @if($item->status === 'posted')
-                                                    <span class="badge bg-success rounded-pill px-3">Posted</span>
-                                                @else
-                                                    <span class="badge bg-warning text-dark rounded-pill px-3">Unposted</span>
-                                                @endif
-                                            </td>
-                                            <td class="text-center">
-                                                <div class="d-flex gap-1 justify-content-center">
-                                                    @if($item->status === 'draft' || $item->status === 'Unposted' || $item->status === 'unposted')
-                                                        <form action="{{ route('income.vochers.post', $item->id) }}" method="POST" class="d-inline">
-                                                            @csrf
-                                                            <button type="submit" class="btn btn-primary btn-xs px-2 py-0" title="Post now" style="font-size: 10px;">
-                                                                <i class="fa fa-send"></i> Post
-                                                            </button>
-                                                        </form>
-                                                        
-                                                        <a href="{{ route('income-vochers', $item->id) }}" class="btn btn-outline-warning btn-xs px-1 py-0" title="Edit" style="height: 20px;">
-                                                            <i class="fa fa-edit text-dark"></i>
-                                                        </a>
+                                    <th class="text-center" style="min-width: 140px;">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($incomes as $item)
+                                @php
+                                    $refs = json_decode($item->reference_no, true);
+                                    $reference = is_array($refs) ? implode(', ', array_filter($refs)) : $item->reference_no;
 
-                                                        <form action="{{ route('income.vochers.cancel', $item->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Delete this unposted voucher?')">
-                                                            @csrf @method('DELETE')
-                                                            <button type="submit" class="btn btn-outline-danger btn-xs px-1 py-0" title="Delete" style="height: 20px;">
-                                                                <i class="fa fa-trash"></i>
-                                                            </button>
-                                                        </form>
-                                                    @else
-                                                        <a href="{{ route('income-vouchers.view', $item->id) }}" class="btn btn-outline-info btn-xs px-1 py-0" title="View Income Voucher" style="height: 20px;">
-                                                            <i class="fa fa-eye"></i>
-                                                        </a>
-                                                    @endif
-                                                    
-                                                    <a href="{{ route('incomeVoucher.print', $item->id) }}" target="_blank" class="btn btn-outline-dark btn-xs px-1 py-0" title="Print" style="height: 20px;">
-                                                        <i class="fa fa-print"></i>
-                                                    </a>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                        @endforeach
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
+                                    $depositAccountName = DB::table('accounts')->where('id', $item->account_id)->value('title') ?? ('Acc #' . $item->account_id);
+
+                                    $pIdsRaw = json_decode($item->party_id, true);
+                                    if(!is_array($pIdsRaw)) $pIdsRaw = [$item->party_id];
+
+                                    $typesRaw = json_decode($item->party_type, true);
+                                    if(!is_array($typesRaw)) $typesRaw = [$item->party_type];
+
+                                    $rowAmounts = json_decode($item->amount, true);
+                                    if(!is_array($rowAmounts)) $rowAmounts = [$item->total_amount];
+
+                                    $destAccounts = [];
+                                    $destAmounts = [];
+                                    foreach($pIdsRaw as $idx => $pId) {
+                                        if($pId) {
+                                            $pType = $typesRaw[$idx] ?? '';
+                                            if ($pType === 'vendor') $title = DB::table('vendors')->where('id', $pId)->value('name');
+                                            elseif (in_array($pType, ['customer', 'walkin', 'walking'])) $title = DB::table('customers')->where('id', $pId)->value('customer_name');
+                                            else $title = DB::table('accounts')->where('id', $pId)->value('title');
+                                            
+                                            $destAccounts[] = $title ?? ('Party #' . $pId);
+                                            $amtVal = (float)($rowAmounts[$idx] ?? 0);
+                                            $destAmounts[] = number_format($amtVal, 0);
+                                        }
+                                    }
+                                @endphp
+                                <tr>
+                                    <td class="text-muted small">{{ $item->id }}</td>
+                                    <td class="text-center small">IV</td>
+                                    <td class="fw-bold text-success">{{ $item->ivid ?? '-' }}</td>
+                                    <td class="small">{{ $item->entry_date ? \Carbon\Carbon::parse($item->entry_date)->format('d-M-Y') : '-' }}</td>
+                                    <td class="small">{{ $item->entry_date ? \Carbon\Carbon::parse($item->entry_date)->format('d-M-Y') : '-' }}</td>
+                                    <td>
+                                        <span class="deposit-acc-badge"><i class="fa fa-university me-1"></i>{{ $depositAccountName }}</span>
+                                    </td>
+                                    <td class="text-center">
+                                        <span class="badge bg-light text-success border-0 rounded-pill px-2" style="font-size: 9px;">{{ $item->type_label ?? '-' }}</span>
+                                    </td>
+                                    <td class="fw-semibold text-dark small">{{ Str::limit($item->party_name ?? '-', 25) }}</td>
+                                    <td>
+                                        @if(count($destAccounts) > 0)
+                                            @foreach($destAccounts as $da)
+                                                <div><span class="dest-acc-badge"><i class="fa fa-bank me-1 text-primary"></i>{{ $da }}</span></div>
+                                            @endforeach
+                                        @else
+                                            <span class="text-muted small">-</span>
+                                        @endif
+                                    </td>
+                                    <td class="text-end">
+                                        @if(count($destAmounts) > 0)
+                                            @foreach($destAmounts as $damt)
+                                                <div><span class="dest-amt-badge">{{ $damt }}</span></div>
+                                            @endforeach
+                                        @else
+                                            <span class="text-muted small">-</span>
+                                        @endif
+                                    </td>
+                                    <td class="small text-muted">{{ Str::limit($reference, 15) }}</td>
+                                    <td class="small text-muted">{{ Str::limit($item->remarks, 15) }}</td>
+                                    <td class="text-end fw-bold text-danger">{{ number_format((float)$item->total_discount, 0) }}</td>
+                                    <td class="text-end fw-bold">{{ number_format((float)$item->total_amount, 0) }}</td>
+                                    <td>
+                                        @if($item->creator)
+                                            <span class="text-dark small">{{ $item->creator->name }}</span>
+                                        @else
+                                            <span class="text-muted small">System</span>
+                                        @endif
+                                    </td>
+                                    <td class="text-center">
+                                        @if($item->status === 'posted')
+                                            <span class="badge bg-success rounded-pill px-3">Posted</span>
+                                        @else
+                                            <span class="badge bg-warning text-dark rounded-pill px-3">Unposted</span>
+                                        @endif
+                                    </td>
+                                    <td class="text-center">
+                                        <div class="d-flex gap-1 justify-content-center">
+                                            @if($item->status === 'draft' || $item->status === 'Unposted' || $item->status === 'unposted')
+                                                <form action="{{ route('income.vochers.post', $item->id) }}" method="POST" class="d-inline">
+                                                    @csrf
+                                                    <button type="submit" class="btn btn-primary btn-mini px-2" title="Post now">
+                                                        <i class="fa fa-send me-1"></i> Post
+                                                    </button>
+                                                </form>
+                                                
+                                                <a href="{{ route('income-vochers', $item->id) }}" class="btn btn-outline-warning btn-mini" title="Edit">
+                                                    <i class="fa fa-pencil text-dark"></i>
+                                                </a>
+
+                                                <form action="{{ route('income.vochers.cancel', $item->id) }}" method="POST" class="d-inline delete-form">
+                                                    @csrf @method('DELETE')
+                                                    <button type="button" class="btn btn-outline-danger btn-mini delete-btn" title="Delete">
+                                                        <i class="fa fa-trash"></i>
+                                                    </button>
+                                                </form>
+                                            @else
+                                                <a href="{{ route('income-vouchers.view', $item->id) }}" class="btn btn-outline-info btn-mini" title="View Income Voucher">
+                                                    <i class="fa fa-eye"></i>
+                                                </a>
+                                            @endif
+                                            
+                                            <a href="{{ route('incomeVoucher.print', $item->id) }}" target="_blank" class="btn btn-outline-dark btn-mini" title="Print">
+                                                <i class="fa fa-print"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
+
+            <!-- Column Picker Menu HTML snippet rendered next to search box via JS -->
+            <div id="columnPickerMenuContainer" class="d-none">
+                <div class="column-picker-dropdown">
+                    <button class="btn btn-outline-secondary btn-sm px-3 rounded-pill" type="button" id="columnPickerBtn">
+                        <i class="fa fa-columns me-1"></i> Columns
+                    </button>
+                    <div class="column-picker-menu shadow" id="columnPickerMenu">
+                        <div class="p-2 border-bottom fw-bold small text-muted">Show/Hide Columns</div>
+                        <label class="column-picker-item"><input type="checkbox" data-column="1" checked> ID</label>
+                        <label class="column-picker-item"><input type="checkbox" data-column="2" checked> Type</label>
+                        <label class="column-picker-item"><input type="checkbox" data-column="3" checked> Inv#</label>
+                        <label class="column-picker-item"><input type="checkbox" data-column="4" checked> Date</label>
+                        <label class="column-picker-item"><input type="checkbox" data-column="5" checked> Entry Date</label>
+                        <label class="column-picker-item"><input type="checkbox" data-column="6" checked> Account Deposit To</label>
+                        <label class="column-picker-item"><input type="checkbox" data-column="7" checked> Party Type</label>
+                        <label class="column-picker-item"><input type="checkbox" data-column="8" checked> Party</label>
+                        <label class="column-picker-item"><input type="checkbox" data-column="9" checked> Destination Account</label>
+                        <label class="column-picker-item"><input type="checkbox" data-column="10" checked> Income Amount</label>
+                        <label class="column-picker-item"><input type="checkbox" data-column="11" checked> Ref#</label>
+                        <label class="column-picker-item"><input type="checkbox" data-column="12" checked> Remarks</label>
+                        <label class="column-picker-item"><input type="checkbox" data-column="13" checked> Discount</label>
+                        <label class="column-picker-item"><input type="checkbox" data-column="14" checked> Total Amount</label>
+                        <label class="column-picker-item"><input type="checkbox" data-column="15" checked> Created By</label>
+                        <label class="column-picker-item"><input type="checkbox" data-column="16" checked> Status</label>
+                        <label class="column-picker-item"><input type="checkbox" data-column="17" checked> Action</label>
+                    </div>
+                </div>
+            </div>
+
         </div>
     </div>
 </div>
@@ -259,8 +347,30 @@
     $(document).ready(function() {
         $('.select2').select2({ width: '100%' });
 
+        const storageKey = 'income_voucher_cols_v5';
+        
+        var dt = $('#incomeTable').DataTable({
+            "destroy": true,
+            "scrollX": true,
+            "autoWidth": false,
+            "pageLength": 25,
+            "lengthMenu": [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
+            "order": [[0, 'desc']],
+            "language": {
+                "search": "_INPUT_",
+                "searchPlaceholder": "Search income..."
+            },
+            dom: '<"d-flex justify-content-between align-items-center mb-2"l<"d-flex align-items-center"f<"column-picker-slot">>>rt<"d-flex justify-content-between align-items-center mt-2"ip>',
+            buttons: [
+                'copyHtml5', 'excelHtml5', 'csvHtml5'
+            ]
+        });
+
+        // Insert column picker button into slot next to search box
+        $('.column-picker-slot').html($('#columnPickerMenuContainer').html());
+
         // Toggle Column Picker Menu
-        $('#columnPickerBtn').on('click', function(e) {
+        $(document).on('click', '#columnPickerBtn', function(e) {
             e.stopPropagation();
             $('#columnPickerMenu').toggleClass('show');
         });
@@ -268,19 +378,6 @@
         $(document).on('click', function(e) {
             if (!$(e.target).closest('.column-picker-dropdown').length) {
                 $('#columnPickerMenu').removeClass('show');
-            }
-        });
-
-        const storageKey = 'income_voucher_table_columns_v4';
-        
-        var dt = $('#incomeTable').DataTable({
-            scrollX: true,
-            autoWidth: false,
-            pageLength: 25,
-            order: [[0, 'desc']],
-            language: {
-                search: "_INPUT_",
-                searchPlaceholder: "Search income..."
             }
         });
 
@@ -298,7 +395,7 @@
         }
 
         // Handle Checkbox Change
-        $('#columnPickerMenu input').on('change', function() {
+        $(document).on('change', '#columnPickerMenu input', function() {
             const colIdx = parseInt($(this).data('column'));
             const isChecked = $(this).is(':checked');
             
@@ -310,6 +407,19 @@
                 state[$(this).data('column')] = $(this).is(':checked');
             });
             localStorage.setItem(storageKey, JSON.stringify(state));
+        });
+
+        // Confirmation handlers
+        $(document).on('click', '.delete-btn', function() {
+            var form = $(this).closest('form');
+            Swal.fire({
+                title: 'Delete Voucher?',
+                text: 'This unposted record will be removed permanently.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                confirmButtonText: 'Yes, delete!'
+            }).then((result) => { if (result.isConfirmed) form.submit(); });
         });
     });
 </script>

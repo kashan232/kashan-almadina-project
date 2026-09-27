@@ -9,9 +9,9 @@
     /* Table Density */
     #paymentVoucherTable { font-size: 11px !important; border-collapse: separate !important; border-spacing: 0; width: 100% !important; }
     #paymentVoucherTable thead th { 
-        padding: 2px 10px !important; 
+        padding: 4px 10px !important; 
         font-size: 11px !important; 
-        height: 20px !important;
+        height: 24px !important;
         line-height: 1.2 !important;
         background: #fff !important;
         color: #444 !important;
@@ -44,7 +44,7 @@
     .btn-mini { padding: 0px 4px; font-size: 9px; height: 18px; display: inline-flex; align-items: center; justify-content: center; }
     
     /* DataTables Export Buttons styling */
-    .dt-buttons { margin-bottom: 0px !important; }
+    .dt-buttons { margin-bottom: 0px !important; display: inline-flex; gap: 4px; }
     .dt-button { 
         padding: 2px 10px !important; 
         font-size: 10px !important; 
@@ -60,7 +60,7 @@
     .form-control-sm, .form-select-sm { font-size: 11px !important; height: calc(1.5em + 0.5rem + 2px) !important; padding: 0.25rem 0.5rem !important; }
     
     /* Column Picker Styles */
-    .column-picker-dropdown { position: relative; display: inline-block; }
+    .column-picker-dropdown { position: relative; display: inline-block; margin-left: 8px; }
     .column-picker-menu {
         position: absolute;
         top: 100%;
@@ -98,20 +98,40 @@
     .column-picker-item input { margin-right: 12px; cursor: pointer; width: 16px; height: 16px; }
 
     .card { border-radius: 8px; box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075); border: none; margin-bottom: 0.5rem; }
+
+    /* Stacked Pill Badges for Destination Accounts & Payment Amounts */
+    .dest-acc-badge { display: inline-block; background: #eef2ff; color: #3730a3; border: 1px solid #c7d2fe; padding: 1px 6px; border-radius: 4px; font-weight: 600; font-size: 10px; margin: 1px 0; }
+    .dest-amt-badge { display: inline-block; background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; padding: 1px 6px; border-radius: 4px; font-weight: 700; font-size: 10px; margin: 1px 0; }
 </style>
 
 <div class="main-content">
     <div class="main-content-inner">
         <div class="container-fluid stock-hold-page">
             
+            @if(session('success'))
+                <div class="alert alert-success alert-dismissible fade show my-2" role="alert">
+                    <i class="fa fa-check-circle me-1"></i> {{ session('success') }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            @endif
+
+            @if(session('error'))
+                <div class="alert alert-danger alert-dismissible fade show my-2" role="alert">
+                    <i class="fa fa-exclamation-circle me-1"></i> {{ session('error') }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            @endif
+
             <!-- Filters Section -->
             <div class="row mb-2">
                 <div class="col-12">
                     <div class="card border-0 shadow-sm">
                         <div class="card-body p-2" style="overflow: visible;">
                             <form action="{{ route('all-Payment-vochers') }}" method="GET" class="row g-2 align-items-center">
-                                <div class="col-md-3">
-                                    <h6 class="mb-0 fw-bold text-dark ms-2"><i class="fa fa-credit-card me-2 text-primary"></i>Payments</h6>
+                                <div class="col-md-2">
+                                    <span class="badge bg-danger text-white px-3 py-2 rounded-pill fs-6 fw-bold shadow-sm d-inline-flex align-items-center">
+                                        <i class="fa fa-credit-card me-2"></i>PAYMENT VOUCHER LIST
+                                    </span>
                                 </div>
                                 <div class="col-md-3">
                                     <div class="input-group input-group-sm">
@@ -120,6 +140,14 @@
                                         <input type="date" name="end_date" class="form-control" value="{{ request('end_date') }}">
                                     </div>
                                 </div>
+                                <div class="col-md-3">
+                                    <select name="customer_id" class="form-select form-select-sm select2">
+                                        <option value="">All Customers</option>
+                                        @foreach($customers as $c)
+                                            <option value="{{ $c->id }}" {{ request('customer_id') == $c->id ? 'selected' : '' }}>{{ $c->customer_name }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
                                 <div class="col-md-2">
                                     <select name="status" class="form-select form-select-sm select2">
                                         <option value="">All Status</option>
@@ -127,11 +155,11 @@
                                         <option value="posted" {{ request('status') == 'posted' ? 'selected' : '' }}>Posted</option>
                                     </select>
                                 </div>
-                                <div class="col-md-4 text-end">
+                                <div class="col-md-2 text-end">
                                     <div class="d-flex gap-1 justify-content-end align-items-center">
                                         <button type="submit" class="btn btn-primary btn-sm rounded-pill px-3 shadow-sm">Filter</button>
                                         <a href="{{ route('all-Payment-vochers') }}" class="btn btn-outline-secondary btn-sm rounded-pill px-2" title="Reset"><i class="fa fa-refresh"></i></a>
-                                        <a class="btn btn-success btn-sm rounded-pill px-4 shadow-sm ms-2" href="{{ route('Payment-vochers') }}">
+                                        <a class="btn btn-success btn-sm rounded-pill px-3 shadow-sm ms-1" href="{{ route('Payment-vochers') }}">
                                             <i class="fa fa-plus me-1"></i> Add Payment
                                         </a>
                                     </div>
@@ -143,33 +171,7 @@
             </div>
 
             <div class="card shadow-sm border-0">
-                <div class="card-header bg-white d-flex justify-content-between align-items-center py-2 border-bottom">
-                    <span class="fw-bold text-muted small text-uppercase"><i class="fa fa-list me-1"></i> Payments Registry</span>
-                    <div class="column-picker-dropdown">
-                        <button class="btn btn-outline-secondary btn-sm px-3 rounded-pill" type="button" id="columnPickerBtn">
-                            <i class="fa fa-columns me-1"></i> Columns
-                        </button>
-                        <div class="column-picker-menu shadow" id="columnPickerMenu">
-                            <div class="p-2 border-bottom fw-bold small text-muted">Show/Hide Columns</div>
-                            <label class="column-picker-item"><input type="checkbox" data-column="1" checked> ID</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="2" checked> Type</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="3" checked> Inv#</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="4" checked> Date</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="5" checked> Entry Date</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="6" checked> Party Type</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="7" checked> Party</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="8" checked> Ref#</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="9" checked> Remarks</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="10" checked> Discount</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="11" checked> Total Amount</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="12" checked> Created By</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="13" checked> Status</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="14" checked> Action</label>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="card-body p-0">
+                <div class="card-body p-2">
                     <div class="table-responsive">
                         <table id="paymentVoucherTable" class="table table-sm table-striped table-bordered w-100 mb-0">
                             <thead>
@@ -181,6 +183,8 @@
                                     <th>Entry Date</th>
                                     <th>Party Type</th>
                                     <th>Party</th>
+                                    <th>Destination Account</th>
+                                    <th>Payment Amount</th>
                                     <th>Ref#</th>
                                     <th>Remarks</th>
                                     <th class="text-end">Disc.</th>
@@ -195,6 +199,20 @@
                                 @php
                                     $refs = json_decode($item->reference_no, true);
                                     $reference = is_array($refs) ? implode(', ', array_filter($refs)) : $item->reference_no;
+
+                                    $destAccountIds = json_decode($item->row_account_id, true) ?? [];
+                                    $rowAmounts = json_decode($item->amount, true) ?? [];
+
+                                    $destAccounts = [];
+                                    $destAmounts = [];
+                                    foreach($destAccountIds as $idx => $accId) {
+                                        if($accId) {
+                                            $accTitle = DB::table('accounts')->where('id', $accId)->value('title') ?? ('Acc #' . $accId);
+                                            $destAccounts[] = $accTitle;
+                                            $amtVal = (float)($rowAmounts[$idx] ?? 0);
+                                            $destAmounts[] = number_format($amtVal, 0);
+                                        }
+                                    }
                                 @endphp
                                 <tr>
                                     <td class="text-muted small">{{ $item->id }}</td>
@@ -206,6 +224,24 @@
                                         <span class="badge bg-light text-primary border px-2 py-0" style="font-size: 9px;">{{ $item->type_label ?? '-' }}</span>
                                     </td>
                                     <td class="fw-bold text-dark small">{{ Str::limit($item->party_name ?? '-', 25) }}</td>
+                                    <td>
+                                        @if(count($destAccounts) > 0)
+                                            @foreach($destAccounts as $da)
+                                                <div><span class="dest-acc-badge"><i class="fa fa-bank me-1 text-primary"></i>{{ $da }}</span></div>
+                                            @endforeach
+                                        @else
+                                            <span class="text-muted small">-</span>
+                                        @endif
+                                    </td>
+                                    <td class="text-end">
+                                        @if(count($destAmounts) > 0)
+                                            @foreach($destAmounts as $damt)
+                                                <div><span class="dest-amt-badge">{{ $damt }}</span></div>
+                                            @endforeach
+                                        @else
+                                            <span class="text-muted small">-</span>
+                                        @endif
+                                    </td>
                                     <td class="small text-muted">{{ Str::limit($reference, 15) }}</td>
                                     <td class="small text-muted">{{ Str::limit($item->remarks, 15) }}</td>
                                     <td class="text-end fw-bold text-danger">{{ number_format((float)$item->total_discount, 0) }}</td>
@@ -262,6 +298,35 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Column Picker Menu HTML snippet rendered next to search box via JS -->
+            <div id="columnPickerMenuContainer" class="d-none">
+                <div class="column-picker-dropdown">
+                    <button class="btn btn-outline-secondary btn-sm px-3 rounded-pill" type="button" id="columnPickerBtn">
+                        <i class="fa fa-columns me-1"></i> Columns
+                    </button>
+                    <div class="column-picker-menu shadow" id="columnPickerMenu">
+                        <div class="p-2 border-bottom fw-bold small text-muted">Show/Hide Columns</div>
+                        <label class="column-picker-item"><input type="checkbox" data-column="1" checked> ID</label>
+                        <label class="column-picker-item"><input type="checkbox" data-column="2" checked> Type</label>
+                        <label class="column-picker-item"><input type="checkbox" data-column="3" checked> Inv#</label>
+                        <label class="column-picker-item"><input type="checkbox" data-column="4" checked> Date</label>
+                        <label class="column-picker-item"><input type="checkbox" data-column="5" checked> Entry Date</label>
+                        <label class="column-picker-item"><input type="checkbox" data-column="6" checked> Party Type</label>
+                        <label class="column-picker-item"><input type="checkbox" data-column="7" checked> Party</label>
+                        <label class="column-picker-item"><input type="checkbox" data-column="8" checked> Destination Account</label>
+                        <label class="column-picker-item"><input type="checkbox" data-column="9" checked> Payment Amount</label>
+                        <label class="column-picker-item"><input type="checkbox" data-column="10" checked> Ref#</label>
+                        <label class="column-picker-item"><input type="checkbox" data-column="11" checked> Remarks</label>
+                        <label class="column-picker-item"><input type="checkbox" data-column="12" checked> Disc.</label>
+                        <label class="column-picker-item"><input type="checkbox" data-column="13" checked> Total Amount</label>
+                        <label class="column-picker-item"><input type="checkbox" data-column="14" checked> Created By</label>
+                        <label class="column-picker-item"><input type="checkbox" data-column="15" checked> Status</label>
+                        <label class="column-picker-item"><input type="checkbox" data-column="16" checked> Action</label>
+                    </div>
+                </div>
+            </div>
+
         </div>
     </div>
 </div>
@@ -272,8 +337,30 @@
     $(document).ready(function() {
         $('.select2').select2({ width: '100%' });
 
+        const storageKey = 'payment_voucher_cols_v4';
+        
+        var dt = $('#paymentVoucherTable').DataTable({
+            "destroy": true,
+            "scrollX": true,
+            "autoWidth": false,
+            "pageLength": 25,
+            "lengthMenu": [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
+            "order": [[0, 'desc']],
+            "language": {
+                "search": "_INPUT_",
+                "searchPlaceholder": "Search payments..."
+            },
+            dom: '<"d-flex justify-content-between align-items-center mb-2"l<"d-flex align-items-center"f<"column-picker-slot">>>rt<"d-flex justify-content-between align-items-center mt-2"ip>',
+            buttons: [
+                'copyHtml5', 'excelHtml5', 'csvHtml5'
+            ]
+        });
+
+        // Insert column picker button into slot next to search box
+        $('.column-picker-slot').html($('#columnPickerMenuContainer').html());
+
         // Column Picker Logic
-        $('#columnPickerBtn').on('click', function(e) {
+        $(document).on('click', '#columnPickerBtn', function(e) {
             e.stopPropagation();
             $('#columnPickerMenu').toggleClass('show');
         });
@@ -282,24 +369,6 @@
             if (!$(e.target).closest('.column-picker-dropdown').length) {
                 $('#columnPickerMenu').removeClass('show');
             }
-        });
-
-        const storageKey = 'payment_voucher_cols_v3';
-        
-        var dt = $('#paymentVoucherTable').DataTable({
-            "destroy": true, // Fix reinitialisation error
-            "scrollX": true,
-            "autoWidth": false,
-            "pageLength": 25,
-            "order": [[0, 'desc']],
-            "language": {
-                "search": "_INPUT_",
-                "searchPlaceholder": "Search vouchers..."
-            },
-            dom: 'Bfrtip',
-            buttons: [
-                'copyHtml5', 'excelHtml5', 'csvHtml5'
-            ]
         });
 
         // Apply saved column visibility
@@ -316,7 +385,7 @@
         }
 
         // Handle Checkbox Change
-        $('#columnPickerMenu input').on('change', function() {
+        $(document).on('change', '#columnPickerMenu input', function() {
             const colIdx = parseInt($(this).data('column'));
             const isChecked = $(this).is(':checked');
             

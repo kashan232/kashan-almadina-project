@@ -363,6 +363,10 @@ class VoucherController extends Controller
             // Mapping for draft/posted
             $query->where('status', $request->status);
         }
+        if ($request->filled('customer_id')) {
+            $query->where('party_id', $request->customer_id)
+                  ->whereIn('type', ['customer', 'walkin', 'walking']);
+        }
 
         $receipts = $query->orderBy('id', 'DESC')->get();
 
@@ -399,7 +403,9 @@ class VoucherController extends Controller
             $voucher->party_name = $partyName;
         }
 
-        return view('admin_panel.vochers.all_recepit_vochers', compact('receipts'));
+        $customers = \App\Models\Customer::orderBy('customer_name')->get();
+
+        return view('admin_panel.vochers.all_recepit_vochers', compact('receipts', 'customers'));
     }
 
 
@@ -1070,6 +1076,10 @@ class VoucherController extends Controller
         if ($request->filled('status')) {
             $query->where('status', $request->status);
         }
+        if ($request->filled('customer_id')) {
+            $query->where('party_id', $request->customer_id)
+                  ->whereIn('type', ['customer', 'walkin', 'walking']);
+        }
 
         $payments = $query->orderBy('id', 'DESC')->get();
 
@@ -1110,7 +1120,9 @@ class VoucherController extends Controller
             }
         }
 
-        return view('admin_panel.vochers.payment_vochers.all_payment_vochers', compact('payments'));
+        $customers = \App\Models\Customer::orderBy('customer_name')->get();
+
+        return view('admin_panel.vochers.payment_vochers.all_payment_vochers', compact('payments', 'customers'));
     }
 
     public function Paymentprint($id)
@@ -1384,6 +1396,10 @@ class VoucherController extends Controller
         if ($request->filled('status')) {
             $query->where('status', $request->status);
         }
+        if ($request->filled('customer_id')) {
+            $query->where('party_id', $request->customer_id)
+                  ->whereIn('type', ['customer', 'walkin', 'walking']);
+        }
 
         $expenses = $query->orderBy('id', 'DESC')->get();
 
@@ -1414,7 +1430,9 @@ class VoucherController extends Controller
             $voucher->party_name = $partyName;
         }
 
-        return view('admin_panel.vochers.expense_vochers.all_expense_vochers', compact('expenses'));
+        $customers = \App\Models\Customer::orderBy('customer_name')->get();
+
+        return view('admin_panel.vochers.expense_vochers.all_expense_vochers', compact('expenses', 'customers'));
     }
 
 
