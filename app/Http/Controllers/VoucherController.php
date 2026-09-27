@@ -363,9 +363,11 @@ class VoucherController extends Controller
             // Mapping for draft/posted
             $query->where('status', $request->status);
         }
-        if ($request->filled('customer_id')) {
-            $query->where('party_id', $request->customer_id)
-                  ->whereIn('type', ['customer', 'walkin', 'walking']);
+        if ($request->filled('user_group_id')) {
+            $groupId = (string) $request->user_group_id;
+            $query->where(function($q) use ($groupId) {
+                $q->whereJsonContains('user_group_ids', $groupId);
+            });
         }
 
         $receipts = $query->orderBy('id', 'DESC')->get();
@@ -403,9 +405,9 @@ class VoucherController extends Controller
             $voucher->party_name = $partyName;
         }
 
-        $customers = \App\Models\Customer::orderBy('customer_name')->get();
+        $userGroups = \App\Models\UserGroup::orderBy('group_name')->get();
 
-        return view('admin_panel.vochers.all_recepit_vochers', compact('receipts', 'customers'));
+        return view('admin_panel.vochers.all_recepit_vochers', compact('receipts', 'userGroups'));
     }
 
 
@@ -1076,9 +1078,11 @@ class VoucherController extends Controller
         if ($request->filled('status')) {
             $query->where('status', $request->status);
         }
-        if ($request->filled('customer_id')) {
-            $query->where('party_id', $request->customer_id)
-                  ->whereIn('type', ['customer', 'walkin', 'walking']);
+        if ($request->filled('user_group_id')) {
+            $groupId = (string) $request->user_group_id;
+            $query->where(function($q) use ($groupId) {
+                $q->whereJsonContains('user_group_ids', $groupId);
+            });
         }
 
         $payments = $query->orderBy('id', 'DESC')->get();
@@ -1120,9 +1124,9 @@ class VoucherController extends Controller
             }
         }
 
-        $customers = \App\Models\Customer::orderBy('customer_name')->get();
+        $userGroups = \App\Models\UserGroup::orderBy('group_name')->get();
 
-        return view('admin_panel.vochers.payment_vochers.all_payment_vochers', compact('payments', 'customers'));
+        return view('admin_panel.vochers.payment_vochers.all_payment_vochers', compact('payments', 'userGroups'));
     }
 
     public function Paymentprint($id)

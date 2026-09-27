@@ -141,10 +141,10 @@
                                     </div>
                                 </div>
                                 <div class="col-md-3">
-                                    <select name="customer_id" class="form-select form-select-sm select2">
-                                        <option value="">All Customers</option>
-                                        @foreach($customers as $c)
-                                            <option value="{{ $c->id }}" {{ request('customer_id') == $c->id ? 'selected' : '' }}>{{ $c->customer_name }}</option>
+                                    <select name="user_group_id" class="form-select form-select-sm select2">
+                                        <option value="">Group: All</option>
+                                        @foreach($userGroups as $grp)
+                                            <option value="{{ $grp->id }}" {{ request('user_group_id') == $grp->id ? 'selected' : '' }}>{{ $grp->group_name }}</option>
                                         @endforeach
                                     </select>
                                 </div>
