@@ -789,13 +789,13 @@ class PurchaseController extends Controller
         $type = strtolower($request->query('type', 'vendor'));
 
         if ($type === 'vendor') {
-            $data = Vendor::withInactive()->orderBy('name')->get();
+            $data = Vendor::withoutGlobalScopes()->orderBy('name')->get();
             return response()->json($data->map(function($v) {
                 return ['id' => $v->id, 'text' => $v->name];
             }));
         }
 
-        $query = Customer::withInactive();
+        $query = Customer::withoutGlobalScopes();
         if ($type === 'walkin' || $type === 'walking') {
             $query->where('customer_type', 'Walking Customer');
         } elseif ($type === 'customer') {

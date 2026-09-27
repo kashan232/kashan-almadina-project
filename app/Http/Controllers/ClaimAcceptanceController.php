@@ -238,22 +238,22 @@ class ClaimAcceptanceController extends Controller
         $q = $request->q;
         
         if ($type === 'vendor') {
-            $data = Vendor::withInactive()->when($q, function($query) use ($q) {
+            $data = Vendor::withoutGlobalScopes()->when($q, function($query) use ($q) {
                 $query->where('name', 'like', "%$q%")->orWhere('id', 'like', "%$q%");
-            })->limit(30)->get()->map(fn($v) => ['id' => $v->id, 'text' => $v->id . ' - ' . $v->name]);
+            })->limit(50)->get()->map(fn($v) => ['id' => $v->id, 'text' => $v->id . ' - ' . $v->name]);
         } elseif ($type === 'walkin' || $type === 'walking') {
-            $data = Customer::withInactive()->where('customer_type', 'Walking Customer')
+            $data = Customer::withoutGlobalScopes()->where('customer_type', 'Walking Customer')
                 ->when($q, function($query) use ($q) {
                     $query->where('customer_name', 'like', "%$q%")->orWhere('id', 'like', "%$q%");
-                })->limit(30)->get()->map(fn($c) => ['id' => $c->id, 'text' => $c->id . ' - ' . $c->customer_name]);
+                })->limit(50)->get()->map(fn($c) => ['id' => $c->id, 'text' => $c->id . ' - ' . $c->customer_name]);
         } else {
-            $data = Customer::withInactive()->where(function($sub) {
+            $data = Customer::withoutGlobalScopes()->where(function($sub) {
                     $sub->where('customer_type', 'Main Customer')
                         ->orWhereNull('customer_type');
                 })
                 ->when($q, function($query) use ($q) {
                     $query->where('customer_name', 'like', "%$q%")->orWhere('id', 'like', "%$q%");
-                })->limit(30)->get()->map(fn($c) => ['id' => $c->id, 'text' => $c->id . ' - ' . $c->customer_name]);
+                })->limit(50)->get()->map(fn($c) => ['id' => $c->id, 'text' => $c->id . ' - ' . $c->customer_name]);
         }
         return response()->json($data);
     }

@@ -98,13 +98,11 @@ class StockHoldController extends Controller
     {
         $type = strtolower($request->type ?? 'vendor'); // vendor, customer, walkin, walking
         if ($type === 'vendor') {
-            return Vendor::withInactive()->orderBy('name')->get()->map(fn($v) => ['id' => $v->id, 'text' => $v->name]);
+            return Vendor::withoutGlobalScopes()->orderBy('name')->get()->map(fn($v) => ['id' => $v->id, 'text' => $v->name]);
         }
         
-        $customerType = ($type === 'walkin' || $type === 'walking') ? 'Walking Customer' : 'Main Customer';
-        
-        return Customer::withInactive()
-            ->where(function($q) use ($customerType, $type) {
+        return Customer::withoutGlobalScopes()
+            ->where(function($q) use ($type) {
                 if ($type === 'walkin' || $type === 'walking') {
                     $q->where('customer_type', 'Walking Customer');
                 } else {
