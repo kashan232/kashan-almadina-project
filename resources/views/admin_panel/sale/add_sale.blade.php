@@ -427,7 +427,7 @@
 
   /* Items Table Scrollable Box */
   .items-table-wrap {
-    max-height: 380px !important;
+    max-height: 260px !important;
     overflow-y: auto !important;
     overflow-x: auto !important;
     border: 1px solid #dee2e6;
@@ -443,9 +443,9 @@
 
   /* Receipt Vouchers Scrollable Box */
   #rvWrapper {
-    max-height: 180px !important;
+    max-height: 140px !important;
     overflow-y: auto !important;
-    padding-right: 2px;
+    padding-right: 4px;
   }
 
   .discount-wrapper {
@@ -465,7 +465,14 @@
     transition: background-color 0.3s ease;
   }
 
-  .sale-page .bottom-bar { margin-top: .4rem !important; padding: .75rem !important; }
+  .sale-page .bottom-bar { 
+    margin-top: 0.75rem !important; 
+    padding: 0.5rem 0.75rem !important;
+    background: #ffffff;
+    border-top: 1px solid #e2e8f0;
+    position: relative;
+    z-index: 5;
+  }
 </style>
 
 <div class="container-fluid py-2 sale-page">
