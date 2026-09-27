@@ -410,7 +410,7 @@
     max-width: 100% !important;
   }
   
-  /* Compact Select2 for Narration */
+  /* Compact Select2 for Narration & Receipts */
   .receipt-row .select2-container--default .select2-selection--single {
     height: 31px !important;
     padding: 0px 5px !important;
@@ -423,6 +423,29 @@
   }
   .receipt-row .select2-container--default .select2-selection--single .select2-selection__arrow {
     height: 29px !important;
+  }
+
+  /* Items Table Scrollable Box */
+  .items-table-wrap {
+    max-height: 380px !important;
+    overflow-y: auto !important;
+    overflow-x: auto !important;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+  }
+  .items-table-wrap thead th {
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 10 !important;
+    background-color: #212529 !important;
+    color: #ffffff !important;
+  }
+
+  /* Receipt Vouchers Scrollable Box */
+  #rvWrapper {
+    max-height: 180px !important;
+    overflow-y: auto !important;
+    padding-right: 2px;
   }
 
   .discount-wrapper {
@@ -1939,7 +1962,7 @@
   };
   */
 
-  // Party ID Lookup
+  // Party ID Lookup (Step 1 -> Step 2)
   $('#partyIdInput').on('keydown', function(e) {
       if (e.key === 'Tab' || e.key === 'Enter') {
           const pid = $(this).val().trim();
@@ -1962,10 +1985,9 @@
                   $('#customerSelect').val(foundId).trigger('change');
               }
               e.preventDefault();
-              // Transition to first row's Item ID
-              setTimeout(() => $('#salesTableBody tr:first-child .item-id-input').focus(), 100);
+              // Transition to Step 2 (Select Party dropdown)
+              setTimeout(() => $('#customerSelect').select2('open'), 50);
           } else {
-              // Optional: You could add a small visual indicator that ID was not found
               $(this).addClass('is-invalid');
               setTimeout(() => $(this).removeClass('is-invalid'), 1000);
           }
@@ -2001,6 +2023,12 @@
       $('#previousBalance').val((+d.previous_balance || 0).toFixed(2));
       updateGrandTotals();
     });
+  });
+
+  $(document).on('select2:select', '#customerSelect', function() {
+    setTimeout(() => {
+        $('#salesTableBody tr:first-child .item-id-input').focus().select();
+    }, 100);
   });
 
   $('#clearCustomerData').on('click', function() {
@@ -2081,7 +2109,7 @@
                         addNewRow(false);
                     }
                     
-                    // 3. Focus Sales Price of current row
+                    // 3. Focus Sales Price of current row (Step 5)
                     setTimeout(() => $row.find('.sales-price').focus().select(), 50);
                 } else {
                     Swal.fire({
