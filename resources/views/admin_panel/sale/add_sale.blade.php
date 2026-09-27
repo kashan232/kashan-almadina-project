@@ -889,7 +889,7 @@
                     <div class="row g-1 m-0 align-items-center">
                       <div class="col-md-3">
                         <label class="form-label text-muted small mb-0" style="font-size:0.7rem;">Head</label>
-                        <select class="form-select form-select-sm rv-head px-1" style="font-size: 0.75rem;" name="receipt_head_id[]">
+                        <select class="form-select form-select-sm rv-head select2 px-1" style="font-size: 0.75rem;" name="receipt_head_id[]">
                           <option value="" disabled selected>Select Head</option>
                           @foreach ($accountHeads as $head)
                             @if(str_contains(strtoupper($head->name), 'CASH') || str_contains(strtoupper($head->name), 'BANK') || $head->id == 2 || $head->id == 3 || $head->id == 4 || $head->id == 100000 || strtoupper($head->name) == 'SCRAP')
@@ -900,7 +900,7 @@
                       </div>
                       <div class="col-md-3">
                         <label class="form-label text-muted small mb-0" style="font-size:0.7rem;">Account</label>
-                        <select class="form-select form-select-sm rv-account px-1" style="font-size: 0.75rem;" name="receipt_account_id[]" disabled>
+                        <select class="form-select form-select-sm rv-account select2 px-1" style="font-size: 0.75rem;" name="receipt_account_id[]" disabled>
                           <option value="" disabled selected>Select account</option>
                         </select>
                       </div>
@@ -958,17 +958,17 @@
                           }
                       }
                     @endphp
-                    <select id="discount_head" name="discount_head" class="form-select form-select-sm" style="width:100px;">
-                      <option value="" disabled {{ empty($savedDiscHead) ? 'selected' : '' }}>Select Head</option>
+                    <select id="discount_head" name="discount_head" class="form-select form-select-sm select2" style="width:120px;">
+                      <option value="" selected>Select Head</option>
                       @foreach($accountHeads as $head)
                           @if(strtoupper($head->name) == 'EXPENSE')
-                          <option value="{{ $head->id }}" {{ ($savedDiscHead == $head->id || empty($savedDiscHead)) ? 'selected' : '' }}>
+                          <option value="{{ $head->id }}" {{ ($savedDiscHead == $head->id) ? 'selected' : '' }}>
                               {{ $head->name }}
                           </option>
                           @endif
                       @endforeach
                     </select>
-                    <select name="discount_account_id" id="discount_account_id" class="form-select form-select-sm" style="flex-grow:1;" {{ ($editData && $editData->discount_account_id) ? '' : 'disabled' }}>
+                    <select name="discount_account_id" id="discount_account_id" class="form-select form-select-sm select2" style="flex-grow:1;" {{ ($editData && $editData->discount_account_id) ? '' : 'disabled' }}>
                       <option value="" disabled selected>Select Account</option>
                       @if($editData && $editData->discount_account_id)
                           @php
@@ -2404,7 +2404,12 @@
     const $accSelect = $row.find('.rv-account');
     const $amtInput = $row.find('.rv-amount');
 
-    if (!headId) return;
+    if (!headId) {
+      $accSelect.prop('disabled', true).empty().append('<option value="" disabled selected>Select account</option>');
+      $amtInput.prop('disabled', true).val('');
+      recomputeReceipts();
+      return;
+    }
 
     loadAccountsByHead(headId, $accSelect);
     if (!$accSelect.val()) {
@@ -2413,9 +2418,29 @@
     recomputeReceipts();
   });
 
+  $(document).on('change', '.rv-account', function() {
+    const accId = $(this).val();
+    const $row = $(this).closest('.rv-row');
+    const $amtInput = $row.find('.rv-amount');
+
+    if (accId) {
+      $amtInput.prop('disabled', false);
+    } else {
+      $amtInput.prop('disabled', true).val('');
+    }
+    recomputeReceipts();
+  });
+
+  $(document).on('blur', '.rv-amount', function() {
+    const raw = toNum($(this).val());
+    if (raw > 0) {
+      $(this).val(raw.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}));
+    }
+  });
+
   function loadAccountsByHead(headId, $select) {
     if (!headId) return;
-    $select.prop('disabled', true).empty().append('<option value="">Loading...</option>');
+    $select.prop('disabled', true).empty().append('<option value="">Loading...</option>').trigger('change');
 
     $.get('{{ url("/get-accounts-by-head") }}/' + headId, function(rows) {
       $select.empty().append('<option value="" disabled selected>Select account</option>');
@@ -2432,8 +2457,9 @@
         const $row = $select.closest('.rv-row, .row');
         $row.find('.rv-amount').prop('disabled', false);
       }
+      $select.select2({ width: '100%' }).trigger('change');
     }).fail(function() {
-      $select.empty().append('<option value="">Error loading</option>').prop('disabled', false);
+      $select.empty().append('<option value="">Error loading</option>').prop('disabled', false).trigger('change');
     });
   }
 
@@ -2491,8 +2517,10 @@
     </div>
   `);
 
-    // Load narrations into the newly added row
-    loadNarrationsInto($('#rvWrapper .rv-row:last .rv-narration'));
+    // Load narrations into the newly added row and initialize Select2 on Head and Account
+    const $lastRow = $('#rvWrapper .rv-row:last');
+    $lastRow.find('.rv-head, .rv-account').select2({ width: '100%' });
+    loadNarrationsInto($lastRow.find('.rv-narration'));
   });
   $(document).on('click', '.btnRemRV', function() {
     $(this).closest('.rv-row').remove();
@@ -2524,6 +2552,11 @@
     let initialType = $('input[name="partyType"]:checked').val() || 'customer';
     loadCustomersByType(initialType);
     loadNarrationsInto($('.rv-narration'));
+
+    // Initialize Select2 on Order Discount Head and Sub-account
+    $('#discount_head, #discount_account_id, .rv-head, .rv-account').select2({
+      width: '100%'
+    });
 
     // If there are existing heads (from old() or edit), load their accounts
     $('.rv-head').each(function() {
@@ -2609,11 +2642,24 @@
     let firstMessage = null;
     let firstEl = null;
 
-    $('#salesTableBody tr').each(function(rowIndex) {
+    const $rows = $('#salesTableBody tr');
+    const totalRows = $rows.length;
+
+    $rows.each(function(rowIndex) {
       const $row = $(this);
       const $wh = $row.find('.warehouse');
       const $prod = $row.find('.product-select'); // Updated for Select2
       const $qty = $row.find('.sales-qty');
+
+      const prodVal = $prod.val();
+      const qtyVal = parseFloat($qty.val() || '0') || 0;
+
+      // If this is the last row, and no item or qty is entered at all, remove it silently instead of throwing validation error
+      if (rowIndex === totalRows - 1 && totalRows > 1 && !prodVal && qtyVal <= 0) {
+        $row.remove();
+        updateGrandTotals();
+        return; // skip validation for this removed row
+      }
 
       // Warehouse
       if (!$wh.val()) {
@@ -2626,7 +2672,7 @@
       }
 
       // Product / Item
-      if (!$prod.val()) {
+      if (!prodVal) {
         ok = false;
         if (!firstMessage) {
           firstMessage = 'Please select Item for row ' + (rowIndex + 1);
@@ -2636,7 +2682,6 @@
       }
 
       // Qty > 0
-      const qtyVal = parseFloat($qty.val() || '0') || 0;
       if (qtyVal <= 0) {
         ok = false;
         if (!firstMessage) {

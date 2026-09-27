@@ -2045,30 +2045,55 @@ class VoucherController extends Controller
         if ($request->filled('start_date')) $query->whereDate(DB::raw($dateCol), '>=', $request->start_date);
         if ($request->filled('end_date')) $query->whereDate(DB::raw($dateCol), '<=', $request->end_date);
         if ($request->filled('status')) $query->where('status', $request->status);
+        if ($request->filled('user_group_id')) {
+            $query->whereJsonContains('user_group_ids', (string)$request->user_group_id);
+        }
 
         $vouchers = $query->orderBy('id', 'DESC')->get();
+        $userGroups = UserGroup::all()->keyBy('id');
 
         foreach ($vouchers as $v) {
             $partyCode = '-';
+            $srcGroupNames = [];
+
             if (is_numeric($v->party_type)) {
                 $head = DB::table('account_heads')->where('id', $v->party_type)->first();
                 $acc = DB::table('accounts')->where('id', $v->party_id)->first();
                 $typeLabel = $head->name ?? 'Account';
                 $partyName = $acc->title ?? '-';
                 $partyCode = $acc->account_code ?? $v->party_id;
+                $gIds = json_decode($acc->user_group_ids ?? '[]', true);
+                if (is_array($gIds)) {
+                    foreach ($gIds as $gid) {
+                        if (isset($userGroups[$gid])) $srcGroupNames[] = $userGroups[$gid]->group_name;
+                    }
+                }
             } elseif ($v->party_type === 'vendor') {
                 $vendor = DB::table('vendors')->where('id', $v->party_id)->first();
                 $partyName = $vendor->name ?? '-';
                 $partyCode = $vendor->id ?? '-';
                 $typeLabel = 'Vendor';
+                $gIds = json_decode($vendor->user_group_ids ?? '[]', true);
+                if (is_array($gIds)) {
+                    foreach ($gIds as $gid) {
+                        if (isset($userGroups[$gid])) $srcGroupNames[] = $userGroups[$gid]->group_name;
+                    }
+                }
             } elseif ($v->party_type === 'customer' || $v->party_type === 'walkin') {
                 $customer = DB::table('customers')->where('id', $v->party_id)->first();
                 $partyName = $customer->customer_name ?? '-';
                 $partyCode = $customer->id ?? '-';
                 $typeLabel = ($v->party_type === 'walkin') ? 'Walk-in' : 'Customer';
+                $gIds = json_decode($customer->user_group_ids ?? '[]', true);
+                if (is_array($gIds)) {
+                    foreach ($gIds as $gid) {
+                        if (isset($userGroups[$gid])) $srcGroupNames[] = $userGroups[$gid]->group_name;
+                    }
+                }
             }
 
             $v->type_label = $typeLabel;
+            $v->src_group_badge = !empty($srcGroupNames) ? ' <span class="badge bg-info text-dark" style="font-size: 8.5px;">[' . htmlspecialchars(implode(', ', $srcGroupNames)) . ']</span>' : '';
             $v->party_name = $partyName;
             $v->party_code = $partyCode;
 
@@ -2079,25 +2104,51 @@ class VoucherController extends Controller
             foreach ($rowAccIds as $idx => $aid) {
                 if (!$aid) continue;
                 $headOrType = $rowAccHeads[$idx] ?? null;
-                
+                $destGroupNames = [];
+
                 if ($headOrType === 'vendor') {
                     $acc = DB::table('vendors')->where('id', $aid)->first();
-                    if ($acc) $accountsList[] = "[Vendor] " . $acc->name;
+                    if ($acc) {
+                        $gIds = json_decode($acc->user_group_ids ?? '[]', true);
+                        if (is_array($gIds)) {
+                            foreach ($gIds as $gid) {
+                                if (isset($userGroups[$gid])) $destGroupNames[] = $userGroups[$gid]->group_name;
+                            }
+                        }
+                        $dGrpBadge = !empty($destGroupNames) ? ' <span class="badge bg-info text-dark" style="font-size: 8.5px;">[' . htmlspecialchars(implode(', ', $destGroupNames)) . ']</span>' : '';
+                        $accountsList[] = "[Vendor] " . htmlspecialchars($acc->name) . $dGrpBadge;
+                    }
                 } elseif ($headOrType === 'customer' || $headOrType === 'walkin') {
                     $acc = DB::table('customers')->where('id', $aid)->first();
-                    if ($acc) $accountsList[] = "[" . ucfirst($headOrType) . "] " . $acc->customer_name;
+                    if ($acc) {
+                        $gIds = json_decode($acc->user_group_ids ?? '[]', true);
+                        if (is_array($gIds)) {
+                            foreach ($gIds as $gid) {
+                                if (isset($userGroups[$gid])) $destGroupNames[] = $userGroups[$gid]->group_name;
+                            }
+                        }
+                        $dGrpBadge = !empty($destGroupNames) ? ' <span class="badge bg-info text-dark" style="font-size: 8.5px;">[' . htmlspecialchars(implode(', ', $destGroupNames)) . ']</span>' : '';
+                        $accountsList[] = "[" . ucfirst($headOrType) . "] " . htmlspecialchars($acc->customer_name) . $dGrpBadge;
+                    }
                 } else {
                     $acc = DB::table('accounts')->where('id', $aid)->first();
                     if ($acc) {
                         $headName = DB::table('account_heads')->where('id', $headOrType)->value('name');
-                        $accountsList[] = ($headName ? "[$headName] " : "") . $acc->title . ($acc->account_code ? " (#{$acc->account_code})" : "");
+                        $gIds = json_decode($acc->user_group_ids ?? '[]', true);
+                        if (is_array($gIds)) {
+                            foreach ($gIds as $gid) {
+                                if (isset($userGroups[$gid])) $destGroupNames[] = $userGroups[$gid]->group_name;
+                            }
+                        }
+                        $dGrpBadge = !empty($destGroupNames) ? ' <span class="badge bg-info text-dark" style="font-size: 8.5px;">[' . htmlspecialchars(implode(', ', $destGroupNames)) . ']</span>' : '';
+                        $accountsList[] = ($headName ? "[$headName] " : "") . htmlspecialchars($acc->title) . ($acc->account_code ? " (#{$acc->account_code})" : "") . $dGrpBadge;
                     }
                 }
             }
             $v->accounts_detail = implode('<br>', $accountsList);
         }
 
-        return view('admin_panel.vochers.adjustment_vouchers.all_adjustment_vouchers', compact('vouchers'));
+        return view('admin_panel.vochers.adjustment_vouchers.all_adjustment_vouchers', compact('vouchers', 'userGroups'));
     }
 
     // ==========================================
@@ -2295,11 +2346,14 @@ class VoucherController extends Controller
         if ($request->filled('start_date')) $query->whereDate(DB::raw($dateCol), '>=', $request->start_date);
         if ($request->filled('end_date')) $query->whereDate(DB::raw($dateCol), '<=', $request->end_date);
         if ($request->filled('status')) $query->where('status', $request->status);
+        if ($request->filled('user_group_id')) {
+            $query->whereJsonContains('user_group_ids', (string)$request->user_group_id);
+        }
 
         $vouchers = $query->orderBy('id', 'DESC')->get();
+        $userGroups = UserGroup::all()->keyBy('id');
 
         foreach ($vouchers as $v) {
-            // Safe JSON decode — json_decode can return int/string/null, must use is_array()
             $decoded = json_decode($v->party_type, true);
             $pTypes = is_array($decoded) ? $decoded : [];
 
@@ -2312,9 +2366,6 @@ class VoucherController extends Controller
             $decoded = json_decode($v->credit, true);
             $credits = is_array($decoded) ? $decoded : [];
 
-            $summary = [];
-
-            // Set type_label and party_name from first row for blade display
             $destAccList = [];
             $destAmtList = [];
 
@@ -2323,11 +2374,36 @@ class VoucherController extends Controller
                 if (!$pid) continue;
 
                 $pName = '-';
-                if ($type === 'vendor') $pName = DB::table('vendors')->where('id', $pid)->value('name') ?? '-';
-                elseif ($type === 'customer' || $type === 'walkin') $pName = DB::table('customers')->where('id', $pid)->value('customer_name') ?? '-';
-                else $pName = DB::table('accounts')->where('id', $pid)->value('title') ?? '-';
+                $pGroupNames = [];
+                if ($type === 'vendor') {
+                    $vendor = DB::table('vendors')->where('id', $pid)->first();
+                    $pName = $vendor->name ?? '-';
+                    $gIds = json_decode($vendor->user_group_ids ?? '[]', true);
+                    if (is_array($gIds)) {
+                        foreach ($gIds as $gid) {
+                            if (isset($userGroups[$gid])) $pGroupNames[] = $userGroups[$gid]->group_name;
+                        }
+                    }
+                } elseif ($type === 'customer' || $type === 'walkin') {
+                    $customer = DB::table('customers')->where('id', $pid)->first();
+                    $pName = $customer->customer_name ?? '-';
+                    $gIds = json_decode($customer->user_group_ids ?? '[]', true);
+                    if (is_array($gIds)) {
+                        foreach ($gIds as $gid) {
+                            if (isset($userGroups[$gid])) $pGroupNames[] = $userGroups[$gid]->group_name;
+                        }
+                    }
+                } else {
+                    $acc = DB::table('accounts')->where('id', $pid)->first();
+                    $pName = $acc->title ?? '-';
+                    $gIds = json_decode($acc->user_group_ids ?? '[]', true);
+                    if (is_array($gIds)) {
+                        foreach ($gIds as $gid) {
+                            if (isset($userGroups[$gid])) $pGroupNames[] = $userGroups[$gid]->group_name;
+                        }
+                    }
+                }
 
-                // Set first row as header display
                 if ($idx === 0) {
                     if (is_numeric($type)) {
                         $accHead = DB::table('account_heads')->where('id', $type)->first();
@@ -2343,21 +2419,24 @@ class VoucherController extends Controller
                 $dr = (float)($debits[$idx] ?? 0);
                 $cr = (float)($credits[$idx] ?? 0);
 
-                $destAccList[] = $pName;
+                $grpBadge = !empty($pGroupNames) ? ' <span class="badge bg-info text-dark" style="font-size: 8.5px;">[' . htmlspecialchars(implode(', ', $pGroupNames)) . ']</span>' : '';
+                $destAccList[] = $pName . $grpBadge;
+
                 if ($dr > 0) {
                     $destAmtList[] = '<div><span class="dest-dr-badge"><i class="fa fa-arrow-down me-1"></i>DR: ' . number_format($dr, 0) . '</span></div>';
                 } else {
                     $destAmtList[] = '<div><span class="dest-cr-badge"><i class="fa fa-arrow-up me-1"></i>CR: ' . number_format($cr, 0) . '</span></div>';
                 }
             }
+
             $v->dest_accounts_html = implode('', array_map(function($acc) {
-                return '<div><span class="dest-acc-badge"><i class="fa fa-bank me-1 text-primary"></i>' . htmlspecialchars($acc) . '</span></div>';
+                return '<div><span class="dest-acc-badge"><i class="fa fa-bank me-1 text-primary"></i>' . $acc . '</span></div>';
             }, $destAccList));
             $v->total_debit = array_sum(array_map('floatval', $debits));
             $v->total_credit = array_sum(array_map('floatval', $credits));
         }
 
-        return view('admin_panel.vochers.journal_vouchers.all_journal_vouchers', compact('vouchers'));
+        return view('admin_panel.vochers.journal_vouchers.all_journal_vouchers', compact('vouchers', 'userGroups'));
     }
 
     public function journalprint($id)

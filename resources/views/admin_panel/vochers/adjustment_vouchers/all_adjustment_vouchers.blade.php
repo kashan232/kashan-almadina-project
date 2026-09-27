@@ -136,7 +136,7 @@
                     <div class="card border-0 shadow-sm">
                         <div class="card-body p-2" style="overflow: visible;">
                             <form action="{{ route('all-adjustment-vochers') }}" method="GET" class="row g-2 align-items-center">
-                                <div class="col-md-3">
+                                <div class="col-md-2">
                                     <span class="badge bg-success text-white px-3 py-2 rounded-pill fs-6 fw-bold shadow-sm d-inline-flex align-items-center">
                                         <i class="fa fa-adjust me-2"></i>ADJUSTMENT VOUCHER LIST
                                     </span>
@@ -148,14 +148,22 @@
                                         <input type="date" name="end_date" class="form-control" value="{{ request('end_date') }}">
                                     </div>
                                 </div>
+                                <div class="col-md-3">
+                                    <select name="user_group_id" class="form-select form-select-sm select2">
+                                        <option value="">Group: All</option>
+                                        @foreach($userGroups as $grp)
+                                            <option value="{{ $grp->id }}" {{ request('user_group_id') == $grp->id ? 'selected' : '' }}>{{ $grp->group_name }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
                                 <div class="col-md-2">
                                     <select name="status" class="form-select form-select-sm select2">
-                                        <option value="">All Status</option>
+                                        <option value="">Status: All</option>
                                         <option value="draft" {{ request('status') == 'draft' ? 'selected' : '' }}>Unposted</option>
                                         <option value="posted" {{ request('status') == 'posted' ? 'selected' : '' }}>Posted</option>
                                     </select>
                                 </div>
-                                <div class="col-md-4 text-end">
+                                <div class="col-md-2 text-end">
                                     <div class="d-flex gap-1 justify-content-end align-items-center">
                                         <button type="submit" class="btn btn-primary btn-sm rounded-pill px-3 shadow-sm">Filter</button>
                                         <a href="{{ route('all-adjustment-vochers') }}" class="btn btn-outline-secondary btn-sm rounded-pill px-2" title="Reset"><i class="fa fa-refresh"></i></a>
@@ -199,7 +207,7 @@
                                     <td>
                                         <div class="d-flex align-items-center">
                                             <span class="side-badge side-1">Debit</span>
-                                            <span class="fw-bold text-dark small">{{ Str::limit($item->party_name, 25) }}</span>
+                                            <span class="fw-bold text-dark small">{{ Str::limit($item->party_name, 25) }}</span> {!! $item->src_group_badge !!}
                                         </div>
                                         <div class="text-muted" style="font-size: 9.5px; margin-left: 35px;">{{ $item->type_label }}</div>
                                     </td>
