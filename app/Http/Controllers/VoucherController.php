@@ -2287,7 +2287,9 @@ class VoucherController extends Controller
             ->where('jvid', 'NOT LIKE', 'PJ-%')
             ->where('jvid', 'NOT LIKE', 'PRJ-%')
             ->where('jvid', 'NOT LIKE', 'SJ-%')
-            ->where('jvid', 'NOT LIKE', 'SR-%');
+            ->where('jvid', 'NOT LIKE', 'SR-%')
+            ->where('remarks', 'NOT LIKE', '%Stock Wastage%')
+            ->where('remarks', 'NOT LIKE', '%Wastage%');
         $dateCol = $this->getDateColumn('journal_vouchers');
         if ($request->filled('start_date')) $query->whereDate(DB::raw($dateCol), '>=', $request->start_date);
         if ($request->filled('end_date')) $query->whereDate(DB::raw($dateCol), '<=', $request->end_date);
