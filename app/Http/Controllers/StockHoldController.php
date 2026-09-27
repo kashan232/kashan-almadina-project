@@ -47,17 +47,17 @@ class StockHoldController extends Controller
         if ($request->status) {
             $query->where('status', $request->status);
         }
-        if ($request->customer_id) {
-            $query->where(function($q) use ($request) {
-                $q->where('party_id', $request->customer_id)
-                  ->whereIn('party_type', ['customer', 'walkin', 'walking']);
+        if ($request->user_group_id) {
+            $groupId = (string) $request->user_group_id;
+            $query->where(function($q) use ($groupId) {
+                $q->whereJsonContains('user_group_ids', $groupId);
             });
         }
 
         $vouchers = $query->latest()->get();
-        $customers = Customer::orderBy('customer_name')->get();
+        $userGroups = \App\Models\UserGroup::orderBy('group_name')->get();
 
-        return view("admin_panel.stock_hold.stock_hold_list", compact('vouchers', 'customers'));
+        return view("admin_panel.stock_hold.stock_hold_list", compact('vouchers', 'userGroups'));
     }
 
     /** Load hold voucher with released qty sum so display_hold_qty matches the list page. */

@@ -31,9 +31,20 @@ class CustomerClaimController extends Controller
         if ($request->status) {
             $query->where('status', $request->status);
         }
+        if ($request->claim_type) {
+            $query->where('claim_type', $request->claim_type);
+        }
+        if ($request->user_group_id) {
+            $groupId = (string) $request->user_group_id;
+            $query->where(function($q) use ($groupId) {
+                $q->whereJsonContains('user_group_ids', $groupId);
+            });
+        }
 
         $claims = $query->latest()->get();
-        return view('admin_panel.customer_claims.index', compact('claims'));
+        $userGroups = \App\Models\UserGroup::orderBy('group_name')->get();
+
+        return view('admin_panel.customer_claims.index', compact('claims', 'userGroups'));
     }
 
     public function create()

@@ -35,6 +35,16 @@ class ClaimItemReceiptController extends Controller
             $credits->where('status', $request->status);
         }
         
+        if ($request->user_group_id) {
+            $groupId = (string) $request->user_group_id;
+            $receipts->where(function($q) use ($groupId) {
+                $q->whereJsonContains('user_group_ids', $groupId);
+            });
+            $credits->where(function($q) use ($groupId) {
+                $q->whereJsonContains('user_group_ids', $groupId);
+            });
+        }
+        
         $claimType = $request->get('claim_type');
         
         $receiptList = collect();
@@ -54,8 +64,9 @@ class ClaimItemReceiptController extends Controller
         }
         
         $vouchers = $receiptList->concat($creditList)->sortByDesc('created_at')->values();
+        $userGroups = \App\Models\UserGroup::orderBy('group_name')->get();
         
-        return view('admin_panel.claim_item_receipt.index', compact('vouchers'));
+        return view('admin_panel.claim_item_receipt.index', compact('vouchers', 'userGroups'));
     }
 
     public function create()

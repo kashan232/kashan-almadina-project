@@ -46,28 +46,6 @@ class SaleController extends Controller
             $salesQuery->whereDate('created_at', '<=', $request->end_date);
             $bookingsQuery->whereDate('created_at', '<=', $request->end_date);
         }
-        if ($request->filled('sale_type')) {
-            $isOrder = $request->sale_type === 'order' ? 1 : 0;
-            $salesQuery->where('is_sale_order', $isOrder);
-            $bookingsQuery->where('is_sale_order', $isOrder);
-        }
-        if ($request->filled('created_by')) {
-            $salesQuery->where('created_by', $request->created_by);
-            $bookingsQuery->where('created_by', $request->created_by);
-        }
-        if ($request->filled('party_type')) {
-            $pt = strtolower($request->party_type);
-            $salesQuery->where('partyType', $pt);
-            $bookingsQuery->where('party_type', $pt);
-        }
-        if ($request->filled('vendor_id')) {
-            $salesQuery->where('vendor_id', $request->vendor_id);
-            $bookingsQuery->where('vendor_id', $request->vendor_id);
-        }
-        if ($request->filled('customer_id')) {
-            $salesQuery->where('customer_id', $request->customer_id);
-            $bookingsQuery->where('customer_id', $request->customer_id);
-        }
         if ($request->filled('user_group_id')) {
             $groupId = (string) $request->user_group_id;
             $salesQuery->whereJsonContains('user_group_ids', $groupId);
@@ -92,15 +70,10 @@ class SaleController extends Controller
             $combined = $combined->where('entry_status', $request->status);
         }
 
-        $customers = Customer::orderBy('customer_name')->get();
-        $vendors = Vendor::orderBy('name')->get();
-        $userGroups = \App\Models\UserGroup::all();
+        $userGroups = \App\Models\UserGroup::orderBy('group_name')->get();
 
         return view('admin_panel.sale.index', [
             'sales' => $combined,
-            'users' => $users,
-            'customers' => $customers,
-            'vendors' => $vendors,
             'userGroups' => $userGroups
         ]);
     }

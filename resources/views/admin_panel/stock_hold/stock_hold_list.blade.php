@@ -109,19 +109,19 @@
                                         <input type="date" name="end_date" class="form-control" value="{{ request('end_date') }}">
                                     </div>
                                 </div>
-                                <div class="col-md-2">
-                                    <select name="customer_id" class="form-select form-select-sm select2">
-                                        <option value="">All Customers</option>
-                                        @foreach($customers as $cust)
-                                            <option value="{{ $cust->id }}" {{ request('customer_id') == $cust->id ? 'selected' : '' }}>
-                                                {{ $cust->customer_name }}
+                                <div class="col-md-3">
+                                    <select name="user_group_id" class="form-select form-select-sm select2">
+                                        <option value="">Group: All</option>
+                                        @foreach($userGroups as $grp)
+                                            <option value="{{ $grp->id }}" {{ request('user_group_id') == $grp->id ? 'selected' : '' }}>
+                                                {{ $grp->group_name }}
                                             </option>
                                         @endforeach
                                     </select>
                                 </div>
                                 <div class="col-md-2">
                                     <select name="status" class="form-select form-select-sm select2">
-                                        <option value="">All Status</option>
+                                        <option value="">Status: All</option>
                                         <option value="Unposted" {{ request('status') == 'Unposted' ? 'selected' : '' }}>Unposted</option>
                                         <option value="Posted" {{ request('status') == 'Posted' ? 'selected' : '' }}>Posted</option>
                                     </select>

@@ -33,33 +33,16 @@ class PurchaseReturnController extends Controller
             $query->where('status', $request->status);
         }
 
-        if ($request->filled('user_id')) {
-            $query->where('created_by', $request->user_id);
-        }
-
-        if ($request->filled('party_type')) {
-            if ($request->party_type === 'Vendor') {
-                $query->where('purchasable_type', 'App\\Models\\Vendor');
-            } elseif (in_array($request->party_type, ['Customer', 'Walking Customer'])) {
-                $query->where('purchasable_type', 'App\\Models\\Customer');
-            }
-        }
-
-        if ($request->filled('supplier_id')) {
-            $query->where('purchasable_type', 'App\\Models\\Vendor')
-                  ->where('purchasable_id', $request->supplier_id);
-        }
-
-        if ($request->filled('customer_id')) {
-            $query->where('purchasable_type', 'App\\Models\\Customer')
-                  ->where('purchasable_id', $request->customer_id);
+        if ($request->filled('user_group_id')) {
+            $groupId = (string) $request->user_group_id;
+            $query->where(function($q) use ($groupId) {
+                $q->whereJsonContains('user_group_ids', $groupId);
+            });
         }
 
         $PurchaseReturns = $query->with(['warehouse'])->latest()->get();
-        $users = User::orderBy('name')->get();
-        $suppliers = \App\Models\Vendor::orderBy('name')->get();
-        $customers = \App\Models\Customer::orderBy('customer_name')->get();
-        return view('admin_panel.purchase_return.index', compact('PurchaseReturns', 'users', 'suppliers', 'customers'));
+        $userGroups = \App\Models\UserGroup::orderBy('group_name')->get();
+        return view('admin_panel.purchase_return.index', compact('PurchaseReturns', 'userGroups'));
     }
 
     public function create()

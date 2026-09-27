@@ -121,42 +121,16 @@
                                             <input type="date" name="end_date" class="form-control" value="{{ request('end_date') }}">
                                         </div>
 
-                                        <div style="min-width: 130px;">
-                                            <select name="party_type" class="form-select form-select-sm" onchange="this.form.submit()">
-                                                <option value="">Party Type: All</option>
-                                                <option value="Vendor" {{ request('party_type') == 'Vendor' ? 'selected' : '' }}>Vendor</option>
-                                                <option value="Customer" {{ request('party_type') == 'Customer' ? 'selected' : '' }}>Customer</option>
-                                            </select>
-                                        </div>
-
-                                        <div style="min-width: 140px;">
-                                            <select name="supplier_id" class="form-select form-select-sm select2">
-                                                <option value="">All Suppliers</option>
-                                                @foreach($suppliers as $sup)
-                                                    <option value="{{ $sup->id }}" {{ request('supplier_id') == $sup->id ? 'selected' : '' }}>{{ $sup->name }}</option>
-                                                @endforeach
-                                            </select>
-                                        </div>
-
-                                        <div style="min-width: 140px;">
-                                            <select name="customer_id" class="form-select form-select-sm select2">
-                                                <option value="">All Customers</option>
-                                                @foreach($customers as $c)
-                                                    <option value="{{ $c->id }}" {{ request('customer_id') == $c->id ? 'selected' : '' }}>{{ $c->customer_name }}</option>
+                                        <div style="min-width: 160px;">
+                                            <select name="user_group_id" class="form-select form-select-sm select2">
+                                                <option value="">Group: All</option>
+                                                @foreach($userGroups as $grp)
+                                                    <option value="{{ $grp->id }}" {{ request('user_group_id') == $grp->id ? 'selected' : '' }}>{{ $grp->group_name }}</option>
                                                 @endforeach
                                             </select>
                                         </div>
 
                                         <div style="min-width: 130px;">
-                                            <select name="user_id" class="form-select form-select-sm select2">
-                                                <option value="">All Cashiers</option>
-                                                @foreach($users as $user)
-                                                    <option value="{{ $user->id }}" {{ request('user_id') == $user->id ? 'selected' : '' }}>{{ $user->name }}</option>
-                                                @endforeach
-                                            </select>
-                                        </div>
-
-                                        <div style="min-width: 120px;">
                                             <select name="status" class="form-select form-select-sm select2">
                                                 <option value="">Status: All</option>
                                                 <option value="Unposted" {{ request('status') == 'Unposted' ? 'selected' : '' }}>Unposted</option>
@@ -165,7 +139,7 @@
                                         </div>
 
                                         <button type="submit" class="btn btn-primary btn-sm rounded-pill px-3 shadow-sm">Filter</button>
-                                        <a href="{{ route('purchase.return.home') }}" class="btn btn-outline-secondary btn-sm rounded-pill px-2" title="Reset"><i class="fa fa-refresh"></i> Reset</a>
+                                        <a href="{{ route('purchase.return.home') }}" class="btn btn-outline-secondary btn-sm rounded-pill px-2" title="Reset"><i class="fa fa-refresh"></i></a>
                                     </div>
 
                                     <div>

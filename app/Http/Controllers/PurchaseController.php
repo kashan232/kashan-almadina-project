@@ -38,38 +38,19 @@ class PurchaseController extends Controller
         if ($request->filled('end_date')) {
             $query->whereDate('current_date', '<=', $request->end_date);
         }
-
         if ($request->filled('status')) {
             $query->where('status', $request->status);
         }
-
-        if ($request->filled('user_id')) {
-            $query->where('created_by', $request->user_id);
-        }
-
-        if ($request->filled('party_type')) {
-            if ($request->party_type === 'Vendor') {
-                $query->where('purchasable_type', 'App\\Models\\Vendor');
-            } elseif (in_array($request->party_type, ['Customer', 'Walking Customer'])) {
-                $query->where('purchasable_type', 'App\\Models\\Customer');
-            }
-        }
-
-        if ($request->filled('vendor_id')) {
-            $query->where('purchasable_type', 'App\\Models\\Vendor')
-                  ->where('purchasable_id', $request->vendor_id);
-        }
-
-        if ($request->filled('customer_id')) {
-            $query->where('purchasable_type', 'App\\Models\\Customer')
-                  ->where('purchasable_id', $request->customer_id);
+        if ($request->filled('user_group_id')) {
+            $groupId = (string) $request->user_group_id;
+            $query->where(function($q) use ($groupId) {
+                $q->whereJsonContains('user_group_ids', $groupId);
+            });
         }
 
         $Purchase = $query->orderByDesc('id')->get();
-        $users = User::orderBy('name')->get();
-        $customers = Customer::orderBy('customer_name')->get();
-        $vendors = Vendor::orderBy('name')->get();
-        return view("admin_panel.purchase.index", compact('Purchase', 'users', 'customers', 'vendors'));
+        $userGroups = \App\Models\UserGroup::orderBy('group_name')->get();
+        return view("admin_panel.purchase.index", compact('Purchase', 'userGroups'));
     }
     public function add_purchase()
     {

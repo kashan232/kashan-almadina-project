@@ -92,9 +92,16 @@
                     <div class="card border-0 shadow-sm">
                         <div class="card-body p-2">
                             <form action="{{ route('claim-item-receipt.index') }}" method="GET" class="row g-2 align-items-center">
-                                <div class="col-md-3">
-                                    <h6 class="mb-0 fw-bold text-dark ms-2"><i class="fa fa-file-text-o me-2 text-primary"></i>Claim Item Receipt</h6>
+                                <div class="col-md-2">
+                                    <h6 class="mb-0 fw-bold text-dark ms-2"><i class="fa fa-file-text-o me-2 text-primary"></i>Claim Received/Credits</h6>
                                 </div>
+                                <div class="col-md-2">
+                                     <select name="claim_type" class="form-select form-select-sm select2">
+                                         <option value="">Claim Type: All</option>
+                                         <option value="receipt" {{ request('claim_type') == 'receipt' ? 'selected' : '' }}>Item Return</option>
+                                         <option value="credit" {{ request('claim_type') == 'credit' ? 'selected' : '' }}>Credit Note</option>
+                                     </select>
+                                 </div>
                                 <div class="col-md-3">
                                     <div class="input-group input-group-sm">
                                         <span class="input-group-text bg-white border-end-0 small fw-bold text-muted">Range</span>
@@ -103,15 +110,16 @@
                                     </div>
                                 </div>
                                 <div class="col-md-2">
-                                     <select name="claim_type" class="form-select form-select-sm select2">
-                                         <option value="">All Claim Types</option>
-                                         <option value="receipt" {{ request('claim_type') == 'receipt' ? 'selected' : '' }}>Item Receipt</option>
-                                         <option value="credit" {{ request('claim_type') == 'credit' ? 'selected' : '' }}>Credit Note</option>
+                                     <select name="user_group_id" class="form-select form-select-sm select2">
+                                         <option value="">Group: All</option>
+                                         @foreach($userGroups as $grp)
+                                             <option value="{{ $grp->id }}" {{ request('user_group_id') == $grp->id ? 'selected' : '' }}>{{ $grp->group_name }}</option>
+                                         @endforeach
                                      </select>
                                  </div>
-                                 <div class="col-md-2">
+                                 <div class="col-md-1">
                                      <select name="status" class="form-select form-select-sm select2">
-                                         <option value="">All Status</option>
+                                         <option value="">Status</option>
                                          <option value="Draft" {{ request('status') == 'Draft' ? 'selected' : '' }}>Draft</option>
                                          <option value="Posted" {{ request('status') == 'Posted' ? 'selected' : '' }}>Posted</option>
                                      </select>
@@ -120,7 +128,7 @@
                                      <div class="d-flex gap-1 justify-content-end align-items-center">
                                          <button type="submit" class="btn btn-primary btn-sm rounded-pill px-3 shadow-sm">Filter</button>
                                          <a href="{{ route('claim-item-receipt.index') }}" class="btn btn-outline-secondary btn-sm rounded-pill px-2" title="Reset"><i class="fa fa-refresh"></i></a>
-                                         <a class="btn btn-success btn-sm rounded-pill px-4 shadow-sm ms-2" href="{{ route('claim-item-receipt.create') }}">
+                                         <a class="btn btn-success btn-sm rounded-pill px-3 shadow-sm ms-1" href="{{ route('claim-item-receipt.create') }}">
                                              <i class="fa fa-plus me-1"></i> Add Receipt
                                          </a>
                                      </div>

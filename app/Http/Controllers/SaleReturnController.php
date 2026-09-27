@@ -32,22 +32,17 @@ class SaleReturnController extends Controller
         if ($request->filled('status')) {
             $query->where('status', $request->status);
         }
-        if ($request->filled('party_type')) {
-            $pt = strtolower($request->party_type);
-            $query->where('party_type', $pt);
-        }
-        if ($request->filled('customer_id')) {
-            $query->where('customer_id', $request->customer_id);
-        }
-        if ($request->filled('vendor_id')) {
-            $query->where('vendor_id', $request->vendor_id);
+        if ($request->filled('user_group_id')) {
+            $groupId = (string) $request->user_group_id;
+            $query->where(function($q) use ($groupId) {
+                $q->whereJsonContains('user_group_ids', $groupId);
+            });
         }
 
         $SaleReturns = $query->orderBy('id', 'desc')->get();
-        $customers = \App\Models\Customer::orderBy('customer_name')->get();
-        $vendors = \App\Models\Vendor::orderBy('name')->get();
+        $userGroups = \App\Models\UserGroup::orderBy('group_name')->get();
 
-        return view('admin_panel.sale_return.index', compact('SaleReturns', 'customers', 'vendors'));
+        return view('admin_panel.sale_return.index', compact('SaleReturns', 'userGroups'));
     }
 
     public function create()

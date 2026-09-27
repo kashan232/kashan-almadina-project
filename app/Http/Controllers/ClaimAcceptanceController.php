@@ -54,9 +54,16 @@ class ClaimAcceptanceController extends Controller
         if ($request->status) {
             $query->where('status', $request->status);
         }
+        if ($request->user_group_id) {
+            $groupId = (string) $request->user_group_id;
+            $query->where(function($q) use ($groupId) {
+                $q->whereJsonContains('user_group_ids', $groupId);
+            });
+        }
         
         $vouchers = $query->latest()->get();
-        return view('admin_panel.claim_acceptance.index', compact('vouchers'));
+        $userGroups = \App\Models\UserGroup::orderBy('group_name')->get();
+        return view('admin_panel.claim_acceptance.index', compact('vouchers', 'userGroups'));
     }
 
     public function create()
