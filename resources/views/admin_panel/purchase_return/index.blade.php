@@ -188,6 +188,7 @@
                             <label class="column-picker-item"><input type="checkbox" data-column="12" checked> Net Amount</label>
                             <label class="column-picker-item"><input type="checkbox" data-column="13" checked> Status</label>
                             <label class="column-picker-item"><input type="checkbox" data-column="14" checked> Created By</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="15" checked> Action</label>
                         </div>
                     </div>
                 </div>
@@ -253,16 +254,6 @@
                                             <span class="text-dark small">{{ $ret->creator->name }}</span>
                                         @else
                                             <span class="text-muted small">System</span>
-                                        @endif
-                                    </td>
-                                    <td class="text-end fw-bold">{{ number_format($ret->subtotal, 0) }}</td>
-                                    <td class="text-end fw-bold">{{ number_format($ret->wht, 0) }}</td>
-                                    <td class="text-end fw-bold text-danger">{{ number_format($ret->net_amount, 0) }}</td>
-                                    <td class="text-center">
-                                        @if($ret->status === 'Posted')
-                                            <span class="badge bg-success rounded-pill px-3" style="font-size: 9px;">Posted</span>
-                                        @else
-                                            <span class="badge bg-warning text-dark rounded-pill px-3" style="font-size: 9px;">Unposted</span>
                                         @endif
                                     </td>
                                     <td class="text-center">
