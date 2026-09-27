@@ -142,21 +142,24 @@
                                 </button>
                                 <div class="column-picker-menu shadow" id="columnPickerMenu">
                                     <div class="p-2 border-bottom fw-bold small text-muted">Show/Hide Columns</div>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="1" checked> ID</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="2" checked> Type</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="3" checked> Inv#</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="4" checked> Date</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="5" checked> Party</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="6" checked> Product</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="7" checked> MFG Date</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="8" checked> Card No</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="0" checked> ID</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="1" checked> Type</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="2" checked> Inv#</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="3" checked> Date</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="4" checked> Party</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="5" checked> Product</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="6" checked> MFG Date</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="7" checked> Card No</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="8" checked> Claim WH</label>
                                     <label class="column-picker-item"><input type="checkbox" data-column="9" checked> Claim Type</label>
                                     <label class="column-picker-item"><input type="checkbox" data-column="10" checked> Sales Price</label>
                                     <label class="column-picker-item"><input type="checkbox" data-column="11" checked> Replacement Item</label>
                                     <label class="column-picker-item"><input type="checkbox" data-column="12" checked> Replacement Price</label>
                                     <label class="column-picker-item"><input type="checkbox" data-column="13" checked> Fault</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="14" checked> Remarks</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="15" checked> Status</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="14" checked> Replacement WH</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="15" checked> Remarks</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="16" checked> Created By</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="17" checked> Status</label>
                                 </div>
                             </div>
                         </div>
@@ -174,11 +177,13 @@
                                             <th>Product</th>
                                             <th>MFG Date</th>
                                             <th>Card No</th>
+                                            <th>Claim WH</th>
                                             <th>Claim Type</th>
                                             <th class="text-end">Sales Price</th>
                                             <th>Replacement Item</th>
                                             <th class="text-end">Replacement Price</th>
                                             <th>Fault</th>
+                                            <th>Replacement WH</th>
                                             <th>Remarks</th>
                                             <th>Created By</th>
                                             <th class="text-center">Status</th>
@@ -200,6 +205,7 @@
                                             <td class="small text-dark">{{ $claim->product->name ?? 'N/A' }}</td>
                                             <td class="small text-secondary">{{ $claim->mfg_date ?: '-' }}</td>
                                             <td class="small text-secondary">{{ $claim->card_no ?: '-' }}</td>
+                                            <td class="small text-primary fw-semibold">{{ $claim->warehouse->warehouse_name ?? '-' }}</td>
                                             <td class="small text-muted">{{ $claim->claim_type }}</td>
                                             <td class="text-end fw-bold">{{ number_format((float)($claim->sales_price > 0 ? $claim->sales_price : ($claim->replacement_sales_price ?? 0)), 2) }}</td>
                                             <td class="small text-dark">
@@ -217,6 +223,7 @@
                                                 @endif
                                             </td>
                                             <td class="small text-muted">{{ Str::limit($claim->fault_found, 15) }}</td>
+                                            <td class="small text-primary fw-semibold">{{ $claim->replacementFromWarehouse->warehouse_name ?? '-' }}</td>
                                             <td class="small text-muted">{{ Str::limit($claim->remarks, 15) }}</td>
                                             <td>
                                                 @if($claim->creator)
@@ -285,12 +292,20 @@
             }
         });
 
-        const storageKey = 'claims_table_cols_v1';
+        const storageKey = 'claims_table_cols_v2';
         
         var dt = $('#claimsTable').DataTable({
+            destroy: true,
             scrollX: true,
             autoWidth: false,
             pageLength: 25,
+            lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
+            dom: '<"d-flex justify-content-between align-items-center mb-2"<"d-flex align-items-center gap-2"lB>f>rt<"d-flex justify-content-between align-items-center mt-2"ip>',
+            buttons: [
+                { extend: 'excel', className: 'btn btn-sm btn-outline-success', text: '<i class="fa fa-file-excel-o me-1"></i> Excel' },
+                { extend: 'csv', className: 'btn btn-sm btn-outline-info', text: '<i class="fa fa-file-text-o me-1"></i> CSV' },
+                { extend: 'copy', className: 'btn btn-sm btn-outline-secondary', text: '<i class="fa fa-copy me-1"></i> Copy' }
+            ],
             order: [[0, 'desc']],
             language: {
                 search: "_INPUT_",
@@ -306,7 +321,7 @@
                 const colIdx = parseInt($(this).data('column'));
                 const checked = columns.hasOwnProperty(colIdx) ? columns[colIdx] : true;
                 $(this).prop('checked', checked);
-                dt.column(colIdx - 1).visible(checked);
+                dt.column(colIdx).visible(checked);
             });
             dt.columns.adjust().draw(false);
         }
@@ -316,7 +331,7 @@
             const colIdx = parseInt($(this).data('column'));
             const isChecked = $(this).is(':checked');
             
-            dt.column(colIdx - 1).visible(isChecked);
+            dt.column(colIdx).visible(isChecked);
             dt.columns.adjust().draw(false);
             
             const state = {};

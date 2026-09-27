@@ -99,7 +99,7 @@
                     <div class="card border-0 shadow-sm">
                         <div class="card-body p-2">
                             <form action="{{ route('stock-hold-list') }}" method="GET" class="row g-2 align-items-center">
-                                <div class="col-md-3">
+                                <div class="col-md-2">
                                     <h6 class="mb-0 fw-bold text-dark ms-2"><i class="fa fa-lock me-2 text-primary"></i>Stock Hold List</h6>
                                 </div>
                                 <div class="col-md-3">
@@ -110,24 +110,28 @@
                                     </div>
                                 </div>
                                 <div class="col-md-2">
+                                    <select name="customer_id" class="form-select form-select-sm select2">
+                                        <option value="">All Customers</option>
+                                        @foreach($customers as $cust)
+                                            <option value="{{ $cust->id }}" {{ request('customer_id') == $cust->id ? 'selected' : '' }}>
+                                                {{ $cust->customer_name }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div class="col-md-2">
                                     <select name="status" class="form-select form-select-sm select2">
                                         <option value="">All Status</option>
                                         <option value="Unposted" {{ request('status') == 'Unposted' ? 'selected' : '' }}>Unposted</option>
                                         <option value="Posted" {{ request('status') == 'Posted' ? 'selected' : '' }}>Posted</option>
                                     </select>
                                 </div>
-                                <div class="col-md-4 text-end">
+                                <div class="col-md-3 text-end">
                                     <div class="d-flex gap-1 justify-content-end align-items-center">
                                         <button type="submit" class="btn btn-primary btn-sm rounded-pill px-3 shadow-sm">Filter</button>
                                         <a href="{{ route('stock-hold-list') }}" class="btn btn-outline-secondary btn-sm rounded-pill px-2" title="Reset"><i class="fa fa-refresh"></i></a>
-                                        <a class="btn btn-success btn-sm rounded-pill px-3 shadow-sm ms-1" href="{{ route('stock-holds.import.template') }}">
-                                            <i class="fa fa-file-excel-o me-1"></i> Excel Template
-                                        </a>
-                                        <a class="btn btn-info btn-sm text-white rounded-pill px-3 shadow-sm ms-1" href="{{ route('stock-holds.import') }}">
-                                            <i class="fa fa-upload me-1"></i> Import Excel
-                                        </a>
-                                        <a class="btn btn-primary btn-sm rounded-pill px-4 shadow-sm ms-1" href="{{ route('create-stock-hold') }}">
-                                            <i class="fa fa-plus me-1"></i> Add Stock Hold
+                                        <a class="btn btn-primary btn-sm rounded-pill px-3 shadow-sm ms-1" href="{{ route('create-stock-hold') }}">
+                                            <i class="fa fa-plus me-1"></i> Add Hold
                                         </a>
                                     </div>
                                 </div>
@@ -148,12 +152,13 @@
                                 </button>
                                 <div class="column-picker-menu shadow" id="columnPickerMenu">
                                     <div class="p-2 border-bottom fw-bold small text-muted">Show/Hide Columns</div>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="1" checked> Type</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="2" checked> Inv#</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="3" checked> Date</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="4" checked> Party / Customer</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="5" checked> Location</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="6" checked> Items Details</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="0" checked> Type</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="1" checked> Inv#</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="2" checked> Date</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="3" checked> Party / Customer</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="4" checked> Location</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="5" checked> Items Details</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="6" checked> Created By</label>
                                     <label class="column-picker-item"><input type="checkbox" data-column="7" checked> Status</label>
                                 </div>
                             </div>
@@ -171,7 +176,7 @@
                                             <th>Location</th>
                                             <th>Items Details</th>
                                             <th>Created By</th>
-                                    <th class="text-center">Status</th>
+                                            <th class="text-center">Status</th>
                                             <th class="text-center">Action</th>
                                         </tr>
                                     </thead>
@@ -199,13 +204,13 @@
                                                 @endforeach
                                             </td>
                                             <td>
-                                        @if($v->creator)
-                                            <span class="text-dark small">{{ $v->creator->name }}</span>
-                                        @else
-                                            <span class="text-muted small">System</span>
-                                        @endif
-                                    </td>
-                                    <td class="text-center">
+                                                @if($v->creator)
+                                                    <span class="text-dark small">{{ $v->creator->name }}</span>
+                                                @else
+                                                    <span class="text-muted small">System</span>
+                                                @endif
+                                            </td>
+                                            <td class="text-center">
                                                 @if($v->status == 'Posted')
                                                     <span class="badge bg-success rounded-pill px-3">Posted</span>
                                                 @else
@@ -225,6 +230,13 @@
                                                         <a href="{{ route('stock-holds.edit', $v->id) }}" class="btn btn-outline-warning btn-xs px-1 py-0" title="Edit" style="height: 20px;">
                                                             <i class="fa fa-pencil text-dark"></i>
                                                         </a>
+
+                                                        <form action="{{ route('stock-holds.destroy', $v->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this unposted hold entry?')">
+                                                            @csrf
+                                                            <button type="submit" class="btn btn-outline-danger btn-xs px-1 py-0" title="Delete" style="height: 20px;">
+                                                                <i class="fa fa-trash"></i>
+                                                            </button>
+                                                        </form>
                                                     @else
                                                         <a href="{{ route('stock-holds.view', $v->id) }}" class="btn btn-outline-info btn-xs px-1 py-0" title="View Hold" style="height: 20px;">
                                                             <i class="fa fa-eye"></i>
@@ -263,13 +275,20 @@
             }
         });
 
-        const storageKey = 'stock_hold_table_cols_v1';
+        const storageKey = 'stock_hold_table_cols_v2';
         
         var dt = $('#stockHoldTable').DataTable({
             destroy: true,
             scrollX: true,
             autoWidth: false,
             pageLength: 25,
+            lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
+            dom: '<"d-flex justify-content-between align-items-center mb-2"<"d-flex align-items-center gap-2"lB>f>rt<"d-flex justify-content-between align-items-center mt-2"ip>',
+            buttons: [
+                { extend: 'excel', className: 'btn btn-sm btn-outline-success', text: '<i class="fa fa-file-excel-o me-1"></i> Excel' },
+                { extend: 'csv', className: 'btn btn-sm btn-outline-info', text: '<i class="fa fa-file-text-o me-1"></i> CSV' },
+                { extend: 'copy', className: 'btn btn-sm btn-outline-secondary', text: '<i class="fa fa-copy me-1"></i> Copy' }
+            ],
             order: [[1, 'desc']],
             language: {
                 search: "_INPUT_",
@@ -285,7 +304,7 @@
                 const colIdx = parseInt($(this).data('column'));
                 const checked = columns.hasOwnProperty(colIdx) ? columns[colIdx] : true;
                 $(this).prop('checked', checked);
-                dt.column(colIdx - 1).visible(checked);
+                dt.column(colIdx).visible(checked);
             });
             dt.columns.adjust().draw(false);
         }
@@ -295,7 +314,7 @@
             const colIdx = parseInt($(this).data('column'));
             const isChecked = $(this).is(':checked');
             
-            dt.column(colIdx - 1).visible(isChecked);
+            dt.column(colIdx).visible(isChecked);
             dt.columns.adjust().draw(false);
             
             const state = {};

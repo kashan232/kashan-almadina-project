@@ -47,10 +47,17 @@ class StockHoldController extends Controller
         if ($request->status) {
             $query->where('status', $request->status);
         }
+        if ($request->customer_id) {
+            $query->where(function($q) use ($request) {
+                $q->where('party_id', $request->customer_id)
+                  ->whereIn('party_type', ['customer', 'walkin', 'walking']);
+            });
+        }
 
         $vouchers = $query->latest()->get();
+        $customers = Customer::orderBy('customer_name')->get();
 
-        return view("admin_panel.stock_hold.stock_hold_list", compact('vouchers'));
+        return view("admin_panel.stock_hold.stock_hold_list", compact('vouchers', 'customers'));
     }
 
     /** Load hold voucher with released qty sum so display_hold_qty matches the list page. */
@@ -560,18 +567,36 @@ class StockHoldController extends Controller
         return view('admin_panel.stock_hold.print_release', compact('voucher'));
     }
 
-    public function stockrelaselist()
+    public function stockrelaselist(Request $request)
     {
-        // load releases with product, warehouse and hold + party info
-        $vouchers = \App\Models\StockReleaseVoucher::with([
+        $query = \App\Models\StockReleaseVoucher::with([
             'items.product',
             'warehouse',
             'holdVoucher',
             'partyCustomer',
             'partyVendor'
-        ])->orderBy('id', 'desc')->get();
+        ]);
 
-        return view('admin_panel.stock_hold.stock_relase_list', compact('vouchers'));
+        if ($request->start_date) {
+            $query->whereDate('date', '>=', $request->start_date);
+        }
+        if ($request->end_date) {
+            $query->whereDate('date', '<=', $request->end_date);
+        }
+        if ($request->status) {
+            $query->where('status', $request->status);
+        }
+        if ($request->customer_id) {
+            $query->where(function($q) use ($request) {
+                $q->where('party_id', $request->customer_id)
+                  ->whereIn('party_type', ['customer', 'walkin', 'walking']);
+            });
+        }
+
+        $vouchers = $query->orderBy('id', 'desc')->get();
+        $customers = Customer::orderBy('customer_name')->get();
+
+        return view('admin_panel.stock_hold.stock_relase_list', compact('vouchers', 'customers'));
     }
     public function createRelease()
     {
@@ -1029,6 +1054,44 @@ class StockHoldController extends Controller
                 return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
             }
             return redirect()->back()->with('error', $e->getMessage());
+        }
+    }
+
+    public function destroy($id)
+    {
+        $voucher = StockHoldVoucher::with('items')->findOrFail($id);
+        if ($voucher->status === 'Posted') {
+            return back()->with('error', 'Posted Stock Hold entries cannot be deleted.');
+        }
+
+        try {
+            DB::beginTransaction();
+            $voucher->items()->forceDelete();
+            $voucher->delete();
+            DB::commit();
+            return back()->with('success', 'Stock Hold entry deleted successfully.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->with('error', 'Failed to delete Stock Hold: ' . $e->getMessage());
+        }
+    }
+
+    public function destroyRelease($id)
+    {
+        $voucher = \App\Models\StockReleaseVoucher::with('items')->findOrFail($id);
+        if ($voucher->status === 'Posted') {
+            return back()->with('error', 'Posted Stock Release entries cannot be deleted.');
+        }
+
+        try {
+            DB::beginTransaction();
+            $voucher->items()->delete();
+            $voucher->delete();
+            DB::commit();
+            return back()->with('success', 'Stock Release entry deleted successfully.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->with('error', 'Failed to delete Stock Release: ' . $e->getMessage());
         }
     }
 

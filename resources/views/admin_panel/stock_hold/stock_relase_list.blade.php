@@ -99,7 +99,7 @@
                     <div class="card border-0 shadow-sm">
                         <div class="card-body p-2">
                             <form action="{{ route('stock-relase-list') }}" method="GET" class="row g-2 align-items-center">
-                                <div class="col-md-3">
+                                <div class="col-md-2">
                                     <h6 class="mb-0 fw-bold text-dark ms-2"><i class="fa fa-unlock me-2 text-primary"></i>Stock Release List</h6>
                                 </div>
                                 <div class="col-md-3">
@@ -110,17 +110,27 @@
                                     </div>
                                 </div>
                                 <div class="col-md-2">
+                                    <select name="customer_id" class="form-select form-select-sm select2">
+                                        <option value="">All Customers</option>
+                                        @foreach($customers as $cust)
+                                            <option value="{{ $cust->id }}" {{ request('customer_id') == $cust->id ? 'selected' : '' }}>
+                                                {{ $cust->customer_name }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div class="col-md-2">
                                     <select name="status" class="form-select form-select-sm select2">
                                         <option value="">All Status</option>
                                         <option value="Unposted" {{ request('status') == 'Unposted' ? 'selected' : '' }}>Unposted</option>
                                         <option value="Posted" {{ request('status') == 'Posted' ? 'selected' : '' }}>Posted</option>
                                     </select>
                                 </div>
-                                <div class="col-md-4 text-end">
+                                <div class="col-md-3 text-end">
                                     <div class="d-flex gap-1 justify-content-end align-items-center">
                                         <button type="submit" class="btn btn-primary btn-sm rounded-pill px-3 shadow-sm">Filter</button>
                                         <a href="{{ route('stock-relase-list') }}" class="btn btn-outline-secondary btn-sm rounded-pill px-2" title="Reset"><i class="fa fa-refresh"></i></a>
-                                        <a class="btn btn-success btn-sm rounded-pill px-4 shadow-sm ms-2" href="{{ route('stock-holds.release.add') }}">
+                                        <a class="btn btn-success btn-sm rounded-pill px-3 shadow-sm ms-1" href="{{ route('stock-holds.release.add') }}">
                                             <i class="fa fa-plus me-1"></i> Add Release
                                         </a>
                                     </div>
@@ -141,15 +151,16 @@
                                     <i class="fa fa-columns me-1"></i> Columns
                                 </button>
                                 <div class="column-picker-menu shadow" id="columnPickerMenu">
-                                    <div class="p-2 border-bottom fw-bold small text-muted">Show/Hide Columns</div>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="1" checked> Type</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="2" checked> Inv#</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="3" checked> Date</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="4" checked> Release Type</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="5" checked> Party / Customer</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="6" checked> Location</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="7" checked> Items Details</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="8" checked> Status</label>
+                                     <div class="p-2 border-bottom fw-bold small text-muted">Show/Hide Columns</div>
+                                     <label class="column-picker-item"><input type="checkbox" data-column="0" checked> Type</label>
+                                     <label class="column-picker-item"><input type="checkbox" data-column="1" checked> Inv#</label>
+                                     <label class="column-picker-item"><input type="checkbox" data-column="2" checked> Date</label>
+                                     <label class="column-picker-item"><input type="checkbox" data-column="3" checked> Release Type</label>
+                                     <label class="column-picker-item"><input type="checkbox" data-column="4" checked> Party / Customer</label>
+                                     <label class="column-picker-item"><input type="checkbox" data-column="5" checked> Location</label>
+                                     <label class="column-picker-item"><input type="checkbox" data-column="6" checked> Items Details</label>
+                                     <label class="column-picker-item"><input type="checkbox" data-column="7" checked> Created By</label>
+                                     <label class="column-picker-item"><input type="checkbox" data-column="8" checked> Status</label>
                                 </div>
                             </div>
                         </div>
@@ -208,7 +219,7 @@
                                                     <span class="text-muted small">System</span>
                                                 @endif
                                             </td>
-<td class="text-center">
+                                            <td class="text-center">
                                                 @if($v->status == 'Posted')
                                                     <span class="badge bg-success rounded-pill px-3">Posted</span>
                                                 @else
@@ -228,6 +239,13 @@
                                                         <a href="{{ route('stock-holds.release.edit', $v->id) }}" class="btn btn-outline-warning btn-xs px-1 py-0" title="Edit" style="height: 20px;">
                                                             <i class="fa fa-pencil text-dark"></i>
                                                         </a>
+
+                                                        <form action="{{ route('stock-holds.release.destroy', $v->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this unposted release entry?')">
+                                                            @csrf
+                                                            <button type="submit" class="btn btn-outline-danger btn-xs px-1 py-0" title="Delete" style="height: 20px;">
+                                                                <i class="fa fa-trash"></i>
+                                                            </button>
+                                                        </form>
                                                     @else
                                                         <a href="{{ route('stock-holds.release.view', $v->id) }}" class="btn btn-outline-info btn-xs px-1 py-0" title="View Release" style="height: 20px;">
                                                             <i class="fa fa-eye"></i>
@@ -270,12 +288,20 @@
             }
         });
 
-        const storageKey = 'stock_release_table_cols_v1';
+        const storageKey = 'stock_release_table_cols_v2';
         
         var dt = $('#stockReleaseTable').DataTable({
+            destroy: true,
             scrollX: true, 
             autoWidth: false, 
             pageLength: 25, 
+            lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
+            dom: '<"d-flex justify-content-between align-items-center mb-2"<"d-flex align-items-center gap-2"lB>f>rt<"d-flex justify-content-between align-items-center mt-2"ip>',
+            buttons: [
+                { extend: 'excel', className: 'btn btn-sm btn-outline-success', text: '<i class="fa fa-file-excel-o me-1"></i> Excel' },
+                { extend: 'csv', className: 'btn btn-sm btn-outline-info', text: '<i class="fa fa-file-text-o me-1"></i> CSV' },
+                { extend: 'copy', className: 'btn btn-sm btn-outline-secondary', text: '<i class="fa fa-copy me-1"></i> Copy' }
+            ],
             order: [[1, 'desc']],
             language: { search: "_INPUT_", searchPlaceholder: "Search releases..." }
         });
@@ -288,7 +314,7 @@
                 const colIdx = parseInt($(this).data('column'));
                 const checked = columns.hasOwnProperty(colIdx) ? columns[colIdx] : true;
                 $(this).prop('checked', checked);
-                dt.column(colIdx - 1).visible(checked);
+                dt.column(colIdx).visible(checked);
             });
             dt.columns.adjust().draw(false);
         }
@@ -296,7 +322,7 @@
         $('#columnPickerMenu input').on('change', function() {
             var colIdx = parseInt($(this).data('column'));
             var isChecked = $(this).is(':checked');
-            dt.column(colIdx - 1).visible(isChecked);
+            dt.column(colIdx).visible(isChecked);
             dt.columns.adjust().draw(false);
 
             const state = {};

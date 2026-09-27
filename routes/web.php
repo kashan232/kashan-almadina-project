@@ -460,6 +460,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/stock-holds/edit/{id}', [StockHoldController::class, 'edit'])->name('stock-holds.edit');
     Route::post('/stock-holds/update/{id}', [StockHoldController::class, 'update'])->name('stock-holds.update');
     Route::post('/stock-holds/delete/{id}', [StockHoldController::class, 'destroy'])->name('stock-holds.destroy');
+    Route::delete('/stock-holds/delete/{id}', [StockHoldController::class, 'destroy']);
     Route::post('/stock-holds/post/{id}', [StockHoldController::class, 'post'])->name('stock-holds.post');
     Route::post('stock-holds/claim/invoice/{invoice}', [StockHoldController::class, 'claimByInvoice'])->name('stock-holds.claim.invoice');
     Route::post('stock-holds/claim/item', [StockHoldController::class, 'claimItem'])->name('stock-holds.claim.item');
@@ -480,6 +481,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/add-stock-release', [StockHoldController::class, 'createRelease'])->name('stock-holds.release.add');
     Route::get('/stock-release/edit/{id}', [StockHoldController::class, 'editRelease'])->name('stock-holds.release.edit');
     Route::post('/stock-release/update/{id}', [StockHoldController::class, 'updateRelease'])->name('stock-holds.release.update');
+    Route::post('/stock-release/delete/{id}', [StockHoldController::class, 'destroyRelease'])->name('stock-holds.release.destroy');
+    Route::delete('/stock-release/delete/{id}', [StockHoldController::class, 'destroyRelease']);
     Route::post('/stock-release/post/{id}', [StockHoldController::class, 'postRelease'])->name('stock-holds.release.post');
     Route::get('/stock-release/print/{id}', [StockHoldController::class, 'printRelease'])->name('stock-holds.release.print');
     Route::get('/stock-release/{id}/view', [StockHoldController::class, 'showRelease'])->name('stock-holds.release.view');

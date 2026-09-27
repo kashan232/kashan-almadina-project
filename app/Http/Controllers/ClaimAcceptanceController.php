@@ -43,7 +43,7 @@ class ClaimAcceptanceController extends Controller
 
     public function index(Request $request)
     {
-        $query = ClaimAcceptance::with(['vendor', 'customer', 'creator', 'items']);
+        $query = ClaimAcceptance::with(['vendor', 'customer', 'creator', 'items.product', 'fromWarehouse', 'toWarehouse']);
         
         if ($request->start_date) {
             $query->whereDate('date', '>=', $request->start_date);

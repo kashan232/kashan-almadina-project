@@ -135,13 +135,19 @@
                                 </button>
                                 <div class="column-picker-menu shadow" id="columnPickerMenu">
                                     <div class="p-2 border-bottom fw-bold small text-muted">Show/Hide Columns</div>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="1" checked> Type</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="2" checked> Inv#</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="3" checked> Date</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="4" checked> BTR#</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="5" checked> Party / Supplier</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="6" checked> Remarks</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="7" checked> Status</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="0" checked> Type</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="1" checked> Inv#</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="2" checked> Date</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="3" checked> BTR#</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="4" checked> Party / Supplier</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="5" checked> + WH (To WH)</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="6" checked> - WH (From WH)</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="7" checked> Item</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="8" checked> Qty</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="9" checked> Total Qty</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="10" checked> Remarks</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="11" checked> Created By</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="12" checked> Status</label>
                                 </div>
                             </div>
                         </div>
@@ -156,14 +162,22 @@
                                             <th>Date</th>
                                             <th>BTR#</th>
                                             <th>Party / Supplier</th>
+                                            <th>+ WH</th>
+                                            <th>- WH</th>
+                                            <th>Item</th>
+                                            <th class="text-center">Qty</th>
+                                            <th class="text-center">Total Qty</th>
                                             <th>Remarks</th>
                                             <th>Created By</th>
-                                    <th class="text-center">Status</th>
+                                            <th class="text-center">Status</th>
                                             <th class="text-center" style="min-width: 120px;">Action</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         @foreach($vouchers as $v)
+                                        @php
+                                            $totalQty = $v->items->sum('quantity');
+                                        @endphp
                                         <tr>
                                             <td class="text-muted small">CLA</td>
                                             <td class="fw-bold text-success">{{ preg_replace('/[^0-9]/', '', $v->voucher_no) ?: '-' }}</td>
@@ -179,15 +193,32 @@
                                                     @endif
                                                 </span>
                                             </td>
+                                            <td class="small text-success fw-semibold">{{ $v->toWarehouse->warehouse_name ?? '-' }}</td>
+                                            <td class="small text-danger fw-semibold">{{ $v->fromWarehouse->warehouse_name ?? '-' }}</td>
+                                            <td class="py-1">
+                                                @foreach($v->items as $item)
+                                                    <div style="font-size:10.5px; border-bottom:1px dashed #eee; padding:1px 0; line-height: 1.2;" class="text-truncate" style="max-width: 180px;">
+                                                        {{ $item->product->name ?? 'Unknown' }}
+                                                    </div>
+                                                @endforeach
+                                            </td>
+                                            <td class="py-1 text-center">
+                                                @foreach($v->items as $item)
+                                                    <div style="font-size:10.5px; border-bottom:1px dashed #eee; padding:1px 0; line-height: 1.2;" class="fw-bold text-primary">
+                                                        {{ (float)$item->quantity }}
+                                                    </div>
+                                                @endforeach
+                                            </td>
+                                            <td class="text-center fw-bold text-dark">{{ (float)$totalQty }}</td>
                                             <td class="small text-muted">{{ Str::limit($v->remarks, 30) }}</td>
                                             <td>
-                                        @if($v->creator)
-                                            <span class="text-dark small">{{ $v->creator->name }}</span>
-                                        @else
-                                            <span class="text-muted small">System</span>
-                                        @endif
-                                    </td>
-                                    <td class="text-center">
+                                                @if($v->creator)
+                                                    <span class="text-dark small">{{ $v->creator->name }}</span>
+                                                @else
+                                                    <span class="text-muted small">System</span>
+                                                @endif
+                                            </td>
+                                            <td class="text-center">
                                                 @if($v->status == 'Posted')
                                                     <span class="badge bg-success rounded-pill px-3">Posted</span>
                                                 @else
@@ -255,12 +286,20 @@
             }
         });
 
-        const storageKey = 'claim_acceptance_table_cols_v1';
+        const storageKey = 'claim_acceptance_table_cols_v2';
         
         var dt = $('#acceptanceTable').DataTable({
+            destroy: true,
             scrollX: true,
             autoWidth: false,
             pageLength: 25,
+            lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
+            dom: '<"d-flex justify-content-between align-items-center mb-2"<"d-flex align-items-center gap-2"lB>f>rt<"d-flex justify-content-between align-items-center mt-2"ip>',
+            buttons: [
+                { extend: 'excel', className: 'btn btn-sm btn-outline-success', text: '<i class="fa fa-file-excel-o me-1"></i> Excel' },
+                { extend: 'csv', className: 'btn btn-sm btn-outline-info', text: '<i class="fa fa-file-text-o me-1"></i> CSV' },
+                { extend: 'copy', className: 'btn btn-sm btn-outline-secondary', text: '<i class="fa fa-copy me-1"></i> Copy' }
+            ],
             order: [[0, 'desc']],
             language: {
                 search: "_INPUT_",
@@ -276,7 +315,7 @@
                 const colIdx = parseInt($(this).data('column'));
                 const checked = columns.hasOwnProperty(colIdx) ? columns[colIdx] : true;
                 $(this).prop('checked', checked);
-                dt.column(colIdx - 1).visible(checked);
+                dt.column(colIdx).visible(checked);
             });
             dt.columns.adjust().draw(false);
         }
@@ -286,7 +325,7 @@
             const colIdx = parseInt($(this).data('column'));
             const isChecked = $(this).is(':checked');
             
-            dt.column(colIdx - 1).visible(isChecked);
+            dt.column(colIdx).visible(isChecked);
             dt.columns.adjust().draw(false);
             
             const state = {};
