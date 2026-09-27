@@ -787,7 +787,7 @@
 
 
                       {{-- Reports Section --}}
-                      @canany(['Reports Dashboard', 'Sales Report', 'Purchase Report', 'Claim Report', 'Claim Acceptance Report', 'Claim Receipt Report', 'Stock Wastage Report', 'Stock Transfer Report', 'Receipt Voucher Report', 'Payment Voucher Report', 'Expense Voucher Report', 'Income Voucher Report', 'Journal Voucher Report', 'Adjustment Voucher Report'])
+                      @canany(['Reports Dashboard', 'Daily Activity Report', 'Sales Report', 'Customer Outstanding Balance', 'Purchase Report', 'Claim Report', 'Claim Acceptance Report', 'Claim Receipt Report', 'Stock Report', 'Item Stock Ledger', 'Hold & Release Summary', 'Stock Wastage Report', 'Stock Transfer Report', 'Receipt Voucher Report', 'Payment Voucher Report', 'Expense Voucher Report', 'Income Voucher Report', 'Journal Voucher Report', 'Adjustment Voucher Report'])
                       <li class="nav-item">
                           <a href="#" class="nav-link">
                               <span class="menu-title">Reports</span>
@@ -803,12 +803,14 @@
                                       </a>
                                   </li>
                                   @endcan
+                                  @can('Daily Activity Report')
                                   <li class="nav-item">
                                       <a class="nav-link" href="{{ route('reports.daily-activity.index') }}">
                                           <i class="fa-solid fa-calendar-day mr-2"></i>
                                           <span>Daily Activity Report</span>
                                       </a>
                                   </li>
+                                  @endcan
                                   @can('Sales Report')
                                   <li class="nav-item">
                                       <a class="nav-link" href="{{ route('reports.sales.index') }}">
@@ -816,6 +818,8 @@
                                           <span>Sales Report</span>
                                       </a>
                                   </li>
+                                  @endcan
+                                  @can('Customer Outstanding Balance')
                                   <li class="nav-item">
                                       <a class="nav-link" href="{{ route('reports.customer-outstanding.index') }}">
                                           <i class="fa-solid fa-users mr-2"></i>
@@ -867,30 +871,37 @@
                                   </li>
                                   @endcanany
 
+                                  @canany(['Stock Report', 'Item Stock Ledger', 'Hold & Release Summary', 'Stock Wastage Report', 'Stock Transfer Report'])
                                   <li class="nav-item has-nested-submenu">
                                       <a href="javascript:void(0)" class="nav-link nested-toggle">
                                           <span><i class="fa-solid fa-boxes-stacked mr-2"></i> Stock Reports</span>
                                           <i class="fa-solid fa-chevron-right nested-arrow"></i>
                                       </a>
                                       <ul class="nested-submenu">
+                                          @can('Stock Report')
                                           <li>
                                               <a href="{{ route('reports.stock.index') }}">
                                                   <i class="fa-solid fa-boxes-stacked"></i>
                                                   <span>Stock Report</span>
                                               </a>
                                           </li>
+                                          @endcan
+                                          @can('Item Stock Ledger')
                                           <li>
                                               <a href="{{ route('reports.stock-ledger.index') }}">
                                                   <i class="fa-solid fa-book"></i>
                                                   <span>Item Stock Ledger</span>
                                               </a>
                                           </li>
+                                          @endcan
+                                          @can('Hold & Release Summary')
                                           <li>
                                               <a href="{{ route('reports.stock-hold-release.index') }}">
                                                   <i class="fa-solid fa-pause-circle"></i>
                                                   <span>Hold &amp; Release Summary</span>
                                               </a>
                                           </li>
+                                          @endcan
                                           @can('Stock Wastage Report')
                                           <li>
                                               <a href="{{ route('reports.stock-wastage.index') }}">
@@ -909,6 +920,7 @@
                                           @endcan
                                       </ul>
                                   </li>
+                                  @endcanany
 
                                   @canany(['Receipt Voucher Report', 'Payment Voucher Report', 'Expense Voucher Report', 'Income Voucher Report', 'Journal Voucher Report', 'Adjustment Voucher Report'])
                                   <li class="nav-item has-nested-submenu">
