@@ -1253,19 +1253,6 @@ class SaleController extends Controller
                 // Sale Discount is an expense. Debit increases expense.
                 $discountAccount->opening_balance = ($discountAccount->opening_balance ?? 0) + $orderDiscount;
                 $discountAccount->save();
-
-                \App\Models\JournalVoucher::create([
-                    'jvid' => 'SJ-DISC-' . $invoiceNo,
-                    'entry_date' => $date,
-                    'status' => 'posted',
-                    'total_debit' => $orderDiscount,
-                    'total_credit' => $orderDiscount,
-                    'party_type' => json_encode([$pType, (string)$discountAccount->head_id]),
-                    'party_id' => json_encode([$partyId, $discountAccount->id]),
-                    'debit' => json_encode([0, $orderDiscount]), // Debit Discount Account
-                    'credit' => json_encode([$orderDiscount, 0]), // Credit Customer
-                    'remarks' => 'Discount on Sale: ' . $invoiceNo . ' ; ' . ($discountAccount->head->name ?? 'Head') . ' ; ' . ($discountAccount->title ?? 'Subhead'),
-                ]);
             }
         } elseif ($orderDiscount > 0) {
             Voucher::create([

@@ -416,19 +416,6 @@ class SaleReturnController extends Controller
                         if ($discountAccount) {
                             $discountAccount->opening_balance = ($discountAccount->opening_balance ?? 0) - $ret->discount_amount;
                             $discountAccount->save();
-
-                            JournalVoucher::create([
-                                'jvid' => 'SR-DISC-' . $ret->invoice_no,
-                                'entry_date' => $ret->entry_date ?: $ret->current_date,
-                                'status' => 'posted',
-                                'total_debit' => $ret->discount_amount,
-                                'total_credit' => $ret->discount_amount,
-                                'party_type' => json_encode([$pType, (string) $discountAccount->head_id]),
-                                'party_id' => json_encode([$pId, $discountAccount->id]),
-                                'debit' => json_encode([$ret->discount_amount, 0]),
-                                'credit' => json_encode([0, $ret->discount_amount]),
-                                'remarks' => 'Discount on Sale Return: ' . $ret->invoice_no . ' ; ' . ($discountAccount->head->name ?? 'Head') . ' ; ' . ($discountAccount->title ?? 'Subhead'),
-                            ]);
                         }
                     } else {
                         Voucher::create([
