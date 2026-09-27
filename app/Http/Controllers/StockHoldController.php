@@ -1063,25 +1063,6 @@ class StockHoldController extends Controller
         }
     }
 
-    public function destroy($id)
-    {
-        $voucher = StockHoldVoucher::with('items')->findOrFail($id);
-        if ($voucher->status === 'Posted') {
-            return back()->with('error', 'Posted Stock Hold entries cannot be deleted.');
-        }
-
-        try {
-            DB::beginTransaction();
-            $voucher->items()->forceDelete();
-            $voucher->delete();
-            DB::commit();
-            return back()->with('success', 'Stock Hold entry deleted successfully.');
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return back()->with('error', 'Failed to delete Stock Hold: ' . $e->getMessage());
-        }
-    }
-
     public function destroyRelease($id)
     {
         $voucher = \App\Models\StockReleaseVoucher::with('items')->findOrFail($id);
