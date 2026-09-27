@@ -523,7 +523,7 @@
                       @endcanany
 
                       {{-- Purchase Section --}}
-                      @canany(['Purchase', 'Purchase Return'])
+                      @canany(['Purchase', 'Purchase Return', 'Purchase Report'])
                       <li class="nav-item">
                           <a href="#" class="nav-link"><span class="menu-title">Purchase</span><i class="menu-arrow"></i></a>
                           <div class="submenu">
@@ -534,13 +534,16 @@
                                   @can('Purchase Return')
                                   <li><a href="{{route('purchase.return.home')}}"><i class="fas fa-undo mr-2"></i> Purchase Return</a></li>
                                   @endcan
+                                  @can('Purchase Report')
+                                  <li><a href="{{ route('reports.purchase.index') }}"><i class="fas fa-file-invoice-dollar mr-2"></i> Purchase Report</a></li>
+                                  @endcan
                               </ul>
                           </div>
                       </li>
                       @endcanany
 
                       {{-- Inventory Section --}}
-                      @canany(['Warehouse Stock'])
+                      @canany(['Warehouse Stock', 'Stock Report', 'Item Stock Ledger', 'Hold & Release Summary'])
                       <li class="nav-item">
                           <a href="#" class="nav-link"><span class="menu-title">Inventory</span><i class="menu-arrow"></i></a>
                           <div class="submenu">
@@ -548,13 +551,16 @@
                                   @can('Warehouse Stock')
                                   <li><a href="{{url('warehouse_stocks')}}"><i class="fas fa-boxes mr-2"></i> Warehouse Stock</a></li>
                                   @endcan
+                                  <li><a href="{{ route('reports.stock.index') }}"><i class="fas fa-cubes mr-2"></i> Stock Report</a></li>
+                                  <li><a href="{{ route('reports.stock-ledger.index') }}"><i class="fas fa-book mr-2"></i> Item Stock Ledger</a></li>
+                                  <li><a href="{{ route('reports.stock-hold-release.index') }}"><i class="fas fa-pause-circle mr-2"></i> Hold &amp; Release Summary</a></li>
                               </ul>
                           </div>
                       </li>
                       @endcanany
 
                       {{-- Sales Section --}}
-                      @canany(['Sales', 'Sale Return'])
+                      @canany(['Sales', 'Sale Return', 'Sales Report'])
                       <li class="nav-item">
                           <a href="#" class="nav-link"><span class="menu-title">Sales</span><i class="menu-arrow"></i></a>
                           <div class="submenu">
@@ -565,38 +571,57 @@
                                   @can('Sale Return')
                                   <li><a href="{{route('sale.return.home')}}"><i class="fas fa-undo mr-2"></i> Sale Return</a></li>
                                   @endcan
+                                  @can('Sales Report')
+                                  <li><a href="{{ route('reports.sales.index') }}"><i class="fas fa-chart-line mr-2"></i> Sales Report</a></li>
+                                  @endcan
                               </ul>
                           </div>
                       </li>
                       @endcanany
 
                       {{-- General Section --}}
-                      @canany(['Stock Transfer', 'Stock Wastage', 'Stock Hold', 'Stock Release'])
+                      @canany(['Stock Transfer', 'Stock Wastage', 'Stock Transfer Report', 'Stock Wastage Report'])
                       <li class="nav-item">
                           <a href="#" class="nav-link"><span class="menu-title">General</span><i class="menu-arrow"></i></a>
                           <div class="submenu">
                               <ul class="submenu-item">
                                   @can('Stock Transfer')
                                   <li><a href="{{url('stock_transfers')}}"><i class="fas fa-exchange-alt mr-2"></i> Stock Transfer</a></li>
-                                  {{-- <li><a href="{{route('stock_transfers.pending')}}"><i class="fas fa-clock mr-2"></i> Pending Transfer Requests</a></li> --}}
+                                  @endcan
+                                  @can('Stock Transfer Report')
+                                  <li><a href="{{ route('reports.stock-transfer.index') }}"><i class="fas fa-file-export mr-2"></i> Stock Transfer Report</a></li>
                                   @endcan
                                   @can('Stock Wastage')
                                   <li><a href="{{route('stock-wastage.index')}}"><i class="fas fa-trash mr-2"></i> Stock Wastage</a></li>
                                   @endcan
-                                  @can('Stock Hold')
-                                  <li><a href="{{ route('stock-hold-list') }}"><i class="fas fa-pause mr-2"></i> Stock Hold</a></li>
-                                  {{-- <li><a href="{{ route('stock-holds.import') }}"><i class="fas fa-file-import mr-2"></i> Import Stock Hold</a></li> --}}
-                                  @endcan
-                                  @can('Stock Release')
-                                  <li><a href="{{ route('stock-relase-list') }}"><i class="fas fa-play mr-2"></i> Stock Release</a></li>
+                                  @can('Stock Wastage Report')
+                                  <li><a href="{{ route('reports.stock-wastage.index') }}"><i class="fas fa-file-alt mr-2"></i> Stock Wastage Report</a></li>
                                   @endcan
                               </ul>
                           </div>
                       </li>
                       @endcanany
 
+                      {{-- Hold Section --}}
+                      @canany(['Stock Hold', 'Stock Release'])
+                      <li class="nav-item">
+                          <a href="#" class="nav-link"><span class="menu-title">Hold</span><i class="menu-arrow"></i></a>
+                          <div class="submenu">
+                              <ul class="submenu-item">
+                                  @can('Stock Hold')
+                                  <li><a href="{{ route('stock-hold-list') }}"><i class="fas fa-pause mr-2"></i> Stock Hold</a></li>
+                                  @endcan
+                                  @can('Stock Release')
+                                  <li><a href="{{ route('stock-relase-list') }}"><i class="fas fa-play mr-2"></i> Stock Release</a></li>
+                                  @endcan
+                                  <li><a href="{{ route('reports.stock-hold-release.index') }}"><i class="fas fa-pause-circle mr-2"></i> Hold &amp; Release Summary Report</a></li>
+                              </ul>
+                          </div>
+                      </li>
+                      @endcanany
+
                       {{-- Claims Section --}}
-                      @canany(['Customer Claim', 'Claim Acceptance', 'Claim Receipt'])
+                      @canany(['Customer Claim', 'Claim Acceptance', 'Claim Receipt', 'Claim Report', 'Claim Acceptance Report', 'Claim Receipt Report'])
                       <li class="nav-item">
                           <a href="#" class="nav-link"><span class="menu-title">Claims</span><i class="menu-arrow"></i></a>
                           <div class="submenu">
@@ -610,6 +635,40 @@
                                   @can('Claim Receipt')
                                   <li><a href="{{ route('claim-item-receipt.index') }}"><i class="fas fa-file-invoice-dollar mr-2"></i> Claim Receipt/Credits</a></li>
                                   @endcan
+                                  @canany(['Claim Report', 'Claim Acceptance Report', 'Claim Receipt Report'])
+                                  <li class="nav-item has-nested-submenu">
+                                      <a href="javascript:void(0)" class="nav-link nested-toggle">
+                                          <span><i class="fa-solid fa-handshake mr-2"></i> Claim Reports</span>
+                                          <i class="fa-solid fa-chevron-right nested-arrow"></i>
+                                      </a>
+                                      <ul class="nested-submenu">
+                                          @can('Claim Report')
+                                          <li>
+                                              <a href="{{ route('reports.claim.index') }}">
+                                                  <i class="fa-solid fa-handshake"></i>
+                                                  <span>Claim Report</span>
+                                              </a>
+                                          </li>
+                                          @endcan
+                                          @can('Claim Acceptance Report')
+                                          <li>
+                                              <a href="{{ route('reports.claim-acceptance.index') }}">
+                                                  <i class="fa-solid fa-check-double"></i>
+                                                  <span>Claim Acceptance Report</span>
+                                              </a>
+                                          </li>
+                                          @endcan
+                                          @can('Claim Receipt Report')
+                                          <li>
+                                              <a href="{{ route('reports.claim-item-receipt.index') }}">
+                                                  <i class="fa-solid fa-file-invoice-dollar"></i>
+                                                  <span>Claim Receipt Report</span>
+                                              </a>
+                                          </li>
+                                          @endcan
+                                      </ul>
+                                  </li>
+                                  @endcanany
                               </ul>
                           </div>
                       </li>
@@ -617,7 +676,7 @@
 
 
                       {{-- Vouchers Section --}}
-                      @canany(['Receipts Voucher', 'Payment Voucher', 'Expense Voucher', 'Income Voucher', 'Journal Voucher', 'Adjustment Voucher'])
+                      @canany(['Receipts Voucher', 'Payment Voucher', 'Expense Voucher', 'Income Voucher', 'Journal Voucher', 'Adjustment Voucher', 'Receipt Voucher Report', 'Payment Voucher Report', 'Expense Voucher Report', 'Income Voucher Report', 'Journal Voucher Report', 'Adjustment Voucher Report'])
                       <li class="nav-item">
                           <a href="#" class="nav-link">
                               <span class="menu-title">Vouchers</span>
@@ -673,7 +732,54 @@
                                       </a>
                                   </li>
                                   @endcan
-
+                                  @can('Receipt Voucher Report')
+                                  <li class="nav-item">
+                                      <a class="nav-link" href="{{ route('reports.receipt-voucher.index') }}">
+                                          <i class="fa-solid fa-receipt mr-2"></i>
+                                          <span>Receipt Voucher Report</span>
+                                      </a>
+                                  </li>
+                                  @endcan
+                                  @can('Payment Voucher Report')
+                                  <li class="nav-item">
+                                      <a class="nav-link" href="{{ route('reports.payment-voucher.index') }}">
+                                          <i class="fa-solid fa-money-bill-transfer mr-2"></i>
+                                          <span>Payment Voucher Report</span>
+                                      </a>
+                                  </li>
+                                  @endcan
+                                  @can('Expense Voucher Report')
+                                  <li class="nav-item">
+                                      <a class="nav-link" href="{{ route('reports.expense-voucher.index') }}">
+                                          <i class="fa-solid fa-file-invoice mr-2"></i>
+                                          <span>Expense Voucher Report</span>
+                                      </a>
+                                  </li>
+                                  @endcan
+                                  @can('Income Voucher Report')
+                                  <li class="nav-item">
+                                      <a class="nav-link" href="{{ route('reports.income-voucher.index') }}">
+                                          <i class="fa-solid fa-hand-holding-dollar mr-2"></i>
+                                          <span>Income Voucher Report</span>
+                                      </a>
+                                  </li>
+                                  @endcan
+                                  @can('Journal Voucher Report')
+                                  <li class="nav-item">
+                                      <a class="nav-link" href="{{ route('reports.journal-voucher.index') }}">
+                                          <i class="fa-solid fa-book mr-2"></i>
+                                          <span>Journal Voucher Report</span>
+                                      </a>
+                                  </li>
+                                  @endcan
+                                  @can('Adjustment Voucher Report')
+                                  <li class="nav-item">
+                                      <a class="nav-link" href="{{ route('reports.adjustment-voucher.index') }}">
+                                          <i class="fa-solid fa-sliders mr-2"></i>
+                                          <span>Adjustment Voucher Report</span>
+                                      </a>
+                                  </li>
+                                  @endcan
                               </ul>
                           </div>
                       </li>
@@ -953,7 +1059,7 @@
               });
 
               // Nested report submenus (Claim, Stock, Voucher) — click to expand inline
-              document.querySelectorAll('.submenu.submenu-scroll').forEach(submenuEl => {
+              document.querySelectorAll('.submenu').forEach(submenuEl => {
                   submenuEl.addEventListener('click', function(e) {
                       const toggle = e.target.closest('.has-nested-submenu > .nested-toggle');
                       if (!toggle) {
@@ -976,7 +1082,7 @@
               });
 
               document.addEventListener('click', function(e) {
-                  if (e.target.closest('.has-nested-submenu') || e.target.closest('.submenu.submenu-scroll')) {
+                  if (e.target.closest('.has-nested-submenu') || e.target.closest('.submenu')) {
                       return;
                   }
                   document.querySelectorAll('.has-nested-submenu').forEach(item => {
