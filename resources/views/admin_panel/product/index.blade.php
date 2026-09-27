@@ -125,9 +125,29 @@
             <div class="row">
                 <div class="col-12">
                     <div class="card border-0">
-                        <div class="card-header d-flex justify-content-between align-items-center py-3">
-                            <h4 class="card-title mb-0 fw-bold text-dark">Product Management</h4>
-                            <div class="d-flex gap-2">
+                        <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2 py-3">
+                            <div class="d-flex align-items-center gap-3 flex-wrap">
+                                <h4 class="card-title mb-0 fw-bold text-dark me-2">Product Management</h4>
+                                
+                                <!-- Compact Inline Brand Filter -->
+                                <form action="{{ route('products.index') }}" method="GET" class="d-flex align-items-center gap-2 m-0">
+                                    <select name="brand" class="form-select form-select-sm border-secondary-subtle fw-semibold" style="min-width: 170px;" onchange="this.form.submit()">
+                                        <option value="">All Brands</option>
+                                        @foreach($brands as $b)
+                                            <option value="{{ $b->id }}" {{ request('brand') == $b->id ? 'selected' : '' }}>
+                                                {{ $b->name }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                    @if(request('brand'))
+                                        <a href="{{ route('products.index') }}" class="btn btn-sm btn-outline-secondary rounded-circle px-2 py-1" title="Reset Filter">
+                                            <i class="fa fa-times"></i>
+                                        </a>
+                                    @endif
+                                </form>
+                            </div>
+
+                            <div class="d-flex gap-2 align-items-center">
                                 <!-- Column Picker Button -->
                                 <div class="column-picker-dropdown">
                                     <button class="btn btn-outline-secondary btn-sm px-3 rounded-pill" type="button" id="columnPickerBtn">
@@ -137,20 +157,23 @@
                                         <div class="p-2 border-bottom fw-bold small text-muted">Show/Hide Columns</div>
                                         <label class="column-picker-item"><input type="checkbox" data-column="1" checked> Select</label>
                                         <label class="column-picker-item"><input type="checkbox" data-column="2" checked> #</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="3" checked> Product Name</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="4" checked> Brand</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="5" checked> Weight</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="3" checked> Item ID</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="4" checked> Product Name</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="5" checked> Brand</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="6" checked> Weight</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="7" checked> Opening Stock</label>
                                         @if(auth()->user()->canAccessShop())
-                                            <label class="column-picker-item"><input type="checkbox" data-column="6" checked> Stock</label>
+                                            <label class="column-picker-item"><input type="checkbox" data-column="8" checked> Current Stock</label>
                                         @endif
-                                        <label class="column-picker-item"><input type="checkbox" data-column="7" checked> Base Price</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="8" checked> Disc (%)</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="9" checked> Disc (PKR)</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="10" checked> Tax (%)</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="11" checked> Tax (PKR)</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="12" checked> WHT (%)</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="13" checked> Sale Net Amount</label>
-                                        <label class="column-picker-item"><input type="checkbox" data-column="14" checked> Status</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="9" checked> Base Price</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="10" checked> Disc (%)</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="11" checked> Disc (PKR)</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="12" checked> Tax (%)</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="13" checked> Tax (PKR)</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="14" checked> WHT (%)</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="15" checked> WHT (PKR)</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="16" checked> Sale Net Amount</label>
+                                        <label class="column-picker-item"><input type="checkbox" data-column="17" checked> Status</label>
                                     </div>
                                 </div>
 
@@ -179,6 +202,7 @@
                                                 <input type="checkbox" id="select-all">
                                             </th>
                                             <th>#</th>
+                                            <th>Item ID</th>
                                             <th>Product Name</th>
                                             <th>Brand</th>
                                             <th>Weight</th>
@@ -192,6 +216,7 @@
                                             <th>Tax (%)</th>
                                             <th>Tax (PKR)</th>
                                             <th>WHT (%)</th>
+                                            <th>WHT (PKR)</th>
                                             <th>Sale Net Amount</th>
                                             <th>Status</th>
                                             <th>Actions</th>
@@ -199,11 +224,20 @@
                                     </thead>
                                     <tbody>
                                         @foreach($products as $index => $product)
+                                        @php
+                                            $retail = (float) ($product->latestPrice->sale_retail_price ?? 0);
+                                            $whtPct = (float) ($product->latestPrice->sale_wht_percent ?? 0);
+                                            $whtAmt = (float) ($product->latestPrice->sale_wht_amount ?? 0);
+                                            if (!$whtAmt && $whtPct > 0) {
+                                                $whtAmt = ($retail * $whtPct) / 100;
+                                            }
+                                        @endphp
                                         <tr>
                                             <td class="text-center">
                                                 <input type="checkbox" class="row-checkbox" value="{{ $product->id }}">
                                             </td>
                                             <td>{{ $index + 1 }}</td>
+                                            <td class="fw-bold text-secondary">#{{ $product->id }}</td>
                                             <td class="fw-bold">{{ $product->name }}</td>
                                             <td>{{ $product->brandRelation->name ?? 'N/A' }}</td>
                                             <td>{{ $product->weight }}</td>
@@ -216,7 +250,8 @@
                                             <td class="text-end">{{ number_format($product->latestPrice->sale_discount_amount ?? 0, 0) }}</td>
                                             <td class="text-center">{{ $product->latestPrice->sale_tax_percent ?? '0' }}%</td>
                                             <td class="text-end">{{ number_format($product->latestPrice->sale_tax_amount ?? 0, 0) }}</td>
-                                            <td class="text-center">{{ $product->latestPrice->sale_wht_percent ?? '0' }}%</td>
+                                            <td class="text-center">{{ $whtPct }}%</td>
+                                            <td class="text-end">{{ number_format($whtAmt, 0) }}</td>
                                             <td class="text-end fw-bold">{{ number_format($product->latestPrice->sale_net_amount ?? 0, 0) }}</td>
                                             <td class="text-center">
                                                 @if($product->status == 1)
@@ -419,14 +454,15 @@
              }
          });
 
-         // Initialize DataTable with Export Buttons
+         // Initialize DataTable with Export Buttons & Show All Entries option
          var table = $('#example').DataTable({
              destroy: true,
              scrollX: true,
              autoWidth: false,
+             lengthMenu: [[10, 25, 50, 100, 250, 500, -1], [10, 25, 50, 100, 250, 500, "All"]],
              pageLength: 25,
              order: [[1, 'asc']],
-             dom: 'Bfrtip',
+             dom: '<"d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2"<"d-flex align-items-center gap-2"lB>f>rt<"d-flex justify-content-between align-items-center mt-3 flex-wrap gap-2"ip>',
              buttons: [
                  { extend: 'copyHtml5', text: '<i class="fa fa-copy me-1"></i> Copy', className: 'btn btn-sm btn-outline-secondary rounded-pill me-1' },
                  { extend: 'csvHtml5', text: '<i class="fa fa-file-text-o me-1"></i> CSV', className: 'btn btn-sm btn-outline-info rounded-pill me-1' },
@@ -434,7 +470,8 @@
              ],
              language: {
                  search: "_INPUT_",
-                 searchPlaceholder: "Search products..."
+                 searchPlaceholder: "Search products...",
+                 lengthMenu: "Show _MENU_ entries"
              }
          });
 

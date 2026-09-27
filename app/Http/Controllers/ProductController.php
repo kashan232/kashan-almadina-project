@@ -21,10 +21,17 @@ use App\Rules\GlobalUniqueName;
 
 class ProductController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $products = Product::withInactive()->with('latestPrice')->orderByDesc('id')->get();
-        return view('admin_panel.product.index', compact('products'));
+        $query = Product::withInactive()->with(['latestPrice', 'brandRelation'])->orderByDesc('id');
+        
+        if ($request->has('brand') && $request->brand != '') {
+            $query->where('brand', $request->brand);
+        }
+
+        $products = $query->get();
+        $brands = Brand::orderBy('name')->get();
+        return view('admin_panel.product.index', compact('products', 'brands'));
     }
     public function prices($id)
     {
