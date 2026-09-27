@@ -116,6 +116,15 @@
                                                 <option value="Main Customer" {{ request('customer_type') == 'Main Customer' ? 'selected' : '' }}>Main Customer</option>
                                                 <option value="Walking Customer" {{ request('customer_type') == 'Walking Customer' ? 'selected' : '' }}>Walking Customer</option>
                                             </select>
+                                        <div style="min-width: 170px;">
+                                            <select name="group_id" class="form-select form-select-sm select2" onchange="this.form.submit()">
+                                                <option value="">All Groups</option>
+                                                @foreach($userGroups as $group)
+                                                    <option value="{{ $group->id }}" {{ request('group_id') == $group->id ? 'selected' : '' }}>
+                                                        {{ $group->group_name }}
+                                                    </option>
+                                                @endforeach
+                                            </select>
                                         </div>
 
                                         @if($isAdmin)

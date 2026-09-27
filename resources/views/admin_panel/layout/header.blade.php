@@ -587,6 +587,7 @@
                               <ul class="submenu-item">
                                   @can('Stock Transfer')
                                   <li><a href="{{url('stock_transfers')}}"><i class="fas fa-exchange-alt mr-2"></i> Stock Transfer</a></li>
+                                  <li><a href="{{route('stock_transfers.pending')}}"><i class="fas fa-clock mr-2"></i> Stock Transfer Request</a></li>
                                   @endcan
                                   @can('Stock Transfer Report')
                                   <li><a href="{{ route('reports.stock-transfer.index') }}"><i class="fas fa-file-export mr-2"></i> Stock Transfer Report</a></li>

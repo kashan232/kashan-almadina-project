@@ -117,7 +117,7 @@
                                                     <option value="">All Groups</option>
                                                     @foreach($userGroups as $group)
                                                         <option value="{{ $group->id }}" {{ request('group_id') == $group->id ? 'selected' : '' }}>
-                                                            {{ $group->name }}
+                                                            {{ $group->group_name ?? $group->name }}
                                                         </option>
                                                     @endforeach
                                                 </select>

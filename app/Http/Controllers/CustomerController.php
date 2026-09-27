@@ -59,6 +59,11 @@ class CustomerController extends Controller
             }
         }
 
+        if ($request->filled('group_id')) {
+            $groupId = (string) $request->group_id;
+            $query->whereJsonContains('user_group_ids', $groupId);
+        }
+
         if ($request->filled('customer_name')) {
             $query->where('customer_name', 'like', '%' . $request->customer_name . '%');
         }
