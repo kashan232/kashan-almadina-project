@@ -151,47 +151,58 @@
     <div class="main-content-inner">
         <div class="container-fluid pt-0">
             
-            <!-- Filters Section -->
+            <!-- Filter Section -->
             <div class="row mb-2">
                 <div class="col-12">
                     <div class="card border-0 shadow-sm">
-                        <div class="card-body p-1" style="overflow: visible;">
-                            <form action="{{ route('sale.index') }}" method="GET" class="row g-1 align-items-center">
-                                <div class="col-md-2">
-                                    <h6 class="mb-0 fw-bold text-dark ms-1 small"><i class="fa fa-shopping-cart me-1 text-primary"></i>Sales List</h6>
-                                </div>
-                                <div class="col-md-3">
-                                    <div class="input-group input-group-sm">
-                                        <span class="input-group-text bg-white border-end-0 small fw-bold text-muted px-1">Range</span>
-                                        <input type="date" name="start_date" class="form-control border-start-0 px-1" value="{{ request('start_date') }}">
-                                        <input type="date" name="end_date" class="form-control px-1" value="{{ request('end_date') }}">
-                                    </div>
-                                </div>
-                                <div class="col-md-2">
-                                    <div class="input-group input-group-sm">
-                                        <span class="input-group-text bg-white border-end-0 small fw-bold text-muted px-1">Customer</span>
-                                        <select name="customer_id" class="form-select form-select-sm select2 border-start-0">
-                                            <option value="">All</option>
-                                            @foreach($customers as $c)
-                                                <option value="{{ $c->id }}" {{ request('customer_id') == $c->id ? 'selected' : '' }}>{{ $c->customer_name }}</option>
-                                            @endforeach
-                                        </select>
-                                    </div>
-                                </div>
-                                <div class="col-md-2">
-                                    <div class="input-group input-group-sm">
-                                        <span class="input-group-text bg-white border-end-0 small fw-bold text-muted px-1">Group</span>
-                                        <select name="user_group_id" class="form-select form-select-sm select2 border-start-0">
-                                            <option value="">All</option>
-                                            @foreach($userGroups as $grp)
-                                                <option value="{{ $grp->id }}" {{ request('user_group_id') == $grp->id ? 'selected' : '' }}>{{ $grp->name }}</option>
-                                            @endforeach
-                                        </select>
-                                    </div>
-                                </div>
-                                <div class="col-md-3 text-end">
-                                    <div class="d-flex gap-1 justify-content-end align-items-center">
-                                        <div class="input-group input-group-sm me-1" style="max-width: 110px;">
+                        <div class="card-body p-2" style="overflow: visible;">
+                            <form action="{{ route('sale.index') }}" method="GET">
+                                <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+                                    <div class="d-flex align-items-center gap-1 flex-wrap">
+                                        <span class="badge bg-success text-white px-3 py-2 fs-6 rounded-pill"><i class="fa fa-shopping-cart me-1"></i> Sales List</span>
+                                        
+                                        <div class="input-group input-group-sm" style="width: 220px;">
+                                            <span class="input-group-text bg-white border-end-0 small fw-bold text-muted">Range</span>
+                                            <input type="date" name="start_date" class="form-control border-start-0" value="{{ request('start_date') }}">
+                                            <input type="date" name="end_date" class="form-control" value="{{ request('end_date') }}">
+                                        </div>
+
+                                        <div style="min-width: 130px;">
+                                            <select name="party_type" class="form-select form-select-sm" onchange="this.form.submit()">
+                                                <option value="">Party Type: All</option>
+                                                <option value="Customer" {{ request('party_type') == 'Customer' ? 'selected' : '' }}>Customer</option>
+                                                <option value="Vendor" {{ request('party_type') == 'Vendor' ? 'selected' : '' }}>Vendor</option>
+                                            </select>
+                                        </div>
+
+                                        <div style="min-width: 140px;">
+                                            <select name="customer_id" class="form-select form-select-sm select2">
+                                                <option value="">All Customers</option>
+                                                @foreach($customers as $c)
+                                                    <option value="{{ $c->id }}" {{ request('customer_id') == $c->id ? 'selected' : '' }}>{{ $c->customer_name }}</option>
+                                                @endforeach
+                                            </select>
+                                        </div>
+
+                                        <div style="min-width: 140px;">
+                                            <select name="vendor_id" class="form-select form-select-sm select2">
+                                                <option value="">All Vendors</option>
+                                                @foreach($vendors as $v)
+                                                    <option value="{{ $v->id }}" {{ request('vendor_id') == $v->id ? 'selected' : '' }}>{{ $v->name }}</option>
+                                                @endforeach
+                                            </select>
+                                        </div>
+
+                                        <div style="min-width: 120px;">
+                                            <select name="user_group_id" class="form-select form-select-sm select2">
+                                                <option value="">All Groups</option>
+                                                @foreach($userGroups as $grp)
+                                                    <option value="{{ $grp->id }}" {{ request('user_group_id') == $grp->id ? 'selected' : '' }}>{{ $grp->name }}</option>
+                                                @endforeach
+                                            </select>
+                                        </div>
+
+                                        <div style="min-width: 110px;">
                                             <select name="created_by" class="form-select form-select-sm select2">
                                                 <option value="">User: All</option>
                                                 @foreach($users as $user)
@@ -199,11 +210,14 @@
                                                 @endforeach
                                             </select>
                                         </div>
-                                        <button type="submit" class="btn btn-primary btn-sm rounded-pill px-2 shadow-sm" style="font-size: 11px;">Filter</button>
+
+                                        <button type="submit" class="btn btn-primary btn-sm rounded-pill px-3 shadow-sm">Filter</button>
                                         <a href="{{ route('sale.index') }}" class="btn btn-outline-secondary btn-sm rounded-pill px-2" title="Reset"><i class="fa fa-refresh"></i></a>
-                                        
-                                        <a class="btn btn-primary btn-sm rounded-pill px-2 shadow-sm ms-1" href="{{ route('sale.add') }}" style="font-size: 10px;">
-                                            <i class="fa fa-plus me-1"></i> Add
+                                    </div>
+
+                                    <div>
+                                        <a class="btn btn-success btn-sm rounded-pill px-3 shadow-sm" href="{{ route('sale.add') }}">
+                                            <i class="fa fa-plus me-1"></i> Add Sale
                                         </a>
                                     </div>
                                 </div>
@@ -213,36 +227,36 @@
                 </div>
             </div>
 
-            <div class="card shadow-sm border-0">
-                <div class="card-header bg-white d-flex justify-content-between align-items-center py-1 border-bottom">
-                    <span class="fw-bold text-muted small text-uppercase"><i class="fa fa-shopping-cart me-1"></i> Sales Ledger</span>
-                    <div class="column-picker-dropdown">
-                        <button class="btn btn-outline-secondary btn-sm px-3 rounded-pill" type="button" id="columnPickerBtn">
-                            <i class="fa fa-columns me-1"></i> Columns
-                        </button>
-                        <div class="column-picker-menu shadow" id="columnPickerMenu">
-                            <div class="p-2 border-bottom fw-bold small text-muted">Show/Hide Columns</div>
-                            <label class="column-picker-item"><input type="checkbox" data-column="1" checked> #</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="2" checked> Type</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="3" checked> Inv#</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="4" checked> Manual Inv</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="5" checked> Date</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="6" checked> Party Type</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="7" checked> Customer</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="8" checked> Warehouse</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="9" checked> Items</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="10" checked> Item Qty</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="11" checked> T. Qty</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="12" checked> Inv Total</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="13" checked> Disc</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="14" checked> A/C Allocation</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="15" checked> Net Payable</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="16" checked> Created</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="17" checked> Status</label>
-                        </div>
+            <!-- Column Picker Menu Template (Moved next to search) -->
+            <div id="columnPickerMenuContainer" class="d-none">
+                <div class="column-picker-dropdown">
+                    <button class="btn btn-outline-secondary btn-sm px-3 rounded-pill" type="button" id="columnPickerBtn">
+                        <i class="fa fa-columns me-1"></i> Columns
+                    </button>
+                    <div class="column-picker-menu shadow" id="columnPickerMenu">
+                        <div class="p-2 border-bottom fw-bold small text-muted">Show/Hide Columns</div>
+                        <label class="column-picker-item"><input type="checkbox" data-column="1" checked> #</label>
+                        <label class="column-picker-item"><input type="checkbox" data-column="2" checked> Type</label>
+                        <label class="column-picker-item"><input type="checkbox" data-column="3" checked> Inv#</label>
+                        <label class="column-picker-item"><input type="checkbox" data-column="4" checked> Manual Inv</label>
+                        <label class="column-picker-item"><input type="checkbox" data-column="5" checked> Date</label>
+                        <label class="column-picker-item"><input type="checkbox" data-column="6" checked> Party Type</label>
+                        <label class="column-picker-item"><input type="checkbox" data-column="7" checked> Customer</label>
+                        <label class="column-picker-item"><input type="checkbox" data-column="8" checked> Warehouse</label>
+                        <label class="column-picker-item"><input type="checkbox" data-column="9" checked> Items</label>
+                        <label class="column-picker-item"><input type="checkbox" data-column="10" checked> Item Qty</label>
+                        <label class="column-picker-item"><input type="checkbox" data-column="11" checked> T. Qty</label>
+                        <label class="column-picker-item"><input type="checkbox" data-column="12" checked> Inv Total</label>
+                        <label class="column-picker-item"><input type="checkbox" data-column="13" checked> Disc</label>
+                        <label class="column-picker-item"><input type="checkbox" data-column="14" checked> A/C Allocation</label>
+                        <label class="column-picker-item"><input type="checkbox" data-column="15" checked> Net Payable</label>
+                        <label class="column-picker-item"><input type="checkbox" data-column="16" checked> Created</label>
+                        <label class="column-picker-item"><input type="checkbox" data-column="17" checked> Status</label>
                     </div>
                 </div>
+            </div>
 
+            <div class="card shadow-sm border-0">
                 <div class="card-body p-0">
                     <div class="table-responsive">
                         <table id="saleListingTable" class="table table-sm table-striped table-bordered w-100 mb-0">
@@ -405,13 +419,16 @@
                 "search": "_INPUT_",
                 "searchPlaceholder": "Search sales..."
             },
-            dom: '<"d-flex justify-content-between align-items-center p-2"lBf>rt<"d-flex justify-content-between align-items-center p-2"ip>',
+            dom: '<"d-flex justify-content-between align-items-center p-2"<"d-flex align-items-center gap-2"l<"column-picker-slot">>Bf>rt<"d-flex justify-content-between align-items-center p-2"ip>',
             buttons: [
                 { extend: 'copy', className: 'btn btn-outline-secondary btn-sm rounded-pill px-3 me-1' },
                 { extend: 'csv', className: 'btn btn-outline-success btn-sm rounded-pill px-3 me-1' },
                 { extend: 'excel', className: 'btn btn-outline-primary btn-sm rounded-pill px-3 me-1' }
             ]
         });
+
+        // Place Column Picker menu near search box
+        $('.column-picker-slot').html($('#columnPickerMenuContainer').html());
 
         // Apply saved column visibility
         const savedState = localStorage.getItem(storageKey);

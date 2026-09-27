@@ -18,6 +18,7 @@ class SaleReturn extends Model
 
     public function items(){ return $this->hasMany(SaleReturnItem::class, 'sale_return_id'); }
     public function sale(){ return $this->belongsTo(Sale::class, 'sale_id'); }
+    public function warehouse(){ return $this->belongsTo(Warehouse::class, 'warehouse_id')->withoutGlobalScopes(); }
 
     public function customer()
     {

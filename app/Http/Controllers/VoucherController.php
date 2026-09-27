@@ -2345,7 +2345,8 @@ class VoucherController extends Controller
             $v->dest_accounts_html = implode('', array_map(function($acc) {
                 return '<div><span class="dest-acc-badge"><i class="fa fa-bank me-1 text-primary"></i>' . htmlspecialchars($acc) . '</span></div>';
             }, $destAccList));
-            $v->dest_amounts_html = implode('', $destAmtList);
+            $v->total_debit = array_sum(array_map('floatval', $debits));
+            $v->total_credit = array_sum(array_map('floatval', $credits));
         }
 
         return view('admin_panel.vochers.journal_vouchers.all_journal_vouchers', compact('vouchers'));

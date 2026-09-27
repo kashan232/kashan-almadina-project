@@ -91,36 +91,64 @@
 
 <div class="main-content">
     <div class="main-content-inner">
-        <div class="container-fluid pt-3">
+        <div class="container-fluid pt-0">
             
             <!-- Top Actions & Filter -->
-            <div class="row mb-3">
+            <div class="row mb-2">
                 <div class="col-12">
                     <div class="card border-0 shadow-sm">
-                        <div class="card-body p-2">
-                            <form action="{{ route('sale.return.home') }}" method="GET" class="row g-2 align-items-center">
-                                <div class="col-md-3">
-                                    <h6 class="mb-0 fw-bold text-dark ms-2"><i class="fa fa-reply me-2 text-primary"></i>Sale Returns</h6>
-                                </div>
-                                <div class="col-md-3">
-                                    <div class="input-group input-group-sm">
-                                        <span class="input-group-text bg-white border-end-0 small fw-bold text-muted">Range</span>
-                                        <input type="date" name="start_date" class="form-control border-start-0" value="{{ request('start_date') }}">
-                                        <input type="date" name="end_date" class="form-control" value="{{ request('end_date') }}">
-                                    </div>
-                                </div>
-                                <div class="col-md-2">
-                                    <select name="status" class="form-select form-select-sm select2">
-                                        <option value="">All Status</option>
-                                        <option value="Unposted" {{ request('status') == 'Unposted' ? 'selected' : '' }}>Unposted</option>
-                                        <option value="Posted" {{ request('status') == 'Posted' ? 'selected' : '' }}>Posted</option>
-                                    </select>
-                                </div>
-                                <div class="col-md-4 text-end">
-                                    <div class="d-flex gap-1 justify-content-end align-items-center">
+                        <div class="card-body p-2" style="overflow: visible;">
+                            <form action="{{ route('sale.return.home') }}" method="GET">
+                                <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+                                    <div class="d-flex align-items-center gap-1 flex-wrap">
+                                        <span class="badge bg-danger text-white px-3 py-2 fs-6 rounded-pill"><i class="fa fa-reply me-1"></i> Sale Returns</span>
+                                        
+                                        <div class="input-group input-group-sm" style="width: 220px;">
+                                            <span class="input-group-text bg-white border-end-0 small fw-bold text-muted">Range</span>
+                                            <input type="date" name="start_date" class="form-control border-start-0" value="{{ request('start_date') }}">
+                                            <input type="date" name="end_date" class="form-control" value="{{ request('end_date') }}">
+                                        </div>
+
+                                        <div style="min-width: 130px;">
+                                            <select name="party_type" class="form-select form-select-sm" onchange="this.form.submit()">
+                                                <option value="">Party Type: All</option>
+                                                <option value="Customer" {{ request('party_type') == 'Customer' ? 'selected' : '' }}>Customer</option>
+                                                <option value="Vendor" {{ request('party_type') == 'Vendor' ? 'selected' : '' }}>Vendor</option>
+                                            </select>
+                                        </div>
+
+                                        <div style="min-width: 140px;">
+                                            <select name="customer_id" class="form-select form-select-sm select2">
+                                                <option value="">All Customers</option>
+                                                @foreach($customers as $c)
+                                                    <option value="{{ $c->id }}" {{ request('customer_id') == $c->id ? 'selected' : '' }}>{{ $c->customer_name }}</option>
+                                                @endforeach
+                                            </select>
+                                        </div>
+
+                                        <div style="min-width: 140px;">
+                                            <select name="vendor_id" class="form-select form-select-sm select2">
+                                                <option value="">All Vendors</option>
+                                                @foreach($vendors as $v)
+                                                    <option value="{{ $v->id }}" {{ request('vendor_id') == $v->id ? 'selected' : '' }}>{{ $v->name }}</option>
+                                                @endforeach
+                                            </select>
+                                        </div>
+
+                                        <div style="min-width: 120px;">
+                                            <select name="status" class="form-select form-select-sm select2">
+                                                <option value="">All Status</option>
+                                                <option value="Unposted" {{ request('status') == 'Unposted' ? 'selected' : '' }}>Unposted</option>
+                                                <option value="Posted" {{ request('status') == 'Posted' ? 'selected' : '' }}>Posted</option>
+                                            </select>
+                                        </div>
+
                                         <button type="submit" class="btn btn-primary btn-sm rounded-pill px-3 shadow-sm">Filter</button>
                                         <a href="{{ route('sale.return.home') }}" class="btn btn-outline-secondary btn-sm rounded-pill px-2" title="Reset"><i class="fa fa-refresh"></i></a>
-                                        <a class="btn btn-danger btn-sm rounded-pill px-4 shadow-sm ms-2" href="{{ route('sale.return.add') }}">
+                                    </div>
+
+                                    <div>
+                                        <a class="btn btn-danger btn-sm rounded-pill px-3 shadow-sm" href="{{ route('sale.return.add') }}">
                                             <i class="fa fa-plus me-1"></i> Add Return
                                         </a>
                                     </div>
@@ -131,34 +159,34 @@
                 </div>
             </div>
 
+            <!-- Column Picker Menu Template (Moved next to search) -->
+            <div id="columnPickerMenuContainer" class="d-none">
+                <div class="column-picker-dropdown">
+                    <button class="btn btn-outline-secondary btn-sm px-3 rounded-pill" type="button" id="columnPickerBtn">
+                        <i class="fa fa-columns me-1"></i> Columns
+                    </button>
+                    <div class="column-picker-menu shadow" id="columnPickerMenu">
+                        <div class="p-2 border-bottom fw-bold small text-muted">Show/Hide Columns</div>
+                        <label class="column-picker-item"><input type="checkbox" data-column="0" checked> Type</label>
+                        <label class="column-picker-item"><input type="checkbox" data-column="1" checked> Inv#</label>
+                        <label class="column-picker-item"><input type="checkbox" data-column="2" checked> Date</label>
+                        <label class="column-picker-item"><input type="checkbox" data-column="3" checked> Original Sale</label>
+                        <label class="column-picker-item"><input type="checkbox" data-column="4" checked> Party Name</label>
+                        <label class="column-picker-item"><input type="checkbox" data-column="5" checked> Warehouse</label>
+                        <label class="column-picker-item"><input type="checkbox" data-column="6" checked> Item</label>
+                        <label class="column-picker-item"><input type="checkbox" data-column="7" checked> Qty</label>
+                        <label class="column-picker-item"><input type="checkbox" data-column="8" checked> Total Qty</label>
+                        <label class="column-picker-item"><input type="checkbox" data-column="9" checked> Disc</label>
+                        <label class="column-picker-item"><input type="checkbox" data-column="10" checked> Net Amount</label>
+                        <label class="column-picker-item"><input type="checkbox" data-column="11" checked> Created By</label>
+                        <label class="column-picker-item"><input type="checkbox" data-column="12" checked> Status</label>
+                    </div>
+                </div>
+            </div>
+
             <div class="row">
                 <div class="col-12">
                     <div class="card border-0 shadow-sm">
-                        <div class="card-header bg-white d-flex justify-content-between align-items-center py-2 border-bottom">
-                            <span class="fw-bold text-muted small text-uppercase">Return History</span>
-                            <div class="column-picker-dropdown">
-                                <button class="btn btn-outline-secondary btn-sm px-3 rounded-pill" type="button" id="columnPickerBtn">
-                                    <i class="fa fa-columns me-1"></i> Columns
-                                </button>
-                                <div class="column-picker-menu shadow" id="columnPickerMenu">
-                                    <div class="p-2 border-bottom fw-bold small text-muted">Show/Hide Columns</div>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="0" checked> Type</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="1" checked> Inv#</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="2" checked> Date</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="3" checked> Original Sale</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="4" checked> Party Name</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="5" checked> Warehouse</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="6" checked> Item</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="7" checked> Qty</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="8" checked> Total Qty</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="9" checked> Disc</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="10" checked> Net Amount</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="11" checked> Created By</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="12" checked> Status</label>
-                                </div>
-                            </div>
-                        </div>
-
                         <div class="card-body p-0">
                             <div class="table-responsive">
                                 <table id="saleReturnTable" class="table table-sm table-striped table-bordered w-100 mb-0">
@@ -185,7 +213,15 @@
                                         @php
                                             $totalQty = $ret->items->sum('sales_qty');
                                             $whNames = $ret->items->pluck('warehouse.warehouse_name')->filter()->unique()->implode(', ');
-                                            if (empty($whNames)) { $whNames = 'N/A'; }
+                                            if (empty($whNames)) {
+                                                if (isset($ret->warehouse->warehouse_name)) {
+                                                    $whNames = $ret->warehouse->warehouse_name;
+                                                } elseif (isset($ret->warehouse_id) && $ret->warehouse_id == 0) {
+                                                    $whNames = 'Shop Stock';
+                                                } else {
+                                                    $whNames = 'Shop Stock';
+                                                }
+                                            }
                                         @endphp
                                         <tr>
                                             <td class="text-muted small">SRJ</td>
@@ -273,7 +309,7 @@
         $('.select2').select2({ width: '100%' });
 
         // Toggle Column Picker Menu
-        $('#columnPickerBtn').on('click', function(e) {
+        $(document).on('click', '#columnPickerBtn', function(e) {
             e.stopPropagation();
             $('#columnPickerMenu').toggleClass('show');
         });
@@ -292,11 +328,11 @@
             autoWidth: false,
             pageLength: 25,
             lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
-            dom: '<"d-flex justify-content-between align-items-center mb-2"<"d-flex align-items-center gap-2"lB>f>rt<"d-flex justify-content-between align-items-center mt-2"ip>',
+            dom: '<"d-flex justify-content-between align-items-center p-2"<"d-flex align-items-center gap-2"l<"column-picker-slot">>Bf>rt<"d-flex justify-content-between align-items-center p-2"ip>',
             buttons: [
-                { extend: 'excel', className: 'btn btn-sm btn-outline-success', text: '<i class="fa fa-file-excel-o me-1"></i> Excel' },
-                { extend: 'csv', className: 'btn btn-sm btn-outline-info', text: '<i class="fa fa-file-text-o me-1"></i> CSV' },
-                { extend: 'copy', className: 'btn btn-sm btn-outline-secondary', text: '<i class="fa fa-copy me-1"></i> Copy' }
+                { extend: 'excel', className: 'btn btn-sm btn-outline-success rounded-pill px-3 me-1', text: '<i class="fa fa-file-excel-o me-1"></i> Excel' },
+                { extend: 'csv', className: 'btn btn-sm btn-outline-info rounded-pill px-3 me-1', text: '<i class="fa fa-file-text-o me-1"></i> CSV' },
+                { extend: 'copy', className: 'btn btn-sm btn-outline-secondary rounded-pill px-3 me-1', text: '<i class="fa fa-copy me-1"></i> Copy' }
             ],
             order: [], // Let backend sorting take precedence
             language: {
@@ -304,6 +340,9 @@
                 searchPlaceholder: "Search returns..."
             }
         });
+
+        // Place Column Picker menu near search box
+        $('.column-picker-slot').html($('#columnPickerMenuContainer').html());
 
         // Apply saved column visibility
         const savedState = localStorage.getItem(storageKey);
@@ -319,7 +358,7 @@
         }
 
         // Handle Checkbox Change
-        $('#columnPickerMenu input').on('change', function() {
+        $(document).on('change', '#columnPickerMenu input', function() {
             const colIdx = parseInt($(this).data('column'));
             const isChecked = $(this).is(':checked');
             

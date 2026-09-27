@@ -21,7 +21,7 @@ class SaleReturnController extends Controller
 {
     public function index(Request $request)
     {
-        $query = SaleReturn::with(['items.product', 'items.warehouse', 'creator']);
+        $query = SaleReturn::with(['items.product', 'items.warehouse', 'creator', 'warehouse']);
 
         if ($request->filled('start_date')) {
             $query->whereDate('current_date', '>=', $request->start_date);
@@ -32,9 +32,22 @@ class SaleReturnController extends Controller
         if ($request->filled('status')) {
             $query->where('status', $request->status);
         }
+        if ($request->filled('party_type')) {
+            $pt = strtolower($request->party_type);
+            $query->where('party_type', $pt);
+        }
+        if ($request->filled('customer_id')) {
+            $query->where('customer_id', $request->customer_id);
+        }
+        if ($request->filled('vendor_id')) {
+            $query->where('vendor_id', $request->vendor_id);
+        }
 
         $SaleReturns = $query->orderBy('id', 'desc')->get();
-        return view('admin_panel.sale_return.index', compact('SaleReturns'));
+        $customers = \App\Models\Customer::orderBy('customer_name')->get();
+        $vendors = \App\Models\Vendor::orderBy('name')->get();
+
+        return view('admin_panel.sale_return.index', compact('SaleReturns', 'customers', 'vendors'));
     }
 
     public function create()
