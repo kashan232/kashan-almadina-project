@@ -443,27 +443,47 @@
                       </li>
                       @endcan
 
-                      {{-- Management Section --}}
-                      {{-- Products Section --}}
-                      @canany(['Products', 'Category', 'Sub Category', 'Brands', 'Units'])
+                      {{-- Setup Section --}}
+                      @canany(['Products', 'Category', 'Sub Category', 'Brands', 'Units', 'Chart Of Accounts', 'Narrations', 'Vendor', 'Customer', 'Warehouse', 'Sales Officer', 'Zone'])
                       <li class="nav-item">
-                          <a href="#" class="nav-link"><span class="menu-title">Products</span><i class="menu-arrow"></i></a>
+                          <a href="#" class="nav-link"><span class="menu-title">Setup</span><i class="menu-arrow"></i></a>
                           <div class="submenu">
                               <ul class="submenu-item">
                                   @can('Products')
-                                  <li><a href="{{url('products')}}"><i class="fas fa-box mr-2"></i> Products</a></li>
+                                  <li><a href="{{url('products')}}"><i class="fas fa-box mr-2"></i> Product</a></li>
                                   @endcan
                                   @can('Category')
                                   <li><a href="{{route('Category.home')}}"><i class="fas fa-list mr-2"></i> Category</a></li>
                                   @endcan
                                   @can('Sub Category')
-                                  <li><a href="{{route('subcategory.home')}}"><i class="fas fa-th-list mr-2"></i> Sub Category</a></li>
+                                  <li><a href="{{route('subcategory.home')}}"><i class="fas fa-th-list mr-2"></i> Sub category</a></li>
                                   @endcan
                                   @can('Brands')
-                                  <li><a href="{{route('Brand.home')}}"><i class="fas fa-trademark mr-2"></i> Brands</a></li>
+                                  <li><a href="{{route('Brand.home')}}"><i class="fas fa-trademark mr-2"></i> Brand</a></li>
                                   @endcan
                                   @can('Units')
-                                  <li><a href="{{route('Unit.home')}}"><i class="fas fa-balance-scale mr-2"></i> Units</a></li>
+                                  <li><a href="{{route('Unit.home')}}"><i class="fas fa-balance-scale mr-2"></i> Unit</a></li>
+                                  @endcan
+                                  @can('Chart Of Accounts')
+                                  <li><a href="{{ route('view_all') }}"><i class="fa-solid fa-money-bill-wave mr-2"></i> Chart of account</a></li>
+                                  @endcan
+                                  @can('Narrations')
+                                  <li><a href="{{ route('coa.narration') }}"><i class="fa-solid fa-quote-left mr-2"></i> Narrations</a></li>
+                                  @endcan
+                                  @can('Vendor')
+                                  <li><a href="{{url('vendor')}}"><i class="fas fa-truck mr-2"></i> Vendor</a></li>
+                                  @endcan
+                                  @can('Customer')
+                                  <li><a href="{{url('customers')}}"><i class="fas fa-user-friends mr-2"></i> Customer</a></li>
+                                  @endcan
+                                  @can('Warehouse')
+                                  <li><a href="{{url('warehouse')}}"><i class="fas fa-building mr-2"></i> Warehouse</a></li>
+                                  @endcan
+                                  @can('Sales Officer')
+                                  <li><a href="{{url('sales-officers')}}"><i class="fas fa-user-tie mr-2"></i> Sales officer</a></li>
+                                  @endcan
+                                  @can('Zone')
+                                  <li><a href="{{url('zone')}}"><i class="fas fa-map-marked-alt mr-2"></i> Zone</a></li>
                                   @endcan
                               </ul>
                           </div>
@@ -471,7 +491,7 @@
                       @endcanany
 
                       {{-- Purchase Section --}}
-                      @canany(['Inward Gatepass', 'Purchase', 'Stock Wastage', 'Vendor'])
+                      @canany(['Inward Gatepass', 'Purchase', 'Purchase Return', 'Stock Wastage'])
                       <li class="nav-item">
                           <a href="#" class="nav-link"><span class="menu-title">Purchase</span><i class="menu-arrow"></i></a>
                           <div class="submenu">
@@ -489,23 +509,17 @@
                                   @can('Stock Wastage')
                                   <li><a href="{{route('stock-wastage.index')}}"><i class="fas fa-trash mr-2"></i> Stock Wastage</a></li>
                                   @endcan
-                                  @can('Vendor')
-                                  <li><a href="{{url('vendor')}}"><i class="fas fa-truck mr-2"></i> Vendor</a></li>
-                                  @endcan
                               </ul>
                           </div>
                       </li>
                       @endcanany
 
                       {{-- Inventory Section --}}
-                      @canany(['Warehouse', 'Warehouse Stock', 'Stock Transfer'])
+                      @canany(['Warehouse Stock', 'Stock Transfer'])
                       <li class="nav-item">
                           <a href="#" class="nav-link"><span class="menu-title">Inventory</span><i class="menu-arrow"></i></a>
                           <div class="submenu">
                               <ul class="submenu-item">
-                                  @can('Warehouse')
-                                  <li><a href="{{url('warehouse')}}"><i class="fas fa-building mr-2"></i> Warehouse</a></li>
-                                  @endcan
                                   @can('Warehouse Stock')
                                   <li><a href="{{url('warehouse_stocks')}}"><i class="fas fa-boxes mr-2"></i> Warehouse Stock</a></li>
                                   @endcan
@@ -519,7 +533,7 @@
                       @endcanany
 
                       {{-- Sales Section --}}
-                      @canany(['Sales', 'Sale Return', 'Stock Hold', 'Customer', 'Sales Officer', 'Zone'])
+                      @canany(['Sales', 'Sale Return', 'Stock Hold', 'Stock Release'])
                       <li class="nav-item">
                           <a href="#" class="nav-link"><span class="menu-title">Sales</span><i class="menu-arrow"></i></a>
                           <div class="submenu">
@@ -536,15 +550,6 @@
                                   @endcan
                                   @can('Stock Release')
                                   <li><a href="{{ route('stock-relase-list') }}"><i class="fas fa-play mr-2"></i> Stock Release</a></li>
-                                  @endcan
-                                  @can('Customer')
-                                  <li><a href="{{url('customers')}}"><i class="fas fa-user-friends mr-2"></i> Customer</a></li>
-                                  @endcan
-                                  @can('Sales Officer')
-                                  <li><a href="{{url('sales-officers')}}"><i class="fas fa-user-tie mr-2"></i> Sales Officer</a></li>
-                                  @endcan
-                                  @can('Zone')
-                                  <li><a href="{{url('zone')}}"><i class="fas fa-map-marked-alt mr-2"></i> Zone</a></li>
                                   @endcan
                               </ul>
                           </div>
@@ -604,7 +609,7 @@
                       @endcanany
 
                       {{-- Vouchers Section --}}
-                      @canany(['Chart Of Accounts', 'Narrations', 'Receipts Voucher', 'Payment Voucher', 'Expense Voucher', 'Income Voucher', 'Journal Voucher', 'Adjustment Voucher'])
+                      @canany(['Receipts Voucher', 'Payment Voucher', 'Expense Voucher', 'Income Voucher', 'Journal Voucher', 'Adjustment Voucher'])
                       <li class="nav-item">
                           <a href="#" class="nav-link">
                               <span class="menu-title">Vouchers</span>
@@ -612,22 +617,6 @@
                           </a>
                           <div class="submenu">
                               <ul class="submenu-item">
-                                  @can('Chart Of Accounts')
-                                  <li class="nav-item">
-                                      <a class="nav-link" href="{{ route('view_all') }}">
-                                          <i class="fa-solid fa-money-bill-wave mr-2"></i>
-                                          <span>Char Of Accounts </span>
-                                      </a>
-                                  </li>
-                                  @endcan
-                                  @can('Narrations')
-                                  <li class="nav-item">
-                                      <a class="nav-link" href="{{ route('coa.narration') }}">
-                                          <i class="fa-solid fa-money-bill-wave mr-2"></i>
-                                          <span>Narrations</span>
-                                      </a>
-                                  </li>
-                                  @endcan
                                   @can('Receipts Voucher')
                                   <li class="nav-item">
                                       <a class="nav-link" href="{{ route('all-recepit-vochers') }}">
