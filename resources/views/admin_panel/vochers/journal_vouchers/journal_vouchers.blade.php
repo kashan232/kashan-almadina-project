@@ -39,7 +39,11 @@
                 </div>
             </div>
 
-            <form id="journalForm" autocomplete="off" class="{{ ($receipt->id && $receipt->status == 'posted') ? 'form-locked' : '' }}">
+            @php
+                $isViewMode = isset($viewMode) && $viewMode;
+                $isPosted = $receipt->status == 'posted';
+            @endphp
+            <form id="journalForm" autocomplete="off" class="{{ ($isViewMode || ($receipt->id && $isPosted)) ? 'form-locked' : '' }}{{ $isViewMode ? ' view-mode' : '' }}">
                 @csrf
                 <input type="hidden" name="id" id="receipt_id" value="{{ $receipt->id }}">
                 <input type="hidden" name="entry_time" id="entry_time" value="{{ $receipt->entry_time ?: date('H:i') }}">

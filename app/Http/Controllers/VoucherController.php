@@ -2100,6 +2100,26 @@ class VoucherController extends Controller
     // JOURNAL VOUCHER (GENERAL VOUCHER) METHODS
     // ==========================================
 
+    public function showJournal($id)
+    {
+        $receipt = JournalVoucher::findOrFail($id);
+        $AccountHeads = DB::table('account_heads')->get();
+        $narrationsList = DB::table('narrations')->where('expense_head', 'Journal voucher')->pluck('narration', 'id');
+        $viewMode = true;
+
+        return view('admin_panel.vochers.journal_vouchers.journal_vouchers', compact('receipt', 'AccountHeads', 'narrationsList', 'viewMode'));
+    }
+
+    public function showAdjustment($id)
+    {
+        $receipt = AdjustmentVoucher::findOrFail($id);
+        $AccountHeads = DB::table('account_heads')->get();
+        $narrationsList = DB::table('narrations')->where('expense_head', 'Adjustment voucher')->pluck('narration', 'id');
+        $viewMode = true;
+
+        return view('admin_panel.vochers.adjustment_vouchers.adjustment_vouchers', compact('receipt', 'AccountHeads', 'narrationsList', 'viewMode'));
+    }
+
     public function journal_vochers($id = null)
     {
         $receipt = $id ? JournalVoucher::findOrFail($id) : new JournalVoucher();
@@ -2287,8 +2307,8 @@ class VoucherController extends Controller
             $summary = [];
 
             // Set type_label and party_name from first row for blade display
-            $v->type_label = '-';
-            $v->party_name = '-';
+            $destAccList = [];
+            $destAmtList = [];
 
             foreach ($pTypes as $idx => $type) {
                 $pid = $pIds[$idx] ?? null;
@@ -2314,9 +2334,18 @@ class VoucherController extends Controller
 
                 $dr = (float)($debits[$idx] ?? 0);
                 $cr = (float)($credits[$idx] ?? 0);
-                $summary[] = "($pName) Dr: $dr, Cr: $cr";
+
+                $destAccList[] = $pName;
+                if ($dr > 0) {
+                    $destAmtList[] = '<div><span class="dest-dr-badge"><i class="fa fa-arrow-down me-1"></i>DR: ' . number_format($dr, 0) . '</span></div>';
+                } else {
+                    $destAmtList[] = '<div><span class="dest-cr-badge"><i class="fa fa-arrow-up me-1"></i>CR: ' . number_format($cr, 0) . '</span></div>';
+                }
             }
-            $v->accounts_detail = implode('<br>', $summary);
+            $v->dest_accounts_html = implode('', array_map(function($acc) {
+                return '<div><span class="dest-acc-badge"><i class="fa fa-bank me-1 text-primary"></i>' . htmlspecialchars($acc) . '</span></div>';
+            }, $destAccList));
+            $v->dest_amounts_html = implode('', $destAmtList);
         }
 
         return view('admin_panel.vochers.journal_vouchers.all_journal_vouchers', compact('vouchers'));
