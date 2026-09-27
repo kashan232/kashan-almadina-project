@@ -491,23 +491,16 @@
                       @endcanany
 
                       {{-- Purchase Section --}}
-                      @canany(['Inward Gatepass', 'Purchase', 'Purchase Return', 'Stock Wastage'])
+                      @canany(['Purchase', 'Purchase Return'])
                       <li class="nav-item">
                           <a href="#" class="nav-link"><span class="menu-title">Purchase</span><i class="menu-arrow"></i></a>
                           <div class="submenu">
                               <ul class="submenu-item">
-                                  @can('Inward Gatepass')
-                                  <li><a href="{{route('InwardGatepass.home')}}"><i class="fas fa-file-invoice mr-2"></i> Inward Gatepass</a></li>
-                                  <li><a href="{{route('add_inwardgatepass')}}"><i class="fas fa-plus-circle mr-2"></i> Add Gatepass</a></li>
-                                  @endcan
                                   @can('Purchase')
                                   <li><a href="{{route('Purchase.home')}}"><i class="fas fa-shopping-bag mr-2"></i> Purchase</a></li>
                                   @endcan
                                   @can('Purchase Return')
                                   <li><a href="{{route('purchase.return.home')}}"><i class="fas fa-undo mr-2"></i> Purchase Return</a></li>
-                                  @endcan
-                                  @can('Stock Wastage')
-                                  <li><a href="{{route('stock-wastage.index')}}"><i class="fas fa-trash mr-2"></i> Stock Wastage</a></li>
                                   @endcan
                               </ul>
                           </div>
@@ -515,7 +508,7 @@
                       @endcanany
 
                       {{-- Inventory Section --}}
-                      @canany(['Warehouse Stock', 'Stock Transfer'])
+                      @canany(['Warehouse Stock'])
                       <li class="nav-item">
                           <a href="#" class="nav-link"><span class="menu-title">Inventory</span><i class="menu-arrow"></i></a>
                           <div class="submenu">
@@ -523,17 +516,13 @@
                                   @can('Warehouse Stock')
                                   <li><a href="{{url('warehouse_stocks')}}"><i class="fas fa-boxes mr-2"></i> Warehouse Stock</a></li>
                                   @endcan
-                                  @can('Stock Transfer')
-                                  <li><a href="{{url('stock_transfers')}}"><i class="fas fa-exchange-alt mr-2"></i> Stock Transfer</a></li>
-                                  <li><a href="{{route('stock_transfers.pending')}}"><i class="fas fa-clock mr-2"></i> Pending Transfer Requests</a></li>
-                                  @endcan
                               </ul>
                           </div>
                       </li>
                       @endcanany
 
                       {{-- Sales Section --}}
-                      @canany(['Sales', 'Sale Return', 'Stock Hold', 'Stock Release'])
+                      @canany(['Sales', 'Sale Return'])
                       <li class="nav-item">
                           <a href="#" class="nav-link"><span class="menu-title">Sales</span><i class="menu-arrow"></i></a>
                           <div class="submenu">
@@ -544,9 +533,27 @@
                                   @can('Sale Return')
                                   <li><a href="{{route('sale.return.home')}}"><i class="fas fa-undo mr-2"></i> Sale Return</a></li>
                                   @endcan
+                              </ul>
+                          </div>
+                      </li>
+                      @endcanany
+
+                      {{-- General Section --}}
+                      @canany(['Stock Transfer', 'Stock Wastage', 'Stock Hold', 'Stock Release'])
+                      <li class="nav-item">
+                          <a href="#" class="nav-link"><span class="menu-title">General</span><i class="menu-arrow"></i></a>
+                          <div class="submenu">
+                              <ul class="submenu-item">
+                                  @can('Stock Transfer')
+                                  <li><a href="{{url('stock_transfers')}}"><i class="fas fa-exchange-alt mr-2"></i> Stock Transfer</a></li>
+                                  {{-- <li><a href="{{route('stock_transfers.pending')}}"><i class="fas fa-clock mr-2"></i> Pending Transfer Requests</a></li> --}}
+                                  @endcan
+                                  @can('Stock Wastage')
+                                  <li><a href="{{route('stock-wastage.index')}}"><i class="fas fa-trash mr-2"></i> Stock Wastage</a></li>
+                                  @endcan
                                   @can('Stock Hold')
                                   <li><a href="{{ route('stock-hold-list') }}"><i class="fas fa-pause mr-2"></i> Stock Hold</a></li>
-                                  <li><a href="{{ route('stock-holds.import') }}"><i class="fas fa-file-import mr-2"></i> Import Stock Hold</a></li>
+                                  {{-- <li><a href="{{ route('stock-holds.import') }}"><i class="fas fa-file-import mr-2"></i> Import Stock Hold</a></li> --}}
                                   @endcan
                                   @can('Stock Release')
                                   <li><a href="{{ route('stock-relase-list') }}"><i class="fas fa-play mr-2"></i> Stock Release</a></li>
@@ -672,7 +679,7 @@
                       @endcanany
 
                       {{-- Tools Section --}}
-                      @canany(['Rollback Posting', 'General Ledger'])
+                      @can('General Ledger')
                       <li class="nav-item">
                           <a href="#" class="nav-link">
                               <span class="menu-title">Tools</span>
@@ -680,14 +687,6 @@
                           </a>
                           <div class="submenu">
                               <ul class="submenu-item">
-                                  @can('Rollback Posting')
-                                  <li class="nav-item">
-                                      <a class="nav-link" href="{{ route('rollback.index') }}">
-                                          <i class="fas fa-undo-alt mr-2"></i>
-                                          <span>Rollback Posting</span>
-                                      </a>
-                                  </li>
-                                  @endcan
                                   @can('General Ledger')
                                   <li class="nav-item">
                                       <a class="nav-link" href="{{ route('general-ledger.index') }}">
@@ -699,7 +698,7 @@
                               </ul>
                           </div>
                       </li>
-                      @endcanany
+                      @endcan
 
                       {{-- Reports Section --}}
                       @canany(['Reports Dashboard', 'Sales Report', 'Purchase Report', 'Claim Report', 'Claim Acceptance Report', 'Claim Receipt Report', 'Stock Wastage Report', 'Stock Transfer Report', 'Receipt Voucher Report', 'Payment Voucher Report', 'Expense Voucher Report', 'Income Voucher Report', 'Journal Voucher Report', 'Adjustment Voucher Report'])
@@ -888,9 +887,17 @@
                       </li>
                       @endcanany
 
+                      @can('Rollback Posting')
                       <li class="nav-item">
-                          <a href="{{ route('reports.unpost-entries.index') }}" class="nav-link">
-                              <span class="menu-title">Un Post Entries</span>
+                          <a href="{{ route('rollback.index') }}" class="nav-link px-2 py-1 bg-warning text-dark fw-bold rounded shadow-sm hover-scale" style="margin-right: 4px; font-size: 13px !important; line-height: 1.4;">
+                              <i class="fas fa-undo-alt me-1 text-dark"></i> <span class="menu-title text-dark">Rollback Posting</span>
+                          </a>
+                      </li>
+                      @endcan
+
+                      <li class="nav-item">
+                          <a href="{{ route('reports.unpost-entries.index') }}" class="nav-link px-2 py-1 bg-info text-white fw-bold rounded shadow-sm hover-scale" style="font-size: 13px !important; line-height: 1.4;">
+                              <i class="fa-solid fa-list-check me-1 text-white"></i> <span class="menu-title text-white">Un Post Entries</span>
                           </a>
                       </li>
 
