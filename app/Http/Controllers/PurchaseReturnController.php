@@ -37,9 +37,15 @@ class PurchaseReturnController extends Controller
             $query->where('created_by', $request->user_id);
         }
 
-        $PurchaseReturns = $query->latest()->get();
+        if ($request->filled('supplier_id')) {
+            $query->where('purchasable_type', 'App\\Models\\Vendor')
+                  ->where('purchasable_id', $request->supplier_id);
+        }
+
+        $PurchaseReturns = $query->with(['warehouse'])->latest()->get();
         $users = User::orderBy('name')->get();
-        return view('admin_panel.purchase_return.index', compact('PurchaseReturns', 'users'));
+        $suppliers = \App\Models\Vendor::orderBy('name')->get();
+        return view('admin_panel.purchase_return.index', compact('PurchaseReturns', 'users', 'suppliers'));
     }
 
     public function create()

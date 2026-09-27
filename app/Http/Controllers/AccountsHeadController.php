@@ -38,6 +38,10 @@ class AccountsHeadController extends Controller
             }
         }
 
+        if (request('head_id')) {
+            $query->where('head_id', request('head_id'));
+        }
+
         $heads = AccountHead::withInactive()
             ->orderByRaw('CASE WHEN id >= ? THEN 0 ELSE 1 END', [ModuleIdSequence::ACCOUNT_HEAD_MIN])
             ->orderBy('id')

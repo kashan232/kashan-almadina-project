@@ -154,14 +154,25 @@
                     <div class="card border-0 shadow-sm">
                         <div class="card-body p-2" style="overflow: visible;">
                             <form action="{{ route('Purchase.home') }}" method="GET" class="row g-2 align-items-center">
-                                <div class="col-md-3">
-                                    <h6 class="mb-0 fw-bold text-dark ms-2"><i class="fa fa-shopping-cart me-2 text-primary"></i>Purchase Management</h6>
+                                <div class="col-md-2">
+                                    <h6 class="mb-0 fw-bold text-dark ms-1"><i class="fa fa-shopping-cart me-2 text-primary"></i>Purchase List</h6>
                                 </div>
                                 <div class="col-md-3">
                                     <div class="input-group input-group-sm">
                                         <span class="input-group-text bg-white border-end-0 small fw-bold text-muted">Range</span>
                                         <input type="date" name="start_date" class="form-control border-start-0" value="{{ request('start_date') }}">
                                         <input type="date" name="end_date" class="form-control" value="{{ request('end_date') }}">
+                                    </div>
+                                </div>
+                                <div class="col-md-2">
+                                    <div class="input-group input-group-sm">
+                                        <span class="input-group-text bg-white border-end-0 small fw-bold text-muted">Customer</span>
+                                        <select name="customer_id" class="form-select form-select-sm select2 border-start-0">
+                                            <option value="">All</option>
+                                            @foreach($customers as $c)
+                                                <option value="{{ $c->id }}" {{ request('customer_id') == $c->id ? 'selected' : '' }}>{{ $c->customer_name }}</option>
+                                            @endforeach
+                                        </select>
                                     </div>
                                 </div>
                                 <div class="col-md-2">
@@ -175,23 +186,20 @@
                                         </select>
                                     </div>
                                 </div>
-                                <div class="col-md-2">
-                                    <div class="input-group input-group-sm">
-                                        <span class="input-group-text bg-white border-end-0 small fw-bold text-muted">Status</span>
-                                        <select name="status" class="form-select form-select-sm select2 border-start-0">
-                                            <option value="">All</option>
-                                            <option value="Unposted" {{ request('status') == 'Unposted' ? 'selected' : '' }}>Unposted</option>
-                                            <option value="Posted" {{ request('status') == 'Posted' ? 'selected' : '' }}>Posted</option>
-                                        </select>
-                                    </div>
-                                </div>
-                                <div class="col-md-2 text-end">
+                                <div class="col-md-3 text-end">
                                     <div class="d-flex gap-1 justify-content-end align-items-center">
+                                        <div class="input-group input-group-sm me-1" style="max-width: 130px;">
+                                            <select name="status" class="form-select form-select-sm select2">
+                                                <option value="">Status: All</option>
+                                                <option value="Unposted" {{ request('status') == 'Unposted' ? 'selected' : '' }}>Unposted</option>
+                                                <option value="Posted" {{ request('status') == 'Posted' ? 'selected' : '' }}>Posted</option>
+                                            </select>
+                                        </div>
                                         <button type="submit" class="btn btn-primary btn-sm rounded-pill px-3 shadow-sm">Filter</button>
                                         <a href="{{ route('Purchase.home') }}" class="btn btn-outline-secondary btn-sm rounded-pill px-2" title="Reset"><i class="fa fa-refresh"></i></a>
                                         
-                                        <a class="btn btn-primary btn-sm rounded-pill px-4 shadow-sm ms-2" href="{{ route('add_purchase') }}">
-                                            <i class="fa fa-plus me-1"></i> Add Purchase
+                                        <a class="btn btn-primary btn-sm rounded-pill px-3 shadow-sm ms-1" href="{{ route('add_purchase') }}">
+                                            <i class="fa fa-plus me-1"></i> Add
                                         </a>
                                     </div>
                                 </div>
@@ -214,18 +222,20 @@
                             <label class="column-picker-item"><input type="checkbox" data-column="2" checked> Type</label>
                             <label class="column-picker-item"><input type="checkbox" data-column="3" checked> Inv#</label>
                             <label class="column-picker-item"><input type="checkbox" data-column="4" checked> DC #</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="5" checked> Date</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="6" checked> Party Type</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="7" checked> Customer / Warehouse</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="8" checked> Items</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="9" checked> Item Qty</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="10" checked> T. Qty</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="11" checked> Inv Total</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="12" checked> Disc</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="13" checked> WHT</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="14" checked> Net</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="15" checked> Created</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="16" checked> Status</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="5" checked> DC Date</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="6" checked> Date</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="7" checked> Party Type</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="8" checked> Party / Customer</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="9" checked> Warehouse</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="10" checked> Items</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="11" checked> Item Qty</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="12" checked> T. Qty</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="13" checked> Inv Total</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="14" checked> Disc</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="15" checked> WHT</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="16" checked> Net</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="17" checked> Created</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="18" checked> Status</label>
                         </div>
                     </div>
                 </div>
@@ -239,9 +249,11 @@
                                     <th>Type</th>
                                     <th>Inv#</th>
                                     <th>DC #</th>
+                                    <th>DC Date</th>
                                     <th>Date</th>
                                     <th>Party Type</th>
-                                    <th>Customer / Warehouse</th>
+                                    <th>Party / Customer</th>
+                                    <th>Warehouse</th>
                                     <th>Items</th>
                                     <th class="text-center">Item Qty</th>
                                     <th class="text-center">T. Qty</th>
@@ -270,16 +282,15 @@
                                     <td class="text-center small fw-bold">PJ</td>
                                     <td class="fw-bold text-primary" data-order="{{ (int) preg_replace('/[^0-9]/', '', $purchase->invoice_no) ?: $purchase->id }}">{{ preg_replace('/[^0-9]/', '', $purchase->invoice_no) }}</td>
                                     <td class="small">{{ $purchase->dc ?: '-' }}</td>
+                                    <td class="small">{{ $purchase->dc_date ? \Carbon\Carbon::parse($purchase->dc_date)->format('d-M-Y') : '-' }}</td>
                                     <td class="fw-bold text-dark" data-order="{{ $purchase->current_date }}_{{ $purchase->id }}">
                                         {{ \Carbon\Carbon::parse($purchase->current_date)->format('d-M-Y') }}
                                     </td>
                                     <td>
                                         <span class="badge bg-info-subtle text-info border border-info px-1 py-0" style="font-size: 10px;">{{ $partyLabel }}</span>
                                     </td>
-                                    <td>
-                                        <span class="fw-bold text-dark small">{{ $partyName }}</span>
-                                        <div class="text-muted" style="font-size: 10px;"><i class="fa fa-building-o me-1"></i>{{ Str::limit($warehouseName, 18) }}</div>
-                                    </td>
+                                    <td class="fw-bold text-dark small">{{ $partyName }}</td>
+                                    <td class="small text-muted"><i class="fa fa-building-o me-1"></i>{{ Str::limit($warehouseName, 18) }}</td>
 
                                     <td class="py-1">
                                         @foreach($purchase->items as $item)
@@ -378,15 +389,18 @@
                 { "type": "num", "targets": 2 }
             ],
             "pageLength": 25,
+            "lengthMenu": [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
             "scrollX": true,
             "autoWidth": false,
             "language": {
                 "search": "_INPUT_",
                 "searchPlaceholder": "Search purchases..."
             },
-            dom: 'Bfrtip',
+            dom: '<"d-flex justify-content-between align-items-center p-2"lBf>rt<"d-flex justify-content-between align-items-center p-2"ip>',
             buttons: [
-                'copyHtml5', 'excelHtml5', 'csvHtml5'
+                { extend: 'copy', className: 'btn btn-outline-secondary btn-sm rounded-pill px-3 me-1' },
+                { extend: 'csv', className: 'btn btn-outline-success btn-sm rounded-pill px-3 me-1' },
+                { extend: 'excel', className: 'btn btn-outline-primary btn-sm rounded-pill px-3 me-1' }
             ]
         });
 

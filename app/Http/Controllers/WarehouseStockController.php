@@ -42,8 +42,10 @@ class WarehouseStockController extends Controller
         $view = $request->get('view', 'balances');
         $filter_warehouse_ids = (array) $request->get('filter_warehouse_id', []);
         $filter_claim_type = $request->get('claim_type', 'none'); // Default to 'none' (Normal)
-        $filter_product_id = $request->filled('filter_product_id') ? (int) $request->filter_product_id : null;
-        $filterProduct = $filter_product_id ? Product::find($filter_product_id) : null;
+        $filter_product_ids = (array) $request->get('filter_product_id', []);
+        $filter_product_ids = array_filter(array_map('intval', $filter_product_ids));
+        $filterProducts = !empty($filter_product_ids) ? Product::whereIn('id', $filter_product_ids)->get() : collect();
+        $filterProduct = $filterProducts->first();
 
         $allWarehouses = $this->accessibleWarehouses();
         $accessibleWarehouseIds = $allWarehouses->pluck('id')->map(fn ($id) => (int) $id)->all();
@@ -85,9 +87,9 @@ class WarehouseStockController extends Controller
             if ($request->filled('status')) {
                 $query->where('status', $request->status);
             }
-            if ($filter_product_id) {
-                $query->whereHas('items', function ($q) use ($filter_product_id) {
-                    $q->where('product_id', $filter_product_id);
+            if (!empty($filter_product_ids)) {
+                $query->whereHas('items', function ($q) use ($filter_product_ids) {
+                    $q->whereIn('product_id', $filter_product_ids);
                 });
             }
             if ($filter_brand_id) {
@@ -100,7 +102,7 @@ class WarehouseStockController extends Controller
 
             return view('admin_panel.warehouses.warehouse_stocks.index', compact(
                 'stocks', 'warehouses', 'allWarehouses', 'view', 'isAdmin', 'canAccessShop',
-                'filter_product_id', 'filterProduct', 'brands', 'filter_brand_id'
+                'filter_product_ids', 'filterProducts', 'filter_product_id', 'filterProduct', 'brands', 'filter_brand_id'
             ));
         }
 
@@ -124,8 +126,8 @@ class WarehouseStockController extends Controller
             'brandRelation'
         ])->orderBy('name');
 
-        if ($filter_product_id) {
-            $productsQuery->where('id', $filter_product_id);
+        if (!empty($filter_product_ids)) {
+            $productsQuery->whereIn('id', $filter_product_ids);
         }
 
         if ($filter_brand_id) {
@@ -136,7 +138,7 @@ class WarehouseStockController extends Controller
 
         return view('admin_panel.warehouses.warehouse_stocks.index', compact(
             'products', 'warehouses', 'allWarehouses', 'view', 'filter_warehouse_ids',
-            'filter_claim_type', 'filter_product_id', 'filterProduct', 'brands', 'filter_brand_id', 'isAdmin', 'canAccessShop'
+            'filter_claim_type', 'filter_product_ids', 'filterProducts', 'filter_product_id', 'filterProduct', 'brands', 'filter_brand_id', 'isAdmin', 'canAccessShop'
         ));
     }
 

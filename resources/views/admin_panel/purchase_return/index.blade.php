@@ -111,14 +111,25 @@
                     <div class="card border-0 shadow-sm">
                         <div class="card-body p-2" style="overflow: visible;">
                             <form action="{{ route('purchase.return.home') }}" method="GET" class="row g-2 align-items-center">
-                                <div class="col-md-3">
-                                    <h6 class="mb-0 fw-bold text-dark ms-2"><i class="fa fa-undo me-2 text-danger"></i>Purchase Returns</h6>
+                                <div class="col-md-2">
+                                    <h6 class="mb-0 fw-bold text-dark ms-1"><i class="fa fa-undo me-2 text-danger"></i>Purchase Return</h6>
                                 </div>
                                 <div class="col-md-3">
                                     <div class="input-group input-group-sm">
                                         <span class="input-group-text bg-white border-end-0 small fw-bold text-muted">Range</span>
                                         <input type="date" name="start_date" class="form-control border-start-0" value="{{ request('start_date') }}">
                                         <input type="date" name="end_date" class="form-control" value="{{ request('end_date') }}">
+                                    </div>
+                                </div>
+                                <div class="col-md-2">
+                                    <div class="input-group input-group-sm">
+                                        <span class="input-group-text bg-white border-end-0 small fw-bold text-muted">Supplier</span>
+                                        <select name="supplier_id" class="form-select form-select-sm select2 border-start-0">
+                                            <option value="">All</option>
+                                            @foreach($suppliers as $sup)
+                                                <option value="{{ $sup->id }}" {{ request('supplier_id') == $sup->id ? 'selected' : '' }}>{{ $sup->name }}</option>
+                                            @endforeach
+                                        </select>
                                     </div>
                                 </div>
                                 <div class="col-md-2">
@@ -132,22 +143,19 @@
                                         </select>
                                     </div>
                                 </div>
-                                <div class="col-md-2">
-                                    <div class="input-group input-group-sm">
-                                        <span class="input-group-text bg-white border-end-0 small fw-bold text-muted">Status</span>
-                                        <select name="status" class="form-select form-select-sm select2 border-start-0">
-                                            <option value="">All</option>
-                                            <option value="Unposted" {{ request('status') == 'Unposted' ? 'selected' : '' }}>Unposted</option>
-                                            <option value="Posted" {{ request('status') == 'Posted' ? 'selected' : '' }}>Posted</option>
-                                        </select>
-                                    </div>
-                                </div>
-                                <div class="col-md-2 text-end">
+                                <div class="col-md-3 text-end">
                                     <div class="d-flex gap-1 justify-content-end align-items-center">
+                                        <div class="input-group input-group-sm me-1" style="max-width: 120px;">
+                                            <select name="status" class="form-select form-select-sm select2">
+                                                <option value="">Status: All</option>
+                                                <option value="Unposted" {{ request('status') == 'Unposted' ? 'selected' : '' }}>Unposted</option>
+                                                <option value="Posted" {{ request('status') == 'Posted' ? 'selected' : '' }}>Posted</option>
+                                            </select>
+                                        </div>
                                         <button type="submit" class="btn btn-primary btn-sm rounded-pill px-3 shadow-sm">Filter</button>
                                         <a href="{{ route('purchase.return.home') }}" class="btn btn-outline-secondary btn-sm rounded-pill px-2" title="Reset"><i class="fa fa-refresh"></i></a>
-                                        <a class="btn btn-danger btn-sm rounded-pill px-4 shadow-sm ms-2" href="{{ route('purchase.return.add') }}">
-                                            <i class="fa fa-plus me-1"></i> Add Return
+                                        <a class="btn btn-danger btn-sm rounded-pill px-3 shadow-sm ms-1" href="{{ route('purchase.return.add') }}">
+                                            <i class="fa fa-plus me-1"></i> Add
                                         </a>
                                     </div>
                                 </div>
@@ -169,16 +177,17 @@
                             <label class="column-picker-item"><input type="checkbox" data-column="1" checked> ID</label>
                             <label class="column-picker-item"><input type="checkbox" data-column="2" checked> Type</label>
                             <label class="column-picker-item"><input type="checkbox" data-column="3" checked> Inv#</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="4" checked> Orig. Purchase</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="5" checked> Supplier</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="6" checked> Items</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="7" checked> Qty</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="8" checked> Created By</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="9" checked> Date</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="4" checked> Date</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="5" checked> Orig. Purchase</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="6" checked> Supplier</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="7" checked> Warehouse</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="8" checked> Items</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="9" checked> Qty</label>
                             <label class="column-picker-item"><input type="checkbox" data-column="10" checked> Sub Total</label>
                             <label class="column-picker-item"><input type="checkbox" data-column="11" checked> WHT Amount</label>
                             <label class="column-picker-item"><input type="checkbox" data-column="12" checked> Net Amount</label>
                             <label class="column-picker-item"><input type="checkbox" data-column="13" checked> Status</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="14" checked> Created By</label>
                         </div>
                     </div>
                 </div>
@@ -191,16 +200,17 @@
                                     <th>ID</th>
                                     <th>Type</th>
                                     <th>Inv#</th>
+                                    <th>Date</th>
                                     <th>Original Purchase</th>
                                     <th>Supplier</th>
+                                    <th>Warehouse</th>
                                     <th>Items</th>
                                     <th class="text-center">Qty</th>
-                                    <th>Created By</th>
-                                    <th>Date</th>
                                     <th class="text-end">Sub Total</th>
                                     <th class="text-end">WHT Amount</th>
                                     <th class="text-end">Net Amount</th>
                                     <th class="text-center">Status</th>
+                                    <th>Created By</th>
                                     <th class="text-center" style="min-width: 120px;">Action</th>
                                 </tr>
                             </thead>
@@ -210,8 +220,10 @@
                                     <td class="text-muted">{{ $ret->id }}</td>
                                     <td class="text-muted small">PRJ</td>
                                     <td class="fw-bold text-primary">{{ preg_replace('/[^0-9]/', '', $ret->invoice_no) }}</td>
+                                    <td class="small fw-bold text-dark">{{ \Carbon\Carbon::parse($ret->current_date)->format('d-M-Y') }}</td>
                                     <td><span class="badge bg-light text-dark border px-2">{{ $ret->purchase->invoice_no ?? 'N/A' }}</span></td>
                                     <td class="fw-bold text-dark">{{ $ret->purchasable->name ?? ($ret->purchasable->customer_name ?? 'N/A') }}</td>
+                                    <td class="small text-muted"><i class="fa fa-building-o me-1"></i>{{ $ret->warehouse->warehouse_name ?? ($ret->warehouse_id == 0 ? 'Shop' : 'N/A') }}</td>
                                     <td>
                                         @foreach($ret->items as $item)
                                             <div class="item-detail-row">
@@ -226,6 +238,16 @@
                                             </div>
                                         @endforeach
                                     </td>
+                                    <td class="text-end fw-bold">{{ number_format($ret->subtotal, 0) }}</td>
+                                    <td class="text-end fw-bold">{{ number_format($ret->wht, 0) }}</td>
+                                    <td class="text-end fw-bold text-danger">{{ number_format($ret->net_amount, 0) }}</td>
+                                    <td class="text-center">
+                                        @if($ret->status === 'Posted')
+                                            <span class="badge bg-success rounded-pill px-3" style="font-size: 9px;">Posted</span>
+                                        @else
+                                            <span class="badge bg-warning text-dark rounded-pill px-3" style="font-size: 9px;">Unposted</span>
+                                        @endif
+                                    </td>
                                     <td class="small text-muted">
                                         @if($ret->creator)
                                             <span class="text-dark small">{{ $ret->creator->name }}</span>
@@ -233,7 +255,6 @@
                                             <span class="text-muted small">System</span>
                                         @endif
                                     </td>
-                                    <td class="small">{{ \Carbon\Carbon::parse($ret->current_date)->format('d-M-Y') }}</td>
                                     <td class="text-end fw-bold">{{ number_format($ret->subtotal, 0) }}</td>
                                     <td class="text-end fw-bold">{{ number_format($ret->wht, 0) }}</td>
                                     <td class="text-end fw-bold text-danger">{{ number_format($ret->net_amount, 0) }}</td>
@@ -292,15 +313,18 @@
         var dt = $('#purchaseReturnTable').DataTable({
             "order": [[0, 'desc']], 
             "pageLength": 25,
+            "lengthMenu": [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
             "scrollX": true,
             "autoWidth": false,
             "language": {
                 "search": "_INPUT_",
                 "searchPlaceholder": "Search returns..."
             },
-            dom: 'Bfrtip',
+            dom: '<"d-flex justify-content-between align-items-center p-2"lBf>rt<"d-flex justify-content-between align-items-center p-2"ip>',
             buttons: [
-                'copyHtml5', 'excelHtml5', 'csvHtml5'
+                { extend: 'copy', className: 'btn btn-outline-secondary btn-sm rounded-pill px-3 me-1' },
+                { extend: 'csv', className: 'btn btn-outline-success btn-sm rounded-pill px-3 me-1' },
+                { extend: 'excel', className: 'btn btn-outline-primary btn-sm rounded-pill px-3 me-1' }
             ]
         });
 

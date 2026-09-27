@@ -176,9 +176,17 @@
                                 </div>
                             </div>
                             
-                            @if($isAdmin)
                             <div class="d-flex gap-1 align-items-center">
                                 <form action="{{ route('view_all') }}" method="GET" class="d-flex gap-1 align-items-center">
+                                    <select name="head_id" class="form-select form-select-sm select2" style="min-width: 170px;">
+                                        <option value="">All Heads</option>
+                                        @foreach($heads as $h)
+                                            <option value="{{ $h->id }}" {{ request('head_id') == $h->id ? 'selected' : '' }}>
+                                                {{ $h->id }} - {{ $h->name }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                    @if($isAdmin)
                                     <select name="created_by" class="form-select form-select-sm select2" style="min-width: 150px;">
                                         <option value="">All Creators</option>
                                         @foreach($users as $user)
@@ -187,16 +195,18 @@
                                             </option>
                                         @endforeach
                                     </select>
+                                    @endif
                                     <button type="submit" class="btn btn-primary btn-sm rounded-pill px-3">Filter</button>
-                                    @if(request('created_by'))
+                                    @if(request('head_id') || request('created_by'))
                                         <a href="{{ route('view_all') }}" class="btn btn-outline-secondary btn-sm rounded-pill px-2" title="Reset"><i class="fa fa-refresh"></i></a>
                                     @endif
                                 </form>
-                                <a href="{{ route('purcahse-account-allocation') }}" class="btn btn-outline-danger btn-sm rounded-pill px-3 ms-2">
+                                @if($isAdmin)
+                                <a href="{{ route('purcahse-account-allocation') }}" class="btn btn-outline-danger btn-sm rounded-pill px-3 ms-1">
                                     <i class="fa fa-history me-1"></i> History
                                 </a>
+                                @endif
                             </div>
-                            @endif
                         </div>
                     </div>
                 </div>
@@ -508,6 +518,12 @@
             scrollX: true,
             autoWidth: false,
             pageLength: 25,
+            dom: '<"d-flex justify-content-between align-items-center p-2"lBf>rt<"d-flex justify-content-between align-items-center p-2"ip>',
+            buttons: [
+                { extend: 'copy', className: 'btn btn-outline-secondary btn-sm rounded-pill px-3 me-1' },
+                { extend: 'csv', className: 'btn btn-outline-success btn-sm rounded-pill px-3 me-1' },
+                { extend: 'excel', className: 'btn btn-outline-primary btn-sm rounded-pill px-3 me-1' }
+            ],
             order: [[3, 'asc']],
             language: {
                 search: "_INPUT_",

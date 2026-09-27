@@ -106,14 +106,22 @@
                     <div class="card border-0 shadow-sm">
                         <div class="card-body p-2">
                             <div class="row g-2 align-items-center">
-                                <div class="col-md-6">
+                                <div class="col-md-4">
                                     <h5 class="mb-0 fw-bold text-dark ms-2"><i class="fa fa-users me-2 text-primary"></i>Vendor Management</h5>
                                 </div>
-                                <div class="col-md-6 text-end">
-                                    <div class="d-flex gap-2 justify-content-end align-items-center">
-                                        @if($isAdmin)
-                                        <form action="{{ url('vendor') }}" method="GET" class="d-flex gap-2 align-items-center me-2">
-                                            <select name="created_by" class="form-select form-select-sm select2" style="min-width: 150px;">
+                                <div class="col-md-8 text-end">
+                                    <div class="d-flex gap-2 justify-content-end align-items-center flex-wrap">
+                                        <form action="{{ url('vendor') }}" method="GET" class="d-flex gap-2 align-items-center me-1">
+                                            <select name="group_id" class="form-select form-select-sm select2" style="min-width: 140px;">
+                                                <option value="">All Groups</option>
+                                                @foreach($userGroups as $group)
+                                                    <option value="{{ $group->id }}" {{ request('group_id') == $group->id ? 'selected' : '' }}>
+                                                        {{ $group->name }}
+                                                    </option>
+                                                @endforeach
+                                            </select>
+                                            @if($isAdmin)
+                                            <select name="created_by" class="form-select form-select-sm select2" style="min-width: 130px;">
                                                 <option value="">All Users</option>
                                                 @foreach($users as $user)
                                                     <option value="{{ $user->id }}" {{ request('created_by') == $user->id ? 'selected' : '' }}>
@@ -121,12 +129,12 @@
                                                     </option>
                                                 @endforeach
                                             </select>
+                                            @endif
                                             <button type="submit" class="btn btn-primary btn-sm rounded-pill px-3 shadow-sm">Filter</button>
-                                            @if(request('created_by'))
-                                                <a href="{{ url('vendor') }}" class="btn btn-outline-secondary btn-sm rounded-pill px-3">Reset</a>
+                                            @if(request('group_id') || request('created_by'))
+                                                <a href="{{ url('vendor') }}" class="btn btn-outline-secondary btn-sm rounded-pill px-2" title="Reset"><i class="fa fa-refresh"></i></a>
                                             @endif
                                         </form>
-                                        @endif
                                         
                                         <div class="btn-group">
                                             <a href="{{ route('vendors.audit') }}" class="btn btn-outline-danger btn-sm rounded-pill px-3 me-1" title="Vendor Ledger Audit">
@@ -276,6 +284,13 @@ $(document).ready(function() {
         scrollX: true,
         autoWidth: false,
         pageLength: 25,
+        lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
+        dom: '<"d-flex justify-content-between align-items-center p-2"lBf>rt<"d-flex justify-content-between align-items-center p-2"ip>',
+        buttons: [
+            { extend: 'copy', className: 'btn btn-outline-secondary btn-sm rounded-pill px-3 me-1' },
+            { extend: 'csv', className: 'btn btn-outline-success btn-sm rounded-pill px-3 me-1' },
+            { extend: 'excel', className: 'btn btn-outline-primary btn-sm rounded-pill px-3 me-1' }
+        ],
         order: [[0, 'asc']],
         language: {
             search: "_INPUT_",

@@ -44,6 +44,11 @@ class VendorController extends Controller
             }
         }
 
+        if ($request->filled('group_id')) {
+            $groupId = (string) $request->group_id;
+            $query->whereJsonContains('user_group_ids', $groupId);
+        }
+
         $vendors = $query->withInactive()->withCount('purchases')->latest()->get();
         $userGroups = UserGroup::all();
         $users = User::all();

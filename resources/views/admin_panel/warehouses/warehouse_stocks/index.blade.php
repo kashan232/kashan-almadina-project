@@ -172,9 +172,6 @@
                                     <a class="btn btn-outline-success btn-sm rounded-pill px-3 shadow-sm py-1" href="{{ route('warehouse_stocks.import') }}" style="font-size: 11px;">
                                         <i class="fa fa-upload me-1"></i> Import Excel
                                     </a>
-                                    <a class="btn btn-primary btn-sm rounded-pill px-3 shadow-sm py-1" href="{{ route('warehouse_stocks.create') }}" style="font-size: 11px;">
-                                        <i class="fa fa-plus me-1"></i> Manual Update
-                                    </a>
                                 </div>
                             </div>
                         </div>
@@ -183,17 +180,17 @@
             </div>
 
             {{-- Tabs --}}
-            <div class="card border-0 shadow-sm mb-2">
+            <div class="card border-0 shadow-sm mb-1">
                 <div class="card-body p-0">
                     <ul class="nav nav-tabs-custom">
                         <li class="nav-item">
                             <a class="nav-link {{ $view == 'balances' ? 'active' : '' }}" href="{{ route('warehouse_stocks.index', ['view' => 'balances']) }}">
-                                <i class="fa fa-list-ul me-1"></i> Current Stock Balances
+                                <i class="fa fa-list-ul me-1"></i> Stock Balances
                             </a>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link {{ $view == 'history' ? 'active' : '' }}" href="{{ route('warehouse_stocks.index', ['view' => 'history']) }}">
-                                <i class="fa fa-history me-1"></i> Adjustment History
+                                <i class="fa fa-history me-1"></i> History
                             </a>
                         </li>
                     </ul>
@@ -205,13 +202,10 @@
                 <div class="card shadow-sm">
                     <div class="card-header bg-white py-1 border-bottom">
                         <div class="row align-items-center">
-                            <div class="col-md-2">
-                                <span class="fw-bold text-muted small text-uppercase">Stock Balance Matrix</span>
-                            </div>
-                            <div class="col-md-7">
+                            <div class="col-md-9">
                                 <form action="{{ route('warehouse_stocks.index') }}" method="GET" class="d-flex align-items-center flex-wrap gap-1 m-0">
                                     <input type="hidden" name="view" value="balances">
-                                    <select name="claim_type" class="form-select form-select-sm" style="width: 115px; font-size: 11px;">
+                                    <select name="claim_type" class="form-select form-select-sm" style="width: 110px; font-size: 11px;">
                                         <option value="none" {{ $filter_claim_type == 'none' ? 'selected' : '' }}>Normal</option>
                                         <option value="company" {{ $filter_claim_type == 'company' ? 'selected' : '' }}>Company Claim</option>
                                         <option value="customer" {{ $filter_claim_type == 'customer' ? 'selected' : '' }}>Customer Claim</option>
@@ -223,11 +217,10 @@
                                             <option value="{{ $b->id }}" {{ $filter_brand_id == $b->id ? 'selected' : '' }}>{{ $b->name }}</option>
                                         @endforeach
                                     </select>
-                                    <select name="filter_product_id" id="filter_product_id" class="form-select form-select-sm" style="width: 150px; font-size: 11px;">
-                                        <option value="">All Products</option>
-                                        @if(!empty($filterProduct))
-                                            <option value="{{ $filterProduct->id }}" selected>{{ $filterProduct->id }} - {{ $filterProduct->name }}</option>
-                                        @endif
+                                    <select name="filter_product_id[]" id="filter_product_id" class="form-select form-select-sm select2" multiple="multiple" data-placeholder="Select Items" style="min-width: 180px; font-size: 11px;">
+                                        @foreach($filterProducts as $fp)
+                                            <option value="{{ $fp->id }}" selected>{{ $fp->id }} - {{ $fp->name }}</option>
+                                        @endforeach
                                     </select>
                                     <select name="filter_warehouse_id[]" class="form-select form-select-sm select2" multiple="multiple" data-placeholder="All Warehouses" style="min-width: 140px;">
                                         @foreach($allWarehouses as $aw)

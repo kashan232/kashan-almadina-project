@@ -164,15 +164,15 @@
                             <label class="column-picker-item"><input type="checkbox" data-column="3" checked> Type</label>
                             <label class="column-picker-item"><input type="checkbox" data-column="4" checked> Name</label>
                             <label class="column-picker-item"><input type="checkbox" data-column="5" checked> Groups</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="6" checked> Created By</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="7" checked> Creator Type</label>
-                            @php $shift = 1; @endphp
-                            <label class="column-picker-item"><input type="checkbox" data-column="{{ 7 + $shift }}" checked> Mobile</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="{{ 8 + $shift }}" checked> Zone</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="{{ 9 + $shift }}" checked> Opening</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="{{ 10 + $shift }}" checked> Closing</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="{{ 11 + $shift }}" checked> Filer</label>
-                            <label class="column-picker-item"><input type="checkbox" data-column="{{ 12 + $shift }}" checked> Status</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="6" checked> Mobile</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="7" checked> Zone</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="8" checked> Address Eng</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="9" checked> Address Urdu</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="10" checked> Opening</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="11" checked> Closing</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="12" checked> Filer</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="13" checked> Status</label>
+                            <label class="column-picker-item"><input type="checkbox" data-column="14" checked> Created By</label>
                         </div>
                     </div>
                 </div>
@@ -186,14 +186,15 @@
                                     <th>Type</th>
                                     <th>Name</th>
                                     <th>Groups</th>
-                                    <th>Created By</th>
-                                    <th>Creator Type</th>
                                     <th>Mobile</th>
                                     <th>Zone</th>
+                                    <th>Address Eng</th>
+                                    <th>Address Urdu</th>
                                     <th class="text-end">Opening</th>
                                     <th class="text-end">Closing</th>
                                     <th>Filer</th>
                                     <th class="text-center">Status</th>
+                                    <th>Created By</th>
                                     <th class="text-center" style="min-width: 120px;">Action</th>
                                 </tr>
                             </thead>
@@ -223,10 +224,10 @@
                                             <span class="text-muted small">-</span>
                                         @endif
                                     </td>
-                                    <td class="small fw-bold text-dark">{{ $customer->creator->name ?? 'System' }}</td>
-                                    <td class="small text-muted text-capitalize">{{ $customer->creator ? ($customer->creator->roles->first()->name ?? $customer->creator->usertype) : 'System' }}</td>
                                     <td class="small">{{ $customer->mobile }}</td>
                                     <td class="small">{{ $customer->zone }}</td>
+                                    <td class="small">{{ $customer->address }}</td>
+                                    <td class="small text-end" dir="rtl">{{ $customer->address_ur }}</td>
                                     <td class="text-end text-success fw-bold">
                                         {{ number_format($customer->resolvedOpeningBalance(), 0) }}
                                     </td>
@@ -241,6 +242,7 @@
                                             <span class="badge bg-secondary rounded-pill px-3">Inactive</span>
                                         @endif
                                     </td>
+                                    <td class="small fw-bold text-dark">{{ $customer->creator->name ?? 'System' }}</td>
                                     <td class="text-center">
                                         <div class="d-flex gap-1 justify-content-center">
                                             <a href="{{ route('customers.edit', $customer->id) }}" class="btn btn-outline-warning btn-xs px-1 py-0" title="Edit" style="height: 20px;">
@@ -280,13 +282,16 @@
         $('.select2').select2({ width: '100%' });
 
         var dt = $('#customerTable').DataTable({
-            dom: 'Bfrtip',
-            order: [[0, "desc"]],
-            pageLength: 25,
             scrollX: true,
             autoWidth: false,
+            pageLength: 25,
+            lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
+            dom: '<"d-flex justify-content-between align-items-center p-2"lBf>rt<"d-flex justify-content-between align-items-center p-2"ip>',
+            order: [[0, "desc"]],
             buttons: [
-                'copyHtml5', 'excelHtml5', 'csvHtml5'
+                { extend: 'copy', className: 'btn btn-outline-secondary btn-sm rounded-pill px-3 me-1' },
+                { extend: 'csv', className: 'btn btn-outline-success btn-sm rounded-pill px-3 me-1' },
+                { extend: 'excel', className: 'btn btn-outline-primary btn-sm rounded-pill px-3 me-1' }
             ]
         });
 

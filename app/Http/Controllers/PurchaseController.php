@@ -47,9 +47,15 @@ class PurchaseController extends Controller
             $query->where('created_by', $request->user_id);
         }
 
+        if ($request->filled('customer_id')) {
+            $query->where('purchasable_type', 'App\\Models\\Customer')
+                  ->where('purchasable_id', $request->customer_id);
+        }
+
         $Purchase = $query->orderByDesc('id')->get();
         $users = User::orderBy('name')->get();
-        return view("admin_panel.purchase.index", compact('Purchase', 'users'));
+        $customers = Customer::orderBy('customer_name')->get();
+        return view("admin_panel.purchase.index", compact('Purchase', 'users', 'customers'));
     }
     public function add_purchase()
     {
