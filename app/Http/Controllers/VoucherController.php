@@ -16,6 +16,7 @@ use App\Services\PartyLedgerService;
 use App\Models\IncomeVoucher;
 use App\Models\AdjustmentVoucher;
 use App\Models\JournalVoucher;
+use App\Models\UserGroup;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 
