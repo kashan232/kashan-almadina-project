@@ -228,5 +228,31 @@ class AccountsHeadController extends Controller
         return redirect()->route('view_all')->with('success', 'Account saved successfully.');
     }
 
-    
+    public function bulkUpdateOpeningBalances(Request $request)
+    {
+        $request->validate([
+            'balances' => 'required|array',
+            'balances.*' => 'nullable|string',
+        ]);
+
+        DB::transaction(function () use ($request) {
+            foreach ($request->input('balances', []) as $accountId => $rawBalance) {
+                $account = Account::withInactive()
+                    ->withoutGlobalScope(\App\Scopes\GroupIsolationScope::class)
+                    ->find($accountId);
+
+                if ($account) {
+                    $cleanBalance = (is_null($rawBalance) || trim((string)$rawBalance) === '') ? 0.00 : (float) str_replace(',', '', (string) $rawBalance);
+                    $oldOb = (float) $account->opening_balance;
+                    $diff = $cleanBalance - $oldOb;
+
+                    $account->opening_balance = $cleanBalance;
+                    $account->current_balance = (float) $account->current_balance + $diff;
+                    $account->save();
+                }
+            }
+        });
+
+        return redirect()->route('view_all')->with('success', 'All account opening balances updated successfully.');
+    }
 }

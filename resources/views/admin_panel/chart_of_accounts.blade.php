@@ -173,6 +173,9 @@
                                     <button class="btn btn-outline-info btn-sm rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#listHeadsModal">
                                         <i class="fa fa-list-ul me-1"></i> Heads
                                     </button>
+                                    <button class="btn btn-success btn-sm rounded-pill px-3 shadow-sm" data-bs-toggle="modal" data-bs-target="#bulkOpeningBalanceModal">
+                                        <i class="fa fa-balance-scale me-1"></i> Bulk Opening Balances
+                                    </button>
                                 </div>
                             </div>
                             
@@ -489,6 +492,57 @@
                 </div>
             </div>
         </div>
+    </div>
+</div>
+
+<!-- Bulk Opening Balance Modal -->
+<div class="modal fade" id="bulkOpeningBalanceModal" tabindex="-1">
+    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+        <form action="{{ route('coa.accounts.bulk_opening_balances') }}" method="POST" class="modal-content border-0 shadow-lg">
+            @csrf
+            <div class="modal-header bg-success text-white py-2">
+                <h6 class="modal-title fw-bold"><i class="fa fa-balance-scale me-2"></i>Bulk Update Opening Balances (All Accounts)</h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-3">
+                <div class="alert alert-info py-2 px-3 small mb-2">
+                    <i class="fa fa-info-circle me-1"></i> Aap tamam <strong>{{ count($accounts) }}</strong> accounts ke Opening Balance ek saath enter karke Save kar sakte hain. Subhead / Code ke mutabiq list niche di gayi hai.
+                </div>
+                <div class="table-responsive" style="max-height: 500px;">
+                    <table class="table table-sm table-striped table-bordered align-middle mb-0" style="font-size: 12px;">
+                        <thead class="bg-light sticky-top">
+                            <tr>
+                                <th style="width: 50px;" class="text-center">#</th>
+                                <th style="width: 100px;">Account Code</th>
+                                <th>Sub Head</th>
+                                <th>Account Title</th>
+                                <th style="width: 220px;" class="text-end">Opening Balance (₨)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach($accounts as $index => $acc)
+                            <tr>
+                                <td class="text-center text-muted">{{ $index + 1 }}</td>
+                                <td class="fw-bold text-primary">{{ $acc->account_code }}</td>
+                                <td><span class="badge bg-secondary">{{ $acc->head->name ?? 'N/A' }}</span></td>
+                                <td class="fw-bold text-dark">{{ $acc->title }}</td>
+                                <td>
+                                    <div class="input-group input-group-sm">
+                                        <span class="input-group-text bg-light">₨</span>
+                                        <input type="number" step="0.01" name="balances[{{ $acc->id }}]" class="form-control form-control-sm text-end fw-bold bulk-ob-input" value="{{ (float)($acc->opening_balance ?? 0) }}">
+                                    </div>
+                                </td>
+                            </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer py-2">
+                <button type="button" class="btn btn-light btn-sm px-3" data-bs-dismiss="modal">Close</button>
+                <button type="submit" class="btn btn-success btn-sm px-4 shadow-sm"><i class="fa fa-check me-1"></i> Save All Opening Balances</button>
+            </div>
+        </form>
     </div>
 </div>
 

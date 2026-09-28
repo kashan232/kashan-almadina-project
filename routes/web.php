@@ -193,6 +193,7 @@ Route::middleware('auth')->group(function () {
     // Chart Of accounts
 
     Route::get('/view_all', [AccountsHeadController::class, 'index'])->name('view_all');
+    Route::post('/accounts/bulk-opening-balances', [AccountsHeadController::class, 'bulkUpdateOpeningBalances'])->name('coa.accounts.bulk_opening_balances');
     Route::get('/purcahse-account-allocation', [AccountsHeadController::class, 'purcahse_account_allocation'])->name('purcahse-account-allocation');
     // Route::get('/narration', [AccountsHeadController::class, 'narration'])->name('narration');
     // Route::get('/expense-heads', [AccountsHeadController::class, 'index'])->name('expense.heads.index');
