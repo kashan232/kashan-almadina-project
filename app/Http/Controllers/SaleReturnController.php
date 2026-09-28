@@ -41,8 +41,10 @@ class SaleReturnController extends Controller
 
         $SaleReturns = $query->orderBy('id', 'desc')->get();
         $userGroups = \App\Models\UserGroup::orderBy('group_name')->get();
+        $customers = \App\Models\Customer::orderBy('customer_name')->get();
+        $vendors = \App\Models\Vendor::orderBy('name')->get();
 
-        return view('admin_panel.sale_return.index', compact('SaleReturns', 'userGroups'));
+        return view('admin_panel.sale_return.index', compact('SaleReturns', 'userGroups', 'customers', 'vendors'));
     }
 
     public function create()
