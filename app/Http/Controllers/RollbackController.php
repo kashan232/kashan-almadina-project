@@ -346,6 +346,15 @@ class RollbackController extends Controller
             $ret->invoice_no,
             'Rollback Purchase Return'
         );
+
+        // 3. Reverse WHT Account Impact
+        if ($ret->wht > 0 && $ret->wht_account_id) {
+            $this->adjustAccount($ret->wht_account_id, $ret->wht, 'add');
+        }
+
+        // 4. Delete Journal Vouchers
+        JournalVoucher::where('jvid', 'PRJ-WHT-' . $ret->invoice_no)->delete();
+
         $ret->update(['status' => 'Unposted']);
         return back()->with('success', "Purchase Return #$invoiceNo set to Unposted.");
     }

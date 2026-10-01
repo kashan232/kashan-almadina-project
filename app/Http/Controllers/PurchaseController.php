@@ -870,21 +870,48 @@ class PurchaseController extends Controller
             // B. Post Discount Impact (Order-level Discount) removed as requested
             
             // C. Post WHT Account Impact (Tax)
-            // The user requires WHT to be on the CREDIT side for both Vendor and WHT Account.
+            // Self Account (Dr) / Party Account (Cr)
             if ($purchase->wht > 0 && $purchase->wht_account_id) {
                 $whtAccount = Account::find($purchase->wht_account_id);
                 if ($whtAccount) {
                     $whtAccount->current_balance = ($whtAccount->current_balance ?? 0) + $purchase->wht;
                     $whtAccount->save();
+
+                    JournalVoucher::create([
+                        'jvid' => 'PJ-WHT-' . $purchase->invoice_no,
+                        'entry_date' => $purchase->current_date ?: date('Y-m-d'),
+                        'status' => 'posted',
+                        'total_debit' => $purchase->wht,
+                        'total_credit' => $purchase->wht,
+                        'party_type' => json_encode([(string)$whtAccount->head_id, $partyType]),
+                        'party_id' => json_encode([$whtAccount->id, $purchase->purchasable_id]),
+                        'debit' => json_encode([$purchase->wht, 0]), // Self Account (Dr)
+                        'credit' => json_encode([0, $purchase->wht]), // Party Account (Cr)
+                        'remarks' => $whtAccount->title ?? 'WHT (Tax)',
+                    ]);
                 }
             }
 
-            // D. Post Account Allocations Impact (Total Discount)
-            foreach ($purchase->accountAllocations as $allocation) {
+            // D. Post Account Allocations Impact
+            // Self Account (Cr) / Party Account (Dr)
+            foreach ($purchase->accountAllocations as $allocIndex => $allocation) {
                 $account = $allocation->account;
-                if ($account) {
+                if ($account && $allocation->amount > 0) {
                     $account->current_balance = ($account->current_balance ?? 0) - $allocation->amount; 
                     $account->save();
+
+                    JournalVoucher::create([
+                        'jvid' => 'PJ-ALLOC-' . $purchase->invoice_no . '-' . ($allocIndex + 1),
+                        'entry_date' => $purchase->current_date ?: date('Y-m-d'),
+                        'status' => 'posted',
+                        'total_debit' => $allocation->amount,
+                        'total_credit' => $allocation->amount,
+                        'party_type' => json_encode([$partyType, (string)$account->head_id]),
+                        'party_id' => json_encode([$purchase->purchasable_id, $account->id]),
+                        'debit' => json_encode([$allocation->amount, 0]), // Party Account (Dr)
+                        'credit' => json_encode([0, $allocation->amount]), // Self Account (Cr)
+                        'remarks' => 'Account Allocation: ' . ($account->title ?? 'Allocation'),
+                    ]);
                 }
             }
         }
@@ -957,7 +984,7 @@ class PurchaseController extends Controller
 
         // 5. Delete Journal Vouchers
         JournalVoucher::where('jvid', 'PJ-WHT-' . $purchase->invoice_no)->delete();
-        JournalVoucher::where('jvid', 'PJ-ALLOC-' . $purchase->invoice_no)->delete();
+        JournalVoucher::where('jvid', 'LIKE', 'PJ-ALLOC-' . $purchase->invoice_no . '%')->delete();
 
         // 6. Reverse Inward Status if exists
         if ($purchase->inward_id) {

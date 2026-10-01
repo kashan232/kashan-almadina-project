@@ -393,7 +393,7 @@ class PurchaseReturnController extends Controller
                     $whtAccount = \App\Models\Account::find($ret->wht_account_id);
                     if ($whtAccount) {
                         // Update WHT account balance (Credit decreases Asset/Expense)
-                        $whtAccount->opening_balance = ($whtAccount->opening_balance ?? 0) - $ret->wht;
+                        $whtAccount->current_balance = ($whtAccount->current_balance ?? 0) - $ret->wht;
                         $whtAccount->save();
 
                         \App\Models\JournalVoucher::create([
