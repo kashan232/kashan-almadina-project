@@ -2021,13 +2021,22 @@
         $('#partyIdInput').val(id);
     }
 
+    const isView = @json($isViewMode);
+    const hasEditData = @json(isset($editData) && !empty($editData));
+
+    // If viewing a posted sale or viewing an existing record, preserve saved details unless manually selected by user
+    if (isView) {
+      updateGrandTotals();
+      return;
+    }
+
     let type = $('input[name="partyType"]:checked').val();
 
     $.get('{{ route("customers.show", ["id" => "__ID__"]) }}'.replace('__ID__', id) + '?type=' + type, function(d) {
-      $('#address').val(d.address || '');
-      $('#tel').val(d.mobile || '');
-      $('#remarks').val(d.remarks || '');
-      $('#previousBalance').val((+d.previous_balance || 0).toFixed(2));
+      if (!$('#address').val() || !hasEditData) $('#address').val(d.address || '');
+      if (!$('#tel').val() || !hasEditData) $('#tel').val(d.mobile || '');
+      if (!$('#remarks').val() || !hasEditData) $('#remarks').val(d.remarks || '');
+      if (!hasEditData) $('#previousBalance').val((+d.previous_balance || 0).toFixed(2));
       updateGrandTotals();
     });
   });
