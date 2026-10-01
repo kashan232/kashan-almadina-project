@@ -78,8 +78,8 @@ class GeneralLedgerController extends Controller
     private function cleanNum($val): float
     {
         if (is_null($val) || $val === '') return 0.0;
-        if (is_numeric($val)) return (float)$val;
-        return (float)str_replace(',', '', (string)$val);
+        $str = str_replace(',', '', (string)$val);
+        return (float)$str;
     }
 
     private function voucherDiscountDescription($discAccId, string $fallback = 'Discount'): string
@@ -1468,7 +1468,7 @@ class GeneralLedgerController extends Controller
                 }
 
                 if ($rv->party_id == $id) {
-                    $totAmt = (float)$rv->total_amount + $this->sumVoucherDiscounts($rv);
+                    $totAmt = $this->cleanNum($rv->total_amount) + $this->sumVoucherDiscounts($rv);
                     if ($totAmt > 0) {
                         $transactions[] = [
                             'created_at' => $rv->created_at,
