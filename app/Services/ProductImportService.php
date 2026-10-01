@@ -206,25 +206,37 @@ class ProductImportService
                 // Check existing product
                 $product = Product::where('name', $name)->first();
 
+                // Build warehouse stocks JSON map
+                $whStocksJsonMap = [];
+                foreach ($whStocks as $wId => $wQty) {
+                    $whStocksJsonMap[(string) $wId] = (float) $wQty;
+                }
+
                 if ($product) {
                     $product->update([
-                        'category_id'     => $category?->id ?? $product->category_id,
-                        'sub_category_id' => $subCategory?->id ?? $product->sub_category_id,
-                        'brand_id'        => $brand?->id ?? $product->brand_id,
-                        'weight'          => $weight ?: $product->weight,
-                        'alert_qty'       => $alertQty !== null ? $alertQty : $product->alert_qty,
-                        'stock'           => $shopStock,
+                        'category_id'              => $category?->id ?? $product->category_id,
+                        'sub_category_id'          => $subCategory?->id ?? $product->sub_category_id,
+                        'brand_id'                 => $brand?->id ?? $product->brand_id,
+                        'weight'                   => $weight ?: $product->weight,
+                        'alert_qty'                => $alertQty !== null ? $alertQty : $product->alert_qty,
+                        'stock'                    => $shopStock,
+                        'opening_total_stock'      => $totalOpeningStock,
+                        'opening_shop_stock'       => $shopStock,
+                        'opening_warehouse_stocks' => $whStocksJsonMap,
                     ]);
                 } else {
                     $product = Product::create([
-                        'name'            => $name,
-                        'category_id'     => $category?->id,
-                        'sub_category_id' => $subCategory?->id,
-                        'brand_id'        => $brand?->id,
-                        'weight'          => $weight,
-                        'alert_qty'       => $alertQty ?: 0,
-                        'stock'           => $shopStock,
-                        'status'          => 1,
+                        'name'                     => $name,
+                        'category_id'              => $category?->id,
+                        'sub_category_id'          => $subCategory?->id,
+                        'brand_id'                 => $brand?->id,
+                        'weight'                   => $weight,
+                        'alert_qty'                => $alertQty ?: 0,
+                        'stock'                    => $shopStock,
+                        'status'                   => 1,
+                        'opening_total_stock'      => $totalOpeningStock,
+                        'opening_shop_stock'       => $shopStock,
+                        'opening_warehouse_stocks' => $whStocksJsonMap,
                     ]);
                 }
 
