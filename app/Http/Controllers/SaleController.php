@@ -1224,8 +1224,21 @@ class SaleController extends Controller
             $discountAccount = \App\Models\Account::find($sale->discount_account_id);
             if ($discountAccount) {
                 // Sale Discount is an expense. Debit increases expense.
-                $discountAccount->opening_balance = ($discountAccount->opening_balance ?? 0) + $orderDiscount;
+                $discountAccount->current_balance = ($discountAccount->current_balance ?? 0) + $orderDiscount;
                 $discountAccount->save();
+
+                \App\Models\JournalVoucher::create([
+                    'jvid' => 'SJ-DISC-' . $invoiceNo,
+                    'entry_date' => $date,
+                    'status' => 'posted',
+                    'total_debit' => $orderDiscount,
+                    'total_credit' => $orderDiscount,
+                    'party_type' => json_encode([(string)$discountAccount->head_id, $pType]),
+                    'party_id' => json_encode([$discountAccount->id, $partyId]),
+                    'debit' => json_encode([$orderDiscount, 0]), // Self Account (Dr)
+                    'credit' => json_encode([0, $orderDiscount]), // Party Account (Cr)
+                    'remarks' => 'Sale Discount: ' . ($discountAccount->title ?? 'Discount'),
+                ]);
             }
         } elseif ($orderDiscount > 0) {
             Voucher::create([
@@ -1271,7 +1284,7 @@ class SaleController extends Controller
                     if ($accAmt > 0) {
                         $acc = Account::find($accId);
                         if ($acc) {
-                            $acc->opening_balance = ($acc->opening_balance ?? 0) + $accAmt;
+                            $acc->current_balance = ($acc->current_balance ?? 0) + $accAmt;
                             $acc->save();
                         }
                     }

@@ -411,8 +411,21 @@ class SaleReturnController extends Controller
                     if ($ret->discount_account_id) {
                         $discountAccount = Account::with('head')->find($ret->discount_account_id);
                         if ($discountAccount) {
-                            $discountAccount->opening_balance = ($discountAccount->opening_balance ?? 0) - $ret->discount_amount;
+                            $discountAccount->current_balance = ($discountAccount->current_balance ?? 0) - $ret->discount_amount;
                             $discountAccount->save();
+
+                            JournalVoucher::create([
+                                'jvid' => 'SR-DISC-' . $ret->invoice_no,
+                                'entry_date' => $ret->entry_date ?: $ret->current_date,
+                                'status' => 'posted',
+                                'total_debit' => $ret->discount_amount,
+                                'total_credit' => $ret->discount_amount,
+                                'party_type' => json_encode([$pType, (string)$discountAccount->head_id]),
+                                'party_id' => json_encode([$ret->customer_id, $discountAccount->id]),
+                                'debit' => json_encode([$ret->discount_amount, 0]), // Party Account (Dr)
+                                'credit' => json_encode([0, $ret->discount_amount]), // Self Account (Cr)
+                                'remarks' => 'Sale Return Discount: ' . ($discountAccount->title ?? 'Discount'),
+                            ]);
                         }
                     } else {
                         Voucher::create([
