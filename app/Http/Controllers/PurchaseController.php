@@ -873,11 +873,8 @@ class PurchaseController extends Controller
             // The user requires WHT to be on the CREDIT side for both Vendor and WHT Account.
             if ($purchase->wht > 0 && $purchase->wht_account_id) {
                 $whtAccount = Account::find($purchase->wht_account_id);
-                $purchaseExpAccId = 6; // Pur-expnse
-                
                 if ($whtAccount) {
-                    // Update WHT account balance (Debit increases Asset)
-                    $whtAccount->opening_balance = ($whtAccount->opening_balance ?? 0) + $purchase->wht;
+                    $whtAccount->current_balance = ($whtAccount->current_balance ?? 0) + $purchase->wht;
                     $whtAccount->save();
                 }
             }
@@ -885,11 +882,8 @@ class PurchaseController extends Controller
             // D. Post Account Allocations Impact (Total Discount)
             foreach ($purchase->accountAllocations as $allocation) {
                 $account = $allocation->account;
-                $purchaseExpAccId = 6; // Pur-expnse
-                
                 if ($account) {
-                    // Update account balance (Credit decreases asset/increases liability)
-                    $account->opening_balance = ($account->opening_balance ?? 0) - $allocation->amount; 
+                    $account->current_balance = ($account->current_balance ?? 0) - $allocation->amount; 
                     $account->save();
                 }
             }
@@ -947,7 +941,7 @@ class PurchaseController extends Controller
         if ($purchase->wht > 0 && $purchase->wht_account_id) {
             $whtAccount = Account::find($purchase->wht_account_id);
             if ($whtAccount) {
-                $whtAccount->opening_balance = ($whtAccount->opening_balance ?? 0) - $purchase->wht;
+                $whtAccount->current_balance = ($whtAccount->current_balance ?? 0) - $purchase->wht;
                 $whtAccount->save();
             }
         }
@@ -956,7 +950,7 @@ class PurchaseController extends Controller
         foreach ($purchase->accountAllocations as $allocation) {
             $account = $allocation->account;
             if ($account) {
-                $account->opening_balance = ($account->opening_balance ?? 0) + $allocation->amount; 
+                $account->current_balance = ($account->current_balance ?? 0) + $allocation->amount; 
                 $account->save();
             }
         }
