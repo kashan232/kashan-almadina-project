@@ -420,7 +420,15 @@ $(document).ready(function() {
     }
 
     $(document).on('click', '.remove-row', function() { $(this).closest('tr').remove(); updateCount(); });
-    function updateCount() { $('#total_items_badge').text($('#itemRows tr').length); }
+    $(document).on('input', '.release-qty-input', function() { updateCount(); });
+    function updateCount() {
+        var totalQty = 0;
+        $('.release-qty-input').each(function() {
+            var val = parseFloat($(this).val()) || 0;
+            totalQty += val;
+        });
+        $('#total_items_badge').text(totalQty % 1 === 0 ? totalQty : totalQty.toFixed(2));
+    }
 
     var _savedVoucherId = null;
     var _saveInFlight = false;
