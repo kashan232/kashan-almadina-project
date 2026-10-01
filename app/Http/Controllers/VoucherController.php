@@ -445,6 +445,7 @@ class VoucherController extends Controller
         // 🧩 Party setup — dynamic based on type
         $party = null;
         $previousBalance = 0;
+        $ledgerService = app(PartyLedgerService::class);
 
         // ✅ If type is numeric → means from Account Head
         if (is_numeric($voucher->type)) {
@@ -463,18 +464,12 @@ class VoucherController extends Controller
             // ✅ If vendor
         } elseif ($voucher->type === 'vendor') {
             $party = DB::table('vendors')->where('id', $voucher->party_id)->first();
-            $previousBalance = DB::table('vendor_ledgers')
-                ->where('vendor_id', $voucher->party_id)
-                ->orderByDesc('id')
-                ->value('closing_balance') ?? 0;
+            $previousBalance = $ledgerService->latestClosing('vendor', (int) $voucher->party_id);
 
             // ✅ If customer
         } elseif ($voucher->type === 'customer') {
             $party = DB::table('customers')->where('id', $voucher->party_id)->first();
-            $previousBalance = DB::table('customer_ledgers')
-                ->where('customer_id', $voucher->party_id)
-                ->orderByDesc('id')
-                ->value('closing_balance') ?? 0;
+            $previousBalance = $ledgerService->latestClosing('customer', (int) $voucher->party_id);
 
             // ✅ If walkin
         } elseif ($voucher->type === 'walkin') {
@@ -482,6 +477,7 @@ class VoucherController extends Controller
                 ->where('id', $voucher->party_id)
                 ->where('customer_type', 'Walking Customer')
                 ->first();
+            $previousBalance = $ledgerService->latestClosing('walkin', (int) $voucher->party_id);
         }
 
         return view('admin_panel.vochers.print', compact('voucher', 'rows', 'party', 'previousBalance'));
@@ -516,7 +512,13 @@ class VoucherController extends Controller
             ->pluck('narration', 'id');
         $AccountHeads = AccountHead::get();
 
-        return view('admin_panel.vochers.reciepts_vouchers', compact('narrations', 'AccountHeads', 'receipt'));
+        $previousBalance = 0;
+        if ($receipt->party_id && $receipt->type) {
+            $ledgerService = app(PartyLedgerService::class);
+            $previousBalance = $ledgerService->latestClosing($receipt->type, (int) $receipt->party_id);
+        }
+
+        return view('admin_panel.vochers.reciepts_vouchers', compact('narrations', 'AccountHeads', 'receipt', 'previousBalance'));
     }
 
     public function showReceipt($id)
@@ -527,7 +529,13 @@ class VoucherController extends Controller
         $AccountHeads = AccountHead::get();
         $viewMode = true;
 
-        return view('admin_panel.vochers.reciepts_vouchers', compact('narrations', 'AccountHeads', 'receipt', 'viewMode'));
+        $previousBalance = 0;
+        if ($receipt->party_id && $receipt->type) {
+            $ledgerService = app(PartyLedgerService::class);
+            $previousBalance = $ledgerService->latestClosing($receipt->type, (int) $receipt->party_id);
+        }
+
+        return view('admin_panel.vochers.reciepts_vouchers', compact('narrations', 'AccountHeads', 'receipt', 'viewMode', 'previousBalance'));
     }
 
     public function ajax_save_receipt(Request $request)

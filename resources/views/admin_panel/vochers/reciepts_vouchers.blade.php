@@ -80,6 +80,10 @@
                                     <option value="">Select Party...</option>
                                 </select>
                             </div>
+                            <div class="col-md-2">
+                                <label class="form-label text-muted">Current Balance</label>
+                                <input type="text" class="form-control form-control-sm text-end fw-bold input-readonly" id="previousBalance" name="previousBalance" value="{{ number_format($previousBalance ?? 0, 2, '.', '') }}" placeholder="0.00" readonly style="font-size: 1rem; color: #d63384; background: #fffcfd;">
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -260,7 +264,25 @@ $(document).ready(function() {
         }
     }
     $('#party_code_input').on('blur keydown', function(e) { if(e.type === 'keydown' && e.which != 13 && e.which != 9) return; syncPartyIdToSelect2(); });
-    $('#vendor_id').on('change', function() { let val = $(this).val(); $('#party_code_input').val(val || ''); });
+    $('#vendor_id').on('change', function() {
+        let val = $(this).val();
+        let partyType = $('#vendor_type').val();
+        $('#party_code_input').val(val || '');
+        if (val && partyType) {
+            let fetchUrl = '{{ route("customers.show", ["id" => "__ID__"]) }}'.replace('__ID__', val) + '?type=' + partyType;
+            $.get(fetchUrl, function(res) {
+                if (res && res.previous_balance !== undefined) {
+                    $('#previousBalance').val(parseFloat(res.previous_balance || 0).toFixed(2));
+                } else {
+                    $('#previousBalance').val('0.00');
+                }
+            }).fail(function() {
+                $('#previousBalance').val('0.00');
+            });
+        } else {
+            $('#previousBalance').val('0.00');
+        }
+    });
 
     $('#vendor_type').change(function() {
         let type = $(this).val();
