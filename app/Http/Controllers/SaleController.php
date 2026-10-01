@@ -150,8 +150,9 @@ class SaleController extends Controller
         $receiptHeads = $request->input('receipt_head_id', []);
         $receiptAccounts = $request->input('receipt_account_id', []);
         $receiptNarrations = $request->input('receipt_narration', []);
-        $receiptAmountsArr = $request->input('receipt_amount', []);
-        $totalReceipts = array_sum(array_map(function($val) { return (float) str_replace(',', '', $val); }, $receiptAmountsArr));
+        $rawReceiptAmountsArr = $request->input('receipt_amount', []);
+        $receiptAmountsArr = array_map(function($val) { return (float) str_replace(',', '', (string)$val); }, $rawReceiptAmountsArr);
+        $totalReceipts = array_sum($receiptAmountsArr);
 
         $sale->update([
             'manual_invoice' => $request->Invoice_main ?? null,
@@ -451,9 +452,10 @@ class SaleController extends Controller
             $receiptHeads = $request->input('receipt_head_id', []);
             $receiptAccounts = $request->input('receipt_account_id', []);
             $receiptNarrations = $request->input('receipt_narration', []);
-            $receiptAmountsArr = $request->input('receipt_amount', []);
+            $rawReceiptAmountsArr = $request->input('receipt_amount', []);
+            $receiptAmountsArr = array_map(function($val) { return (float) str_replace(',', '', (string)$val); }, $rawReceiptAmountsArr);
             
-            $totalReceipts = array_sum(array_map(function($val) { return (float) str_replace(',', '', $val); }, $receiptAmountsArr));
+            $totalReceipts = array_sum($receiptAmountsArr);
             
             $booking->receipt1 = $totalReceipts;
             $booking->receipt2 = 0;
@@ -1258,7 +1260,15 @@ class SaleController extends Controller
             $receiptHeads = json_decode($sale->receipt_heads, true);
             $receiptAccounts = json_decode($sale->receipt_accounts, true);
             $receiptNarrations = json_decode($sale->receipt_narrations, true);
-            $receiptAmounts = json_decode($sale->receipt_amounts_json, true);
+            $rawReceiptAmounts = json_decode($sale->receipt_amounts_json, true);
+
+            $cleanReceiptAmounts = [];
+            if (is_array($rawReceiptAmounts)) {
+                foreach ($rawReceiptAmounts as $ramt) {
+                    $cleanReceiptAmounts[] = (float) str_replace(',', '', (string)$ramt);
+                }
+            }
+            $cleanTotalReceipts = (float) str_replace(',', '', (string)$receiptAmount);
 
             ReceiptsVoucher::create([
                 'rvid' => ReceiptsVoucher::generateInvoiceNo(),
@@ -1272,15 +1282,15 @@ class SaleController extends Controller
                 'narration_id' => json_encode($receiptNarrations),
                 'row_account_head' => json_encode($receiptHeads),
                 'row_account_id' => json_encode($receiptAccounts),
-                'amount' => json_encode($receiptAmounts),
-                'total_amount' => $receiptAmount,
+                'amount' => json_encode($cleanReceiptAmounts),
+                'total_amount' => $cleanTotalReceipts,
                 'status' => 'posted',
             ]);
 
             // Update Account Balances
             if (is_array($receiptAccounts)) {
                 foreach ($receiptAccounts as $idx => $accId) {
-                    $accAmt = (float)($receiptAmounts[$idx] ?? 0);
+                    $accAmt = (float)($cleanReceiptAmounts[$idx] ?? 0);
                     if ($accAmt > 0) {
                         $acc = Account::find($accId);
                         if ($acc) {

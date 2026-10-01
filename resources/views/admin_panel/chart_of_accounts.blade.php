@@ -163,7 +163,7 @@
                         <div class="card-body p-2 d-flex flex-wrap align-items-center justify-content-between gap-2">
                             <div class="d-flex align-items-center">
                                 <h6 class="mb-0 fw-bold text-dark ms-2 me-4"><i class="fa fa-sitemap me-2 text-primary"></i>Chart of Accounts</h6>
-                                <div class="d-flex gap-1">
+                                <div class="d-flex gap-1 flex-wrap">
                                     <button class="btn btn-primary btn-sm rounded-pill px-3 shadow-sm" data-bs-toggle="modal" data-bs-target="#addAccountModal">
                                         <i class="fa fa-plus-circle me-1"></i> Add Account
                                     </button>
@@ -180,28 +180,53 @@
                             </div>
                             
                             <div class="d-flex gap-1 align-items-center">
-                                <form action="{{ route('view_all') }}" method="GET" class="d-flex gap-1 align-items-center">
-                                    <select name="head_id" class="form-select form-select-sm select2" style="min-width: 220px;">
-                                        <option value="">All Sub Heads</option>
-                                        @foreach($heads as $h)
-                                            <option value="{{ $h->id }}" {{ request('head_id') == $h->id ? 'selected' : '' }}>
-                                                {{ $h->id }} - {{ $h->name }}
-                                            </option>
-                                        @endforeach
-                                    </select>
+                                <form action="{{ route('view_all') }}" method="GET" class="d-flex gap-1 align-items-center flex-wrap">
+                                    <div style="min-width: 170px;">
+                                        <select name="head_id" class="form-select form-select-sm select2">
+                                            <option value="">Sub Head: All</option>
+                                            @foreach($heads as $h)
+                                                <option value="{{ $h->id }}" {{ request('head_id') == $h->id ? 'selected' : '' }}>
+                                                    {{ $h->id }} - {{ $h->name }}
+                                                </option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                    
+                                    <div style="min-width: 120px;">
+                                        <select name="status" class="form-select form-select-sm select2">
+                                            <option value="">Status: All</option>
+                                            <option value="1" {{ request('status') === '1' ? 'selected' : '' }}>Active</option>
+                                            <option value="0" {{ request('status') === '0' ? 'selected' : '' }}>Disabled</option>
+                                        </select>
+                                    </div>
+
+                                    <div style="min-width: 140px;">
+                                        <select name="user_group_id" class="form-select form-select-sm select2">
+                                            <option value="">Group: All</option>
+                                            @foreach($userGroups as $grp)
+                                                <option value="{{ $grp->id }}" {{ request('user_group_id') == $grp->id ? 'selected' : '' }}>
+                                                    {{ $grp->group_name }}
+                                                </option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+
                                     @if($isAdmin)
-                                    <select name="created_by" class="form-select form-select-sm select2" style="min-width: 150px;">
-                                        <option value="">All Creators</option>
-                                        @foreach($users as $user)
-                                            <option value="{{ $user->id }}" {{ request('created_by') == $user->id ? 'selected' : '' }}>
-                                                {{ $user->name }}
-                                            </option>
-                                        @endforeach
-                                    </select>
+                                    <div style="min-width: 130px;">
+                                        <select name="created_by" class="form-select form-select-sm select2">
+                                            <option value="">Creator: All</option>
+                                            @foreach($users as $user)
+                                                <option value="{{ $user->id }}" {{ request('created_by') == $user->id ? 'selected' : '' }}>
+                                                    {{ $user->name }}
+                                                </option>
+                                            @endforeach
+                                        </select>
+                                    </div>
                                     @endif
-                                    <button type="submit" class="btn btn-primary btn-sm rounded-pill px-3">Filter</button>
-                                    @if(request('head_id') || request('created_by'))
-                                        <a href="{{ route('view_all') }}" class="btn btn-outline-secondary btn-sm rounded-pill px-2" title="Reset"><i class="fa fa-refresh"></i></a>
+
+                                    <button type="submit" class="btn btn-primary btn-sm rounded-pill px-3 shadow-sm">Filter</button>
+                                    @if(request()->filled('head_id') || request()->filled('status') || request()->filled('user_group_id') || request()->filled('created_by'))
+                                        <a href="{{ route('view_all') }}" class="btn btn-outline-secondary btn-sm rounded-pill px-2" title="Reset Filters"><i class="fa fa-refresh"></i> Reset</a>
                                     @endif
                                 </form>
                                 @if($isAdmin)
@@ -215,109 +240,135 @@
                 </div>
             </div>
 
+            <!-- Bulk Actions Floating Bar -->
+            <div id="bulkActionsBar" class="card border-0 bg-dark text-white p-2 mb-2 shadow-sm d-none justify-content-between align-items-center">
+                <div class="small fw-bold">
+                    <i class="fa fa-check-square-o me-2 text-info"></i>
+                    <span id="selectedCount" class="badge bg-info text-dark rounded-pill me-1">0</span> account(s) selected
+                </div>
+                <div class="d-flex gap-2">
+                    <button type="button" class="btn btn-success btn-sm rounded-pill px-3" id="bulkActivateBtn">
+                        <i class="fa fa-check me-1"></i> Activate
+                    </button>
+                    <button type="button" class="btn btn-danger btn-sm rounded-pill px-3" id="bulkDeactivateBtn">
+                        <i class="fa fa-ban me-1"></i> Disable
+                    </button>
+                    <button type="button" class="btn btn-warning btn-sm text-dark rounded-pill px-3" data-bs-toggle="modal" data-bs-target="#bulkAssignGroupsModal">
+                        <i class="fa fa-users me-1"></i> Assign Groups
+                    </button>
+                </div>
+            </div>
+
             <div class="row">
                 <div class="col-12">
                     <div class="card border-0 shadow-sm">
                         <div class="card-header bg-white d-flex justify-content-between align-items-center py-2 border-bottom">
-                            <span class="fw-bold text-muted small text-uppercase">All Accounts</span>
+                            <span class="fw-bold text-muted small text-uppercase">All Accounts (Total: {{ count($accounts) }})</span>
                             <div class="column-picker-dropdown">
                                 <button class="btn btn-outline-secondary btn-sm px-3 rounded-pill" type="button" id="columnPickerBtn">
                                     <i class="fa fa-columns me-1"></i> Columns
                                 </button>
                                 <div class="column-picker-menu shadow" id="columnPickerMenu">
                                     <div class="p-2 border-bottom fw-bold small text-muted">Show/Hide Columns</div>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="1" checked> ID</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="2" checked> Head Code</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="3" checked> Head Name</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="4" checked> Account Code</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="5" checked> Account Title</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="6" checked> Opening Dr.</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="7" checked> Opening Cr.</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="8" checked> Closing Balance</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="9" checked> Assigned User Groups</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="10" checked> Inactive</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="1" checked> Selection</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="2" checked> ID</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="3" checked> Head Code</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="4" checked> Head Name</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="5" checked> Account Code</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="6" checked> Account Title</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="7" checked> Opening Dr.</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="8" checked> Opening Cr.</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="9" checked> Closing Balance</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="10" checked> Assigned User Groups</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="11" checked> Inactive</label>
                                 </div>
                             </div>
                         </div>
 
                         <div class="card-body p-0">
-                            <div class="table-responsive">
-                                <table id="accountsTable" class="table table-sm table-striped table-bordered w-100 mb-0">
-                                    <thead>
-                                        <tr>
-                                            <th>ID</th>
-                                            <th>Head Code</th>
-                                            <th>Head Name</th>
-                                            <th>Account Code</th>
-                                            <th>Account Title</th>
-                                            <th class="text-end">Opening Dr.</th>
-                                            <th class="text-end">Opening Cr.</th>
-                                            <th class="text-end">Closing Balance</th>
-                                            <th>Assigned User Groups</th>
-                                            <th class="text-center">Inactive</th>
-                                            <th class="text-center" style="width: 80px;">Action</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        @forelse($accounts as $account)
-                                        @php
-                                            $opening = (float) ($account->opening_balance ?? 0);
-                                            $openingDr = $opening > 0 ? $opening : 0;
-                                            $openingCr = $opening < 0 ? abs($opening) : 0;
-                                            $closing = (float) ($account->current_balance ?? $opening);
-                                        @endphp
-                                        <tr>
-                                            <td class="text-center">{{ $account->id }}</td>
-                                            <td class="text-center fw-bold text-muted">{{ $account->head_id }}</td>
-                                            <td class="fw-bold">{{ $account->head->name ?? '—' }}</td>
-                                            <td class="fw-bold text-primary">{{ $account->account_code }}</td>
-                                            <td class="fw-bold text-dark">{{ $account->title }}</td>
-                                            <td class="text-end">{{ $openingDr > 0 ? number_format($openingDr, 2) : '0.00' }}</td>
-                                            <td class="text-end">{{ $openingCr > 0 ? number_format($openingCr, 2) : '0.00' }}</td>
-                                            <td class="text-end fw-bold {{ $closing >= 0 ? 'text-success' : 'text-danger' }}">{{ number_format($closing, 2) }}</td>
-                                            <td>
-                                                @if(!empty($account->user_group_ids))
-                                                    @foreach($account->user_group_ids as $groupId)
-                                                        <span class="badge bg-light text-dark border px-1 me-1" style="font-size: 9px;">
-                                                            {{ $userGroups->get((int) $groupId)?->group_name ?? 'N/A' }}
-                                                        </span>
-                                                    @endforeach
-                                                @else
-                                                    <span class="text-muted small">—</span>
-                                                @endif
-                                            </td>
-                                            <td class="text-center">
-                                                @if($account->status)
-                                                    <span class="badge bg-success">Active</span>
-                                                @else
-                                                    <span class="badge bg-danger">Disabled</span>
-                                                @endif
-                                            </td>
-                                            <td class="text-center">
-                                                <button class="btn btn-outline-warning btn-xs px-1 py-0 edit-account-btn" 
-                                                    data-id="{{ $account->id }}"
-                                                    data-head_id="{{ $account->head_id }}"
-                                                    data-code="{{ $account->account_code }}"
-                                                    data-title="{{ $account->title }}"
-                                                    data-balance="{{ (float) ($account->opening_balance ?? 0) }}"
-                                                    data-status="{{ $account->status }}"
-                                                    data-groups="{{ json_encode($account->user_group_ids ?? []) }}"
-                                                    data-bs-toggle="modal" data-bs-target="#addAccountModal"
-                                                    style="height: 20px;">
-                                                    <i class="fa fa-edit text-dark"></i>
-                                                </button>
-                                            </td>
-                                        </tr>
-                                        @empty
-                                        <tr class="no-data-row">
-                                            <td colspan="11" class="text-center text-muted py-4">
-                                                No accounts found.
-                                            </td>
-                                        </tr>
-                                        @endforelse
-                                    </tbody>
-                                </table>
-                            </div>
+                            <form action="{{ route('coa.accounts.bulk_action') }}" method="POST" id="bulkAccountForm">
+                                @csrf
+                                <input type="hidden" name="action" id="bulkActionInput" value="">
+                                <div class="table-responsive">
+                                    <table id="accountsTable" class="table table-sm table-striped table-bordered w-100 mb-0">
+                                        <thead>
+                                            <tr>
+                                                <th class="text-center" style="width: 30px;"><input type="checkbox" id="selectAllAccounts"></th>
+                                                <th>ID</th>
+                                                <th>Head Code</th>
+                                                <th>Head Name</th>
+                                                <th>Account Code</th>
+                                                <th>Account Title</th>
+                                                <th class="text-end">Opening Dr.</th>
+                                                <th class="text-end">Opening Cr.</th>
+                                                <th class="text-end">Closing Balance</th>
+                                                <th>Assigned User Groups</th>
+                                                <th class="text-center">Inactive</th>
+                                                <th class="text-center" style="width: 80px;">Action</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @forelse($accounts as $account)
+                                            @php
+                                                $opening = (float) ($account->opening_balance ?? 0);
+                                                $openingDr = $opening > 0 ? $opening : 0;
+                                                $openingCr = $opening < 0 ? abs($opening) : 0;
+                                                $closing = (float) ($account->current_balance ?? $opening);
+                                            @endphp
+                                            <tr>
+                                                <td class="text-center"><input type="checkbox" name="account_ids[]" value="{{ $account->id }}" class="account-select-cb"></td>
+                                                <td class="text-center">{{ $account->id }}</td>
+                                                <td class="text-center fw-bold text-muted">{{ $account->head_id }}</td>
+                                                <td class="fw-bold">{{ $account->head->name ?? '—' }}</td>
+                                                <td class="fw-bold text-primary">{{ $account->account_code }}</td>
+                                                <td class="fw-bold text-dark">{{ $account->title }}</td>
+                                                <td class="text-end">{{ $openingDr > 0 ? number_format($openingDr, 2) : '0.00' }}</td>
+                                                <td class="text-end">{{ $openingCr > 0 ? number_format($openingCr, 2) : '0.00' }}</td>
+                                                <td class="text-end fw-bold {{ $closing >= 0 ? 'text-success' : 'text-danger' }}">{{ number_format($closing, 2) }}</td>
+                                                <td>
+                                                    @if(!empty($account->user_group_ids))
+                                                        @foreach($account->user_group_ids as $groupId)
+                                                            <span class="badge bg-light text-dark border px-1 me-1" style="font-size: 9px;">
+                                                                {{ $userGroups->get((int) $groupId)?->group_name ?? 'N/A' }}
+                                                            </span>
+                                                        @endforeach
+                                                    @else
+                                                        <span class="text-muted small">—</span>
+                                                    @endif
+                                                </td>
+                                                <td class="text-center">
+                                                    @if($account->status)
+                                                        <span class="badge bg-success">Active</span>
+                                                    @else
+                                                        <span class="badge bg-danger">Disabled</span>
+                                                    @endif
+                                                </td>
+                                                <td class="text-center">
+                                                    <button type="button" class="btn btn-outline-warning btn-xs px-1 py-0 edit-account-btn" 
+                                                        data-id="{{ $account->id }}"
+                                                        data-head_id="{{ $account->head_id }}"
+                                                        data-code="{{ $account->account_code }}"
+                                                        data-title="{{ $account->title }}"
+                                                        data-balance="{{ (float) ($account->opening_balance ?? 0) }}"
+                                                        data-status="{{ $account->status }}"
+                                                        data-groups="{{ json_encode($account->user_group_ids ?? []) }}"
+                                                        data-bs-toggle="modal" data-bs-target="#addAccountModal"
+                                                        style="height: 20px;">
+                                                        <i class="fa fa-edit text-dark"></i>
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                            @empty
+                                            <tr class="no-data-row">
+                                                <td colspan="12" class="text-center text-muted py-4">
+                                                    No accounts found.
+                                                </td>
+                                            </tr>
+                                            @endforelse
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </form>
                         </div>
                     </div>
                 </div>
@@ -546,12 +597,95 @@
     </div>
 </div>
 
+<!-- Bulk Assign User Groups Modal -->
+<div class="modal fade" id="bulkAssignGroupsModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-warning text-dark py-2">
+                <h6 class="modal-title fw-bold"><i class="fa fa-users me-2"></i>Assign User Groups to Selected Accounts</h6>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-3">
+                <p class="small text-muted mb-2">Select user groups to assign to the selected accounts:</p>
+                <select id="bulkUserGroupsSelect" class="form-control select2-bulk-groups" multiple style="width: 100%;" data-placeholder="Select User Groups">
+                    @foreach($userGroups as $group)
+                        <option value="{{ $group->id }}">{{ $group->group_name }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div class="modal-footer py-2">
+                <button type="button" class="btn btn-light btn-sm px-3" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-warning btn-sm px-4 text-dark fw-bold shadow-sm" id="submitBulkAssignGroups">Apply Groups</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 @endsection
 
 @section('scripts')
 <script>
     $(document).ready(function() {
         $('.select2').select2({ width: '100%' });
+
+        $('#bulkAssignGroupsModal').on('shown.bs.modal', function() {
+            $('.select2-bulk-groups').select2({
+                dropdownParent: $('#bulkAssignGroupsModal'),
+                width: '100%'
+            });
+        });
+
+        // Handle Select All Checkbox
+        $('#selectAllAccounts').on('change', function() {
+            const isChecked = $(this).is(':checked');
+            $('.account-select-cb').prop('checked', isChecked);
+            updateBulkActionsBar();
+        });
+
+        $(document).on('change', '.account-select-cb', function() {
+            updateBulkActionsBar();
+        });
+
+        function updateBulkActionsBar() {
+            const count = $('.account-select-cb:checked').length;
+            $('#selectedCount').text(count);
+            if (count > 0) {
+                $('#bulkActionsBar').removeClass('d-none').addClass('d-flex');
+            } else {
+                $('#bulkActionsBar').addClass('d-none').removeClass('d-flex');
+                $('#selectAllAccounts').prop('checked', false);
+            }
+        }
+
+        $('#bulkActivateBtn').on('click', function() {
+            const count = $('.account-select-cb:checked').length;
+            if (count === 0) return alert('Please select at least one account.');
+            if (confirm('Are you sure you want to activate ' + count + ' selected account(s)?')) {
+                $('#bulkActionInput').val('activate');
+                $('#bulkAccountForm').submit();
+            }
+        });
+
+        $('#bulkDeactivateBtn').on('click', function() {
+            const count = $('.account-select-cb:checked').length;
+            if (count === 0) return alert('Please select at least one account.');
+            if (confirm('Are you sure you want to disable ' + count + ' selected account(s)?')) {
+                $('#bulkActionInput').val('deactivate');
+                $('#bulkAccountForm').submit();
+            }
+        });
+
+        $('#submitBulkAssignGroups').on('click', function() {
+            const count = $('.account-select-cb:checked').length;
+            if (count === 0) return alert('Please select at least one account.');
+            const selectedGroups = $('#bulkUserGroupsSelect').val() || [];
+            $('#bulkAccountForm').find('input[name="user_group_ids[]"]').remove();
+            selectedGroups.forEach(gId => {
+                $('#bulkAccountForm').append('<input type="hidden" name="user_group_ids[]" value="' + gId + '">');
+            });
+            $('#bulkActionInput').val('assign_groups');
+            $('#bulkAccountForm').submit();
+        });
 
         // Toggle Column Picker Menu
         $('#columnPickerBtn').on('click', function(e) {
@@ -565,7 +699,7 @@
             }
         });
 
-        const storageKey = 'coa_table_columns_v5';
+        const storageKey = 'coa_table_columns_v6';
         const hasRows = $('#accountsTable tbody tr').not('.no-data-row').length > 0;
 
         var dt = hasRows ? $('#accountsTable').DataTable({
@@ -579,7 +713,10 @@
                 { extend: 'csv', className: 'btn btn-outline-success btn-sm rounded-pill px-3 me-1' },
                 { extend: 'excel', className: 'btn btn-outline-primary btn-sm rounded-pill px-3 me-1' }
             ],
-            order: [[3, 'asc']],
+            order: [[4, 'asc']],
+            columnDefs: [
+                { orderable: false, targets: 0 }
+            ],
             language: {
                 search: "_INPUT_",
                 searchPlaceholder: "Search accounts...",
@@ -587,7 +724,8 @@
             }
         }) : null;
 
-        $('#accountsTable tbody').on('click', 'tr', function () {
+        $('#accountsTable tbody').on('click', 'tr', function (e) {
+            if ($(e.target).is('input, button, i, a')) return;
             $('#accountsTable tbody tr').removeClass('selected-row');
             $(this).addClass('selected-row');
         });

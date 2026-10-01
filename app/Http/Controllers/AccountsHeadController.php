@@ -38,8 +38,20 @@ class AccountsHeadController extends Controller
             }
         }
 
-        if (request('head_id')) {
+        if (request()->filled('head_id')) {
             $query->where('head_id', request('head_id'));
+        }
+
+        if (request()->filled('status')) {
+            $query->where('status', request('status'));
+        }
+
+        if (request()->filled('user_group_id')) {
+            $groupId = (string) request('user_group_id');
+            $query->where(function($q) use ($groupId) {
+                $q->whereJsonContains('user_group_ids', $groupId)
+                  ->orWhereJsonContains('user_group_ids', (int)$groupId);
+            });
         }
 
         $heads = AccountHead::withInactive()
@@ -79,6 +91,52 @@ class AccountsHeadController extends Controller
             'userGroups',
             'users'
         ));
+    }
+
+    public function bulkAction(Request $request)
+    {
+        $request->validate([
+            'account_ids' => 'required|array|min:1',
+            'action' => 'required|string',
+        ]);
+
+        $ids = $request->input('account_ids', []);
+        $action = $request->input('action');
+
+        if ($action === 'activate') {
+            Account::withInactive()
+                ->withoutGlobalScope(\App\Scopes\GroupIsolationScope::class)
+                ->whereIn('id', $ids)
+                ->update(['status' => 1]);
+            return redirect()->back()->with('success', count($ids) . ' account(s) activated successfully.');
+        }
+
+        if ($action === 'deactivate') {
+            Account::withInactive()
+                ->withoutGlobalScope(\App\Scopes\GroupIsolationScope::class)
+                ->whereIn('id', $ids)
+                ->update(['status' => 0]);
+            return redirect()->back()->with('success', count($ids) . ' account(s) disabled successfully.');
+        }
+
+        if ($action === 'assign_groups') {
+            $groups = $request->input('user_group_ids', []);
+            $groupIds = !empty($groups) ? array_values(array_map('strval', $groups)) : null;
+
+            $accounts = Account::withInactive()
+                ->withoutGlobalScope(\App\Scopes\GroupIsolationScope::class)
+                ->whereIn('id', $ids)
+                ->get();
+
+            foreach ($accounts as $acc) {
+                $acc->user_group_ids = $groupIds;
+                $acc->save();
+            }
+
+            return redirect()->back()->with('success', count($ids) . ' account(s) updated with user groups.');
+        }
+
+        return redirect()->back()->with('error', 'Invalid action.');
     }
 
     public function getNextAccountCode($headId)

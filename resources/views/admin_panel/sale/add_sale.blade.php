@@ -892,9 +892,9 @@
                           </div>
                           <div class="col-md-2">
                             <label class="form-label text-muted small mb-0" style="font-size:0.7rem;">Amount</label>
-                            <input type="number" step="0.01" class="form-control form-control-sm px-1 text-end fw-bold rv-amount" style="font-size: 0.75rem;"
-                                   name="receipt_amount[]" placeholder="0.00" value="{{ $rv['amount'] }}"
-                                   {{ empty($rv['account_id']) ? 'disabled' : '' }}>
+                            <input type="text" class="form-control form-control-sm px-1 text-end fw-bold rv-amount" style="font-size: 0.75rem;"
+                                   name="receipt_amount[]" placeholder="0.00" value="{{ is_numeric(str_replace(',', '', $rv['amount'])) ? number_format((float)str_replace(',', '', $rv['amount']), 2) : $rv['amount'] }}"
+                                   {{ (empty($rv['account_id']) && !$isViewMode) ? 'disabled' : '' }}>
                           </div>
                           <div class="col-md-3">
                             <label class="form-label text-muted small mb-0" style="font-size:0.7rem;">Narration</label>
@@ -2475,26 +2475,38 @@
 
   function loadAccountsByHead(headId, $select) {
     if (!headId) return;
-    $select.prop('disabled', true).empty().append('<option value="">Loading...</option>').trigger('change');
+    const isView = @json($isViewMode);
+    $select.empty().append('<option value="">Loading...</option>');
 
     $.get('{{ url("/get-accounts-by-head") }}/' + headId, function(rows) {
       $select.empty().append('<option value="" disabled selected>Select account</option>');
       (rows || []).forEach(function(a) {
         $select.append('<option value="' + a.id + '">' + a.title + '</option>');
       });
-      $select.prop('disabled', false);
       
       // If we have a pre-selected value (from old() or edit)
       const selected = $select.attr('data-selected');
       if (selected) {
         $select.val(selected);
-        $select.removeAttr('data-selected');
         const $row = $select.closest('.rv-row, .row');
         $row.find('.rv-amount').prop('disabled', false);
+        if ($select.attr('id') === 'discount_account_id') {
+          $('#orderDiscountValue').prop('disabled', false);
+        }
       }
-      $select.select2({ width: '100%' }).trigger('change');
+
+      if (!isView) {
+        $select.prop('disabled', false);
+      } else {
+        $select.prop('disabled', true);
+      }
+
+      $select.select2({ width: '100%' });
+      recomputeReceipts();
+      updateGrandTotals();
     }).fail(function() {
-      $select.empty().append('<option value="">Error loading</option>').prop('disabled', false).trigger('change');
+      $select.empty().append('<option value="">Error loading</option>');
+      if (!isView) $select.prop('disabled', false);
     });
   }
 
@@ -2607,8 +2619,10 @@
       const $accSelect = $('#discount_account_id');
       const $valInput = $('#orderDiscountValue');
       
-      $valInput.prop('disabled', true).val('');
-      updateGrandTotals();
+      if (!$accSelect.attr('data-selected')) {
+        $valInput.prop('disabled', true).val('');
+        updateGrandTotals();
+      }
 
       if (!headId) {
         $accSelect.prop('disabled', true).empty().append('<option value="" disabled selected>Select Account</option>');
@@ -2635,11 +2649,9 @@
     if (initialDiscHead) {
       if (currentAccVal) {
         $('#discount_account_id').attr('data-selected', currentAccVal);
-      }
-      loadAccountsByHead(initialDiscHead, $('#discount_account_id'));
-      if (currentAccVal || $('#discount_account_id').attr('data-selected')) {
         $('#orderDiscountValue').prop('disabled', false);
       }
+      loadAccountsByHead(initialDiscHead, $('#discount_account_id'));
     }
 
     recomputeReceipts();

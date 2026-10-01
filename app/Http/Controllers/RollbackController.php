@@ -168,16 +168,28 @@ class RollbackController extends Controller
         $record = $model::where($field, $input)->first();
         if ($record) return $record;
 
-        // 2. Try numeric match (handling prefixes like INVSLE- or leading zeros like 001)
+        // 2. Try numeric match (handling prefixes like INVSLE- or SR- or leading zeros like 001)
         $inputNum = (int)preg_replace('/[^0-9]/', '', $input);
         if ($inputNum > 0) {
-            // Search by LIKE to narrow down candidates efficiently
+            // Search candidates efficiently
             $candidates = $model::where($field, 'LIKE', '%' . $inputNum . '%')->get();
+            $matches = [];
             foreach ($candidates as $candidate) {
                 $dbNum = (int)preg_replace('/[^0-9]/', '', $candidate->$field);
                 if ($dbNum === $inputNum) {
-                    return $candidate;
+                    $matches[] = $candidate;
                 }
+            }
+
+            if (!empty($matches)) {
+                // Prioritize Posted records first if status column exists
+                foreach ($matches as $match) {
+                    $st = strtolower((string)($match->status ?? ''));
+                    if ($st === 'posted') {
+                        return $match;
+                    }
+                }
+                return $matches[0];
             }
         }
 
@@ -310,7 +322,7 @@ class RollbackController extends Controller
 
         // 5. Delete Related Journal Vouchers
         JournalVoucher::where('jvid', 'PJ-WHT-' . $purchase->invoice_no)->delete();
-        JournalVoucher::where('jvid', 'PJ-ALLOC-' . $purchase->invoice_no)->delete();
+        JournalVoucher::where('jvid', 'LIKE', 'PJ-ALLOC-' . $purchase->invoice_no . '%')->delete();
 
         // 6. Update Purchase Status
         $purchase->update(['status' => 'Unposted']);

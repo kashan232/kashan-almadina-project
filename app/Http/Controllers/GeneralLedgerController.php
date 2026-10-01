@@ -693,8 +693,18 @@ class GeneralLedgerController extends Controller
             ->whereBetween(DB::raw($salesDateCol), [$start, $end])
             ->get();
         foreach ($sales as $sale) {
-            $orderDisc = (float)($sale->discount_amount ?? 0);
-            $receiptAmt = (float)($sale->receipt1 ?? 0) + (float)($sale->receipt2 ?? 0);
+            $orderDisc = $this->cleanNum($sale->discount_amount ?? 0);
+            
+            $receiptAmt = 0.0;
+            $m = json_decode($sale->receipt_amounts_json ?? '[]', true);
+            if (is_array($m) && !empty($m)) {
+                foreach ($m as $rvAmt) {
+                    $receiptAmt += $this->cleanNum($rvAmt);
+                }
+            } else {
+                $receiptAmt = $this->cleanNum($sale->receipt1 ?? 0) + $this->cleanNum($sale->receipt2 ?? 0);
+            }
+
             $transactions[] = [
                 'created_at' => $sale->created_at,
                 'id' => $sale->id,
@@ -1030,8 +1040,8 @@ class GeneralLedgerController extends Controller
             $discAccIds = json_decode($rv->discount_account_id, true) ?? [];
 
             foreach ($accIds as $idx => $aid) {
-                $rowAmount = (float)($amounts[$idx] ?? 0);
-                $rowDiscount = (float)($discounts[$idx] ?? 0);
+                $rowAmount = $this->cleanNum($amounts[$idx] ?? 0);
+                $rowDiscount = $this->cleanNum($discounts[$idx] ?? 0);
                 if ($rowAmount <= 0 && $rowDiscount <= 0) continue;
 
                 $accName = DB::table('accounts')->where('id', $aid)->value('title');
@@ -1475,7 +1485,7 @@ class GeneralLedgerController extends Controller
 
                 foreach ($accIds as $idx => $aid) {
                     if ($aid == $id) {
-                        $rowAmount = (float)($amounts[$idx] ?? 0);
+                        $rowAmount = $this->cleanNum($amounts[$idx] ?? 0);
                         $rowNarr = '';
                         if (isset($narrIds[$idx])) {
                             if (is_numeric($narrIds[$idx])) {
