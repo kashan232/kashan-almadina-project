@@ -53,6 +53,40 @@ use App\Http\Controllers\GeneralLedgerController;
 // fixedssssssss
 // Customer Claim Routes
 Route::middleware(['auth'])->group(function () {
+    // One-time sync route for opening stocks
+    Route::get('/fix-opening-stocks', function () {
+        $products = \App\Models\Product::withoutGlobalScopes()->get();
+        $count = 0;
+        foreach ($products as $p) {
+            $whStocks = \App\Models\WarehouseStock::where('product_id', $p->id)->pluck('quantity', 'warehouse_id')->toArray();
+            $whJsonMap = [];
+            $whTotal = 0;
+            foreach ($whStocks as $whId => $qty) {
+                $q = (float) $qty;
+                $whJsonMap[(string)$whId] = $q;
+                $whTotal += $q;
+            }
+            if (empty($p->opening_total_stock) || (float)$p->opening_total_stock == 0) {
+                $shopStock = (float)($p->stock ?? 0);
+                $totalOpening = $shopStock + $whTotal;
+                $p->update([
+                    'opening_total_stock' => $totalOpening,
+                    'opening_shop_stock' => $shopStock,
+                    'opening_warehouse_stocks' => $whJsonMap,
+                ]);
+            } else {
+                $totalOpening = (float) $p->opening_total_stock;
+                $shopOpening = $totalOpening - $whTotal;
+                $p->update([
+                    'opening_shop_stock' => $shopOpening,
+                    'opening_warehouse_stocks' => $whJsonMap,
+                ]);
+            }
+            $count++;
+        }
+        return "SUCCESS! Synced opening stocks for {$count} products.";
+    });
+
     // Rollback Routes
     Route::get('/rollback', [RollbackController::class, 'index'])->name('rollback.index');
     Route::post('/rollback/process', [RollbackController::class, 'process'])->name('rollback.process');
