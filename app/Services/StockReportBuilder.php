@@ -1068,7 +1068,29 @@ class StockReportBuilder
         }
 
         // Same opening rules as Item Stock Ledger (product opening + pre-period movements).
-        $opening = $this->resolveLedgerOpening($txns, $productId, $warehouseId, $fromDate, $current);
+        $baseOpening = $this->resolveProductOpeningQty($productId, $warehouseId);
+        if ($baseOpening !== null) {
+            $prePeriodEffect = $fromDate
+                ? $txns->filter(fn ($m) => $m['date'] < $fromDate)->sum('balance_effect')
+                : 0.0;
+            $opening = $baseOpening + $prePeriodEffect;
+        } else {
+            // Apply requested reverse recovery formula:
+            // Part 1: Stock deducts (SJ, PRJ, TOG Out, CLM-REP, CLM-OUT, WOG, SR, etc.)
+            $part1 = ($periodCols['sales'] ?? 0) + ($periodCols['pur_ret'] ?? 0) + ($periodCols['trf_out'] ?? 0)
+                   + ($periodCols['clm_rep'] ?? 0) + ($periodCols['clm_out'] ?? 0) + ($periodCols['cla_out'] ?? 0)
+                   + ($periodCols['cli_out'] ?? 0) + ($periodCols['waste'] ?? 0) + ($periodCols['release'] ?? 0);
+            
+            // Part 2: Stock adds (PJ, SRJ, TOG In, CLM-IN, SH, etc.)
+            $part2 = ($periodCols['pur'] ?? 0) + ($periodCols['sales_ret'] ?? 0) + ($periodCols['trf_in'] ?? 0)
+                   + ($periodCols['clm_in'] ?? 0) + ($periodCols['cla_in'] ?? 0) + ($periodCols['cli_in'] ?? 0)
+                   + ($periodCols['hold'] ?? 0);
+
+            // Part 3: (Part 1 - Part 2) * 2 + Current Stock (02-10-2026)
+            $diff = $part1 - $part2;
+            $calculatedOpening = ($diff * 2) + $current;
+            $opening = $calculatedOpening;
+        }
         $closing = $opening + $periodBalance;
 
         if ($this->isZeroRow($opening, $closing, $periodCols)) {
