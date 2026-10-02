@@ -177,6 +177,9 @@
                                     </div>
                                 </div>
 
+                                <a class="btn btn-outline-success btn-sm px-3 rounded-pill" href="{{ route('products.export-opening') }}" title="Export Opening Stock Sheet">
+                                    <i class="fa fa-download me-1"></i> Export Opening Sheet
+                                </a>
                                 <a class="btn btn-success btn-sm px-3 rounded-pill" href="{{ route('products.import') }}">
                                     <i class="fa fa-file-excel-o me-1"></i> Bulk Import
                                 </a>
