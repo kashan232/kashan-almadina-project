@@ -980,7 +980,7 @@ class StockReportBuilder
     private function productOpeningProduct(int $productId): ?Product
     {
         if ($this->productOpeningCache === null) {
-            $this->productOpeningCache = Product::query()
+            $this->productOpeningCache = Product::withoutGlobalScopes()
                 ->whereIn('id', $this->filteredProductIds())
                 ->get(['id', 'opening_total_stock', 'opening_shop_stock', 'opening_warehouse_stocks', 'stock'])
                 ->keyBy('id')
