@@ -23,7 +23,10 @@ class ProductController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Product::withInactive()->with(['latestPrice', 'brandRelation'])->orderByDesc('id');
+        $query = Product::withInactive()
+            ->with(['latestPrice', 'brandRelation'])
+            ->withSum('warehouseStocks as total_warehouse_stock', 'quantity')
+            ->orderByDesc('id');
         
         if ($request->has('brand') && $request->brand != '') {
             $query->where('brand', $request->brand);
@@ -611,6 +614,84 @@ class ProductController extends Controller
     public function downloadImportTemplate(\App\Services\ProductImportService $service)
     {
         return $service->downloadTemplateResponse();
+    }
+
+    public function exportOpeningTemplate()
+    {
+        $products = Product::withoutGlobalScopes()
+            ->with(['brandRelation', 'sub_category_relation', 'sub_category_relation.category', 'latestPrice'])
+            ->orderBy('id', 'asc')
+            ->get();
+
+        $warehouses = Warehouse::withoutGlobalScopes()->orderBy('id', 'asc')->get();
+
+        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('Products Opening Stock');
+
+        $headers = [
+            'Item ID',
+            'Product Name',
+            'Category',
+            'Sub Category',
+            'Brand',
+            'Weight',
+            'Alert Qty',
+            'Total Opening Stock',
+        ];
+
+        foreach ($warehouses as $wh) {
+            $headers[] = 'Warehouse Stock (' . $wh->warehouse_name . ')';
+        }
+
+        foreach ($headers as $colIndex => $header) {
+            $colLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($colIndex + 1);
+            $sheet->setCellValue($colLetter . '1', $header);
+        }
+
+        $lastColLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex(count($headers));
+        $sheet->getStyle('A1:' . $lastColLetter . '1')->getFont()->setBold(true);
+        $sheet->getStyle('A1:' . $lastColLetter . '1')->getFill()
+            ->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID)
+            ->getStartColor()->setRGB('D9EAD3');
+
+        $rowIndex = 2;
+        foreach ($products as $p) {
+            $col = 1;
+            $sheet->setCellValue(\PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($col++) . $rowIndex, $p->id);
+            $sheet->setCellValue(\PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($col++) . $rowIndex, $p->name);
+            $sheet->setCellValue(\PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($col++) . $rowIndex, $p->sub_category_relation?->category?->name ?? '');
+            $sheet->setCellValue(\PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($col++) . $rowIndex, $p->sub_category_relation?->name ?? '');
+            $sheet->setCellValue(\PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($col++) . $rowIndex, $p->brandRelation?->name ?? '');
+            $sheet->setCellValue(\PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($col++) . $rowIndex, $p->weight ?? '');
+            $sheet->setCellValue(\PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($col++) . $rowIndex, $p->alert_qty ?? 0);
+            $sheet->setCellValue(\PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($col++) . $rowIndex, $p->opening_total_stock ?? 0);
+
+            $savedWhStocks = is_array($p->opening_warehouse_stocks) ? $p->opening_warehouse_stocks : [];
+            foreach ($warehouses as $wh) {
+                $whQty = $savedWhStocks[$wh->id] ?? $savedWhStocks[(string)$wh->id] ?? 0;
+                $sheet->setCellValue(\PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($col++) . $rowIndex, $whQty);
+            }
+
+            $rowIndex++;
+        }
+
+        foreach (range(1, count($headers)) as $colIndex) {
+            $sheet->getColumnDimension(\PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($colIndex))->setAutoSize(true);
+        }
+
+        $fileName = 'products_opening_stock_export_' . date('Y_m_d_His') . '.xlsx';
+
+        return response()->streamDownload(function () use ($spreadsheet) {
+            if (ob_get_length()) {
+                ob_end_clean();
+            }
+            $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+            $writer->save('php://output');
+        }, $fileName, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Cache-Control' => 'max-age=0',
+        ]);
     }
 
     public function processImport(Request $request, \App\Services\ProductImportService $service)

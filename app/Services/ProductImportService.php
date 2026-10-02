@@ -157,8 +157,9 @@ class ProductImportService
                 return is_string($val) ? trim($val) : $val;
             };
 
+            $itemId = $getVal('Item ID');
             $name = $getVal(self::COLUMN_MAP['name']);
-            if (empty($name)) {
+            if (empty($name) && empty($itemId)) {
                 continue; // Skip empty rows
             }
 
@@ -192,39 +193,55 @@ class ProductImportService
             // Warehouse stock map for row
             $whStocks = [];
             $whStockTotal = 0;
+            $whStocksJsonMap = [];
             foreach ($whHeaderMap as $whId => $colIdx) {
                 $wQty = (float)($sheet->getCell([$colIdx, $row])->getValue() ?? 0);
                 $whStocks[$whId] = $wQty;
                 $whStockTotal += $wQty;
+                $whStocksJsonMap[(string)$whId] = $wQty;
             }
 
-            $shopStock = $totalOpeningStock - $whStockTotal;
+            $shopOpeningStock = $totalOpeningStock - $whStockTotal;
 
             try {
                 DB::beginTransaction();
 
-                // Check existing product
-                $product = Product::where('name', $name)->first();
+                // Match existing product by Item ID first, then by name
+                $product = null;
+                if (!empty($itemId)) {
+                    $cleanId = (int) preg_replace('/[^0-9]/', '', (string)$itemId);
+                    if ($cleanId > 0) {
+                        $product = Product::withoutGlobalScopes()->where('id', $cleanId)->first();
+                    }
+                }
+                if (!$product && !empty($name)) {
+                    $product = Product::withoutGlobalScopes()->where('name', $name)->first();
+                }
 
                 if ($product) {
+                    // Update ONLY product opening stock fields safely WITHOUT touching prices, category, or live balances
                     $product->update([
-                        'category_id'     => $category?->id ?? $product->category_id,
-                        'sub_category_id' => $subCategory?->id ?? $product->sub_category_id,
-                        'brand_id'        => $brand?->id ?? $product->brand_id,
-                        'weight'          => $weight ?: $product->weight,
-                        'alert_qty'       => $alertQty !== null ? $alertQty : $product->alert_qty,
-                        'stock'           => $shopStock,
+                        'opening_total_stock'      => $totalOpeningStock,
+                        'opening_shop_stock'       => $shopOpeningStock,
+                        'opening_warehouse_stocks' => $whStocksJsonMap,
                     ]);
+
+                    DB::commit();
+                    $imported++;
+                    continue; // Done for existing product, skip touching prices or warehouse stocks
                 } else {
                     $product = Product::create([
-                        'name'            => $name,
-                        'category_id'     => $category?->id,
-                        'sub_category_id' => $subCategory?->id,
-                        'brand_id'        => $brand?->id,
-                        'weight'          => $weight,
-                        'alert_qty'       => $alertQty ?: 0,
-                        'stock'           => $shopStock,
-                        'status'          => 1,
+                        'name'                     => $name,
+                        'category_id'              => $category?->id,
+                        'sub_category_id'          => $subCategory?->id,
+                        'brand_id'                 => $brand?->id,
+                        'weight'                   => $weight,
+                        'alert_qty'                => $alertQty ?: 0,
+                        'stock'                    => $shopOpeningStock,
+                        'status'                   => 1,
+                        'opening_total_stock'      => $totalOpeningStock,
+                        'opening_shop_stock'       => $shopOpeningStock,
+                        'opening_warehouse_stocks' => $whStocksJsonMap,
                     ]);
                 }
 

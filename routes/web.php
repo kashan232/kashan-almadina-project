@@ -244,6 +244,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/products/toggle-status/{id}', [ProductController::class, 'toggleStatus'])->name('products.toggleStatus');
 
     Route::get('/products/import', [ProductController::class, 'showImport'])->name('products.import');
+    Route::get('/products/export-opening', [ProductController::class, 'exportOpeningTemplate'])->name('products.export-opening');
     Route::get('/products/import/template', [ProductController::class, 'downloadImportTemplate'])->name('products.import.template');
     Route::post('/products/import/store', [ProductController::class, 'processImport'])->name('products.import.store');
 

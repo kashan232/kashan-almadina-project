@@ -243,7 +243,7 @@
                                             <td>{{ $product->weight }}</td>
                                             <td class="text-center fw-bold text-primary">{{ number_format((float)($product->opening_total_stock ?? 0), 0) }}</td>
                                             @if(auth()->user()->canAccessShop())
-                                                <td>{{ $product->stock }}</td>
+                                                <td class="text-center fw-bold">{{ number_format(($product->stock ?? 0) + ($product->total_warehouse_stock ?? 0), 0) }}</td>
                                             @endif
                                             <td class="text-end">{{ number_format($product->latestPrice->sale_retail_price ?? 0, 0) }}</td>
                                             <td class="text-center">{{ $product->latestPrice->sale_discount_percent ?? '0' }}%</td>

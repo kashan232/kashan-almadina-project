@@ -861,8 +861,11 @@ class StockReportBuilder
                         $party = strtoupper($sale->customer?->customer_name ?? $sale->vendor?->name ?? 'SALE ORDER');
                     }
 
-                    // Hold: reserve adds to stock balance (+qty)
-                    $this->addMovement((int) $item->product_id, $wh, $date, 'hold', $qty, $qty, $ref, 'SH', $party, 0, 0, (int) ($voucher->id ?? $sale->id ?? $item->id ?? 0));
+                    // Hold: reserve adds to stock balance (+qty), EXCEPT claim hold reservations which do not affect physical stock balance
+                    $isClaimHoldRes = !empty($item->meta['claim_id']);
+                    $balanceEffect = $isClaimHoldRes ? 0.0 : $qty;
+
+                    $this->addMovement((int) $item->product_id, $wh, $date, 'hold', $qty, $balanceEffect, $ref, 'SH', $party, 0, 0, (int) ($voucher->id ?? $sale->id ?? $item->id ?? 0));
                 }
             });
     }
