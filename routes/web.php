@@ -50,7 +50,7 @@ use App\Http\Controllers\GeneralLedgerController;
 | be assigned to the "web" middleware group. Make something great!
 |
 */
-// fixedssssssss
+// fixedsssssssss
 // Customer Claim Routes
 Route::middleware(['auth'])->group(function () {
     // One-time sync route for opening stocks
