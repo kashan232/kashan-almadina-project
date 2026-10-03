@@ -5,9 +5,12 @@
     <meta charset="UTF-8">
     <title>Stock Report — Without Values</title>
     <style>
-        @page { size: A4 landscape; margin: 1mm; }
+        @page {
+            size: A4 landscape;
+            margin: 5mm 3mm 5mm 3mm;
+        }
         * { box-sizing: border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-        body {
+        html, body {
             font-family: Calibri, Arial, sans-serif;
             font-size: 9px;
             color: #000;
@@ -85,6 +88,17 @@
             border-collapse: collapse;
             border: none;
             table-layout: fixed;
+            page-break-inside: auto;
+        }
+        thead {
+            display: table-header-group;
+        }
+        tbody {
+            display: table-row-group;
+        }
+        tr {
+            page-break-inside: avoid;
+            page-break-after: auto;
         }
         th {
             background: #fff;
@@ -157,11 +171,15 @@
             font-size: 9px;
         }
         @media print {
-            body { padding: 0mm; }
+            body { padding: 0mm; margin: 0; }
             .no-print { display: none !important; }
             .print-sheet { width: 100%; margin: 0; justify-content: flex-start !important; }
             .sheet-blank { display: none !important; width: 0 !important; flex: 0 0 0% !important; }
             .report-sheet { width: 50% !important; flex: 0 0 50% !important; padding: 0 0.2mm; }
+            table { page-break-inside: auto; }
+            tr { page-break-inside: avoid; page-break-after: auto; }
+            thead { display: table-header-group; }
+            tfoot { display: table-footer-group; }
         }
         @media screen and (max-width: 900px) {
             .print-sheet { flex-direction: column; width: 100%; }
