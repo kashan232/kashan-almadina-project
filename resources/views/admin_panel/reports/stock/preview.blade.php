@@ -12,7 +12,7 @@
         * { box-sizing: border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
         html, body {
             font-family: Calibri, Arial, sans-serif;
-            font-size: 9px;
+            font-size: 8px;
             color: #000;
             margin: 0;
             padding: 0mm;
@@ -74,13 +74,13 @@
             font-weight: bold;
             text-decoration: underline;
         }
-        .date-range { font-size: 9px; font-weight: bold; margin-bottom: 2px; }
+        .date-range { font-size: 8px; font-weight: bold; margin-bottom: 2px; }
         .date-range span { text-decoration: underline; }
         .generated-date {
             position: absolute;
             right: 0;
             top: 0;
-            font-size: 8px;
+            font-size: 7px;
             color: #333;
         }
         table {
@@ -107,7 +107,7 @@
             border-left: none;
             border-right: none;
             padding: 1px 1px;
-            font-size: 9px;
+            font-size: 8px;
             font-weight: bold;
             text-align: center;
             line-height: 1.05;
@@ -123,7 +123,7 @@
             border-bottom: 1px solid #777;
             padding: 1px 1px;
             vertical-align: middle;
-            font-size: 9px;
+            font-size: 8px;
             line-height: 1.05;
             overflow: hidden;
             color: #000 !important;
@@ -146,13 +146,13 @@
             color: #000 !important;
             text-align: center;
         }
-        .opening-col, .closing-col { font-weight: bold; text-align: center; font-size: 9px; }
+        .opening-col, .closing-col { font-weight: bold; text-align: center; font-size: 8px; }
         .wh-title td {
             background: #f0f0f0 !important;
             font-weight: bold;
             text-align: left;
             padding: 1px 2px;
-            font-size: 9px;
+            font-size: 8px;
             border-top: 1px solid #000;
             border-bottom: 1px solid #000;
         }
@@ -161,14 +161,14 @@
             font-weight: bold;
             border-top: 1px solid #000;
             border-bottom: 1px solid #000;
-            font-size: 9px;
+            font-size: 8px;
         }
         .grand-total-row td {
             background: #fff !important;
             font-weight: bold;
             border-top: 1px solid #000;
             border-bottom: 1px solid #000;
-            font-size: 9px;
+            font-size: 8px;
         }
         @media print {
             body { padding: 0mm; margin: 0; }
