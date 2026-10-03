@@ -30,7 +30,7 @@
             max-width: 100%;
             margin: 0 auto;
             display: flex;
-            justify-content: flex-start;
+            justify-content: flex-end;
         }
         .sheet-blank {
             display: none;
@@ -173,9 +173,9 @@
         @media print {
             body { padding: 0mm; margin: 0; }
             .no-print { display: none !important; }
-            .print-sheet { width: 100%; margin: 0; justify-content: flex-start !important; }
+            .print-sheet { width: 100%; margin: 0; justify-content: flex-end !important; }
             .sheet-blank { display: none !important; width: 0 !important; flex: 0 0 0% !important; }
-            .report-sheet { width: 50% !important; flex: 0 0 50% !important; padding: 0 0.2mm; }
+            .report-sheet { width: 50% !important; flex: 0 0 50% !important; padding: 0 0.2mm; margin-left: auto !important; }
             table { page-break-inside: auto; }
             tr { page-break-inside: avoid; page-break-after: auto; }
             thead { display: table-header-group; }
