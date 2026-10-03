@@ -171,6 +171,7 @@
         @media print {
             body { padding: 0mm; margin: 0; }
             .no-print { display: none !important; }
+            .col-hide-print { display: none !important; }
             .print-sheet { width: 100%; margin: 0; justify-content: flex-end !important; }
             .sheet-blank { display: none !important; width: 0 !important; flex: 0 0 0% !important; }
             .report-sheet { width: 50% !important; flex: 0 0 50% !important; padding: 0 0.2mm; margin-left: auto !important; }
@@ -208,6 +209,25 @@
             }
             return 'num';
         };
+
+        // Determine report type
+        $whTypes = \App\Models\Warehouse::withoutGlobalScopes()->pluck('claim_type', 'id')->all();
+        $isClaimReport = false;
+        if (isset($grouped) && $grouped->isNotEmpty()) {
+            foreach ($grouped->keys() as $wId) {
+                if ($wId > 0 && in_array($whTypes[$wId] ?? '', ['customer', 'company'], true)) {
+                    $isClaimReport = true;
+                    break;
+                }
+            }
+        }
+        $isNormalReport = !$isClaimReport;
+
+        // Keys to hide in print for Normal Report: Claim Acceptance (cla_in, cla_out) and Customer Claim CLM-IN (clm_in)
+        $normalHideKeys = ['cla_in', 'cla_out', 'clm_in'];
+        // Keys to hide in print for Claim Report: Non-claim movement columns
+        $claimHideKeys = ['pur', 'pur_ret', 'sales', 'sales_ret', 'trf_in', 'trf_out', 'waste', 'hold', 'release'];
+
         $cols = [
             ['key' => 'opening', 'head' => $opening_label, 'th' => ''],
             ['key' => 'closing', 'head' => $closing_label, 'th' => ''],
@@ -228,6 +248,15 @@
             ['key' => 'hold', 'head' => 'SH', 'th' => 'col-hold'],
             ['key' => 'release', 'head' => 'SR', 'th' => 'col-out'],
         ];
+
+        foreach ($cols as &$c) {
+            if ($isNormalReport && in_array($c['key'], $normalHideKeys, true)) {
+                $c['hide_print'] = true;
+            } elseif ($isClaimReport && in_array($c['key'], $claimHideKeys, true)) {
+                $c['hide_print'] = true;
+            }
+        }
+        unset($c);
     @endphp
 
     <div class="print-sheet">
@@ -245,25 +274,25 @@
                         <th rowspan="2" style="width:14%;">Item</th>
                         <th rowspan="2">{{ $opening_label }}</th>
                         <th rowspan="2">{{ $closing_label }}</th>
-                        <th rowspan="2">PJ</th>
-                        <th rowspan="2" class="col-out">PRJ</th>
-                        <th rowspan="2" class="col-out">SJ</th>
-                        <th rowspan="2">SRJ</th>
-                        <th colspan="3">Customer Claim</th>
-                        <th colspan="2">Claim Acceptance</th>
-                        <th colspan="2">Claim Item Receipt</th>
-                        <th rowspan="2">TOG In</th>
-                        <th rowspan="2" class="col-out">TOG Out</th>
-                        <th rowspan="2" class="col-out">WOG</th>
-                        <th rowspan="2" class="col-hold">SH</th>
-                        <th rowspan="2" class="col-out">SR</th>
+                        <th rowspan="2" class="{{ $isClaimReport ? 'col-hide-print' : '' }}">PJ</th>
+                        <th rowspan="2" class="col-out {{ $isClaimReport ? 'col-hide-print' : '' }}">PRJ</th>
+                        <th rowspan="2" class="col-out {{ $isClaimReport ? 'col-hide-print' : '' }}">SJ</th>
+                        <th rowspan="2" class="{{ $isClaimReport ? 'col-hide-print' : '' }}">SRJ</th>
+                        <th colspan="{{ $isNormalReport ? 2 : 3 }}">Customer Claim</th>
+                        <th colspan="2" class="{{ $isNormalReport ? 'col-hide-print' : '' }}">Claim Acceptance</th>
+                        <th colspan="2">CIR</th>
+                        <th rowspan="2" class="{{ $isClaimReport ? 'col-hide-print' : '' }}">TOG In</th>
+                        <th rowspan="2" class="col-out {{ $isClaimReport ? 'col-hide-print' : '' }}">TOG Out</th>
+                        <th rowspan="2" class="col-out {{ $isClaimReport ? 'col-hide-print' : '' }}">WOG</th>
+                        <th rowspan="2" class="col-hold {{ $isClaimReport ? 'col-hide-print' : '' }}">SH</th>
+                        <th rowspan="2" class="col-out {{ $isClaimReport ? 'col-hide-print' : '' }}">SR</th>
                     </tr>
                     <tr>
                         <th class="col-out">CLM-REP</th>
-                        <th>CLM-IN</th>
+                        <th class="{{ $isNormalReport ? 'col-hide-print' : '' }}">CLM-IN</th>
                         <th class="col-out">CLM-OUT</th>
-                        <th>CLM-IN</th>
-                        <th class="col-out">CLM-OUT</th>
+                        <th class="{{ $isNormalReport ? 'col-hide-print' : '' }}">CLM-IN</th>
+                        <th class="col-out {{ $isNormalReport ? 'col-hide-print' : '' }}">CLM-OUT</th>
                         <th>CLM-IN</th>
                         <th class="col-out">CLM-OUT</th>
                     </tr>
@@ -279,7 +308,7 @@
                             <tr>
                                 <td class="item-name" title="{{ $row['product_name'] }}">{{ $row['product_name'] }}</td>
                                 @foreach($cols as $col)
-                                <td class="{{ $cellClass($col['key'], $row[$col['key']] ?? 0) }} {{ in_array($col['key'], ['opening','closing']) ? 'opening-col' : '' }}">
+                                <td class="{{ $cellClass($col['key'], $row[$col['key']] ?? 0) }} {{ in_array($col['key'], ['opening','closing']) ? 'opening-col' : '' }} {{ !empty($col['hide_print']) ? 'col-hide-print' : '' }}">
                                     {{ $fmt($row[$col['key']] ?? 0) }}
                                 </td>
                                 @endforeach
@@ -288,7 +317,7 @@
                         <tr class="subtotal-row">
                             <td style="text-align:right;">{{ $rows->first()['warehouse_label'] ?? ('WH #' . $warehouseId) }} Total:</td>
                             @foreach($cols as $col)
-                            <td class="{{ $cellClass($col['key'], $whTotal[$col['key']]) }}">{{ $fmt($whTotal[$col['key']]) }}</td>
+                            <td class="{{ $cellClass($col['key'], $whTotal[$col['key']]) }} {{ !empty($col['hide_print']) ? 'col-hide-print' : '' }}">{{ $fmt($whTotal[$col['key']]) }}</td>
                             @endforeach
                         </tr>
                     @empty
@@ -298,7 +327,7 @@
                     <tr class="grand-total-row">
                         <td style="text-align:right;">Grand Total:</td>
                         @foreach($cols as $col)
-                        <td class="{{ $cellClass($col['key'], $grand[$col['key']] ?? 0) }}">{{ $fmt($grand[$col['key']] ?? 0) }}</td>
+                        <td class="{{ $cellClass($col['key'], $grand[$col['key']] ?? 0) }} {{ !empty($col['hide_print']) ? 'col-hide-print' : '' }}">{{ $fmt($grand[$col['key']] ?? 0) }}</td>
                         @endforeach
                     </tr>
                     @endif
