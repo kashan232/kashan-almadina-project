@@ -87,7 +87,7 @@
             width: 100%;
             border-collapse: collapse;
             border: none;
-            table-layout: fixed;
+            table-layout: auto;
             page-break-inside: auto;
         }
         thead {
@@ -106,11 +106,11 @@
             border-bottom: 1px solid #000;
             border-left: none;
             border-right: none;
-            padding: 1px 1px;
-            font-size: 8px;
+            padding: 0.5px 0.5px;
+            font-size: 7.5px;
             font-weight: bold;
             text-align: center;
-            line-height: 1.05;
+            line-height: 1.0;
             word-wrap: break-word;
             color: #000 !important;
         }
@@ -121,19 +121,17 @@
             border-left: none;
             border-right: none;
             border-bottom: 1px solid #777;
-            padding: 1px 1px;
+            padding: 0.5px 0.5px;
             vertical-align: middle;
-            font-size: 8px;
-            line-height: 1.05;
-            overflow: hidden;
+            font-size: 7.5px;
+            line-height: 1.0;
             color: #000 !important;
         }
         .item-name {
             text-align: left;
             font-weight: bold;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
+            white-space: normal;
+            word-break: break-word;
         }
         .num { text-align: center; }
         .col-out-cell {
