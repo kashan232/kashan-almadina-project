@@ -312,7 +312,9 @@ class CustomerImportService
             $data['user_group_ids'] = $userGroupIds;
         }
 
-        $data['status'] = $data['status'] ?? 'active';
+        if (($data['customer_type'] ?? '') === 'Walking Customer' && empty($data['filer_type'])) {
+            $data['filer_type'] = 'exempt';
+        }
 
         $customer = Customer::create($data);
 
