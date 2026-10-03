@@ -242,11 +242,16 @@
             return values;
         }
 
-        $('.filter-item').on('click', function(e) {
+        $(document).on('click', '.filter-item', function(e) {
             if ($(e.target).is('input')) return;
             const $cb = $(this).find('input[type="checkbox"]');
             $cb.prop('checked', !$cb.prop('checked'));
             $(this).toggleClass('selected', $cb.prop('checked'));
+        });
+
+        $(document).on('change', '.filter-item input[type="checkbox"]', function() {
+            const $item = $(this).closest('.filter-item');
+            $item.toggleClass('selected', $(this).prop('checked'));
         });
 
         $('.select-all').on('change', function() {
@@ -263,28 +268,18 @@
             $('.select-all').prop('checked', checked).trigger('change');
         });
 
-        $('#itemSearch').on('keyup', function() {
-            const term = $(this).val().toLowerCase();
+        $('#itemSearch').on('keyup input search', function() {
+            const term = $(this).val().toLowerCase().trim();
             $('#item-list .filter-item').each(function() {
-                const match = ($(this).data('search') || '').includes(term);
+                const match = !term || ($(this).data('search') || '').includes(term);
                 $(this).toggle(match);
-                if (!match) uncheckItem($(this));
-            });
-        });
-
-        $('#partySearch').on('keyup', function() {
-            const term = $(this).val().toLowerCase();
-            $('#party-list .filter-item').each(function() {
-                const match = ($(this).data('search') || '').includes(term);
-                $(this).toggle(match);
-                if (!match) uncheckItem($(this));
             });
         });
 
         function filterByGroup() {
             const selectedGroups = getCheckedValues('group-list', 'user_group[]');
             const selectedPartyTypes = getCheckedValues('partytype-list', 'party_type[]');
-            const partyTerm = ($('#partySearch').val() || '').toLowerCase();
+            const partyTerm = ($('#partySearch').val() || '').toLowerCase().trim();
 
             ['officer-list', 'claimfrom-list', 'acceptin-list'].forEach(function(listId) {
                 $('#' + listId + ' .filter-item').each(function() {
@@ -307,15 +302,15 @@
                 const visible = groupMatch && typeMatch && searchMatch;
 
                 $item.toggle(visible);
-                if (!visible) uncheckItem($item);
+                if (!groupMatch || !typeMatch) uncheckItem($item);
             });
         }
 
-        $('#group-list .filter-item, #partytype-list .filter-item').on('click', function() {
+        $(document).on('click', '#group-list .filter-item, #partytype-list .filter-item', function() {
             setTimeout(filterByGroup, 50);
         });
 
-        $('#partySearch').on('keyup', filterByGroup);
+        $('#partySearch').on('keyup input search', filterByGroup);
 
         setTimeout(() => {
             $('#globalSelectAll').prop('checked', true).trigger('change');

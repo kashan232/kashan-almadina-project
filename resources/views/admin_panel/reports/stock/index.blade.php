@@ -246,13 +246,22 @@
             return values;
         }
 
-        $('.filter-item').on('click', function(e) {
+        $(document).on('click', '.filter-item', function(e) {
             if ($(e.target).is('input')) return;
             const $cb = $(this).find('input[type="checkbox"]');
             $cb.prop('checked', !$cb.prop('checked'));
             $(this).toggleClass('selected', $cb.prop('checked'));
 
             const listId = $(this).closest('.filter-list').attr('id');
+            if (['category-list', 'subcat-list', 'brand-list'].includes(listId)) {
+                setTimeout(applyItemFilters, 50);
+            }
+        });
+
+        $(document).on('change', '.filter-item input[type="checkbox"]', function() {
+            const $item = $(this).closest('.filter-item');
+            $item.toggleClass('selected', $(this).prop('checked'));
+            const listId = $item.closest('.filter-list').attr('id');
             if (['category-list', 'subcat-list', 'brand-list'].includes(listId)) {
                 setTimeout(applyItemFilters, 50);
             }
@@ -275,7 +284,7 @@
             $('.select-all').prop('checked', checked).trigger('change');
         });
 
-        $('#itemSearch').on('keyup', function() {
+        $('#itemSearch').on('keyup input search', function() {
             applyItemFilters();
         });
 
@@ -283,7 +292,7 @@
             const brands = getCheckedValues('brand-list', 'brand[]');
             const categories = getCheckedValues('category-list', 'category[]');
             const subcategories = getCheckedValues('subcat-list', 'subcategory[]');
-            const term = ($('#itemSearch').val() || '').toLowerCase();
+            const term = ($('#itemSearch').val() || '').toLowerCase().trim();
 
             $('#subcat-list .filter-item').each(function() {
                 const $item = $(this);
@@ -305,7 +314,7 @@
                 const searchMatch = !term || searchText.includes(term);
                 const show = brandMatch && catMatch && subcatMatch && searchMatch;
                 $item.toggle(show);
-                if (!show) uncheckItem($item);
+                if (!brandMatch || !catMatch || !subcatMatch) uncheckItem($item);
             });
         }
 

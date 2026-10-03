@@ -335,25 +335,29 @@
             const selectedCategories = getCheckedValues('category-list', 'category[]');
             const selectedBrands = getCheckedValues('brand-list', 'brand[]');
             const selectedPartyTypes = getCheckedValues('partytype-list', 'party_type[]');
-            const itemSearch = ($('#itemSearch').val() || '').toLowerCase();
-            const partySearch = ($('#partySearch').val() || '').toLowerCase();
+            const itemSearch = ($('#itemSearch').val() || '').toLowerCase().trim();
+            const partySearch = ($('#partySearch').val() || '').toLowerCase().trim();
 
-            $('#officer-list .filter-item, #warehouse-list .filter-item, #party-list .filter-item').each(function() {
+            $('#officer-list .filter-item, #warehouse-list .filter-item').each(function() {
+                const $item = $(this);
+                const show = matchesGroups($item, selectedGroups);
+                $item.toggle(show);
+                if (!show) uncheckItem($item);
+            });
+
+            $('#party-list .filter-item').each(function() {
                 const $item = $(this);
                 const partyType = String($item.data('party-type') || '');
                 const searchText = String($item.data('search') || '');
-                const isPartyItem = $item.closest('#party-list').length > 0;
                 
-                let show = matchesGroups($item, selectedGroups);
-
-                if (isPartyItem) {
-                    const typeMatch = !selectedPartyTypes.length || selectedPartyTypes.includes(partyType);
-                    const searchMatch = !partySearch || searchText.indexOf(partySearch) > -1;
-                    show = show && typeMatch && searchMatch;
-                }
+                const groupMatch = matchesGroups($item, selectedGroups);
+                const typeMatch = !selectedPartyTypes.length || selectedPartyTypes.includes(partyType);
+                const searchMatch = !partySearch || searchText.indexOf(partySearch) > -1;
+                
+                const show = groupMatch && typeMatch && searchMatch;
 
                 $item.toggle(show);
-                if (!show) uncheckItem($item);
+                if (!groupMatch || !typeMatch) uncheckItem($item);
             });
 
             $('#item-list .filter-item').each(function() {
@@ -364,7 +368,7 @@
                 const searchMatch = !itemSearch || searchText.indexOf(itemSearch) > -1;
                 const show = brandMatch && searchMatch;
                 $item.toggle(show);
-                if (!show) uncheckItem($item);
+                if (!brandMatch) uncheckItem($item);
             });
         }
 
@@ -376,6 +380,16 @@
             $(this).toggleClass('selected', checkbox.prop('checked'));
 
             const listId = $(this).closest('.filter-list').attr('id');
+            if (['group-list', 'category-list', 'brand-list', 'partytype-list'].includes(listId)) {
+                applyCascadeFilters();
+            }
+        });
+
+        $(document).on('change', '.filter-item input[type="checkbox"]', function() {
+            const $item = $(this).closest('.filter-item');
+            $item.toggleClass('selected', $(this).prop('checked'));
+
+            const listId = $item.closest('.filter-list').attr('id');
             if (['group-list', 'category-list', 'brand-list', 'partytype-list'].includes(listId)) {
                 applyCascadeFilters();
             }
@@ -410,11 +424,7 @@
             applyCascadeFilters();
         });
 
-        $('#itemSearch').on('keyup', function() {
-            applyCascadeFilters();
-        });
-
-        $('#partySearch').on('keyup', function() {
+        $('#itemSearch, #partySearch').on('keyup input search', function() {
             applyCascadeFilters();
         });
 

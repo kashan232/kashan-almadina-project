@@ -198,7 +198,10 @@
             $cb.prop('checked', !$cb.prop('checked'));
             $(this).toggleClass('selected', $cb.prop('checked'));
 
-            const listId = $(this).closest('.filter-list').attr('id');
+        $(document).on('change', '.filter-item input[type="checkbox"]', function() {
+            const $item = $(this).closest('.filter-item');
+            $item.toggleClass('selected', $(this).prop('checked'));
+            const listId = $item.closest('.filter-list').attr('id');
             if (['group-list', 'partytype-list'].includes(listId)) {
                 setTimeout(applyPartyFilters, 0);
             }
@@ -239,7 +242,7 @@
         function applyPartyFilters() {
             const selectedGroups = getCheckedValues('group-list', 'user_group[]');
             const selectedTypes = getCheckedValues('partytype-list', 'party_type[]');
-            const term = ($('#partySearch').val() || '').toLowerCase();
+            const term = ($('#partySearch').val() || '').toLowerCase().trim();
 
             $('#party-list .filter-item').each(function() {
                 const $item = $(this);
@@ -251,11 +254,11 @@
                 const show = groupMatch && typeMatch && searchMatch;
 
                 $item.toggle(show);
-                if (!show) uncheckItem($item);
+                if (!groupMatch || !typeMatch) uncheckItem($item);
             });
         }
 
-        $('#partySearch').on('keyup', applyPartyFilters);
+        $('#partySearch').on('keyup input search', applyPartyFilters);
         setTimeout(() => {
             $('#globalSelectAll').prop('checked', true).trigger('change');
         }, 300);

@@ -223,11 +223,16 @@
             return values;
         }
 
-        $('.filter-item').on('click', function(e) {
+        $(document).on('click', '.filter-item', function(e) {
             if ($(e.target).is('input')) return;
             const $cb = $(this).find('input[type="checkbox"]');
             $cb.prop('checked', !$cb.prop('checked'));
             $(this).toggleClass('selected', $cb.prop('checked'));
+        });
+
+        $(document).on('change', '.filter-item input[type="checkbox"]', function() {
+            const $item = $(this).closest('.filter-item');
+            $item.toggleClass('selected', $(this).prop('checked'));
         });
 
         $('.select-all').on('change', function() {
@@ -244,23 +249,22 @@
             $('.select-all').prop('checked', checked).trigger('change');
         });
 
-        $('#partySearch').on('keyup', function() {
+        $('#partySearch').on('keyup input search', function() {
             filterByPartyType();
         });
 
-        $('#itemSearch').on('keyup', function() {
-            const term = ($(this).val() || '').toLowerCase();
+        $('#itemSearch').on('keyup input search', function() {
+            const term = ($(this).val() || '').toLowerCase().trim();
             $('#item-list .filter-item').each(function() {
                 const $item = $(this);
                 const show = !term || String($item.data('search') || '').includes(term);
                 $item.toggle(show);
-                if (!show) uncheckItem($item);
             });
         });
 
         function filterByPartyType() {
             const selectedTypes = getCheckedValues('partytype-list', 'party_type[]');
-            const searchTerm = ($('#partySearch').val() || '').toLowerCase();
+            const searchTerm = ($('#partySearch').val() || '').toLowerCase().trim();
 
             $('#party-list .filter-item').each(function() {
                 const partyType = String($(this).data('party-type') || '');
@@ -268,11 +272,11 @@
                 const matchesSearch = !searchTerm || ($(this).data('search') || '').includes(searchTerm);
                 const visible = matchesType && matchesSearch;
                 $(this).toggle(visible);
-                if (!visible) uncheckItem($(this));
+                if (!matchesType) uncheckItem($(this));
             });
         }
 
-        $('#partytype-list .filter-item').on('click', function() {
+        $(document).on('click', '#partytype-list .filter-item', function() {
             setTimeout(filterByPartyType, 50);
         });
 
@@ -292,7 +296,7 @@
             });
         }
 
-        $('#group-list .filter-item').on('click', function() {
+        $(document).on('click', '#group-list .filter-item', function() {
             setTimeout(filterByGroup, 50);
         });
     });
