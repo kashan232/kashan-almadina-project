@@ -8,8 +8,8 @@
         @page { size: A4 landscape; margin: 1mm; }
         * { box-sizing: border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
         body {
-            font-family: Arial, Helvetica, sans-serif;
-            font-size: 7px;
+            font-family: Calibri, Arial, sans-serif;
+            font-size: 9px;
             color: #000;
             margin: 0;
             padding: 0mm;
@@ -49,7 +49,7 @@
         .company-name {
             text-align: center;
             color: #8e24aa;
-            font-size: 9px;
+            font-size: 11px;
             font-weight: bold;
             margin-bottom: 1px;
             line-height: 1.1;
@@ -62,22 +62,22 @@
         }
         .report-title {
             color: #0d47a1;
-            font-size: 9px;
+            font-size: 11px;
             font-weight: bold;
             margin: 0;
         }
         .report-type {
-            font-size: 7px;
+            font-size: 9px;
             font-weight: bold;
             text-decoration: underline;
         }
-        .date-range { font-size: 7px; font-weight: bold; margin-bottom: 1px; }
+        .date-range { font-size: 9px; font-weight: bold; margin-bottom: 2px; }
         .date-range span { text-decoration: underline; }
         .generated-date {
             position: absolute;
             right: 0;
             top: 0;
-            font-size: 6px;
+            font-size: 8px;
             color: #333;
         }
         table {
@@ -87,71 +87,74 @@
             table-layout: fixed;
         }
         th {
-            background: #cfd8dc;
-            border-top: none;
+            background: #fff;
+            border-top: 1px solid #000;
+            border-bottom: 1px solid #000;
             border-left: none;
             border-right: none;
-            border-bottom: 1px solid #000;
-            padding: 0.5px 1px;
-            font-size: 6px;
+            padding: 1px 1px;
+            font-size: 9px;
             font-weight: bold;
             text-align: center;
             line-height: 1.05;
             word-wrap: break-word;
+            color: #000 !important;
         }
-        th.col-out { background: #e65100 !important; color: #fff !important; }
-        th.col-hold { background: inherit; color: inherit; }
+        th.col-out { background: #fff !important; color: #000 !important; }
+        th.col-hold { background: #fff !important; color: #000 !important; }
         td {
             border-top: none;
             border-left: none;
             border-right: none;
-            border-bottom: 1px solid #666;
-            padding: 0.5px 1px;
+            border-bottom: 1px solid #777;
+            padding: 1px 1px;
             vertical-align: middle;
-            font-size: 6.5px;
+            font-size: 9px;
             line-height: 1.05;
             overflow: hidden;
+            color: #000 !important;
         }
         .item-name {
             text-align: left;
-            font-weight: 600;
+            font-weight: bold;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
         }
         .num { text-align: center; }
         .col-out-cell {
-            background: #fff3e0 !important;
-            color: #bf360c !important;
-            font-weight: 600;
+            background: transparent !important;
+            color: #000 !important;
             text-align: center;
         }
         .col-hold-cell {
+            background: transparent !important;
+            color: #000 !important;
             text-align: center;
         }
-        .opening-col, .closing-col { font-weight: bold; text-align: center; font-size: 6px; }
+        .opening-col, .closing-col { font-weight: bold; text-align: center; font-size: 9px; }
         .wh-title td {
-            background: #eceff1 !important;
+            background: #f0f0f0 !important;
             font-weight: bold;
             text-align: left;
-            padding: 0.5px 2px;
-            font-size: 6.5px;
-            border-top: none;
+            padding: 1px 2px;
+            font-size: 9px;
+            border-top: 1px solid #000;
             border-bottom: 1px solid #000;
         }
         .subtotal-row td {
-            background: #e3f2fd !important;
+            background: #fff !important;
             font-weight: bold;
-            border-top: none;
+            border-top: 1px solid #000;
             border-bottom: 1px solid #000;
-            font-size: 6.5px;
+            font-size: 9px;
         }
         .grand-total-row td {
-            background: #cfd8dc !important;
+            background: #fff !important;
             font-weight: bold;
-            border-top: none;
+            border-top: 1px solid #000;
             border-bottom: 1px solid #000;
-            font-size: 6.5px;
+            font-size: 9px;
         }
         @media print {
             body { padding: 0mm; }
