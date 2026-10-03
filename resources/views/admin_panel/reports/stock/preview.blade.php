@@ -5,22 +5,22 @@
     <meta charset="UTF-8">
     <title>Stock Report — Without Values</title>
     <style>
-        @page { size: A4 landscape; margin: 2mm; }
+        @page { size: A4 landscape; margin: 1mm; }
         * { box-sizing: border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
         body {
             font-family: Arial, Helvetica, sans-serif;
             font-size: 7px;
             color: #000;
             margin: 0;
-            padding: 1mm;
+            padding: 0mm;
             background: #fff;
         }
         .no-print {
-            padding: 8px;
+            padding: 4px;
             background: #f8f9fa;
             border-bottom: 1px solid #ddd;
             text-align: center;
-            margin-bottom: 8px;
+            margin-bottom: 4px;
         }
         .print-sheet {
             width: 297mm;
@@ -37,10 +37,10 @@
         .report-sheet {
             width: 50%;
             flex: 0 0 50%;
-            padding: 0 0.5mm;
+            padding: 0 0.2mm;
             overflow: visible;
             transform-origin: top left !important;
-            cursor: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><circle cx='11' cy='11' r='8'/><line x1='21' y1='21' x2='16.65' y2='16.65'/><line x1='11' y1='8' x2='11' y2='14'/><line x1='8' y1='11' x2='14' y2='11'/></svg>") 11 11, zoom-in !important;
+            cursor: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><circle cx='11' cy='11' r='8'/><line x1='21' y1='21' x2='16.65' y2='16.65'/><line x1='8' y1='8' x2='11' y2='14'/><line x1='8' y1='11' x2='14' y2='11'/></svg>") 11 11, zoom-in !important;
             transition: transform 0.25s ease;
         }
         .report-sheet.is-zoomed-max {
@@ -57,8 +57,8 @@
         .report-header {
             text-align: center;
             position: relative;
-            margin-bottom: 2px;
-            line-height: 1.15;
+            margin-bottom: 1px;
+            line-height: 1.1;
         }
         .report-title {
             color: #0d47a1;
@@ -71,7 +71,7 @@
             font-weight: bold;
             text-decoration: underline;
         }
-        .date-range { font-size: 7px; font-weight: bold; }
+        .date-range { font-size: 7px; font-weight: bold; margin-bottom: 1px; }
         .date-range span { text-decoration: underline; }
         .generated-date {
             position: absolute;
@@ -83,27 +83,33 @@
         table {
             width: 100%;
             border-collapse: collapse;
-            border: 1px solid #000;
+            border: none;
             table-layout: fixed;
         }
         th {
             background: #cfd8dc;
-            border: 1px solid #000;
-            padding: 1px;
+            border-top: none;
+            border-left: none;
+            border-right: none;
+            border-bottom: 1px solid #000;
+            padding: 0.5px 1px;
             font-size: 6px;
             font-weight: bold;
             text-align: center;
-            line-height: 1.1;
+            line-height: 1.05;
             word-wrap: break-word;
         }
         th.col-out { background: #e65100 !important; color: #fff !important; }
-        th.col-hold { background: #e65100 !important; color: #fff !important; }
+        th.col-hold { background: inherit; color: inherit; }
         td {
-            border: 1px solid #666;
-            padding: 1px 2px;
+            border-top: none;
+            border-left: none;
+            border-right: none;
+            border-bottom: 1px solid #666;
+            padding: 0.5px 1px;
             vertical-align: middle;
             font-size: 6.5px;
-            line-height: 1.15;
+            line-height: 1.05;
             overflow: hidden;
         }
         .item-name {
@@ -121,9 +127,6 @@
             text-align: center;
         }
         .col-hold-cell {
-            background: #fff3e0 !important;
-            color: #bf360c !important;
-            font-weight: 600;
             text-align: center;
         }
         .opening-col, .closing-col { font-weight: bold; text-align: center; font-size: 6px; }
@@ -131,28 +134,31 @@
             background: #eceff1 !important;
             font-weight: bold;
             text-align: left;
-            padding: 1px 3px;
+            padding: 0.5px 2px;
             font-size: 6.5px;
-            border-top: 1px solid #000;
+            border-top: none;
+            border-bottom: 1px solid #000;
         }
         .subtotal-row td {
             background: #e3f2fd !important;
             font-weight: bold;
-            border-top: 1px solid #000;
+            border-top: none;
+            border-bottom: 1px solid #000;
             font-size: 6.5px;
         }
         .grand-total-row td {
             background: #cfd8dc !important;
             font-weight: bold;
-            border-top: 1px solid #000;
+            border-top: none;
+            border-bottom: 1px solid #000;
             font-size: 6.5px;
         }
         @media print {
-            body { padding: 1mm; }
+            body { padding: 0mm; }
             .no-print { display: none !important; }
             .print-sheet { width: 100%; margin: 0; justify-content: flex-start !important; }
             .sheet-blank { display: none !important; width: 0 !important; flex: 0 0 0% !important; }
-            .report-sheet { width: 50% !important; flex: 0 0 50% !important; padding: 0 0.5mm; }
+            .report-sheet { width: 50% !important; flex: 0 0 50% !important; padding: 0 0.2mm; }
         }
         @media screen and (max-width: 900px) {
             .print-sheet { flex-direction: column; width: 100%; }
