@@ -57,7 +57,6 @@ class RollbackController extends Controller
             'stock_wastage' => 'Stock Wastage',
             'warehouse_stock' => 'Warehouse Stock (Manual)',
             'customer_claim' => 'Customer Claim',
-            'customer_claim_release' => 'Customer Claim Release',
             'claim_acceptance' => 'Claim Acceptance',
             'claim_receipt' => 'Claim Receipt/Credits',
             'receipt_voucher' => 'Receipt Voucher',
