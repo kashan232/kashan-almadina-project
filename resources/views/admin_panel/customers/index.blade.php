@@ -314,37 +314,41 @@
 
         $(document).on('click', '#columnPickerBtn', function(e) {
             e.stopPropagation();
-            $('#columnPickerMenu').toggleClass('show');
+            $('.column-picker-menu').toggleClass('show');
         });
 
         $(document).on('click', function(e) {
             if (!$(e.target).closest('.column-picker-dropdown').length) {
-                $('#columnPickerMenu').removeClass('show');
+                $('.column-picker-menu').removeClass('show');
             }
         });
 
         const storageKey = 'customer_table_cols_v1';
         
-        const savedState = localStorage.getItem(storageKey);
-        if (savedState) {
-            const columns = JSON.parse(savedState);
-            $('#columnPickerMenu input').each(function() {
-                const colIdx = parseInt($(this).data('column'));
-                if (columns.hasOwnProperty(colIdx)) {
-                    const isChecked = columns[colIdx];
-                    $(this).prop('checked', isChecked);
-                    dt.column(colIdx - 1).visible(isChecked);
-                }
-            });
+        function applySavedColumnState() {
+            const savedState = localStorage.getItem(storageKey);
+            if (savedState) {
+                const columns = JSON.parse(savedState);
+                $('.column-picker-menu input').each(function() {
+                    const colIdx = parseInt($(this).data('column'));
+                    if (columns.hasOwnProperty(colIdx)) {
+                        const isChecked = columns[colIdx];
+                        $(this).prop('checked', isChecked);
+                        dt.column(colIdx - 1).visible(isChecked);
+                    }
+                });
+            }
         }
 
-        $(document).on('change', '#columnPickerMenu input', function() {
+        applySavedColumnState();
+
+        $(document).on('change', '.column-picker-menu input', function() {
             const colIdx = parseInt($(this).data('column'));
             const isChecked = $(this).is(':checked');
             dt.column(colIdx - 1).visible(isChecked);
             
             const state = {};
-            $('#columnPickerMenu input').each(function() {
+            $('.column-picker-menu input').each(function() {
                 state[$(this).data('column')] = $(this).is(':checked');
             });
             localStorage.setItem(storageKey, JSON.stringify(state));

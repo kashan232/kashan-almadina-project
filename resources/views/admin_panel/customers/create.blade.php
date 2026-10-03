@@ -177,10 +177,15 @@
         var typeSelect = document.getElementById('customerTypeSelect');
         var mainOnlyFields = document.querySelectorAll('.main-only-field');
 
+        var filerSelect = document.querySelector('select[name="filer_type"]');
+
         function toggleFields() {
             var isWalking = typeSelect.value === 'Walking Customer';
             if (preview) {
                 preview.value = isWalking ? walkinId : mainId;
+            }
+            if (isWalking && filerSelect) {
+                filerSelect.value = 'exempt';
             }
             mainOnlyFields.forEach(function (el) {
                 el.style.display = isWalking ? 'none' : '';
