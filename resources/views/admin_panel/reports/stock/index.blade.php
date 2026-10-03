@@ -37,15 +37,36 @@
                             <div class="col-md-1" style="min-width: 110px;">
                                 <div class="filter-column">
                                     <div class="filter-header">
+                                        <input type="checkbox" class="select-all" data-target="type-list"> Type
+                                    </div>
+                                    <div class="filter-list" id="type-list">
+                                        <div class="filter-item">
+                                            <input type="checkbox" name="claim_type[]" value="none">
+                                            <span>Normal</span>
+                                        </div>
+                                        <div class="filter-item">
+                                            <input type="checkbox" name="claim_type[]" value="customer">
+                                            <span>Customer Claim</span>
+                                        </div>
+                                        <div class="filter-item">
+                                            <input type="checkbox" name="claim_type[]" value="company">
+                                            <span>Company Claim</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-1" style="min-width: 110px;">
+                                <div class="filter-column">
+                                    <div class="filter-header">
                                         <input type="checkbox" class="select-all" data-target="warehouse-list"> Warehouse
                                     </div>
                                     <div class="filter-list" id="warehouse-list">
-                                        <div class="filter-item" data-groups="{{ $shopGroupIds }}">
+                                        <div class="filter-item" data-groups="{{ $shopGroupIds }}" data-claim-type="none">
                                             <input type="checkbox" name="warehouse[]" value="0">
                                             <span>Shop Stock</span>
                                         </div>
                                         @foreach($warehouses as $w)
-                                            <div class="filter-item" data-groups="{{ is_array($w->user_group_ids) ? implode(',', $w->user_group_ids) : '' }}">
+                                            <div class="filter-item" data-groups="{{ is_array($w->user_group_ids) ? implode(',', $w->user_group_ids) : '' }}" data-claim-type="{{ $w->claim_type ?: 'none' }}">
                                                 <input type="checkbox" name="warehouse[]" value="{{ $w->id }}">
                                                 <span>{{ $w->warehouse_name }}</span>
                                             </div>
@@ -256,6 +277,9 @@
             if (['category-list', 'subcat-list', 'brand-list'].includes(listId)) {
                 setTimeout(applyItemFilters, 50);
             }
+            if (listId === 'type-list') {
+                setTimeout(applyWarehouseTypeFilter, 50);
+            }
         });
 
         $(document).on('change', '.filter-item input[type="checkbox"]', function() {
@@ -265,7 +289,21 @@
             if (['category-list', 'subcat-list', 'brand-list'].includes(listId)) {
                 setTimeout(applyItemFilters, 50);
             }
+            if (listId === 'type-list') {
+                setTimeout(applyWarehouseTypeFilter, 50);
+            }
         });
+
+        function applyWarehouseTypeFilter() {
+            const types = getCheckedValues('type-list', 'claim_type[]');
+            $('#warehouse-list .filter-item').each(function() {
+                const $item = $(this);
+                const itemType = String($item.data('claim-type') || 'none');
+                const show = !types.length || types.includes(itemType);
+                $item.toggle(show);
+                if (!show) uncheckItem($item);
+            });
+        }
 
         $('.select-all').on('change', function() {
             const target = $(this).data('target');

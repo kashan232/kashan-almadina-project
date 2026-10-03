@@ -186,6 +186,7 @@ class StockReportBuilder
     {
         return [
             'user_groups' => $request->user_group ?? [],
+            'claim_types' => $request->claim_type ?? [],
             'warehouses' => $request->warehouse ?? [],
             'categories' => $request->category ?? [],
             'subcategories' => $request->subcategory ?? [],
@@ -194,6 +195,7 @@ class StockReportBuilder
             'from_date' => $request->from_date,
             'to_date' => $request->to_date,
             'totalGroups' => UserGroup::count(),
+            'totalClaimTypes' => 3,
             'totalWarehouses' => Warehouse::withoutGlobalScopes()->count() + 1,
             'totalCategories' => \App\Models\Category::count(),
             'totalSubcategories' => \App\Models\Subcategory::count(),
@@ -301,24 +303,45 @@ class StockReportBuilder
 
     private function warehouseMatchesFilter(int $warehouseId): bool
     {
-        if (!$this->shouldApplyFilter($this->filters['warehouses'], $this->filters['totalWarehouses'])) {
-            return true;
-        }
-
-        $selected = array_map('strval', $this->filters['warehouses']);
-
-        return in_array((string) $warehouseId, $selected, true);
+        $whIds = $this->resolvedWarehouseIds();
+        return in_array($warehouseId, $whIds, true);
     }
 
     private function resolvedWarehouseIds(): array
     {
-        if ($this->shouldApplyFilter($this->filters['warehouses'], $this->filters['totalWarehouses'])) {
-            return array_map('intval', $this->filters['warehouses']);
+        static $resolved = null;
+        if ($resolved !== null) {
+            return $resolved;
         }
 
-        $ids = Warehouse::withoutGlobalScopes()->orderBy('id')->pluck('id')->map(fn ($id) => (int) $id)->all();
+        $applyWh = $this->shouldApplyFilter($this->filters['warehouses'], $this->filters['totalWarehouses']);
+        $applyType = $this->shouldApplyFilter($this->filters['claim_types'], $this->filters['totalClaimTypes']);
 
-        return array_merge([0], $ids);
+        if ($applyWh) {
+            $candidateIds = array_map('intval', $this->filters['warehouses']);
+        } else {
+            $candidateIds = array_merge([0], Warehouse::withoutGlobalScopes()->pluck('id')->map(fn ($id) => (int) $id)->all());
+        }
+
+        if (!$applyType) {
+            return $resolved = $candidateIds;
+        }
+
+        $selectedTypes = $this->filters['claim_types'];
+        $whTypes = Warehouse::withoutGlobalScopes()->pluck('claim_type', 'id')->all();
+
+        $filtered = [];
+        foreach ($candidateIds as $wId) {
+            $type = $wId === 0 ? 'none' : ($whTypes[$wId] ?? 'none');
+            if (empty($type)) {
+                $type = 'none';
+            }
+            if (in_array($type, $selectedTypes, true)) {
+                $filtered[] = $wId;
+            }
+        }
+
+        return $resolved = $filtered;
     }
 
     private function warehouseLabel(int $warehouseId): string
