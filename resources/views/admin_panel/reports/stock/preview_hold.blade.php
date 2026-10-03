@@ -27,8 +27,9 @@
             max-width: 100%;
             margin: 0 auto;
             display: flex;
+            justify-content: flex-start;
         }
-        .sheet-blank { width: 50%; flex: 0 0 50%; }
+        .sheet-blank { display: none; width: 0; flex: 0 0 0%; }
         .report-sheet {
             width: 50%;
             flex: 0 0 50%;

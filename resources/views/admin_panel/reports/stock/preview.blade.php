@@ -27,18 +27,19 @@
             max-width: 100%;
             margin: 0 auto;
             display: flex;
-            justify-content: flex-end;
+            justify-content: flex-start;
         }
         .sheet-blank {
-            width: 50%;
-            flex: 0 0 50%;
+            display: none;
+            width: 0;
+            flex: 0 0 0%;
         }
         .report-sheet {
             width: 50%;
             flex: 0 0 50%;
             padding: 0 0.5mm;
             overflow: visible;
-            transform-origin: top right !important;
+            transform-origin: top left !important;
             cursor: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><circle cx='11' cy='11' r='8'/><line x1='21' y1='21' x2='16.65' y2='16.65'/><line x1='11' y1='8' x2='11' y2='14'/><line x1='8' y1='11' x2='14' y2='11'/></svg>") 11 11, zoom-in !important;
             transition: transform 0.25s ease;
         }
@@ -149,9 +150,9 @@
         @media print {
             body { padding: 1mm; }
             .no-print { display: none !important; }
-            .print-sheet { width: 100%; margin: 0; }
-            .sheet-blank { width: 50%; }
-            .report-sheet { width: 50%; padding: 0 0.5mm; }
+            .print-sheet { width: 100%; margin: 0; justify-content: flex-start !important; }
+            .sheet-blank { display: none !important; width: 0 !important; flex: 0 0 0% !important; }
+            .report-sheet { width: 50% !important; flex: 0 0 50% !important; padding: 0 0.5mm; }
         }
         @media screen and (max-width: 900px) {
             .print-sheet { flex-direction: column; width: 100%; }
