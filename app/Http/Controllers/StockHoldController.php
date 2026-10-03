@@ -607,7 +607,8 @@ class StockHoldController extends Controller
     public function createRelease()
     {
         $warehouses = Warehouse::orderBy('warehouse_name')->get();
-        return view('admin_panel.stock_hold.create_release', compact('warehouses'));
+        $products = Product::select('id', 'name')->orderBy('name')->get();
+        return view('admin_panel.stock_hold.create_release', compact('warehouses', 'products'));
     }
 
     public function holdVoucherList(Request $request)

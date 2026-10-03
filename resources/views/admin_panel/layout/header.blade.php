@@ -470,6 +470,8 @@
                                   <li class="nav-item"><a class="nav-link" href="{{ route('user-group.index') }}"><i
                                               class="fa-solid fa-users-rectangle mr-2"></i><span>User Groups</span></a></li>
                                   @endcan
+                                  <li class="nav-item"><a class="nav-link" href="{{ route('database-backups.index') }}"><i
+                                              class="fa-solid fa-database mr-2"></i><span>Database Backup</span></a></li>
                               </ul>
                           </div>
                       </li>

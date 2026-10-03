@@ -2,38 +2,41 @@
 
 <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 <style>
-    .stock-hold-page.container-fluid { padding: .25rem .4rem !important; }
+    .stock-hold-page.container-fluid { padding: .35rem .5rem !important; }
     .stock-hold-page .main-content-inner { padding: 0 !important; }
-    .stock-hold-page .page-top-bar { margin-bottom: .35rem !important; padding: .35rem .5rem !important; }
-    .stock-hold-page .page-top-bar .page-title { font-size: .9rem !important; }
-    .stock-hold-page .page-top-bar .badge { font-size: 11px !important; padding: .2rem .55rem !important; }
-    .stock-hold-page .card { margin-bottom: .35rem !important; }
-    .stock-hold-page .card-body { padding: .45rem .55rem !important; }
-    .stock-hold-page .card-footer { padding: .45rem .55rem !important; }
-    .stock-hold-page .row.g-2 { --bs-gutter-x: .4rem; --bs-gutter-y: .25rem; }
-    .stock-hold-page .row.mb-3 { margin-bottom: .35rem !important; }
-    .stock-hold-page .form-label { margin-bottom: .1rem !important; font-size: .72rem !important; line-height: 1.1; }
+    .stock-hold-page .page-top-bar { margin-bottom: .4rem !important; padding: .4rem .6rem !important; }
+    .stock-hold-page .page-top-bar .page-title { font-size: .95rem !important; }
+    .stock-hold-page .page-top-bar .badge { font-size: 11px !important; padding: .25rem .6rem !important; }
+    .stock-hold-page .card { margin-bottom: .4rem !important; border-radius: .5rem !important; border: 1px solid #e5e7eb; }
+    .stock-hold-page .card-body { padding: .55rem .7rem !important; }
+    .stock-hold-page .card-footer { padding: .5rem .7rem !important; }
+    .stock-hold-page .row.g-2 { --bs-gutter-x: .5rem; --bs-gutter-y: .35rem; }
+    .stock-hold-page .form-label { margin-bottom: .15rem !important; font-size: .75rem !important; font-weight: 600; color: #475569; }
     .stock-hold-page .input-sm,
     .stock-hold-page .form-control,
-    .stock-hold-page .form-select { height: 26px !important; min-height: 26px !important; padding: .1rem .4rem !important; font-size: .78rem !important; }
-    .stock-hold-page .select2-container .select2-selection--single { height: 26px !important; border: 1px solid #ced4da; }
-    .stock-hold-page .select2-container .select2-selection--single .select2-selection__rendered { line-height: 24px !important; padding-left: 6px !important; font-size: .78rem !important; }
-    .stock-hold-page .select2-container .select2-selection--single .select2-selection__arrow { height: 24px !important; }
-    .stock-hold-page .table td, .stock-hold-page .table th { vertical-align: middle !important; padding: 2px 4px !important; font-size: .78rem !important; }
-    .stock-hold-page .table .form-control { height: 24px !important; min-height: 24px !important; padding: 1px 4px !important; font-size: .75rem !important; }
-    .stock-hold-page .manual-add-card .card-body { padding: .35rem .55rem !important; }
-    .stock-hold-page .hold-pill-card { padding: .25rem .5rem !important; }
-    .stock-hold-page #addItemBtn { height: 26px; padding: 0 .65rem; font-size: .75rem; line-height: 1.2; }
-    .stock-hold-page .bottom-bar-btns { gap: .35rem !important; }
-    .stock-hold-page .bottom-bar-btns .btn { padding: .25rem .65rem !important; font-size: .78rem !important; }
-    .stock-hold-page tfoot th { padding: .25rem 4px !important; }
+    .stock-hold-page .form-select { height: 28px !important; min-height: 28px !important; padding: .15rem .45rem !important; font-size: .8rem !important; border-radius: 4px; }
+    .stock-hold-page .select2-container .select2-selection--single { height: 28px !important; border: 1px solid #ced4da; border-radius: 4px; }
+    .stock-hold-page .select2-container .select2-selection--single .select2-selection__rendered { line-height: 26px !important; padding-left: 6px !important; font-size: .8rem !important; }
+    .stock-hold-page .select2-container .select2-selection--single .select2-selection__arrow { height: 26px !important; }
+    
+    .stock-hold-page .table-responsive { max-height: 380px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 6px; }
+    .stock-hold-page .table th { vertical-align: middle !important; padding: 6px 8px !important; font-size: .78rem !important; text-transform: uppercase; letter-spacing: .3px; }
+    .stock-hold-page .table td { vertical-align: middle !important; padding: 3px 5px !important; font-size: .8rem !important; }
+    .stock-hold-page .table .form-control, 
+    .stock-hold-page .table .form-select { height: 26px !important; min-height: 26px !important; padding: 2px 6px !important; font-size: .78rem !important; }
+    
+    .stock-hold-page .bottom-bar-btns { gap: .4rem !important; }
+    .stock-hold-page .bottom-bar-btns .btn { padding: .3rem .75rem !important; font-size: .8rem !important; font-weight: 600; border-radius: 6px; }
+    
+    .input-readonly { background-color: #f8fafc !important; }
+    .hold-pill-card { padding: .2rem .5rem !important; }
 
-    .form-locked { position: relative; opacity: 0.8; }
+    .form-locked { position: relative; opacity: 0.85; }
     .form-locked .card-body { pointer-events: none !important; }
-    .form-locked input, .form-locked .select2-container--default .select2-selection--single, .form-locked select, .form-locked textarea {
-        background-color: #e9ecef !important; cursor: not-allowed !important;
+    .form-locked input, .form-locked .select2-container--default .select2-selection--single, .form-locked select, .form-locked textarea { 
+        background-color: #e9ecef !important; cursor: not-allowed !important; 
     }
-    .form-locked .remove-row, .form-locked #addItemBtn, .form-locked #saveDraftBtn { display: none !important; }
+    .form-locked .remove-row, .form-locked #addRowBtn, .form-locked #saveDraftBtn { display: none !important; }
     .form-locked #editInvoiceBtn, .form-locked #newInvoiceBtn, .form-locked #realPrintBtn,
     .form-locked #postBtn, .form-locked #exitBtn, .form-locked #deleteBtn {
         pointer-events: auto !important; opacity: 1 !important;
@@ -59,8 +62,8 @@
     
     .posted-watermark {
         position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-30deg);
-        font-size: 100px; color: rgba(0, 128, 0, 0.1); font-weight: bold; pointer-events: none; z-index: 1000;
-        text-transform: uppercase; border: 10px solid rgba(0, 128, 0, 0.1); padding: 20px; border-radius: 20px; display: none;
+        font-size: 100px; color: rgba(40, 167, 69, 0.14); font-weight: 900; pointer-events: none; z-index: 1000;
+        text-transform: uppercase; border: 10px solid rgba(40, 167, 69, 0.14); padding: 20px 40px; border-radius: 20px; display: none;
     }
     .posted-watermark.show { display: block; }
 </style>
@@ -71,19 +74,21 @@
         <div class="container-fluid stock-hold-page">
 
             {{-- TOP BAR --}}
-            <div class="d-flex justify-content-between align-items-center page-top-bar bg-light rounded shadow-sm">
+            <div class="d-flex justify-content-between align-items-center page-top-bar bg-white rounded shadow-sm border mb-2">
                 <div style="min-width:80px;"></div>
                 <div class="d-flex align-items-center gap-2 justify-content-center flex-grow-1">
-                    <h6 class="page-title mb-0 fw-bold">Stock Release Management</h6>
-                    <span id="statusBadge" class="badge bg-warning text-dark px-3 py-2 rounded-pill shadow-sm" style="font-size:12px;">
+                    <h6 class="page-title mb-0 fw-bold text-success">
+                        <i class="fas fa-box-open me-2"></i>Stock Release Management
+                    </h6>
+                    <span id="statusBadge" class="badge bg-warning text-dark px-3 py-1 rounded-pill shadow-sm" style="font-size:11px;">
                         <i class="fa fa-pencil me-1"></i> New Release
                     </span>
-                    <span id="idBadge" class="badge bg-primary px-3 py-2 rounded-pill shadow-sm" style="display:none;font-size:12px;">
+                    <span id="idBadge" class="badge bg-primary px-3 py-1 rounded-pill shadow-sm" style="display:none;font-size:11px;">
                         <i class="fa fa-tag me-1"></i> ID: NEW
                     </span>
                 </div>
                 <div class="d-flex align-items-center justify-content-end" style="min-width:115px;">
-                    <a href="{{ route('stock-relase-list') }}" id="listBtn" class="btn btn-sm btn-outline-secondary rounded-pill px-3">
+                    <a href="{{ route('stock-relase-list') }}" id="listBtn" class="btn btn-sm btn-outline-secondary rounded-pill px-3 py-1" style="font-size:.78rem;">
                         <i class="fa fa-list me-1"></i> List <kbd style="font-size:9px;opacity:.7;margin-left:4px;">Ctrl+L</kbd>
                     </a>
                 </div>
@@ -95,36 +100,36 @@
                 <input type="hidden" name="hold_voucher_id" id="hold_voucher_id">
                 <div class="posted-watermark" id="postedWatermark">Posted</div>
 
-                {{-- Header Details --}}
-                <div class="card shadow-sm">
+                {{-- Header Details Card --}}
+                <div class="card shadow-sm mb-2">
                     <div class="card-body">
-                        <div class="row g-2 mb-3 align-items-end">
+                        <div class="row g-2 mb-2 align-items-end">
                             <div class="col-md-2">
-                                <label class="form-label small fw-bold text-muted">Release Date</label>
+                                <label class="form-label">Release Date</label>
                                 <input type="date" name="entry_date" class="form-control input-sm" value="{{ date('Y-m-d') }}" required>
                             </div>
                             <div class="col-md-2">
-                                <label class="form-label small fw-bold text-muted">Release No</label>
-                                <input type="text" id="release_no" class="form-control input-sm fw-bold text-primary bg-light" value="Auto-Generated" readonly>
+                                <label class="form-label">Release No.</label>
+                                <input type="text" id="release_no" class="form-control input-sm fw-bold text-success bg-light" value="Auto-Generated" readonly>
                             </div>
-                            <div class="col-md-2">
-                                <label class="form-label small fw-bold text-muted">Deliver From <span class="text-danger">*</span></label>
+                            <div class="col-md-3">
+                                <label class="form-label">Deliver From <span class="text-danger">*</span></label>
                                 <select name="warehouse_id" id="warehouse_id" class="form-select input-sm" required>
-                                    <option value="0">Shop Stock</option>
+                                    <option value="0">🏠 Shop Stock</option>
                                     @foreach($warehouses as $wh)
-                                        <option value="{{ $wh->id }}">{{ $wh->warehouse_name }}</option>
+                                        <option value="{{ $wh->id }}">📦 {{ $wh->warehouse_name }}</option>
                                     @endforeach
                                 </select>
                             </div>
-                            <div class="col-md-6">
-                                <label class="form-label small fw-bold text-muted">Remarks</label>
+                            <div class="col-md-5">
+                                <label class="form-label">Remarks</label>
                                 <input type="text" name="remarks" class="form-control input-sm" placeholder="Optional release notes...">
                             </div>
                         </div>
 
                         <div class="row g-2 align-items-end">
                             <div class="col-md-2">
-                                <label class="form-label small fw-bold text-primary">Party Type <span class="text-danger">*</span></label>
+                                <label class="form-label text-primary">Party Type <span class="text-danger">*</span></label>
                                 <select name="vendor_type" id="vendor_type" class="form-select input-sm" required>
                                     <option value="">Select Type...</option>
                                     <option value="vendor">Vendor</option>
@@ -132,22 +137,21 @@
                                     <option value="walkin">Walking Customer</option>
                                 </select>
                             </div>
-                            <div class="col-md-1">
-                                <label class="form-label small fw-bold text-primary">Code/ID</label>
+                            <div class="col-md-2">
+                                <label class="form-label text-primary">Code / ID</label>
                                 <input type="text" id="party_code_input" class="form-control input-sm text-center fw-bold text-danger" placeholder="ID">
                             </div>
-                            <div class="col-md-3">
-                                <label class="form-label small fw-bold text-primary">Party Name <span class="text-danger">*</span></label>
+                            <div class="col-md-4">
+                                <label class="form-label text-primary">Party Name <span class="text-danger">*</span></label>
                                 <select name="vendor_id" id="vendor_id" class="form-select select2" required>
                                     <option value="">Select Party...</option>
                                 </select>
                             </div>
-                            
-                            <div class="col-md-6">
-                                <div class="card border-primary border-opacity-25 bg-primary bg-opacity-10 hold-pill-card rounded-pill h-100">
-                                    <div class="row g-2 align-items-center">
-                                        <div class="col-auto"><i class="fa fa-search text-primary"></i></div>
-                                        <div class="col">
+                            <div class="col-md-4">
+                                <div class="card border-primary border-opacity-25 bg-primary bg-opacity-10 hold-pill-card rounded-3 mb-0">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <i class="fa fa-search text-primary ms-1"></i>
+                                        <div class="flex-grow-1">
                                             <label class="form-label x-small fw-bold text-primary mb-0" style="font-size:10px;">PULL FROM EXISTING HOLD / CLAIM</label>
                                             <select id="hold_select" class="form-select select2" disabled>
                                                 <option value="">Choose Party First...</option>
@@ -161,56 +165,56 @@
                     </div>
                 </div>
 
-                {{-- MANUAL ADD ROW (Standard Logic) --}}
-                <div class="card shadow-sm manual-add-card border-success border-opacity-25">
-                    <div class="card-body">
-                        <div class="row g-2 align-items-end">
-                            <div class="col-md-1 text-center">
-                                <label class="form-label small fw-bold text-success">Item ID</label>
-                                <input type="text" id="manual_id_input" class="form-control input-sm text-center fw-bold" placeholder="ID">
-                            </div>
-                            <div class="col-md-9">
-                                <label class="form-label small fw-bold text-success">Manual Product Search (Quick Add)</label>
-                                <select id="manual_product_search" class="form-select select2">
-                                    <option value="">Search for a product manually...</option>
-                                </select>
-                            </div>
-                            <div class="col-md-2">
-                                <button type="button" id="addItemBtn" class="btn btn-success btn-sm w-100 rounded-pill shadow-sm">
-                                    <i class="fa fa-plus me-1"></i> Add Item
-                                </button>
-                            </div>
+                {{-- Items Table Card --}}
+                <div class="card shadow-sm">
+                    <div class="card-header bg-white py-2 d-flex justify-content-between align-items-center border-bottom">
+                        <div class="d-flex align-items-center gap-2">
+                            <h6 class="mb-0 fw-bold text-dark"><i class="fas fa-boxes me-2 text-success"></i>Release Items List</h6>
+                            <span class="badge bg-secondary rounded-pill px-2 py-1" style="font-size:10px;">Total Items: <span id="total_items_badge">0</span></span>
+                        </div>
+                        <div>
+                            <button type="button" id="addRowBtn" class="btn btn-sm btn-success rounded-pill px-3 py-1">
+                                <i class="fa fa-plus me-1"></i> Add Row <kbd style="font-size:9px;opacity:.8;margin-left:3px;">Ctrl+I</kbd>
+                            </button>
                         </div>
                     </div>
-                </div>
-
-                {{-- Items Table --}}
-                <div class="card shadow-sm">
                     <div class="card-body p-0">
                         <div class="table-responsive">
-                            <table class="table table-bordered table-striped mb-0" id="itemsTable">
-                                <thead class="bg-light text-center">
+                            <table class="table table-bordered table-hover align-middle mb-0" id="itemsTable" style="width:100%; table-layout: fixed;">
+                                <colgroup>
+                                    <col style="width: 5%;">
+                                    <col style="width: 12%;">
+                                    <col style="width: 44%;">
+                                    <col style="width: 11%;">
+                                    <col style="width: 11%;">
+                                    <col style="width: 12%;">
+                                    <col style="width: 5%;">
+                                </colgroup>
+                                <thead class="table-light">
                                     <tr>
-                                        <th style="width:80px;">Item ID</th>
+                                        <th class="text-center">#</th>
+                                        <th>Item ID</th>
                                         <th>Product Description</th>
-                                        <th style="width:120px;">Sale Qty</th>
-                                        <th style="width:120px;">Hold Qty</th>
-                                        <th style="width:120px;">Release Qty</th>
-                                        <th style="width:50px;">Act</th>
+                                        <th class="text-center">Sale Qty</th>
+                                        <th class="text-center">Hold Qty</th>
+                                        <th class="text-center">Release Qty</th>
+                                        <th class="text-center">Act</th>
                                     </tr>
                                 </thead>
                                 <tbody id="itemRows"></tbody>
-                                <tfoot>
+                                <tfoot class="table-light border-top">
                                     <tr>
-                                        <th colspan="4" class="text-end">Total Release Items:</th>
-                                        <th class="text-center"><span id="total_items_badge" class="badge bg-secondary">0</span></th>
+                                        <th colspan="3" class="text-end fw-bold">Grand Total:</th>
+                                        <th class="text-center fw-bold text-dark fs-6" id="total_sale_qty">0</th>
+                                        <th class="text-center fw-bold text-primary fs-6" id="total_hold_qty">0</th>
+                                        <th class="text-center fw-bold text-success fs-6" id="total_release_qty">0</th>
                                         <th></th>
                                     </tr>
                                 </tfoot>
                             </table>
                         </div>
                     </div>
-                    <div class="card-footer bg-white">
+                    <div class="card-footer bg-white border-top py-2">
                         <div class="d-flex flex-wrap justify-content-center w-100 bottom-bar-btns">
                             <button type="button" id="saveDraftBtn" class="btn btn-primary px-3 fw-bold shadow-sm">
                                 <u>S</u>ave <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+S</kbd>
@@ -245,6 +249,10 @@
 @section('scripts')
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script>
+var allProducts = @json(isset($products) ? $products->map(fn($p) => ['id' => (string)$p->id, 'name' => $p->name]) : []);
+var productsMap = {};
+allProducts.forEach(function(p) { productsMap[p.id] = p.name; });
+
 $(document).ready(function() {
     function showToast(msg, type = 'success') {
         var icon = type === 'success' ? 'fa-check-circle' : 'fa-times-circle';
@@ -252,13 +260,14 @@ $(document).ready(function() {
         var $toast = $('<div>').css({
             position: 'fixed', top: '20px', right: '20px', zIndex: 9999,
             background: color, color: '#fff', padding: '12px 20px', borderRadius: '8px',
-            boxShadow: '0 4px 15px rgba(0,0,0,.2)', display: 'flex', alignItems: 'center', gap: '8px'
-        }).html('<i class="fa ' + icon + '"></i> ' + msg);
+            boxShadow: '0 4px 15px rgba(0,0,0,.2)', display: 'flex', alignItems: 'center', gap: '8px',
+            maxWidth: '420px', lineHeight: '1.35'
+        }).html('<i class="fa ' + icon + '"></i> ' + $('<div>').text(msg).html());
         $('body').append($toast);
         setTimeout(function() { $toast.fadeOut(400, function(){ $(this).remove(); }); }, 3000);
     }
 
-    // 1. Party Selection Logic
+    // Party Selection Logic
     $('#vendor_id').select2({ width: '100%', placeholder: 'Select Party...' });
     
     $('#vendor_type').on('change', function() {
@@ -279,7 +288,6 @@ $(document).ready(function() {
             $partySelect.trigger('change');
         });
         
-        // Reset and disable hold select
         resetSelections();
     });
 
@@ -310,50 +318,131 @@ $(document).ready(function() {
             resetSelections();
         }
         $('#itemRows').empty();
+        addNewRow();
         updateCount();
     });
 
     function resetSelections() {
         $('#hold_select').prop('disabled', true).html('<option value="">Choose Party First</option>').trigger('change');
         $('#itemRows').empty();
+        addNewRow();
         updateCount();
     }
 
-    // 2. Manual Product Entry Logic
-    $('#manual_product_search').select2({
-        width: '100%',
-        ajax: {
-            url: "{{ route('stock-holds.products.search') }}", dataType: 'json', delay: 250,
-            data: function(params) { return { q: params.term }; },
-            processResults: function(data) { return { results: data.map(p => ({ id: p.id, text: p.id + ' - ' + p.name, name: p.name })) }; }
+    // Initialize 1 empty row on page load if empty
+    if ($('#itemRows tr').length === 0) {
+        addNewRow();
+    }
+
+    function buildProductOptions(selectedId) {
+        var html = '<option value="">-- Select Product --</option>';
+        allProducts.forEach(function(p) {
+            var sel = (String(p.id) === String(selectedId)) ? 'selected' : '';
+            html += '<option value="' + p.id + '" ' + sel + '>' + p.id + ' - ' + $('<div>').text(p.name).html() + '</option>';
+        });
+        return html;
+    }
+
+    function addNewRow(pid, saleQty, holdQty, releaseQty, holdId) {
+        pid = pid ? String(pid) : '';
+        saleQty = saleQty !== undefined ? saleQty : 0;
+        holdQty = holdQty !== undefined ? holdQty : 0;
+        releaseQty = releaseQty !== undefined ? releaseQty : 1;
+        holdId = holdId || '';
+
+        var rowIdx = $('#itemRows tr').length;
+
+        var trHtml = `<tr data-row-idx="${rowIdx}">
+            <td class="text-center fw-bold text-secondary row-num">${rowIdx + 1}</td>
+            <td>
+                <input type="text" class="form-control form-control-sm text-center item-id-input" value="${pid}" placeholder="ID">
+                <input type="hidden" name="hold_id[]" value="${holdId}">
+            </td>
+            <td>
+                <select name="product_id[]" class="form-select form-select-sm product-select">
+                    ${buildProductOptions(pid)}
+                </select>
+            </td>
+            <td>
+                <input type="number" name="sale_qty[]" class="form-control form-control-sm text-center input-readonly" value="${saleQty}" readonly>
+            </td>
+            <td>
+                <input type="number" name="hold_qty[]" class="form-control form-control-sm text-center input-readonly" value="${holdQty}" readonly>
+            </td>
+            <td>
+                <input type="number" name="release_qty[]" class="form-control form-control-sm text-center release-qty-input fw-bold text-success" value="${releaseQty}" step="any" min="0.01" required>
+            </td>
+            <td class="text-center">
+                <button type="button" class="btn btn-xs btn-outline-danger remove-row" title="Remove Row"><i class="fa fa-times"></i></button>
+            </td>
+        </tr>`;
+
+        var $tr = $(trHtml);
+        $('#itemRows').append($tr);
+        $tr.find('.product-select').select2({ width: '100%' });
+        updateCount();
+        return $tr;
+    }
+
+    $('#addRowBtn').on('click', function() {
+        var $newRow = addNewRow();
+        $newRow.find('.item-id-input').focus();
+    });
+
+    // Item ID Input change / keyup handling
+    $(document).on('change blur keyup', '.item-id-input', function(e) {
+        if (e.type === 'keyup' && e.key !== 'Enter') return;
+        var $tr = $(this).closest('tr');
+        var pid = $.trim($(this).val());
+        var $sel = $tr.find('.product-select');
+        
+        if (pid && productsMap[pid]) {
+            if ($sel.val() !== pid) {
+                $sel.val(pid).trigger('change.select2');
+            }
+            if ($tr.is(':last-child')) {
+                addNewRow();
+            }
+            if (e.type === 'keyup' || e.type === 'change') {
+                $tr.find('.release-qty-input').focus().select();
+            }
+        } else if (pid && !productsMap[pid]) {
+            showToast('Product ID ' + pid + ' not found', 'error');
+            $sel.val('').trigger('change.select2');
         }
     });
 
-    $('#manual_id_input').on('keydown', function(e) {
-        if (e.key === 'Enter' || e.key === 'Tab') {
-            if (e.key === 'Enter') e.preventDefault();
-            let id = $(this).val();
-            if (id) {
-                $.get("{{ url('products/get-by-id') }}/" + id, function(res) {
-                    if (res && res.success) {
-                        addRow(res.id, res.name, 0, 0, 1);
-                        $('#manual_id_input').val('').focus();
-                    } else {
-                        showToast('Product not found!', 'error');
-                    }
-                });
+    // Product Select change handling
+    $(document).on('change', '.product-select', function() {
+        var $tr = $(this).closest('tr');
+        var pid = $(this).val();
+        var $idInput = $tr.find('.item-id-input');
+        
+        if (pid) {
+            $idInput.val(pid);
+            if ($tr.is(':last-child')) {
+                addNewRow();
+            }
+        } else {
+            $idInput.val('');
+        }
+    });
+
+    // Enter key on Release Qty input creates new row if last row
+    $(document).on('keydown', '.release-qty-input', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            var $tr = $(this).closest('tr');
+            if ($tr.is(':last-child')) {
+                var $newRow = addNewRow();
+                $newRow.find('.item-id-input').focus();
+            } else {
+                $tr.next('tr').find('.item-id-input').focus();
             }
         }
     });
 
-    $('#addItemBtn').on('click', function() {
-        var data = $('#manual_product_search').select2('data')[0];
-        if(!data) { showToast('Select a product first', 'error'); return; }
-        addRow(data.id, data.name, 0, 0, 1);
-        $('#manual_product_search').val(null).trigger('change');
-    });
-
-    // 3. Hold / Claim Filtering (Unified)
+    // Hold / Claim Filtering (Unified)
     function initHoldSelect() {
         $('#hold_select').select2({
             width: '100%',
@@ -374,7 +463,7 @@ $(document).ready(function() {
         });
     }
 
-    // 4. Selection Details
+    // Selection Details
     $('#hold_select').on('change', function() {
         var val = $(this).val();
         if(!val) return;
@@ -389,7 +478,8 @@ $(document).ready(function() {
             $.get("{{ url('customer-claims-release/details') }}/" + id, function(res) {
                 $('#warehouse_id').val(res.warehouse_id);
                 $('#itemRows').empty();
-                addRow(res.product_id, res.product_name, res.hold_qty, res.hold_qty, res.hold_qty, res.hold_id || '');
+                addNewRow(res.product_id, res.hold_qty, res.hold_qty, res.hold_qty, res.hold_id || '');
+                updateCount();
             });
         } else {
             $('#hold_voucher_id').val(id);
@@ -399,35 +489,44 @@ $(document).ready(function() {
                 $('#itemRows').empty();
                 res.items.forEach(item => {
                     var remaining = item.remaining_qty ?? item.release_qty ?? item.hold_qty;
-                    addRow(item.product_id, item.item_name, item.sale_qty, item.hold_qty, remaining, item.hold_id || '');
+                    addNewRow(item.product_id, item.sale_qty, item.hold_qty, remaining, item.hold_id || '');
                 });
+                updateCount();
             });
         }
     });
 
-    function addRow(pid, name, saleQty, holdQty, releaseQty, holdId) {
-        holdId = holdId || '';
-        var row = `<tr>
-            <td class="text-center font-weight-bold text-primary">${pid} <input type="hidden" name="product_id[]" value="${pid}"><input type="hidden" name="hold_id[]" value="${holdId}"></td>
-            <td>${name}</td>
-            <td class="text-center"><input type="number" name="sale_qty[]" class="form-control input-sm text-center bg-light" value="${saleQty}" readonly></td>
-            <td class="text-center"><input type="number" name="hold_qty[]" class="form-control input-sm text-center bg-light" value="${holdQty}" readonly></td>
-            <td class="text-center"><input type="number" name="release_qty[]" class="form-control input-sm text-center release-qty-input border-success" value="${releaseQty}" step="any"></td>
-            <td class="text-center"><button type="button" class="btn btn-sm btn-link text-danger remove-row p-0"><i class="fa fa-trash fs-5"></i></button></td>
-        </tr>`;
-        $('#itemRows').append(row);
-        updateCount();
-    }
+    // Remove row
+    $(document).on('click', '.remove-row', function() { 
+        $(this).closest('tr').remove(); 
+        updateCount(); 
+    });
 
-    $(document).on('click', '.remove-row', function() { $(this).closest('tr').remove(); updateCount(); });
-    $(document).on('input', '.release-qty-input', function() { updateCount(); });
+    $(document).on('input change', '.release-qty-input, [name="sale_qty[]"], [name="hold_qty[]"]', function() { 
+        updateCount(); 
+    });
+
     function updateCount() {
-        var totalQty = 0;
-        $('.release-qty-input').each(function() {
-            var val = parseFloat($(this).val()) || 0;
-            totalQty += val;
+        var count = 0;
+        var totalSaleQty = 0;
+        var totalHoldQty = 0;
+        var totalReleaseQty = 0;
+
+        $('#itemRows tr').each(function(idx) {
+            $(this).find('.row-num').text(idx + 1);
+            var pid = $(this).find('.product-select').val();
+            if (pid) {
+                count++;
+                totalSaleQty += parseFloat($(this).find('[name="sale_qty[]"]').val()) || 0;
+                totalHoldQty += parseFloat($(this).find('[name="hold_qty[]"]').val()) || 0;
+                totalReleaseQty += parseFloat($(this).find('.release-qty-input').val()) || 0;
+            }
         });
-        $('#total_items_badge').text(totalQty % 1 === 0 ? totalQty : totalQty.toFixed(2));
+
+        $('#total_items_badge').text(count);
+        $('#total_sale_qty').text(totalSaleQty % 1 === 0 ? totalSaleQty : totalSaleQty.toFixed(2));
+        $('#total_hold_qty').text(totalHoldQty % 1 === 0 ? totalHoldQty : totalHoldQty.toFixed(2));
+        $('#total_release_qty').text(totalReleaseQty % 1 === 0 ? totalReleaseQty : totalReleaseQty.toFixed(2));
     }
 
     var _savedVoucherId = null;
@@ -467,11 +566,26 @@ $(document).ready(function() {
         return $.param(data);
     }
 
-    // 4. Save Logic
+    // Save Logic
     function save(act) {
         if (_saveInFlight || _postInFlight) return;
         $('#formAction').val(act);
-        if($('#itemRows tr').length === 0) { showToast('Please select a record with items first', 'error'); return; }
+        
+        // Auto-remove empty rows where no product is selected before saving
+        $('#itemRows tr').each(function() {
+            var pid = $(this).find('.product-select').val();
+            if (!pid) {
+                $(this).remove();
+            }
+        });
+        updateCount();
+
+        if($('#itemRows tr').length === 0) { 
+            addNewRow();
+            showToast('Please add at least one item with product selected', 'error'); 
+            return; 
+        }
+
         var $form = $('#stockReleaseForm');
         if(!$form[0].checkValidity()) { $form[0].reportValidity(); return; }
 
@@ -561,6 +675,7 @@ $(document).ready(function() {
         }
     });
 
+    // Keyboard Shortcuts
     document.addEventListener('keydown', function(e) {
         if (isReleasePostedView()) {
             if (e.key === 'Escape') { e.preventDefault(); window.location.href = $('#exitBtn').attr('href'); }
@@ -571,6 +686,10 @@ $(document).ready(function() {
                 if (href && href !== 'javascript:void(0)') window.open(href, '_blank');
             }
             return;
+        }
+        if (e.ctrlKey && (e.key === 'i' || e.key === 'I')) {
+            e.preventDefault();
+            $('#addRowBtn').click();
         }
         if (e.ctrlKey && (e.key === 's' || e.key === 'S')) {
             e.preventDefault(); e.stopImmediatePropagation();

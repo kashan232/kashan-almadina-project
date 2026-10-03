@@ -39,6 +39,7 @@ use App\Http\Controllers\ClaimItemReceiptController;
 use App\Http\Controllers\ClaimCreditNoteController;
 use App\Http\Controllers\RollbackController;
 use App\Http\Controllers\GeneralLedgerController;
+use App\Http\Controllers\DatabaseBackupController;
 
 /*
 |--------------------------------------------------------------------------
@@ -53,6 +54,12 @@ use App\Http\Controllers\GeneralLedgerController;
 // fixedsssssss
 // Customer Claim Routes
 Route::middleware(['auth'])->group(function () {
+    // Database Backup Routes
+    Route::get('/database-backups', [DatabaseBackupController::class, 'index'])->name('database-backups.index');
+    Route::post('/database-backups/create', [DatabaseBackupController::class, 'createBackup'])->name('database-backups.create');
+    Route::get('/database-backups/download/{id}', [DatabaseBackupController::class, 'download'])->name('database-backups.download');
+    Route::delete('/database-backups/destroy/{id}', [DatabaseBackupController::class, 'destroy'])->name('database-backups.destroy');
+
     // Rollback Routes
     Route::get('/rollback', [RollbackController::class, 'index'])->name('rollback.index');
     Route::post('/rollback/process', [RollbackController::class, 'process'])->name('rollback.process');
