@@ -171,7 +171,6 @@
         @media print {
             body { padding: 0mm; margin: 0; }
             .no-print { display: none !important; }
-            .col-hide-print { display: none !important; }
             .print-sheet { width: 100%; margin: 0; justify-content: flex-end !important; }
             .sheet-blank { display: none !important; width: 0 !important; flex: 0 0 0% !important; }
             .report-sheet { width: 50% !important; flex: 0 0 50% !important; padding: 0 0.2mm; margin-left: auto !important; }
@@ -219,10 +218,10 @@
             ['key' => 'clm_rep', 'head' => 'CLM-REP', 'th' => 'col-out'],
             ['key' => 'clm_in', 'head' => 'CLM-IN', 'th' => ''],
             ['key' => 'clm_out', 'head' => 'CLM-OUT', 'th' => 'col-out'],
-            ['key' => 'cla_in', 'head' => 'CLM-IN', 'th' => '', 'hide_print' => true],
-            ['key' => 'cla_out', 'head' => 'CLM-OUT', 'th' => 'col-out', 'hide_print' => true],
-            ['key' => 'cli_in', 'head' => 'CLM-IN', 'th' => '', 'hide_print' => true],
-            ['key' => 'cli_out', 'head' => 'CLM-OUT', 'th' => 'col-out', 'hide_print' => true],
+            ['key' => 'cla_in', 'head' => 'CLM-IN', 'th' => ''],
+            ['key' => 'cla_out', 'head' => 'CLM-OUT', 'th' => 'col-out'],
+            ['key' => 'cli_in', 'head' => 'CLM-IN', 'th' => ''],
+            ['key' => 'cli_out', 'head' => 'CLM-OUT', 'th' => 'col-out'],
             ['key' => 'trf_in', 'head' => 'TOG In', 'th' => ''],
             ['key' => 'trf_out', 'head' => 'TOG Out', 'th' => 'col-out'],
             ['key' => 'waste', 'head' => 'WOG', 'th' => 'col-out'],
@@ -251,8 +250,8 @@
                         <th rowspan="2" class="col-out">SJ</th>
                         <th rowspan="2">SRJ</th>
                         <th colspan="3">Customer Claim</th>
-                        <th colspan="2" class="col-hide-print">Claim Acceptance</th>
-                        <th colspan="2" class="col-hide-print">Claim Item Receipt</th>
+                        <th colspan="2">Claim Acceptance</th>
+                        <th colspan="2">Claim Item Receipt</th>
                         <th rowspan="2">TOG In</th>
                         <th rowspan="2" class="col-out">TOG Out</th>
                         <th rowspan="2" class="col-out">WOG</th>
@@ -263,10 +262,10 @@
                         <th class="col-out">CLM-REP</th>
                         <th>CLM-IN</th>
                         <th class="col-out">CLM-OUT</th>
-                        <th class="col-hide-print">CLM-IN</th>
-                        <th class="col-out col-hide-print">CLM-OUT</th>
-                        <th class="col-hide-print">CLM-IN</th>
-                        <th class="col-out col-hide-print">CLM-OUT</th>
+                        <th>CLM-IN</th>
+                        <th class="col-out">CLM-OUT</th>
+                        <th>CLM-IN</th>
+                        <th class="col-out">CLM-OUT</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -280,7 +279,7 @@
                             <tr>
                                 <td class="item-name" title="{{ $row['product_name'] }}">{{ $row['product_name'] }}</td>
                                 @foreach($cols as $col)
-                                <td class="{{ $cellClass($col['key'], $row[$col['key']] ?? 0) }} {{ in_array($col['key'], ['opening','closing']) ? 'opening-col' : '' }} {{ !empty($col['hide_print']) ? 'col-hide-print' : '' }}">
+                                <td class="{{ $cellClass($col['key'], $row[$col['key']] ?? 0) }} {{ in_array($col['key'], ['opening','closing']) ? 'opening-col' : '' }}">
                                     {{ $fmt($row[$col['key']] ?? 0) }}
                                 </td>
                                 @endforeach
@@ -289,7 +288,7 @@
                         <tr class="subtotal-row">
                             <td style="text-align:right;">{{ $rows->first()['warehouse_label'] ?? ('WH #' . $warehouseId) }} Total:</td>
                             @foreach($cols as $col)
-                            <td class="{{ $cellClass($col['key'], $whTotal[$col['key']]) }} {{ !empty($col['hide_print']) ? 'col-hide-print' : '' }}">{{ $fmt($whTotal[$col['key']]) }}</td>
+                            <td class="{{ $cellClass($col['key'], $whTotal[$col['key']]) }}">{{ $fmt($whTotal[$col['key']]) }}</td>
                             @endforeach
                         </tr>
                     @empty
@@ -299,7 +298,7 @@
                     <tr class="grand-total-row">
                         <td style="text-align:right;">Grand Total:</td>
                         @foreach($cols as $col)
-                        <td class="{{ $cellClass($col['key'], $grand[$col['key']] ?? 0) }} {{ !empty($col['hide_print']) ? 'col-hide-print' : '' }}">{{ $fmt($grand[$col['key']] ?? 0) }}</td>
+                        <td class="{{ $cellClass($col['key'], $grand[$col['key']] ?? 0) }}">{{ $fmt($grand[$col['key']] ?? 0) }}</td>
                         @endforeach
                     </tr>
                     @endif
