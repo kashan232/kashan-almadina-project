@@ -894,12 +894,10 @@ class StockHoldController extends Controller
             'partyVendor',
         ])->findOrFail($id);
 
-        if ($voucher->status === 'Posted') {
-            return redirect()->route('stock-relase-list')->with('error', 'Posted releases cannot be edited.');
-        }
-
         $warehouses = Warehouse::orderBy('warehouse_name')->get();
-        return view('admin_panel.stock_hold.edit_release', compact('voucher', 'warehouses'));
+        $products = Product::select('id', 'name')->orderBy('name')->get();
+
+        return view('admin_panel.stock_hold.create_release', compact('voucher', 'warehouses', 'products'));
     }
 
     public function showRelease($id)
@@ -914,9 +912,10 @@ class StockHoldController extends Controller
         ])->findOrFail($id);
 
         $warehouses = Warehouse::orderBy('warehouse_name')->get();
+        $products = Product::select('id', 'name')->orderBy('name')->get();
         $viewMode = true;
 
-        return view('admin_panel.stock_hold.edit_release', compact('voucher', 'warehouses', 'viewMode'));
+        return view('admin_panel.stock_hold.create_release', compact('voucher', 'warehouses', 'products', 'viewMode'));
     }
 
     public function updateRelease(Request $request, $id)

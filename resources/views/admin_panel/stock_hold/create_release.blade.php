@@ -68,7 +68,24 @@
     .posted-watermark.show { display: block; }
 </style>
 
-@section('content')
+@php
+    $isViewMode = isset($viewMode) && $viewMode;
+    $isEditMode = isset($voucher) && !$isViewMode;
+    $isPosted = isset($voucher) && $voucher->status === 'Posted';
+    $formClass = 'position-relative';
+    if ($isViewMode || $isPosted || $isEditMode) {
+        $formClass .= ' form-locked';
+    }
+    if ($isViewMode) {
+        $formClass .= ' view-mode';
+    }
+    $partyLabel = '';
+    if (isset($voucher)) {
+        $partyLabel = $voucher->party_type === 'vendor'
+            ? ($voucher->partyVendor->name ?? 'N/A')
+            : ($voucher->partyCustomer->customer_name ?? 'N/A');
+    }
+@endphp
 <div class="main-content">
     <div class="main-content-inner">
         <div class="container-fluid stock-hold-page">
@@ -79,12 +96,16 @@
                 <div class="d-flex align-items-center gap-2 justify-content-center flex-grow-1">
                     <h6 class="page-title mb-0 fw-bold text-success">
                         <i class="fas fa-box-open me-2"></i>Stock Release Management
+                        @if($isViewMode)
+                            <span class="badge bg-info text-white px-2 py-1 rounded ms-1" style="font-size:10px;"><i class="fa fa-eye me-1"></i> View Only</span>
+                        @endif
                     </h6>
-                    <span id="statusBadge" class="badge bg-warning text-dark px-3 py-1 rounded-pill shadow-sm" style="font-size:11px;">
-                        <i class="fa fa-pencil me-1"></i> New Release
+                    <span id="statusBadge" class="badge {{ $isPosted ? 'bg-success text-white' : (isset($voucher) ? 'bg-info text-white' : 'bg-warning text-dark') }} px-3 py-1 rounded-pill shadow-sm" style="font-size:11px;">
+                        <i class="fa {{ $isPosted ? 'fa-check' : 'fa-pencil' }} me-1"></i>
+                        {{ isset($voucher) ? $voucher->status : 'New Release' }}
                     </span>
-                    <span id="idBadge" class="badge bg-primary px-3 py-1 rounded-pill shadow-sm" style="display:none;font-size:11px;">
-                        <i class="fa fa-tag me-1"></i> ID: NEW
+                    <span id="idBadge" class="badge bg-primary px-3 py-1 rounded-pill shadow-sm" style="{{ isset($voucher) ? '' : 'display:none;' }} font-size:11px;">
+                        <i class="fa fa-tag me-1"></i> ID: {{ isset($voucher) ? $voucher->id : 'NEW' }}
                     </span>
                 </div>
                 <div class="d-flex align-items-center justify-content-end" style="min-width:115px;">
@@ -94,11 +115,12 @@
                 </div>
             </div>
 
-            <form action="{{ route('stock-holds.release.bulk_store') }}" method="POST" id="stockReleaseForm" class="position-relative">
+            <form action="{{ $isViewMode ? '#' : (isset($voucher) ? route('stock-holds.release.update', $voucher->id) : route('stock-holds.release.bulk_store')) }}" method="POST" id="stockReleaseForm" class="{{ $formClass }}">
                 @csrf
                 <input type="hidden" name="action" id="formAction" value="save">
-                <input type="hidden" name="hold_voucher_id" id="hold_voucher_id">
-                <div class="posted-watermark" id="postedWatermark">Posted</div>
+                <input type="hidden" name="id" id="voucher_id" value="{{ $voucher->id ?? '' }}">
+                <input type="hidden" name="hold_voucher_id" id="hold_voucher_id" value="{{ $voucher->hold_voucher_id ?? '' }}">
+                <div class="posted-watermark {{ $isPosted ? 'show' : '' }}" id="postedWatermark">Posted</div>
 
                 {{-- Header Details Card --}}
                 <div class="card shadow-sm mb-2">
@@ -106,24 +128,26 @@
                         <div class="row g-2 mb-2 align-items-end">
                             <div class="col-md-2">
                                 <label class="form-label">Release Date</label>
-                                <input type="date" name="entry_date" class="form-control input-sm" value="{{ date('Y-m-d') }}" required>
+                                <input type="date" name="entry_date" class="form-control input-sm" value="{{ isset($voucher) ? $voucher->date : date('Y-m-d') }}" required>
                             </div>
                             <div class="col-md-2">
                                 <label class="form-label">Release No.</label>
-                                <input type="text" id="release_no" class="form-control input-sm fw-bold text-success bg-light" value="Auto-Generated" readonly>
+                                <input type="text" id="release_no" class="form-control input-sm fw-bold text-success bg-light" value="{{ isset($voucher) ? $voucher->display_no : 'Auto-Generated' }}" readonly>
                             </div>
                             <div class="col-md-3">
                                 <label class="form-label">Deliver From <span class="text-danger">*</span></label>
                                 <select name="warehouse_id" id="warehouse_id" class="form-select input-sm" required>
-                                    <option value="0">🏠 Shop Stock</option>
+                                    @if(auth()->user()->canAccessShop())
+                                        <option value="0" {{ (isset($voucher) && (string)$voucher->warehouse_id === '0') ? 'selected' : '' }}>🏠 Shop Stock</option>
+                                    @endif
                                     @foreach($warehouses as $wh)
-                                        <option value="{{ $wh->id }}">📦 {{ $wh->warehouse_name }}</option>
+                                        <option value="{{ $wh->id }}" {{ (isset($voucher) && $voucher->warehouse_id == $wh->id) ? 'selected' : '' }}>📦 {{ $wh->warehouse_name }}</option>
                                     @endforeach
                                 </select>
                             </div>
                             <div class="col-md-5">
                                 <label class="form-label">Remarks</label>
-                                <input type="text" name="remarks" class="form-control input-sm" placeholder="Optional release notes...">
+                                <input type="text" name="remarks" class="form-control input-sm" value="{{ $voucher->remarks ?? '' }}" placeholder="Optional release notes...">
                             </div>
                         </div>
 
@@ -131,20 +155,23 @@
                             <div class="col-md-2">
                                 <label class="form-label text-primary">Party Type <span class="text-danger">*</span></label>
                                 <select name="vendor_type" id="vendor_type" class="form-select input-sm" required>
-                                    <option value="">Select Type...</option>
-                                    <option value="vendor">Vendor</option>
-                                    <option value="customer">Customer</option>
-                                    <option value="walkin">Walking Customer</option>
+                                    <option value="" disabled {{ isset($voucher) ? '' : 'selected' }}>Select Type...</option>
+                                    <option value="vendor" {{ (isset($voucher) && $voucher->party_type == 'vendor') ? 'selected' : '' }}>Vendor</option>
+                                    <option value="customer" {{ (isset($voucher) && $voucher->party_type == 'customer') ? 'selected' : '' }}>Customer</option>
+                                    <option value="walkin" {{ (isset($voucher) && $voucher->party_type == 'walkin') ? 'selected' : '' }}>Walking Customer</option>
                                 </select>
                             </div>
                             <div class="col-md-2">
                                 <label class="form-label text-primary">Code / ID</label>
-                                <input type="text" id="party_code_input" class="form-control input-sm text-center fw-bold text-danger" placeholder="ID">
+                                <input type="text" id="party_code_input" class="form-control input-sm text-center fw-bold text-danger" value="{{ $voucher->party_id ?? '' }}" placeholder="ID">
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label text-primary">Party Name <span class="text-danger">*</span></label>
                                 <select name="vendor_id" id="vendor_id" class="form-select select2" required>
                                     <option value="">Select Party...</option>
+                                    @if(isset($voucher) && $voucher->party_id)
+                                        <option value="{{ $voucher->party_id }}" selected>{{ $partyLabel }}</option>
+                                    @endif
                                 </select>
                             </div>
                             <div class="col-md-4">
@@ -201,7 +228,42 @@
                                         <th class="text-center">Act</th>
                                     </tr>
                                 </thead>
-                                <tbody id="itemRows"></tbody>
+                                <tbody id="itemRows">
+                                    @if(isset($voucher) && count($voucher->items) > 0)
+                                        @foreach($voucher->items as $idx => $item)
+                                            <tr data-row-idx="{{ $idx }}">
+                                                <td class="text-center fw-bold text-secondary row-num">{{ $idx + 1 }}</td>
+                                                <td>
+                                                    <input type="text" class="form-control form-control-sm text-center item-id-input" value="{{ $item->product_id }}" placeholder="ID" {{ $isViewMode ? 'readonly' : '' }}>
+                                                    <input type="hidden" name="product_id[]" class="product-id-hidden" value="{{ $item->product_id }}">
+                                                    <input type="hidden" name="hold_id[]" class="hold-id-hidden" value="{{ $item->hold_id }}">
+                                                </td>
+                                                <td>
+                                                    <select class="form-select form-select-sm product-select" {{ $isViewMode ? 'disabled' : '' }}>
+                                                        <option value="">Select Item...</option>
+                                                        @foreach($products as $p)
+                                                            <option value="{{ $p->id }}" {{ $item->product_id == $p->id ? 'selected' : '' }}>{{ $p->name }}</option>
+                                                        @endforeach
+                                                    </select>
+                                                </td>
+                                                <td>
+                                                    <input type="number" name="sale_qty[]" class="form-control form-control-sm text-center sale-qty-input bg-light" value="{{ (float) $item->sale_qty }}" readonly>
+                                                </td>
+                                                <td>
+                                                    <input type="number" class="form-control form-control-sm text-center hold-qty-input bg-light" value="{{ (float) ($item->hold->hold_qty ?? 0) }}" readonly>
+                                                </td>
+                                                <td>
+                                                    <input type="number" name="release_qty[]" class="form-control form-control-sm text-center fw-bold text-success release-qty-input" value="{{ (float) $item->release_qty }}" step="any" min="0" {{ $isViewMode ? 'readonly' : '' }}>
+                                                </td>
+                                                <td class="text-center">
+                                                    @if(!$isViewMode)
+                                                        <button type="button" class="btn btn-sm btn-outline-danger py-0 px-1 remove-row" style="font-size:11px;"><i class="fa fa-times"></i></button>
+                                                    @endif
+                                                </td>
+                                            </tr>
+                                        @endforeach
+                                    @endif
+                                </tbody>
                                 <tfoot class="table-light border-top">
                                     <tr>
                                         <th colspan="3" class="text-end fw-bold">Grand Total:</th>
@@ -529,11 +591,22 @@ $(document).ready(function() {
         $('#total_release_qty').text(totalReleaseQty % 1 === 0 ? totalReleaseQty : totalReleaseQty.toFixed(2));
     }
 
-    var _savedVoucherId = null;
+    var _savedVoucherId = @json(isset($voucher) ? (string)$voucher->id : null);
     var _saveInFlight = false;
     var _postInFlight = false;
     var saveBtnHtml = '<u>S</u>ave <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+S</kbd>';
     var postBtnHtml = '<u>P</u>ost <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+&crarr;</kbd>';
+    var isViewMode = @json($isViewMode);
+
+    if (_savedVoucherId) {
+        $('#realPrintBtn').attr('href', '/stock-release/print/' + _savedVoucherId).attr('target', '_blank');
+        if (@json($isPosted)) {
+            setReleaseFormPostedState(_savedVoucherId, '/stock-release/print/' + _savedVoucherId);
+        } else if (!isViewMode) {
+            $('#editInvoiceBtn, #postBtn').prop('disabled', false);
+            $('#saveDraftBtn').prop('disabled', true);
+        }
+    }
 
     function setReleaseFormPostedState(voucherId, printUrl) {
         _savedVoucherId = voucherId;
