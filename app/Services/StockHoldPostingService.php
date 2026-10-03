@@ -519,6 +519,7 @@ class StockHoldPostingService
         $overflowQuery = StockHold::withoutGlobalScopes()
             ->where('product_id', $item->product_id)
             ->whereNull('stock_hold_voucher_id')
+            ->whereNull('meta->claim_id')
             ->where(function ($q) {
                 $q->where('status', 0)->orWhereNull('status');
             });

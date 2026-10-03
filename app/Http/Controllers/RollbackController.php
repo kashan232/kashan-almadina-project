@@ -566,20 +566,10 @@ class RollbackController extends Controller
         $stock = app(StockService::class);
         $qty = (float) ($release->release_qty ?? 1);
 
-        // Reverse physical deduction from deliver-from warehouse
+        // Restore physical stock from deliver-from warehouse
         $stock->add((int) $release->product_id, $release->warehouse_id, $qty);
 
-        // Restore reserve on the linked claim hold
-        $hold = StockHold::where('meta->claim_id', (string) $release->claim_id)->first();
-        if (!$hold) {
-            $hold = StockHold::where('remarks', 'Reserved via Customer Claim Hold: ' . ($release->claim?->claim_no ?? ''))->first();
-        }
-        if ($hold) {
-            $hold->hold_qty = (float) $hold->hold_qty + $qty;
-            $hold->status = 0;
-            $hold->save();
-        }
-
+        // Claim hold quantity remains constant (fixed); remaining balance is dynamically tracked.
         $release->update(['status' => 'Draft']);
         return back()->with('success', "Customer Claim Release #$invoiceNo set to Draft.");
     }
