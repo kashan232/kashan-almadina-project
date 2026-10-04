@@ -753,6 +753,14 @@ class GeneralLedgerController extends Controller
             $amounts = json_decode($pv->amount, true) ?? [];
             $discounts = json_decode($pv->discount_value, true);
             $discAccIds = json_decode($pv->discount_account_id, true) ?? [];
+            $kgs = json_decode($pv->kg, true) ?? [];
+
+            $totalKg = 0.0;
+            if (is_array($kgs)) {
+                foreach ($kgs as $k) { $totalKg += (float)$k; }
+            } elseif (is_numeric($pv->kg ?? null)) {
+                $totalKg = (float)$pv->kg;
+            }
 
             $totalDisc = 0.0;
             if (is_numeric($pv->discount_value)) {
@@ -774,7 +782,7 @@ class GeneralLedgerController extends Controller
                 'ref' => 'PV',
                 'inv' => $pv->pvid,
                 'desc' => $pv->remarks ?? 'Payment Voucher',
-                'qty' => 0, 'debit' => $pvPaidAmt, 'credit' => 0
+                'qty' => $totalKg, 'debit' => $pvPaidAmt, 'credit' => 0
             ];
 
             if ($totalDisc > 0) {
@@ -1038,10 +1046,12 @@ class GeneralLedgerController extends Controller
             $narrIds = json_decode($rv->narration_id, true) ?? [];
             $discounts = json_decode($rv->discount_value, true) ?? [];
             $discAccIds = json_decode($rv->discount_account_id, true) ?? [];
+            $kgs = json_decode($rv->kg, true) ?? [];
 
             foreach ($accIds as $idx => $aid) {
                 $rowAmount = $this->cleanNum($amounts[$idx] ?? 0);
                 $rowDiscount = $this->cleanNum($discounts[$idx] ?? 0);
+                $rowKg = (float)($kgs[$idx] ?? 0);
                 if ($rowAmount <= 0 && $rowDiscount <= 0) continue;
 
                 $accName = DB::table('accounts')->where('id', $aid)->value('title');
@@ -1076,7 +1086,7 @@ class GeneralLedgerController extends Controller
                         'ref' => $ref,
                         'inv' => $inv,
                         'desc' => $desc,
-                        'qty' => 0, 'debit' => 0, 'credit' => $rowAmount,
+                        'qty' => $rowKg, 'debit' => 0, 'credit' => $rowAmount,
                         'priority' => str_contains($rv->remarks ?? '', 'Auto-generated from Sale:') ? 11 : 60,
                         'sort_inv' => str_contains($rv->remarks ?? '', 'Auto-generated from Sale:') ? preg_replace('/[^0-9]/', '', $rv->remarks) : preg_replace('/[^0-9]/', '', $rv->rvid ?? '')
                     ];
@@ -1450,6 +1460,14 @@ class GeneralLedgerController extends Controller
                 $narrIds = json_decode($rv->narration_id, true) ?? [];
                 $discAccIds = json_decode($rv->discount_account_id, true) ?? [];
                 $discounts = json_decode($rv->discount_value, true) ?? [];
+                $kgs = json_decode($rv->kg, true) ?? [];
+
+                $totalKg = 0.0;
+                if (is_array($kgs)) {
+                    foreach ($kgs as $k) { $totalKg += (float)$k; }
+                } elseif (is_numeric($rv->kg ?? null)) {
+                    $totalKg = (float)$rv->kg;
+                }
                 
                 // Get party name
                 $partyName = '';
@@ -1477,7 +1495,7 @@ class GeneralLedgerController extends Controller
                             'ref' => $ref,
                             'inv' => $inv,
                             'desc' => $rv->remarks ?? 'Receipt Voucher (Source Party)',
-                            'price' => 0, 'qty' => 0, 'debit' => 0, 'credit' => $totAmt,
+                            'price' => 0, 'qty' => $totalKg, 'debit' => 0, 'credit' => $totAmt,
                             'priority' => 60
                         ];
                     }
@@ -1486,6 +1504,7 @@ class GeneralLedgerController extends Controller
                 foreach ($accIds as $idx => $aid) {
                     if ($aid == $id) {
                         $rowAmount = $this->cleanNum($amounts[$idx] ?? 0);
+                        $rowKg = (float)($kgs[$idx] ?? 0);
                         $rowNarr = '';
                         if (isset($narrIds[$idx])) {
                             if (is_numeric($narrIds[$idx])) {
@@ -1513,7 +1532,7 @@ class GeneralLedgerController extends Controller
                             'ref' => $ref,
                             'inv' => $inv,
                             'desc' => $desc,
-                            'price' => 0, 'qty' => 0, 'debit' => $rowAmount, 'credit' => 0,
+                            'price' => 0, 'qty' => $rowKg, 'debit' => $rowAmount, 'credit' => 0,
                             'priority' => 60
                         ];
                     }
@@ -1566,6 +1585,14 @@ class GeneralLedgerController extends Controller
                 $narrIds = json_decode($pv->narration_id, true) ?? [];
                 $discAccIds = json_decode($pv->discount_account_id, true) ?? [];
                 $discounts = json_decode($pv->discount_value, true) ?? [];
+                $pvKgs = json_decode($pv->kg, true) ?? [];
+
+                $pvTotalKg = 0.0;
+                if (is_array($pvKgs)) {
+                    foreach ($pvKgs as $k) { $pvTotalKg += (float)$k; }
+                } elseif (is_numeric($pv->kg ?? null)) {
+                    $pvTotalKg = (float)$pv->kg;
+                }
                 
                 // Get party name
                 $partyName = '';
@@ -1585,7 +1612,7 @@ class GeneralLedgerController extends Controller
                             'ref' => 'PV',
                             'inv' => $pv->pvid,
                             'desc' => $pv->remarks ?? 'Payment Voucher (Destination Party)',
-                            'price' => 0, 'qty' => 0, 'debit' => $totAmt, 'credit' => 0,
+                            'price' => 0, 'qty' => $pvTotalKg, 'debit' => $totAmt, 'credit' => 0,
                             'priority' => 60
                         ];
                     }
@@ -1594,6 +1621,7 @@ class GeneralLedgerController extends Controller
                 foreach ($accIds as $idx => $aid) {
                     if ($aid == $id) {
                         $rowAmount = (float)($amounts[$idx] ?? 0);
+                        $rowKg = (float)($pvKgs[$idx] ?? 0);
                         $rowNarr = '';
                         if (isset($narrIds[$idx])) {
                             if (is_numeric($narrIds[$idx])) {
@@ -1617,7 +1645,7 @@ class GeneralLedgerController extends Controller
                             'ref' => 'PV',
                             'inv' => $pv->pvid,
                             'desc' => $desc,
-                            'price' => 0, 'qty' => 0, 'debit' => 0, 'credit' => $rowAmount,
+                            'price' => 0, 'qty' => $rowKg, 'debit' => 0, 'credit' => $rowAmount,
                             'priority' => 60
                         ];
                     }
@@ -2143,9 +2171,12 @@ class GeneralLedgerController extends Controller
             $discounts = json_decode($pv->discount_value, true) ?? [];
             $discAccIds = json_decode($pv->discount_account_id, true) ?? [];
 
+            $kgs = json_decode($pv->kg, true) ?? [];
+
             foreach ($accIds as $idx => $aid) {
                 $rowAmount = (float)($amounts[$idx] ?? 0);
                 $rowDiscount = (float)($discounts[$idx] ?? 0);
+                $rowKg = (float)($kgs[$idx] ?? 0);
                 if ($rowAmount <= 0 && $rowDiscount <= 0) continue;
 
                 $accName = DB::table('accounts')->where('id', $aid)->value('title');
@@ -2167,7 +2198,7 @@ class GeneralLedgerController extends Controller
                         'ref' => 'PV',
                         'inv' => $pv->pvid,
                         'desc' => $desc,
-                        'price' => 0, 'qty' => 0, 'debit' => $rowAmount, 'credit' => 0,
+                        'price' => 0, 'qty' => $rowKg, 'debit' => $rowAmount, 'credit' => 0,
                         'priority' => 50
                     ];
                 }
@@ -2701,9 +2732,12 @@ class GeneralLedgerController extends Controller
             $discounts = json_decode($rv->discount_value, true) ?? [];
             $discAccIds = json_decode($rv->discount_account_id, true) ?? [];
 
+            $kgs = json_decode($rv->kg, true) ?? [];
+
             foreach ($accIds as $idx => $aid) {
                 $rowAmount = (float)($amounts[$idx] ?? 0);
                 $rowDiscount = (float)($discounts[$idx] ?? 0);
+                $rowKg = (float)($kgs[$idx] ?? 0);
                 if ($rowAmount <= 0 && $rowDiscount <= 0) continue;
 
                 $accName = DB::table('accounts')->where('id', $aid)->value('title');
@@ -2739,7 +2773,7 @@ class GeneralLedgerController extends Controller
                         'ref' => $ref,
                         'inv' => $inv,
                         'desc' => $desc,
-                        'price' => 0, 'qty' => 0, 'debit' => 0, 'credit' => $rowAmount,
+                        'price' => 0, 'qty' => $rowKg, 'debit' => 0, 'credit' => $rowAmount,
                         'priority' => str_contains($rv->remarks ?? '', 'Auto-generated from Sale:') ? 11 : 60,
                         'sort_inv' => str_contains($rv->remarks ?? '', 'Auto-generated from Sale:') ? preg_replace('/[^0-9]/', '', $rv->remarks) : preg_replace('/[^0-9]/', '', $rv->rvid ?? '')
                     ];
