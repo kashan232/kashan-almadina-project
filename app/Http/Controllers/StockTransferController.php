@@ -239,6 +239,12 @@ class StockTransferController extends Controller
     // List pending transfers for approval
     public function pending(Request $request)
     {
+        $user = auth()->user();
+        $isAdmin = $user && ($user->email === 'admin@admin.com' || ($user->roles && $user->roles->contains('name', 'Admin')) || $user->hasRole('Admin'));
+        if (!$isAdmin) {
+            abort(403, 'Unauthorized action. Only Admin can access Pending Transfer Requests.');
+        }
+
         $query = StockTransfer::with(['items.product', 'fromWarehouse', 'toWarehouse', 'creator'])->where('status', 'Pending Approval');
 
         $transfers = $query->orderBy('created_at', 'desc')->get();

@@ -584,12 +584,27 @@
                       {{-- General Section --}}
                       @canany(['Stock Transfer', 'Stock Wastage', 'Stock Transfer Report', 'Stock Wastage Report'])
                       <li class="nav-item">
-                          <a href="#" class="nav-link"><span class="menu-title">General</span><i class="menu-arrow"></i></a>
+                          <a href="#" class="nav-link">
+                              <span class="menu-title">General</span>
+                              @if(!empty($pendingStockTransferCount) && $pendingStockTransferCount > 0)
+                                  <span class="badge bg-danger rounded-pill ms-1 animate__animated animate__pulse animate__infinite" style="font-size: 10px; padding: 2px 6px;">{{ $pendingStockTransferCount }}</span>
+                              @endif
+                              <i class="menu-arrow"></i>
+                          </a>
                           <div class="submenu">
                               <ul class="submenu-item">
                                   @can('Stock Transfer')
                                   <li><a href="{{url('stock_transfers')}}"><i class="fas fa-exchange-alt mr-2"></i> Stock Transfer</a></li>
-                                  <li><a href="{{route('stock_transfers.pending')}}"><i class="fas fa-clock mr-2"></i> Stock Transfer Request</a></li>
+                                  @if(!empty($isAdminUser))
+                                  <li>
+                                      <a href="{{route('stock_transfers.pending')}}" class="d-flex align-items-center justify-content-between">
+                                          <span><i class="fas fa-clock mr-2"></i> Stock Transfer Request</span>
+                                          @if(!empty($pendingStockTransferCount) && $pendingStockTransferCount > 0)
+                                              <span class="badge bg-danger rounded-pill px-2 py-1" style="font-size: 10px;">{{ $pendingStockTransferCount }}</span>
+                                          @endif
+                                      </a>
+                                  </li>
+                                  @endif
                                   @endcan
                                   @can('Stock Transfer Report')
                                   <li><a href="{{ route('reports.stock-transfer.index') }}"><i class="fas fa-file-export mr-2"></i> Stock Transfer Report</a></li>
