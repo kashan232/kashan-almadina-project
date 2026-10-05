@@ -215,16 +215,17 @@
                         <label class="column-picker-item"><input type="checkbox" data-column="5" checked> Date</label>
                         <label class="column-picker-item"><input type="checkbox" data-column="6" checked> Party Type</label>
                         <label class="column-picker-item"><input type="checkbox" data-column="7" checked> Customer</label>
-                        <label class="column-picker-item"><input type="checkbox" data-column="8" checked> Warehouse</label>
-                        <label class="column-picker-item"><input type="checkbox" data-column="9" checked> Items</label>
-                        <label class="column-picker-item"><input type="checkbox" data-column="10" checked> Item Qty</label>
-                        <label class="column-picker-item"><input type="checkbox" data-column="11" checked> T. Qty</label>
-                        <label class="column-picker-item"><input type="checkbox" data-column="12" checked> Inv Total</label>
-                        <label class="column-picker-item"><input type="checkbox" data-column="13" checked> Disc</label>
-                        <label class="column-picker-item"><input type="checkbox" data-column="14" checked> A/C Allocation</label>
-                        <label class="column-picker-item"><input type="checkbox" data-column="15" checked> Net Payable</label>
-                        <label class="column-picker-item"><input type="checkbox" data-column="16" checked> Created</label>
-                        <label class="column-picker-item"><input type="checkbox" data-column="17" checked> Status</label>
+                        <label class="column-picker-item"><input type="checkbox" data-column="8" checked> Group</label>
+                        <label class="column-picker-item"><input type="checkbox" data-column="9" checked> Warehouse</label>
+                        <label class="column-picker-item"><input type="checkbox" data-column="10" checked> Items</label>
+                        <label class="column-picker-item"><input type="checkbox" data-column="11" checked> Item Qty</label>
+                        <label class="column-picker-item"><input type="checkbox" data-column="12" checked> T. Qty</label>
+                        <label class="column-picker-item"><input type="checkbox" data-column="13" checked> Inv Total</label>
+                        <label class="column-picker-item"><input type="checkbox" data-column="14" checked> Disc</label>
+                        <label class="column-picker-item"><input type="checkbox" data-column="15" checked> A/C Allocation</label>
+                        <label class="column-picker-item"><input type="checkbox" data-column="16" checked> Net Payable</label>
+                        <label class="column-picker-item"><input type="checkbox" data-column="17" checked> Created</label>
+                        <label class="column-picker-item"><input type="checkbox" data-column="18" checked> Status</label>
                     </div>
                 </div>
             </div>
@@ -242,6 +243,7 @@
                                     <th>Date</th>
                                     <th>Party Type</th>
                                     <th>Customer</th>
+                                    <th>Group</th>
                                     <th>Warehouse</th>
                                     <th>Items</th>
                                     <th class="text-center">Item Qty</th>
@@ -283,6 +285,15 @@
                                     </td>
                                     <td>
                                         <span class="fw-bold text-dark small">{{ $partyName }}</span>
+                                    </td>
+                                    <td>
+                                        @if(!empty($sale->group_names))
+                                            @foreach($sale->group_names as $gName)
+                                                <span class="badge bg-secondary-subtle text-dark border px-1 py-0" style="font-size: 10px;">{{ $gName }}</span>
+                                            @endforeach
+                                        @else
+                                            <span class="text-muted small">-</span>
+                                        @endif
                                     </td>
                                     <td>
                                         <div class="text-muted" style="font-size: 10px;"><i class="fa fa-building-o me-1"></i>{{ Str::limit($whNames ?: '-', 20) }}</div>
@@ -367,7 +378,7 @@
     $(document).ready(function() {
         $('.select2').select2({ width: '100%' });
 
-        const storageKey = 'sale_table_cols_v4';
+        const storageKey = 'sale_table_cols_v5';
         
         // Initialize DataTable
         var dt = $('#saleListingTable').DataTable({

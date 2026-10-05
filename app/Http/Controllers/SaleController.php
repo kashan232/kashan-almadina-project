@@ -48,20 +48,61 @@ class SaleController extends Controller
         }
         if ($request->filled('user_group_id')) {
             $groupId = (string) $request->user_group_id;
-            $salesQuery->whereJsonContains('user_group_ids', $groupId);
-            $bookingsQuery->whereJsonContains('user_group_ids', $groupId);
+            $groupIdInt = (int) $request->user_group_id;
+            
+            $groupFilter = function($query) use ($groupId, $groupIdInt) {
+                $query->where(function($q) use ($groupId, $groupIdInt) {
+                    $q->whereJsonContains('user_group_ids', $groupId)
+                      ->orWhereJsonContains('user_group_ids', $groupIdInt)
+                      ->orWhereHas('customer', function($cq) use ($groupId, $groupIdInt) {
+                          $cq->whereJsonContains('user_group_ids', $groupId)
+                            ->orWhereJsonContains('user_group_ids', $groupIdInt);
+                      })
+                      ->orWhereHas('vendor', function($vq) use ($groupId, $groupIdInt) {
+                          $vq->whereJsonContains('user_group_ids', $groupId)
+                            ->orWhereJsonContains('user_group_ids', $groupIdInt);
+                      });
+                });
+            };
+
+            $salesQuery->where($groupFilter);
+            $bookingsQuery->where($groupFilter);
         }
 
-        $salesRows = $salesQuery->get()->map(function($s) {
+        $userGroupsMap = \App\Models\UserGroup::pluck('group_name', 'id')->toArray();
+
+        $mapRowGroups = function($s) use ($userGroupsMap) {
+            $gIds = [];
+            if (!empty($s->user_group_ids)) {
+                $raw = is_string($s->user_group_ids) ? json_decode($s->user_group_ids, true) : $s->user_group_ids;
+                if (is_array($raw)) $gIds = array_merge($gIds, $raw);
+            }
+            $party = ($s->p_type === 'vendor') ? $s->vendor : $s->customer;
+            if ($party && !empty($party->user_group_ids)) {
+                $raw = is_string($party->user_group_ids) ? json_decode($party->user_group_ids, true) : $party->user_group_ids;
+                if (is_array($raw)) $gIds = array_merge($gIds, $raw);
+            }
+            $gIds = array_unique(array_filter($gIds));
+            $names = [];
+            foreach ($gIds as $id) {
+                if (isset($userGroupsMap[$id])) {
+                    $names[] = $userGroupsMap[$id];
+                }
+            }
+            $s->group_names = $names;
+            return $s;
+        };
+
+        $salesRows = $salesQuery->get()->map(function($s) use ($mapRowGroups) {
             $s->entry_status = 'Posted';
             $s->p_type = $s->partyType ?? 'customer';
-            return $s;
+            return $mapRowGroups($s);
         });
 
-        $bookingsRows = $bookingsQuery->get()->map(function($b) {
+        $bookingsRows = $bookingsQuery->get()->map(function($b) use ($mapRowGroups) {
             $b->entry_status = 'Unposted';
             $b->p_type = $b->party_type ?? 'customer'; 
-            return $b;
+            return $mapRowGroups($b);
         });
 
         $combined = $salesRows->concat($bookingsRows)->sortByDesc('created_at');
