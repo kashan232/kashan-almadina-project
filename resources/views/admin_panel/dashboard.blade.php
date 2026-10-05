@@ -3,234 +3,299 @@
 @section('content')
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-<div class="main-content" style="background-color: #f8fafc; min-height: 100vh;">
-    <div class="container-fluid p-4">
+<style>
+    :root {
+        --dash-bg: #f8fafc;
+        --card-radius: 16px;
+    }
+
+    body {
+        background-color: var(--dash-bg);
+        font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    }
+
+    .dashboard-container {
+        padding: 24px;
+    }
+
+    /* Top Banner / Header */
+    .dash-hero-card {
+        background: #ffffff;
+        border-radius: var(--card-radius);
+        padding: 20px 24px;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        margin-bottom: 24px;
+    }
+
+    .dash-title {
+        font-size: 22px;
+        font-weight: 800;
+        color: #0f172a;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    /* KPI Summary Cards */
+    .kpi-box {
+        background: #ffffff;
+        border-radius: var(--card-radius);
+        padding: 20px;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02);
+        transition: all 0.25s ease;
+        height: 100%;
+    }
+
+    .kpi-box:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 10px 15px -3px rgba(0,0,0,0.06);
+        border-color: #cbd5e1;
+    }
+
+    .kpi-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 12px;
+    }
+
+    .kpi-label {
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.6px;
+        color: #64748b;
+    }
+
+    .kpi-icon {
+        width: 44px;
+        height: 44px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
+    }
+
+    .icon-emerald { background: #d1fae5; color: #059669; }
+    .icon-blue    { background: #dbeafe; color: #2563eb; }
+    .icon-amber   { background: #fef3c7; color: #d97706; }
+    .icon-purple  { background: #f3e8ff; color: #9333ea; }
+
+    .kpi-value {
+        font-size: 26px;
+        font-weight: 800;
+        color: #0f172a;
+        letter-spacing: -0.5px;
+        margin-bottom: 6px;
+    }
+
+    .kpi-foot {
+        font-size: 12px;
+        font-weight: 600;
+        color: #64748b;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    /* Section Cards */
+    .section-card {
+        background: #ffffff;
+        border-radius: var(--card-radius);
+        padding: 24px;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02);
+        margin-bottom: 24px;
+    }
+
+    .section-title {
+        font-size: 16px;
+        font-weight: 800;
+        color: #0f172a;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    /* User Cards Grid */
+    .user-card {
+        background: #f8fafc;
+        border: 1px solid #e2e8f0;
+        border-radius: 14px;
+        padding: 16px;
+        transition: all 0.2s;
+    }
+
+    .user-card:hover {
+        background: #ffffff;
+        border-color: #3b82f6;
+        box-shadow: 0 8px 16px -4px rgba(59, 130, 246, 0.12);
+        transform: translateY(-2px);
+    }
+
+    .user-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+        color: white;
+        font-weight: 800;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+    }
+
+    .user-revenue-badge {
+        background: #ffffff;
+        border: 1px solid #e2e8f0;
+        border-radius: 10px;
+        padding: 8px 12px;
+        margin-top: 12px;
+    }
+</style>
+
+<div class="main-content">
+    <div class="dashboard-container">
         
-        <!-- Header & Dropdown Filter Bar -->
-        <div class="card border-0 shadow-sm rounded-4 mb-4" style="background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);">
-            <div class="card-body p-4 text-white">
-                <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
-                    <div class="d-flex align-items-center gap-3">
-                        <div class="bg-primary bg-opacity-25 p-3 rounded-4 border border-primary border-opacity-25 d-flex align-items-center justify-content-center" style="width: 56px; height: 56px;">
-                            <i class="fa-solid fa-chart-pie fs-3 text-primary"></i>
-                        </div>
-                        <div>
-                            <h4 class="fw-bold mb-1 text-white">
-                                {{ $isAdmin ? 'Executive Sales Analytics' : 'My Performance Dashboard' }}
-                            </h4>
-                            <p class="text-white-50 mb-0 small">
-                                {{ $isAdmin ? 'Real-time overview of user performance & overall revenue.' : 'Track your personal sales volume & performance trends.' }}
-                            </p>
-                        </div>
-                    </div>
-
-                    <!-- Dropdown Filter -->
-                    <div class="d-flex align-items-center gap-2 bg-white bg-opacity-10 p-2 rounded-3 border border-white border-opacity-10">
-                        <label for="periodSelect" class="text-white-50 small fw-semibold mb-0 ms-1">
-                            <i class="fa-solid fa-filter text-primary me-1"></i> Period:
-                        </label>
-                        <select id="periodSelect" class="form-select form-select-sm border-0 shadow-none fw-bold bg-white text-dark" style="min-width: 140px; cursor: pointer;" onchange="location = this.value;">
-                            <option value="{{ route('home', ['period' => 'daily']) }}" {{ $period === 'daily' ? 'selected' : '' }}>
-                                📅 Daily
-                            </option>
-                            <option value="{{ route('home', ['period' => 'weekly']) }}" {{ $period === 'weekly' ? 'selected' : '' }}>
-                                📆 Weekly
-                            </option>
-                            <option value="{{ route('home', ['period' => 'monthly']) }}" {{ $period === 'monthly' ? 'selected' : '' }}>
-                                📊 Monthly
-                            </option>
-                        </select>
+        <!-- Header Controls -->
+        <div class="dash-hero-card">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+                <div>
+                    <h3 class="dash-title">
+                        <i class="fa-solid fa-chart-pie text-primary"></i>
+                        {{ $isAdmin ? 'Executive Sales Analytics' : 'My Performance Dashboard' }}
+                    </h3>
+                    <span class="text-muted small fw-medium">Real-time overview of orders & team performance</span>
+                </div>
+                
+                <div class="d-flex align-items-center gap-2 bg-light p-1.5 rounded-3 border">
+                    <span class="text-muted small fw-bold ms-2 me-1"><i class="fa-solid fa-calendar-days text-primary me-1"></i> Period:</span>
+                    <div class="btn-group btn-group-sm" role="group">
+                        <a href="{{ route('home', ['period' => 'daily']) }}" class="btn btn-sm {{ $period === 'daily' ? 'btn-primary fw-bold' : 'btn-light text-dark' }}">Daily</a>
+                        <a href="{{ route('home', ['period' => 'weekly']) }}" class="btn btn-sm {{ $period === 'weekly' ? 'btn-primary fw-bold' : 'btn-light text-dark' }}">Weekly</a>
+                        <a href="{{ route('home', ['period' => 'monthly']) }}" class="btn btn-sm {{ $period === 'monthly' ? 'btn-primary fw-bold' : 'btn-light text-dark' }}">Monthly</a>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Metric KPI Cards -->
+        <!-- Top KPI Cards -->
         <div class="row g-3 mb-4">
-            <div class="col-md-6 col-xl-4">
-                <div class="card border-0 shadow-sm rounded-4 h-100 bg-white hover-up">
-                    <div class="card-body p-4">
-                        <div class="d-flex justify-content-between align-items-start mb-3">
-                            <div>
-                                <span class="text-muted text-uppercase fw-semibold" style="font-size: 0.75rem; letter-spacing: 0.5px;">
-                                    Total Revenue ({{ ucfirst($period) }})
-                                </span>
-                                <h3 class="fw-extrabold text-dark mt-1 mb-0" style="letter-spacing: -0.5px;">
-                                    Rs. {{ number_format($filteredSalesAmount, 2) }}
-                                </h3>
-                            </div>
-                            <div class="rounded-3 p-3 text-success" style="background-color: #ecfdf5;">
-                                <i class="fa-solid fa-wallet fs-4"></i>
-                            </div>
+            <div class="col-md-4">
+                <div class="kpi-box">
+                    <div class="kpi-header">
+                        <span class="kpi-label">Total Revenue ({{ ucfirst($period) }})</span>
+                        <div class="kpi-icon icon-emerald">
+                            <i class="fa-solid fa-wallet"></i>
                         </div>
-                        <div class="d-flex align-items-center gap-2">
-                            <span class="badge rounded-pill bg-success-subtle text-success fw-bold px-2 py-1" style="font-size: 0.75rem;">
-                                <i class="fa-solid fa-arrow-up me-1"></i>Active Period
-                            </span>
-                            <span class="text-muted small">Updated in real-time</span>
-                        </div>
+                    </div>
+                    <div class="kpi-value">Rs. {{ number_format($filteredSalesAmount, 2) }}</div>
+                    <div class="kpi-foot">
+                        <span class="badge bg-success-subtle text-success fw-bold px-2 py-0.5 rounded-pill"><i class="fa-solid fa-arrow-up me-1"></i>Active</span>
+                        <span>Live Sync</span>
                     </div>
                 </div>
             </div>
 
-            <div class="col-md-6 col-xl-4">
-                <div class="card border-0 shadow-sm rounded-4 h-100 bg-white hover-up">
-                    <div class="card-body p-4">
-                        <div class="d-flex justify-content-between align-items-start mb-3">
-                            <div>
-                                <span class="text-muted text-uppercase fw-semibold" style="font-size: 0.75rem; letter-spacing: 0.5px;">
-                                    Total Orders ({{ ucfirst($period) }})
-                                </span>
-                                <h3 class="fw-extrabold text-dark mt-1 mb-0" style="letter-spacing: -0.5px;">
-                                    {{ number_format($filteredSalesCount) }} <span class="fs-6 fw-normal text-muted">Orders</span>
-                                </h3>
-                            </div>
-                            <div class="rounded-3 p-3 text-primary" style="background-color: #eff6ff;">
-                                <i class="fa-solid fa-receipt fs-4"></i>
-                            </div>
+            <div class="col-md-4">
+                <div class="kpi-box">
+                    <div class="kpi-header">
+                        <span class="kpi-label">Total Orders ({{ ucfirst($period) }})</span>
+                        <div class="kpi-icon icon-blue">
+                            <i class="fa-solid fa-receipt"></i>
                         </div>
-                        <div class="d-flex align-items-center gap-2">
-                            <span class="badge rounded-pill bg-primary-subtle text-primary fw-bold px-2 py-1" style="font-size: 0.75rem;">
-                                <i class="fa-solid fa-box me-1"></i>Completed
-                            </span>
-                            <span class="text-muted small">Invoices recorded</span>
-                        </div>
+                    </div>
+                    <div class="kpi-value">{{ number_format($filteredSalesCount) }} <span class="fs-6 text-muted fw-semibold">Orders</span></div>
+                    <div class="kpi-foot">
+                        <span class="badge bg-primary-subtle text-primary fw-bold px-2 py-0.5 rounded-pill"><i class="fa-solid fa-circle-check me-1"></i>Completed</span>
+                        <span>Invoices recorded</span>
                     </div>
                 </div>
             </div>
 
-            <div class="col-md-12 col-xl-4">
-                <div class="card border-0 shadow-sm rounded-4 h-100 bg-white hover-up">
-                    <div class="card-body p-4">
-                        <div class="d-flex justify-content-between align-items-start mb-3">
-                            <div>
-                                <span class="text-muted text-uppercase fw-semibold" style="font-size: 0.75rem; letter-spacing: 0.5px;">
-                                    Account Access
-                                </span>
-                                <h4 class="fw-bold text-dark mt-1 mb-0 text-truncate" style="max-width: 200px;">
-                                    {{ $isAdmin ? 'All Staff Members' : Auth::user()->name }}
-                                </h4>
-                            </div>
-                            <div class="rounded-3 p-3 text-warning" style="background-color: #fffbeb;">
-                                <i class="fa-solid fa-user-shield fs-4"></i>
-                            </div>
+            <div class="col-md-4">
+                <div class="kpi-box">
+                    <div class="kpi-header">
+                        <span class="kpi-label">Account Access</span>
+                        <div class="kpi-icon icon-amber">
+                            <i class="fa-solid fa-user-shield"></i>
                         </div>
-                        <div class="d-flex align-items-center gap-2">
-                            <span class="badge rounded-pill bg-warning-subtle text-warning-emphasis fw-bold px-2 py-1" style="font-size: 0.75rem;">
-                                {{ $isAdmin ? 'Admin Rights' : 'Standard User' }}
-                            </span>
-                            <span class="text-muted small">{{ $isAdmin ? count($userCards).' Active Users' : 'Restricted Scope' }}</span>
-                        </div>
+                    </div>
+                    <div class="kpi-value text-truncate" style="font-size: 20px; line-height: 1.4;">
+                        {{ $isAdmin ? 'All Staff Members' : Auth::user()->name }}
+                    </div>
+                    <div class="kpi-foot">
+                        <span class="badge bg-warning-subtle text-warning-emphasis fw-bold px-2 py-0.5 rounded-pill">{{ $isAdmin ? 'Admin Rights' : 'User Rights' }}</span>
+                        <span>{{ $isAdmin ? count($userCards).' Active Users' : 'Personal View' }}</span>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- User Wise Sales Cards Section -->
-        <div class="d-flex justify-content-between align-items-center mb-3">
-            <div>
-                <h5 class="fw-bold mb-0 text-dark">
-                    <i class="fa-solid fa-users-gear text-primary me-2"></i>
-                    {{ $isAdmin ? 'User Sales Breakdown' : 'My Performance Overview' }}
-                </h5>
-                <p class="text-muted small mb-0">Sales figures for selected filter ({{ ucfirst($period) }})</p>
-            </div>
-        </div>
+        <!-- User Sales Breakdown Grid -->
+        <div class="section-card">
+            <h4 class="section-title">
+                <i class="fa-solid fa-users text-primary"></i>
+                {{ $isAdmin ? 'User Sales Breakdown' : 'My Performance Overview' }}
+                <span class="badge bg-light text-dark border ms-auto small font-monospace">{{ ucfirst($period) }} View</span>
+            </h4>
 
-        <div class="row g-3 mb-4">
-            @forelse($userCards as $uc)
-                <div class="col-sm-6 col-md-4 col-xl-3">
-                    <div class="card border-0 shadow-sm rounded-4 h-100 bg-white user-sales-card">
-                        <div class="card-body p-3">
-                            <div class="d-flex align-items-center gap-3 mb-3">
-                                <div class="avatar-gradient shadow-sm">
+            <div class="row g-3">
+                @forelse($userCards as $uc)
+                    <div class="col-sm-6 col-md-4 col-xl-3">
+                        <div class="user-card">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="user-avatar">
                                     {{ strtoupper(substr($uc['name'], 0, 1)) }}
                                 </div>
                                 <div class="text-truncate">
                                     <h6 class="fw-bold mb-0 text-dark text-truncate">{{ $uc['name'] }}</h6>
-                                    <span class="text-muted" style="font-size: 0.75rem;">{{ $uc['email'] }}</span>
+                                    <small class="text-muted d-block text-truncate">{{ $uc['email'] }}</small>
                                 </div>
                             </div>
-                            <div class="bg-light p-2.5 rounded-3 d-flex justify-content-between align-items-center">
+                            <div class="user-revenue-badge d-flex justify-content-between align-items-center">
                                 <div>
-                                    <span class="text-muted d-block" style="font-size: 0.7rem; text-transform: uppercase; font-weight: 600;">Total Revenue</span>
-                                    <strong class="text-success fs-6">
-                                        Rs. {{ number_format($uc['total_amount'], 0) }}
-                                    </strong>
+                                    <span class="text-muted d-block" style="font-size: 10px; font-weight: 700; text-transform: uppercase;">Total Revenue</span>
+                                    <strong class="text-success" style="font-size: 15px;">Rs. {{ number_format($uc['total_amount'], 0) }}</strong>
                                 </div>
                                 <div class="text-end">
-                                    <span class="text-muted d-block" style="font-size: 0.7rem; text-transform: uppercase; font-weight: 600;">Orders</span>
-                                    <span class="badge bg-white text-dark border shadow-xs fw-bold px-2 py-1">{{ $uc['total_orders'] }}</span>
+                                    <span class="text-muted d-block" style="font-size: 10px; font-weight: 700; text-transform: uppercase;">Orders</span>
+                                    <span class="badge bg-primary text-white fw-bold px-2 py-1">{{ $uc['total_orders'] }}</span>
                                 </div>
                             </div>
                         </div>
                     </div>
-                </div>
-            @empty
-                <div class="col-12">
-                    <div class="alert alert-light border rounded-4 text-center text-muted py-4">
-                        <i class="fa-solid fa-inbox fs-3 d-block mb-2 text-secondary"></i>
-                        No sales activity found for the selected period.
+                @empty
+                    <div class="col-12">
+                        <div class="p-4 text-center text-muted">
+                            <i class="fa-solid fa-inbox fs-3 mb-2 d-block"></i> No sales activity found for this period.
+                        </div>
                     </div>
-                </div>
-            @endforelse
+                @endforelse
+            </div>
         </div>
 
-        <!-- Sales Trend Chart Section -->
-        <div class="card border-0 shadow-sm rounded-4 bg-white mb-4">
-            <div class="card-header bg-transparent border-0 p-4 pb-0 d-flex justify-content-between align-items-center flex-wrap gap-2">
-                <div>
-                    <h5 class="fw-bold text-dark mb-1">
-                        <i class="fa-solid fa-chart-column text-primary me-2"></i>
-                        Sales Performance Graph
-                    </h5>
-                    <p class="text-muted small mb-0">Graphical presentation of revenue over {{ $period }} intervals.</p>
-                </div>
-                <div class="badge bg-primary-subtle text-primary fw-bold px-3 py-2 rounded-pill">
-                    <i class="fa-solid fa-clock-rotate-left me-1"></i> Filter: {{ ucfirst($period) }} View
-                </div>
+        <!-- Sales Analytics Chart -->
+        <div class="section-card">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h4 class="section-title mb-0">
+                    <i class="fa-solid fa-chart-column text-primary"></i> Sales Performance Graph
+                </h4>
+                <span class="text-muted small font-monospace">Revenue (Rs.) over {{ $period }}</span>
             </div>
-            <div class="card-body p-4">
-                <div style="height: 350px;">
-                    <canvas id="salesAnalyticsChart"></canvas>
-                </div>
+            <div style="height: 320px;">
+                <canvas id="salesAnalyticsChart"></canvas>
             </div>
         </div>
 
     </div>
 </div>
-
-<style>
-    .hover-up {
-        transition: transform 0.25s cubic-bezier(0.165, 0.84, 0.44, 1), box-shadow 0.25s ease;
-    }
-    .hover-up:hover {
-        transform: translateY(-4px);
-        box-shadow: 0 12px 24px rgba(15, 23, 42, 0.08) !important;
-    }
-    .user-sales-card {
-        transition: all 0.2s ease;
-        border: 1px solid rgba(0,0,0,0.04) !important;
-    }
-    .user-sales-card:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 10px 20px rgba(0,0,0,0.06) !important;
-        border-color: rgba(13, 110, 253, 0.2) !important;
-    }
-    .avatar-gradient {
-        width: 42px;
-        height: 42px;
-        border-radius: 12px;
-        background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
-        color: #ffffff;
-        font-weight: 800;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1.1rem;
-        flex-shrink: 0;
-    }
-</style>
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
@@ -238,10 +303,9 @@ document.addEventListener('DOMContentLoaded', function () {
     const chartLabels = @json($chartData['labels']);
     const chartSales = @json($chartData['sales']);
 
-    // Create Gradient for Chart Bars
     const gradient = ctx.createLinearGradient(0, 0, 0, 300);
-    gradient.addColorStop(0, 'rgba(59, 130, 246, 0.85)');
-    gradient.addColorStop(1, 'rgba(59, 130, 246, 0.15)');
+    gradient.addColorStop(0, 'rgba(37, 99, 235, 0.85)');
+    gradient.addColorStop(1, 'rgba(37, 99, 235, 0.1)');
 
     new Chart(ctx, {
         type: 'bar',
@@ -254,56 +318,35 @@ document.addEventListener('DOMContentLoaded', function () {
                 borderColor: '#2563eb',
                 borderWidth: 2,
                 borderRadius: 8,
-                borderSkipped: false,
-                barThickness: 32,
-                maxBarThickness: 45,
+                barThickness: 30
             }]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
             plugins: {
-                legend: {
-                    display: false,
-                },
+                legend: { display: false },
                 tooltip: {
                     backgroundColor: '#0f172a',
-                    titleFont: { size: 13, weight: 'bold' },
-                    bodyFont: { size: 12 },
                     padding: 12,
-                    cornerRadius: 10,
                     displayColors: false,
                     callbacks: {
-                        label: function(context) {
-                            let value = context.raw || 0;
-                            return ' Total Sales: Rs. ' + value.toLocaleString('en-US', {minimumFractionDigits: 2});
+                        label: function(ctx) {
+                            return ' Sales: Rs. ' + (ctx.raw || 0).toLocaleString();
                         }
                     }
                 }
             },
             scales: {
-                x: {
-                    grid: {
-                        display: false,
-                    },
-                    ticks: {
-                        font: { family: 'sans-serif', size: 11, weight: '600' },
-                        color: '#64748b'
-                    }
-                },
+                x: { grid: { display: false } },
                 y: {
-                    grid: {
-                        color: '#f1f5f9',
-                        drawBorder: false,
-                    },
                     beginAtZero: true,
+                    grid: { color: '#f1f5f9' },
                     ticks: {
-                        font: { family: 'sans-serif', size: 11 },
-                        color: '#64748b',
-                        callback: function(value) {
-                            if (value >= 1000000) return 'Rs. ' + (value/1000000).toFixed(1) + 'M';
-                            if (value >= 1000) return 'Rs. ' + (value/1000).toFixed(0) + 'k';
-                            return 'Rs. ' + value;
+                        callback: function(v) {
+                            if (v >= 1000000) return 'Rs. ' + (v/1000000).toFixed(1) + 'M';
+                            if (v >= 1000) return 'Rs. ' + (v/1000).toFixed(0) + 'k';
+                            return 'Rs. ' + v;
                         }
                     }
                 }
@@ -313,4 +356,3 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 </script>
 @endsection
-
