@@ -63,6 +63,10 @@ Route::middleware(['auth'])->group(function () {
     // Rollback Routes
     Route::get('/rollback', [RollbackController::class, 'index'])->name('rollback.index');
     Route::post('/rollback/process', [RollbackController::class, 'process'])->name('rollback.process');
+    Route::get('/system/fix-rolledback-adjustments', function () {
+        $res = \App\Console\Commands\FixRolledbackAdjustments::runFix();
+        return response()->json($res, 200, [], JSON_PRETTY_PRINT);
+    })->name('system.fix-rolledback-adjustments');
 
     Route::get('/customer-claims', [CustomerClaimController::class, 'index'])->name('customer-claims.index');
     Route::get('/customer-claims/add', [CustomerClaimController::class, 'create'])->name('customer-claims.create');
