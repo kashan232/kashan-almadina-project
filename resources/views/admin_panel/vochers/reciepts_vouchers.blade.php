@@ -394,10 +394,16 @@ $(document).ready(function() {
     });
 
     $(document).on('keydown', '.amount', function(e) {
-        if (e.key === 'Enter') {
+        if (e.key === 'Enter' || (e.key === 'Tab' && !e.shiftKey)) {
             e.preventDefault();
             $('#btnAddRow').click();
-            $('#voucherTable tbody tr').last().find('.narrationSelect').focus();
+            let $lastRow = $('#voucherTable tbody tr').last();
+            let $narration = $lastRow.find('.narrationSelect');
+            if ($narration.length && $narration.data('select2')) {
+                $narration.select2('open');
+            } else {
+                $narration.focus();
+            }
         }
     });
 

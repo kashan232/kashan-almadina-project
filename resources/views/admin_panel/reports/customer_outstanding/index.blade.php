@@ -197,6 +197,7 @@
             const $cb = $(this).find('input[type="checkbox"]');
             $cb.prop('checked', !$cb.prop('checked'));
             $(this).toggleClass('selected', $cb.prop('checked'));
+        });
 
         $(document).on('change', '.filter-item input[type="checkbox"]', function() {
             const $item = $(this).closest('.filter-item');

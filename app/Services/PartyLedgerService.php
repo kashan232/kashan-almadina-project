@@ -68,7 +68,7 @@ class PartyLedgerService
 
         return $model::create([
             $col => $partyId,
-            'admin_or_user_id' => $entry['admin_or_user_id'] ?? auth()->id(),
+            'admin_or_user_id' => $entry['admin_or_user_id'] ?? auth()->id() ?? 1,
             'date' => $entry['date'] ?? now()->toDateString(),
             'description' => $entry['description'],
             'opening_balance' => $entry['opening_balance'] ?? 0,

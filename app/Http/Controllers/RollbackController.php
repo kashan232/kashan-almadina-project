@@ -696,6 +696,77 @@ class RollbackController extends Controller
                 }
                 $ledger->appendReversal($pType, (int) $pId, $rowAmount, 0, $date, "Rollback Income Voucher #$invoiceNo");
             }
+        } elseif ($model === JournalVoucher::class) {
+            $types = json_decode($v->party_type, true) ?? [];
+            $pIds = json_decode($v->party_id, true) ?? [];
+            $debits = json_decode($v->debit, true) ?? [];
+            $credits = json_decode($v->credit, true) ?? [];
+            $jvid = $v->jvid ?? $invoiceNo;
+            foreach ($types as $idx => $type) {
+                $dr = (float) ($debits[$idx] ?? 0);
+                $cr = (float) ($credits[$idx] ?? 0);
+                if ($dr == 0.0 && $cr == 0.0) continue;
+                $pid = $pIds[$idx] ?? null;
+                if (!$pid) continue;
+
+                if (in_array($type, ['vendor', 'customer', 'walkin'], true)) {
+                    $ledger->appendReversal($type, (int)$pid, $dr, $cr, $date, "Rollback Journal Voucher #$jvid");
+                } else {
+                    $acc = \App\Models\Account::find($pid);
+                    if ($acc) {
+                        $acc->current_balance -= ($dr - $cr);
+                        $acc->save();
+                    }
+                }
+            }
+        } elseif ($model === AdjustmentVoucher::class) {
+            $avid = $v->avid ?? $invoiceNo;
+            // 1. Header Party (Source) -> Reversed
+            $pType = $v->party_type;
+            $pId = (int)$v->party_id;
+            if (in_array($pType, ['vendor', 'customer', 'walkin'], true)) {
+                $ledger->appendReversal(
+                    $pType,
+                    $pId,
+                    $amount, // originalDebit = amount
+                    0,       // originalCredit = 0
+                    $date,
+                    "Rollback Adjustment Voucher #$avid"
+                );
+            } else {
+                $headerAcc = \App\Models\Account::find($pId);
+                if ($headerAcc) {
+                    $headerAcc->current_balance -= $amount;
+                    $headerAcc->save();
+                }
+            }
+
+            // 2. Row Accounts (Destinations) -> Reversed
+            $accHeads = json_decode($v->account_head, true) ?? [];
+            $accIds = json_decode($v->account_id, true) ?? [];
+            $amounts = json_decode($v->amount, true) ?? [];
+            foreach ($accIds as $idx => $accId) {
+                $rowAmount = (float)($amounts[$idx] ?? 0);
+                if ($rowAmount <= 0) continue;
+
+                $rType = $accHeads[$idx] ?? '';
+                if (in_array($rType, ['vendor', 'customer', 'walkin'], true)) {
+                    $ledger->appendReversal(
+                        $rType,
+                        (int)$accId,
+                        0,           // originalDebit = 0
+                        $rowAmount,  // originalCredit = rowAmount
+                        $date,
+                        "Rollback Adjustment Voucher #$avid"
+                    );
+                } else {
+                    $rowAcc = \App\Models\Account::find($accId);
+                    if ($rowAcc) {
+                        $rowAcc->current_balance += $rowAmount;
+                        $rowAcc->save();
+                    }
+                }
+            }
         } else {
             $this->adjustLedger($v->type, $v->party_id, $amount, $model === ReceiptsVoucher::class ? 'add' : 'subtract', "Rollback $name #$invoiceNo");
         }
