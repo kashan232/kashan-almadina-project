@@ -255,6 +255,14 @@
                                 </tr>
                                 @endforeach
                             </tbody>
+                            <tfoot class="bg-light fw-bold border-top">
+                                <tr>
+                                    <th colspan="9" class="text-end py-2 text-dark" style="font-weight: 700; font-size: 12px;">TOTALS:</th>
+                                    <th class="text-end text-success fw-bold py-2" style="font-size: 13px;">0</th>
+                                    <th class="text-end text-primary fw-bold py-2" style="font-size: 13px;">0</th>
+                                    <th colspan="4"></th>
+                                </tr>
+                            </tfoot>
                         </table>
                     </div>
                 </div>
@@ -306,7 +314,40 @@
                 { extend: 'copy', className: 'btn btn-outline-secondary btn-sm rounded-pill px-3 me-1' },
                 { extend: 'csv', className: 'btn btn-outline-success btn-sm rounded-pill px-3 me-1' },
                 { extend: 'excel', className: 'btn btn-outline-primary btn-sm rounded-pill px-3 me-1' }
-            ]
+            ],
+            footerCallback: function (row, data, start, end, display) {
+                var api = this.api();
+
+                var intVal = function (i) {
+                    if (typeof i === 'string') {
+                        return parseFloat(i.replace(/<[^>]+>/g, '').replace(/[\$,]/g, '').trim()) || 0;
+                    } else if (typeof i === 'number') {
+                        return i;
+                    }
+                    return 0;
+                };
+
+                var totalOpening = api
+                    .column(9, { search: 'applied' })
+                    .data()
+                    .reduce(function (a, b) {
+                        return intVal(a) + intVal(b);
+                    }, 0);
+
+                var totalClosing = api
+                    .column(10, { search: 'applied' })
+                    .data()
+                    .reduce(function (a, b) {
+                        return intVal(a) + intVal(b);
+                    }, 0);
+
+                $(api.column(9).footer()).html(
+                    totalOpening.toLocaleString('en-US', { maximumFractionDigits: 0 })
+                );
+                $(api.column(10).footer()).html(
+                    totalClosing.toLocaleString('en-US', { maximumFractionDigits: 0 })
+                );
+            }
         });
 
         // Inject Column Picker dropdown right next to Search filter box
