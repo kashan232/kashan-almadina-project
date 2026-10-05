@@ -902,7 +902,7 @@
                           <div class="col-md-1 text-center">
                             @if(!$loop->first)
                             <button type="button" class="btn btn-outline-danger btn-sm py-0 px-1 btnRemRV" style="font-size: 0.75rem;">
-                              <i class="bi bi-trash"></i>
+                              <i class="fa fa-trash"></i>
                             </button>
                             @endif
                           </div>
@@ -1327,17 +1327,43 @@
     refreshPostedState();
   }
 
-  // Load narrations into dropdown
+  // Load narrations into dropdown with caching
+  let cachedReceiptNarrations = null;
+  let isFetchingReceiptNarrations = false;
+  let narrationsPendingCallbacks = [];
+
+  function getReceiptNarrations(callback) {
+    if (cachedReceiptNarrations !== null) {
+      callback(cachedReceiptNarrations);
+      return;
+    }
+    narrationsPendingCallbacks.push(callback);
+    if (isFetchingReceiptNarrations) return;
+
+    isFetchingReceiptNarrations = true;
+    $.get('{{ route("narrations.receipts") }}', function(data) {
+      cachedReceiptNarrations = data || [];
+      isFetchingReceiptNarrations = false;
+      let callbacks = narrationsPendingCallbacks;
+      narrationsPendingCallbacks = [];
+      callbacks.forEach(cb => cb(cachedReceiptNarrations));
+    }).fail(function() {
+      isFetchingReceiptNarrations = false;
+      let callbacks = narrationsPendingCallbacks;
+      narrationsPendingCallbacks = [];
+      callbacks.forEach(cb => cb([]));
+    });
+  }
+
   function loadNarrationsInto($select) {
     if ($select.hasClass('select2-hidden-accessible')) {
         $select.select2('destroy');
     }
 
     $select.prop('disabled', true).empty().append('<option value="">Loading...</option>');
-
     const selectedVal = $select.data('selected') || $select.val();
 
-    $.get('{{ route("narrations.receipts") }}', function(data) {
+    getReceiptNarrations(function(data) {
       $select.empty().append('<option value="">Select narration...</option>');
       
       if (data && data.length > 0) {
@@ -1348,23 +1374,17 @@
           });
       }
       
-      // If we had a custom value typed before, it might not be in the list, so we add it
       if (selectedVal && !$select.find('option[value="'+selectedVal+'"]').length) {
           $select.append('<option value="'+selectedVal+'" selected>'+selectedVal+'</option>');
       }
 
       $select.prop('disabled', false);
 
-      // Initialize Select2 with tags: true
       $select.select2({
         tags: true,
         placeholder: "Select or type narration...",
         width: '100%'
       });
-
-    }).fail(function(xhr, status, error) {
-      console.error('Error loading narrations:', status, error);
-      $select.empty().append('<option value="">Error loading narrations</option>').prop('disabled', false);
     });
   }
 
@@ -2557,7 +2577,7 @@
         </div>
         <div class="col-md-1 text-center">
           <button type="button" class="btn btn-outline-danger btn-sm py-0 px-1 btnRemRV" style="font-size: 0.75rem;">
-            <i class="bi bi-trash"></i>
+            <i class="fa fa-trash"></i>
           </button>
         </div>
       </div>
@@ -3206,9 +3226,17 @@
     }
   }
 
-  // Save on EVERY change (immediate, no debounce)
+  // Save state (debounced to prevent UI lag/freezing when many rows exist)
+  let saveFormStateTimeout = null;
+  function saveFormStateDebounced() {
+    clearTimeout(saveFormStateTimeout);
+    saveFormStateTimeout = setTimeout(function() {
+      saveFormState();
+    }, 400);
+  }
+
   $(document).on('change input', '#saleForm input, #saleForm select, #saleForm textarea', function() {
-    saveFormState();
+    saveFormStateDebounced();
   });
 
   $(function() {

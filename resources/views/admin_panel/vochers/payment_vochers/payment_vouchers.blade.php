@@ -249,6 +249,17 @@ $(document).ready(function() {
     }
     initSelectors();
 
+    // Auto-open Select2 dropdown when focused via Tab key or click
+    $(document).on('focus', '.select2-container', function(e) {
+        if ($(this).is(':hidden')) return;
+        let $select = $(this).prev('select');
+        if ($select.length && !$select.prop('disabled') && !$select.data('select2-is-opening')) {
+            $select.data('select2-is-opening', true);
+            $select.select2('open');
+            setTimeout(function() { $select.data('select2-is-opening', false); }, 200);
+        }
+    });
+
     // 👤 Header Party Logic
     function syncPartyIdToCodeField() {
         let val = $('#party_code_input').val();

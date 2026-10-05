@@ -296,11 +296,35 @@ $(document).ready(function() {
     }
     $(document).on('input change', '.row-amount, .row-qty', calc);
     calc();
+    function cleanupEmptyLastRow() {
+        let $rows = $('#voucherTable tbody tr');
+        if ($rows.length > 1) {
+            let $last = $rows.last();
+            let narration = ($last.find('.narrationSelect').val() || '').toString().trim();
+            let accHead = ($last.find('.rowAccountHead').val() || '').toString().trim();
+            let accId = ($last.find('.rowAccountSelect').val() || '').toString().trim();
+            let ref = ($last.find('input[name="reference_no[]"]').val() || '').toString().trim();
+            let qty = parseFloat($last.find('.row-qty').val()) || 0;
+            let amount = parseFloat($last.find('.row-amount').val()) || 0;
+
+            if (!narration && !accHead && !accId && !ref && qty === 0 && amount === 0) {
+                $last.remove();
+                calc();
+            }
+        }
+    }
+
     $(document).on('keydown', '.row-amount', function(e) {
-        if (e.key === 'Enter') {
+        if (e.key === 'Enter' || (e.key === 'Tab' && !e.shiftKey)) {
             e.preventDefault();
             $('#btnAddRow').click();
-            $('#voucherTable tbody tr').last().find('.narrationSelect').focus();
+            let $lastRow = $('#voucherTable tbody tr').last();
+            let $narration = $lastRow.find('.narrationSelect');
+            if ($narration.length && $narration.data('select2')) {
+                $narration.select2('open');
+            } else {
+                $narration.focus();
+            }
         }
     });
 
@@ -342,6 +366,7 @@ $(document).ready(function() {
     }
 
     $('#saveDraftBtn').click(function() {
+        cleanupEmptyLastRow();
         $('.ajax-valid-error').remove();
         $.post('{{ route("adjustment.vochers.ajax-save") }}', $('#adjustmentForm').serialize())
             .done(res => {

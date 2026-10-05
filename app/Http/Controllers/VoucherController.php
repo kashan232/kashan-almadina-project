@@ -446,11 +446,13 @@ class VoucherController extends Controller
         $party = null;
         $previousBalance = 0;
         $ledgerService = app(PartyLedgerService::class);
+        $pType = $voucher->type;
+        $pId = (int) $voucher->party_id;
 
         // ✅ If type is numeric → means from Account Head
-        if (is_numeric($voucher->type)) {
-            $accountHead = DB::table('account_heads')->where('id', $voucher->type)->first();
-            $account = DB::table('accounts')->where('id', $voucher->party_id)->first();
+        if (is_numeric($pType)) {
+            $accountHead = DB::table('account_heads')->where('id', $pType)->first();
+            $account = DB::table('accounts')->where('id', $pId)->first();
 
             if ($account) {
                 $party = (object)[
@@ -459,25 +461,27 @@ class VoucherController extends Controller
                     'phone' => $account->account_code ?? '—',
                     'head_name' => $accountHead->name ?? '—',
                 ];
+                $previousBalance = (float)($account->current_balance ?? 0);
+                if ($voucher->status === 'posted') {
+                    $previousBalance += (float)$voucher->total_amount;
+                }
             }
 
-            // ✅ If vendor
-        } elseif ($voucher->type === 'vendor') {
-            $party = DB::table('vendors')->where('id', $voucher->party_id)->first();
-            $previousBalance = $ledgerService->latestClosing('vendor', (int) $voucher->party_id);
+            // ✅ Vendor / Customer / Walkin
+        } elseif (in_array($pType, ['vendor', 'customer', 'walkin'], true)) {
+            if ($pType === 'vendor') {
+                $party = DB::table('vendors')->where('id', $pId)->first();
+            } else {
+                $party = DB::table('customers')->where('id', $pId)->first();
+            }
 
-            // ✅ If customer
-        } elseif ($voucher->type === 'customer') {
-            $party = DB::table('customers')->where('id', $voucher->party_id)->first();
-            $previousBalance = $ledgerService->latestClosing('customer', (int) $voucher->party_id);
-
-            // ✅ If walkin
-        } elseif ($voucher->type === 'walkin') {
-            $party = DB::table('customers')
-                ->where('id', $voucher->party_id)
-                ->where('customer_type', 'Walking Customer')
-                ->first();
-            $previousBalance = $ledgerService->latestClosing('walkin', (int) $voucher->party_id);
+            $latestClosing = $ledgerService->latestClosing($pType, $pId);
+            if ($voucher->status === 'posted') {
+                $totalImpact = (float)$voucher->total_amount + $this->sumVoucherDiscounts($voucher);
+                $previousBalance = $latestClosing + $totalImpact;
+            } else {
+                $previousBalance = $latestClosing;
+            }
         }
 
         return view('admin_panel.vochers.print', compact('voucher', 'rows', 'party', 'previousBalance'));
@@ -511,6 +515,7 @@ class VoucherController extends Controller
         $narrations = \App\Models\Narration::where('expense_head', 'Receipts Voucher')
             ->pluck('narration', 'id');
         $AccountHeads = AccountHead::get();
+        $allAccounts = Account::where('status', 1)->get(['id', 'head_id', 'title', 'account_code']);
 
         $previousBalance = 0;
         if ($receipt->party_id && $receipt->type) {
@@ -518,7 +523,7 @@ class VoucherController extends Controller
             $previousBalance = $ledgerService->latestClosing($receipt->type, (int) $receipt->party_id);
         }
 
-        return view('admin_panel.vochers.reciepts_vouchers', compact('narrations', 'AccountHeads', 'receipt', 'previousBalance'));
+        return view('admin_panel.vochers.reciepts_vouchers', compact('narrations', 'AccountHeads', 'allAccounts', 'receipt', 'previousBalance'));
     }
 
     public function showReceipt($id)
@@ -527,6 +532,7 @@ class VoucherController extends Controller
         $narrations = \App\Models\Narration::where('expense_head', 'Receipts Voucher')
             ->pluck('narration', 'id');
         $AccountHeads = AccountHead::get();
+        $allAccounts = Account::where('status', 1)->get(['id', 'head_id', 'title', 'account_code']);
         $viewMode = true;
 
         $previousBalance = 0;
@@ -535,7 +541,7 @@ class VoucherController extends Controller
             $previousBalance = $ledgerService->latestClosing($receipt->type, (int) $receipt->party_id);
         }
 
-        return view('admin_panel.vochers.reciepts_vouchers', compact('narrations', 'AccountHeads', 'receipt', 'viewMode', 'previousBalance'));
+        return view('admin_panel.vochers.reciepts_vouchers', compact('narrations', 'AccountHeads', 'allAccounts', 'receipt', 'viewMode', 'previousBalance'));
     }
 
     public function ajax_save_receipt(Request $request)
@@ -1171,11 +1177,14 @@ class VoucherController extends Controller
         // 🧩 Party setup — dynamic based on type
         $party = null;
         $previousBalance = 0;
+        $ledgerService = app(PartyLedgerService::class);
+        $pType = $voucher->type;
+        $pId = (int) $voucher->party_id;
 
         // ✅ Account Head type (numeric)
-        if (is_numeric($voucher->type)) {
-            $accountHead = DB::table('account_heads')->where('id', $voucher->type)->first();
-            $account = DB::table('accounts')->where('id', $voucher->party_id)->first();
+        if (is_numeric($pType)) {
+            $accountHead = DB::table('account_heads')->where('id', $pType)->first();
+            $account = DB::table('accounts')->where('id', $pId)->first();
 
             if ($account) {
                 $party = (object)[
@@ -1184,32 +1193,27 @@ class VoucherController extends Controller
                     'phone' => $account->account_code ?? '—',
                     'head_name' => $accountHead->name ?? '—',
                 ];
+                $previousBalance = (float)($account->current_balance ?? 0);
+                if ($voucher->status === 'posted') {
+                    $previousBalance -= (float)$voucher->total_amount;
+                }
             }
 
-            $previousBalance = $account->current_balance ?? 0;
+            // ✅ Vendor / Customer / Walkin
+        } elseif (in_array($pType, ['vendor', 'customer', 'walkin'], true)) {
+            if ($pType === 'vendor') {
+                $party = DB::table('vendors')->where('id', $pId)->first();
+            } else {
+                $party = DB::table('customers')->where('id', $pId)->first();
+            }
 
-            // ✅ Vendor
-        } elseif ($voucher->type === 'vendor') {
-            $party = DB::table('vendors')->where('id', $voucher->party_id)->first();
-            $previousBalance = DB::table('vendor_ledgers')
-                ->where('vendor_id', $voucher->party_id)
-                ->orderByDesc('id')
-                ->value('closing_balance') ?? 0;
-
-            // ✅ Customer
-        } elseif ($voucher->type === 'customer') {
-            $party = DB::table('customers')->where('id', $voucher->party_id)->first();
-            $previousBalance = DB::table('customer_ledgers')
-                ->where('customer_id', $voucher->party_id)
-                ->orderByDesc('id')
-                ->value('closing_balance') ?? 0;
-
-            // ✅ Walking customer
-        } elseif ($voucher->type === 'walkin') {
-            $party = DB::table('customers')
-                ->where('id', $voucher->party_id)
-                ->where('customer_type', 'Walking Customer')
-                ->first();
+            $latestClosing = $ledgerService->latestClosing($pType, $pId);
+            if ($voucher->status === 'posted') {
+                $totalImpact = (float)$voucher->total_amount + $this->sumVoucherDiscounts($voucher);
+                $previousBalance = $latestClosing - $totalImpact;
+            } else {
+                $previousBalance = $latestClosing;
+            }
         }
 
         return view('admin_panel.vochers.payment_vochers.print', compact('voucher', 'rows', 'party', 'previousBalance'));
@@ -1943,9 +1947,36 @@ class VoucherController extends Controller
                 $data['total_amount'] = str_replace(',', '', $data['total_amount']);
             }
             
+            $rawNarrations = $request->input('narration_id', []);
+            $rawAccHeads   = $request->input('account_head', []);
+            $rawAccIds     = $request->input('account_id', []);
+            $rawRefs       = $request->input('reference_no', []);
+            $rawQtys       = $request->input('qty', []);
+            $rawAmounts    = $request->input('amount', []);
+
+            // Filter out empty last row if more than 1 row exists
+            if (count($rawNarrations) > 1) {
+                $lastIdx = count($rawNarrations) - 1;
+                $nVal = trim((string)($rawNarrations[$lastIdx] ?? ''));
+                $hVal = trim((string)($rawAccHeads[$lastIdx] ?? ''));
+                $aVal = trim((string)($rawAccIds[$lastIdx] ?? ''));
+                $rVal = trim((string)($rawRefs[$lastIdx] ?? ''));
+                $qVal = (float)($rawQtys[$lastIdx] ?? 0);
+                $amtVal = (float)($rawAmounts[$lastIdx] ?? 0);
+
+                if (empty($nVal) && empty($hVal) && empty($aVal) && empty($rVal) && $qVal == 0.0 && $amtVal == 0.0) {
+                    array_pop($rawNarrations);
+                    array_pop($rawAccHeads);
+                    array_pop($rawAccIds);
+                    array_pop($rawRefs);
+                    array_pop($rawQtys);
+                    array_pop($rawAmounts);
+                }
+            }
+
             // Handle Narrations (Select2 Tags)
             $narrationIds = [];
-            foreach ($request->input('narration_id', []) as $nId) {
+            foreach ($rawNarrations as $nId) {
                 if ($nId && !is_numeric($nId)) {
                     $newN = \App\Models\Narration::firstOrCreate(['narration' => $nId, 'expense_head' => 'Adjustment voucher']);
                     $narrationIds[] = (string)$newN->id;
@@ -1955,11 +1986,11 @@ class VoucherController extends Controller
             }
 
             $data['narration_id'] = json_encode($narrationIds);
-            $data['account_head'] = json_encode($request->account_head);
-            $data['account_id'] = json_encode($request->account_id);
-            $data['reference_no'] = json_encode($request->reference_no);
-            $data['qty'] = json_encode($request->qty);
-            $data['amount'] = json_encode($request->amount);
+            $data['account_head'] = json_encode($rawAccHeads);
+            $data['account_id'] = json_encode($rawAccIds);
+            $data['reference_no'] = json_encode($rawRefs);
+            $data['qty'] = json_encode($rawQtys);
+            $data['amount'] = json_encode($rawAmounts);
 
             if ($request->id) {
                 $voucher = AdjustmentVoucher::findOrFail($request->id);
