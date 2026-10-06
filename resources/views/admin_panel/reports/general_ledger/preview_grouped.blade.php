@@ -133,6 +133,39 @@
                 </tr>
             @endforeach
         </tbody>
+        @php
+            $grandOpening = 0;
+            $grandDebit = 0;
+            $grandCredit = 0;
+            $grandQty = 0;
+            $grandClosing = 0;
+            foreach($groupedData as $sub) {
+                $grandOpening += $sub['openingBalance'];
+                $subBalance = $sub['openingBalance'];
+                foreach($sub['transactions'] as $trx) {
+                    $grandDebit += $trx['debit'];
+                    $grandCredit += $trx['credit'];
+                    $grandQty += ($trx['qty'] ?? 0);
+                    $subBalance += ($trx['debit'] - $trx['credit']);
+                }
+                $grandClosing += $subBalance;
+            }
+        @endphp
+        <tfoot>
+            <tr style="background-color: #0f172a; color: #ffffff; font-weight: bold; font-size: 11px; border-top: 2px solid #000;">
+                <td colspan="3" class="text-right" style="padding: 7px 10px; text-transform: uppercase;">
+                    GRAND TOTAL AMOUNT >>>
+                </td>
+                <td></td>
+                <td class="text-center">{{ $grandQty > 0 ? $grandQty : '-' }}</td>
+                <td class="text-right">{{ number_format($grandDebit, 0) }}</td>
+                <td class="text-center">-</td>
+                <td class="text-right">{{ number_format($grandCredit, 0) }}</td>
+                <td class="text-right" style="color: #60a5fa;">
+                    {{ $grandClosing >= 0 ? 'DR.' : 'CR.' }} {{ number_format(abs($grandClosing), 0) }}
+                </td>
+            </tr>
+        </tfoot>
     </table>
 
     <div class="footer-info">
