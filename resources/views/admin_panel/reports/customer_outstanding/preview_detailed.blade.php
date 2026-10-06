@@ -115,6 +115,7 @@
             ['key' => 'payment', 'head' => 'Payment', 'class' => 'col-green', 'is_deduction' => false],
             ['key' => 'income', 'head' => 'Income', 'class' => 'col-green', 'is_deduction' => false],
             ['key' => 'jv_dr', 'head' => 'JV-DR.', 'class' => '', 'is_deduction' => false],
+            ['key' => 'av_dr', 'head' => 'AV-DR.', 'class' => '', 'is_deduction' => false],
             ['key' => 'cir', 'head' => 'CIR', 'class' => 'col-green', 'is_deduction' => false],
             ['key' => 'purchase', 'head' => 'Purchase', 'class' => 'col-red', 'is_deduction' => true],
             ['key' => 'pur_ret', 'head' => 'Pur Ret', 'class' => 'col-green', 'is_deduction' => false],
@@ -123,6 +124,7 @@
             ['key' => 'receipts', 'head' => 'Receipts', 'class' => 'col-red', 'is_deduction' => true],
             ['key' => 'exp_dis', 'head' => 'Exp / Dis', 'class' => 'col-green', 'is_deduction' => true],
             ['key' => 'jv_cr', 'head' => 'JV-CR.', 'class' => 'col-green', 'is_deduction' => true],
+            ['key' => 'av_cr', 'head' => 'AV-CR.', 'class' => 'col-green', 'is_deduction' => true],
         ];
     @endphp
 

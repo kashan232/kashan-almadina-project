@@ -220,7 +220,7 @@
                                         {{ number_format($customer->resolvedOpeningBalance(), 0) }}
                                     </td>
                                     <td class="text-end text-primary fw-bold">
-                                        {{ $customer->customerLedger ? number_format($customer->customerLedger->closing_balance, 0) : '0' }}
+                                        {{ number_format($customer->resolvedClosingBalance(), 0) }}
                                     </td>
                                     <td class="small">{{ $customer->filer_type }}</td>
                                     <td class="text-center">

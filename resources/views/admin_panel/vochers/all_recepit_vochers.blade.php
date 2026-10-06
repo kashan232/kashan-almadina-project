@@ -206,8 +206,11 @@
                                         foreach($discs as $d) { $total_disc += (float)$d; }
                                     }
 
-                                    $destAccountIds = json_decode($item->row_account_id, true) ?? [];
-                                    $rowAmounts = json_decode($item->amount, true) ?? [];
+                                    $rawAccIds = json_decode($item->row_account_id, true);
+                                    $destAccountIds = is_array($rawAccIds) ? $rawAccIds : ($item->row_account_id ? [$item->row_account_id] : []);
+
+                                    $rawAmounts = json_decode($item->amount, true);
+                                    $rowAmounts = is_array($rawAmounts) ? $rawAmounts : ($item->amount ? [$item->amount] : []);
 
                                     $destAccounts = [];
                                     $destAmounts = [];

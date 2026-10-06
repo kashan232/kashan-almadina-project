@@ -30,6 +30,9 @@ class CustomerOutstandingBalanceReportController extends Controller
 
     public function preview(Request $request, CustomerOutstandingBalanceReportBuilder $builder)
     {
+        @set_time_limit(300);
+        @ini_set('max_execution_time', '300');
+
         $request->validate([
             'from_date' => 'required|date',
             'to_date' => 'required|date|after_or_equal:from_date',

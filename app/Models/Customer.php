@@ -88,4 +88,32 @@ class Customer extends Model
             $this->forceFill(['opening_balance' => (float) $opening])->save();
         }
     }
+
+    public function resolvedClosingBalance(): float
+    {
+        // Check latest customer ledger entry first
+        $ledger = $this->customerLedger;
+        $ledgerClosing = $ledger ? (float)$ledger->closing_balance : 0.0;
+        
+        // If ledger closing is non-zero, return it
+        if (abs($ledgerClosing) > 0.001) {
+            return $ledgerClosing;
+        }
+
+        // Fallback to real-time GeneralLedger calculation to capture all vouchers (including Walkin Payment Vouchers)
+        $ledgerController = app(\App\Http\Controllers\GeneralLedgerController::class);
+        $startDate = '2020-01-01';
+        $endDate = date('Y-m-d');
+        $op = (float)$ledgerController->calculateOpeningBalance('customer', $this->id, $startDate);
+        $txns = $ledgerController->fetchTransactions('customer', $this->id, $startDate, $endDate);
+        
+        $debits = 0.0;
+        $credits = 0.0;
+        foreach ($txns as $t) {
+            $debits += (float)($t['debit'] ?? 0);
+            $credits += (float)($t['credit'] ?? 0);
+        }
+
+        return $op + $debits - $credits;
+    }
 }

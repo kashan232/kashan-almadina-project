@@ -58,9 +58,11 @@ class VendorController extends Controller
 
     public function auditIndex(Request $request)
     {
+        @set_time_limit(300);
+        @ini_set('max_execution_time', '300');
+
         $startDate = $request->start_date ?? '2020-01-01';
         $endDate = $request->end_date ?? date('Y-m-d');
-        $nextDayDate = \Carbon\Carbon::parse($endDate)->addDay()->toDateString();
 
         $query = Vendor::with(['creator']);
         $isAdmin = Auth::user()->roles->pluck('name')->contains('Admin') || Auth::id() == 1;
@@ -85,7 +87,9 @@ class VendorController extends Controller
             $partyId = (int)$vendor->id;
             $opening = (float)$ledgerController->calculateOpeningBalance('vendor', $partyId, $startDate);
             $txns = $ledgerController->fetchTransactions('vendor', $partyId, $startDate, $endDate);
-            $savedBalance = (float)$ledgerController->calculateOpeningBalance('vendor', $partyId, $nextDayDate);
+
+            $txnDebits = 0.0;
+            $txnCredits = 0.0;
 
             $purchases = 0.0;
             $purRet = 0.0;
@@ -102,9 +106,12 @@ class VendorController extends Controller
             $jvCr = 0.0;
 
             foreach ($txns as $t) {
-                $ref = strtoupper((string)($t['ref'] ?? ''));
                 $debit = (float)($t['debit'] ?? 0);
                 $credit = (float)($t['credit'] ?? 0);
+                $txnDebits += $debit;
+                $txnCredits += $credit;
+
+                $ref = strtoupper((string)($t['ref'] ?? ''));
                 $desc = strtolower((string)($t['desc'] ?? ''));
 
                 if ($ref === 'PJ') {
@@ -143,6 +150,8 @@ class VendorController extends Controller
                     if ($credit > 0) $jvCr += $credit;
                 }
             }
+
+            $savedBalance = $opening + $txnDebits - $txnCredits;
 
             // Vendor formula: Opening + Purchase + Receipts + Income + S_Ret + JV_Cr + CLM_CN - (Payment + Pur_Ret + Sales + C_Rep + CIR + Exp_Dis + JV_Dr)
             $calculatedTrueBalance = $opening + $purchases + $receipts + $income + $sRet + $jvCr + $clmCn

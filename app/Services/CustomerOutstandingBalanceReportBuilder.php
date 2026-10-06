@@ -24,8 +24,8 @@ class CustomerOutstandingBalanceReportBuilder
     private const CUSTOMER_PARTY_TYPES = ['customer', 'walking', 'walkin'];
 
     private const DETAIL_COLS = [
-        'sales', 'c_rep', 'payment', 'income', 'jv_dr', 'cir',
-        'purchase', 'pur_ret', 's_ret', 'clm_cn', 'receipts', 'exp_dis', 'jv_cr',
+        'sales', 'c_rep', 'payment', 'income', 'jv_dr', 'av_dr', 'cir',
+        'purchase', 'pur_ret', 's_ret', 'clm_cn', 'receipts', 'exp_dis', 'jv_cr', 'av_cr',
     ];
 
     public function build(Request $request): array
@@ -119,7 +119,21 @@ class CustomerOutstandingBalanceReportBuilder
             $ledgerType = $party['ledger_type'];
             $opening = (float) $ledger->calculateOpeningBalance($ledgerType, $partyId, $fromDate);
             $period = $this->aggregateDetailedPeriod($ledgerType, $partyId, $fromDate, $toDate);
-            $balance = (float) $ledger->calculateOpeningBalance($ledgerType, $partyId, $closingDate);
+
+            $calcBalance = 0.0;
+            if ($party['party_kind'] === 'vendor') {
+                // Vendor: Opening + Purchase + Receipts + Income + S_Ret + JV_Cr + AV_Cr + CLM_CN - (Payment + Pur_Ret + Sales + C_Rep + CIR + Exp_Dis + JV_Dr + AV_Dr)
+                $calcBalance = $opening 
+                    + $period['purchase'] + $period['receipts'] + $period['income'] + $period['s_ret'] + $period['jv_cr'] + $period['av_cr'] + $period['clm_cn']
+                    - ($period['payment'] + $period['pur_ret'] + $period['sales'] + $period['c_rep'] + $period['cir'] + $period['exp_dis'] + $period['jv_dr'] + $period['av_dr']);
+            } else {
+                // Customer: Opening + Sales + Payment + C_Rep + JV_Dr + AV_Dr + CIR + Pur_Ret - (S_Ret + Receipts + Income + Exp_Dis + JV_Cr + AV_Cr + Purchase + CLM_CN)
+                $calcBalance = $opening 
+                    + $period['sales'] + $period['payment'] + $period['c_rep'] + $period['jv_dr'] + $period['av_dr'] + $period['cir'] + $period['pur_ret']
+                    - ($period['s_ret'] + $period['receipts'] + $period['income'] + $period['exp_dis'] + $period['jv_cr'] + $period['av_cr'] + $period['purchase'] + $period['clm_cn']);
+            }
+
+            $balance = $calcBalance;
 
             if ($this->isZeroDetailedRow($opening, $period, $balance)) {
                 continue;
@@ -127,15 +141,15 @@ class CustomerOutstandingBalanceReportBuilder
 
             $calcBalance = 0.0;
             if ($party['party_kind'] === 'vendor') {
-                // Vendor: Opening + Purchase + Receipts + Income + S_Ret + JV_Cr + CLM_CN - (Payment + Pur_Ret + Sales + C_Rep + CIR + Exp_Dis + JV_Dr)
+                // Vendor: Opening + Purchase + Receipts + Income + S_Ret + JV_Cr + AV_Cr + CLM_CN - (Payment + Pur_Ret + Sales + C_Rep + CIR + Exp_Dis + JV_Dr + AV_Dr)
                 $calcBalance = $opening 
-                    + $period['purchase'] + $period['receipts'] + $period['income'] + $period['s_ret'] + $period['jv_cr'] + $period['clm_cn']
-                    - ($period['payment'] + $period['pur_ret'] + $period['sales'] + $period['c_rep'] + $period['cir'] + $period['exp_dis'] + $period['jv_dr']);
+                    + $period['purchase'] + $period['receipts'] + $period['income'] + $period['s_ret'] + $period['jv_cr'] + $period['av_cr'] + $period['clm_cn']
+                    - ($period['payment'] + $period['pur_ret'] + $period['sales'] + $period['c_rep'] + $period['cir'] + $period['exp_dis'] + $period['jv_dr'] + $period['av_dr']);
             } else {
-                // Customer: Opening + Sales + C_Rep + JV_Dr + CIR + Pur_Ret - (S_Ret + Receipts + Payment + Income + Exp_Dis + JV_Cr + Purchase + CLM_CN)
+                // Customer: Opening + Sales + C_Rep + JV_Dr + AV_Dr + CIR + Pur_Ret - (S_Ret + Receipts + Payment + Income + Exp_Dis + JV_Cr + AV_Cr + Purchase + CLM_CN)
                 $calcBalance = $opening 
-                    + $period['sales'] + $period['c_rep'] + $period['jv_dr'] + $period['cir'] + $period['pur_ret']
-                    - ($period['s_ret'] + $period['receipts'] + $period['payment'] + $period['income'] + $period['exp_dis'] + $period['jv_cr'] + $period['purchase'] + $period['clm_cn']);
+                    + $period['sales'] + $period['c_rep'] + $period['jv_dr'] + $period['av_dr'] + $period['cir'] + $period['pur_ret']
+                    - ($period['s_ret'] + $period['receipts'] + $period['payment'] + $period['income'] + $period['exp_dis'] + $period['jv_cr'] + $period['av_cr'] + $period['purchase'] + $period['clm_cn']);
             }
 
             $diff = $balance - $calcBalance;
@@ -319,13 +333,24 @@ class CustomerOutstandingBalanceReportBuilder
             return;
         }
 
-        // 12 & 13. JV-DR / JV-CR
-        if ($ref === 'JV' || $ref === 'AV') {
+        // 12. Journal Vouchers (JV)
+        if ($ref === 'JV') {
             if ($debit > 0) {
                 $cols['jv_dr'] += $debit;
             }
             if ($credit > 0) {
                 $cols['jv_cr'] += $credit;
+            }
+            return;
+        }
+
+        // 13. Adjustment Vouchers (AV)
+        if ($ref === 'AV') {
+            if ($debit > 0) {
+                $cols['av_dr'] += $debit;
+            }
+            if ($credit > 0) {
+                $cols['av_cr'] += $credit;
             }
             return;
         }

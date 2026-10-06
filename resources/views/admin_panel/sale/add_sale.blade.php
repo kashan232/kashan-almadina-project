@@ -473,6 +473,12 @@
     position: relative;
     z-index: 5;
   }
+
+  #partyTypeGroup:focus, #partyTypeGroup:focus-within {
+    box-shadow: 0 0 0 2px #0d6efd !important;
+    background-color: #f0f7ff !important;
+    border-radius: 6px;
+  }
 </style>
 
 <div class="container-fluid py-2 sale-page">
@@ -585,7 +591,7 @@
           </style>
 
           {{-- Party Type Toggle --}}
-          <div class="mb-2">
+          <div class="mb-2 p-1 transition-all" id="partyTypeGroup" tabindex="0" style="outline: none;">
             <label class="form-label text-muted small mb-0" style="font-size: 0.7rem;">Party Type</label>
             <div class="btn-group w-100" role="group">
               <input type="radio" class="btn-check" name="partyType" id="typeCustomers" value="customer" {{ old('partyType', $ePartyType) == 'customer' ? 'checked' : '' }}>
@@ -1258,7 +1264,7 @@
   }
 
   /* ---------- Add New Row ---------- */
-  function addNewRow(focusNewRow = true, force = false) {
+  function addNewRow(focusNewRow = false, force = false) {
     const $last = $('#salesTableBody tr:last-child');
     if ($last.length && !force) {
       const pid = $last.find('.product-select').val();
@@ -1878,7 +1884,7 @@
 
 
   /* ---------- Customer type & list ---------- */
-  function loadCustomersByType(type) {
+  function loadCustomersByType(type, autoOpenSelect = false) {
     const $sel = $('#customerSelect').prop('disabled', true).empty().append('<option selected disabled>Loading...</option>');
         $.get('{{ route("customers.filter") }}', {
         type
@@ -1921,6 +1927,10 @@
             setTimeout(function() {
                 $sel.trigger('change.select2');
             }, 50);
+        } else if (autoOpenSelect) {
+            setTimeout(function() {
+                $sel.select2('open');
+            }, 100);
         }
         
         $sel.attr('data-old-val', '');
@@ -1933,7 +1943,28 @@
   $(document).on('change', 'input[name="partyType"]', function() {
     $('#customerSelect').val(null).trigger('change');
     $('#address,#tel,#remarks,#partyIdInput').val('');
-    loadCustomersByType(this.value);
+    loadCustomersByType(this.value, true);
+  });
+
+  $('#partyTypeGroup').on('keydown', function(e) {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      const $radios = $('input[name="partyType"]');
+      const currIdx = $radios.index($('input[name="partyType"]:checked'));
+      const nextIdx = (currIdx + 1) % $radios.length;
+      $radios.eq(nextIdx).prop('checked', true).trigger('change');
+    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      const $radios = $('input[name="partyType"]');
+      const currIdx = $radios.index($('input[name="partyType"]:checked'));
+      const prevIdx = (currIdx - 1 + $radios.length) % $radios.length;
+      $radios.eq(prevIdx).prop('checked', true).trigger('change');
+    } else if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      if (!$('#customerSelect').prop('disabled')) {
+        $('#customerSelect').select2('open');
+      }
+    }
   });
 
   /*
@@ -2054,7 +2085,12 @@
 
   $(document).on('select2:select', '#customerSelect', function() {
     setTimeout(() => {
-        $('#salesTableBody tr:first-child .item-id-input').focus().select();
+        const $firstProdSelect = $('#salesTableBody tr:first-child .product-select');
+        if ($firstProdSelect.length) {
+            $firstProdSelect.select2('open');
+        } else {
+            $('#salesTableBody tr:first-child .item-id-input').focus().select();
+        }
     }, 100);
   });
 
@@ -2677,6 +2713,12 @@
     recomputeReceipts();
     updateGrandTotals();
     refreshPostedState();
+
+    if (!@json($isViewMode) && !$('#booking_id').val() && !$('#sale_id').val()) {
+      setTimeout(function() {
+        $('#partyTypeGroup').focus();
+      }, 250);
+    }
   }
 
   $(function() {
@@ -3248,7 +3290,7 @@
 
     if ($('#salesTableBody tr').length === 0) {
       if (!restoreFormState()) {
-        addNewRow();
+        addNewRow(false);
       }
     }
   });

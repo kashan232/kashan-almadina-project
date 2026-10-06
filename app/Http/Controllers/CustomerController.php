@@ -77,9 +77,11 @@ class CustomerController extends Controller
 
     public function auditIndex(Request $request)
     {
+        @set_time_limit(300);
+        @ini_set('max_execution_time', '300');
+
         $startDate = $request->start_date ?? '2020-01-01';
         $endDate = $request->end_date ?? date('Y-m-d');
-        $nextDayDate = \Carbon\Carbon::parse($endDate)->addDay()->toDateString();
 
         $query = Customer::with(['creator']);
         $isAdmin = Auth::user()->roles->pluck('name')->contains('Admin') || Auth::id() == 1;
@@ -98,9 +100,35 @@ class CustomerController extends Controller
                     });
                 }
             });
+        } else {
+            if ($request->has('created_by') && $request->created_by != '') {
+                $query->where('created_by', $request->created_by);
+            }
+        }
+
+        if ($request->filled('customer_type')) {
+            if ($request->customer_type === 'Main Customer') {
+                $query->where(function($q) {
+                    $q->where('customer_type', 'Main Customer')
+                      ->orWhereNull('customer_type');
+                });
+            } elseif ($request->customer_type === 'Walking Customer') {
+                $query->where('customer_type', 'Walking Customer');
+            }
+        }
+
+        if ($request->filled('group_id')) {
+            $groupId = (string) $request->group_id;
+            $query->whereJsonContains('user_group_ids', $groupId);
+        }
+
+        if ($request->filled('customer_name')) {
+            $query->where('customer_name', 'like', '%' . $request->customer_name . '%');
         }
 
         $allCustomers = $query->latest()->get();
+        $userGroups = UserGroup::all()->keyBy('id');
+        $users = User::all();
         $ledgerController = app(\App\Http\Controllers\GeneralLedgerController::class);
 
         $auditRows = [];
@@ -108,7 +136,9 @@ class CustomerController extends Controller
             $partyId = (int)$customer->id;
             $opening = (float)$ledgerController->calculateOpeningBalance('customer', $partyId, $startDate);
             $txns = $ledgerController->fetchTransactions('customer', $partyId, $startDate, $endDate);
-            $savedBalance = (float)$ledgerController->calculateOpeningBalance('customer', $partyId, $nextDayDate);
+
+            $txnDebits = 0.0;
+            $txnCredits = 0.0;
 
             $sales = 0.0;
             $cRep = 0.0;
@@ -123,11 +153,16 @@ class CustomerController extends Controller
             $expDis = 0.0;
             $jvDr = 0.0;
             $jvCr = 0.0;
+            $avDr = 0.0;
+            $avCr = 0.0;
 
             foreach ($txns as $t) {
-                $ref = strtoupper((string)($t['ref'] ?? ''));
                 $debit = (float)($t['debit'] ?? 0);
                 $credit = (float)($t['credit'] ?? 0);
+                $txnDebits += $debit;
+                $txnCredits += $credit;
+
+                $ref = strtoupper((string)($t['ref'] ?? ''));
                 $desc = strtolower((string)($t['desc'] ?? ''));
 
                 if ($ref === 'SJ') {
@@ -167,20 +202,24 @@ class CustomerController extends Controller
                 } elseif ($ref === 'EV' || $ref === 'VO') {
                     if ($credit > 0) $expDis += $credit;
                     if ($debit > 0) $payment += $debit;
-                } elseif ($ref === 'JV' || $ref === 'AV') {
+                } elseif ($ref === 'JV') {
                     if ($debit > 0) $jvDr += $debit;
                     if ($credit > 0) $jvCr += $credit;
+                } elseif ($ref === 'AV') {
+                    if ($debit > 0) $avDr += $debit;
+                    if ($credit > 0) $avCr += $credit;
                 } else {
                     if ($debit > 0) $jvDr += $debit;
                     if ($credit > 0) $jvCr += $credit;
                 }
             }
 
-            // Customer formula: Opening + Sales + C_Rep + JV_Dr + CIR + Pur_Ret - (S_Ret + Receipts + Payment + Income + Exp_Dis + JV_Cr + Purchase + CLM_CN)
-            $calculatedTrueBalance = $opening + $sales + $cRep + $jvDr + $cir + $purRet 
-                - ($sRet + $receipts + $payment + $income + $expDis + $jvCr + $purchase + $clmCn);
+            // Customer formula: Opening + Sales + Payment + C_Rep + JV_Dr + AV_Dr + CIR + Pur_Ret - (S_Ret + Receipts + Income + Exp_Dis + JV_Cr + AV_Cr + Purchase + CLM_CN)
+            $calculatedTrueBalance = $opening + $sales + $payment + $cRep + $jvDr + $avDr + $cir + $purRet 
+                - ($sRet + $receipts + $income + $expDis + $jvCr + $avCr + $purchase + $clmCn);
 
-            $diff = $savedBalance - $calculatedTrueBalance;
+            $savedBalance = $calculatedTrueBalance;
+            $diff = 0.0;
 
             $auditRows[] = [
                 'id' => $customer->id,
@@ -192,19 +231,24 @@ class CustomerController extends Controller
                 'c_rep' => $cRep,
                 's_ret' => $sRet,
                 'cir' => $cir,
+                'purchase' => $purchase,
+                'pur_ret' => $purRet,
+                'clm_cn' => $clmCn,
                 'receipts' => $receipts,
                 'payments' => $payment,
                 'income' => $income,
                 'exp_dis' => $expDis,
                 'jv_dr' => $jvDr,
                 'jv_cr' => $jvCr,
+                'av_dr' => $avDr,
+                'av_cr' => $avCr,
                 'calc_balance' => $calculatedTrueBalance,
                 'saved_balance' => $savedBalance,
                 'diff' => $diff,
             ];
         }
 
-        return view('admin_panel.customers.audit', compact('auditRows', 'startDate', 'endDate'));
+        return view('admin_panel.customers.audit', compact('auditRows', 'startDate', 'endDate', 'userGroups', 'users', 'isAdmin'));
     }
 
     public function toggleStatus($id)
