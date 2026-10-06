@@ -26,7 +26,7 @@ class FixRolledbackAdjustments extends Command
 
     public static function runFix(): array
     {
-        $vouchers = AdjustmentVoucher::whereIn('status', ['draft', 'Draft', 'Unposted', 'unposted'])->get();
+        $vouchers = AdjustmentVoucher::all();
         $ledger = app(PartyLedgerService::class);
         $fixedCount = 0;
         $details = [];
@@ -37,6 +37,7 @@ class FixRolledbackAdjustments extends Command
             $amount = (float) $v->total_amount;
             $date = $v->entry_date ?? substr((string)$v->created_at, 0, 10);
             $descMarker = "Adjustment Voucher #" . $avid;
+            $isPosted = in_array($v->status, ['posted', 'Posted'], true);
 
             // 1. Check Header Party (Source)
             $pType = $v->party_type;
@@ -48,23 +49,34 @@ class FixRolledbackAdjustments extends Command
                 if ($resolved) {
                     [$modelClass, $col] = $resolved;
                     
-                    // Check if posted row exists for this AV
-                    $hasPost = $modelClass::where($col, $pId)
+                    $postedRows = $modelClass::where($col, $pId)
                         ->where('description', 'LIKE', '%' . $descMarker . '%')
                         ->where('description', 'NOT LIKE', '%Rollback%')
-                        ->exists();
+                        ->orderBy('id')
+                        ->get();
 
-                    if ($hasPost) {
-                        // Check if rollback reversal row exists
-                        $hasRev = $modelClass::where($col, $pId)
-                            ->where('description', 'LIKE', '%Rollback%' . $descMarker . '%')
-                            ->exists();
-
-                        if (!$hasRev) {
-                            $ledger->appendReversal($normType, $pId, $amount, 0, $date, "Rollback Adjustment Voucher #$avid");
+                    if ($isPosted) {
+                        // Posted AV should have exactly 1 posted row
+                        if ($postedRows->count() > 1) {
+                            $duplicateIds = $postedRows->slice(1)->pluck('id')->toArray();
+                            $modelClass::whereIn('id', $duplicateIds)->delete();
                             $fixedCount++;
-                            $details[] = "Header Party ($normType #$pId): Added Rollback Reversal for AV #$avid (Credit $amount)";
+                            $details[] = "Header Party ($normType #$pId): Removed " . count($duplicateIds) . " duplicate posted row(s) for AV #$avid";
                             $affectedParties[] = [$normType, $pId];
+                        }
+                    } else {
+                        // Draft/Unposted AV should have a Rollback reversal row or no posted row
+                        if ($postedRows->count() > 0) {
+                            $hasRev = $modelClass::where($col, $pId)
+                                ->where('description', 'LIKE', '%Rollback%' . $descMarker . '%')
+                                ->exists();
+
+                            if (!$hasRev) {
+                                $ledger->appendReversal($normType, $pId, $amount, 0, $date, "Rollback Adjustment Voucher #$avid");
+                                $fixedCount++;
+                                $details[] = "Header Party ($normType #$pId): Added Rollback Reversal for AV #$avid (Credit $amount)";
+                                $affectedParties[] = [$normType, $pId];
+                            }
                         }
                     }
                 }
@@ -87,21 +99,32 @@ class FixRolledbackAdjustments extends Command
                     if ($resolvedRow) {
                         [$modelClass, $col] = $resolvedRow;
                         
-                        $hasPostRow = $modelClass::where($col, $rId)
+                        $postedRows = $modelClass::where($col, $rId)
                             ->where('description', 'LIKE', '%' . $descMarker . '%')
                             ->where('description', 'NOT LIKE', '%Rollback%')
-                            ->exists();
+                            ->orderBy('id')
+                            ->get();
 
-                        if ($hasPostRow) {
-                            $hasRevRow = $modelClass::where($col, $rId)
-                                ->where('description', 'LIKE', '%Rollback%' . $descMarker . '%')
-                                ->exists();
-
-                            if (!$hasRevRow) {
-                                $ledger->appendReversal($normRowType, $rId, 0, $rowAmount, $date, "Rollback Adjustment Voucher #$avid");
+                        if ($isPosted) {
+                            if ($postedRows->count() > 1) {
+                                $duplicateIds = $postedRows->slice(1)->pluck('id')->toArray();
+                                $modelClass::whereIn('id', $duplicateIds)->delete();
                                 $fixedCount++;
-                                $details[] = "Row Party ($normRowType #$rId): Added Rollback Reversal for AV #$avid (Debit $rowAmount)";
+                                $details[] = "Row Party ($normRowType #$rId): Removed " . count($duplicateIds) . " duplicate posted row(s) for AV #$avid";
                                 $affectedParties[] = [$normRowType, $rId];
+                            }
+                        } else {
+                            if ($postedRows->count() > 0) {
+                                $hasRevRow = $modelClass::where($col, $rId)
+                                    ->where('description', 'LIKE', '%Rollback%' . $descMarker . '%')
+                                    ->exists();
+
+                                if (!$hasRevRow) {
+                                    $ledger->appendReversal($normRowType, $rId, 0, $rowAmount, $date, "Rollback Adjustment Voucher #$avid");
+                                    $fixedCount++;
+                                    $details[] = "Row Party ($normRowType #$rId): Added Rollback Reversal for AV #$avid (Debit $rowAmount)";
+                                    $affectedParties[] = [$normRowType, $rId];
+                                }
                             }
                         }
                     }
@@ -116,8 +139,8 @@ class FixRolledbackAdjustments extends Command
         }
 
         $msg = $fixedCount > 0 
-            ? "Successfully applied missing reversals for $fixedCount party entries."
-            : "All rolled-back Adjustment Vouchers are already fully synced and up to date!";
+            ? "Successfully applied missing reversals & cleaned duplicates for $fixedCount party entries."
+            : "All Adjustment Vouchers are already fully synced and up to date!";
 
         return [
             'success' => true,

@@ -721,7 +721,7 @@ class RollbackController extends Controller
             }
         } elseif ($model === AdjustmentVoucher::class) {
             $avid = $v->avid ?? $invoiceNo;
-            // 1. Header Party (Source) -> Reversed
+            // 1. Header Party (Source) was Posted with DEBIT = amount. Reversal: originalDebit = amount, originalCredit = 0.
             $pType = $v->party_type;
             $pId = (int)$v->party_id;
             if (in_array($pType, ['vendor', 'customer', 'walkin'], true)) {
@@ -741,7 +741,7 @@ class RollbackController extends Controller
                 }
             }
 
-            // 2. Row Accounts (Destinations) -> Reversed
+            // 2. Row Accounts (Destinations) were Posted with CREDIT = rowAmount. Reversal: originalDebit = 0, originalCredit = rowAmount.
             $accHeads = json_decode($v->account_head, true) ?? [];
             $accIds = json_decode($v->account_id, true) ?? [];
             $amounts = json_decode($v->amount, true) ?? [];
@@ -754,8 +754,8 @@ class RollbackController extends Controller
                     $ledger->appendReversal(
                         $rType,
                         (int)$accId,
-                        0,           // originalDebit = 0
-                        $rowAmount,  // originalCredit = rowAmount
+                        0,          // originalDebit = 0
+                        $rowAmount, // originalCredit = rowAmount
                         $date,
                         "Rollback Adjustment Voucher #$avid"
                     );
