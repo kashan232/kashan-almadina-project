@@ -9,7 +9,7 @@
         * { box-sizing: border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
         body {
             font-family: Arial, Helvetica, sans-serif;
-            font-size: 9.5px;
+            font-size: 8.5px;
             color: #000;
             margin: 0;
             padding: 0;
@@ -50,28 +50,23 @@
             font-weight: bold;
         }
 
-        /* 📄 A4 Landscape Half-Page Sheet Preview Styling (Short View) */
+        /* 📄 A4 Landscape Page Sheet Preview Styling (Short View) */
         .page-sheet {
-            width: 148mm;
-            min-height: 200mm;
+            width: 297mm;
+            height: 200mm;
             margin: 15px auto;
             background: #ffffff;
-            padding: 6mm 6mm;
+            padding: 6mm 8mm;
             box-shadow: 0 4px 15px rgba(0,0,0,0.4);
             position: relative;
             box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
         }
-        .page-sheet-number {
-            position: absolute;
-            top: 3mm;
-            right: 6mm;
-            font-size: 9px;
-            font-weight: bold;
-            color: #666;
-            background: #f0f0f0;
-            padding: 1px 5px;
-            border-radius: 3px;
-            border: 1px solid #ccc;
+
+        .table-half-container {
+            width: 145mm;
         }
 
         table {
@@ -83,21 +78,21 @@
         th {
             background: #d9d9d9;
             border: 1px solid #000;
-            padding: 4px 2px;
+            padding: 3px 2px;
             font-size: 8.5px;
             font-weight: bold;
             text-align: center;
-            line-height: 1.15;
+            line-height: 1.1;
         }
         td {
             border: 1px solid #666;
-            padding: 3px 2px;
-            font-size: 8.5px;
+            padding: 2px 3px;
+            font-size: 8px;
+            line-height: 1.1;
         }
         .sno { width: 5%; text-align: center; }
-        .type { width: 10%; text-align: center; }
-        .customer { width: 28%; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .num { text-align: right; white-space: nowrap; font-size: 8.5px; }
+        .customer { width: 27%; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 500; }
+        .num { text-align: right; white-space: nowrap; font-size: 8px; font-family: monospace, Arial; }
         .period-head {
             background: #eceff1;
             font-weight: bold;
@@ -106,23 +101,34 @@
             font-weight: bold;
             background: #eceff1;
             border-top: 2px solid #000;
+            font-size: 8px;
         }
         .grand-label { text-align: right; }
         .empty-msg { text-align: center; padding: 24px; font-size: 11px; }
+
+        .sheet-footer {
+            width: 145mm;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 8px;
+            color: #333;
+            padding-top: 3px;
+            border-top: 1px dashed #ccc;
+            margin-top: auto;
+        }
 
         @media print {
             body { background: #fff; }
             .no-print { display: none !important; }
             .page-sheet {
-                width: 148mm !important;
+                width: 297mm !important;
+                height: 200mm !important;
                 margin: 0 !important;
-                padding: 4mm !important;
+                padding: 6mm 8mm !important;
                 box-shadow: none !important;
                 page-break-after: always;
-                min-height: auto !important;
-                float: left !important;
             }
-            .page-sheet-number { display: none !important; }
         }
     </style>
 </head>
@@ -156,23 +162,21 @@
             <thead>
                 <tr>
                     <th class="sno" rowspan="2">S#</th>
-                    <th class="type" rowspan="2">Type</th>
-                    <th class="customer" rowspan="2">Party Name</th>
-                    <th rowspan="2">Opening Balance</th>
+                    <th class="customer" rowspan="2">Customer Name</th>
+                    <th rowspan="2" style="width: 11%;">Opening Balance</th>
                     <th colspan="4" class="period-head">Between {{ $fromLabel }} To. {{ $toLabel }}</th>
                 </tr>
                 <tr>
-                    <th>Sales</th>
-                    <th>SR/ PJ</th>
-                    <th>Receipts</th>
-                    <th>Balance</th>
+                    <th style="width: 14%;">Sales</th>
+                    <th style="width: 14%;">SRJ PJ</th>
+                    <th style="width: 14%;">Receipts</th>
+                    <th style="width: 16%;">Balance</th>
                 </tr>
             </thead>
             <tbody>
                 @foreach($rows as $i => $row)
                 <tr>
                     <td class="sno">{{ $i + 1 }}</td>
-                    <td class="type">{{ $row['party_type_label'] ?? 'Customer' }}</td>
                     <td class="customer">{{ $row['party_name'] ?? $row['customer_name'] }}</td>
                     <td class="num">{{ $fmt($row['opening']) }}</td>
                     <td class="num">{{ $fmt($row['sales']) }}</td>
@@ -182,7 +186,7 @@
                 </tr>
                 @endforeach
                 <tr class="grand-row">
-                    <td colspan="3" class="grand-label">Grand Total Amount</td>
+                    <td colspan="2" class="grand-label">Grand Total Amount</td>
                     <td class="num">{{ $fmt($grand['opening']) }}</td>
                     <td class="num">{{ $fmt($grand['sales']) }}</td>
                     <td class="num">{{ $fmt($grand['sr_pj']) }}</td>
@@ -206,7 +210,7 @@
             XLSX.writeFile(wb, "Outstanding_Balance_Short.xlsx");
         }
 
-        // 📄 Dynamic A4 Page Sheet Paginator (Short View: 25 rows per A4 landscape sheet)
+        // 📄 Dynamic A4 Page Sheet Paginator (Short View: 42 rows per A4 landscape half-sheet)
         document.addEventListener("DOMContentLoaded", function() {
             var rawTable = document.getElementById("outstandingShortTable");
             var pagesWrapper = document.getElementById("pagesWrapper");
@@ -220,13 +224,12 @@
                 return;
             }
 
-            var rowsPerPage = 28; // Fits perfectly on A4 Landscape Half Page height
+            var rowsPerPage = 42; // Fits ~42 rows per A4 Landscape Half Page sheet
             var totalPages = Math.ceil(rows.length / rowsPerPage);
             if (badge) badge.innerText = "📄 Total Pages: " + totalPages + " A4 Pages";
 
             var theadHTML = rawTable.querySelector("thead").outerHTML;
-            var companyName = "AL-MADINA TRADERS";
-            var genDate = "{{ $generated_at->format('l, M j, Y') }}";
+            var genDate = "{{ $generated_at->format('l, F j, Y') }}";
 
             for (var p = 0; p < totalPages; p++) {
                 var start = p * rowsPerPage;
@@ -235,15 +238,15 @@
                 var sheet = document.createElement("div");
                 sheet.className = "page-sheet";
 
-                var sheetNumBadge = document.createElement("div");
-                sheetNumBadge.className = "page-sheet-number";
-                sheetNumBadge.innerText = "Page " + (p + 1) + " of " + totalPages;
-                sheet.appendChild(sheetNumBadge);
-
                 var tbodyHTML = pageRows.map(function(r) { return r.outerHTML; }).join("");
-                var tableHTML = '<table style="table-layout:fixed; width:100%; border-collapse:collapse; border:1px solid #000;">' + theadHTML + '<tbody>' + tbodyHTML + '</tbody></table>';
+                var tableHTML = '<div class="table-half-container"><table style="table-layout:fixed; width:100%; border-collapse:collapse; border:1px solid #000;">' + theadHTML + '<tbody>' + tbodyHTML + '</tbody></table></div>';
 
-                sheet.innerHTML += tableHTML;
+                var footerHTML = '<div class="sheet-footer">' +
+                    '<div>' + genDate + '</div>' +
+                    '<div>Page ' + (p + 1) + ' of ' + totalPages + '</div>' +
+                    '</div>';
+
+                sheet.innerHTML = tableHTML + footerHTML;
                 pagesWrapper.appendChild(sheet);
             }
         });
