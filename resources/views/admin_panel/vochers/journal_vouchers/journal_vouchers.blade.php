@@ -120,7 +120,28 @@
                                         <td><input type="text" class="form-control form-control-sm text-center fw-bold text-danger rowPartyCode" placeholder="Code" value="{{ is_numeric($pIds[$idx] ?? '') ? (DB::table('accounts')->where('id', $pIds[$idx])->value('account_code') ?: $pIds[$idx]) : ($pIds[$idx] ?? '') }}"></td>
                                         <td>
                                             <select name="party_id[]" class="form-select form-select-sm rowPartyName select2" data-selected="{{ $pIds[$idx] ?? '' }}" required>
-                                                <option value="">Select Party...</option>
+                                                 <option value="">Select Party...</option>
+                                                 @if(isset($allAccounts) && count($allAccounts) > 0)
+                                                 <optgroup label="Accounts">
+                                                     @foreach($allAccounts as $acc)
+                                                     <option value="{{ $acc->id }}" data-type="account" data-head-id="{{ $acc->head_id }}" data-code="{{ $acc->account_code }}" {{ ($pTypes[$idx] ?? '') == $acc->head_id && ($pIds[$idx] ?? '') == $acc->id ? 'selected' : '' }}>{{ $acc->title }} ({{ $acc->account_code }})</option>
+                                                     @endforeach
+                                                 </optgroup>
+                                                 @endif
+                                                 @if(isset($customers) && count($customers) > 0)
+                                                 <optgroup label="Customers">
+                                                     @foreach($customers as $cust)
+                                                     <option value="{{ $cust->id }}" data-type="customer" data-head-id="customer" data-code="{{ $cust->customer_id }}" {{ ($pTypes[$idx] ?? '') == 'customer' && ($pIds[$idx] ?? '') == $cust->id ? 'selected' : '' }}>{{ $cust->customer_name }} ({{ $cust->customer_id }}) [Customer]</option>
+                                                     @endforeach
+                                                 </optgroup>
+                                                 @endif
+                                                 @if(isset($vendors) && count($vendors) > 0)
+                                                 <optgroup label="Vendors">
+                                                     @foreach($vendors as $vend)
+                                                     <option value="{{ $vend->id }}" data-type="vendor" data-head-id="vendor" data-code="{{ $vend->id }}" {{ ($pTypes[$idx] ?? '') == 'vendor' && ($pIds[$idx] ?? '') == $vend->id ? 'selected' : '' }}>{{ $vend->name }} [Vendor]</option>
+                                                     @endforeach
+                                                 </optgroup>
+                                                 @endif
                                             </select>
                                         </td>
                                         <td><input type="number" step="any" name="qty[]" class="form-control form-control-sm text-end row-qty" value="{{ $qtys[$idx] ?? '' }}" placeholder="0"></td>
@@ -187,33 +208,40 @@ $(document).ready(function() {
         $row.find('.select2').select2({ width: '100%' });
         $row.find('.narrationSelect').select2({ placeholder: "Narration...", tags: true, width: '100%' });
         $row.find('.rowPartyName').select2({ placeholder: "Select Party...", allowClear: true, width: '100%' });
-        
-        if($row.find('.rowPartyType').val()) {
-            $row.find('.rowPartyType').trigger('change');
-        }
     }
 
-    $(document).on('change', '.rowPartyType', function() {
-        let typeId = $(this).val();
+    $(document).on('change', '.rowPartyName', function() {
         let $row = $(this).closest('tr');
-        let $sub = $row.find('.rowPartyName');
-        let selected = $sub.data('selected');
-        $row.find('.rowPartyCode').val('');
-        $sub.html('<option value="">Loading...</option>');
-        if(typeId) {
-            let url = (['vendor','customer','walkin'].includes(typeId)) ? '{{ route("party.list") }}?type=' + typeId : '{{ url("get-accounts-by-head") }}/' + typeId;
-            $.get(url, function(res) {
-                $sub.html('<option value="">Select Party...</option>');
-                res.forEach(i => {
-                    let code = i.account_code || i.id || '';
-                    $sub.append(`<option value="${i.id}" data-code="${code}" ${i.id == selected ? 'selected' : ''}>${i.text || i.title}</option>`);
-                });
-                if(selected) { let code = $sub.find('option:selected').attr('data-code'); $row.find('.rowPartyCode').val(code || ''); }
-            });
+        let $opt = $(this).find('option:selected');
+        let code = $opt.attr('data-code') || $opt.data('code');
+        let headId = $opt.attr('data-head-id') || $opt.data('head-id');
+        $row.find('.rowPartyCode').val(code || '');
+        if (headId) {
+            let $headSelect = $row.find('.rowPartyType');
+            $headSelect.val(headId).trigger('change', [false]); // false = don't filter party list
         }
     });
 
-    $(document).on('change', '.rowPartyName', function() { let code = $(this).find('option:selected').attr('data-code'); $(this).closest('tr').find('.rowPartyCode').val(code || $(this).val() || ''); });
+    $(document).on('change', '.rowPartyType', function(e, isUserAction) {
+        if (isUserAction === false) return; // Triggered by Party selection
+        let $row = $(this).closest('tr');
+        let headId = $(this).val();
+        let $subSelect = $row.find('.rowPartyName');
+        let selectedSubId = $subSelect.val();
+        if (headId) {
+            let url = (['vendor','customer','walkin'].includes(headId)) ? '{{ route("party.list") }}?type=' + headId : '{{ url("get-accounts-by-head") }}/' + headId;
+            $.get(url, function(res) {
+                $subSelect.html('<option value="">Select Party...</option>');
+                res.forEach(acc => {
+                    let code = acc.account_code || acc.id || '';
+                    let title = acc.text || acc.title || acc.name || acc.customer_name;
+                    let sel = (acc.id == selectedSubId) ? 'selected' : '';
+                    $subSelect.append(`<option value="${acc.id}" data-type="${headId}" data-head-id="${headId}" data-code="${code}" ${sel}>${title} (${code})</option>`);
+                });
+                $subSelect.trigger('change.select2');
+            });
+        }
+    });
 
     $(document).on('blur keydown', '.rowPartyCode', function(e) {
         if(e.type === 'keydown' && e.which != 13 && e.which != 9) return;
@@ -256,7 +284,30 @@ $(document).ready(function() {
             <td><select name="narration_id[]" class="form-select form-select-sm narrationSelect"><option value="">Narration...</option>@foreach($narrationsList as $lid => $lname)<option value="{{ $lid }}">{{ $lname }}</option>@endforeach</select></td>
             <td><select name="party_type[]" class="form-select form-select-sm rowPartyType select2" required><option value="">Select Type...</option>@foreach($AccountHeads as $head)<option value="{{ $head->id }}">{{ $head->name }}</option>@endforeach<option value="vendor">Vendor</option><option value="customer">Customer</option><option value="walkin">Walkin</option></select></td>
             <td><input type="text" class="form-control form-control-sm text-center fw-bold text-danger rowPartyCode" placeholder="Code"></td>
-            <td><select name="party_id[]" class="form-select form-select-sm rowPartyName select2" required><option value="">Select Party...</option></select></td>
+            <td><select name="party_id[]" class="form-select form-select-sm rowPartyName select2" data-selected="{{ $pIds[$idx] ?? '' }}" required>
+                                                 <option value="">Select Party...</option>
+                                                 @if(isset($allAccounts) && count($allAccounts) > 0)
+                                                 <optgroup label="Accounts">
+                                                     @foreach($allAccounts as $acc)
+                                                     <option value="{{ $acc->id }}" data-type="account" data-head-id="{{ $acc->head_id }}" data-code="{{ $acc->account_code }}" {{ ($pTypes[$idx] ?? '') == $acc->head_id && ($pIds[$idx] ?? '') == $acc->id ? 'selected' : '' }}>{{ $acc->title }} ({{ $acc->account_code }})</option>
+                                                     @endforeach
+                                                 </optgroup>
+                                                 @endif
+                                                 @if(isset($customers) && count($customers) > 0)
+                                                 <optgroup label="Customers">
+                                                     @foreach($customers as $cust)
+                                                     <option value="{{ $cust->id }}" data-type="customer" data-head-id="customer" data-code="{{ $cust->customer_id }}" {{ ($pTypes[$idx] ?? '') == 'customer' && ($pIds[$idx] ?? '') == $cust->id ? 'selected' : '' }}>{{ $cust->customer_name }} ({{ $cust->customer_id }}) [Customer]</option>
+                                                     @endforeach
+                                                 </optgroup>
+                                                 @endif
+                                                 @if(isset($vendors) && count($vendors) > 0)
+                                                 <optgroup label="Vendors">
+                                                     @foreach($vendors as $vend)
+                                                     <option value="{{ $vend->id }}" data-type="vendor" data-head-id="vendor" data-code="{{ $vend->id }}" {{ ($pTypes[$idx] ?? '') == 'vendor' && ($pIds[$idx] ?? '') == $vend->id ? 'selected' : '' }}>{{ $vend->name }} [Vendor]</option>
+                                                     @endforeach
+                                                 </optgroup>
+                                                 @endif
+                                            </select></td>
             <td><input type="number" step="any" name="qty[]" class="form-control form-control-sm text-end row-qty" placeholder="0"></td>
             <td><input type="number" step="0.01" name="debit[]" class="form-control form-control-sm text-end fw-bold row-debit" placeholder="0.00"></td>
             <td><input type="number" step="0.01" name="credit[]" class="form-control form-control-sm text-end fw-bold row-credit" placeholder="0.00"></td>

@@ -126,9 +126,7 @@
                                              <select name="party_type[]" class="form-select form-select-sm rowPartyType select2">
                                                  <option value="">Select Type...</option>
                                                  @foreach($AccountHeads as $head)
-                                                     @if(strtoupper($head->name) === 'INCOME')
                                                      <option value="{{ $head->id }}" {{ ($types[$idx] ?? '') == $head->id ? 'selected' : '' }}>{{ $head->name }}</option>
-                                                     @endif
                                                  @endforeach
                                              </select>
                                         </td>
@@ -136,6 +134,11 @@
                                         <td>
                                             <select name="party_id[]" class="form-select form-select-sm rowPartySelect select2" data-selected="{{ $pIds[$idx] ?? '' }}">
                                                 <option value="">Select Party...</option>
+                                                 @if(isset($allAccounts))
+                                                     @foreach($allAccounts as $acc)
+                                                     <option value="{{ $acc->id }}" data-head-id="{{ $acc->head_id }}" data-code="{{ $acc->account_code }}" {{ ($pIds[$idx] ?? '') == $acc->id ? 'selected' : '' }}>{{ $acc->title }}</option>
+                                                     @endforeach
+                                                 @endif
                                             </select>
                                         </td>
                                         <td><input type="text" name="reference_no[]" class="form-control form-control-sm" value="{{ $refs[$idx] ?? '' }}" placeholder="Ref#"></td>
@@ -254,34 +257,33 @@ $(document).ready(function() {
     });
 
     // 👤 Row Party Logic
-    $(document).on('change', '.rowPartyType', function() {
-        let type = $(this).val();
+    $(document).on('change', '.rowPartySelect', function() {
         let $row = $(this).closest('tr');
-        let $select = $row.find('.rowPartySelect');
-        let selected = $select.data('selected');
-        $row.find('.rowPartyCode').val('');
-        $select.html('<option value="">Loading...</option>');
-        if(type) {
-            let url = (['vendor','customer','walkin'].includes(type)) ? '{{ route("party.list") }}?type=' + type : '{{ url("get-accounts-by-head") }}/' + type;
-            $.get(url, function(res) {
-                $select.html('<option value="">Select Party...</option>');
-                res.forEach(i => {
-                    let code = i.account_code || '';
-                    $select.append(`<option value="${i.id}" data-code="${code}" ${i.id == selected ? 'selected' : ''}>${i.text || i.title}</option>`);
-                });
-                if(selected) {
-                    let code = $select.find('option:selected').attr('data-code');
-                    $row.find('.rowPartyCode').val(code || selected);
-                }
-            });
+        let $opt = $(this).find('option:selected');
+        let code = $opt.attr('data-code') || $opt.data('code');
+        let headId = $opt.attr('data-head-id') || $opt.data('head-id');
+        $row.find('.rowPartyCode').val(code || '');
+        if (headId) {
+            let $headSelect = $row.find('.rowPartyType');
+            $headSelect.val(headId).trigger('change');
         }
     });
 
-    $('.rowPartyType').each(function() { if ($(this).val()) $(this).trigger('change'); });
-
-    $(document).on('change', '.rowPartySelect', function() {
-        let code = $(this).find('option:selected').attr('data-code');
-        $(this).closest('tr').find('.rowPartyCode').val(code || $(this).val() || '');
+    $(document).on('change', '.rowPartyType', function(e, isUserAction) {
+        let $row = $(this).closest('tr');
+        let headId = $(this).val();
+        let $subSelect = $row.find('.rowPartySelect');
+        let selectedSubId = $subSelect.val();
+        if (headId && isUserAction) {
+            $.get('{{ url("get-accounts-by-head") }}/' + headId, function(res) {
+                $subSelect.html('<option value="">Select Party...</option>');
+                res.forEach(acc => {
+                    let sel = (acc.id == selectedSubId) ? 'selected' : '';
+                    $subSelect.append(`<option value="${acc.id}" data-head-id="${headId}" data-code="${acc.account_code}" ${sel}>${acc.title}</option>`);
+                });
+                $subSelect.trigger('change.select2');
+            });
+        }
     });
 
     $(document).on('blur keydown', '.rowPartyCode', function(e) {
@@ -309,9 +311,8 @@ $(document).ready(function() {
         if (window.VoucherRowValidation && !window.VoucherRowValidation.validateLastRow($('#voucherTable'))) return;
         let row = '<tr>' +
             '<td><select name="narration_id[]" class="form-select form-select-sm narrationSelect"><option value="">Narration...</option>@foreach($narrationsList as $lid => $lname)<option value="{{ $lid }}">{{ addslashes($lname) }}</option>@endforeach</select></td>' +
-            '<td><select name="party_type[]" class="form-select form-select-sm rowPartyType select2"><option value="">Select Type...</option>@foreach($AccountHeads as $head) @if(strtoupper($head->name) === 'INCOME')<option value="{{ $head->id }}">{{ addslashes($head->name) }}</option>@endif @endforeach</select></td>' +
             '<td><input type="text" name="row_party_code[]" class="form-control form-control-sm text-center fw-bold text-danger rowPartyCode" placeholder="Code"></td>' +
-            '<td><select name="party_id[]" class="form-select form-select-sm rowPartySelect select2"><option value="">Select Party...</option></select></td>' +
+            '<td><select name="party_id[]" class="form-select form-select-sm rowPartySelect select2"><option value="">Select Party...</option>@if(isset($allAccounts))@foreach($allAccounts as $acc)<option value="{{ $acc->id }}" data-head-id="{{ $acc->head_id }}" data-code="{{ $acc->account_code }}">{{ addslashes($acc->title) }}</option>@endforeach @endif</select></td>' +
             '<td><input type="text" name="reference_no[]" class="form-control form-control-sm" placeholder="Ref#"></td>' +
             '<td><input type="number" step="0.01" name="amount[]" class="form-control form-control-sm text-end fw-bold row-amount" placeholder="0.00"></td>' +
             '<td class="text-center"><button type="button" class="btn text-danger btn-xs removeRow p-0" title="Remove Line"><i class="fa fa-trash-o fs-5"></i></button></td>' +

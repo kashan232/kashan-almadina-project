@@ -141,9 +141,7 @@
                                              <select name="row_account_head[]" class="form-select form-select-sm rowAccountHead select2">
                                                  <option value="">Select Head...</option>
                                                  @foreach($AccountHeads as $head)
-                                                 @if(str_contains(strtoupper($head->name), 'CASH') || str_contains(strtoupper($head->name), 'BANK') || $head->id == 100000 || strtoupper($head->name) == 'SCRAP')
                                                  <option value="{{ $head->id }}" {{ ($rowHeads[$index] ?? '') == $head->id ? 'selected' : '' }}>{{ $head->name }}</option>
-                                                 @endif
                                                  @endforeach
                                              </select>
                                         </td>
@@ -151,6 +149,11 @@
                                         <td>
                                             <select name="row_account_id[]" class="form-select form-select-sm rowAccountSelect select2" data-selected="{{ $rowAccounts[$index] ?? '' }}">
                                                 <option value="">Select Account...</option>
+                                                @if(isset($allAccounts))
+                                                    @foreach($allAccounts as $acc)
+                                                    <option value="{{ $acc->id }}" data-head-id="{{ $acc->head_id }}" data-code="{{ $acc->account_code }}" {{ ($rowAccounts[$index] ?? '') == $acc->id ? 'selected' : '' }}>{{ $acc->title }}</option>
+                                                    @endforeach
+                                                @endif
                                             </select>
                                         </td>
                                         <td><input name="kg[]" type="number" step="any" class="form-control form-control-sm text-center kg" value="{{ $kgs[$index] ?? '' }}"></td>
@@ -310,33 +313,37 @@ $(document).ready(function() {
     }).trigger('change');
 
     // 🏦 Row Account Logic
-    $(document).on('change', '.rowAccountHead', function() {
-        let headId = $(this).val();
+    $(document).on('change', '.rowAccountSelect', function() {
         let $row = $(this).closest('tr');
-        let $select = $row.find('.rowAccountSelect');
-        let selected = $select.data('selected');
-        $row.find('.rowAccountCode').val('');
-        $select.empty().append('<option value="">Loading...</option>');
-        if(headId) {
-            $.get('{{ url("get-accounts-by-head") }}/' + headId, res => {
-                $select.empty().append('<option value="">Select Account...</option>');
-                let hasSelected = false;
-                res.forEach(a => {
-                    let sel = (a.id == selected) ? 'selected' : '';
-                    if (a.id == selected) hasSelected = true;
-                    $select.append(`<option value="${a.id}" data-code="${a.account_code}" ${sel}>${a.title}</option>`);
+        let $opt = $(this).find('option:selected');
+        let code = $opt.attr('data-code') || $opt.data('code');
+        let headId = $opt.attr('data-head-id') || $opt.data('head-id');
+        
+        $row.find('.rowAccountCode').val(code || '');
+        
+        if (headId) {
+            let $headSelect = $row.find('.rowAccountHead');
+            $headSelect.val(headId).trigger('change');
+        }
+    });
+
+    $(document).on('change', '.rowAccountHead', function(e, isUserAction) {
+        let $row = $(this).closest('tr');
+        let headId = $(this).val();
+        let $subSelect = $row.find('.rowAccountSelect');
+        let selectedSubId = $subSelect.val();
+        
+        if (headId && isUserAction) {
+            $.get('{{ url("get-accounts-by-head") }}/' + headId, function(res) {
+                $subSelect.html('<option value="">Select Account...</option>');
+                res.forEach(acc => {
+                    let sel = (acc.id == selectedSubId) ? 'selected' : '';
+                    $subSelect.append(`<option value="${acc.id}" data-head-id="${headId}" data-code="${acc.account_code}" ${sel}>${acc.title}</option>`);
                 });
-                if (hasSelected && selected) { 
-                    $select.val(String(selected));
-                    let code = $select.find('option:selected').attr('data-code'); 
-                    $row.find('.rowAccountCode').val(code || selected); 
-                }
-                $select.trigger('change');
-                $select.data('selected', ''); // Clear so it only auto-selects on first load
+                $subSelect.trigger('change.select2');
             });
         }
     });
-    $('.rowAccountHead').trigger('change');
 
     // 🏷️ Voucher Level Discount Head & Sub Head Logic
     $(document).on('change', '#discount_head', function() {
@@ -363,18 +370,14 @@ $(document).ready(function() {
         $('#discount_head').trigger('change');
     }
 
-    $(document).on('change', '.rowAccountSelect', function() { let code = $(this).find('option:selected').attr('data-code'); $(this).closest('tr').find('.rowAccountCode').val(code || $(this).val() || ''); });
-
     $(document).on('blur keydown', '.rowAccountCode', function(e) {
         if(e.type === 'keydown' && e.which != 13 && e.which != 9) return;
-        let $row = $(this).closest('tr');
-        let val = $(this).val();
-        if(val) {
-            let $sel = $row.find('.rowAccountSelect');
-            let optById = $sel.find('option').filter(function() { return $(this).val() == val; });
-            if(optById.length > 0) { $sel.val(val).trigger('change'); return; }
-            let optByCode = $sel.find('option').filter(function() { return $(this).attr('data-code') == val; });
-            if(optByCode.length > 0) { $sel.val(optByCode.val()).trigger('change'); }
+        let code = $(this).val();
+        if (code) {
+            let $row = $(this).closest('tr');
+            let $subSelect = $row.find('.rowAccountSelect');
+            let $opt = $subSelect.find('option').filter(function() { return $(this).attr('data-code') == code; });
+            if ($opt.length > 0) $subSelect.val($opt.val()).trigger('change');
         }
     });
 
@@ -386,9 +389,9 @@ $(document).ready(function() {
         let row = '<tr>' +
             '<td><select name="narration_id[]" class="form-select form-select-sm narrationSelect"><option value="">Narration...</option>@foreach($narrations as $id => $name)<option value="{{ $id }}">{{ addslashes($name) }}</option>@endforeach</select></td>' +
             '<td><input name="reference_no[]" type="text" class="form-control form-control-sm" placeholder="Ref#"></td>' +
-            '<td><select name="row_account_head[]" class="form-select form-select-sm rowAccountHead select2"><option value="">Select Head...</option>@foreach($AccountHeads as $head) @if(str_contains(strtoupper($head->name), 'CASH') || str_contains(strtoupper($head->name), 'BANK') || $head->id == 100000 || strtoupper($head->name) == 'SCRAP')<option value="{{ $head->id }}">{{ addslashes($head->name) }}</option>@endif @endforeach</select></td>' +
+            '<td><select name="row_account_head[]" class="form-select form-select-sm rowAccountHead select2"><option value="">Select Head...</option>@foreach($AccountHeads as $head) <option value="{{ $head->id }}">{{ addslashes($head->name) }}</option> @endforeach</select></td>' +
             '<td><input type="text" name="row_account_code[]" class="form-control form-control-sm text-center fw-bold text-danger rowAccountCode" placeholder="Code"></td>' +
-            '<td><select name="row_account_id[]" class="form-select form-select-sm rowAccountSelect select2"><option value="">Select Account...</option></select></td>' +
+            '<td><select name="row_account_id[]" class="form-select form-select-sm rowAccountSelect select2"><option value="">Select Account...</option>@if(isset($allAccounts))@foreach($allAccounts as $acc)<option value="{{ $acc->id }}" data-head-id="{{ $acc->head_id }}" data-code="{{ $acc->account_code }}">{{ addslashes($acc->title) }}</option>@endforeach @endif</select></td>' +
             '<td><input name="kg[]" type="number" step="any" class="form-control form-control-sm text-center kg"></td>' +
             '<td><input name="rate[]" type="number" step="any" class="form-control form-control-sm text-end rate"></td>' +
             '<td><input name="amount[]" type="text" class="form-control form-control-sm text-end fw-bold amount"></td>' +

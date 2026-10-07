@@ -138,8 +138,29 @@
                                         <td><input type="text" name="row_account_code[]" class="form-control form-control-sm text-center fw-bold text-danger rowAccountCode" placeholder="Code"></td>
                                         <td>
                                             <select name="account_id[]" class="form-select form-select-sm rowAccountSelect select2" data-selected="{{ $accIds[$idx] ?? '' }}">
-                                                <option value="">Select Account...</option>
-                                            </select>
+                                                 <option value="">Select Account...</option>
+                                                 @if(isset($allAccounts) && count($allAccounts) > 0)
+                                                 <optgroup label="Accounts">
+                                                     @foreach($allAccounts as $acc)
+                                                     <option value="{{ $acc->id }}" data-type="account" data-head-id="{{ $acc->head_id }}" data-code="{{ $acc->account_code }}" {{ ($accHeads[$idx] ?? '') == $acc->head_id && ($accIds[$idx] ?? '') == $acc->id ? 'selected' : '' }}>{{ $acc->title }} ({{ $acc->account_code }})</option>
+                                                     @endforeach
+                                                 </optgroup>
+                                                 @endif
+                                                 @if(isset($customers) && count($customers) > 0)
+                                                 <optgroup label="Customers">
+                                                     @foreach($customers as $cust)
+                                                     <option value="{{ $cust->id }}" data-type="customer" data-head-id="customer" data-code="{{ $cust->customer_id }}" {{ ($accHeads[$idx] ?? '') == 'customer' && ($accIds[$idx] ?? '') == $cust->id ? 'selected' : '' }}>{{ $cust->customer_name }} ({{ $cust->customer_id }}) [Customer]</option>
+                                                     @endforeach
+                                                 </optgroup>
+                                                 @endif
+                                                 @if(isset($vendors) && count($vendors) > 0)
+                                                 <optgroup label="Vendors">
+                                                     @foreach($vendors as $vend)
+                                                     <option value="{{ $vend->id }}" data-type="vendor" data-head-id="vendor" data-code="{{ $vend->id }}" {{ ($accHeads[$idx] ?? '') == 'vendor' && ($accIds[$idx] ?? '') == $vend->id ? 'selected' : '' }}>{{ $vend->name }} [Vendor]</option>
+                                                     @endforeach
+                                                 </optgroup>
+                                                 @endif
+                                             </select>
                                         </td>
                                         <td><input type="text" name="reference_no[]" class="form-control form-control-sm" value="{{ $refs[$idx] ?? '' }}" placeholder="Ref#"></td>
                                         <td><input type="number" step="any" name="qty[]" class="form-control form-control-sm text-end row-qty" value="{{ $qtys[$idx] ?? '' }}" placeholder="0"></td>
@@ -245,32 +266,38 @@ $(document).ready(function() {
     });
 
     // 🏦 Row Account Logic
-    $(document).on('change', '.rowAccountHead', function() {
+    $(document).on('change', '.rowAccountSelect', function() {
+        let $row = $(this).closest('tr');
+        let $opt = $(this).find('option:selected');
+        let code = $opt.attr('data-code') || $opt.data('code');
+        let headId = $opt.attr('data-head-id') || $opt.data('head-id');
+        $row.find('.rowAccountCode').val(code || '');
+        if (headId) {
+            let $headSelect = $row.find('.rowAccountHead');
+            $headSelect.val(headId).trigger('change', [false]);
+        }
+    });
+
+    $(document).on('change', '.rowAccountHead', function(e, isUserAction) {
+        if (isUserAction === false) return;
         let typeId = $(this).val();
         let $row = $(this).closest('tr');
         let $sub = $row.find('.rowAccountSelect');
-        let selected = $sub.data('selected');
-        $row.find('.rowAccountCode').val('');
-        $sub.html('<option value="">Loading...</option>');
+        let selected = $sub.val();
         if(typeId) {
             let url = (['vendor','customer','walkin'].includes(typeId)) ? '{{ route("party.list") }}?type=' + typeId : '{{ url("get-accounts-by-head") }}/' + typeId;
             $.get(url, function(res) {
                 $sub.html('<option value="">Select Account...</option>');
                 res.forEach(i => {
                     let code = i.account_code || i.id || '';
-                    $sub.append(`<option value="${i.id}" data-code="${code}" ${i.id == selected ? 'selected' : ''}>${i.text || i.title}</option>`);
+                    let title = i.text || i.title || i.name || i.customer_name;
+                    $sub.append(`<option value="${i.id}" data-type="${typeId}" data-head-id="${typeId}" data-code="${code}" ${i.id == selected ? 'selected' : ''}>${title} (${code})</option>`);
                 });
-                if(selected) { let code = $sub.find('option:selected').attr('data-code'); $row.find('.rowAccountCode').val(code || ''); }
+                $sub.trigger('change.select2');
             });
         }
     });
 
-    $('.rowAccountHead').each(function() { if ($(this).val()) $(this).trigger('change'); });
-
-    $(document).on('change', '.rowAccountSelect', function() {
-        let code = $(this).find('option:selected').attr('data-code');
-        $(this).closest('tr').find('.rowAccountCode').val(code || $(this).val() || '');
-    });
 
     $(document).on('blur keydown', '.rowAccountCode', function(e) {
         if(e.type === 'keydown' && e.which != 13 && e.which != 9) return;
@@ -336,7 +363,12 @@ $(document).ready(function() {
             '<td><select name="narration_id[]" class="form-select form-select-sm narrationSelect"><option value="">Narration...</option>@foreach($narrationsList as $lid => $lname)<option value="{{ $lid }}">{{ addslashes($lname) }}</option>@endforeach</select></td>' +
             '<td><select name="account_head[]" class="form-select form-select-sm rowAccountHead select2"><option value="">Select Head...</option>@foreach($AccountHeads as $head)<option value="{{ $head->id }}">{{ addslashes($head->name) }}</option>@endforeach<option value="vendor">Vendor</option><option value="customer">Customer</option><option value="walkin">Walkin</option></select></td>' +
             '<td><input type="text" name="row_account_code[]" class="form-control form-control-sm text-center fw-bold text-danger rowAccountCode" placeholder="Code"></td>' +
-            '<td><select name="account_id[]" class="form-select form-select-sm rowAccountSelect select2"><option value="">Select Account...</option></select></td>' +
+            '<td><select name="account_id[]" class="form-select form-select-sm rowAccountSelect select2">' +
+    '<option value="">Select Account...</option>' +
+    '@if(isset($allAccounts) && count($allAccounts) > 0)<optgroup label="Accounts">@foreach($allAccounts as $acc)<option value="{{ $acc->id }}" data-type="account" data-head-id="{{ $acc->head_id }}" data-code="{{ $acc->account_code }}">{{ addslashes($acc->title) }} ({{ $acc->account_code }})</option>@endforeach</optgroup>@endif' +
+    '@if(isset($customers) && count($customers) > 0)<optgroup label="Customers">@foreach($customers as $cust)<option value="{{ $cust->id }}" data-type="customer" data-head-id="customer" data-code="{{ $cust->customer_id }}">{{ addslashes($cust->customer_name) }} ({{ $cust->customer_id }}) [Customer]</option>@endforeach</optgroup>@endif' +
+    '@if(isset($vendors) && count($vendors) > 0)<optgroup label="Vendors">@foreach($vendors as $vend)<option value="{{ $vend->id }}" data-type="vendor" data-head-id="vendor" data-code="{{ $vend->id }}">{{ addslashes($vend->name) }} [Vendor]</option>@endforeach</optgroup>@endif' +
+'</select></td>' +
             '<td><input type="text" name="reference_no[]" class="form-control form-control-sm" placeholder="Ref#"></td>' +
             '<td><input type="number" step="any" name="qty[]" class="form-control form-control-sm text-end row-qty" placeholder="0"></td>' +
             '<td><input type="number" step="0.01" name="amount[]" class="form-control form-control-sm text-end fw-bold row-amount" placeholder="0.00"></td>' +

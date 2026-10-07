@@ -124,9 +124,7 @@
                                              <select name="row_account_head[]" class="form-select form-select-sm rowAccountHead select2">
                                                  <option value="">Select Head...</option>
                                                  @foreach($AccountHeads as $head)
-                                                     @if(strtoupper($head->name) === 'EXPENSE' || strtoupper($head->name) === 'DRAWING' || str_contains(strtoupper($head->name), 'DRAW'))
                                                      <option value="{{ $head->id }}" {{ ($rowHeads[$idx] ?? '') == $head->id ? 'selected' : '' }}>{{ $head->name }}</option>
-                                                     @endif
                                                  @endforeach
                                              </select>
                                         </td>
@@ -134,6 +132,11 @@
                                         <td>
                                             <select name="row_account_id[]" class="form-select form-select-sm rowAccountSub select2" data-selected="{{ $rowAccs[$idx] ?? '' }}">
                                                 <option value="">Select Account...</option>
+                                                 @if(isset($allAccounts))
+                                                     @foreach($allAccounts as $acc)
+                                                     <option value="{{ $acc->id }}" data-head-id="{{ $acc->head_id }}" data-code="{{ $acc->account_code }}" {{ ($rowAccs[$idx] ?? '') == $acc->id ? 'selected' : '' }}>{{ $acc->title }}</option>
+                                                     @endforeach
+                                                 @endif
                                             </select>
                                         </td>
                                         <td><input type="number" step="0.01" name="amount[]" class="form-control form-control-sm text-end fw-bold row-amount" value="{{ $amounts[$idx] ?? '' }}" placeholder="0.00"></td>
@@ -237,33 +240,22 @@ $(document).ready(function() {
     }).trigger('change');
 
     // 🏦 Row Account Logic
-    $(document).on('change', '.rowAccountHead', function() {
-        let headId = $(this).val();
+    $(document).on('change', '.rowAccountHead', function(e, isUserAction) {
         let $row = $(this).closest('tr');
+        let headId = $(this).val();
         let $subSelect = $row.find('.rowAccountSub');
-        let selected = $subSelect.data('selected');
-        $row.find('.account-id-lookup').val('');
-        $subSelect.html('<option value="">Loading...</option>');
-        if (headId) {
+        let selectedSubId = $subSelect.val();
+        if (headId && isUserAction) {
             $.get('{{ url("get-accounts-by-head") }}/' + headId, function(res) {
-                $subSelect.html('<option value="">Select Account</option>');
-                let hasSelected = false;
+                $subSelect.html('<option value="">Select Account...</option>');
                 res.forEach(acc => {
-                    let sel = (acc.id == selected) ? 'selected' : '';
-                    if (acc.id == selected) hasSelected = true;
-                    $subSelect.append(`<option value="${acc.id}" data-code="${acc.account_code}" ${sel}>${acc.title}</option>`);
+                    let sel = (acc.id == selectedSubId) ? 'selected' : '';
+                    $subSelect.append(`<option value="${acc.id}" data-head-id="${headId}" data-code="${acc.account_code}" ${sel}>${acc.title}</option>`);
                 });
-                if (hasSelected && selected) { 
-                    $subSelect.val(String(selected));
-                    let code = $subSelect.find('option:selected').attr('data-code'); 
-                    $row.find('.account-id-lookup').val(code || selected); 
-                }
-                $subSelect.trigger('change');
-                $subSelect.data('selected', ''); // Clear so it only auto-selects on first load
+                $subSelect.trigger('change.select2');
             });
         }
     });
-    $('.rowAccountHead').each(function() { if ($(this).val()) $(this).trigger('change'); });
 
     $(document).on('blur keydown', '.account-id-lookup', function(e) {
         if(e.type === 'keydown' && e.which != 13 && e.which != 9) return;
@@ -277,7 +269,17 @@ $(document).ready(function() {
             if(optByCode.length > 0) { $select.val(optByCode.val()).trigger('change'); }
         }
     });
-    $(document).on('change', '.rowAccountSub', function() { let code = $(this).find('option:selected').attr('data-code'); $(this).closest('tr').find('.account-id-lookup').val(code || $(this).val() || ''); });
+    $(document).on('change', '.rowAccountSub', function() {
+        let $row = $(this).closest('tr');
+        let $opt = $(this).find('option:selected');
+        let code = $opt.attr('data-code') || $opt.data('code');
+        let headId = $opt.attr('data-head-id') || $opt.data('head-id');
+        $row.find('.account-id-lookup').val(code || '');
+        if (headId) {
+            let $headSelect = $row.find('.rowAccountHead');
+            $headSelect.val(headId).trigger('change');
+        }
+    });
 
     // ➕ Table Math & Action
     function calculateTotals() {
@@ -301,7 +303,6 @@ $(document).ready(function() {
         }
         let newRow = '<tr>' +
             '<td><select name="narration_id[]" class="form-select form-select-sm narrationSelect"><option value="">Narration...</option>@foreach($narrationsList as $lid => $lname)<option value="{{ $lid }}">{{ addslashes($lname) }}</option>@endforeach</select></td>' +
-            '<td><select name="row_account_head[]" class="form-select form-select-sm rowAccountHead select2"><option value="">Select Head...</option>@foreach($AccountHeads as $head) @if(strtoupper($head->name) === 'EXPENSE' || strtoupper($head->name) === 'DRAWING' || str_contains(strtoupper($head->name), 'DRAW'))<option value="{{ $head->id }}">{{ addslashes($head->name) }}</option>@endif @endforeach</select></td>' +
             '<td><input type="text" class="form-control form-control-sm text-center fw-bold text-danger account-id-lookup" placeholder="Code"></td>' +
             '<td><select name="row_account_id[]" class="form-select form-select-sm rowAccountSub select2"><option value="">Select Account...</option></select></td>' +
             '<td><input type="number" step="0.01" name="amount[]" class="form-control form-control-sm text-end fw-bold row-amount" placeholder="0.00"></td>' +
