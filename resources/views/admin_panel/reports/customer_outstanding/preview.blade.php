@@ -5,11 +5,11 @@
     <meta charset="UTF-8">
     <title>Customer Outstanding Balance</title>
     <style>
-        @page { size: A4 portrait; margin: 0; }
+        @page { size: A4 landscape; margin: 0; }
         * { box-sizing: border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
         body {
             font-family: Arial, Helvetica, sans-serif;
-            font-size: 11px;
+            font-size: 9.5px;
             color: #000;
             margin: 0;
             padding: 0;
@@ -50,55 +50,30 @@
             font-weight: bold;
         }
 
-        /* 📄 A4 Portrait Sheet Preview Styling for Short View */
+        /* 📄 A4 Landscape Half-Page Sheet Preview Styling (Short View) */
         .page-sheet {
-            width: 210mm;
-            min-height: 297mm;
+            width: 148mm;
+            min-height: 200mm;
             margin: 15px auto;
             background: #ffffff;
-            padding: 8mm 10mm;
+            padding: 6mm 6mm;
             box-shadow: 0 4px 15px rgba(0,0,0,0.4);
             position: relative;
             box-sizing: border-box;
         }
         .page-sheet-number {
             position: absolute;
-            top: 5mm;
-            right: 10mm;
-            font-size: 10px;
+            top: 3mm;
+            right: 6mm;
+            font-size: 9px;
             font-weight: bold;
             color: #666;
             background: #f0f0f0;
-            padding: 2px 6px;
+            padding: 1px 5px;
             border-radius: 3px;
             border: 1px solid #ccc;
         }
 
-        .company-name {
-            text-align: center;
-            color: #8e24aa;
-            font-size: 17px;
-            font-weight: bold;
-            margin-bottom: 3px;
-        }
-        .report-header {
-            text-align: center;
-            position: relative;
-            margin-bottom: 12px;
-        }
-        .report-title {
-            color: #0d47a1;
-            font-size: 17px;
-            font-weight: bold;
-            margin: 0;
-        }
-        .generated-date {
-            position: absolute;
-            right: 0;
-            top: 0;
-            font-size: 10px;
-            color: #555;
-        }
         table {
             width: 100%;
             border-collapse: collapse;
@@ -108,20 +83,21 @@
         th {
             background: #d9d9d9;
             border: 1px solid #000;
-            padding: 6px 5px;
-            font-size: 11px;
+            padding: 4px 2px;
+            font-size: 8.5px;
             font-weight: bold;
             text-align: center;
+            line-height: 1.15;
         }
         td {
             border: 1px solid #666;
-            padding: 4.5px 6px;
-            font-size: 11px;
+            padding: 3px 2px;
+            font-size: 8.5px;
         }
         .sno { width: 5%; text-align: center; }
         .type { width: 10%; text-align: center; }
-        .customer { width: 27%; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .num { text-align: right; white-space: nowrap; }
+        .customer { width: 28%; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .num { text-align: right; white-space: nowrap; font-size: 8.5px; }
         .period-head {
             background: #eceff1;
             font-weight: bold;
@@ -138,12 +114,13 @@
             body { background: #fff; }
             .no-print { display: none !important; }
             .page-sheet {
-                width: 100% !important;
+                width: 148mm !important;
                 margin: 0 !important;
-                padding: 5mm !important;
+                padding: 4mm !important;
                 box-shadow: none !important;
                 page-break-after: always;
                 min-height: auto !important;
+                float: left !important;
             }
             .page-sheet-number { display: none !important; }
         }
@@ -174,13 +151,6 @@
     </div>
 
     <div id="reportContainer" style="display:none;">
-        <div class="company-name">AL-MADINA TRADERS</div>
-        <div class="report-header">
-            <div class="generated-date">{{ $generated_at->format('l, M j, Y') }}</div>
-            <div class="report-title">Outstanding Balance</div>
-            <div class="report-sub" style="font-size:8px;font-weight:bold;">Short View</div>
-        </div>
-
         @if(!empty($rows))
         <table id="outstandingShortTable">
             <thead>
@@ -250,7 +220,7 @@
                 return;
             }
 
-            var rowsPerPage = 34; // Fits perfectly on A4 portrait page
+            var rowsPerPage = 28; // Fits perfectly on A4 Landscape Half Page height
             var totalPages = Math.ceil(rows.length / rowsPerPage);
             if (badge) badge.innerText = "📄 Total Pages: " + totalPages + " A4 Pages";
 
@@ -270,17 +240,10 @@
                 sheetNumBadge.innerText = "Page " + (p + 1) + " of " + totalPages;
                 sheet.appendChild(sheetNumBadge);
 
-                var headerHTML = '<div class="company-name">' + companyName + '</div>' +
-                    '<div class="report-header">' +
-                        '<div class="generated-date">' + genDate + '</div>' +
-                        '<div class="report-title">Outstanding Balance</div>' +
-                        '<div class="report-sub" style="font-size:8px;font-weight:bold;">Short View</div>' +
-                    '</div>';
-
                 var tbodyHTML = pageRows.map(function(r) { return r.outerHTML; }).join("");
                 var tableHTML = '<table style="table-layout:fixed; width:100%; border-collapse:collapse; border:1px solid #000;">' + theadHTML + '<tbody>' + tbodyHTML + '</tbody></table>';
 
-                sheet.innerHTML += headerHTML + tableHTML;
+                sheet.innerHTML += tableHTML;
                 pagesWrapper.appendChild(sheet);
             }
         });
