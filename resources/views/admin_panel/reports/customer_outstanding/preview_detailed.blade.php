@@ -53,19 +53,19 @@
         /* 📄 A4 Landscape Sheet Preview Styling */
         .page-sheet {
             width: 297mm;
-            min-height: 210mm;
+            min-height: 200mm;
             margin: 15px auto;
             background: #ffffff;
-            padding: 5mm 6mm;
+            padding: 8mm 10mm;
             box-shadow: 0 4px 15px rgba(0,0,0,0.4);
             position: relative;
             box-sizing: border-box;
         }
         .page-sheet-number {
             position: absolute;
-            top: 4mm;
-            right: 6mm;
-            font-size: 9px;
+            top: 5mm;
+            right: 10mm;
+            font-size: 10px;
             font-weight: bold;
             color: #666;
             background: #f0f0f0;
@@ -77,23 +77,23 @@
         .company-name {
             text-align: center;
             color: #8e24aa;
-            font-size: 15px;
+            font-size: 17px;
             font-weight: bold;
-            margin-bottom: 2px;
+            margin-bottom: 3px;
         }
         .report-header {
             text-align: center;
             position: relative;
-            margin-bottom: 8px;
+            margin-bottom: 10px;
         }
         .report-title {
             color: #0d47a1;
-            font-size: 15px;
+            font-size: 17px;
             font-weight: bold;
             margin: 0;
         }
         .report-sub {
-            font-size: 10px;
+            font-size: 11px;
             font-weight: bold;
             color: #333;
         }
@@ -101,7 +101,7 @@
             position: absolute;
             right: 0;
             top: 0;
-            font-size: 9px;
+            font-size: 10px;
             color: #555;
         }
         table {
@@ -113,21 +113,21 @@
         th {
             background: #d9d9d9;
             border: 1px solid #000;
-            padding: 4px 3px;
-            font-size: 8.5px;
+            padding: 4px 2px;
+            font-size: 8px;
             font-weight: bold;
             text-align: center;
-            line-height: 1.15;
+            line-height: 1.1;
         }
         td {
             border: 1px solid #666;
-            padding: 2.5px 3px;
-            font-size: 8.5px;
+            padding: 3px 2px;
+            font-size: 8px;
         }
-        .sno { width: 3%; text-align: center; }
-        .type { width: 7%; text-align: center; }
-        .customer { width: 12%; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .num { text-align: right; white-space: nowrap; }
+        .sno { width: 2.5%; text-align: center; }
+        .type { width: 5.5%; text-align: center; }
+        .customer { width: 14%; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .num { text-align: right; white-space: nowrap; font-size: 8px; }
         .period-head { background: #eceff1; }
         .col-green { color: #1b5e20; font-weight: 600; }
         .col-red { color: #b71c1c; font-weight: 600; }
@@ -145,7 +145,7 @@
             .page-sheet {
                 width: 100% !important;
                 margin: 0 !important;
-                padding: 3mm !important;
+                padding: 5mm 8mm !important;
                 box-shadow: none !important;
                 page-break-after: always;
                 min-height: auto !important;
@@ -201,13 +201,6 @@
 
     <!-- Hidden Raw Report Container for Excel & Pagination calculation -->
     <div id="reportContainer" style="display:none;">
-        <div class="company-name">AL-MADINA TRADERS</div>
-        <div class="report-header">
-            <div class="generated-date">{{ $generated_at->format('l, M j, Y') }}</div>
-            <div class="report-title">Outstanding Balance</div>
-            <div class="report-sub">Detailed View</div>
-        </div>
-
         @if(!empty($rows))
         <table id="outstandingReportTable">
             <thead>
@@ -277,13 +270,11 @@
                 return;
             }
 
-            var rowsPerPage = 22; // Fits perfectly on A4 landscape sheet with 0/3mm margin
+            var rowsPerPage = 34; // Maximize rows per page without top header
             var totalPages = Math.ceil(rows.length / rowsPerPage);
             if (badge) badge.innerText = "📄 Total Pages: " + totalPages + " A4 Pages";
 
             var theadHTML = rawTable.querySelector("thead").outerHTML;
-            var companyName = "AL-MADINA TRADERS";
-            var genDate = "{{ $generated_at->format('l, M j, Y') }}";
 
             for (var p = 0; p < totalPages; p++) {
                 var start = p * rowsPerPage;
@@ -297,17 +288,10 @@
                 sheetNumBadge.innerText = "Page " + (p + 1) + " of " + totalPages;
                 sheet.appendChild(sheetNumBadge);
 
-                var headerHTML = '<div class="company-name">' + companyName + '</div>' +
-                    '<div class="report-header">' +
-                        '<div class="generated-date">' + genDate + '</div>' +
-                        '<div class="report-title">Outstanding Balance</div>' +
-                        '<div class="report-sub">Detailed View</div>' +
-                    '</div>';
-
                 var tbodyHTML = pageRows.map(function(r) { return r.outerHTML; }).join("");
                 var tableHTML = '<table style="table-layout:fixed; width:100%; border-collapse:collapse; border:1px solid #000;">' + theadHTML + '<tbody>' + tbodyHTML + '</tbody></table>';
 
-                sheet.innerHTML += headerHTML + tableHTML;
+                sheet.innerHTML += tableHTML;
                 pagesWrapper.appendChild(sheet);
             }
         });
