@@ -5,38 +5,90 @@
     <meta charset="UTF-8">
     <title>Customer Outstanding Balance</title>
     <style>
-        @page { size: A4 landscape; margin: 4mm; }
+        @page { size: A4 portrait; margin: 0; }
         * { box-sizing: border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
         body {
             font-family: Arial, Helvetica, sans-serif;
             font-size: 11px;
             color: #000;
             margin: 0;
-            padding: 6mm;
-            background: #fff;
+            padding: 0;
+            background: #525659;
         }
         .no-print {
-            padding: 10px;
-            background: #f8f9fa;
-            border-bottom: 1px solid #ddd;
-            text-align: center;
-            margin-bottom: 12px;
+            position: sticky;
+            top: 0;
+            z-index: 9999;
+            padding: 10px 15px;
+            background: #2a2d32;
+            color: #fff;
+            border-bottom: 1px solid #1a1c1e;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
         }
+        .no-print .btn-group button {
+            padding: 7px 16px;
+            font-weight: bold;
+            cursor: pointer;
+            border: none;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+        .btn-print { background: #e91e63; color: #fff; }
+        .btn-print:hover { background: #d81b60; }
+        .btn-excel { background: #2e7d32; color: #fff; margin-left: 8px; }
+        .btn-excel:hover { background: #1b5e20; }
+        .btn-close { background: #616161; color: #fff; margin-left: 8px; }
+        .page-badge {
+            background: #1976d2;
+            color: #fff;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        /* 📄 A4 Portrait Sheet Preview Styling for Short View */
+        .page-sheet {
+            width: 210mm;
+            min-height: 297mm;
+            margin: 15px auto;
+            background: #ffffff;
+            padding: 8mm 10mm;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+            position: relative;
+            box-sizing: border-box;
+        }
+        .page-sheet-number {
+            position: absolute;
+            top: 5mm;
+            right: 10mm;
+            font-size: 10px;
+            font-weight: bold;
+            color: #666;
+            background: #f0f0f0;
+            padding: 2px 6px;
+            border-radius: 3px;
+            border: 1px solid #ccc;
+        }
+
         .company-name {
             text-align: center;
             color: #8e24aa;
-            font-size: 16px;
+            font-size: 17px;
             font-weight: bold;
             margin-bottom: 3px;
         }
         .report-header {
             text-align: center;
             position: relative;
-            margin-bottom: 10px;
+            margin-bottom: 12px;
         }
         .report-title {
             color: #0d47a1;
-            font-size: 16px;
+            font-size: 17px;
             font-weight: bold;
             margin: 0;
         }
@@ -51,6 +103,7 @@
             width: 100%;
             border-collapse: collapse;
             border: 1px solid #000;
+            table-layout: fixed;
         }
         th {
             background: #d9d9d9;
@@ -62,12 +115,12 @@
         }
         td {
             border: 1px solid #666;
-            padding: 4px 6px;
+            padding: 4.5px 6px;
             font-size: 11px;
         }
-        .sno { width: 4%; text-align: center; }
-        .type { width: 8%; text-align: center; }
-        .customer { width: 20%; text-align: left; }
+        .sno { width: 5%; text-align: center; }
+        .type { width: 10%; text-align: center; }
+        .customer { width: 27%; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .num { text-align: right; white-space: nowrap; }
         .period-head {
             background: #eceff1;
@@ -80,15 +133,30 @@
         }
         .grand-label { text-align: right; }
         .empty-msg { text-align: center; padding: 24px; font-size: 11px; }
+
+        @media print {
+            body { background: #fff; }
+            .no-print { display: none !important; }
+            .page-sheet {
+                width: 100% !important;
+                margin: 0 !important;
+                padding: 5mm !important;
+                box-shadow: none !important;
+                page-break-after: always;
+                min-height: auto !important;
+            }
+            .page-sheet-number { display: none !important; }
+        }
     </style>
 </head>
 <body>
     <div class="no-print">
-        <button onclick="window.print()" style="padding:8px 20px;font-weight:bold;cursor:pointer;background:#c2185b;color:#fff;border:none;border-radius:4px;">Print Report</button>
-        <button id="btnExportExcel" onclick="exportReportToExcel()" style="padding:8px 20px;font-weight:bold;cursor:pointer;background:#2e7d32;color:#fff;border:none;border-radius:4px;margin-left:8px;">
-            Export to Excel
-        </button>
-        <button onclick="if(window.history.length > 1){ window.history.back(); } else { window.close(); }" style="padding:8px 20px;margin-left:8px;cursor:pointer;">Close</button>
+        <div class="page-badge" id="pageCountBadge">📄 Estimated Pages: Computing...</div>
+        <div class="btn-group">
+            <button class="btn-print" onclick="window.print()">Print Report</button>
+            <button class="btn-excel" id="btnExportExcel" onclick="exportReportToExcel()">Export to Excel</button>
+            <button class="btn-close" onclick="if(window.history.length > 1){ window.history.back(); } else { window.close(); }">Close</button>
+        </div>
     </div>
 
     @php
@@ -101,7 +169,11 @@
         $toLabel = $to_date ? \Carbon\Carbon::parse($to_date)->format('d-m-y') : '';
     @endphp
 
-    <div id="reportContainer">
+    <div id="pagesWrapper">
+        <!-- A4 Page Sheets will be dynamically rendered here -->
+    </div>
+
+    <div id="reportContainer" style="display:none;">
         <div class="company-name">AL-MADINA TRADERS</div>
         <div class="report-header">
             <div class="generated-date">{{ $generated_at->format('l, M j, Y') }}</div>
@@ -163,6 +235,55 @@
             var wb = XLSX.utils.table_to_book(table, {sheet: "Outstanding Short"});
             XLSX.writeFile(wb, "Outstanding_Balance_Short.xlsx");
         }
+
+        // 📄 Dynamic A4 Page Sheet Paginator (Short View: 25 rows per A4 landscape sheet)
+        document.addEventListener("DOMContentLoaded", function() {
+            var rawTable = document.getElementById("outstandingShortTable");
+            var pagesWrapper = document.getElementById("pagesWrapper");
+            var badge = document.getElementById("pageCountBadge");
+            if (!rawTable || !pagesWrapper) return;
+
+            var rows = Array.from(rawTable.querySelectorAll("tbody tr"));
+            if (rows.length === 0) {
+                pagesWrapper.innerHTML = '<div class="page-sheet"><p class="empty-msg">No outstanding balance found.</p></div>';
+                if (badge) badge.innerText = "📄 Estimated Pages: 0";
+                return;
+            }
+
+            var rowsPerPage = 34; // Fits perfectly on A4 portrait page
+            var totalPages = Math.ceil(rows.length / rowsPerPage);
+            if (badge) badge.innerText = "📄 Total Pages: " + totalPages + " A4 Pages";
+
+            var theadHTML = rawTable.querySelector("thead").outerHTML;
+            var companyName = "AL-MADINA TRADERS";
+            var genDate = "{{ $generated_at->format('l, M j, Y') }}";
+
+            for (var p = 0; p < totalPages; p++) {
+                var start = p * rowsPerPage;
+                var pageRows = rows.slice(start, start + rowsPerPage);
+                
+                var sheet = document.createElement("div");
+                sheet.className = "page-sheet";
+
+                var sheetNumBadge = document.createElement("div");
+                sheetNumBadge.className = "page-sheet-number";
+                sheetNumBadge.innerText = "Page " + (p + 1) + " of " + totalPages;
+                sheet.appendChild(sheetNumBadge);
+
+                var headerHTML = '<div class="company-name">' + companyName + '</div>' +
+                    '<div class="report-header">' +
+                        '<div class="generated-date">' + genDate + '</div>' +
+                        '<div class="report-title">Outstanding Balance</div>' +
+                        '<div class="report-sub" style="font-size:8px;font-weight:bold;">Short View</div>' +
+                    '</div>';
+
+                var tbodyHTML = pageRows.map(function(r) { return r.outerHTML; }).join("");
+                var tableHTML = '<table style="table-layout:fixed; width:100%; border-collapse:collapse; border:1px solid #000;">' + theadHTML + '<tbody>' + tbodyHTML + '</tbody></table>';
+
+                sheet.innerHTML += headerHTML + tableHTML;
+                pagesWrapper.appendChild(sheet);
+            }
+        });
     </script>
 </body>
 </html>
