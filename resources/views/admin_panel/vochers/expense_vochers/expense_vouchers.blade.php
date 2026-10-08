@@ -60,7 +60,7 @@
                                 <label class="form-label">Party Type <span class="text-danger">*</span></label>
                                 <select name="vendor_type" id="vendor_type" class="form-select form-select-sm select2">
                                     <option value="">Select Type...</option>
-                                    @foreach($AccountHeads as $head)
+                                    @foreach($partyTypeAccountHeads as $head)
                                         <option value="{{ $head->id }}" {{ $receipt->type == $head->id ? 'selected' : '' }}>{{ $head->name }}</option>
                                     @endforeach
                                     <option value="vendor" {{ $receipt->type == 'vendor' ? 'selected' : '' }}>Vendor</option>

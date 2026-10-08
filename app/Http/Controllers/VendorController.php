@@ -82,9 +82,56 @@ class VendorController extends Controller
         $allVendors = $query->withInactive()->latest()->get();
         $ledgerController = app(\App\Http\Controllers\GeneralLedgerController::class);
 
+        // Fetch IDs of vendors with any transaction activity in 1 fast UNION query
+        $activeVendorIds = DB::query()
+            ->select('id')
+            ->from(function ($q) {
+                $q->select('vendor_id as id')->from('purchases')
+                    ->union(DB::table('purchase_returns')->select('vendor_id as id'))
+                    ->union(DB::table('receipts_vouchers')->select('party_id as id'))
+                    ->union(DB::table('payment_vouchers')->select('party_id as id'))
+                    ->union(DB::table('journal_vouchers')->select('party_id as id'))
+                    ->union(DB::table('expense_vouchers')->select('party_id as id'))
+                    ->union(DB::table('claim_item_receipts')->select('party_id as id'))
+                    ->union(DB::table('claim_credit_notes')->select('party_id as id'))
+                    ->union(DB::table('vendor_ledgers')->select('vendor_id as id'));
+            }, 'active_v')
+            ->whereNotNull('id')
+            ->pluck('id')
+            ->flip()
+            ->toArray();
+
         $auditRows = [];
         foreach ($allVendors as $vendor) {
             $partyId = (int)$vendor->id;
+            $hasOpening = (float) ($vendor->opening_balance ?? 0) != 0.0;
+            $hasActivity = isset($activeVendorIds[$partyId]);
+
+            if (!$hasOpening && !$hasActivity) {
+                $auditRows[] = [
+                    'id' => $vendor->id,
+                    'name' => $vendor->name,
+                    'opening' => 0.0,
+                    'purchases' => 0.0,
+                    'pur_ret' => 0.0,
+                    'payments' => 0.0,
+                    'receipts' => 0.0,
+                    'income' => 0.0,
+                    's_ret' => 0.0,
+                    'sales' => 0.0,
+                    'c_rep' => 0.0,
+                    'cir' => 0.0,
+                    'clm_cn' => 0.0,
+                    'exp_dis' => 0.0,
+                    'jv_dr' => 0.0,
+                    'jv_cr' => 0.0,
+                    'calc_balance' => 0.0,
+                    'saved_balance' => 0.0,
+                    'diff' => 0.0,
+                ];
+                continue;
+            }
+
             $opening = (float)$ledgerController->calculateOpeningBalance('vendor', $partyId, $startDate);
             $txns = $ledgerController->fetchTransactions('vendor', $partyId, $startDate, $endDate);
 

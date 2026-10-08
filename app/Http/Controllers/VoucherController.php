@@ -1243,6 +1243,8 @@ class VoucherController extends Controller
         $receipt = $id ? \App\Models\ExpenseVoucher::findOrFail($id) : new \App\Models\ExpenseVoucher();
         $nextRvid = $receipt->evid ?: \App\Models\ExpenseVoucher::generateInvoiceNo();
         
+        $partyTypeAccountHeads = AccountHead::whereRaw("UPPER(name) NOT LIKE '%INCOME%'")->get();
+
         $AccountHeads = AccountHead::where(function($q) {
             $q->whereRaw("UPPER(name) LIKE '%EXPENSE%'")
               ->orWhereRaw("UPPER(name) LIKE '%DRAWING%'")
@@ -1253,13 +1255,15 @@ class VoucherController extends Controller
         $allAccounts = Account::where('status', 1)->whereIn('head_id', $headIds)->get(['id', 'head_id', 'title', 'account_code']);
         $narrationsList = \App\Models\Narration::where('expense_head', 'Expense voucher')->pluck('narration', 'id');
 
-        return view('admin_panel.vochers.expense_vochers.expense_vouchers', compact('receipt', 'AccountHeads', 'accounts', 'allAccounts', 'narrationsList', 'nextRvid'));
+        return view('admin_panel.vochers.expense_vochers.expense_vouchers', compact('receipt', 'partyTypeAccountHeads', 'AccountHeads', 'accounts', 'allAccounts', 'narrationsList', 'nextRvid'));
     }
 
     public function showExpense($id)
     {
         $receipt = \App\Models\ExpenseVoucher::findOrFail($id);
         $nextRvid = $receipt->evid;
+        $partyTypeAccountHeads = AccountHead::whereRaw("UPPER(name) NOT LIKE '%INCOME%'")->get();
+
         $AccountHeads = AccountHead::where(function($q) {
             $q->whereRaw("UPPER(name) LIKE '%EXPENSE%'")
               ->orWhereRaw("UPPER(name) LIKE '%DRAWING%'")
@@ -1271,7 +1275,7 @@ class VoucherController extends Controller
         $narrationsList = \App\Models\Narration::where('expense_head', 'Expense voucher')->pluck('narration', 'id');
         $viewMode = true;
 
-        return view('admin_panel.vochers.expense_vochers.expense_vouchers', compact('receipt', 'AccountHeads', 'accounts', 'allAccounts', 'narrationsList', 'nextRvid', 'viewMode'));
+        return view('admin_panel.vochers.expense_vochers.expense_vouchers', compact('receipt', 'partyTypeAccountHeads', 'AccountHeads', 'accounts', 'allAccounts', 'narrationsList', 'nextRvid', 'viewMode'));
     }
 
     public function ajax_save_expense(Request $request)
@@ -1583,9 +1587,10 @@ class VoucherController extends Controller
     public function income_vochers($id = null)
     {
         $receipt = $id ? IncomeVoucher::findOrFail($id) : new IncomeVoucher();
+        $mainAccountHeads = AccountHead::orderBy('name')->get();
         $AccountHeads = DB::table('account_heads')->whereRaw("UPPER(name) LIKE '%INCOME%'")->get();
         $headIds = $AccountHeads->pluck('id')->toArray();
-        $allAccounts = Account::where('status', 1)->whereIn('head_id', $headIds)->get(['id', 'head_id', 'title', 'account_code']);
+        $allAccounts = Account::where('status', 1)->get(['id', 'head_id', 'title', 'account_code']);
         // Narrations specifically for Income voucher or 'all'
         $narrationsList = DB::table('narrations')->where('expense_head', 'Income voucher')->pluck('narration', 'id');
         
@@ -1594,19 +1599,20 @@ class VoucherController extends Controller
             $nextIvid = $this->nextVoucherNumber(IncomeVoucher::class, 'ivid');
         }
 
-        return view('admin_panel.vochers.income_vouchers.income_vouchers', compact('receipt', 'AccountHeads', 'allAccounts', 'narrationsList', 'nextIvid'));
+        return view('admin_panel.vochers.income_vouchers.income_vouchers', compact('receipt', 'mainAccountHeads', 'AccountHeads', 'allAccounts', 'narrationsList', 'nextIvid'));
     }
 
     public function showIncome($id)
     {
         $receipt = IncomeVoucher::findOrFail($id);
+        $mainAccountHeads = AccountHead::orderBy('name')->get();
         $AccountHeads = DB::table('account_heads')->whereRaw("UPPER(name) LIKE '%INCOME%'")->get();
         $headIds = $AccountHeads->pluck('id')->toArray();
-        $allAccounts = Account::where('status', 1)->whereIn('head_id', $headIds)->get(['id', 'head_id', 'title', 'account_code']);
+        $allAccounts = Account::where('status', 1)->get(['id', 'head_id', 'title', 'account_code']);
         $narrationsList = DB::table('narrations')->where('expense_head', 'Income voucher')->pluck('narration', 'id');
         $viewMode = true;
 
-        return view('admin_panel.vochers.income_vouchers.income_vouchers', compact('receipt', 'AccountHeads', 'allAccounts', 'narrationsList', 'viewMode'));
+        return view('admin_panel.vochers.income_vouchers.income_vouchers', compact('receipt', 'mainAccountHeads', 'AccountHeads', 'allAccounts', 'narrationsList', 'viewMode'));
     }
 
     public function ajax_save_income(Request $request)

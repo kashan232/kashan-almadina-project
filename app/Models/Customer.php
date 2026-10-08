@@ -68,9 +68,11 @@ class Customer extends Model
             return $stored;
         }
 
-        return (float) (CustomerLedger::where('customer_id', $this->id)
-            ->orderBy('id')
-            ->value('opening_balance') ?? 0);
+        if ($this->relationLoaded('customerLedger') && $this->customerLedger) {
+            return (float) ($this->customerLedger->opening_balance ?? 0);
+        }
+
+        return $stored;
     }
 
     /** Backfill customers.opening_balance from first ledger row (older records). */
@@ -91,29 +93,13 @@ class Customer extends Model
 
     public function resolvedClosingBalance(): float
     {
-        // Check latest customer ledger entry first
+        // Fast path: use eager-loaded latest customerLedger
         $ledger = $this->customerLedger;
-        $ledgerClosing = $ledger ? (float)$ledger->closing_balance : 0.0;
-        
-        // If ledger closing is non-zero, return it
-        if (abs($ledgerClosing) > 0.001) {
-            return $ledgerClosing;
+        if ($ledger !== null) {
+            return (float) $ledger->closing_balance;
         }
 
-        // Fallback to real-time GeneralLedger calculation to capture all vouchers (including Walkin Payment Vouchers)
-        $ledgerController = app(\App\Http\Controllers\GeneralLedgerController::class);
-        $startDate = '2020-01-01';
-        $endDate = date('Y-m-d');
-        $op = (float)$ledgerController->calculateOpeningBalance('customer', $this->id, $startDate);
-        $txns = $ledgerController->fetchTransactions('customer', $this->id, $startDate, $endDate);
-        
-        $debits = 0.0;
-        $credits = 0.0;
-        foreach ($txns as $t) {
-            $debits += (float)($t['debit'] ?? 0);
-            $credits += (float)($t['credit'] ?? 0);
-        }
-
-        return $op + $debits - $credits;
+        // Fallback: if no ledger entry exists, return opening balance
+        return (float) ($this->attributes['opening_balance'] ?? 0);
     }
 }

@@ -350,8 +350,10 @@
             }
         });
 
-        // Inject Column Picker dropdown right next to Search filter box
-        $('.column-picker-slot').html($('#columnPickerMenuContainer').html());
+        // Inject Column Picker dropdown right next to Search filter box and clean up template
+        var pickerHtml = $('#columnPickerMenuContainer').html();
+        $('.column-picker-slot').html(pickerHtml);
+        $('#columnPickerMenuContainer').remove();
 
         $(document).on('click', '#columnPickerBtn', function(e) {
             e.stopPropagation();
@@ -364,33 +366,38 @@
             }
         });
 
-        const storageKey = 'customer_table_cols_v1';
+        const storageKey = 'customer_table_cols_v2';
         
         function applySavedColumnState() {
             const savedState = localStorage.getItem(storageKey);
             if (savedState) {
-                const columns = JSON.parse(savedState);
-                $('.column-picker-menu input').each(function() {
-                    const colIdx = parseInt($(this).data('column'));
-                    if (columns.hasOwnProperty(colIdx)) {
-                        const isChecked = columns[colIdx];
-                        $(this).prop('checked', isChecked);
-                        dt.column(colIdx - 1).visible(isChecked);
-                    }
-                });
+                try {
+                    const columns = JSON.parse(savedState);
+                    $('.column-picker-slot input[data-column]').each(function() {
+                        const colIdx = parseInt($(this).data('column'));
+                        if (columns.hasOwnProperty(colIdx)) {
+                            const isChecked = Boolean(columns[colIdx]);
+                            $(this).prop('checked', isChecked);
+                            dt.column(colIdx - 1).visible(isChecked);
+                        }
+                    });
+                } catch(e) {
+                    console.error('Error loading column state:', e);
+                }
             }
         }
 
         applySavedColumnState();
 
-        $(document).on('change', '.column-picker-menu input', function() {
+        $(document).on('change', '.column-picker-slot input[data-column]', function() {
             const colIdx = parseInt($(this).data('column'));
             const isChecked = $(this).is(':checked');
             dt.column(colIdx - 1).visible(isChecked);
             
             const state = {};
-            $('.column-picker-menu input').each(function() {
-                state[$(this).data('column')] = $(this).is(':checked');
+            $('.column-picker-slot input[data-column]').each(function() {
+                const cNum = $(this).data('column');
+                state[cNum] = $(this).is(':checked');
             });
             localStorage.setItem(storageKey, JSON.stringify(state));
         });

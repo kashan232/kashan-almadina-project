@@ -131,9 +131,60 @@ class CustomerController extends Controller
         $users = User::all();
         $ledgerController = app(\App\Http\Controllers\GeneralLedgerController::class);
 
+        // Fetch IDs of customers with any transaction activity in 1 fast UNION query
+        $activeCustomerIds = DB::query()
+            ->select('id')
+            ->from(function ($q) {
+                $q->select('customer_id as id')->from('sales')
+                    ->union(DB::table('sale_returns')->select('customer_id as id'))
+                    ->union(DB::table('receipts_vouchers')->select('party_id as id'))
+                    ->union(DB::table('payment_vouchers')->select('party_id as id'))
+                    ->union(DB::table('journal_vouchers')->select('party_id as id'))
+                    ->union(DB::table('expense_vouchers')->select('party_id as id'))
+                    ->union(DB::table('claim_item_receipts')->select('party_id as id'))
+                    ->union(DB::table('claim_credit_notes')->select('party_id as id'))
+                    ->union(DB::table('customer_ledgers')->select('customer_id as id'));
+            }, 'active_t')
+            ->whereNotNull('id')
+            ->pluck('id')
+            ->flip()
+            ->toArray();
+
         $auditRows = [];
         foreach ($allCustomers as $customer) {
             $partyId = (int)$customer->id;
+            $hasOpening = (float) ($customer->opening_balance ?? 0) != 0.0;
+            $hasActivity = isset($activeCustomerIds[$partyId]);
+
+            if (!$hasOpening && !$hasActivity) {
+                $auditRows[] = [
+                    'id' => $customer->id,
+                    'customer_id' => $customer->customer_id,
+                    'name' => $customer->customer_name,
+                    'type' => $customer->customer_type,
+                    'opening' => 0.0,
+                    'sales' => 0.0,
+                    'c_rep' => 0.0,
+                    's_ret' => 0.0,
+                    'cir' => 0.0,
+                    'purchase' => 0.0,
+                    'pur_ret' => 0.0,
+                    'clm_cn' => 0.0,
+                    'receipts' => 0.0,
+                    'payments' => 0.0,
+                    'income' => 0.0,
+                    'exp_dis' => 0.0,
+                    'jv_dr' => 0.0,
+                    'jv_cr' => 0.0,
+                    'av_dr' => 0.0,
+                    'av_cr' => 0.0,
+                    'calc_balance' => 0.0,
+                    'saved_balance' => 0.0,
+                    'diff' => 0.0,
+                ];
+                continue;
+            }
+
             $opening = (float)$ledgerController->calculateOpeningBalance('customer', $partyId, $startDate);
             $txns = $ledgerController->fetchTransactions('customer', $partyId, $startDate, $endDate);
 

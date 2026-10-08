@@ -60,7 +60,7 @@
                                 <label class="form-label">Main Account Head <span class="text-danger">*</span></label>
                                 <select name="account_head" id="account_head" class="form-select form-select-sm select2">
                                     <option value="">Select Head...</option>
-                                    @foreach($AccountHeads as $head)
+                                    @foreach($mainAccountHeads as $head)
                                         <option value="{{ $head->id }}" {{ ($receipt->account_head == $head->id || (empty($receipt->account_head) && strtoupper($head->name) === 'INCOME')) ? 'selected' : '' }}>{{ $head->name }}</option>
                                     @endforeach
                                     <option value="vendor" {{ $receipt->account_head == 'vendor' ? 'selected' : '' }}>Vendor</option>
