@@ -43,6 +43,29 @@
                 </div>
             </div>
 
+            <div class="d-none" id="voucherOptionTemplates">
+                <select id="narrationOptionsTemplate">
+                    <option value="">Narration...</option>
+                    @foreach($narrationsList as $lid => $lname)
+                        <option value="{{ $lid }}">{{ $lname }}</option>
+                    @endforeach
+                </select>
+                <select id="headOptionsTemplate">
+                    <option value="">Select Head...</option>
+                    @foreach($AccountHeads as $head)
+                        <option value="{{ $head->id }}">{{ $head->name }}</option>
+                    @endforeach
+                </select>
+                <select id="accountOptionsTemplate">
+                    <option value="">Select Account...</option>
+                    @if(isset($allAccounts))
+                        @foreach($allAccounts as $acc)
+                            <option value="{{ $acc->id }}" data-head-id="{{ $acc->head_id }}" data-code="{{ $acc->account_code }}">{{ $acc->title }}</option>
+                        @endforeach
+                    @endif
+                </select>
+            </div>
+
             <form id="expenseForm" autocomplete="off" class="{{ ($isViewMode || ($receipt->id && $isPosted)) ? 'form-locked' : '' }}{{ $isViewMode ? ' view-mode' : '' }}">
                 @csrf
                 <input type="hidden" name="id" id="receipt_id" value="{{ $receipt->id }}">
@@ -301,10 +324,14 @@ $(document).ready(function() {
         if (window.VoucherRowValidation && !window.VoucherRowValidation.validateLastRow($('#voucherTable'))) {
             return;
         }
+        let narrHtml = $('#narrationOptionsTemplate').html();
+        let headHtml = $('#headOptionsTemplate').html();
+        let accHtml = $('#accountOptionsTemplate').html();
         let newRow = '<tr>' +
-            '<td><select name="narration_id[]" class="form-select form-select-sm narrationSelect"><option value="">Narration...</option>@foreach($narrationsList as $lid => $lname)<option value="{{ $lid }}">{{ addslashes($lname) }}</option>@endforeach</select></td>' +
+            '<td><select name="narration_id[]" class="form-select form-select-sm narrationSelect">' + narrHtml + '</select></td>' +
+            '<td><select name="row_account_head[]" class="form-select form-select-sm rowAccountHead select2">' + headHtml + '</select></td>' +
             '<td><input type="text" class="form-control form-control-sm text-center fw-bold text-danger account-id-lookup" placeholder="Code"></td>' +
-            '<td><select name="row_account_id[]" class="form-select form-select-sm rowAccountSub select2"><option value="">Select Account...</option></select></td>' +
+            '<td><select name="row_account_id[]" class="form-select form-select-sm rowAccountSub select2">' + accHtml + '</select></td>' +
             '<td><input type="number" step="0.01" name="amount[]" class="form-control form-control-sm text-end fw-bold row-amount" placeholder="0.00"></td>' +
             '<td class="text-center"><button type="button" class="btn text-danger btn-xs removeRow p-0"><i class="fa fa-trash-o fs-6"></i></button></td>' +
         '</tr>';

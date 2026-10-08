@@ -311,6 +311,7 @@ $(document).ready(function() {
         if (window.VoucherRowValidation && !window.VoucherRowValidation.validateLastRow($('#voucherTable'))) return;
         let row = '<tr>' +
             '<td><select name="narration_id[]" class="form-select form-select-sm narrationSelect"><option value="">Narration...</option>@foreach($narrationsList as $lid => $lname)<option value="{{ $lid }}">{{ addslashes($lname) }}</option>@endforeach</select></td>' +
+            '<td><select name="party_type[]" class="form-select form-select-sm rowPartyType select2"><option value="">Select Type...</option>@foreach($AccountHeads as $head)<option value="{{ $head->id }}">{{ addslashes($head->name) }}</option>@endforeach</select></td>' +
             '<td><input type="text" name="row_party_code[]" class="form-control form-control-sm text-center fw-bold text-danger rowPartyCode" placeholder="Code"></td>' +
             '<td><select name="party_id[]" class="form-select form-select-sm rowPartySelect select2"><option value="">Select Party...</option>@if(isset($allAccounts))@foreach($allAccounts as $acc)<option value="{{ $acc->id }}" data-head-id="{{ $acc->head_id }}" data-code="{{ $acc->account_code }}">{{ addslashes($acc->title) }}</option>@endforeach @endif</select></td>' +
             '<td><input type="text" name="reference_no[]" class="form-control form-control-sm" placeholder="Ref#"></td>' +
