@@ -71,7 +71,13 @@
                         <a href="{{ route('customers.audit') }}" class="btn btn-outline-secondary btn-sm rounded-pill px-3">
                             <i class="fa fa-refresh me-1"></i> Reset
                         </a>
+                        <button type="submit" form="syncLedgersForm" class="btn btn-warning btn-sm rounded-pill px-3">
+                            <i class="fa fa-database me-1"></i> Sync & Fix Ledgers
+                        </button>
                     </div>
+                </form>
+                <form id="syncLedgersForm" action="{{ route('customers.sync-ledgers') }}" method="POST" class="d-none" onsubmit="return confirm('Recalculate and sync all customer ledgers with General Ledger?');">
+                    @csrf
                 </form>
             </div>
         </div>

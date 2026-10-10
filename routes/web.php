@@ -292,6 +292,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/customer/payments', [CustomerController::class, 'customer_payments'])->name('customer.payments');
     Route::post('/customer/payments', [CustomerController::class, 'store_customer_payment'])->name('customer.payments.store');
     Route::get('/customer/{id}/closing-balance', [CustomerController::class, 'getClosingBalance'])->name('customer.getClosingBalance');
+    Route::post('/customers/sync-ledgers', [CustomerController::class, 'syncLedgers'])->name('customers.sync-ledgers');
 
     // New
     Route::get('/customers/inactive', [CustomerController::class, 'inactiveCustomers'])->name('customers.inactive');

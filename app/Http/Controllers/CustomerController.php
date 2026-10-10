@@ -652,6 +652,47 @@ class CustomerController extends Controller
         // If no ledger entry is found, return a default closing balance of 0
         return response()->json(['closing_balance' => 0]);
     }
+
+    public function syncLedgers(Request $request)
+    {
+        @set_time_limit(300);
+        @ini_set('max_execution_time', '300');
+
+        $gl = app(\App\Http\Controllers\GeneralLedgerController::class);
+        $customers = Customer::all();
+
+        $syncedCount = 0;
+        foreach ($customers as $c) {
+            $trueBal = round((float)$gl->calculateOpeningBalance('customer', $c->id, '2099-12-31'), 2);
+            $latestLedger = CustomerLedger::where('customer_id', $c->id)->latest('id')->first();
+
+            if (!$latestLedger) {
+                if ($trueBal != 0.0) {
+                    CustomerLedger::create([
+                        'customer_id' => $c->id,
+                        'admin_or_user_id' => Auth::id() ?? 1,
+                        'date' => date('Y-m-d'),
+                        'description' => 'Ledger Auto-Sync Baseline',
+                        'opening_balance' => (float)($c->opening_balance ?? 0),
+                        'previous_balance' => (float)($c->opening_balance ?? 0),
+                        'debit' => $trueBal > 0 ? $trueBal : 0,
+                        'credit' => $trueBal < 0 ? abs($trueBal) : 0,
+                        'closing_balance' => $trueBal,
+                    ]);
+                    $syncedCount++;
+                }
+            } else {
+                $stored = round((float)$latestLedger->closing_balance, 2);
+                if (abs($trueBal - $stored) > 0.01) {
+                    $latestLedger->closing_balance = $trueBal;
+                    $latestLedger->save();
+                    $syncedCount++;
+                }
+            }
+        }
+
+        return redirect()->back()->with('success', "Customer ledgers resynced successfully. Total updated: {$syncedCount}.");
+    }
 }
 
 // customer payment start

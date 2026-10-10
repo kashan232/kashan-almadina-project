@@ -148,6 +148,12 @@
                                         <a href="{{ route('customers.audit') }}" class="btn btn-outline-danger btn-sm rounded-pill px-3" title="Ledger Audit Reconciliation">
                                             <i class="fa fa-calculator me-1"></i> Audit
                                         </a>
+                                        <form action="{{ route('customers.sync-ledgers') }}" method="POST" class="d-inline" onsubmit="return confirm('Recalculate and sync all customer ledgers with General Ledger?');">
+                                            @csrf
+                                            <button type="submit" class="btn btn-outline-warning btn-sm rounded-pill px-3" title="Recalculate & Sync Ledgers with GL">
+                                                <i class="fa fa-refresh me-1"></i> Sync Ledgers
+                                            </button>
+                                        </form>
                                         <a href="{{ route('customers.inactive') }}" class="btn btn-outline-secondary btn-sm rounded-pill px-3">Inactive</a>
                                         <a href="{{ route('customers.ledger') }}" class="btn btn-info btn-sm rounded-pill px-3 text-white">Ledger</a>
                                         <a href="{{ route('customer.payments') }}" class="btn btn-primary btn-sm rounded-pill px-3">Payments</a>

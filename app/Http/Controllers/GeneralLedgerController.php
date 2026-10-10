@@ -1780,31 +1780,35 @@ class GeneralLedgerController extends Controller
                 $amounts = json_decode($ev->amount, true) ?? [];
                 $narrIds = json_decode($ev->narration_id, true) ?? [];
 
-                if ($ev->party_id == $id && is_numeric($ev->type ?? '')) {
-                    $rowNarrs = [];
-                    foreach ($narrIds as $nid) {
-                        if (empty($nid)) continue;
-                        if (is_numeric($nid)) {
-                            $nt = DB::table('narrations')->where('id', $nid)->value('narration');
-                            if ($nt) $rowNarrs[] = $nt;
-                        } else {
-                            $rowNarrs[] = $nid;
-                        }
-                    }
-                    $allNarrStr = !empty($rowNarrs) ? implode(', ', array_unique($rowNarrs)) : '';
-                    $descParts = array_filter([$allNarrStr, $ev->remarks]);
-                    $descHeader = !empty($descParts) ? implode(' ; ', $descParts) : 'Expense Voucher';
+                if ($ev->party_id == $id && (is_numeric($ev->type ?? '') || in_array($ev->type, ['vendor', 'customer', 'walkin']))) {
+                    foreach ($accIds as $idx => $aid) {
+                        $rowAmount = (float)($amounts[$idx] ?? 0);
+                        if ($rowAmount <= 0) continue;
 
-                    $transactions[] = [
-                        'created_at' => $ev->created_at,
-                        'id' => $ev->id . '_h',
-                        'date' => $ev->entry_date ?: $ev->created_at,
-                        'ref' => 'EV',
-                        'inv' => $ev->evid,
-                        'desc' => $descHeader,
-                        'price' => 0, 'qty' => 0, 'debit' => 0, 'credit' => (float)$ev->total_amount,
-                        'priority' => 60
-                    ];
+                        $rowNarr = '';
+                        if (isset($narrIds[$idx])) {
+                            if (is_numeric($narrIds[$idx])) {
+                                $rowNarr = DB::table('narrations')->where('id', $narrIds[$idx])->value('narration');
+                            } else {
+                                $rowNarr = $narrIds[$idx];
+                            }
+                        }
+
+                        $destAccTitle = DB::table('accounts')->where('id', $aid)->value('title');
+                        $descParts = array_filter([$rowNarr, $destAccTitle, $ev->remarks]);
+                        $desc = !empty($descParts) ? implode(' ; ', $descParts) : 'Expense Voucher';
+
+                        $transactions[] = [
+                            'created_at' => $ev->created_at,
+                            'id' => $ev->id . '_h_' . $idx,
+                            'date' => $ev->entry_date ?: $ev->created_at,
+                            'ref' => 'EV',
+                            'inv' => $ev->evid,
+                            'desc' => $desc,
+                            'price' => 0, 'qty' => 0, 'debit' => 0, 'credit' => $rowAmount,
+                            'priority' => 60
+                        ];
+                    }
                 }
 
                 foreach($accIds as $idx => $aid) {
