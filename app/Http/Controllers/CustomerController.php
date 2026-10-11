@@ -180,6 +180,7 @@ class CustomerController extends Controller
                     'av_cr' => 0.0,
                     'calc_balance' => 0.0,
                     'saved_balance' => 0.0,
+                    'gl_balance' => 0.0,
                     'diff' => 0.0,
                 ];
                 continue;
@@ -269,8 +270,14 @@ class CustomerController extends Controller
             $calculatedTrueBalance = $opening + $sales + $payment + $cRep + $jvDr + $avDr + $cir + $purRet 
                 - ($sRet + $receipts + $income + $expDis + $jvCr + $avCr + $purchase + $clmCn);
 
-            $savedBalance = $calculatedTrueBalance;
-            $diff = 0.0;
+            // General Ledger Balance = Opening + Total Debits - Total Credits
+            $glBalance = $opening + $txnDebits - $txnCredits;
+
+            $latestLedger = CustomerLedger::where('customer_id', $customer->id)->latest('id')->first();
+            $savedBalance = $latestLedger ? (float)$latestLedger->closing_balance : (float)($customer->closing_balance ?? 0.0);
+
+            // Difference between Calculated True Balance and General Ledger Balance
+            $diff = $calculatedTrueBalance - $glBalance;
 
             $auditRows[] = [
                 'id' => $customer->id,
@@ -295,6 +302,7 @@ class CustomerController extends Controller
                 'av_cr' => $avCr,
                 'calc_balance' => $calculatedTrueBalance,
                 'saved_balance' => $savedBalance,
+                'gl_balance' => $glBalance,
                 'diff' => $diff,
             ];
         }

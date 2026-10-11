@@ -108,6 +108,7 @@
                                 <th colspan="15" style="background:#37474f;color:#fff;">Period Transactions (Between {{ $startDate }} to {{ $endDate }})</th>
                                 <th rowspan="2" style="background:#0d47a1;color:#fff;">Calculated True Balance</th>
                                 <th rowspan="2" style="background:#4a148c;color:#fff;">System Saved Balance</th>
+                                <th rowspan="2" style="background:#00695c;color:#fff;">GL Balance</th>
                                 <th rowspan="2" style="background:#e65100;color:#fff;">Difference</th>
                                 <th rowspan="2">Status</th>
                             </tr>
@@ -163,6 +164,10 @@
                                 <td class="text-end fw-bold" style="background:#faf8fc;color:#4a148c;">
                                     {{ number_format($r['saved_balance'], 2) }}
                                 </td>
+                                <td class="text-end fw-bold" style="background:#e0f2f1;color:#004d40;">
+                                    @php $glVal = (float)($r['gl_balance'] ?? 0); @endphp
+                                    {{ $glVal >= 0 ? 'DR.' : 'CR.' }} {{ number_format(abs($glVal), 2) }}
+                                </td>
                                 <td class="text-end fw-bold" style="background:#fffaf0;color:{{ $isOk ? '#2e7d32' : '#c62828' }};">
                                     {{ number_format($r['diff'], 2) }}
                                 </td>
@@ -176,7 +181,7 @@
                             </tr>
                             @empty
                             <tr>
-                                <td colspan="21" class="text-center p-3 text-muted">No customer record found.</td>
+                                <td colspan="22" class="text-center p-3 text-muted">No customer record found.</td>
                             </tr>
                             @endforelse
                         </tbody>
@@ -187,7 +192,7 @@
                                 'income' => 0.0, 'jv_dr' => 0.0, 'av_dr' => 0.0, 'cir' => 0.0,
                                 'purchase' => 0.0, 'pur_ret' => 0.0, 's_ret' => 0.0, 'clm_cn' => 0.0,
                                 'receipts' => 0.0, 'exp_dis' => 0.0, 'jv_cr' => 0.0, 'av_cr' => 0.0,
-                                'calc_balance' => 0.0, 'saved_balance' => 0.0, 'diff' => 0.0
+                                'calc_balance' => 0.0, 'saved_balance' => 0.0, 'gl_balance' => 0.0, 'diff' => 0.0
                             ];
                             foreach($auditRows as $r) {
                                 foreach(array_keys($totals) as $k) {
@@ -216,6 +221,9 @@
                                 <td>{!! $fmtSub($totals['av_cr']) !!}</td>
                                 <td class="text-primary">{{ number_format($totals['calc_balance'], 2) }}</td>
                                 <td style="color:#ce93d8;">{{ number_format($totals['saved_balance'], 2) }}</td>
+                                <td style="color:#80cbc4;">
+                                    {{ $totals['gl_balance'] >= 0 ? 'DR.' : 'CR.' }} {{ number_format(abs($totals['gl_balance']), 2) }}
+                                </td>
                                 <td style="color:{{ abs($totals['diff']) < 0.01 ? '#81c784' : '#ef5350' }};">{{ number_format($totals['diff'], 2) }}</td>
                                 <td class="text-center">-</td>
                             </tr>
