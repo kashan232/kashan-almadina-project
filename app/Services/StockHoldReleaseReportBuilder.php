@@ -128,14 +128,36 @@ class StockHoldReleaseReportBuilder
             return false;
         }
 
-        $token = strtolower($partyType) . ':' . (int) $partyId;
+        $partyTypeNorm = strtolower($partyType);
+        if (in_array($partyTypeNorm, ['walkin', 'walking', 'walk-in'], true)) {
+            $partyTypeNorm = 'walkin';
+        }
 
-        return in_array($token, array_map('strtolower', $this->filters['parties']), true);
+        $selectedParties = array_map('strtolower', $this->filters['parties']);
+
+        // Direct token match
+        if (in_array($partyTypeNorm . ':' . (int) $partyId, $selectedParties, true)) {
+            return true;
+        }
+
+        // If party is customer or walkin, check both customer:ID and walkin:ID since both are stored in customers table
+        if (in_array($partyTypeNorm, ['customer', 'walkin'], true)) {
+            if (in_array('customer:' . (int) $partyId, $selectedParties, true) || in_array('walkin:' . (int) $partyId, $selectedParties, true)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private function bucketKey(string $partyType, ?int $partyId, int $productId): string
     {
-        return strtolower($partyType) . ':' . (int) $partyId . '|' . $productId;
+        $partyTypeNorm = strtolower($partyType);
+        if (in_array($partyTypeNorm, ['walkin', 'walking', 'walk-in'], true)) {
+            $partyTypeNorm = 'walkin';
+        }
+
+        return $partyTypeNorm . ':' . (int) $partyId . '|' . $productId;
     }
 
     private function ensureBucket(array &$buckets, string $partyKey, string $partyName, int $productId, string $productName): void
@@ -160,6 +182,9 @@ class StockHoldReleaseReportBuilder
     {
         $voucher = $hold->voucher;
         $partyType = strtolower((string) ($hold->party_type ?: $voucher?->party_type ?: 'unknown'));
+        if (in_array($partyType, ['walkin', 'walking', 'walk-in'], true)) {
+            $partyType = 'walkin';
+        }
         $partyId = (int) ($hold->party_id ?: $voucher?->party_id ?: 0);
 
         return [$partyType, $partyId, $this->resolvePartyName($partyType, $partyId, $hold, $voucher)];
@@ -178,6 +203,9 @@ class StockHoldReleaseReportBuilder
             ?: $holdVoucher?->party_type
             ?: 'unknown'
         ));
+        if (in_array($partyType, ['walkin', 'walking', 'walk-in'], true)) {
+            $partyType = 'walkin';
+        }
         $partyId = (int) (
             $release->party_id
             ?: $voucher?->party_id
@@ -202,7 +230,7 @@ class StockHoldReleaseReportBuilder
             return strtoupper(Vendor::find($partyId)?->name ?? 'VENDOR #' . $partyId);
         }
 
-        if ($partyType === 'customer' && $partyId) {
+        if (in_array($partyType, ['customer', 'walkin', 'walking', 'walk-in'], true) && $partyId) {
             if ($hold?->relationLoaded('partyCustomer') && $hold->partyCustomer) {
                 return strtoupper($hold->partyCustomer->customer_name ?? 'CUSTOMER');
             }
@@ -210,7 +238,10 @@ class StockHoldReleaseReportBuilder
                 return strtoupper($voucher->partyCustomer->customer_name ?? 'CUSTOMER');
             }
 
-            return strtoupper(Customer::find($partyId)?->customer_name ?? 'CUSTOMER #' . $partyId);
+            $customer = Customer::find($partyId);
+            if ($customer) {
+                return strtoupper($customer->customer_name);
+            }
         }
 
         if (in_array($partyType, ['walkin', 'walking', 'walk-in'], true)) {
@@ -479,7 +510,7 @@ class StockHoldReleaseReportBuilder
         }
 
         return collect($this->filters['parties'])
-            ->filter(fn ($token) => str_starts_with(strtolower((string) $token), 'customer:'))
+            ->filter(fn ($token) => str_starts_with(strtolower((string) $token), 'customer:') || str_starts_with(strtolower((string) $token), 'walkin:'))
             ->map(fn ($token) => (int) substr((string) $token, strrpos((string) $token, ':') + 1))
             ->filter()
             ->unique()
@@ -620,7 +651,7 @@ class StockHoldReleaseReportBuilder
     {
         $customerBuckets = array_filter(
             $buckets,
-            fn ($row) => str_starts_with($row['party_key'], 'customer:')
+            fn ($row) => str_starts_with($row['party_key'], 'customer:') || str_starts_with($row['party_key'], 'walkin:')
         );
 
         if (empty($customerBuckets)) {

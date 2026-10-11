@@ -16,16 +16,25 @@ class ReceiptsVoucher extends Model
 
     public static function generateInvoiceNo()
     {
-        $lastInvoice = self::withoutGlobalScopes()
-            ->orderBy('id', 'desc')
-            ->first();
+        $allRvids = self::withoutGlobalScopes()
+            ->whereNotNull('rvid')
+            ->pluck('rvid');
 
-        $lastNumber = 0;
-        if ($lastInvoice && $lastInvoice->rvid) {
-            $lastNumber = (int) preg_replace('/[^0-9]/', '', $lastInvoice->rvid);
+        $maxNumber = 0;
+        foreach ($allRvids as $rvid) {
+            $num = (int) preg_replace('/[^0-9]/', '', (string)$rvid);
+            if ($num > $maxNumber) {
+                $maxNumber = $num;
+            }
         }
 
-        return str_pad($lastNumber + 1, 3, '0', STR_PAD_LEFT);
+        do {
+            $maxNumber++;
+            $nextInvoice = str_pad($maxNumber, 3, '0', STR_PAD_LEFT);
+            $exists = self::withoutGlobalScopes()->where('rvid', $nextInvoice)->exists();
+        } while ($exists);
+
+        return $nextInvoice;
     }
 
 

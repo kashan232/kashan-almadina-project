@@ -467,7 +467,13 @@ $(document).ready(function() {
         setTimeout(() => $('#alertBox').addClass('d-none'), 5000);
     }
 
+    let isSavingReceipt = false;
     function saveDraft(silent = false) {
+        if (isSavingReceipt) {
+            return $.Deferred().reject({ message: 'Request already in progress' }).promise();
+        }
+        isSavingReceipt = true;
+        $('#saveDraftBtn').prop('disabled', true);
         VoucherFieldValidation.clearErrors($('#receiptForm'));
         return $.post('{{ route("recepit.vochers.ajax-save") }}', $('#receiptForm').serialize())
             .done(function(res) {
@@ -486,10 +492,16 @@ $(document).ready(function() {
                 } else {
                     showAlert((xhr.responseJSON && xhr.responseJSON.message) || 'Save failed.', 'danger');
                 }
+            })
+            .always(function() {
+                isSavingReceipt = false;
+                if (!$('#receiptForm').hasClass('form-locked')) {
+                    $('#saveDraftBtn').prop('disabled', false);
+                }
             });
     }
 
-    $('#saveDraftBtn').on('click', function(e) { e.preventDefault(); if (!$(this).prop('disabled')) saveDraft(); });
+    $('#saveDraftBtn').on('click', function(e) { e.preventDefault(); if (!$(this).prop('disabled') && !isSavingReceipt) saveDraft(); });
     $('#editInvoiceBtn').on('click', function() {
         if ($(this).prop('disabled')) return;
         $('#receiptForm').removeClass('form-locked');
@@ -499,7 +511,7 @@ $(document).ready(function() {
     });
 
     $('#postBtn').on('click', function() {
-        if ($(this).prop('disabled')) return;
+        if ($(this).prop('disabled') || isSavingReceipt) return;
         let btn = $(this);
         btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin me-1"></i>');
         saveDraft(true).done(function(res) {

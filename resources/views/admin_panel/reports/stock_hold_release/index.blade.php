@@ -60,9 +60,9 @@
                                         <input type="checkbox" class="select-all" data-target="partytype-list"> Type
                                     </div>
                                     <div class="filter-list" id="partytype-list">
-                                        <div class="filter-item"><input type="checkbox" name="party_type[]" value="Main Customer"><span>Main</span></div>
-                                        <div class="filter-item"><input type="checkbox" name="party_type[]" value="Walking Customer"><span>Walk-in</span></div>
-                                        <div class="filter-item"><input type="checkbox" name="party_type[]" value="Vendor"><span>Vendor</span></div>
+                                        <div class="filter-item"><input type="checkbox" name="party_type[]" value="customer"><span>Customer</span></div>
+                                        <div class="filter-item"><input type="checkbox" name="party_type[]" value="walkin"><span>Walk-in</span></div>
+                                        <div class="filter-item"><input type="checkbox" name="party_type[]" value="vendor"><span>Vendor</span></div>
                                     </div>
                                 </div>
                             </div>
@@ -79,10 +79,11 @@
                                         @foreach($customers as $customer)
                                             @php
                                                 $partyTypeKey = $customer->customer_type === 'Walking Customer' ? 'walkin' : 'customer';
+                                                $partyTypeLabel = $partyTypeKey === 'walkin' ? 'Walk-in' : 'Customer';
                                             @endphp
                                             <div class="filter-item"
-                                                 data-search="{{ strtolower($customer->customer_name) }}"
-                                                 data-party-type="{{ $customer->customer_type }}"
+                                                 data-search="{{ strtolower($customer->customer_name . ' ' . $partyTypeLabel) }}"
+                                                 data-party-type="{{ $partyTypeKey }}"
                                                  data-groups="{{ is_array($customer->user_group_ids) ? implode(',', $customer->user_group_ids) : '' }}">
                                                 <input type="checkbox" name="party[]" value="{{ $partyTypeKey }}:{{ $customer->id }}">
                                                 <span>{{ $customer->customer_name }}</span>
@@ -90,8 +91,8 @@
                                         @endforeach
                                         @foreach($vendors as $vendor)
                                             <div class="filter-item"
-                                                 data-search="{{ strtolower($vendor->name) }}"
-                                                 data-party-type="Vendor"
+                                                 data-search="{{ strtolower($vendor->name . ' vendor') }}"
+                                                 data-party-type="vendor"
                                                  data-groups="{{ is_array($vendor->user_group_ids) ? implode(',', $vendor->user_group_ids) : '' }}">
                                                 <input type="checkbox" name="party[]" value="vendor:{{ $vendor->id }}">
                                                 <span>{{ $vendor->name }}</span>
@@ -215,10 +216,23 @@
             $item.removeClass('selected');
         }
 
+        function parseDataList(value) {
+            return String(value || '').split(',').map(v => v.trim()).filter(Boolean);
+        }
+
+        function matchesGroups($item, selectedGroups) {
+            if (!selectedGroups.length) return true;
+            const itemGroups = parseDataList($item.data('groups'));
+            if (!itemGroups.length) return true;
+            return selectedGroups.some(g => itemGroups.includes(g));
+        }
+
         function getCheckedValues(listId, inputName) {
             const values = [];
-            $('#' + listId + ' .filter-item:visible input[name="' + inputName + '"]:checked').each(function() {
-                values.push(String($(this).val()));
+            $('#' + listId + ' .filter-item input[name="' + inputName + '"]:checked').each(function() {
+                if ($(this).closest('.filter-item').is(':visible')) {
+                    values.push(String($(this).val()));
+                }
             });
             return values;
         }
@@ -228,11 +242,21 @@
             const $cb = $(this).find('input[type="checkbox"]');
             $cb.prop('checked', !$cb.prop('checked'));
             $(this).toggleClass('selected', $cb.prop('checked'));
+
+            const listId = $(this).closest('.filter-list').attr('id');
+            if (['partytype-list', 'group-list'].includes(listId)) {
+                setTimeout(applyFilters, 10);
+            }
         });
 
         $(document).on('change', '.filter-item input[type="checkbox"]', function() {
             const $item = $(this).closest('.filter-item');
             $item.toggleClass('selected', $(this).prop('checked'));
+
+            const listId = $item.closest('.filter-list').attr('id');
+            if (['partytype-list', 'group-list'].includes(listId)) {
+                setTimeout(applyFilters, 10);
+            }
         });
 
         $('.select-all').on('change', function() {
@@ -242,15 +266,23 @@
                 $(this).find('input[type="checkbox"]').prop('checked', checked);
                 $(this).toggleClass('selected', checked);
             });
+            if (['partytype-list', 'group-list'].includes(target)) {
+                applyFilters();
+            }
         });
 
         $('#globalSelectAll').on('change', function() {
             const checked = $(this).is(':checked');
-            $('.select-all').prop('checked', checked).trigger('change');
+            $('.select-all').prop('checked', checked);
+            $('.filter-item').each(function() {
+                $(this).find('input[type="checkbox"]').prop('checked', checked);
+                $(this).toggleClass('selected', checked);
+            });
+            applyFilters();
         });
 
         $('#partySearch').on('keyup input search', function() {
-            filterByPartyType();
+            applyPartyFilterOnly();
         });
 
         $('#itemSearch').on('keyup input search', function() {
@@ -262,43 +294,39 @@
             });
         });
 
-        function filterByPartyType() {
+        function applyPartyFilterOnly() {
             const selectedTypes = getCheckedValues('partytype-list', 'party_type[]');
+            const selectedGroups = getCheckedValues('group-list', 'user_group[]');
             const searchTerm = ($('#partySearch').val() || '').toLowerCase().trim();
 
             $('#party-list .filter-item').each(function() {
-                const partyType = String($(this).data('party-type') || '');
-                const matchesType = selectedTypes.length === 0 || selectedTypes.includes(partyType);
-                const matchesSearch = !searchTerm || ($(this).data('search') || '').includes(searchTerm);
-                const visible = matchesType && matchesSearch;
-                $(this).toggle(visible);
-                if (!matchesType) uncheckItem($(this));
+                const $item = $(this);
+                const partyType = String($item.data('party-type') || '');
+                const searchText = String($item.data('search') || '');
+                const groupMatch = matchesGroups($item, selectedGroups);
+                const typeMatch = selectedTypes.length === 0 || selectedTypes.includes(partyType);
+                const searchMatch = !searchTerm || searchText.includes(searchTerm);
+                const visible = groupMatch && typeMatch && searchMatch;
+
+                $item.toggle(visible);
+                if (!typeMatch || !groupMatch) {
+                    uncheckItem($item);
+                }
             });
         }
 
-        $(document).on('click', '#partytype-list .filter-item', function() {
-            setTimeout(filterByPartyType, 50);
-        });
-
-        function filterByGroup() {
+        function applyFilters() {
             const selectedGroups = getCheckedValues('group-list', 'user_group[]');
-            if (selectedGroups.length === 0) {
-                $('#warehouse-list .filter-item, #party-list .filter-item').show();
-                return;
-            }
-            ['warehouse-list', 'party-list'].forEach(function(listId) {
-                $('#' + listId + ' .filter-item').each(function() {
-                    const groups = String($(this).data('groups') || '').split(',').filter(Boolean);
-                    const visible = groups.length === 0 || groups.some(g => selectedGroups.includes(g));
-                    $(this).toggle(visible);
-                    if (!visible) uncheckItem($(this));
-                });
-            });
-        }
 
-        $(document).on('click', '#group-list .filter-item', function() {
-            setTimeout(filterByGroup, 50);
-        });
+            $('#warehouse-list .filter-item').each(function() {
+                const $item = $(this);
+                const visible = matchesGroups($item, selectedGroups);
+                $item.toggle(visible);
+                if (!visible) uncheckItem($item);
+            });
+
+            applyPartyFilterOnly();
+        }
     });
 </script>
 @endsection

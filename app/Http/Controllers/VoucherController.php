@@ -552,20 +552,6 @@ class VoucherController extends Controller
 
         try {
             $id = $request->input('id');
-            
-            if ($id) {
-                $voucher = ReceiptsVoucher::findOrFail($id);
-                if ($voucher->status === 'posted') {
-                    return response()->json(['success' => false, 'message' => 'Cannot edit a posted voucher.']);
-                }
-            } else {
-                $voucher = ReceiptsVoucher::create([
-                    'rvid'       => ReceiptsVoucher::generateInvoiceNo(),
-                    'entry_date' => $request->entry_date ?? now()->toDateString(),
-                    'entry_time' => $request->entry_time ?? now()->toTimeString(),
-                    'status'     => 'draft'
-                ]);
-            }
 
             $narrationIds = [];
             $nIds = $request->input('narration_id', []);
@@ -614,7 +600,17 @@ class VoucherController extends Controller
                 'total_amount'     => (float) str_replace(',', '', $request->total_amount),
             ], $this->voucherDiscountFieldsFromRequest($request));
 
-            $voucher->update($voucherData);
+            if ($id) {
+                $voucher = ReceiptsVoucher::findOrFail($id);
+                if ($voucher->status === 'posted') {
+                    return response()->json(['success' => false, 'message' => 'Cannot edit a posted voucher.']);
+                }
+                $voucher->update($voucherData);
+            } else {
+                $voucherData['rvid'] = ReceiptsVoucher::generateInvoiceNo();
+                $voucherData['status'] = 'draft';
+                $voucher = ReceiptsVoucher::create($voucherData);
+            }
 
             return response()->json([
                 'success' => true, 

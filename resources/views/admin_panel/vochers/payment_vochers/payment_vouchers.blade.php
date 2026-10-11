@@ -470,7 +470,13 @@ $(document).ready(function() {
         setTimeout(() => $box.fadeOut(() => $box.addClass('d-none')), 3000);
     }
 
+    let isSavingPayment = false;
     function saveDraft(silent = false) {
+        if (isSavingPayment) {
+            return $.Deferred().reject({ message: 'Request already in progress' }).promise();
+        }
+        isSavingPayment = true;
+        $('#saveDraftBtn').prop('disabled', true);
         VoucherFieldValidation.clearErrors($('#paymentForm'));
         return $.post('{{ route("Payment.vochers.ajax-save") }}', $('#paymentForm').serialize())
             .done(res => {
@@ -489,10 +495,16 @@ $(document).ready(function() {
                 } else {
                     showAlert((xhr.responseJSON && xhr.responseJSON.message) || 'Save failed.', 'danger');
                 }
+            })
+            .always(() => {
+                isSavingPayment = false;
+                if (!$('#paymentForm').hasClass('form-locked')) {
+                    $('#saveDraftBtn').prop('disabled', false);
+                }
             });
     }
 
-    $('#saveDraftBtn').click(() => saveDraft());
+    $('#saveDraftBtn').click(() => { if (!isSavingPayment) saveDraft(); });
     $('#editInvoiceBtn').on('click', function() {
         if ($(this).prop('disabled')) return;
         $('#paymentForm').removeClass('form-locked');
@@ -502,6 +514,7 @@ $(document).ready(function() {
     });
 
     $('#postBtn').click(function() {
+        if (isSavingPayment) return;
         Swal.fire({ title: 'Post Voucher?', icon: 'question', showCancelButton: true }).then((res) => {
             if(res.isConfirmed) {
                 saveDraft(true).done(res => {

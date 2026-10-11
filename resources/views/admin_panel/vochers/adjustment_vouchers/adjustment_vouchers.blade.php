@@ -433,21 +433,28 @@ $(document).ready(function() {
     });
 
     $('#postBtn').click(function() {
-        Swal.fire({
-            title: 'Post Voucher?', text: 'Once posted, accounting entries will be finalized.', icon: 'question', showCancelButton: true
-        }).then((res) => {
-            if(res.isConfirmed) {
-                $('#saveDraftBtn').click();
-                setTimeout(() => {
-                    let id = $('#receipt_id').val();
+        if ($(this).prop('disabled')) return;
+        let btn = $(this);
+        btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin me-1"></i>');
+
+        cleanupEmptyLastRow();
+        $('.ajax-valid-error').remove();
+        $.post('{{ route("adjustment.vochers.ajax-save") }}', $('#adjustmentForm').serialize())
+            .done(res => {
+                if(res.success) {
+                    let id = res.id || $('#receipt_id').val();
                     if(id) {
                         let f = $('<form>', {action: '{{ route("adjustment.vochers.post", ":id") }}'.replace(':id', id), method: 'POST'});
                         f.append($('<input>', {type: 'hidden', name: '_token', value: '{{ csrf_token() }}'}));
                         $('body').append(f); f.submit();
                     }
-                }, 1000);
-            }
-        });
+                } else {
+                    btn.prop('disabled', false).html('<i class="fa fa-check-circle me-1"></i> Post <kbd>Ctrl+&crarr;</kbd>');
+                }
+            })
+            .fail(() => {
+                btn.prop('disabled', false).html('<i class="fa fa-check-circle me-1"></i> Post <kbd>Ctrl+&crarr;</kbd>');
+            });
     });
 
     $(window).on('keydown', function(e) {
