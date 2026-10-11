@@ -280,6 +280,8 @@ Route::middleware('auth')->group(function () {
     // Customer Routes
 
     Route::get('/customers', [CustomerController::class, 'index'])->name('customers.index');
+    Route::get('/customers/bulk-edit', [CustomerController::class, 'bulkEdit'])->name('customers.bulk-edit');
+    Route::post('/customers/bulk-update', [CustomerController::class, 'bulkUpdate'])->name('customers.bulk-update');
     Route::get('/customers/create', [CustomerController::class, 'create'])->name('customers.create');
     Route::get('/customers/import', [CustomerController::class, 'importForm'])->name('customers.import');
     Route::get('/customers/import/template', [CustomerController::class, 'downloadImportTemplate'])->name('customers.import.template');

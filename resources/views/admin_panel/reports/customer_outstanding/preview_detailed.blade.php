@@ -140,6 +140,7 @@
         .empty-msg { text-align: center; padding: 24px; font-size: 11px; }
 
         @media print {
+            @page { size: A4 landscape; margin: 0; }
             body { background: #fff; }
             .no-print { display: none !important; }
             .page-sheet {

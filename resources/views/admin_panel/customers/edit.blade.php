@@ -45,9 +45,10 @@
 
                             <div class="col-md-3">
                                 <label><strong>Sales Officer:</strong></label>
-                                <select class="form-control" name="sales_oficer">
+                                <select class="form-control" name="sales_officer">
+                                    <option value="">Select Sales Officer</option>
                                     @foreach ($SalesOfficer ?? [] as $so)
-                                        <option value="{{ $so->name }}" {{ old('sales_oficer', $customer->sales_oficer) == $so->name ? 'selected' : '' }}>{{ $so->name }}</option>
+                                        <option value="{{ $so->name }}" {{ old('sales_officer', $customer->sales_officer ?? $customer->sales_oficer) == $so->name ? 'selected' : '' }}>{{ $so->name }}</option>
                                     @endforeach
                                 </select>
                             </div>

@@ -119,6 +119,7 @@
         }
 
         @media print {
+            @page { size: A4 landscape; margin: 0; }
             body { background: #fff; }
             .no-print { display: none !important; }
             .page-sheet {

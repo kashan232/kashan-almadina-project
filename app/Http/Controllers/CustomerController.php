@@ -419,8 +419,15 @@ class CustomerController extends Controller
             'address_ur' => 'nullable',
             'transport_ur' => 'nullable',
             'customer_type' => 'nullable',
+            'sales_officer' => 'nullable|string',
+            'sales_oficer' => 'nullable|string',
             'user_group_ids' => 'nullable|array',
         ]);
+
+        if (empty($data['sales_officer']) && !empty($data['sales_oficer'])) {
+            $data['sales_officer'] = $data['sales_oficer'];
+        }
+        unset($data['sales_oficer']);
 
         $userGroupIds = $data['user_group_ids'] ?? null;
         unset($data['user_group_ids']);
@@ -524,8 +531,15 @@ class CustomerController extends Controller
             'address_ur' => 'nullable',
             'transport_ur' => 'nullable',
             'customer_type' => 'nullable',
+            'sales_officer' => 'nullable|string',
+            'sales_oficer' => 'nullable|string',
             'user_group_ids' => 'nullable|array',
         ]);
+
+        if (empty($data['sales_officer']) && !empty($data['sales_oficer'])) {
+            $data['sales_officer'] = $data['sales_oficer'];
+        }
+        unset($data['sales_oficer']);
 
         // Update model (includes opening_balance on customers table)
         $customer->update($data);
@@ -692,6 +706,94 @@ class CustomerController extends Controller
         }
 
         return redirect()->back()->with('success', "Customer ledgers resynced successfully. Total updated: {$syncedCount}.");
+    }
+
+    public function bulkEdit(Request $request)
+    {
+        $query = Customer::withInactive()->orderBy('customer_name');
+
+        if ($request->filled('customer_type')) {
+            if ($request->customer_type === 'Main Customer') {
+                $query->where(function($q) {
+                    $q->where('customer_type', 'Main Customer')
+                      ->orWhereNull('customer_type');
+                });
+            } elseif ($request->customer_type === 'Walking Customer') {
+                $query->where('customer_type', 'Walking Customer');
+            }
+        }
+
+        if ($request->filled('zone')) {
+            $query->where('zone', $request->zone);
+        }
+
+        if ($request->filled('sales_officer')) {
+            $query->where('sales_officer', $request->sales_officer);
+        }
+
+        if ($request->filled('group_id')) {
+            $query->whereJsonContains('user_group_ids', (string) $request->group_id);
+        }
+
+        if ($request->filled('search')) {
+            $s = $request->search;
+            $query->where(function($q) use ($s) {
+                $q->where('customer_name', 'like', "%{$s}%")
+                  ->orWhere('customer_id', 'like', "%{$s}%")
+                  ->orWhere('mobile', 'like', "%{$s}%");
+            });
+        }
+
+        $perPage = $request->get('per_page', 100);
+        if ($perPage === 'all' || $perPage == -1) {
+            $customers = $query->get();
+        } else {
+            $perPage = (int) $perPage;
+            if ($perPage <= 0) $perPage = 100;
+            $customers = $query->paginate($perPage)->withQueryString();
+        }
+
+        $salesOfficers = SalesOfficer::orderBy('name')->get();
+        $userGroups = UserGroup::all()->keyBy('id');
+
+        return view('admin_panel.customers.bulk_edit', compact('customers', 'salesOfficers', 'userGroups', 'perPage'));
+    }
+
+    public function bulkUpdate(Request $request)
+    {
+        $customersData = $request->input('customers', []);
+
+        if (empty($customersData) || !is_array($customersData)) {
+            return redirect()->back()->with('error', 'No customer data provided for update.');
+        }
+
+        $updatedCount = 0;
+        foreach ($customersData as $row) {
+            if (empty($row['id'])) {
+                continue;
+            }
+
+            $customer = Customer::withInactive()->find($row['id']);
+            if (!$customer) {
+                continue;
+            }
+
+            $updateData = [];
+
+            if (array_key_exists('sales_officer', $row)) {
+                $newSo = $row['sales_officer'] !== '' ? $row['sales_officer'] : null;
+                if ($customer->sales_officer !== $newSo) {
+                    $updateData['sales_officer'] = $newSo;
+                }
+            }
+
+            if (!empty($updateData)) {
+                $customer->update($updateData);
+                $updatedCount++;
+            }
+        }
+
+        return redirect()->back()->with('success', "Bulk Customer update completed successfully. Total updated: {$updatedCount}.");
     }
 }
 

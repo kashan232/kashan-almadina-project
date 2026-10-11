@@ -160,6 +160,9 @@
                                         <a href="{{ route('customers.import') }}" class="btn btn-outline-success btn-sm rounded-pill px-3">
                                             <i class="fa fa-file-excel-o me-1"></i> Import Excel
                                         </a>
+                                        <a href="{{ route('customers.bulk-edit') }}" class="btn btn-warning btn-sm rounded-pill px-3 shadow-sm fw-bold text-dark">
+                                            <i class="fa fa-pencil-square-o me-1"></i> Bulk Edit
+                                        </a>
                                         <a href="{{ route('customers.create') }}" class="btn btn-success btn-sm rounded-pill px-3 shadow-sm">+ Add Customer</a>
                                     </div>
                                 </div>
@@ -184,6 +187,7 @@
                                     <th>Zone</th>
                                     <th>Address Eng</th>
                                     <th>Address Urdu</th>
+                                    <th>Sales Officer</th>
                                     <th class="text-end">Opening</th>
                                     <th class="text-end">Closing</th>
                                     <th>Filer</th>
@@ -222,6 +226,7 @@
                                     <td class="small">{{ $customer->zone }}</td>
                                     <td class="small">{{ $customer->address }}</td>
                                     <td class="small text-end" dir="rtl">{{ $customer->address_ur }}</td>
+                                    <td class="small fw-bold text-secondary">{{ $customer->sales_officer ?? $customer->sales_oficer ?? '-' }}</td>
                                     <td class="text-end text-success fw-bold">
                                         {{ number_format($customer->resolvedOpeningBalance(), 0) }}
                                     </td>
@@ -263,7 +268,7 @@
                             </tbody>
                             <tfoot class="bg-light fw-bold border-top">
                                 <tr>
-                                    <th colspan="9" class="text-end py-2 text-dark" style="font-weight: 700; font-size: 12px;">TOTALS:</th>
+                                    <th colspan="10" class="text-end py-2 text-dark" style="font-weight: 700; font-size: 12px;">TOTALS:</th>
                                     <th class="text-end text-success fw-bold py-2" style="font-size: 13px;">0</th>
                                     <th class="text-end text-primary fw-bold py-2" style="font-size: 13px;">0</th>
                                     <th colspan="4"></th>
@@ -294,11 +299,12 @@
             <label class="column-picker-item"><input type="checkbox" data-column="7" checked> Zone</label>
             <label class="column-picker-item"><input type="checkbox" data-column="8" checked> Address Eng</label>
             <label class="column-picker-item"><input type="checkbox" data-column="9" checked> Address Urdu</label>
-            <label class="column-picker-item"><input type="checkbox" data-column="10" checked> Opening</label>
-            <label class="column-picker-item"><input type="checkbox" data-column="11" checked> Closing</label>
-            <label class="column-picker-item"><input type="checkbox" data-column="12" checked> Filer</label>
-            <label class="column-picker-item"><input type="checkbox" data-column="13" checked> Status</label>
-            <label class="column-picker-item"><input type="checkbox" data-column="14" checked> Created By</label>
+            <label class="column-picker-item"><input type="checkbox" data-column="10" checked> Sales Officer</label>
+            <label class="column-picker-item"><input type="checkbox" data-column="11" checked> Opening</label>
+            <label class="column-picker-item"><input type="checkbox" data-column="12" checked> Closing</label>
+            <label class="column-picker-item"><input type="checkbox" data-column="13" checked> Filer</label>
+            <label class="column-picker-item"><input type="checkbox" data-column="14" checked> Status</label>
+            <label class="column-picker-item"><input type="checkbox" data-column="15" checked> Created By</label>
         </div>
     </div>
 </div>
@@ -334,23 +340,23 @@
                 };
 
                 var totalOpening = api
-                    .column(9, { search: 'applied' })
-                    .data()
-                    .reduce(function (a, b) {
-                        return intVal(a) + intVal(b);
-                    }, 0);
-
-                var totalClosing = api
                     .column(10, { search: 'applied' })
                     .data()
                     .reduce(function (a, b) {
                         return intVal(a) + intVal(b);
                     }, 0);
 
-                $(api.column(9).footer()).html(
+                var totalClosing = api
+                    .column(11, { search: 'applied' })
+                    .data()
+                    .reduce(function (a, b) {
+                        return intVal(a) + intVal(b);
+                    }, 0);
+
+                $(api.column(10).footer()).html(
                     totalOpening.toLocaleString('en-US', { maximumFractionDigits: 0 })
                 );
-                $(api.column(10).footer()).html(
+                $(api.column(11).footer()).html(
                     totalClosing.toLocaleString('en-US', { maximumFractionDigits: 0 })
                 );
             }
@@ -372,7 +378,7 @@
             }
         });
 
-        const storageKey = 'customer_table_cols_v2';
+        const storageKey = 'customer_table_cols_v3';
         
         function applySavedColumnState() {
             const savedState = localStorage.getItem(storageKey);

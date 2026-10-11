@@ -10,6 +10,7 @@ use App\Models\PaymentVoucher;
 use App\Models\ReceiptsVoucher;
 use App\Models\Sale;
 use App\Models\SaleReturn;
+use App\Models\SalesOfficer;
 use App\Models\UserGroup;
 use App\Models\Vendor;
 use Carbon\Carbon;
