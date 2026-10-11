@@ -142,6 +142,7 @@ Route::post('/Payment/vochers/post/{id}', [VoucherController::class, 'post_payme
 Route::post('/Payment/vochers/unpost/{id}', [VoucherController::class, 'unpost_payment'])->name('Payment.vochers.unpost');
 Route::delete('/Payment/vochers/cancel/{id}', [VoucherController::class, 'cancel_payment'])->name('Payment.vochers.cancel');
 
+Route::get('/party-balance', [VoucherController::class, 'getPartyBalance'])->name('voucher.party-balance');
 Route::get('/all-Payment-vochers', [VoucherController::class, 'all_Payment_vochers'])->name('all-Payment-vochers');
 Route::get('/Payment-voucher/print/{id}', [VoucherController::class, 'Paymentprint'])->name('PaymentVoucher.print');
 

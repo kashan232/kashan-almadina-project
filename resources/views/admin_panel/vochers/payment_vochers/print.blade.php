@@ -289,11 +289,11 @@
                     <td style="color:#6b0f8a;">>>> {{ number_format($previousBalance,2) }}</td>
                 </tr>
                 <tr>
-                    <td>Total Payment Received. (-)</td>
+                    <td>Total Payment Paid. (-)</td>
                     <td style="color:#6b0f8a;">>>> {{ number_format($voucher->total_amount,2) }}</td>
                 </tr>
                 <tr>
-                    <td>Amount Payable.</td>
+                    <td>Remaining / Current Balance.</td>
                     <td style="color:#0b5a2b;">>>> {{ number_format($amountPayable,2) }}</td>
                 </tr>
             </table>

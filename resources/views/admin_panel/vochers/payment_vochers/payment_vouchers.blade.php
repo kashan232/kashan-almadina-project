@@ -80,6 +80,10 @@
                                     <option value="">Select Party...</option>
                                 </select>
                             </div>
+                            <div class="col-md-2">
+                                <label class="form-label text-muted">Current Balance</label>
+                                <input type="text" class="form-control form-control-sm text-end fw-bold input-readonly" id="previousBalance" name="previousBalance" value="{{ number_format($previousBalance ?? 0, 2, '.', '') }}" placeholder="0.00" readonly style="font-size: 1rem; color: #d63384; background: #fffcfd;">
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -280,8 +284,25 @@ $(document).ready(function() {
     });
 
     $('#party_id').on('change', function() {
+        let val = $(this).val();
+        let partyType = $('#party_type').val();
         let code = $(this).find('option:selected').attr('data-code');
-        $('#party_code_input').val(code || $(this).val() || '');
+        $('#party_code_input').val(code || val || '');
+
+        if (val && partyType) {
+            let fetchUrl = '{{ route("voucher.party-balance") }}?type=' + encodeURIComponent(partyType) + '&id=' + encodeURIComponent(val);
+            $.get(fetchUrl, function(res) {
+                if (res && res.current_balance !== undefined) {
+                    $('#previousBalance').val(parseFloat(res.current_balance || 0).toFixed(2));
+                } else {
+                    $('#previousBalance').val('0.00');
+                }
+            }).fail(function() {
+                $('#previousBalance').val('0.00');
+            });
+        } else {
+            $('#previousBalance').val('0.00');
+        }
     });
 
     $('#party_type').on('change', function() {

@@ -89,6 +89,12 @@ class CustomerOutstandingBalanceReportBuilder
             }
         }
 
+        usort($rows, function ($a, $b) {
+            $nameA = trim($a['customer_name'] ?? $a['party_name'] ?? '');
+            $nameB = trim($b['customer_name'] ?? $b['party_name'] ?? '');
+            return strcasecmp($nameA, $nameB);
+        });
+
         return [
             'report_type' => 'short',
             'rows' => $rows,
@@ -178,6 +184,12 @@ class CustomerOutstandingBalanceReportBuilder
                 $grand[$col] += $period[$col];
             }
         }
+
+        usort($rows, function ($a, $b) {
+            $nameA = trim($a['customer_name'] ?? $a['party_name'] ?? '');
+            $nameB = trim($b['customer_name'] ?? $b['party_name'] ?? '');
+            return strcasecmp($nameA, $nameB);
+        });
 
         return [
             'report_type' => 'detailed',
@@ -444,7 +456,11 @@ class CustomerOutstandingBalanceReportBuilder
             }));
         }
 
-        usort($parties, fn ($a, $b) => strcmp($a['name'], $b['name']));
+        usort($parties, function ($a, $b) {
+            $nameA = trim($a['name'] ?? '');
+            $nameB = trim($b['name'] ?? '');
+            return strcasecmp($nameA, $nameB);
+        });
 
         return $parties;
     }

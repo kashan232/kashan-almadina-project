@@ -798,7 +798,17 @@ class VoucherController extends Controller
         $headIds = $AccountHeads->pluck('id')->toArray();
         $allAccounts = Account::where('status', 1)->whereIn('head_id', $headIds)->get(['id', 'head_id', 'title', 'account_code']);
 
-        return view('admin_panel.vochers.payment_vochers.payment_vouchers', compact('narrations', 'AccountHeads', 'allAccounts', 'nextPVID', 'receipt'));
+        $previousBalance = 0;
+        if ($receipt->party_id && $receipt->type) {
+            if (is_numeric($receipt->type)) {
+                $previousBalance = (float) (DB::table('accounts')->where('id', $receipt->party_id)->value('current_balance') ?? 0);
+            } else {
+                $ledgerService = app(PartyLedgerService::class);
+                $previousBalance = $ledgerService->latestClosing($receipt->type, (int) $receipt->party_id);
+            }
+        }
+
+        return view('admin_panel.vochers.payment_vochers.payment_vouchers', compact('narrations', 'AccountHeads', 'allAccounts', 'nextPVID', 'receipt', 'previousBalance'));
     }
 
     public function showPayment($id)
@@ -818,7 +828,17 @@ class VoucherController extends Controller
         $nextPVID = $receipt->pvid;
         $viewMode = true;
 
-        return view('admin_panel.vochers.payment_vochers.payment_vouchers', compact('narrations', 'AccountHeads', 'allAccounts', 'nextPVID', 'receipt', 'viewMode'));
+        $previousBalance = 0;
+        if ($receipt->party_id && $receipt->type) {
+            if (is_numeric($receipt->type)) {
+                $previousBalance = (float) (DB::table('accounts')->where('id', $receipt->party_id)->value('current_balance') ?? 0);
+            } else {
+                $ledgerService = app(PartyLedgerService::class);
+                $previousBalance = $ledgerService->latestClosing($receipt->type, (int) $receipt->party_id);
+            }
+        }
+
+        return view('admin_panel.vochers.payment_vochers.payment_vouchers', compact('narrations', 'AccountHeads', 'allAccounts', 'nextPVID', 'receipt', 'viewMode', 'previousBalance'));
     }
 
     public function ajax_save_payment(Request $request)
@@ -2575,6 +2595,30 @@ class VoucherController extends Controller
         }
 
         return view('admin_panel.vochers.journal_vouchers.print', compact('voucher', 'rows'));
+    }
+
+    public function getPartyBalance(Request $request)
+    {
+        $type = $request->query('type');
+        $id = (int) $request->query('id');
+
+        if (!$id || !$type) {
+            return response()->json(['current_balance' => 0]);
+        }
+
+        if (is_numeric($type)) {
+            $account = DB::table('accounts')->where('id', $id)->first();
+            $balance = (float) ($account->current_balance ?? 0);
+            return response()->json(['current_balance' => $balance]);
+        }
+
+        if (in_array($type, ['vendor', 'customer', 'walkin'], true)) {
+            $ledgerService = app(PartyLedgerService::class);
+            $balance = $ledgerService->latestClosing($type, $id);
+            return response()->json(['current_balance' => $balance]);
+        }
+
+        return response()->json(['current_balance' => 0]);
     }
 }
 
