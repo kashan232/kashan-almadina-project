@@ -23,18 +23,35 @@ class ProductController extends Controller
 {
     public function index(Request $request)
     {
+        // Handle filter reset
+        if ($request->has('reset_filter')) {
+            session()->forget('product_filter_brand');
+            return redirect()->route('products.index');
+        }
+
+        // Handle brand filter persistence in session
+        if ($request->has('brand')) {
+            if ($request->brand !== '') {
+                session(['product_filter_brand' => $request->brand]);
+            } else {
+                session()->forget('product_filter_brand');
+            }
+        }
+
+        $selectedBrand = $request->get('brand', session('product_filter_brand', ''));
+
         $query = Product::withInactive()
             ->with(['latestPrice', 'brandRelation'])
             ->withSum('warehouseStocks as total_warehouse_stock', 'quantity')
             ->orderByDesc('id');
         
-        if ($request->has('brand') && $request->brand != '') {
-            $query->where('brand', $request->brand);
+        if ($selectedBrand !== '' && $selectedBrand !== null) {
+            $query->where('brand_id', $selectedBrand);
         }
 
         $products = $query->get();
         $brands = Brand::orderBy('name')->get();
-        return view('admin_panel.product.index', compact('products', 'brands'));
+        return view('admin_panel.product.index', compact('products', 'brands', 'selectedBrand'));
     }
     public function prices($id)
     {

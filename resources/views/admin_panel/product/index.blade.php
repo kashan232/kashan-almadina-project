@@ -134,13 +134,13 @@
                                     <select name="brand" class="form-select form-select-sm border-secondary-subtle fw-semibold" style="min-width: 170px;" onchange="this.form.submit()">
                                         <option value="">All Brands</option>
                                         @foreach($brands as $b)
-                                            <option value="{{ $b->id }}" {{ request('brand') == $b->id ? 'selected' : '' }}>
+                                            <option value="{{ $b->id }}" {{ (string)$selectedBrand === (string)$b->id ? 'selected' : '' }}>
                                                 {{ $b->name }}
                                             </option>
                                         @endforeach
                                     </select>
-                                    @if(request('brand'))
-                                        <a href="{{ route('products.index') }}" class="btn btn-sm btn-outline-secondary rounded-circle px-2 py-1" title="Reset Filter">
+                                    @if(!empty($selectedBrand))
+                                        <a href="{{ route('products.index', ['reset_filter' => 1]) }}" class="btn btn-sm btn-outline-secondary rounded-circle px-2 py-1" title="Reset Filter">
                                             <i class="fa fa-times"></i>
                                         </a>
                                     @endif
@@ -459,7 +459,7 @@
 
          // Initialize DataTable with Export Buttons & Show All Entries option
          var table = $('#example').DataTable({
-             destroy: true,
+             stateSave: true,
              scrollX: true,
              autoWidth: false,
              lengthMenu: [[10, 25, 50, 100, 250, 500, -1], [10, 25, 50, 100, 250, 500, "All"]],
