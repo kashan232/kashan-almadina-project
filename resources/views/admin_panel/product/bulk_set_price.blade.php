@@ -96,6 +96,16 @@
         outline: none;
     }
 
+    .price-input::-webkit-outer-spin-button,
+    .price-input::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+    }
+    .price-input[type=number] {
+        -moz-appearance: textfield;
+        appearance: textfield;
+    }
+
     .price-input[readonly] {
         background-color: #f7fafc;
         border-color: #edf2f7;
@@ -241,7 +251,7 @@
 
             <div class="action-bar">
                 <div class="text-muted small">
-                    <i class="fa fa-keyboard me-2"></i> Use <kbd>TAB</kbd> to move between fields quickly.
+                    <i class="fa fa-keyboard me-2"></i> Use <kbd>↑</kbd> <kbd>↓</kbd> or <kbd>Enter</kbd> to move between products, and <kbd>TAB</kbd> or <kbd>←</kbd> <kbd>→</kbd> between fields.
                 </div>
                 <button type="submit" class="btn btn-save-master btn-brand shadow-sm">
                     <i class="fa fa-save me-2"></i> Update Selected Prices
@@ -324,6 +334,116 @@
     start();
   }
 })();
+
+// Full Grid Keyboard Navigation (Up / Down / Left / Right / Enter)
+$(document).ready(function() {
+  $(document).on('keydown', '.table-pricing input:visible:not([readonly])', function(e) {
+      if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Enter'].indexOf(e.key) === -1) return;
+
+      var $this = $(this);
+      var $row = $this.closest('.product-row');
+      if ($row.length === 0) return;
+
+      var $inputsInRow = $row.find('input:visible:not([readonly])');
+      var currentIndex = $inputsInRow.index($this);
+
+      // Handle ArrowDown, ArrowUp, Enter
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp' || e.key === 'Enter') {
+          e.preventDefault(); // Stop default action (page scroll, number increment/decrement, form submit)
+
+          var isDown = (e.key === 'ArrowDown' || (e.key === 'Enter' && !e.shiftKey));
+          var $targetRow = isDown ? $row.next('.product-row') : $row.prev('.product-row');
+
+          if ($targetRow.length) {
+              var classList = ($this.attr('class') || '').split(/\s+/);
+              var ignore = ['price-input', 'form-control', 'form-control-sm', 'text-end', 'text-center', 'input-readonly', 'fw-bold', 'loading-indicator', 'net-input', 'purchase-net-field', 'sale-net-field'];
+              var specificClass = classList.find(function(c) { return c && ignore.indexOf(c) === -1; });
+
+              var $target = $();
+              if (specificClass) {
+                  $target = $targetRow.find('.' + specificClass + ':visible:not([readonly])');
+              }
+              if (!$target.length && currentIndex >= 0) {
+                  $target = $targetRow.find('input:visible:not([readonly])').eq(currentIndex);
+              }
+
+              if ($target.length) {
+                  $target.focus();
+                  setTimeout(function() {
+                      $target.select();
+                  }, 10);
+              }
+          }
+      } else if (e.key === 'ArrowRight') {
+          var isAtEnd = false;
+          try {
+              isAtEnd = (this.selectionStart === this.value.length && this.selectionEnd === this.value.length);
+          } catch(err) {
+              isAtEnd = true;
+          }
+          if (isAtEnd) {
+              var $next = $inputsInRow.eq(currentIndex + 1);
+              if ($next.length) {
+                  e.preventDefault();
+                  $next.focus();
+                  setTimeout(function() { $next.select(); }, 10);
+              } else {
+                  // Jump to first input of next row
+                  var $nextRow = $row.next('.product-row');
+                  if ($nextRow.length) {
+                      var $firstInput = $nextRow.find('input:visible:not([readonly])').first();
+                      if ($firstInput.length) {
+                          e.preventDefault();
+                          $firstInput.focus();
+                          setTimeout(function() { $firstInput.select(); }, 10);
+                      }
+                  }
+              }
+          }
+      } else if (e.key === 'ArrowLeft') {
+          var isAtStart = false;
+          try {
+              isAtStart = (this.selectionStart === 0 && this.selectionEnd === 0);
+          } catch(err) {
+              isAtStart = true;
+          }
+          if (isAtStart) {
+              if (currentIndex > 0) {
+                  var $prev = $inputsInRow.eq(currentIndex - 1);
+                  if ($prev.length) {
+                      e.preventDefault();
+                      $prev.focus();
+                      setTimeout(function() { $prev.select(); }, 10);
+                  }
+              } else {
+                  // Jump to last input of previous row
+                  var $prevRow = $row.prev('.product-row');
+                  if ($prevRow.length) {
+                      var $lastInput = $prevRow.find('input:visible:not([readonly])').last();
+                      if ($lastInput.length) {
+                          e.preventDefault();
+                          $lastInput.focus();
+                          setTimeout(function() { $lastInput.select(); }, 10);
+                      }
+                  }
+              }
+          }
+      }
+  });
+
+  // Auto-select text on focus/click so user can immediately type
+  $(document).on('focus', '.table-pricing input:visible:not([readonly])', function() {
+      var self = this;
+      setTimeout(function() {
+          self.select();
+      }, 20);
+  });
+
+  // Prevent accidental number changes on mouse wheel
+  $(document).on('wheel', '.table-pricing input', function() {
+      $(this).blur();
+  });
+});
 </script>
 @endsection
 

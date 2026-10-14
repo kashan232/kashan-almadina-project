@@ -1606,7 +1606,7 @@ class VoucherController extends Controller
         $mainAccountHeads = AccountHead::orderBy('name')->get();
         $AccountHeads = DB::table('account_heads')->whereRaw("UPPER(name) LIKE '%INCOME%'")->get();
         $headIds = $AccountHeads->pluck('id')->toArray();
-        $allAccounts = Account::where('status', 1)->get(['id', 'head_id', 'title', 'account_code']);
+        $allAccounts = Account::whereIn('head_id', $headIds)->where('status', 1)->orderBy('title')->get(['id', 'head_id', 'title', 'account_code']);
         // Narrations specifically for Income voucher or 'all'
         $narrationsList = DB::table('narrations')->where('expense_head', 'Income voucher')->pluck('narration', 'id');
         
@@ -1624,7 +1624,7 @@ class VoucherController extends Controller
         $mainAccountHeads = AccountHead::orderBy('name')->get();
         $AccountHeads = DB::table('account_heads')->whereRaw("UPPER(name) LIKE '%INCOME%'")->get();
         $headIds = $AccountHeads->pluck('id')->toArray();
-        $allAccounts = Account::where('status', 1)->get(['id', 'head_id', 'title', 'account_code']);
+        $allAccounts = Account::whereIn('head_id', $headIds)->where('status', 1)->orderBy('title')->get(['id', 'head_id', 'title', 'account_code']);
         $narrationsList = DB::table('narrations')->where('expense_head', 'Income voucher')->pluck('narration', 'id');
         $viewMode = true;
 

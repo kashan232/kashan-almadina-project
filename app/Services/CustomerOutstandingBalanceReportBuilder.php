@@ -89,11 +89,7 @@ class CustomerOutstandingBalanceReportBuilder
             }
         }
 
-        usort($rows, function ($a, $b) {
-            $nameA = trim($a['customer_name'] ?? $a['party_name'] ?? '');
-            $nameB = trim($b['customer_name'] ?? $b['party_name'] ?? '');
-            return strcasecmp($nameA, $nameB);
-        });
+        $this->sortReportRows($rows);
 
         return [
             'report_type' => 'short',
@@ -185,11 +181,7 @@ class CustomerOutstandingBalanceReportBuilder
             }
         }
 
-        usort($rows, function ($a, $b) {
-            $nameA = trim($a['customer_name'] ?? $a['party_name'] ?? '');
-            $nameB = trim($b['customer_name'] ?? $b['party_name'] ?? '');
-            return strcasecmp($nameA, $nameB);
-        });
+        $this->sortReportRows($rows);
 
         return [
             'report_type' => 'detailed',
@@ -385,7 +377,11 @@ class CustomerOutstandingBalanceReportBuilder
             'party_types' => $partyTypes,
             'selected_parties' => $this->parsePartySelections((array) ($request->party ?? [])),
             'totalGroups' => UserGroup::count(),
-            'totalMainCustomers' => Customer::where('customer_type', 'Main Customer')->count(),
+            'totalMainCustomers' => Customer::where(function ($q) {
+                $q->where('customer_type', 'Main Customer')
+                    ->orWhereNull('customer_type')
+                    ->orWhere('customer_type', '');
+            })->count(),
             'totalWalkinCustomers' => Customer::where('customer_type', 'Walking Customer')->count(),
             'totalVendors' => Vendor::count(),
         ];
@@ -457,9 +453,17 @@ class CustomerOutstandingBalanceReportBuilder
         }
 
         usort($parties, function ($a, $b) {
+            $prioA = $this->partyTypeSortPriority($a['party_kind'] ?? '');
+            $prioB = $this->partyTypeSortPriority($b['party_kind'] ?? '');
+
+            if ($prioA !== $prioB) {
+                return $prioA <=> $prioB;
+            }
+
             $nameA = trim($a['name'] ?? '');
             $nameB = trim($b['name'] ?? '');
-            return strcasecmp($nameA, $nameB);
+
+            return strnatcasecmp($nameA, $nameB);
         });
 
         return $parties;
@@ -478,9 +482,19 @@ class CustomerOutstandingBalanceReportBuilder
 
     private function filteredCustomersByType(string $customerType, string $partyKind)
     {
-        $query = Customer::query()
-            ->where('customer_type', $customerType)
-            ->orderBy('customer_name');
+        $query = Customer::query();
+
+        if ($customerType === 'Main Customer') {
+            $query->where(function ($sub) {
+                $sub->where('customer_type', 'Main Customer')
+                    ->orWhereNull('customer_type')
+                    ->orWhere('customer_type', '');
+            });
+        } else {
+            $query->where('customer_type', $customerType);
+        }
+
+        $query->orderBy('customer_name');
 
         if ($this->shouldApplyFilter($this->filters['user_groups'], $this->filters['totalGroups'])) {
             $groups = $this->filters['user_groups'];
@@ -722,5 +736,33 @@ class CustomerOutstandingBalanceReportBuilder
         }
 
         return true;
+    }
+
+    private function partyTypeSortPriority(?string $type): int
+    {
+        $norm = strtolower(trim((string) $type));
+        return match ($norm) {
+            'customer' => 1,
+            'walkin', 'walking', 'walk-in' => 2,
+            'vendor' => 3,
+            default => 4,
+        };
+    }
+
+    private function sortReportRows(array &$rows): void
+    {
+        usort($rows, function ($a, $b) {
+            $prioA = $this->partyTypeSortPriority($a['party_type'] ?? '');
+            $prioB = $this->partyTypeSortPriority($b['party_type'] ?? '');
+
+            if ($prioA !== $prioB) {
+                return $prioA <=> $prioB;
+            }
+
+            $nameA = trim($a['customer_name'] ?? $a['party_name'] ?? '');
+            $nameB = trim($b['customer_name'] ?? $b['party_name'] ?? '');
+
+            return strnatcasecmp($nameA, $nameB);
+        });
     }
 }

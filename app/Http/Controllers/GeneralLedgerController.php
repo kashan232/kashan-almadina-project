@@ -754,6 +754,7 @@ class GeneralLedgerController extends Controller
             $discounts = json_decode($pv->discount_value, true);
             $discAccIds = json_decode($pv->discount_account_id, true) ?? [];
             $kgs = json_decode($pv->kg, true) ?? [];
+            $refNos = json_decode($pv->reference_no, true) ?? [];
 
             $totalKg = 0.0;
             if (is_array($kgs)) {
@@ -775,12 +776,33 @@ class GeneralLedgerController extends Controller
                 $pvPaidAmt = $pvPaidAmt - $totalDisc;
             }
 
+            $validRefs = [];
+            if (is_array($refNos)) {
+                foreach ($refNos as $r) {
+                    $rStr = trim((string)$r);
+                    if ($rStr !== '' && strtolower($rStr) !== 'null') {
+                        $validRefs[] = $rStr;
+                    }
+                }
+            } elseif (is_string($pv->reference_no)) {
+                $rStr = trim($pv->reference_no);
+                if ($rStr !== '' && strtolower($rStr) !== 'null') {
+                    $validRefs[] = $rStr;
+                }
+            }
+            $pvInv = $pv->pvid;
+            if (!empty($validRefs)) {
+                $pvRefStr = implode(', ', array_unique($validRefs));
+                $refLabel = (stripos($pvRefStr, 'ref') !== false) ? $pvRefStr : ('Ref# ' . $pvRefStr);
+                $pvInv .= ' (' . $refLabel . ')';
+            }
+
             $transactions[] = [
                 'created_at' => $pv->created_at,
                 'id' => $pv->id,
                 'date' => $pv->entry_date ?: $pv->created_at,
                 'ref' => 'PV',
-                'inv' => $pv->pvid,
+                'inv' => $pvInv,
                 'desc' => $pv->remarks ?? 'Payment Voucher',
                 'qty' => $totalKg, 'debit' => $pvPaidAmt, 'credit' => 0
             ];
@@ -791,7 +813,7 @@ class GeneralLedgerController extends Controller
                     'id' => $pv->id . '_disc',
                     'date' => $pv->entry_date ?: $pv->created_at,
                     'ref' => 'IV',
-                    'inv' => $pv->pvid,
+                    'inv' => $pvInv,
                     'desc' => 'Payment Discount (Income)',
                     'qty' => 0, 'debit' => 0, 'credit' => $totalDisc
                 ];
@@ -1047,12 +1069,23 @@ class GeneralLedgerController extends Controller
             $discounts = json_decode($rv->discount_value, true) ?? [];
             $discAccIds = json_decode($rv->discount_account_id, true) ?? [];
             $kgs = json_decode($rv->kg, true) ?? [];
+            $refNos = json_decode($rv->reference_no, true) ?? [];
 
             foreach ($accIds as $idx => $aid) {
                 $rowAmount = $this->cleanNum($amounts[$idx] ?? 0);
                 $rowDiscount = $this->cleanNum($discounts[$idx] ?? 0);
                 $rowKg = (float)($kgs[$idx] ?? 0);
                 if ($rowAmount <= 0 && $rowDiscount <= 0) continue;
+
+                $rowRef = '';
+                if (is_array($refNos)) {
+                    $rowRef = trim((string)($refNos[$idx] ?? ''));
+                } elseif (is_string($rv->reference_no)) {
+                    $rowRef = trim($rv->reference_no);
+                }
+                if (strtolower($rowRef) === 'null') {
+                    $rowRef = '';
+                }
 
                 $accName = DB::table('accounts')->where('id', $aid)->value('title');
                 $narrText = '';
@@ -1076,6 +1109,9 @@ class GeneralLedgerController extends Controller
                 if (str_contains($rv->remarks ?? '', 'Auto-generated from Sale:')) {
                     $ref = 'SJ';
                     $inv = trim(str_replace('Auto-generated from Sale:', '', $rv->remarks));
+                } elseif ($rowRef !== '') {
+                    $refLabel = (stripos($rowRef, 'ref') !== false) ? $rowRef : ('Ref# ' . $rowRef);
+                    $inv .= ' (' . $refLabel . ')';
                 }
 
                 if ($rowAmount > 0) {
@@ -1301,6 +1337,7 @@ class GeneralLedgerController extends Controller
 
         foreach ($avs as $av) {
             $narrIds = json_decode($av->narration_id, true) ?? [];
+            $refNos = json_decode($av->reference_no, true) ?? [];
             
             // Header match check
             if ($av->party_id == $id && in_array($av->party_type, $typeArray)) {
@@ -1327,6 +1364,21 @@ class GeneralLedgerController extends Controller
                             $headerNarr = $narrIds[$i];
                         }
                     }
+
+                    $rowRef = '';
+                    if (is_array($refNos)) {
+                        $rowRef = trim((string)($refNos[$i] ?? ''));
+                    } elseif (is_string($av->reference_no)) {
+                        $rowRef = trim($av->reference_no);
+                    }
+                    if (strtolower($rowRef) === 'null') {
+                        $rowRef = '';
+                    }
+                    $rowInv = $av->avid;
+                    if ($rowRef !== '') {
+                        $refLabel = (stripos($rowRef, 'ref') !== false) ? $rowRef : ('Ref# ' . $rowRef);
+                        $rowInv .= ' (' . $refLabel . ')';
+                    }
                     
                     $headerDescParts = [];
                     if ($headerNarr) $headerDescParts[] = $headerNarr;
@@ -1341,7 +1393,7 @@ class GeneralLedgerController extends Controller
                             'id' => $av->id . '_h_' . $i,
                             'date' => $av->entry_date ?: $av->created_at,
                             'ref' => 'AV',
-                            'inv' => $av->avid,
+                            'inv' => $rowInv,
                             'desc' => $headerDesc,
                             'qty' => 0,
                             'debit' => $rowAmt,
@@ -1369,6 +1421,21 @@ class GeneralLedgerController extends Controller
                         }
                     }
 
+                    $rowRef = '';
+                    if (is_array($refNos)) {
+                        $rowRef = trim((string)($refNos[$idx] ?? ''));
+                    } elseif (is_string($av->reference_no)) {
+                        $rowRef = trim($av->reference_no);
+                    }
+                    if (strtolower($rowRef) === 'null') {
+                        $rowRef = '';
+                    }
+                    $rowInv = $av->avid;
+                    if ($rowRef !== '') {
+                        $refLabel = (stripos($rowRef, 'ref') !== false) ? $rowRef : ('Ref# ' . $rowRef);
+                        $rowInv .= ' (' . $refLabel . ')';
+                    }
+
                     $descParts = [];
                     if ($narrText) $descParts[] = $narrText;
                     if (!empty($av->remarks)) $descParts[] = $av->remarks;
@@ -1392,7 +1459,7 @@ class GeneralLedgerController extends Controller
                         'id' => $av->id,
                         'date' => $av->entry_date ?: $av->created_at,
                         'ref' => 'AV',
-                        'inv' => $av->avid,
+                        'inv' => $rowInv,
                         'desc' => $desc,
                         'qty' => 0,
                         'debit' => 0,
@@ -1461,6 +1528,7 @@ class GeneralLedgerController extends Controller
                 $discAccIds = json_decode($rv->discount_account_id, true) ?? [];
                 $discounts = json_decode($rv->discount_value, true) ?? [];
                 $kgs = json_decode($rv->kg, true) ?? [];
+                $refNos = json_decode($rv->reference_no, true) ?? [];
 
                 $totalKg = 0.0;
                 if (is_array($kgs)) {
@@ -1514,6 +1582,22 @@ class GeneralLedgerController extends Controller
                             }
                         }
 
+                        $rowRef = '';
+                        if (is_array($refNos)) {
+                            $rowRef = trim((string)($refNos[$idx] ?? ''));
+                        } elseif (is_string($rv->reference_no)) {
+                            $rowRef = trim($rv->reference_no);
+                        }
+                        if (strtolower($rowRef) === 'null') {
+                            $rowRef = '';
+                        }
+
+                        $rowInv = $inv;
+                        if (!str_starts_with($rv->remarks ?? '', 'Auto-generated from Sale:') && $rowRef !== '') {
+                            $refLabel = (stripos($rowRef, 'ref') !== false) ? $rowRef : ('Ref# ' . $rowRef);
+                            $rowInv .= ' (' . $refLabel . ')';
+                        }
+
                         $accName = DB::table('accounts')->where('id', $aid)->value('title');
 
                         $descParts = [];
@@ -1530,7 +1614,7 @@ class GeneralLedgerController extends Controller
                             'id' => $rv->id . '_' . $idx,
                             'date' => $rv->entry_date ?: $rv->created_at,
                             'ref' => $ref,
-                            'inv' => $inv,
+                            'inv' => $rowInv,
                             'desc' => $desc,
                             'price' => 0, 'qty' => $rowKg, 'debit' => $rowAmount, 'credit' => 0,
                             'priority' => 60
@@ -1548,10 +1632,24 @@ class GeneralLedgerController extends Controller
                     }
 
                     $ref = 'RV';
-                    $inv = $rv->rvid;
+                    $discInv = $rv->rvid;
                     if (str_starts_with($rv->remarks ?? '', 'Auto-generated from Sale:')) {
                         $ref = 'SJ';
-                        $inv = trim(str_replace('Auto-generated from Sale:', '', $rv->remarks));
+                        $discInv = trim(str_replace('Auto-generated from Sale:', '', $rv->remarks));
+                    } else {
+                        $rowRef = '';
+                        if (is_array($refNos)) {
+                            $rowRef = trim((string)($refNos[$idx] ?? ''));
+                        } elseif (is_string($rv->reference_no)) {
+                            $rowRef = trim($rv->reference_no);
+                        }
+                        if (strtolower($rowRef) === 'null') {
+                            $rowRef = '';
+                        }
+                        if ($rowRef !== '') {
+                            $refLabel = (stripos($rowRef, 'ref') !== false) ? $rowRef : ('Ref# ' . $rowRef);
+                            $discInv .= ' (' . $refLabel . ')';
+                        }
                     }
 
                     $desc = $this->voucherDiscountDescription($daid);
@@ -1562,7 +1660,7 @@ class GeneralLedgerController extends Controller
                         'id' => $rv->id . '_discacc_' . $idx,
                         'date' => $rv->entry_date ?: $rv->created_at,
                         'ref' => $ref,
-                        'inv' => $inv,
+                        'inv' => $discInv,
                         'desc' => $desc,
                         'price' => 0, 'qty' => 0, 'debit' => $rowDiscount, 'credit' => 0,
                         'priority' => 61
@@ -1586,6 +1684,7 @@ class GeneralLedgerController extends Controller
                 $discAccIds = json_decode($pv->discount_account_id, true) ?? [];
                 $discounts = json_decode($pv->discount_value, true) ?? [];
                 $pvKgs = json_decode($pv->kg, true) ?? [];
+                $refNos = json_decode($pv->reference_no, true) ?? [];
 
                 $pvTotalKg = 0.0;
                 if (is_array($pvKgs)) {
@@ -1605,12 +1704,33 @@ class GeneralLedgerController extends Controller
                 if ($pv->party_id == $id) {
                     $totAmt = (float)$pv->total_amount + $this->sumVoucherDiscounts($pv);
                     if ($totAmt > 0) {
+                        $validRefs = [];
+                        if (is_array($refNos)) {
+                            foreach ($refNos as $r) {
+                                $rStr = trim((string)$r);
+                                if ($rStr !== '' && strtolower($rStr) !== 'null') {
+                                    $validRefs[] = $rStr;
+                                }
+                            }
+                        } elseif (is_string($pv->reference_no)) {
+                            $rStr = trim($pv->reference_no);
+                            if ($rStr !== '' && strtolower($rStr) !== 'null') {
+                                $validRefs[] = $rStr;
+                            }
+                        }
+                        $headerInv = $pv->pvid;
+                        if (!empty($validRefs)) {
+                            $pvRefStr = implode(', ', array_unique($validRefs));
+                            $refLabel = (stripos($pvRefStr, 'ref') !== false) ? $pvRefStr : ('Ref# ' . $pvRefStr);
+                            $headerInv .= ' (' . $refLabel . ')';
+                        }
+
                         $transactions[] = [
                             'created_at' => $pv->created_at,
                             'id' => $pv->id . '_h',
                             'date' => $pv->entry_date ?: $pv->created_at,
                             'ref' => 'PV',
-                            'inv' => $pv->pvid,
+                            'inv' => $headerInv,
                             'desc' => $pv->remarks ?? 'Payment Voucher (Destination Party)',
                             'price' => 0, 'qty' => $pvTotalKg, 'debit' => $totAmt, 'credit' => 0,
                             'priority' => 60
@@ -1631,6 +1751,21 @@ class GeneralLedgerController extends Controller
                             }
                         }
 
+                        $rowRef = '';
+                        if (is_array($refNos)) {
+                            $rowRef = trim((string)($refNos[$idx] ?? ''));
+                        } elseif (is_string($pv->reference_no)) {
+                            $rowRef = trim($pv->reference_no);
+                        }
+                        if (strtolower($rowRef) === 'null') {
+                            $rowRef = '';
+                        }
+                        $rowInv = $pv->pvid;
+                        if ($rowRef !== '') {
+                            $refLabel = (stripos($rowRef, 'ref') !== false) ? $rowRef : ('Ref# ' . $rowRef);
+                            $rowInv .= ' (' . $refLabel . ')';
+                        }
+
                         $descParts = [];
                         if ($rowNarr) $descParts[] = $rowNarr;
                         if (!empty($pv->remarks)) $descParts[] = $pv->remarks;
@@ -1643,7 +1778,7 @@ class GeneralLedgerController extends Controller
                             'id' => $pv->id . '_' . $idx,
                             'date' => $pv->entry_date ?: $pv->created_at,
                             'ref' => 'PV',
-                            'inv' => $pv->pvid,
+                            'inv' => $rowInv,
                             'desc' => $desc,
                             'price' => 0, 'qty' => $rowKg, 'debit' => 0, 'credit' => $rowAmount,
                             'priority' => 60
@@ -1660,6 +1795,21 @@ class GeneralLedgerController extends Controller
                         continue;
                     }
 
+                    $rowRef = '';
+                    if (is_array($refNos)) {
+                        $rowRef = trim((string)($refNos[$idx] ?? ''));
+                    } elseif (is_string($pv->reference_no)) {
+                        $rowRef = trim($pv->reference_no);
+                    }
+                    if (strtolower($rowRef) === 'null') {
+                        $rowRef = '';
+                    }
+                    $discInv = $pv->pvid;
+                    if ($rowRef !== '') {
+                        $refLabel = (stripos($rowRef, 'ref') !== false) ? $rowRef : ('Ref# ' . $rowRef);
+                        $discInv .= ' (' . $refLabel . ')';
+                    }
+
                     $desc = $this->voucherDiscountDescription($daid);
                     $desc = $partyName ? $desc . ' : ' . $partyName : $desc;
 
@@ -1668,7 +1818,7 @@ class GeneralLedgerController extends Controller
                         'id' => $pv->id . '_discacc_' . $idx,
                         'date' => $pv->entry_date ?: $pv->created_at,
                         'ref' => 'PV',
-                        'inv' => $pv->pvid,
+                        'inv' => $discInv,
                         'desc' => $desc,
                         'price' => 0, 'qty' => 0, 'debit' => 0, 'credit' => $rowDiscount,
                         'priority' => 61
@@ -1944,6 +2094,7 @@ class GeneralLedgerController extends Controller
                 $amounts = json_decode($av->amount, true) ?? [];
                 $narrIds = json_decode($av->narration_id, true) ?? [];
                 $accHeads = json_decode($av->account_head, true) ?? [];
+                $refNos = json_decode($av->reference_no, true) ?? [];
 
                 // Header check
                 if ($av->party_id == $id && is_numeric($av->party_type)) {
@@ -1966,6 +2117,21 @@ class GeneralLedgerController extends Controller
                                 $headerNarr = $narrIds[$i];
                             }
                         }
+
+                        $rowRef = '';
+                        if (is_array($refNos)) {
+                            $rowRef = trim((string)($refNos[$i] ?? ''));
+                        } elseif (is_string($av->reference_no)) {
+                            $rowRef = trim($av->reference_no);
+                        }
+                        if (strtolower($rowRef) === 'null') {
+                            $rowRef = '';
+                        }
+                        $rowInv = $av->avid;
+                        if ($rowRef !== '') {
+                            $refLabel = (stripos($rowRef, 'ref') !== false) ? $rowRef : ('Ref# ' . $rowRef);
+                            $rowInv .= ' (' . $refLabel . ')';
+                        }
                         
                         $headerDescParts = [];
                         if ($headerNarr) $headerDescParts[] = $headerNarr;
@@ -1980,7 +2146,7 @@ class GeneralLedgerController extends Controller
                                 'id' => $av->id . '_h_' . $i,
                                 'date' => $av->entry_date ?: $av->created_at,
                                 'ref' => 'AV',
-                                'inv' => $av->avid,
+                                'inv' => $rowInv,
                                 'desc' => $headerDesc,
                                 'price' => 0, 'qty' => 0, 
                                 'debit' => $rowAmt, 
@@ -2002,6 +2168,21 @@ class GeneralLedgerController extends Controller
                             } else {
                                 $narrText = $narrIds[$idx];
                             }
+                        }
+
+                        $rowRef = '';
+                        if (is_array($refNos)) {
+                            $rowRef = trim((string)($refNos[$idx] ?? ''));
+                        } elseif (is_string($av->reference_no)) {
+                            $rowRef = trim($av->reference_no);
+                        }
+                        if (strtolower($rowRef) === 'null') {
+                            $rowRef = '';
+                        }
+                        $rowInv = $av->avid;
+                        if ($rowRef !== '') {
+                            $refLabel = (stripos($rowRef, 'ref') !== false) ? $rowRef : ('Ref# ' . $rowRef);
+                            $rowInv .= ' (' . $refLabel . ')';
                         }
 
                         $descParts = [];
@@ -2027,7 +2208,7 @@ class GeneralLedgerController extends Controller
                             'id' => $av->id . '_' . $idx,
                             'date' => $av->entry_date ?: $av->created_at,
                             'ref' => 'AV',
-                            'inv' => $av->avid,
+                            'inv' => $rowInv,
                             'desc' => $desc,
                             'price' => 0, 'qty' => 0, 
                             'debit' => 0, 
@@ -2174,14 +2355,30 @@ class GeneralLedgerController extends Controller
             $narrIds = json_decode($pv->narration_id, true) ?? [];
             $discounts = json_decode($pv->discount_value, true) ?? [];
             $discAccIds = json_decode($pv->discount_account_id, true) ?? [];
-
             $kgs = json_decode($pv->kg, true) ?? [];
+            $refNos = json_decode($pv->reference_no, true) ?? [];
 
             foreach ($accIds as $idx => $aid) {
                 $rowAmount = (float)($amounts[$idx] ?? 0);
                 $rowDiscount = (float)($discounts[$idx] ?? 0);
                 $rowKg = (float)($kgs[$idx] ?? 0);
                 if ($rowAmount <= 0 && $rowDiscount <= 0) continue;
+
+                $rowRef = '';
+                if (is_array($refNos)) {
+                    $rowRef = trim((string)($refNos[$idx] ?? ''));
+                } elseif (is_string($pv->reference_no)) {
+                    $rowRef = trim($pv->reference_no);
+                }
+                if (strtolower($rowRef) === 'null') {
+                    $rowRef = '';
+                }
+
+                $rowInv = $pv->pvid;
+                if ($rowRef !== '') {
+                    $refLabel = (stripos($rowRef, 'ref') !== false) ? $rowRef : ('Ref# ' . $rowRef);
+                    $rowInv .= ' (' . $refLabel . ')';
+                }
 
                 $accName = DB::table('accounts')->where('id', $aid)->value('title');
                 $narrText = '';
@@ -2200,7 +2397,7 @@ class GeneralLedgerController extends Controller
                         'id' => $pv->id . '_' . $idx,
                         'date' => $pv->entry_date ?: $pv->created_at,
                         'ref' => 'PV',
-                        'inv' => $pv->pvid,
+                        'inv' => $rowInv,
                         'desc' => $desc,
                         'price' => 0, 'qty' => $rowKg, 'debit' => $rowAmount, 'credit' => 0,
                         'priority' => 50
@@ -2213,7 +2410,7 @@ class GeneralLedgerController extends Controller
                         'id' => $pv->id . '_disc_' . $idx,
                         'date' => $pv->entry_date ?: $pv->created_at,
                         'ref' => 'PV',
-                        'inv' => $pv->pvid,
+                        'inv' => $rowInv,
                         'desc' => $this->voucherDiscountDescription($discAccIds[$idx] ?? null),
                         'price' => 0, 'qty' => 0, 'debit' => $rowDiscount, 'credit' => 0,
                         'priority' => 51
@@ -2441,6 +2638,7 @@ class GeneralLedgerController extends Controller
 
         foreach ($avs as $av) {
             $narrIds = json_decode($av->narration_id, true) ?? [];
+            $refNos = json_decode($av->reference_no, true) ?? [];
             
             // Header match check
             if ($av->party_id == $id && in_array($av->party_type, $typeArray)) {
@@ -2467,6 +2665,21 @@ class GeneralLedgerController extends Controller
                             $headerNarr = $narrIds[$i];
                         }
                     }
+
+                    $rowRef = '';
+                    if (is_array($refNos)) {
+                        $rowRef = trim((string)($refNos[$i] ?? ''));
+                    } elseif (is_string($av->reference_no)) {
+                        $rowRef = trim($av->reference_no);
+                    }
+                    if (strtolower($rowRef) === 'null') {
+                        $rowRef = '';
+                    }
+                    $rowInv = $av->avid;
+                    if ($rowRef !== '') {
+                        $refLabel = (stripos($rowRef, 'ref') !== false) ? $rowRef : ('Ref# ' . $rowRef);
+                        $rowInv .= ' (' . $refLabel . ')';
+                    }
                     
                     $headerDescParts = [];
                     if ($headerNarr) $headerDescParts[] = $headerNarr;
@@ -2481,7 +2694,7 @@ class GeneralLedgerController extends Controller
                             'id' => $av->id . '_h_' . $i,
                             'date' => $av->entry_date ?: $av->created_at,
                             'ref' => 'AV',
-                            'inv' => $av->avid,
+                            'inv' => $rowInv,
                             'desc' => $headerDesc,
                             'price' => 0, 'qty' => 0,
                             'debit' => $rowAmt,
@@ -2509,6 +2722,21 @@ class GeneralLedgerController extends Controller
                         }
                     }
 
+                    $rowRef = '';
+                    if (is_array($refNos)) {
+                        $rowRef = trim((string)($refNos[$idx] ?? ''));
+                    } elseif (is_string($av->reference_no)) {
+                        $rowRef = trim($av->reference_no);
+                    }
+                    if (strtolower($rowRef) === 'null') {
+                        $rowRef = '';
+                    }
+                    $rowInv = $av->avid;
+                    if ($rowRef !== '') {
+                        $refLabel = (stripos($rowRef, 'ref') !== false) ? $rowRef : ('Ref# ' . $rowRef);
+                        $rowInv .= ' (' . $refLabel . ')';
+                    }
+
                     $descParts = [];
                     if ($narrText) $descParts[] = $narrText;
                     if (!empty($av->remarks)) $descParts[] = $av->remarks;
@@ -2532,7 +2760,7 @@ class GeneralLedgerController extends Controller
                         'id' => $av->id,
                         'date' => $av->entry_date ?: $av->created_at,
                         'ref' => 'AV',
-                        'inv' => $av->avid,
+                        'inv' => $rowInv,
                         'desc' => $desc,
                         'price' => 0, 'qty' => 0,
                         'debit' => 0,
@@ -2735,14 +2963,24 @@ class GeneralLedgerController extends Controller
             $narrIds = json_decode($rv->narration_id, true) ?? [];
             $discounts = json_decode($rv->discount_value, true) ?? [];
             $discAccIds = json_decode($rv->discount_account_id, true) ?? [];
-
             $kgs = json_decode($rv->kg, true) ?? [];
+            $refNos = json_decode($rv->reference_no, true) ?? [];
 
             foreach ($accIds as $idx => $aid) {
                 $rowAmount = (float)($amounts[$idx] ?? 0);
                 $rowDiscount = (float)($discounts[$idx] ?? 0);
                 $rowKg = (float)($kgs[$idx] ?? 0);
                 if ($rowAmount <= 0 && $rowDiscount <= 0) continue;
+
+                $rowRef = '';
+                if (is_array($refNos)) {
+                    $rowRef = trim((string)($refNos[$idx] ?? ''));
+                } elseif (is_string($rv->reference_no)) {
+                    $rowRef = trim($rv->reference_no);
+                }
+                if (strtolower($rowRef) === 'null') {
+                    $rowRef = '';
+                }
 
                 $accName = DB::table('accounts')->where('id', $aid)->value('title');
                 $narrText = '';
@@ -2767,6 +3005,9 @@ class GeneralLedgerController extends Controller
                 if (str_contains($rv->remarks ?? '', 'Auto-generated from Sale:')) {
                     $ref = 'SJ';
                     $inv = trim(str_replace('Auto-generated from Sale:', '', $rv->remarks));
+                } elseif ($rowRef !== '') {
+                    $refLabel = (stripos($rowRef, 'ref') !== false) ? $rowRef : ('Ref# ' . $rowRef);
+                    $inv .= ' (' . $refLabel . ')';
                 }
 
                 if ($rowAmount > 0) {
