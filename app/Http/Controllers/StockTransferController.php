@@ -271,6 +271,65 @@ class StockTransferController extends Controller
         return response()->json(['quantity' => $quantity]);
     }
 
+    // Accept all pending transfers (or specified transfer IDs)
+    public function acceptAll(Request $request)
+    {
+        $user = auth()->user();
+        $isAdmin = $user && ($user->email === 'admin@admin.com' || ($user->roles && $user->roles->contains('name', 'Admin')) || $user->hasRole('Admin'));
+        if (!$isAdmin) {
+            abort(403, 'Unauthorized action. Only Admin can access Pending Transfer Requests.');
+        }
+
+        $ids = $request->input('ids');
+        
+        $query = StockTransfer::with('items')->where('status', 'Pending Approval');
+        if (!empty($ids) && is_array($ids)) {
+            $query->whereIn('id', $ids);
+        }
+
+        $transfers = $query->get();
+
+        if ($transfers->isEmpty()) {
+            if ($request->ajax()) {
+                return response()->json(['success' => false, 'message' => 'No pending transfers found to accept.'], 422);
+            }
+            return back()->with('error', 'No pending transfers found to accept.');
+        }
+
+        $count = 0;
+        try {
+            DB::transaction(function () use ($transfers, &$count) {
+                foreach ($transfers as $t) {
+                    $transfer = StockTransfer::with('items')->lockForUpdate()->find($t->id);
+
+                    if (!$transfer || $transfer->status !== 'Pending Approval') {
+                        continue;
+                    }
+
+                    $this->applyTransferStock($transfer);
+
+                    // Update transfer status
+                    $transfer->status = 'Posted';
+                    $transfer->confirmed_by = auth()->id();
+                    $transfer->save();
+
+                    $count++;
+                }
+            });
+
+            $msg = "All {$count} pending transfer(s) accepted successfully. Stock has been impacted.";
+            if ($request->ajax()) {
+                return response()->json(['success' => true, 'message' => $msg]);
+            }
+            return back()->with('success', $msg);
+        } catch (\Exception $e) {
+            if ($request->ajax()) {
+                return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
+            }
+            return back()->with('error', 'Failed to accept transfers: ' . $e->getMessage());
+        }
+    }
+
     // Accept transfer: move reserved stock to destination
     public function accept(Request $request, $id)
     {

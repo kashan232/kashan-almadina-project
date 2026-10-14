@@ -17,8 +17,10 @@
   $eTel = $editData ? $editData->tel : '';
   $ePrevBal = $editData ? $editData->previous_balance : '0.00';
   $eRemarks = $editData ? $editData->remarks : '';
-  $eOrderDiscMode = ($editData && $editData->discount_percent > 0) ? 'percent' : (($editData && $editData->discount_amount > 0) ? 'amount' : 'percent');
-  $eOrderDiscValue = $editData ? ($eOrderDiscMode === 'percent' ? $editData->discount_percent : $editData->discount_amount) : 0;
+  $eOrderDiscMode = ($editData && !empty($editData->order_discount_mode)) 
+      ? $editData->order_discount_mode 
+      : (($editData && $editData->discount_percent > 0 && ($editData->discount_amount == 0 || $editData->discount_percent == floor($editData->discount_percent))) ? 'percent' : (($editData && $editData->discount_amount > 0) ? 'amount' : 'percent'));
+  $eOrderDiscValue = $editData ? (float)($eOrderDiscMode === 'amount' ? $editData->discount_amount : $editData->discount_percent) : 0;
   
   // Try to find the exact receipt variables
   $receiptAccs = $editData ? json_decode($editData->receipt_accounts ?? '[]', true) : [];
@@ -2354,7 +2356,7 @@
       orderDisc = (discountBase * orderValue) / 100.0;
     } else {
       orderDisc = orderValue;
-      orderPct = discountBase > 0 ? (orderValue / discountBase) * 100 : 0;
+      orderPct = 0;
     }
 
     // Update hidden fields

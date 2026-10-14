@@ -225,21 +225,21 @@
                             </td>
 
                             @if($type == 'purchase' || $type == 'both')
-                                <td><input type="number" step="0.01" class="price-input purchase-retail" value="{{ $product->latestPrice->purchase_retail_price ?? ''}}" name="purchase_retail_price[]"></td>
-                                <td><input type="number" step="0.01" class="price-input purchase-tax" value="{{ $product->latestPrice->purchase_tax_percent ?? ''}}" name="purchase_tax_percent[]"></td>
+                                <td><input type="text" inputmode="decimal" class="price-input purchase-retail" value="{{ $product->latestPrice->purchase_retail_price ?? ''}}" name="purchase_retail_price[]"></td>
+                                <td><input type="text" inputmode="decimal" class="price-input purchase-tax" value="{{ $product->latestPrice->purchase_tax_percent ?? ''}}" name="purchase_tax_percent[]"></td>
                                 <td><input type="text" class="price-input purchase-after-tax" value="{{ $product->latestPrice->purchase_tax_amount ?? '' }}" name="purchase_tax_amount[]" readonly></td>
-                                <td><input type="number" step="0.01" class="price-input purchase-discount" value="{{ $product->latestPrice->purchase_discount_percent ?? '' }}" name="purchase_discount_percent[]"></td>
+                                <td><input type="text" inputmode="decimal" class="price-input purchase-discount" value="{{ $product->latestPrice->purchase_discount_percent ?? '' }}" name="purchase_discount_percent[]"></td>
                                 <td><input type="text" class="price-input purchase-discount-amount" name="purchase_discount_amount[]" value="{{ $product->latestPrice->purchase_discount_amount ?? ''}}" readonly></td>
                                 <td><input type="text" class="price-input net-input purchase-net purchase-net-field" value="{{ $product->latestPrice->purchase_net_amount ?? ''}}" name="purchase_net_amount[]" readonly></td>
                             @endif
 
                             @if($type == 'sale' || $type == 'both')
-                                <td><input type="number" step="0.01" class="price-input sale-retail" value="{{ $product->latestPrice->sale_retail_price ?? ''}}" name="sale_retail_price[]"></td>
-                                <td><input type="number" step="0.01" class="price-input sale-tax" value="{{ $product->latestPrice->sale_tax_percent ?? ''}}" name="sale_tax_percent[]"></td>
+                                <td><input type="text" inputmode="decimal" class="price-input sale-retail" value="{{ $product->latestPrice->sale_retail_price ?? ''}}" name="sale_retail_price[]"></td>
+                                <td><input type="text" inputmode="decimal" class="price-input sale-tax" value="{{ $product->latestPrice->sale_tax_percent ?? ''}}" name="sale_tax_percent[]"></td>
                                 <td><input type="text" class="price-input sale-after-tax" value="{{ $product->latestPrice->sale_tax_amount ?? ''}}" name="sale_tax_amount[]" readonly></td>
-                                <td><input type="number" step="0.01" class="price-input sale-wht" value="{{ $product->latestPrice->sale_wht_percent ?? 0.5 }}" name="sale_wht_percent[]"></td>
+                                <td><input type="text" inputmode="decimal" class="price-input sale-wht" value="{{ $product->latestPrice->sale_wht_percent ?? 0.5 }}" name="sale_wht_percent[]"></td>
                                 <td><input type="text" class="price-input sale-wht-amount" name="sale_wht_amount[]" value="{{ $product->latestPrice->sale_wht_amount ?? ''}}" readonly></td>
-                                <td><input type="number" step="0.01" class="price-input sale-discount" value="{{ $product->latestPrice->sale_discount_percent ?? ''}}" name="sale_discount_percent[]"></td>
+                                <td><input type="text" inputmode="decimal" class="price-input sale-discount" value="{{ $product->latestPrice->sale_discount_percent ?? ''}}" name="sale_discount_percent[]"></td>
                                 <td><input type="text" class="price-input sale-discount-amount" name="sale_discount_amount[]" value="{{ $product->latestPrice->sale_discount_amount?? '' }}" readonly></td>
                                 <td><input type="text" class="price-input net-input sale-net sale-net-field" value="{{ $product->latestPrice->sale_net_amount ?? ''}}" name="sale_net_amount[]" readonly></td>
                             @endif
@@ -337,7 +337,9 @@
 
 // Full Grid Keyboard Navigation (Up / Down / Left / Right / Enter)
 $(document).ready(function() {
-  $(document).on('keydown', '.table-pricing input:visible:not([readonly])', function(e) {
+  // ⌨️ Full Grid Keyboard Navigation (Up / Down / Left / Right / Enter)
+  $(document).on('keydown', '.product-row input', function(e) {
+      if (this.readOnly || this.type === 'hidden') return;
       if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Enter'].indexOf(e.key) === -1) return;
 
       var $this = $(this);
@@ -352,7 +354,7 @@ $(document).ready(function() {
           e.preventDefault(); // Stop default action (page scroll, number increment/decrement, form submit)
 
           var isDown = (e.key === 'ArrowDown' || (e.key === 'Enter' && !e.shiftKey));
-          var $targetRow = isDown ? $row.next('.product-row') : $row.prev('.product-row');
+          var $targetRow = isDown ? $row.nextAll('.product-row').first() : $row.prevAll('.product-row').first();
 
           if ($targetRow.length) {
               var classList = ($this.attr('class') || '').split(/\s+/);
@@ -368,7 +370,7 @@ $(document).ready(function() {
               }
 
               if ($target.length) {
-                  $target.focus();
+                  $target.focus().select();
                   setTimeout(function() {
                       $target.select();
                   }, 10);
@@ -385,16 +387,16 @@ $(document).ready(function() {
               var $next = $inputsInRow.eq(currentIndex + 1);
               if ($next.length) {
                   e.preventDefault();
-                  $next.focus();
+                  $next.focus().select();
                   setTimeout(function() { $next.select(); }, 10);
               } else {
                   // Jump to first input of next row
-                  var $nextRow = $row.next('.product-row');
+                  var $nextRow = $row.nextAll('.product-row').first();
                   if ($nextRow.length) {
                       var $firstInput = $nextRow.find('input:visible:not([readonly])').first();
                       if ($firstInput.length) {
                           e.preventDefault();
-                          $firstInput.focus();
+                          $firstInput.focus().select();
                           setTimeout(function() { $firstInput.select(); }, 10);
                       }
                   }
@@ -412,17 +414,17 @@ $(document).ready(function() {
                   var $prev = $inputsInRow.eq(currentIndex - 1);
                   if ($prev.length) {
                       e.preventDefault();
-                      $prev.focus();
+                      $prev.focus().select();
                       setTimeout(function() { $prev.select(); }, 10);
                   }
               } else {
                   // Jump to last input of previous row
-                  var $prevRow = $row.prev('.product-row');
+                  var $prevRow = $row.prevAll('.product-row').first();
                   if ($prevRow.length) {
                       var $lastInput = $prevRow.find('input:visible:not([readonly])').last();
                       if ($lastInput.length) {
                           e.preventDefault();
-                          $lastInput.focus();
+                          $lastInput.focus().select();
                           setTimeout(function() { $lastInput.select(); }, 10);
                       }
                   }
@@ -432,15 +434,16 @@ $(document).ready(function() {
   });
 
   // Auto-select text on focus/click so user can immediately type
-  $(document).on('focus', '.table-pricing input:visible:not([readonly])', function() {
+  $(document).on('focus', '.product-row input', function() {
+      if (this.readOnly || this.type === 'hidden') return;
       var self = this;
       setTimeout(function() {
           self.select();
-      }, 20);
+      }, 10);
   });
 
   // Prevent accidental number changes on mouse wheel
-  $(document).on('wheel', '.table-pricing input', function() {
+  $(document).on('wheel', '.product-row input', function() {
       $(this).blur();
   });
 });

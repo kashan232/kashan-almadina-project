@@ -207,6 +207,7 @@ class SaleController extends Controller
             'sub_total2' => $request->subTotal2 ?? 0,
             'discount_percent' => $request->discountPercent ?? 0,
             'discount_amount' => $request->discountAmount ?? 0,
+            'order_discount_mode' => $request->input('order_discount_mode', 'percent'),
             'discount_head' => $request->discount_head ?? null,
             'discount_account_id' => $request->discount_account_id ?? null,
             'previous_balance' => $request->previousBalance ?? 0,
@@ -297,6 +298,7 @@ class SaleController extends Controller
                     'sub_total2' => (float) str_replace(',', '', $request->subTotal2 ?? 0),
                     'discount_percent' => (float) str_replace(',', '', $request->discountPercent ?? 0),
                     'discount_amount' => (float) str_replace(',', '', $request->discountAmount ?? 0),
+                    'order_discount_mode' => $request->input('order_discount_mode', 'percent'),
                     'previous_balance' => (float) str_replace(',', '', $request->previousBalance ?? 0),
                     'total_balance' => (float) str_replace(',', '', $request->totalBalance ?? 0),
                     'receipt1' => $totalReceipts,
@@ -366,6 +368,7 @@ class SaleController extends Controller
                 'sub_total2' => (float) str_replace(',', '', $request->subTotal2 ?? 0),
                 'discount_percent' => (float) str_replace(',', '', $request->discountPercent ?? 0),
                 'discount_amount' => (float) str_replace(',', '', $request->discountAmount ?? 0),
+                'order_discount_mode' => $request->input('order_discount_mode', 'percent'),
                 'previous_balance' => (float) str_replace(',', '', $request->previousBalance ?? 0),
                 'total_balance' => (float) str_replace(',', '', $request->totalBalance ?? 0),
                 'receipt1' => (float) str_replace(',', '', $request->receipt1 ?? 0),
@@ -484,6 +487,7 @@ class SaleController extends Controller
             $booking->sub_total2     = (float) str_replace(',', '', $request->subTotal2 ?? 0);
             $booking->discount_percent = (float) str_replace(',', '', $request->discountPercent ?? 0);
             $booking->discount_amount  = (float) str_replace(',', '', $request->discountAmount ?? 0);
+            $booking->order_discount_mode = $request->input('order_discount_mode', 'percent');
             $booking->discount_head  = $request->discount_head;
             $booking->discount_account_id = $request->discount_account_id;
             $booking->previous_balance = (float) str_replace(',', '', $request->previousBalance ?? 0);
@@ -600,6 +604,7 @@ class SaleController extends Controller
                     'sub_total2' => $booking->sub_total2,
                     'discount_percent' => $booking->discount_percent,
                     'discount_amount' => $booking->discount_amount,
+                    'order_discount_mode' => $booking->order_discount_mode ?? 'percent',
                     'discount_head' => $booking->discount_head,
                     'discount_account_id' => $booking->discount_account_id,
                     'previous_balance' => $booking->previous_balance,
@@ -762,6 +767,7 @@ class SaleController extends Controller
                 'sub_total2' => $booking->sub_total2,
                 'discount_percent' => $booking->discount_percent,
                 'discount_amount' => $booking->discount_amount,
+                'order_discount_mode' => $booking->order_discount_mode ?? 'percent',
                 'discount_head' => $booking->discount_head,
                 'discount_account_id' => $booking->discount_account_id,
                 'previous_balance' => $booking->previous_balance,

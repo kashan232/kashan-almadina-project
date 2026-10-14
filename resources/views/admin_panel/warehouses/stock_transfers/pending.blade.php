@@ -56,13 +56,29 @@
                 <div class="col-12">
                     <div class="card border-0 shadow-sm">
                         <div class="card-header bg-white d-flex justify-content-between align-items-center py-2 border-bottom">
-                            <span class="fw-bold text-muted small text-uppercase"><i class="fa fa-clock-o text-warning me-2"></i> Pending Transfer Requests</span>
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="fw-bold text-muted small text-uppercase"><i class="fa fa-clock-o text-warning me-2"></i> Pending Transfer Requests</span>
+                                <span class="badge bg-secondary rounded-pill">{{ $transfers->count() }}</span>
+                            </div>
+                            @if($transfers->count() > 0)
+                                <div>
+                                    <button type="button" class="btn btn-success btn-sm px-3 py-1 shadow-sm fw-semibold" id="btnAcceptAll" onclick="confirmAcceptAll()">
+                                        <i class="fa fa-check-circle me-1"></i> Accept All (<span id="btnAcceptCount">{{ $transfers->count() }}</span>)
+                                    </button>
+                                </div>
+                            @endif
                         </div>
                         <div class="card-body p-0">
+                            <form action="{{ route('stock_transfers.accept_all') }}" method="POST" id="accept-all-form" style="display: none;">
+                                @csrf
+                            </form>
                             <div class="table-responsive">
                                 <table id="transferTable" class="table table-sm table-striped table-bordered w-100 mb-0">
                                     <thead>
                                         <tr>
+                                            <th class="text-center" style="width: 35px;">
+                                                <input type="checkbox" id="selectAllTransfers" class="form-check-input" title="Select All">
+                                            </th>
                                             <th>Type</th>
                                             <th>Inv#</th>
                                             <th>Date</th>
@@ -77,6 +93,9 @@
                                     <tbody>
                                         @foreach($transfers as $t)
                                         <tr>
+                                            <td class="text-center">
+                                                <input type="checkbox" name="transfer_ids[]" value="{{ $t->id }}" class="form-check-input transfer-checkbox">
+                                            </td>
                                             <td class="text-muted small">GT</td>
                                             <td class="fw-bold text-primary">#{{ $t->id }}</td>
                                             <td>{{ \Carbon\Carbon::parse($t->created_at)->format('d-M-Y') }}</td>
@@ -161,17 +180,94 @@
         });
     }
 
+    function updateAcceptButtonText() {
+        var dt = $('#transferTable').DataTable();
+        var checkedCount = dt.$('input.transfer-checkbox:checked').length;
+        var totalCount = {{ $transfers->count() }};
+        var $btn = $('#btnAcceptAll');
+
+        if (!$btn.length) return;
+
+        if (checkedCount > 0) {
+            $btn.html('<i class="fa fa-check-circle me-1"></i> Accept Selected (' + checkedCount + ')');
+        } else {
+            $btn.html('<i class="fa fa-check-circle me-1"></i> Accept All (' + totalCount + ')');
+        }
+    }
+
+    function confirmAcceptAll() {
+        var dt = $('#transferTable').DataTable();
+        var checkedBoxes = dt.$('input.transfer-checkbox:checked');
+        var isSelectedOnly = checkedBoxes.length > 0;
+        var totalCount = {{ $transfers->count() }};
+        var countToAccept = isSelectedOnly ? checkedBoxes.length : totalCount;
+
+        if (countToAccept === 0) {
+            Swal.fire({
+                title: 'No Transfers',
+                text: 'There are no pending transfers to accept.',
+                icon: 'info'
+            });
+            return;
+        }
+
+        var title = isSelectedOnly ? 'Accept Selected Transfers' : 'Accept All Pending Transfers';
+        var text = isSelectedOnly 
+            ? 'Are you sure you want to accept ' + countToAccept + ' selected transfer(s)? This will impact the stock ledger.'
+            : 'Are you sure you want to accept all ' + totalCount + ' pending transfer(s)? This will impact the stock ledger for all transfers.';
+
+        Swal.fire({
+            title: title,
+            text: text,
+            icon: 'success',
+            showCancelButton: true,
+            confirmButtonColor: '#28a745',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Yes, Accept ' + (isSelectedOnly ? 'Selected (' + countToAccept + ')' : 'All (' + totalCount + ')') + '!'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                var form = document.getElementById('accept-all-form');
+                $(form).find('input[name="ids[]"]').remove();
+                
+                if (isSelectedOnly) {
+                    checkedBoxes.each(function() {
+                        $(form).append('<input type="hidden" name="ids[]" value="' + $(this).val() + '">');
+                    });
+                }
+                form.submit();
+            }
+        });
+    }
+
     $(document).ready(function() {
         var dt = $('#transferTable').DataTable({
             destroy: true,
             scrollX: true,
             autoWidth: false,
             pageLength: 25,
-            order: [[1, 'desc']],
+            order: [[2, 'desc']],
+            columnDefs: [
+                { orderable: false, targets: [0, 9] }
+            ],
             language: {
                 search: "_INPUT_",
                 searchPlaceholder: "Search requests..."
             }
+        });
+
+        // "Select All" checkbox toggle
+        $('#selectAllTransfers').on('change', function() {
+            var isChecked = this.checked;
+            dt.$('input.transfer-checkbox').prop('checked', isChecked);
+            updateAcceptButtonText();
+        });
+
+        // Individual checkbox change
+        $('#transferTable').on('change', 'input.transfer-checkbox', function() {
+            var totalBoxes = dt.$('input.transfer-checkbox').length;
+            var checkedBoxes = dt.$('input.transfer-checkbox:checked').length;
+            $('#selectAllTransfers').prop('checked', totalBoxes > 0 && totalBoxes === checkedBoxes);
+            updateAcceptButtonText();
         });
     });
 </script>

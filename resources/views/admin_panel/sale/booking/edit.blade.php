@@ -1864,7 +1864,7 @@
       orderDisc = (discountBase * orderValue) / 100.0;
     } else {
       orderDisc = orderValue;
-      orderPct = discountBase > 0 ? (orderValue / discountBase) * 100 : 0;
+      orderPct = 0;
     }
 
     // Update hidden fields

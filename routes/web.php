@@ -329,6 +329,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/warehouse-stock-quantity', [StockTransferController::class, 'getStockQuantity'])->name('warehouse.stock.quantity');
 
     Route::resource('stock_transfers', StockTransferController::class)->except(['destroy']);
+    Route::post('stock_transfers/accept-all', [StockTransferController::class, 'acceptAll'])->name('stock_transfers.accept_all');
     Route::post('stock_transfers/{id}/accept', [StockTransferController::class, 'accept'])->name('stock_transfers.accept');
     Route::post('stock_transfers/{id}/reject', [StockTransferController::class, 'reject'])->name('stock_transfers.reject');
     Route::post('stock_transfers/{id}/post', [StockTransferController::class, 'post'])->name('stock_transfers.post');
