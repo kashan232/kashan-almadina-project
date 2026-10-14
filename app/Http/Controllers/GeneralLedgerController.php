@@ -108,10 +108,52 @@ class GeneralLedgerController extends Controller
         return $total;
     }
 
-    /** Details report: first created entry first (created_at ascending). */
+    /** Extract Y-m-d date string from transaction date or fallback. */
+    private function ledgerDateString($val, $fallback = null): string
+    {
+        if ($val instanceof \DateTimeInterface) {
+            return $val->format('Y-m-d');
+        }
+        $s = is_string($val) ? trim($val) : '';
+        if ($s !== '' && $s !== 'null') {
+            if (preg_match('/^(\d{4}-\d{2}-\d{2})/', $s, $m)) {
+                return $m[1];
+            }
+            $ts = strtotime($s);
+            if ($ts !== false) {
+                return date('Y-m-d', $ts);
+            }
+        }
+        if ($fallback instanceof \DateTimeInterface) {
+            return $fallback->format('Y-m-d');
+        }
+        $fb = is_string($fallback) ? trim($fallback) : '';
+        if ($fb !== '' && $fb !== 'null') {
+            if (preg_match('/^(\d{4}-\d{2}-\d{2})/', $fb, $m)) {
+                return $m[1];
+            }
+            $ts = strtotime($fb);
+            if ($ts !== false) {
+                return date('Y-m-d', $ts);
+            }
+        }
+        return '9999-12-31';
+    }
+
+    /**
+     * Details report:
+     * 1. Date wise (transaction entry date ascending)
+     * 2. Entry come first come (created_at timestamp ascending)
+     */
     private function sortLedgerDetailsByCreatedAt(array &$transactions): void
     {
         usort($transactions, function ($a, $b) {
+            $dateA = $this->ledgerDateString($a['date'] ?? null, $a['created_at'] ?? null);
+            $dateB = $this->ledgerDateString($b['date'] ?? null, $b['created_at'] ?? null);
+            if ($dateA !== $dateB) {
+                return strcmp($dateA, $dateB);
+            }
+
             $timeA = $this->ledgerSortTime($a['created_at'] ?? null);
             $timeB = $this->ledgerSortTime($b['created_at'] ?? null);
             if ($timeA !== $timeB) {
@@ -185,10 +227,10 @@ class GeneralLedgerController extends Controller
     private function sortLedgerTransactions(array &$transactions): void
     {
         usort($transactions, function ($a, $b) {
-            $dateA = strtotime(substr((string)($a['date'] ?? ''), 0, 10)) ?: 0;
-            $dateB = strtotime(substr((string)($b['date'] ?? ''), 0, 10)) ?: 0;
+            $dateA = $this->ledgerDateString($a['date'] ?? null, $a['created_at'] ?? null);
+            $dateB = $this->ledgerDateString($b['date'] ?? null, $b['created_at'] ?? null);
             if ($dateA !== $dateB) {
-                return $dateA <=> $dateB;
+                return strcmp($dateA, $dateB);
             }
 
             $prioA = (int)($a['priority'] ?? 60);
@@ -203,8 +245,8 @@ class GeneralLedgerController extends Controller
                 return strnatcmp($invA, $invB);
             }
 
-            $timeA = isset($a['created_at']) ? strtotime((string)$a['created_at']) : 0;
-            $timeB = isset($b['created_at']) ? strtotime((string)$b['created_at']) : 0;
+            $timeA = $this->ledgerSortTime($a['created_at'] ?? null);
+            $timeB = $this->ledgerSortTime($b['created_at'] ?? null);
             if ($timeA !== $timeB) {
                 return $timeA <=> $timeB;
             }
@@ -1522,13 +1564,13 @@ class GeneralLedgerController extends Controller
                 ->whereIn('status', ['posted', 'Posted'])->whereBetween(DB::raw($rvDateCol), [$start, $end])->get();
             
             foreach($rvs as $rv) {
-                $accIds = json_decode($rv->row_account_id, true) ?? [];
-                $amounts = json_decode($rv->amount, true) ?? [];
-                $narrIds = json_decode($rv->narration_id, true) ?? [];
-                $discAccIds = json_decode($rv->discount_account_id, true) ?? [];
-                $discounts = json_decode($rv->discount_value, true) ?? [];
-                $kgs = json_decode($rv->kg, true) ?? [];
-                $refNos = json_decode($rv->reference_no, true) ?? [];
+                $accIds = json_decode($rv->row_account_id ?? '', true) ?? [];
+                $amounts = json_decode($rv->amount ?? '', true) ?? [];
+                $narrIds = json_decode($rv->narration_id ?? '', true) ?? [];
+                $discAccIds = json_decode($rv->discount_account_id ?? '', true) ?? [];
+                $discounts = json_decode($rv->discount_value ?? '', true) ?? [];
+                $kgs = json_decode($rv->kg ?? '', true) ?? [];
+                $refNos = json_decode($rv->reference_no ?? '', true) ?? [];
 
                 $totalKg = 0.0;
                 if (is_array($kgs)) {
@@ -1539,10 +1581,18 @@ class GeneralLedgerController extends Controller
                 
                 // Get party name
                 $partyName = '';
-                if ($rv->type == 'customer') {
+                $rvType = strtolower((string)($rv->type ?? ''));
+                if (in_array($rvType, ['customer', 'walkin', 'walking', 'subcustomer'])) {
                     $partyName = DB::table('customers')->where('id', $rv->party_id)->value('customer_name');
-                } elseif ($rv->type == 'vendor') {
+                } elseif (in_array($rvType, ['vendor', 'supplier'])) {
                     $partyName = DB::table('vendors')->where('id', $rv->party_id)->value('name');
+                } elseif ($rvType === 'account' || is_numeric($rvType)) {
+                    $partyName = DB::table('accounts')->where('id', $rv->party_id)->value('title');
+                }
+                if (!$partyName && $rv->party_id) {
+                    $partyName = DB::table('customers')->where('id', $rv->party_id)->value('customer_name')
+                        ?: DB::table('vendors')->where('id', $rv->party_id)->value('name')
+                        ?: DB::table('accounts')->where('id', $rv->party_id)->value('title');
                 }
 
                 $ref = 'RV';
@@ -1678,13 +1728,13 @@ class GeneralLedgerController extends Controller
                 })
                 ->whereIn('status', ['posted', 'Posted'])->whereBetween(DB::raw($pvDateCol), [$start, $end])->get();
             foreach($pvs as $pv) {
-                $accIds = json_decode($pv->row_account_id, true) ?? [];
-                $amounts = json_decode($pv->amount, true) ?? [];
-                $narrIds = json_decode($pv->narration_id, true) ?? [];
-                $discAccIds = json_decode($pv->discount_account_id, true) ?? [];
-                $discounts = json_decode($pv->discount_value, true) ?? [];
-                $pvKgs = json_decode($pv->kg, true) ?? [];
-                $refNos = json_decode($pv->reference_no, true) ?? [];
+                $accIds = json_decode($pv->row_account_id ?? '', true) ?? [];
+                $amounts = json_decode($pv->amount ?? '', true) ?? [];
+                $narrIds = json_decode($pv->narration_id ?? '', true) ?? [];
+                $discAccIds = json_decode($pv->discount_account_id ?? '', true) ?? [];
+                $discounts = json_decode($pv->discount_value ?? '', true) ?? [];
+                $pvKgs = json_decode($pv->kg ?? '', true) ?? [];
+                $refNos = json_decode($pv->reference_no ?? '', true) ?? [];
 
                 $pvTotalKg = 0.0;
                 if (is_array($pvKgs)) {
@@ -1695,10 +1745,18 @@ class GeneralLedgerController extends Controller
                 
                 // Get party name
                 $partyName = '';
-                if ($pv->type == 'customer') {
+                $pvType = strtolower((string)($pv->type ?? ''));
+                if (in_array($pvType, ['customer', 'walkin', 'walking', 'subcustomer'])) {
                     $partyName = DB::table('customers')->where('id', $pv->party_id)->value('customer_name');
-                } elseif ($pv->type == 'vendor') {
+                } elseif (in_array($pvType, ['vendor', 'supplier'])) {
                     $partyName = DB::table('vendors')->where('id', $pv->party_id)->value('name');
+                } elseif ($pvType === 'account' || is_numeric($pvType)) {
+                    $partyName = DB::table('accounts')->where('id', $pv->party_id)->value('title');
+                }
+                if (!$partyName && $pv->party_id) {
+                    $partyName = DB::table('customers')->where('id', $pv->party_id)->value('customer_name')
+                        ?: DB::table('vendors')->where('id', $pv->party_id)->value('name')
+                        ?: DB::table('accounts')->where('id', $pv->party_id)->value('title');
                 }
 
                 if ($pv->party_id == $id) {
@@ -1930,7 +1988,7 @@ class GeneralLedgerController extends Controller
                 $amounts = json_decode($ev->amount, true) ?? [];
                 $narrIds = json_decode($ev->narration_id, true) ?? [];
 
-                if ($ev->party_id == $id && (is_numeric($ev->type ?? '') || in_array($ev->type, ['vendor', 'customer', 'walkin']))) {
+                if ($ev->party_id == $id && (is_numeric($ev->type ?? '') || in_array($ev->type, ['vendor', 'customer', 'walkin', 'walking', 'subcustomer']))) {
                     foreach ($accIds as $idx => $aid) {
                         $rowAmount = (float)($amounts[$idx] ?? 0);
                         if ($rowAmount <= 0) continue;
@@ -1977,7 +2035,7 @@ class GeneralLedgerController extends Controller
                             $partyName = DB::table('accounts')->where('id', $ev->party_id)->value('title');
                         } elseif ($ev->type === 'vendor') {
                             $partyName = DB::table('vendors')->where('id', $ev->party_id)->value('name');
-                        } elseif ($ev->type === 'customer' || $ev->type === 'walkin' || $ev->type === 'subcustomer') {
+                        } elseif (in_array($ev->type, ['customer', 'walkin', 'walking', 'subcustomer'])) {
                             $partyName = DB::table('customers')->where('id', $ev->party_id)->value('customer_name');
                         }
 
@@ -2391,11 +2449,12 @@ class GeneralLedgerController extends Controller
                 if (!empty($pv->remarks)) $descParts[] = $pv->remarks;
                 $desc = !empty($descParts) ? implode(' : ', $descParts) : 'Payment Voucher';
 
+                $pvDate = $pv->entry_date ?: ($pv->receipt_date ?: $pv->created_at);
                 if ($rowAmount > 0) {
                     $transactions[] = [
                         'created_at' => $pv->created_at,
                         'id' => $pv->id . '_' . $idx,
-                        'date' => $pv->entry_date ?: $pv->created_at,
+                        'date' => $pvDate,
                         'ref' => 'PV',
                         'inv' => $rowInv,
                         'desc' => $desc,
@@ -2408,7 +2467,7 @@ class GeneralLedgerController extends Controller
                     $transactions[] = [
                         'created_at' => $pv->created_at,
                         'id' => $pv->id . '_disc_' . $idx,
-                        'date' => $pv->entry_date ?: $pv->created_at,
+                        'date' => $pvDate,
                         'ref' => 'PV',
                         'inv' => $rowInv,
                         'desc' => $this->voucherDiscountDescription($discAccIds[$idx] ?? null),
@@ -2528,11 +2587,11 @@ class GeneralLedgerController extends Controller
             })
             ->whereIn('status', ['posted', 'Posted'])->whereBetween(DB::raw($jvDateCol), [$start, $end])->get();
         foreach ($jvs as $jv) {
-            $pIds = json_decode($jv->party_id, true) ?? [];
-            $types = json_decode($jv->party_type, true) ?? [];
-            $debits = json_decode($jv->debit, true) ?? [];
-            $credits = json_decode($jv->credit, true) ?? [];
-            $narrIds = json_decode($jv->narration_id, true) ?? [];
+            $pIds = json_decode($jv->party_id ?? '', true) ?? [];
+            $types = json_decode($jv->party_type ?? '', true) ?? [];
+            $debits = json_decode($jv->debit ?? '', true) ?? [];
+            $credits = json_decode($jv->credit ?? '', true) ?? [];
+            $narrIds = json_decode($jv->narration_id ?? '', true) ?? [];
             foreach($pIds as $idx => $pid) {
                 if ($pid == $id && in_array($types[$idx] ?? '', $typeArray)) {
                     $ref = 'JV';
@@ -2958,13 +3017,13 @@ class GeneralLedgerController extends Controller
         $receipts = $this->ledgerQuery(ReceiptsVoucher::class)->where('party_id', $id)->whereIn('type', $typeArray)
             ->whereIn('status', ['posted', 'Posted'])->whereBetween(DB::raw($rvDateCol), [$start, $end])->get();
         foreach ($receipts as $rv) {
-            $accIds = json_decode($rv->row_account_id, true) ?? [];
-            $amounts = json_decode($rv->amount, true) ?? [];
-            $narrIds = json_decode($rv->narration_id, true) ?? [];
-            $discounts = json_decode($rv->discount_value, true) ?? [];
-            $discAccIds = json_decode($rv->discount_account_id, true) ?? [];
-            $kgs = json_decode($rv->kg, true) ?? [];
-            $refNos = json_decode($rv->reference_no, true) ?? [];
+            $accIds = json_decode($rv->row_account_id ?? '', true) ?? [];
+            $amounts = json_decode($rv->amount ?? '', true) ?? [];
+            $narrIds = json_decode($rv->narration_id ?? '', true) ?? [];
+            $discounts = json_decode($rv->discount_value ?? '', true) ?? [];
+            $discAccIds = json_decode($rv->discount_account_id ?? '', true) ?? [];
+            $kgs = json_decode($rv->kg ?? '', true) ?? [];
+            $refNos = json_decode($rv->reference_no ?? '', true) ?? [];
 
             foreach ($accIds as $idx => $aid) {
                 $rowAmount = (float)($amounts[$idx] ?? 0);
@@ -3010,11 +3069,12 @@ class GeneralLedgerController extends Controller
                     $inv .= ' (' . $refLabel . ')';
                 }
 
+                $rvDate = $rv->entry_date ?: ($rv->receipt_date ?: $rv->created_at);
                 if ($rowAmount > 0) {
                     $transactions[] = [
                         'created_at' => $rv->created_at,
                         'id' => $rv->id . '_' . $idx, // Unique ID for items
-                        'date' => $rv->entry_date ?: $rv->created_at,
+                        'date' => $rvDate,
                         'ref' => $ref,
                         'inv' => $inv,
                         'desc' => $desc,
@@ -3028,7 +3088,7 @@ class GeneralLedgerController extends Controller
                     $transactions[] = [
                         'created_at' => $rv->created_at,
                         'id' => $rv->id . '_disc_' . $idx,
-                        'date' => $rv->entry_date ?: $rv->created_at,
+                        'date' => $rvDate,
                         'ref' => $ref,
                         'inv' => $inv,
                         'desc' => $this->voucherDiscountDescription($discAccIds[$idx] ?? null),

@@ -135,7 +135,25 @@
                                                 <option value="walkin" {{ ($accHeads[$idx] ?? '') == 'walkin' ? 'selected' : '' }}>Walkin</option>
                                             </select>
                                         </td>
-                                        <td><input type="text" name="row_account_code[]" class="form-control form-control-sm text-center fw-bold text-danger rowAccountCode" placeholder="Code"></td>
+                                        @php
+                                            $accIdVal = $accIds[$idx] ?? '';
+                                            $accHeadVal = $accHeads[$idx] ?? '';
+                                            $matchedCode = '';
+                                            if ($accHeadVal == 'customer') {
+                                                $c = isset($customers) ? $customers->firstWhere('id', $accIdVal) : null;
+                                                $matchedCode = $c->customer_id ?? $c->id ?? '';
+                                            } elseif ($accHeadVal == 'vendor') {
+                                                $v = isset($vendors) ? $vendors->firstWhere('id', $accIdVal) : null;
+                                                $matchedCode = $v->id ?? '';
+                                            } else {
+                                                $a = isset($allAccounts) ? $allAccounts->firstWhere('id', $accIdVal) : null;
+                                                if (!$a && $accIdVal) {
+                                                    $a = \App\Models\Account::find($accIdVal);
+                                                }
+                                                $matchedCode = $a->account_code ?? '';
+                                            }
+                                        @endphp
+                                        <td><input type="text" name="row_account_code[]" class="form-control form-control-sm text-center fw-bold text-danger rowAccountCode" value="{{ $matchedCode }}" placeholder="Code"></td>
                                         <td>
                                             <select name="account_id[]" class="form-select form-select-sm rowAccountSelect select2" data-selected="{{ $accIds[$idx] ?? '' }}">
                                                  <option value="">Select Account...</option>
@@ -225,6 +243,19 @@ $(document).ready(function() {
         $('#party_id_header').select2({ placeholder: "Select Party...", allowClear: true, width: '100%' });
     }
     initSelectors();
+
+    function syncRowAccountCodes() {
+        $('#voucherTable tbody tr').each(function() {
+            let $row = $(this);
+            let $codeInp = $row.find('.rowAccountCode');
+            let $opt = $row.find('.rowAccountSelect option:selected');
+            let code = $opt.attr('data-code') || $opt.data('code');
+            if (code && !$codeInp.val()) {
+                $codeInp.val(code);
+            }
+        });
+    }
+    syncRowAccountCodes();
 
     // 👤 Header Party Logic
     $('#party_type_header').change(function() {

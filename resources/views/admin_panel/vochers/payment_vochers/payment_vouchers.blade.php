@@ -149,14 +149,30 @@
                                                  @endforeach
                                              </select>
                                         </td>
-                                        <td><input type="text" name="row_account_code[]" class="form-control form-control-sm text-center fw-bold text-danger rowAccountCode" placeholder="Code"></td>
+                                        @php
+                                            $rowAccId = $rowAccounts[$index] ?? '';
+                                            $rowAcc = isset($allAccounts) ? $allAccounts->firstWhere('id', $rowAccId) : null;
+                                            if (!$rowAcc && $rowAccId) {
+                                                $rowAcc = \App\Models\Account::find($rowAccId);
+                                            }
+                                            $rowCode = $rowAcc ? $rowAcc->account_code : '';
+                                        @endphp
+                                        <td><input type="text" name="row_account_code[]" class="form-control form-control-sm text-center fw-bold text-danger rowAccountCode" value="{{ $rowCode }}" placeholder="Code"></td>
                                         <td>
-                                            <select name="row_account_id[]" class="form-select form-select-sm rowAccountSelect select2" data-selected="{{ $rowAccounts[$index] ?? '' }}">
+                                            <select name="row_account_id[]" class="form-select form-select-sm rowAccountSelect select2" data-selected="{{ $rowAccId }}">
                                                 <option value="">Select Account...</option>
                                                 @if(isset($allAccounts))
+                                                    @php $hasSelected = false; @endphp
                                                     @foreach($allAccounts as $acc)
-                                                    <option value="{{ $acc->id }}" data-head-id="{{ $acc->head_id }}" data-code="{{ $acc->account_code }}" {{ ($rowAccounts[$index] ?? '') == $acc->id ? 'selected' : '' }}>{{ $acc->title }}</option>
+                                                        @php
+                                                            $sel = ($rowAccId == $acc->id);
+                                                            if ($sel) $hasSelected = true;
+                                                        @endphp
+                                                        <option value="{{ $acc->id }}" data-head-id="{{ $acc->head_id }}" data-code="{{ $acc->account_code }}" {{ $sel ? 'selected' : '' }}>{{ $acc->title }}</option>
                                                     @endforeach
+                                                    @if(!$hasSelected && $rowAcc)
+                                                        <option value="{{ $rowAcc->id }}" data-head-id="{{ $rowAcc->head_id }}" data-code="{{ $rowAcc->account_code }}" selected>{{ $rowAcc->title }}</option>
+                                                    @endif
                                                 @endif
                                             </select>
                                         </td>
@@ -255,6 +271,19 @@ $(document).ready(function() {
         $container.find('#party_id').select2({ placeholder: "Select Party...", allowClear: true, width: '100%' });
     }
     initSelectors();
+
+    function syncRowAccountCodes() {
+        $('#voucherTable tbody tr').each(function() {
+            let $row = $(this);
+            let $codeInp = $row.find('.rowAccountCode');
+            let $opt = $row.find('.rowAccountSelect option:selected');
+            let code = $opt.attr('data-code') || $opt.data('code');
+            if (code && !$codeInp.val()) {
+                $codeInp.val(code);
+            }
+        });
+    }
+    syncRowAccountCodes();
 
     // Auto-open Select2 dropdown when focused via Tab key or click
     $(document).on('focus', '.select2-container', function(e) {
