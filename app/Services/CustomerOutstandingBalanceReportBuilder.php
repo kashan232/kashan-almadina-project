@@ -8,8 +8,11 @@ use App\Models\Purchase;
 use App\Models\PurchaseReturn;
 use App\Models\PaymentVoucher;
 use App\Models\ReceiptsVoucher;
+use App\Models\Brand;
 use App\Models\Sale;
+use App\Models\SaleItem;
 use App\Models\SaleReturn;
+use App\Models\SaleReturnItem;
 use App\Models\SalesOfficer;
 use App\Models\UserGroup;
 use App\Models\Vendor;
@@ -33,6 +36,10 @@ class CustomerOutstandingBalanceReportBuilder
     {
         if ($request->input('report_type') === 'detailed') {
             return $this->buildDetailed($request);
+        }
+
+        if ($request->input('report_type') === 'brand_wise') {
+            return $this->buildBrandWise($request);
         }
 
         return $this->buildShort($request);
@@ -187,6 +194,117 @@ class CustomerOutstandingBalanceReportBuilder
             'report_type' => 'detailed',
             'rows' => $rows,
             'grand' => $grand,
+            'from_date' => $fromDate,
+            'to_date' => $toDate,
+            'generated_at' => now(),
+        ];
+    }
+
+    public function buildBrandWise(Request $request): array
+    {
+        $this->filters = $this->extractFilters($request);
+        $fromDate = $request->from_date;
+        $toDate = $request->to_date;
+
+        $parties = $this->filteredParties();
+        $customerIds = [];
+        $vendorIds = [];
+        foreach ($parties as $p) {
+            if ($p['party_kind'] === 'vendor') {
+                $vendorIds[] = (int) $p['id'];
+            } else {
+                $customerIds[] = (int) $p['id'];
+            }
+        }
+
+        $allLines = collect();
+
+        // 1. Fetch Sales Items
+        $saleDateCol = $this->getDateColumn('sales');
+        $salesQuery = SaleItem::query()
+            ->with(['product.brandRelation', 'product.sub_category_relation', 'product.categoryRelation'])
+            ->whereHas('sale', function ($sq) use ($fromDate, $toDate, $saleDateCol, $customerIds, $vendorIds) {
+                $sq->where('is_sale_order', 0)
+                   ->whereBetween(DB::raw($saleDateCol), [$fromDate, $toDate]);
+
+                if (!empty($customerIds) || !empty($vendorIds)) {
+                    $sq->where(function ($sub) use ($customerIds, $vendorIds) {
+                        if (!empty($customerIds)) {
+                            $sub->orWhere(function ($cSub) use ($customerIds) {
+                                $cSub->whereIn('partyType', self::CUSTOMER_PARTY_TYPES)
+                                     ->whereIn('customer_id', $customerIds);
+                            });
+                        }
+                        if (!empty($vendorIds)) {
+                            $sub->orWhere(function ($vSub) use ($vendorIds) {
+                                $vSub->where('partyType', 'vendor')
+                                     ->whereIn('customer_id', $vendorIds);
+                            });
+                        }
+                    });
+                }
+            });
+
+        foreach ($salesQuery->get() as $item) {
+            $allLines->push((object) [
+                'product_id' => $item->product_id,
+                'product' => $item->product,
+                'sales_qty' => (float) $item->sales_qty,
+                'retail_price' => (float) ($item->retail_price ?? 0),
+                'amount' => (float) $item->amount,
+            ]);
+        }
+
+        // 2. Fetch Sale Return Items
+        $srDateCol = $this->getDateColumn('sale_returns', 'current_date');
+        $returnsQuery = SaleReturnItem::query()
+            ->with(['product.brandRelation', 'product.sub_category_relation', 'product.categoryRelation'])
+            ->whereHas('saleReturn', function ($rq) use ($fromDate, $toDate, $srDateCol, $customerIds, $vendorIds) {
+                $rq->whereIn('status', ['posted', 'Posted'])
+                   ->whereBetween(DB::raw($srDateCol), [$fromDate, $toDate]);
+
+                if (!empty($customerIds) || !empty($vendorIds)) {
+                    $rq->where(function ($sub) use ($customerIds, $vendorIds) {
+                        if (!empty($customerIds)) {
+                            $sub->orWhere(function ($cSub) use ($customerIds) {
+                                $cSub->whereIn('party_type', self::CUSTOMER_PARTY_TYPES)
+                                     ->whereIn('customer_id', $customerIds);
+                            });
+                        }
+                        if (!empty($vendorIds)) {
+                            $sub->orWhere(function ($vSub) use ($vendorIds) {
+                                $vSub->where('party_type', 'vendor')
+                                     ->whereIn('customer_id', $vendorIds);
+                            });
+                        }
+                    });
+                }
+            });
+
+        foreach ($returnsQuery->get() as $item) {
+            $allLines->push((object) [
+                'product_id' => $item->product_id,
+                'product' => $item->product,
+                'sales_qty' => (float) (-1 * $item->sales_qty),
+                'retail_price' => (float) ($item->retail_price ?? 0),
+                'amount' => (float) (-1 * $item->amount),
+            ]);
+        }
+
+        // Load all brands ordered by brand.id ascending
+        $brands = Brand::orderBy('id', 'asc')->get()->keyBy('id');
+
+        // Group by brand_id and sort brands strictly by Brand ID ascending
+        $grouped = $allLines->groupBy(function ($item) {
+            return (int) ($item->product?->brand_id ?? 0);
+        })->sortBy(function ($items, $brandId) {
+            return (int) $brandId === 0 ? 999999 : (int) $brandId;
+        });
+
+        return [
+            'report_type' => 'brand_wise',
+            'grouped' => $grouped,
+            'brands' => $brands,
             'from_date' => $fromDate,
             'to_date' => $toDate,
             'generated_at' => now(),

@@ -754,13 +754,15 @@ class SalesReportController extends Controller
 
     private function previewQtyWise($saleItems, $from_date, $to_date)
     {
+        $brands = \App\Models\Brand::orderBy('id', 'asc')->get()->keyBy('id');
+
         $grouped = $saleItems->groupBy(function ($item) {
-            return $item->product && $item->product->brandRelation
-                ? $item->product->brandRelation->name
-                : 'Other';
+            return (int) ($item->product?->brand_id ?? 0);
+        })->sortBy(function ($items, $brandId) {
+            return (int) $brandId === 0 ? 999999 : (int) $brandId;
         });
 
-        return view('admin_panel.reports.sales.preview_qty_wise', compact('grouped', 'from_date', 'to_date'));
+        return view('admin_panel.reports.sales.preview_qty_wise', compact('grouped', 'brands', 'from_date', 'to_date'));
     }
 
     private function previewPartyWise($saleItems, $from_date, $to_date)

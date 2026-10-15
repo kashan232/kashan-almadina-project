@@ -46,9 +46,29 @@ class Product extends Model
     //     return $this->belongsTo(Category::class,'category_id');
     // }
 
+    public function category()
+    {
+        return $this->belongsTo(Category::class, 'category_id');
+    }
+
+    public function categoryRelation()
+    {
+        return $this->belongsTo(Category::class, 'category_id');
+    }
+
+    public function subcategory()
+    {
+        return $this->belongsTo(Subcategory::class, 'sub_category_id');
+    }
+
     public function sub_category_relation()
     {
-        return $this->belongsTo(Subcategory::class,'sub_category_id');
+        return $this->belongsTo(Subcategory::class, 'sub_category_id');
+    }
+
+    public function brand()
+    {
+        return $this->belongsTo(Brand::class, 'brand_id');
     }
 
 

@@ -170,8 +170,12 @@
                 </tr>
             @endif
 
-            @foreach($grouped as $brandName => $items)
+            @foreach($grouped as $brandKey => $items)
                 @php
+                    $brandName = isset($brands) && $brands->has($brandKey)
+                        ? $brands->get($brandKey)->name
+                        : ($brandKey === 0 ? 'Other' : (is_numeric($brandKey) ? 'Brand #' . $brandKey : $brandKey));
+
                     $b_qty = 0; 
                     $b_retail_val = 0;
                     $b_sales_val = 0;
@@ -182,6 +186,24 @@
                         $rPrice = (float) ($item->retail_price ?? 0);
                         return $pId . '_' . number_format($rPrice, 2, '.', '');
                     });
+
+                    // Strict Sorting: Level 1 = Subcategory ID (sub_category_id ASC), Level 2 = Item ID (product_id ASC)
+                    $sortedGroups = $productGroups->sort(function ($groupA, $groupB) {
+                        $firstA = $groupA->first();
+                        $firstB = $groupB->first();
+
+                        $subCatA = (int) ($firstA->product?->sub_category_id ?? 999999);
+                        $subCatB = (int) ($firstB->product?->sub_category_id ?? 999999);
+
+                        if ($subCatA !== $subCatB) {
+                            return $subCatA <=> $subCatB;
+                        }
+
+                        $prodIdA = (int) ($firstA->product_id ?? 0);
+                        $prodIdB = (int) ($firstB->product_id ?? 0);
+
+                        return $prodIdA <=> $prodIdB;
+                    });
                 @endphp
                 
                 <!-- Brand Heading -->
@@ -189,7 +211,7 @@
                     <td colspan="7" class="text-left" style="border-top: 2px solid #000; padding-top: 15px; font-weight: bold; color: #0d47a1;">{{ strtoupper($brandName) }}</td>
                 </tr>
 
-                    @foreach($productGroups as $group)
+                    @foreach($sortedGroups as $group)
                         @php
                             $first = $group->first();
                             $productObj = $first->product;
