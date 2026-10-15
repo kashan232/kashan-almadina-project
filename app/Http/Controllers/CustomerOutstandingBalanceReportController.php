@@ -37,7 +37,7 @@ class CustomerOutstandingBalanceReportController extends Controller
             $request->merge([
                 'from_date' => date('Y-m-01'),
                 'to_date' => date('Y-m-d'),
-                'report_type' => $request->input('report_type', 'brand_wise'),
+                'report_type' => $request->input('report_type', 'short'),
             ]);
         }
 

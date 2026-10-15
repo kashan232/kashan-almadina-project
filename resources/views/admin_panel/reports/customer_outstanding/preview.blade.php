@@ -53,16 +53,16 @@
         /* 📄 A4 Landscape Page Sheet Preview Styling (Short View) */
         .page-sheet {
             width: 297mm;
-            height: 200mm;
+            min-height: auto;
             margin: 15px auto;
             background: #ffffff;
-            padding: 6mm 8mm;
+            padding: 4mm 6mm;
             box-shadow: 0 4px 15px rgba(0,0,0,0.4);
             position: relative;
             box-sizing: border-box;
             display: flex;
             flex-direction: column;
-            justify-content: space-between;
+            justify-content: flex-start;
         }
 
         .table-half-container {
@@ -123,12 +123,16 @@
             body { background: #fff; }
             .no-print { display: none !important; }
             .page-sheet {
-                width: 297mm !important;
-                height: 200mm !important;
+                width: 100% !important;
+                height: auto !important;
+                min-height: auto !important;
                 margin: 0 !important;
-                padding: 6mm 8mm !important;
+                padding: 0 !important;
                 box-shadow: none !important;
                 page-break-after: always;
+            }
+            .page-sheet:last-child {
+                page-break-after: auto;
             }
         }
     </style>

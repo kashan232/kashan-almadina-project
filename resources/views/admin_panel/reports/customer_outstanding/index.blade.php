@@ -101,8 +101,7 @@
                                 <div class="col-md-3">
                                     <label class="fw-bold mb-1" style="font-size: 11px;">Report Type</label>
                                     <select name="report_type" class="form-select form-select-sm" required style="height: 30px; font-size: 12px;">
-                                        <option value="brand_wise" selected>Brand / Item Wise (Qty & Value)</option>
-                                        <option value="short">Short View</option>
+                                        <option value="short" selected>Short View</option>
                                         <option value="detailed">Detailed View</option>
                                     </select>
                                 </div>

@@ -53,23 +53,23 @@
         /* 📄 A4 Landscape Sheet Preview Styling */
         .page-sheet {
             width: 297mm;
-            min-height: 200mm;
+            min-height: auto;
             margin: 15px auto;
             background: #ffffff;
-            padding: 8mm 10mm;
+            padding: 4mm 6mm;
             box-shadow: 0 4px 15px rgba(0,0,0,0.4);
             position: relative;
             box-sizing: border-box;
         }
         .page-sheet-number {
             position: absolute;
-            top: 5mm;
-            right: 10mm;
-            font-size: 10px;
+            top: 2mm;
+            right: 6mm;
+            font-size: 9px;
             font-weight: bold;
             color: #666;
             background: #f0f0f0;
-            padding: 2px 6px;
+            padding: 1px 5px;
             border-radius: 3px;
             border: 1px solid #ccc;
         }
@@ -113,7 +113,7 @@
         th {
             background: #d9d9d9;
             border: 1px solid #000;
-            padding: 4px 2px;
+            padding: 3px 1.5px;
             font-size: 8px;
             font-weight: bold;
             text-align: center;
@@ -121,8 +121,9 @@
         }
         td {
             border: 1px solid #666;
-            padding: 3px 2px;
+            padding: 2.5px 2px;
             font-size: 8px;
+            line-height: 1.1;
         }
         .sno { width: 2.5%; text-align: center; }
         .type { width: 5.5%; text-align: center; }
@@ -140,16 +141,19 @@
         .empty-msg { text-align: center; padding: 24px; font-size: 11px; }
 
         @media print {
-            @page { size: A4 landscape; margin: 0; }
-            body { background: #fff; }
+            @page { size: A4 landscape; margin: 3mm 5mm; }
+            body { background: #fff !important; }
             .no-print { display: none !important; }
             .page-sheet {
                 width: 100% !important;
                 margin: 0 !important;
-                padding: 5mm 8mm !important;
+                padding: 0 !important;
                 box-shadow: none !important;
                 page-break-after: always;
                 min-height: auto !important;
+            }
+            .page-sheet:last-child {
+                page-break-after: auto;
             }
             .page-sheet-number { display: none !important; }
         }
@@ -271,7 +275,7 @@
                 return;
             }
 
-            var rowsPerPage = 34; // Maximize rows per page without top header
+            var rowsPerPage = 54; // Maximizes rows on A4 landscape sheet so no page space is wasted in window.print
             var totalPages = Math.ceil(rows.length / rowsPerPage);
             if (badge) badge.innerText = "📄 Total Pages: " + totalPages + " A4 Pages";
 

@@ -173,7 +173,7 @@
                 </thead>
                 <tbody>
                     <tr class="brand-title">
-                        <td colspan="3">{{ $group['brand_name'] }}</td>
+                        <td colspan="3">{{ strtoupper($group['brand_name']) }}</td>
                     </tr>
                     @foreach($group['rows'] as $i => $row)
                     <tr>
@@ -183,7 +183,7 @@
                     </tr>
                     @endforeach
                     <tr class="subtotal-row">
-                        <td colspan="2" style="text-align:right;">Brand Total:</td>
+                        <td colspan="2" style="text-align:right;">{{ strtoupper($group['brand_name']) }} Total:</td>
                         <td class="hold-col">{{ $fmt($group['totals']['hold_qty']) }}</td>
                     </tr>
                 </tbody>

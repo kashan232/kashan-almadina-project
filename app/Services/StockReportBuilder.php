@@ -283,7 +283,10 @@ class StockReportBuilder
 
     private function filteredProductIds(): Collection
     {
-        $query = Product::query()->orderBy('name');
+        $query = Product::query()
+            ->orderByRaw('COALESCE(brand_id, 999999) asc')
+            ->orderByRaw('COALESCE(sub_category_id, 999999) asc')
+            ->orderBy('id', 'asc');
 
         if ($this->shouldApplyFilter($this->filters['items'], $this->filters['totalProducts'])) {
             $query->whereIn('id', $this->filters['items']);
@@ -1123,14 +1126,24 @@ class StockReportBuilder
             return null;
         }
 
-        static $productNames = null;
-        if ($productNames === null) {
-            $productNames = Product::pluck('name', 'id')->all();
+        static $productsInfo = null;
+        static $brandNames = null;
+        if ($productsInfo === null) {
+            $productsInfo = Product::all(['id', 'name', 'brand_id', 'sub_category_id'])->keyBy('id');
+            $brandNames = \App\Models\Brand::pluck('name', 'id')->all();
         }
+
+        $prod = $productsInfo[$productId] ?? null;
+        $brandId = (int) ($prod?->brand_id ?? 0);
+        $brandName = $brandNames[$brandId] ?? 'Other';
+        $subCatId = (int) ($prod?->sub_category_id ?? 0);
 
         return array_merge([
             'product_id' => $productId,
-            'product_name' => $productNames[$productId] ?? ('Item #' . $productId),
+            'product_name' => $prod?->name ?? ('Item #' . $productId),
+            'brand_id' => $brandId,
+            'brand_name' => $brandName,
+            'sub_category_id' => $subCatId,
             'warehouse_id' => $warehouseId,
             'warehouse_label' => $this->warehouseLabel($warehouseId),
             'opening' => $opening,
@@ -1267,12 +1280,14 @@ class StockReportBuilder
         $this->filters = $this->extractFilters($request);
 
         $products = Product::query()
-            ->with('latestPrice')
+            ->with(['latestPrice', 'brandRelation', 'brand'])
             ->when($this->shouldApplyFilter($this->filters['items'], $this->filters['totalProducts']), fn ($q) => $q->whereIn('id', $this->filters['items']))
             ->when($this->shouldApplyFilter($this->filters['brands'], $this->filters['totalBrands']), fn ($q) => $q->whereIn('brand_id', $this->filters['brands']))
             ->when($this->shouldApplyFilter($this->filters['categories'], $this->filters['totalCategories']), fn ($q) => $q->whereIn('category_id', $this->filters['categories']))
             ->when($this->shouldApplyFilter($this->filters['subcategories'], $this->filters['totalSubcategories']), fn ($q) => $q->whereIn('sub_category_id', $this->filters['subcategories']))
-            ->orderBy('name')
+            ->orderByRaw('COALESCE(brand_id, 999999) asc')
+            ->orderByRaw('COALESCE(sub_category_id, 999999) asc')
+            ->orderBy('id', 'asc')
             ->get();
 
         $groups = [];
@@ -1285,7 +1300,7 @@ class StockReportBuilder
         ];
 
         foreach ($this->resolvedWarehouseIds() as $warehouseId) {
-            $rows = [];
+            $brandBuckets = [];
             $whTotal = [
                 'physical_qty' => 0.0,
                 'physical_amount' => 0.0,
@@ -1307,13 +1322,42 @@ class StockReportBuilder
                 $holdAmount = $holdQty * $retailPrice;
                 $retailAmount = $physicalAmount + $holdAmount;
 
-                $rows[] = [
+                $brandId = (int) ($product->brand_id ?? 0);
+                $brandName = $product->brandRelation?->name ?? $product->brand?->name ?? 'Other';
+
+                if (!isset($brandBuckets[$brandId])) {
+                    $brandBuckets[$brandId] = [
+                        'brand_id' => $brandId,
+                        'brand_name' => $brandName,
+                        'rows' => [],
+                        'totals' => [
+                            'physical_qty' => 0.0,
+                            'physical_amount' => 0.0,
+                            'hold_qty' => 0.0,
+                            'hold_amount' => 0.0,
+                            'retail_amount' => 0.0,
+                        ],
+                    ];
+                }
+
+                $rowItem = [
+                    'product_id' => (int) $product->id,
+                    'sub_category_id' => (int) ($product->sub_category_id ?? 0),
+                    'brand_id' => $brandId,
+                    'brand_name' => $brandName,
                     'product_name' => $product->name,
                     'physical_qty' => $physicalQty,
                     'hold_qty' => $holdQty,
                     'retail_price' => $retailPrice,
                     'retail_amount' => $retailAmount,
                 ];
+
+                $brandBuckets[$brandId]['rows'][] = $rowItem;
+                $brandBuckets[$brandId]['totals']['physical_qty'] += $physicalQty;
+                $brandBuckets[$brandId]['totals']['physical_amount'] += $physicalAmount;
+                $brandBuckets[$brandId]['totals']['hold_qty'] += $holdQty;
+                $brandBuckets[$brandId]['totals']['hold_amount'] += $holdAmount;
+                $brandBuckets[$brandId]['totals']['retail_amount'] += $retailAmount;
 
                 $whTotal['physical_qty'] += $physicalQty;
                 $whTotal['physical_amount'] += $physicalAmount;
@@ -1322,14 +1366,23 @@ class StockReportBuilder
                 $whTotal['retail_amount'] += $retailAmount;
             }
 
-            if (empty($rows)) {
+            if (empty($brandBuckets)) {
                 continue;
+            }
+
+            ksort($brandBuckets, SORT_NUMERIC);
+            $flatRows = [];
+            foreach ($brandBuckets as $b) {
+                foreach ($b['rows'] as $r) {
+                    $flatRows[] = $r;
+                }
             }
 
             $groups[] = [
                 'warehouse_id' => (int) $warehouseId,
                 'warehouse_label' => $this->warehouseLabel((int) $warehouseId),
-                'rows' => $rows,
+                'brand_groups' => array_values($brandBuckets),
+                'rows' => $flatRows,
                 'totals' => $whTotal,
             ];
 
@@ -1359,7 +1412,9 @@ class StockReportBuilder
             ->when($this->shouldApplyFilter($this->filters['brands'], $this->filters['totalBrands']), fn ($q) => $q->whereIn('brand_id', $this->filters['brands']))
             ->when($this->shouldApplyFilter($this->filters['categories'], $this->filters['totalCategories']), fn ($q) => $q->whereIn('category_id', $this->filters['categories']))
             ->when($this->shouldApplyFilter($this->filters['subcategories'], $this->filters['totalSubcategories']), fn ($q) => $q->whereIn('sub_category_id', $this->filters['subcategories']))
-            ->orderBy('name')
+            ->orderByRaw('COALESCE(brand_id, 999999) asc')
+            ->orderByRaw('COALESCE(sub_category_id, 999999) asc')
+            ->orderBy('id', 'asc')
             ->get();
 
         $warehouseIds = $this->resolvedWarehouseIds();
@@ -1386,6 +1441,8 @@ class StockReportBuilder
             }
 
             $brandBuckets[$brandId]['rows'][] = [
+                'product_id' => (int) $product->id,
+                'sub_category_id' => (int) ($product->sub_category_id ?? 0),
                 'product_name' => $product->name,
                 'hold_qty' => $holdQty,
             ];
@@ -1393,10 +1450,8 @@ class StockReportBuilder
             $grand['hold_qty'] += $holdQty;
         }
 
-        $groups = collect($brandBuckets)
-            ->sortBy('brand_name', SORT_NATURAL | SORT_FLAG_CASE)
-            ->values()
-            ->all();
+        ksort($brandBuckets, SORT_NUMERIC);
+        $groups = array_values($brandBuckets);
 
         return [
             'groups' => $groups,

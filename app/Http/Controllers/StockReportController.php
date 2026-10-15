@@ -91,10 +91,13 @@ class StockReportController extends Controller
             })
             ->get();
         $warehouses = Warehouse::withoutGlobalScopes()->orderBy('warehouse_name')->get();
-        $categories = Category::orderBy('name')->get();
-        $subcategories = Subcategory::orderBy('name')->get();
-        $brands = Brand::orderBy('name')->get();
-        $products = Product::orderBy('name')->get();
+        $categories = Category::orderBy('id')->get();
+        $subcategories = Subcategory::orderBy('id')->get();
+        $brands = Brand::orderBy('id')->get();
+        $products = Product::orderByRaw('COALESCE(brand_id, 999999) asc')
+            ->orderByRaw('COALESCE(sub_category_id, 999999) asc')
+            ->orderBy('id', 'asc')
+            ->get();
         $shopGroupIds = $userGroups->where('allow_shop', 1)->pluck('id')->implode(',');
 
         return view($view, array_merge(compact(

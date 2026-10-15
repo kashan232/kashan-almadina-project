@@ -154,6 +154,23 @@
             border-top: 1px solid #000;
             border-bottom: 1px solid #000;
         }
+        .brand-heading-row td {
+            background: #e9ecef !important;
+            font-weight: bold;
+            color: #0d47a1 !important;
+            text-align: left;
+            padding: 1.5px 3px;
+            font-size: 8px;
+            border-top: 1px solid #777;
+            border-bottom: 1px solid #777;
+        }
+        .brand-total-row td {
+            background: #f8f9fa !important;
+            font-weight: bold;
+            border-top: 1px solid #777;
+            border-bottom: 1px solid #000;
+            font-size: 7.5px;
+        }
         .subtotal-row td {
             background: #fff !important;
             font-weight: bold;
@@ -299,17 +316,53 @@
                 </thead>
                 <tbody>
                     @forelse($grouped as $warehouseId => $rows)
-                        @php $whTotal = array_fill_keys(array_column($cols, 'key'), 0.0); @endphp
+                        @php
+                            $whTotal = array_fill_keys(array_column($cols, 'key'), 0.0);
+                            $whRows = collect($rows);
+                            // Group by brand_id and sort brand IDs numerically ascending
+                            $brandGroups = $whRows->groupBy(function($item) {
+                                return (int) ($item['brand_id'] ?? 0);
+                            })->sortKeys();
+                        @endphp
                         <tr class="wh-title">
                             <td colspan="{{ count($cols) + 1 }}">{{ $rows->first()['warehouse_label'] ?? ('WH #' . $warehouseId) }}</td>
                         </tr>
-                        @foreach($rows as $row)
-                            @php foreach ($whTotal as $k => $_) { $whTotal[$k] += $row[$k] ?? 0; } @endphp
-                            <tr>
-                                <td class="item-name" title="{{ $row['product_name'] }}">{{ $row['product_name'] }}</td>
+                        @foreach($brandGroups as $bId => $bRows)
+                            @php
+                                // Sorting Level 1: sub_category_id ASC, Level 2: product_id ASC
+                                $sortedBRows = $bRows->sort(function($a, $b) {
+                                    $subCmp = ((int)($a['sub_category_id'] ?? 0)) <=> ((int)($b['sub_category_id'] ?? 0));
+                                    if ($subCmp !== 0) return $subCmp;
+                                    return ((int)($a['product_id'] ?? 0)) <=> ((int)($b['product_id'] ?? 0));
+                                });
+                                $brandName = $sortedBRows->first()['brand_name'] ?? 'Other';
+                                $brandTotal = array_fill_keys(array_column($cols, 'key'), 0.0);
+                            @endphp
+                            <tr class="brand-heading-row">
+                                <td colspan="{{ count($cols) + 1 }}">{{ strtoupper($brandName) }}</td>
+                            </tr>
+                            @foreach($sortedBRows as $row)
+                                @php
+                                    foreach ($cols as $col) {
+                                        $val = $row[$col['key']] ?? 0;
+                                        $brandTotal[$col['key']] += $val;
+                                        $whTotal[$col['key']] += $val;
+                                    }
+                                @endphp
+                                <tr>
+                                    <td class="item-name" title="{{ $row['product_name'] }}">{{ $row['product_name'] }}</td>
+                                    @foreach($cols as $col)
+                                    <td class="{{ $cellClass($col['key'], $row[$col['key']] ?? 0) }} {{ in_array($col['key'], ['opening','closing']) ? 'opening-col' : '' }} {{ !empty($col['hide_print']) ? 'col-hide-print' : '' }}">
+                                        {{ $fmt($row[$col['key']] ?? 0) }}
+                                    </td>
+                                    @endforeach
+                                </tr>
+                            @endforeach
+                            <tr class="brand-total-row">
+                                <td style="text-align:right;">{{ strtoupper($brandName) }} Total:</td>
                                 @foreach($cols as $col)
-                                <td class="{{ $cellClass($col['key'], $row[$col['key']] ?? 0) }} {{ in_array($col['key'], ['opening','closing']) ? 'opening-col' : '' }} {{ !empty($col['hide_print']) ? 'col-hide-print' : '' }}">
-                                    {{ $fmt($row[$col['key']] ?? 0) }}
+                                <td class="{{ $cellClass($col['key'], $brandTotal[$col['key']]) }} {{ !empty($col['hide_print']) ? 'col-hide-print' : '' }}">
+                                    {{ $fmt($brandTotal[$col['key']]) }}
                                 </td>
                                 @endforeach
                             </tr>

@@ -108,6 +108,22 @@
             font-weight: bold;
             background: #eceff1;
         }
+        .brand-title-row td {
+            background: #eceff1;
+            font-weight: bold;
+            color: #0d47a1;
+            padding: 3px 6px;
+            font-size: 10px;
+            text-align: left;
+            border-top: 1px solid #000;
+            border-bottom: 1px solid #777;
+        }
+        .brand-total-row td {
+            font-weight: bold;
+            background: #f5f5f5;
+            border-top: 1px solid #777;
+            border-bottom: 1px solid #000;
+        }
         .total-label { text-align: right; color: #1565c0; }
         .total-val { text-align: right; background: #e3f2fd !important; }
         .total-val-hold { text-align: right; background: #fff3e0 !important; color: #bf360c; }
@@ -162,18 +178,44 @@
                 </tr>
             </thead>
             <tbody>
-                @foreach($group['rows'] as $i => $row)
-                <tr>
-                    <td class="sno">{{ $i + 1 }}</td>
-                    <td class="item">{{ $row['product_name'] }}</td>
-                    <td class="physical-col num">{{ $fmt($row['physical_qty']) }}</td>
-                    <td class="hold-col num">{{ $fmt($row['hold_qty']) }}</td>
-                    <td class="num">{{ $fmtPrice($row['retail_price']) }}</td>
-                    <td class="num">{{ $fmt($row['retail_amount']) }}</td>
-                </tr>
-                @endforeach
+                @php $sno = 1; @endphp
+                @if(!empty($group['brand_groups']))
+                    @foreach($group['brand_groups'] as $brand)
+                    <tr class="brand-title-row">
+                        <td colspan="6">{{ strtoupper($brand['brand_name']) }}</td>
+                    </tr>
+                    @foreach($brand['rows'] as $row)
+                    <tr>
+                        <td class="sno">{{ $sno++ }}</td>
+                        <td class="item">{{ $row['product_name'] }}</td>
+                        <td class="physical-col num">{{ $fmt($row['physical_qty']) }}</td>
+                        <td class="hold-col num">{{ $fmt($row['hold_qty']) }}</td>
+                        <td class="num">{{ $fmtPrice($row['retail_price']) }}</td>
+                        <td class="num">{{ $fmt($row['retail_amount']) }}</td>
+                    </tr>
+                    @endforeach
+                    <tr class="brand-total-row">
+                        <td colspan="2" class="total-label" style="text-align:right;">{{ strtoupper($brand['brand_name']) }} Total:</td>
+                        <td class="total-val num">{{ $fmt($brand['totals']['physical_qty']) }}</td>
+                        <td class="total-val-hold num">{{ $fmt($brand['totals']['hold_qty']) }}</td>
+                        <td></td>
+                        <td class="total-val-amt num">{{ $fmt($brand['totals']['retail_amount']) }}</td>
+                    </tr>
+                    @endforeach
+                @else
+                    @foreach($group['rows'] as $i => $row)
+                    <tr>
+                        <td class="sno">{{ $i + 1 }}</td>
+                        <td class="item">{{ $row['product_name'] }}</td>
+                        <td class="physical-col num">{{ $fmt($row['physical_qty']) }}</td>
+                        <td class="hold-col num">{{ $fmt($row['hold_qty']) }}</td>
+                        <td class="num">{{ $fmtPrice($row['retail_price']) }}</td>
+                        <td class="num">{{ $fmt($row['retail_amount']) }}</td>
+                    </tr>
+                    @endforeach
+                @endif
                 <tr class="total-row">
-                    <td colspan="2" class="total-label">Total:</td>
+                    <td colspan="2" class="total-label" style="text-align:right;">{{ $group['warehouse_label'] }} Total:</td>
                     <td class="total-val num">{{ $fmt($group['totals']['physical_qty']) }}</td>
                     <td class="total-val-hold num">{{ $fmt($group['totals']['hold_qty']) }}</td>
                     <td></td>
