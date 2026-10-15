@@ -71,7 +71,8 @@ class ClaimAcceptanceController extends Controller
         $voucherNo = ClaimAcceptance::generateVoucherNo();
         $customerWarehouses = $this->claimWarehouses('customer');
         $companyWarehouses = $this->claimWarehouses('company');
-        return view('admin_panel.claim_acceptance.create', compact('voucherNo', 'customerWarehouses', 'companyWarehouses'));
+        $products = Product::withInactive()->orderBy('name')->get(['id', 'name']);
+        return view('admin_panel.claim_acceptance.create', compact('voucherNo', 'customerWarehouses', 'companyWarehouses', 'products'));
     }
 
     public function edit($id)
@@ -82,7 +83,8 @@ class ClaimAcceptanceController extends Controller
         }
         $customerWarehouses = $this->claimWarehouses('customer', $voucher);
         $companyWarehouses = $this->claimWarehouses('company', $voucher);
-        return view('admin_panel.claim_acceptance.create', compact('voucher', 'customerWarehouses', 'companyWarehouses'));
+        $products = Product::withInactive()->orderBy('name')->get(['id', 'name']);
+        return view('admin_panel.claim_acceptance.create', compact('voucher', 'customerWarehouses', 'companyWarehouses', 'products'));
     }
 
     public function show($id)
@@ -90,9 +92,10 @@ class ClaimAcceptanceController extends Controller
         $voucher = ClaimAcceptance::with(['items.product.brandRelation', 'vendor', 'customer'])->findOrFail($id);
         $customerWarehouses = $this->claimWarehouses('customer', $voucher);
         $companyWarehouses = $this->claimWarehouses('company', $voucher);
+        $products = Product::withInactive()->orderBy('name')->get(['id', 'name']);
         $viewMode = true;
 
-        return view('admin_panel.claim_acceptance.create', compact('voucher', 'customerWarehouses', 'companyWarehouses', 'viewMode'));
+        return view('admin_panel.claim_acceptance.create', compact('voucher', 'customerWarehouses', 'companyWarehouses', 'viewMode', 'products'));
     }
 
     public function ajaxSave(Request $request)

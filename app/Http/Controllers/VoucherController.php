@@ -1229,7 +1229,7 @@ class VoucherController extends Controller
                 ];
                 $previousBalance = (float)($account->current_balance ?? 0);
                 if ($voucher->status === 'posted') {
-                    $previousBalance -= (float)$voucher->total_amount;
+                    $previousBalance += (float)$voucher->total_amount;
                 }
             }
 
@@ -1244,7 +1244,7 @@ class VoucherController extends Controller
             $latestClosing = $ledgerService->latestClosing($pType, $pId);
             if ($voucher->status === 'posted') {
                 $totalImpact = (float)$voucher->total_amount + $this->sumVoucherDiscounts($voucher);
-                $previousBalance = $latestClosing - $totalImpact;
+                $previousBalance = $latestClosing + $totalImpact;
             } else {
                 $previousBalance = $latestClosing;
             }

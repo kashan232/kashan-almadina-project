@@ -280,7 +280,16 @@
         <!-- summary -->
         <div class="summary">
             @php
-            $amountPayable = $previousBalance - $voucher->total_amount;
+            $discountVal = 0;
+            if (!empty($voucher->discount_value)) {
+                $dArr = json_decode($voucher->discount_value, true);
+                if (is_array($dArr)) {
+                    $discountVal = array_sum(array_map('floatval', $dArr));
+                } elseif (is_numeric($voucher->discount_value)) {
+                    $discountVal = (float)$voucher->discount_value;
+                }
+            }
+            $amountPayable = $previousBalance - $voucher->total_amount - $discountVal;
             @endphp
 
             <table style="width:100%; border-collapse:collapse; font-size:14px;">
@@ -292,6 +301,12 @@
                     <td>Total Payment Paid. (-)</td>
                     <td style="color:#6b0f8a;">>>> {{ number_format($voucher->total_amount,2) }}</td>
                 </tr>
+                @if($discountVal > 0)
+                <tr>
+                    <td>Discount. (-)</td>
+                    <td style="color:#dc3545;">>>> {{ number_format($discountVal,2) }}</td>
+                </tr>
+                @endif
                 <tr>
                     <td>Remaining / Current Balance.</td>
                     <td style="color:#0b5a2b;">>>> {{ number_format($amountPayable,2) }}</td>

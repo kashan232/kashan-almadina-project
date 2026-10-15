@@ -190,7 +190,14 @@
                                         <td><input type="text" class="form-control form-control-sm text-center item-id-display" value="{{ $it->product_id }}"></td>
                                         <td>
                                             <select name="product_id[]" class="form-select select2 product-select" required>
-                                                <option value="{{ $it->product_id }}" selected>{{ $it->product->name ?? 'N/A' }}</option>
+                                                <option value="">Search Item...</option>
+                                                @if(isset($products))
+                                                    @foreach($products as $p)
+                                                        <option value="{{ $p->id }}" data-id="{{ $p->id }}" @selected($it->product_id == $p->id)>{{ $p->name }}</option>
+                                                    @endforeach
+                                                @else
+                                                    <option value="{{ $it->product_id }}" selected>{{ $it->product->name ?? 'N/A' }}</option>
+                                                @endif
                                             </select>
                                         </td>
                                         <td><input type="number" name="quantity[]" class="form-control form-control-sm text-center quantity-input" value="{{ (float)$it->quantity }}" step="any" required></td>
@@ -204,6 +211,11 @@
                                         <td>
                                             <select name="product_id[]" class="form-select select2 product-select" required>
                                                 <option value="">Search Item...</option>
+                                                @if(isset($products))
+                                                    @foreach($products as $p)
+                                                        <option value="{{ $p->id }}" data-id="{{ $p->id }}">{{ $p->name }}</option>
+                                                    @endforeach
+                                                @endif
                                             </select>
                                         </td>
                                         <td><input type="number" name="quantity[]" class="form-control form-control-sm text-center quantity-input" value="1" step="any" required></td>
@@ -211,6 +223,15 @@
                                     </tr>
                                 @endif
                             </tbody>
+
+                            <template id="productOptionsTemplate">
+                                <option value="">Search Item...</option>
+                                @if(isset($products))
+                                    @foreach($products as $p)
+                                        <option value="{{ $p->id }}" data-id="{{ $p->id }}">{{ $p->name }}</option>
+                                    @endforeach
+                                @endif
+                            </template>
                             <tfoot class="table-light">
                                 <tr class="fw-bold">
                                     <td colspan="3" class="text-end py-1">GRAND TOTAL:</td>
@@ -286,29 +307,48 @@ $(document).ready(function() {
     var isPostedVoucher = {{ $isPosted ? 'true' : 'false' }};
 
     // Initialization functions
+    function matchProduct(params, data) {
+        if ($.trim(params.term) === '') {
+            return data;
+        }
+        if (typeof data.text === 'undefined') {
+            return null;
+        }
+        var term = params.term.toLowerCase();
+        var text = data.text.toLowerCase();
+        var id = String(data.id || '').toLowerCase();
+        if (text.indexOf(term) > -1 || id.indexOf(term) > -1) {
+            return data;
+        }
+        return null;
+    }
+
+    // Initialization functions
     function initProductSelect($row) {
-        $row.find('.product-select').select2({
+        var $select = $row.find('.product-select');
+        if ($select.hasClass('select2-hidden-accessible')) {
+            return;
+        }
+
+        $select.select2({
             width: '100%',
-            ajax: {
-                url: "{{ url('search-products') }}",
-                dataType: 'json', delay: 250,
-                data: (params) => ({ q: params.term }),
-                processResults: function(data) {
-                    return {
-                        results: data.map(function(item) {
-                            return {
-                                id: item.id,
-                                text: item.name || item.text
-                            };
-                        })
-                    };
-                }
-            }
+            placeholder: "Search Item...",
+            allowClear: true,
+            matcher: matchProduct
+        }).on('select2:open', function() {
+            setTimeout(function() {
+                var searchInput = document.querySelector('.select2-container--open .select2-search__field');
+                if (searchInput) searchInput.focus();
+            }, 10);
         }).on('select2:select', function(e) {
             var data = e.params.data;
             $row.find('.item-id-display').val(data.id);
-            $row.find('.quantity-input').focus().select();
+            setTimeout(function() {
+                $row.find('.quantity-input').focus().select();
+            }, 50);
             autoAddRow($row);
+        }).on('select2:clear', function() {
+            $row.find('.item-id-display').val('');
         });
     }
 
@@ -332,12 +372,14 @@ $(document).ready(function() {
     $('#party_type').on('change', () => $('#party_id').val(null).trigger('change'));
 
     // Row management
+    var productOptionsHtml = $('#productOptionsTemplate').html() || '<option value="">Search Item...</option>';
+
     $('#addItemBtn').on('click', function() {
         var lastBtr = $('#itemRows tr:last').find('input[name="btr_no[]"]').val() || '';
         var row = `<tr>
             <td><input type="text" name="btr_no[]" class="form-control form-control-sm text-center" placeholder="BTR#" value="${lastBtr}"></td>
             <td><input type="text" class="form-control form-control-sm text-center item-id-display" placeholder="ID"></td>
-            <td><select name="product_id[]" class="form-select select2 product-select" required><option value="">Search Item...</option></select></td>
+            <td><select name="product_id[]" class="form-select select2 product-select" required>${productOptionsHtml}</select></td>
             <td><input type="number" name="quantity[]" class="form-control form-control-sm text-center quantity-input" value="1" step="any" required></td>
             <td class="text-center"><button type="button" class="btn text-danger btn-xs remove-row"><i class="fa fa-trash"></i></button></td>
         </tr>`;
@@ -354,31 +396,99 @@ $(document).ready(function() {
 
     // Item ID keyboard logic
     $(document).on('keydown', '.item-id-display', function(e) {
-        if (e.which == 13 || e.which == 9) { // Enter or Tab
+        var $row = $(this).closest('tr');
+        var id = $.trim($(this).val());
+
+        // When Tab is pressed without Shift
+        if (e.which === 9 && !e.shiftKey) {
+            if (!id) {
+                // If Item ID is empty, Tab directly opens the Product Select2 dropdown!
+                e.preventDefault();
+                $row.find('.product-select').select2('open');
+                return;
+            }
+        }
+
+        // When Enter or Tab (with an ID typed)
+        if (e.which === 13 || e.which === 9) {
+            e.preventDefault();
+            if (!id) {
+                $row.find('.product-select').select2('open');
+                return;
+            }
+
+            var $select = $row.find('.product-select');
+            var $opt = $select.find('option[value="' + id + '"]');
+
+            if ($opt.length) {
+                $select.val(id).trigger('change');
+                $(this).val(id);
+                setTimeout(function() {
+                    $row.find('.quantity-input').focus().select();
+                }, 50);
+                autoAddRow($row);
+                return;
+            }
+
+            // Fallback: search via server if product wasn't preloaded
+            $(this).addClass('loading-indicator');
+            $.get("{{ url('search-products') }}", { q: id }, (res) => {
+                $(this).removeClass('loading-indicator');
+                if (res && res.length > 0) {
+                    let item = res.find(i => String(i.id) === String(id)) || res.find(i => i.name.toLowerCase() === String(id).toLowerCase());
+                    if (!item && res.length === 1) item = res[0];
+                    
+                    if (item) {
+                        var prodName = item.name || item.text || 'N/A';
+                        if (!$select.find('option[value="' + item.id + '"]').length) {
+                            $select.append(new Option(prodName, item.id, true, true));
+                        }
+                        $select.val(item.id).trigger('change');
+                        $(this).val(item.id);
+                        setTimeout(function() {
+                            $row.find('.quantity-input').focus().select();
+                        }, 50);
+                        autoAddRow($row);
+                    } else {
+                        alert('Product not found!');
+                        $(this).select().focus();
+                    }
+                } else {
+                    alert('Product not found!');
+                    $(this).select().focus();
+                }
+            }).fail(() => {
+                $(this).removeClass('loading-indicator');
+                alert('Product not found!');
+                $(this).select().focus();
+            });
+        }
+    });
+
+    $(document).on('keydown', 'input[name="btr_no[]"]', function(e) {
+        if (e.which === 13) {
+            e.preventDefault();
+            $(this).closest('tr').find('.item-id-display').focus().select();
+        }
+    });
+
+    $(document).on('keydown', '.quantity-input', function(e) {
+        if (e.which === 13) {
             e.preventDefault();
             var $row = $(this).closest('tr');
-            var id = $(this).val();
-            if (!id) return;
-              $row.find('.item-id-display').addClass('loading-indicator');
-              $.get("{{ url('search-products') }}", { q: id }, (res) => {
-                  $row.find('.item-id-display').removeClass('loading-indicator');
-                  if (res && res.length > 0) {
-                      let item = res.find(i => String(i.id) === String(id)) || res.find(i => i.name.toLowerCase() === String(id).toLowerCase());
-                      if (!item && res.length === 1) item = res[0];
-                      
-                      if (item) {
-                          var prodName = item.name || item.text || 'N/A';
-                          $row.find('.product-select').html(`<option value="${item.id}" selected>${prodName}</option>`).trigger('change');
-                          $row.find('.item-id-display').val(item.id);
-                          $row.find('.quantity-input').focus().select();
-                          autoAddRow($row);
-                      } else {
-                          alert('Product not found!');
-                      }
-                  } else {
-                      alert('Product not found!');
-                  }
-              });
+            var $next = $row.next('tr');
+            if (!$next.length) {
+                $('#addItemBtn').click();
+                $next = $('#itemRows tr:last');
+            }
+            setTimeout(function() {
+                var $btr = $next.find('input[name="btr_no[]"]');
+                if ($btr.length && !$btr.val()) {
+                    $btr.focus().select();
+                } else {
+                    $next.find('.item-id-display').focus().select();
+                }
+            }, 60);
         }
     });
 

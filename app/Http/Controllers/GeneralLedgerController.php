@@ -833,10 +833,14 @@ class GeneralLedgerController extends Controller
                 }
             }
             $pvInv = $pv->pvid;
+            $refLabel = '';
             if (!empty($validRefs)) {
                 $pvRefStr = implode(', ', array_unique($validRefs));
                 $refLabel = (stripos($pvRefStr, 'ref') !== false) ? $pvRefStr : ('Ref# ' . $pvRefStr);
-                $pvInv .= ' (' . $refLabel . ')';
+            }
+            $pvDesc = $pv->remarks ?? 'Payment Voucher';
+            if ($refLabel !== '') {
+                $pvDesc = $pvDesc !== '' ? ($pvDesc . ' (' . $refLabel . ')') : ('(' . $refLabel . ')');
             }
 
             $transactions[] = [
@@ -845,18 +849,22 @@ class GeneralLedgerController extends Controller
                 'date' => $pv->entry_date ?: $pv->created_at,
                 'ref' => 'PV',
                 'inv' => $pvInv,
-                'desc' => $pv->remarks ?? 'Payment Voucher',
+                'desc' => $pvDesc,
                 'qty' => $totalKg, 'debit' => $pvPaidAmt, 'credit' => 0
             ];
 
             if ($totalDisc > 0) {
+                $discDesc = 'Payment Discount (Income)';
+                if ($refLabel !== '') {
+                    $discDesc .= ' (' . $refLabel . ')';
+                }
                 $transactions[] = [
                     'created_at' => $pv->created_at,
                     'id' => $pv->id . '_disc',
                     'date' => $pv->entry_date ?: $pv->created_at,
                     'ref' => 'IV',
                     'inv' => $pvInv,
-                    'desc' => 'Payment Discount (Income)',
+                    'desc' => $discDesc,
                     'qty' => 0, 'debit' => 0, 'credit' => $totalDisc
                 ];
             }
@@ -1148,12 +1156,13 @@ class GeneralLedgerController extends Controller
 
                 $ref = 'RV';
                 $inv = $rv->rvid;
+                $refLabel = '';
                 if (str_contains($rv->remarks ?? '', 'Auto-generated from Sale:')) {
                     $ref = 'SJ';
                     $inv = trim(str_replace('Auto-generated from Sale:', '', $rv->remarks));
                 } elseif ($rowRef !== '') {
                     $refLabel = (stripos($rowRef, 'ref') !== false) ? $rowRef : ('Ref# ' . $rowRef);
-                    $inv .= ' (' . $refLabel . ')';
+                    $desc .= ' (' . $refLabel . ')';
                 }
 
                 if ($rowAmount > 0) {
@@ -1171,13 +1180,17 @@ class GeneralLedgerController extends Controller
                 }
                 
                 if ($rowDiscount > 0) {
+                    $discDesc = $this->voucherDiscountDescription($discAccIds[$idx] ?? null);
+                    if ($refLabel !== '') {
+                        $discDesc .= ' (' . $refLabel . ')';
+                    }
                     $transactions[] = [
                         'created_at' => $rv->created_at,
                         'id' => $rv->id . '_disc_' . $idx,
                         'date' => $rv->entry_date ?: $rv->created_at,
                         'ref' => $ref,
                         'inv' => $inv,
-                        'desc' => $this->voucherDiscountDescription($discAccIds[$idx] ?? null),
+                        'desc' => $discDesc,
                         'qty' => 0, 'debit' => 0, 'credit' => $rowDiscount,
                         'priority' => str_contains($rv->remarks ?? '', 'Auto-generated from Sale:') ? 12 : 61,
                         'sort_inv' => str_contains($rv->remarks ?? '', 'Auto-generated from Sale:') ? preg_replace('/[^0-9]/', '', $rv->remarks) : preg_replace('/[^0-9]/', '', $rv->rvid ?? '')
@@ -1203,6 +1216,7 @@ class GeneralLedgerController extends Controller
             $pIds = json_decode($iv->party_id, true) ?? [];
             $amounts = json_decode($iv->amount, true) ?? [];
             $narrIds = json_decode($iv->narration_id, true) ?? [];
+            $refNos = json_decode($iv->reference_no, true) ?? [];
 
             $hType = strtolower($iv->account_head ?? '');
             if ($iv->account_id == $id && in_array($hType, $typeArray)) {
@@ -1231,6 +1245,12 @@ class GeneralLedgerController extends Controller
 
                     $baseDesc = $rowNarr ?: ($iv->remarks ?? 'Income Voucher (Deposit)');
                     $desc = $partyName ? $baseDesc . ' ; ' . $partyName : $baseDesc;
+                    $rowRef = is_array($refNos) ? trim((string)($refNos[$idx] ?? '')) : trim((string)$iv->reference_no);
+                    if (strtolower($rowRef) === 'null') $rowRef = '';
+                    if ($rowRef !== '') {
+                        $refLabel = (stripos($rowRef, 'ref') !== false) ? $rowRef : ('Ref# ' . $rowRef);
+                        $desc .= ' (' . $refLabel . ')';
+                    }
 
                     $transactions[] = [
                         'created_at' => $iv->created_at,
@@ -1275,6 +1295,12 @@ class GeneralLedgerController extends Controller
                     
                     $baseDesc = !empty($descParts) ? implode(' ; ', $descParts) : 'Income Voucher';
                     $desc = $depositAccName ? $baseDesc . ' ; ' . $depositAccName : $baseDesc;
+                    $rowRef = is_array($refNos) ? trim((string)($refNos[$idx] ?? '')) : trim((string)$iv->reference_no);
+                    if (strtolower($rowRef) === 'null') $rowRef = '';
+                    if ($rowRef !== '') {
+                        $refLabel = (stripos($rowRef, 'ref') !== false) ? $rowRef : ('Ref# ' . $rowRef);
+                        $desc .= ' (' . $refLabel . ')';
+                    }
 
                     $transactions[] = [
                         'created_at' => $iv->created_at,
@@ -1417,16 +1443,16 @@ class GeneralLedgerController extends Controller
                         $rowRef = '';
                     }
                     $rowInv = $av->avid;
-                    if ($rowRef !== '') {
-                        $refLabel = (stripos($rowRef, 'ref') !== false) ? $rowRef : ('Ref# ' . $rowRef);
-                        $rowInv .= ' (' . $refLabel . ')';
-                    }
                     
                     $headerDescParts = [];
                     if ($headerNarr) $headerDescParts[] = $headerNarr;
                     if (!empty($av->remarks)) $headerDescParts[] = $av->remarks;
                     if ($destName) $headerDescParts[] = $destName;
                     $headerDesc = !empty($headerDescParts) ? implode(' ; ', $headerDescParts) : 'Adjustment Voucher';
+                    if ($rowRef !== '') {
+                        $refLabel = (stripos($rowRef, 'ref') !== false) ? $rowRef : ('Ref# ' . $rowRef);
+                        $headerDesc .= ' (' . $refLabel . ')';
+                    }
 
                     $rowAmt = (float)($amounts[$i] ?? 0);
                     if ($rowAmt > 0) {
@@ -1473,10 +1499,6 @@ class GeneralLedgerController extends Controller
                         $rowRef = '';
                     }
                     $rowInv = $av->avid;
-                    if ($rowRef !== '') {
-                        $refLabel = (stripos($rowRef, 'ref') !== false) ? $rowRef : ('Ref# ' . $rowRef);
-                        $rowInv .= ' (' . $refLabel . ')';
-                    }
 
                     $descParts = [];
                     if ($narrText) $descParts[] = $narrText;
@@ -1495,6 +1517,10 @@ class GeneralLedgerController extends Controller
                     if ($sourceName) $descParts[] = $sourceName;
 
                     $desc = !empty($descParts) ? implode(' ; ', $descParts) : 'Adjustment Voucher';
+                    if ($rowRef !== '') {
+                        $refLabel = (stripos($rowRef, 'ref') !== false) ? $rowRef : ('Ref# ' . $rowRef);
+                        $desc .= ' (' . $refLabel . ')';
+                    }
 
                     $transactions[] = [
                         'created_at' => $av->created_at,
@@ -1643,10 +1669,6 @@ class GeneralLedgerController extends Controller
                         }
 
                         $rowInv = $inv;
-                        if (!str_starts_with($rv->remarks ?? '', 'Auto-generated from Sale:') && $rowRef !== '') {
-                            $refLabel = (stripos($rowRef, 'ref') !== false) ? $rowRef : ('Ref# ' . $rowRef);
-                            $rowInv .= ' (' . $refLabel . ')';
-                        }
 
                         $accName = DB::table('accounts')->where('id', $aid)->value('title');
 
@@ -1658,6 +1680,10 @@ class GeneralLedgerController extends Controller
                         $desc = !empty($descParts) ? implode(' : ', $descParts) : 'Receipt Voucher';
                         
                         $desc = $partyName ? $desc . ' : ' . $partyName : $desc;
+                        if (!str_starts_with($rv->remarks ?? '', 'Auto-generated from Sale:') && $rowRef !== '') {
+                            $refLabel = (stripos($rowRef, 'ref') !== false) ? $rowRef : ('Ref# ' . $rowRef);
+                            $desc .= ' (' . $refLabel . ')';
+                        }
 
                         $transactions[] = [
                             'created_at' => $rv->created_at,
@@ -1683,6 +1709,7 @@ class GeneralLedgerController extends Controller
 
                     $ref = 'RV';
                     $discInv = $rv->rvid;
+                    $refLabel = '';
                     if (str_starts_with($rv->remarks ?? '', 'Auto-generated from Sale:')) {
                         $ref = 'SJ';
                         $discInv = trim(str_replace('Auto-generated from Sale:', '', $rv->remarks));
@@ -1698,12 +1725,14 @@ class GeneralLedgerController extends Controller
                         }
                         if ($rowRef !== '') {
                             $refLabel = (stripos($rowRef, 'ref') !== false) ? $rowRef : ('Ref# ' . $rowRef);
-                            $discInv .= ' (' . $refLabel . ')';
                         }
                     }
 
                     $desc = $this->voucherDiscountDescription($daid);
                     $desc = $partyName ? $desc . ' : ' . $partyName : $desc;
+                    if ($refLabel !== '') {
+                        $desc .= ' (' . $refLabel . ')';
+                    }
 
                     $transactions[] = [
                         'created_at' => $rv->created_at,
@@ -1777,10 +1806,14 @@ class GeneralLedgerController extends Controller
                             }
                         }
                         $headerInv = $pv->pvid;
+                        $refLabel = '';
                         if (!empty($validRefs)) {
                             $pvRefStr = implode(', ', array_unique($validRefs));
                             $refLabel = (stripos($pvRefStr, 'ref') !== false) ? $pvRefStr : ('Ref# ' . $pvRefStr);
-                            $headerInv .= ' (' . $refLabel . ')';
+                        }
+                        $headerDesc = $pv->remarks ?? 'Payment Voucher (Destination Party)';
+                        if ($refLabel !== '') {
+                            $headerDesc .= ' (' . $refLabel . ')';
                         }
 
                         $transactions[] = [
@@ -1789,7 +1822,7 @@ class GeneralLedgerController extends Controller
                             'date' => $pv->entry_date ?: $pv->created_at,
                             'ref' => 'PV',
                             'inv' => $headerInv,
-                            'desc' => $pv->remarks ?? 'Payment Voucher (Destination Party)',
+                            'desc' => $headerDesc,
                             'price' => 0, 'qty' => $pvTotalKg, 'debit' => $totAmt, 'credit' => 0,
                             'priority' => 60
                         ];
@@ -1819,10 +1852,6 @@ class GeneralLedgerController extends Controller
                             $rowRef = '';
                         }
                         $rowInv = $pv->pvid;
-                        if ($rowRef !== '') {
-                            $refLabel = (stripos($rowRef, 'ref') !== false) ? $rowRef : ('Ref# ' . $rowRef);
-                            $rowInv .= ' (' . $refLabel . ')';
-                        }
 
                         $descParts = [];
                         if ($rowNarr) $descParts[] = $rowNarr;
@@ -1830,6 +1859,10 @@ class GeneralLedgerController extends Controller
                         $baseDesc = !empty($descParts) ? implode(' ; ', $descParts) : 'Payment';
                         
                         $desc = $partyName ? $baseDesc . ' : ' . $partyName : $baseDesc;
+                        if ($rowRef !== '') {
+                            $refLabel = (stripos($rowRef, 'ref') !== false) ? $rowRef : ('Ref# ' . $rowRef);
+                            $desc .= ' (' . $refLabel . ')';
+                        }
 
                         $transactions[] = [
                             'created_at' => $pv->created_at,
@@ -1863,13 +1896,13 @@ class GeneralLedgerController extends Controller
                         $rowRef = '';
                     }
                     $discInv = $pv->pvid;
-                    if ($rowRef !== '') {
-                        $refLabel = (stripos($rowRef, 'ref') !== false) ? $rowRef : ('Ref# ' . $rowRef);
-                        $discInv .= ' (' . $refLabel . ')';
-                    }
 
                     $desc = $this->voucherDiscountDescription($daid);
                     $desc = $partyName ? $desc . ' : ' . $partyName : $desc;
+                    if ($rowRef !== '') {
+                        $refLabel = (stripos($rowRef, 'ref') !== false) ? $rowRef : ('Ref# ' . $rowRef);
+                        $desc .= ' (' . $refLabel . ')';
+                    }
 
                     $transactions[] = [
                         'created_at' => $pv->created_at,
@@ -1896,6 +1929,7 @@ class GeneralLedgerController extends Controller
                 $amounts = json_decode($iv->amount, true) ?? [];
                 $types = json_decode($iv->party_type, true) ?? [];
                 $narrIds = json_decode($iv->narration_id, true) ?? [];
+                $refNos = json_decode($iv->reference_no, true) ?? [];
 
                 if ($iv->account_id == $id) {
                     foreach($pIds as $idx => $pid) {
@@ -1923,6 +1957,12 @@ class GeneralLedgerController extends Controller
 
                         $baseDesc = $rowNarr ?: ($iv->remarks ?? 'Income Voucher (Deposit)');
                         $desc = $partyName ? $baseDesc . ' ; ' . $partyName : $baseDesc;
+                        $rowRef = is_array($refNos) ? trim((string)($refNos[$idx] ?? '')) : trim((string)$iv->reference_no);
+                        if (strtolower($rowRef) === 'null') $rowRef = '';
+                        if ($rowRef !== '') {
+                            $refLabel = (stripos($rowRef, 'ref') !== false) ? $rowRef : ('Ref# ' . $rowRef);
+                            $desc .= ' (' . $refLabel . ')';
+                        }
 
                         $transactions[] = [
                             'created_at' => $iv->created_at,
@@ -1960,6 +2000,12 @@ class GeneralLedgerController extends Controller
                         }
                         $baseDesc = $rowNarr ?: ($iv->remarks ?? 'Income Voucher (Source)');
                         $desc = $depositAccName ? $baseDesc . ' ; ' . $depositAccName : $baseDesc;
+                        $rowRef = is_array($refNos) ? trim((string)($refNos[$idx] ?? '')) : trim((string)$iv->reference_no);
+                        if (strtolower($rowRef) === 'null') $rowRef = '';
+                        if ($rowRef !== '') {
+                            $refLabel = (stripos($rowRef, 'ref') !== false) ? $rowRef : ('Ref# ' . $rowRef);
+                            $desc .= ' (' . $refLabel . ')';
+                        }
                         
                         $transactions[] = [
                             'created_at' => $iv->created_at,
@@ -2186,15 +2232,16 @@ class GeneralLedgerController extends Controller
                             $rowRef = '';
                         }
                         $rowInv = $av->avid;
+                        $refLabel = '';
                         if ($rowRef !== '') {
                             $refLabel = (stripos($rowRef, 'ref') !== false) ? $rowRef : ('Ref# ' . $rowRef);
-                            $rowInv .= ' (' . $refLabel . ')';
                         }
                         
                         $headerDescParts = [];
                         if ($headerNarr) $headerDescParts[] = $headerNarr;
                         if (!empty($av->remarks)) $headerDescParts[] = $av->remarks;
                         if ($destName) $headerDescParts[] = $destName;
+                        if ($refLabel !== '') $headerDescParts[] = '(' . $refLabel . ')';
                         $headerDesc = !empty($headerDescParts) ? implode(' ; ', $headerDescParts) : 'Adjustment Voucher';
 
                         $rowAmt = (float)($amounts[$i] ?? 0);
@@ -2238,9 +2285,9 @@ class GeneralLedgerController extends Controller
                             $rowRef = '';
                         }
                         $rowInv = $av->avid;
+                        $refLabel = '';
                         if ($rowRef !== '') {
                             $refLabel = (stripos($rowRef, 'ref') !== false) ? $rowRef : ('Ref# ' . $rowRef);
-                            $rowInv .= ' (' . $refLabel . ')';
                         }
 
                         $descParts = [];
@@ -2258,6 +2305,7 @@ class GeneralLedgerController extends Controller
                             $sourceName = \Illuminate\Support\Facades\DB::table('accounts')->where('id', $pId)->value('title');
                         }
                         if ($sourceName) $descParts[] = $sourceName;
+                        if ($refLabel !== '') $descParts[] = '(' . $refLabel . ')';
 
                         $desc = !empty($descParts) ? implode(' ; ', $descParts) : 'Adjustment Voucher';
 
@@ -2433,9 +2481,9 @@ class GeneralLedgerController extends Controller
                 }
 
                 $rowInv = $pv->pvid;
+                $refLabel = '';
                 if ($rowRef !== '') {
                     $refLabel = (stripos($rowRef, 'ref') !== false) ? $rowRef : ('Ref# ' . $rowRef);
-                    $rowInv .= ' (' . $refLabel . ')';
                 }
 
                 $accName = DB::table('accounts')->where('id', $aid)->value('title');
@@ -2447,6 +2495,7 @@ class GeneralLedgerController extends Controller
                 $descParts = [];
                 if ($narrText) $descParts[] = $narrText;
                 if (!empty($pv->remarks)) $descParts[] = $pv->remarks;
+                if ($refLabel !== '') $descParts[] = '(' . $refLabel . ')';
                 $desc = !empty($descParts) ? implode(' : ', $descParts) : 'Payment Voucher';
 
                 $pvDate = $pv->entry_date ?: ($pv->receipt_date ?: $pv->created_at);
@@ -2464,13 +2513,17 @@ class GeneralLedgerController extends Controller
                 }
 
                 if ($rowDiscount > 0) {
+                    $discDesc = $this->voucherDiscountDescription($discAccIds[$idx] ?? null);
+                    if ($refLabel !== '') {
+                        $discDesc .= ' (' . $refLabel . ')';
+                    }
                     $transactions[] = [
                         'created_at' => $pv->created_at,
                         'id' => $pv->id . '_disc_' . $idx,
                         'date' => $pvDate,
                         'ref' => 'PV',
                         'inv' => $rowInv,
-                        'desc' => $this->voucherDiscountDescription($discAccIds[$idx] ?? null),
+                        'desc' => $discDesc,
                         'price' => 0, 'qty' => 0, 'debit' => $rowDiscount, 'credit' => 0,
                         'priority' => 51
                     ];
@@ -2735,15 +2788,16 @@ class GeneralLedgerController extends Controller
                         $rowRef = '';
                     }
                     $rowInv = $av->avid;
+                    $refLabel = '';
                     if ($rowRef !== '') {
                         $refLabel = (stripos($rowRef, 'ref') !== false) ? $rowRef : ('Ref# ' . $rowRef);
-                        $rowInv .= ' (' . $refLabel . ')';
                     }
                     
                     $headerDescParts = [];
                     if ($headerNarr) $headerDescParts[] = $headerNarr;
                     if (!empty($av->remarks)) $headerDescParts[] = $av->remarks;
                     if ($destName) $headerDescParts[] = $destName;
+                    if ($refLabel !== '') $headerDescParts[] = '(' . $refLabel . ')';
                     $headerDesc = !empty($headerDescParts) ? implode(' ; ', $headerDescParts) : 'Adjustment Voucher';
 
                     $rowAmt = (float)($amounts[$i] ?? 0);
@@ -2791,9 +2845,9 @@ class GeneralLedgerController extends Controller
                         $rowRef = '';
                     }
                     $rowInv = $av->avid;
+                    $refLabel = '';
                     if ($rowRef !== '') {
                         $refLabel = (stripos($rowRef, 'ref') !== false) ? $rowRef : ('Ref# ' . $rowRef);
-                        $rowInv .= ' (' . $refLabel . ')';
                     }
 
                     $descParts = [];
@@ -2811,6 +2865,7 @@ class GeneralLedgerController extends Controller
                         $sourceName = \Illuminate\Support\Facades\DB::table('accounts')->where('id', $pId)->value('title');
                     }
                     if ($sourceName) $descParts[] = $sourceName;
+                    if ($refLabel !== '') $descParts[] = '(' . $refLabel . ')';
 
                     $desc = !empty($descParts) ? implode(' ; ', $descParts) : 'Adjustment Voucher';
 
@@ -3051,11 +3106,19 @@ class GeneralLedgerController extends Controller
                     }
                 }
                 
+                $refLabel = '';
+                if ($rowRef !== '') {
+                    $refLabel = (stripos($rowRef, 'ref') !== false) ? $rowRef : ('Ref# ' . $rowRef);
+                }
+
                 $descParts = [];
                 if ($accName) $descParts[] = $accName;
                 if ($narrText) $descParts[] = $narrText;
                 if (!empty($rv->remarks) && !str_starts_with($rv->remarks, 'Auto-generated from Sale:')) {
                     $descParts[] = $rv->remarks;
+                }
+                if ($refLabel !== '' && !str_contains($rv->remarks ?? '', 'Auto-generated from Sale:')) {
+                    $descParts[] = '(' . $refLabel . ')';
                 }
                 $desc = !empty($descParts) ? implode(' ; ', $descParts) : 'Receipt Voucher';
 
@@ -3064,9 +3127,6 @@ class GeneralLedgerController extends Controller
                 if (str_contains($rv->remarks ?? '', 'Auto-generated from Sale:')) {
                     $ref = 'SJ';
                     $inv = trim(str_replace('Auto-generated from Sale:', '', $rv->remarks));
-                } elseif ($rowRef !== '') {
-                    $refLabel = (stripos($rowRef, 'ref') !== false) ? $rowRef : ('Ref# ' . $rowRef);
-                    $inv .= ' (' . $refLabel . ')';
                 }
 
                 $rvDate = $rv->entry_date ?: ($rv->receipt_date ?: $rv->created_at);
@@ -3085,13 +3145,17 @@ class GeneralLedgerController extends Controller
                 }
 
                 if ($rowDiscount > 0) {
+                    $discDesc = $this->voucherDiscountDescription($discAccIds[$idx] ?? null);
+                    if ($refLabel !== '') {
+                        $discDesc .= ' (' . $refLabel . ')';
+                    }
                     $transactions[] = [
                         'created_at' => $rv->created_at,
                         'id' => $rv->id . '_disc_' . $idx,
                         'date' => $rvDate,
                         'ref' => $ref,
                         'inv' => $inv,
-                        'desc' => $this->voucherDiscountDescription($discAccIds[$idx] ?? null),
+                        'desc' => $discDesc,
                         'price' => 0, 'qty' => 0, 'debit' => 0, 'credit' => $rowDiscount,
                         'priority' => str_contains($rv->remarks ?? '', 'Auto-generated from Sale:') ? 12 : 61,
                         'sort_inv' => str_contains($rv->remarks ?? '', 'Auto-generated from Sale:') ? preg_replace('/[^0-9]/', '', $rv->remarks) : preg_replace('/[^0-9]/', '', $rv->rvid ?? '')
@@ -3117,6 +3181,7 @@ class GeneralLedgerController extends Controller
             $pIds = json_decode($iv->party_id, true) ?? [];
             $amounts = json_decode($iv->amount, true) ?? [];
             $narrIds = json_decode($iv->narration_id, true) ?? [];
+            $refNos = json_decode($iv->reference_no, true) ?? [];
 
             $hType = strtolower($iv->account_head ?? '');
             if ($iv->account_id == $id && in_array($hType, $typeArray)) {
@@ -3145,6 +3210,12 @@ class GeneralLedgerController extends Controller
 
                     $baseDesc = $rowNarr ?: ($iv->remarks ?? 'Income Voucher (Deposit)');
                     $desc = $partyName ? $baseDesc . ' ; ' . $partyName : $baseDesc;
+                    $rowRef = is_array($refNos) ? trim((string)($refNos[$idx] ?? '')) : trim((string)$iv->reference_no);
+                    if (strtolower($rowRef) === 'null') $rowRef = '';
+                    if ($rowRef !== '') {
+                        $refLabel = (stripos($rowRef, 'ref') !== false) ? $rowRef : ('Ref# ' . $rowRef);
+                        $desc .= ' (' . $refLabel . ')';
+                    }
 
                     $transactions[] = [
                         'created_at' => $iv->created_at,
@@ -3189,6 +3260,12 @@ class GeneralLedgerController extends Controller
                     
                     $baseDesc = !empty($descParts) ? implode(' ; ', $descParts) : 'Income Voucher';
                     $desc = $depositAccName ? $baseDesc . ' ; ' . $depositAccName : $baseDesc;
+                    $rowRef = is_array($refNos) ? trim((string)($refNos[$idx] ?? '')) : trim((string)$iv->reference_no);
+                    if (strtolower($rowRef) === 'null') $rowRef = '';
+                    if ($rowRef !== '') {
+                        $refLabel = (stripos($rowRef, 'ref') !== false) ? $rowRef : ('Ref# ' . $rowRef);
+                        $desc .= ' (' . $refLabel . ')';
+                    }
 
                     $transactions[] = [
                         'created_at' => $iv->created_at,
