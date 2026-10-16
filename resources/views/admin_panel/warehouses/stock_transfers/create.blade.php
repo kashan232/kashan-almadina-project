@@ -71,7 +71,7 @@
                     <span id="statusBadge" class="badge bg-warning text-dark px-2 py-0" style="font-size:10px;">Draft</span>
                     <span id="idBadge" class="badge bg-primary px-2 py-0" style="font-size:10px;">ID: NEW</span>
                 </div>
-                <a href="{{ route('stock_transfers.index') }}" id="listBtn" class="btn btn-xs btn-outline-secondary rounded-pill px-2 py-0" style="font-size:.7rem;">
+                <a href="{{ route('stock_transfers.index') }}" id="listBtn" class="btn btn-xs btn-outline-secondary rounded-pill px-2 py-0" style="font-size:.7rem;" tabindex="-1">
                     <i class="fa fa-list"></i> List
                     <kbd style="font-size:8px;opacity:.8;margin-left:3px;">Ctrl+L</kbd>
                 </a>
@@ -91,18 +91,18 @@
                             {{-- Entry Date --}}
                             <div class="col-md-2">
                                 <label class="form-label small fw-bold text-muted">Entry Date</label>
-                                <input name="entry_date" value="{{ date('Y-m-d') }}" type="date" class="form-control form-control-sm" required>
+                                <input name="entry_date" value="{{ date('Y-m-d') }}" type="date" class="form-control form-control-sm" tabindex="-1" required>
                             </div>
                             {{-- Entry Time --}}
                             <div class="col-md-2">
                                 <label class="form-label small fw-bold text-muted">Entry Time</label>
-                                <input name="entry_time" value="{{ date('H:i') }}" type="time" class="form-control form-control-sm" required>
+                                <input name="entry_time" value="{{ date('H:i') }}" type="time" class="form-control form-control-sm" tabindex="-1" required>
                             </div>
 
                             {{-- From Warehouse --}}
                             <div class="col-md-2">
                                 <label class="form-label small fw-bold">From Location <span class="text-danger">*</span></label>
-                                <select name="from_warehouse_id" id="from_warehouse_id" class="form-select select2" required>
+                                <select name="from_warehouse_id" id="from_warehouse_id" class="form-select select2" tabindex="1" required>
                                     <option value="" disabled selected>Select Location</option>
                                     <option value="shop">Shop</option>
                                     @foreach ($warehouses as $warehouse)
@@ -114,7 +114,7 @@
                             {{-- To Warehouse --}}
                             <div class="col-md-3">
                                 <label class="form-label small fw-bold">To Location <span class="text-danger">*</span></label>
-                                <select name="to_warehouse_id" id="to_warehouse_id" class="form-select select2" required>
+                                <select name="to_warehouse_id" id="to_warehouse_id" class="form-select select2" tabindex="2" required>
                                     <option value="" disabled selected>Select Location</option>
                                     <option value="shop">Shop</option>
                                     @foreach ($warehouses as $warehouse)
@@ -126,7 +126,7 @@
                             {{-- Remarks --}}
                             <div class="col-md-3">
                                 <label class="form-label small fw-bold">Remarks</label>
-                                <input type="text" name="remarks" class="form-control input-sm" placeholder="Optional note...">
+                                <input type="text" name="remarks" id="remarks" class="form-control input-sm" placeholder="Optional note..." tabindex="3">
                             </div>
                         </div>
                     </div>
@@ -223,6 +223,85 @@ $(document).ready(function() {
 
     $('.select2').select2({ width: '100%' });
 
+    // Sync tabindex to select2 containers
+    $('.select2').each(function() {
+        var ti = $(this).attr('tabindex');
+        if (ti) {
+            $(this).data('select2')?.$container.find('.select2-selection').attr('tabindex', ti);
+        }
+    });
+
+    // 1. Initial focus on From Location
+    setTimeout(function() {
+        var $fromSelect2 = $('#from_warehouse_id').data('select2');
+        if ($fromSelect2 && $fromSelect2.$container) {
+            $fromSelect2.$container.find('.select2-selection').focus();
+        } else {
+            $('#from_warehouse_id').focus();
+        }
+    }, 150);
+
+    // Tab Flow: 1 From Location -> 2 To Location
+    $('#from_warehouse_id').on('select2:select', function() {
+        setTimeout(function() {
+            var $to = $('#to_warehouse_id').data('select2');
+            if ($to && $to.$container) {
+                $to.$container.find('.select2-selection').focus();
+            } else {
+                $('#to_warehouse_id').focus();
+            }
+            $('#to_warehouse_id').select2('open');
+        }, 60);
+    });
+
+    // Tab Flow: 2 To Location -> 3 Remarks
+    $('#to_warehouse_id').on('select2:select', function() {
+        setTimeout(function() {
+            $('#remarks').focus().select();
+        }, 60);
+    });
+
+    // Handle Tab in Select2 search box
+    $(document).on('keydown', '.select2-search__field', function(e) {
+        if (e.key === 'Tab' && !e.shiftKey) {
+            var $openSelect = $('select.select2').filter(function() {
+                return $(this).data('select2') && $(this).data('select2').isOpen();
+            });
+            if ($openSelect.attr('id') === 'from_warehouse_id') {
+                e.preventDefault();
+                $('#from_warehouse_id').select2('close');
+                setTimeout(function() {
+                    var $to = $('#to_warehouse_id').data('select2');
+                    if ($to && $to.$container) {
+                        $to.$container.find('.select2-selection').focus();
+                    } else {
+                        $('#to_warehouse_id').focus();
+                    }
+                    $('#to_warehouse_id').select2('open');
+                }, 50);
+            } else if ($openSelect.attr('id') === 'to_warehouse_id') {
+                e.preventDefault();
+                $('#to_warehouse_id').select2('close');
+                setTimeout(function() {
+                    $('#remarks').focus().select();
+                }, 50);
+            }
+        }
+    });
+
+    // Tab Flow: 3 Remarks (Enter or Tab) -> 4 Item ID
+    $('#remarks').on('keydown', function(e) {
+        if (e.key === 'Enter' || (e.key === 'Tab' && !e.shiftKey)) {
+            e.preventDefault();
+            var $firstItemId = $('#transferItems tr:first .item-id-input');
+            if ($firstItemId.length === 0) {
+                var $row = appendBlankRow(false);
+                $firstItemId = $row.find('.item-id-input');
+            }
+            $firstItemId.focus().select();
+        }
+    });
+
     var _savedTransferId = null;
     var _saveInFlight = false;
     var _postInFlight = false;
@@ -300,22 +379,22 @@ $(document).ready(function() {
         });
     }
 
-    function appendBlankRow(focus = true) {
+    function appendBlankRow(focus = false) {
         var html = `<tr>
-            <td><input type="text" class="form-control input-sm item-id-input" placeholder="ID"></td>
+            <td><input type="text" class="form-control input-sm item-id-input" placeholder="ID" tabindex="4"></td>
             <td><select name="product_id[]" class="form-control product-select" style="width:100%;"><option value="">Select Product</option></select></td>
-            <td><input type="number" name="available_stock[]" class="form-control input-sm stock" readonly></td>
+            <td><input type="number" name="available_stock[]" class="form-control input-sm stock" readonly tabindex="-1"></td>
             <td><input type="number" name="quantity[]" class="form-control input-sm quantity" value="1" step="any" min="0.01"></td>
-            <td class="text-center"><button type="button" class="btn btn-sm btn-danger remove-row">X</button></td>
+            <td class="text-center"><button type="button" class="btn btn-sm btn-danger remove-row" tabindex="-1">X</button></td>
         </tr>`;
         var $row = $(html);
         $('#transferItems').append($row);
         initProductSelect($row);
-        if (focus) { setTimeout(function() { $row.find('.item-id-input').focus(); }, 60); }
+        if (focus) { setTimeout(function() { $row.find('.item-id-input').focus().select(); }, 60); }
         return $row;
     }
 
-    appendBlankRow();
+    appendBlankRow(false);
 
     $(document).on('keydown', '.item-id-input', function(e) {
         if ((e.key === 'Enter' || e.key === 'Tab') && !e.shiftKey) {
@@ -353,8 +432,22 @@ $(document).ready(function() {
 
     $(document).on('input', '.quantity', recalcTotals);
 
+    $(document).on('keydown', '.quantity', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            var $row = $(this).closest('tr');
+            var $nextRow = $row.next('tr');
+            if ($nextRow.length) {
+                $nextRow.find('.item-id-input').focus().select();
+            } else {
+                var $newRow = appendBlankRow(false);
+                $newRow.find('.item-id-input').focus().select();
+            }
+        }
+    });
+
     $('#from_warehouse_id').on('change', function() {
-        $('#transferItems').empty(); appendBlankRow(); recalcTotals();
+        $('#transferItems').empty(); appendBlankRow(false); recalcTotals();
     });
 
     function ajaxSaveDraft(callback) {

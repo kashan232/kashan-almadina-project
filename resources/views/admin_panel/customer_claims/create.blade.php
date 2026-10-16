@@ -160,17 +160,21 @@
                                 <input type="number" step="any" id="retail_price_display" class="form-control input-sm text-end fw-bold text-dark bg-light" placeholder="0.00" readonly disabled>
                                 <input type="hidden" name="retail_price" id="retail_price_hidden" value="0.00">
                             </div>
-                            <div class="col-md-2" style="max-width: 130px;">
+                            <div class="col-md-2" style="max-width: 120px;">
                                 <label class="form-label font-weight-bold">Sales Price</label>
                                 <input type="number" step="any" name="sales_price" id="sales_price" class="form-control input-sm text-end fw-bold text-danger" placeholder="0.00" readonly>
                             </div>
-                            <div class="col-md-2" style="max-width: 140px;">
+                            <div class="col-md-2" style="max-width: 130px;">
+                                <label class="form-label font-weight-bold text-success">Claim Amount</label>
+                                <input type="number" step="any" name="claim_income" id="claim_income" class="form-control input-sm text-end fw-bold text-success" placeholder="0.00" value="{{ old('claim_income', '0.00') }}">
+                            </div>
+                            <div class="col-md-2" style="max-width: 130px;">
                                 <label class="form-label">Bill Date</label>
                                 <input type="date" name="bill_date" class="form-control input-sm">
                             </div>
 
-                            <!-- Warehouses -->
-                            <div class="col-md-4" id="original_warehouse_div">
+                            <!-- Warehouses & Accounts -->
+                            <div class="col-md-3" id="original_warehouse_div">
                                 <label class="form-label border-danger border-bottom"><span class="text-danger"><i class="fa fa-minus-circle"></i></span> Deliver From</label>
                                 <select name="original_warehouse_id" class="form-select input-sm">
                                     @if(auth()->user()->canAccessShop())
@@ -181,8 +185,8 @@
                                     @endforeach
                                 </select>
                             </div>
-                            <div class="col-md-5">
-                                <label class="form-label border-primary border-bottom font-weight-bold"><span class="text-success"><i class="fa fa-plus-circle"></i></span> Claim WH (To)</label>
+                            <div class="col-md-3">
+                                <label class="form-label border-primary border-bottom font-weight-bold"><span class="text-primary"><i class="fa fa-plus-circle"></i></span> Claim WH (To)</label>
                                 @if(isset($isAdmin) && $isAdmin)
                                     <select name="claim_warehouse_id" class="form-select input-sm">
                                         @foreach($allClaimWarehouses as $wh)
@@ -197,6 +201,26 @@
                                         <option value="" disabled selected>No Claim WH Assigned</option>
                                     </select>
                                 @endif
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label border-success border-bottom font-weight-bold"><span class="text-success"><i class="fa fa-money"></i></span> Cash Account (Debit)</label>
+                                <select name="cash_account_id" id="cash_account_id" class="form-select input-sm">
+                                    @foreach($cashAccounts as $ca)
+                                        <option value="{{ $ca->id }}" {{ (old('cash_account_id', $defaultCashAccountId) == $ca->id) ? 'selected' : '' }}>
+                                            {{ $ca->title }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label border-info border-bottom font-weight-bold"><span class="text-info"><i class="fa fa-line-chart"></i></span> Claim Income A/c (Credit)</label>
+                                <select name="income_account_id" id="income_account_id" class="form-select input-sm">
+                                    @foreach($incomeAccounts as $ia)
+                                        <option value="{{ $ia->id }}" {{ (old('income_account_id', $defaultIncomeAccountId) == $ia->id) ? 'selected' : '' }}>
+                                            {{ $ia->title }}
+                                        </option>
+                                    @endforeach
+                                </select>
                             </div>
 
                             <!-- Fault Found & Remarks -->

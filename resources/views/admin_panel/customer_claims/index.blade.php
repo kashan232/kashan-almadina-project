@@ -169,13 +169,14 @@
                                     <label class="column-picker-item"><input type="checkbox" data-column="8" checked> Claim WH</label>
                                     <label class="column-picker-item"><input type="checkbox" data-column="9" checked> Claim Type</label>
                                     <label class="column-picker-item"><input type="checkbox" data-column="10" checked> Sales Price</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="11" checked> Replacement Item</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="12" checked> Replacement Price</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="13" checked> Fault</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="14" checked> Replacement WH</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="15" checked> Remarks</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="16" checked> Created By</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="17" checked> Status</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="11" checked> Claim Amount</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="12" checked> Replacement Item</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="13" checked> Replacement Price</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="14" checked> Fault</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="15" checked> Replacement WH</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="16" checked> Remarks</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="17" checked> Created By</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="18" checked> Status</label>
                                 </div>
                             </div>
                         </div>
@@ -196,6 +197,7 @@
                                             <th>Claim WH</th>
                                             <th>Claim Type</th>
                                             <th class="text-end">Sales Price</th>
+                                            <th class="text-end">Claim Amount</th>
                                             <th>Replacement Item</th>
                                             <th class="text-end">Replacement Price</th>
                                             <th>Fault</th>
@@ -224,6 +226,7 @@
                                             <td class="small text-primary fw-semibold">{{ $claim->warehouse->warehouse_name ?? '-' }}</td>
                                             <td class="small text-muted">{{ $claim->claim_type }}</td>
                                             <td class="text-end fw-bold">{{ number_format((float)($claim->sales_price > 0 ? $claim->sales_price : ($claim->replacement_sales_price ?? 0)), 2) }}</td>
+                                            <td class="text-end fw-bold text-success">{{ number_format((float)($claim->claim_income ?? 0), 2) }}</td>
                                             <td class="small text-dark">
                                                 @if($claim->replacementProduct)
                                                     <span class="fw-bold text-primary">{{ $claim->replacementProduct->name }}</span>
@@ -308,7 +311,7 @@
             }
         });
 
-        const storageKey = 'claims_table_cols_v2';
+        const storageKey = 'claims_table_cols_v3';
         
         var dt = $('#claimsTable').DataTable({
             destroy: true,

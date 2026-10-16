@@ -516,8 +516,22 @@ class VoucherController extends Controller
 
         $narrations = \App\Models\Narration::where('expense_head', 'Receipts Voucher')
             ->pluck('narration', 'id');
-        $AccountHeads = AccountHead::get();
-        $allAccounts = Account::where('status', 1)->get(['id', 'head_id', 'title', 'account_code']);
+        $AccountHeads = AccountHead::where(function($q) {
+            $q->whereRaw("UPPER(name) LIKE '%CASH%'")
+              ->orWhereRaw("UPPER(name) LIKE '%BANK%'")
+              ->orWhereRaw("UPPER(name) LIKE '%SCRAP%'")
+              ->orWhere('id', 100000);
+        })->get();
+
+        $headIds = $AccountHeads->pluck('id')->toArray();
+        $allAccounts = Account::where('status', 1)->whereIn('head_id', $headIds)->get(['id', 'head_id', 'title', 'account_code']);
+
+        $discountAccountHeads = AccountHead::where(function($q) {
+            $q->whereRaw("UPPER(name) LIKE '%EXPENSE%'")
+              ->orWhereRaw("UPPER(name) LIKE '%INCOME%'")
+              ->orWhereRaw("UPPER(name) LIKE '%SCRAP%'")
+              ->orWhere('id', 100000);
+        })->get();
 
         $previousBalance = 0;
         if ($receipt->party_id && $receipt->type) {
@@ -525,7 +539,7 @@ class VoucherController extends Controller
             $previousBalance = $ledgerService->latestClosing($receipt->type, (int) $receipt->party_id);
         }
 
-        return view('admin_panel.vochers.reciepts_vouchers', compact('narrations', 'AccountHeads', 'allAccounts', 'receipt', 'previousBalance'));
+        return view('admin_panel.vochers.reciepts_vouchers', compact('narrations', 'AccountHeads', 'allAccounts', 'receipt', 'previousBalance', 'discountAccountHeads'));
     }
 
     public function showReceipt($id)
@@ -533,8 +547,23 @@ class VoucherController extends Controller
         $receipt = ReceiptsVoucher::findOrFail($id);
         $narrations = \App\Models\Narration::where('expense_head', 'Receipts Voucher')
             ->pluck('narration', 'id');
-        $AccountHeads = AccountHead::get();
-        $allAccounts = Account::where('status', 1)->get(['id', 'head_id', 'title', 'account_code']);
+        $AccountHeads = AccountHead::where(function($q) {
+            $q->whereRaw("UPPER(name) LIKE '%CASH%'")
+              ->orWhereRaw("UPPER(name) LIKE '%BANK%'")
+              ->orWhereRaw("UPPER(name) LIKE '%SCRAP%'")
+              ->orWhere('id', 100000);
+        })->get();
+
+        $headIds = $AccountHeads->pluck('id')->toArray();
+        $allAccounts = Account::where('status', 1)->whereIn('head_id', $headIds)->get(['id', 'head_id', 'title', 'account_code']);
+
+        $discountAccountHeads = AccountHead::where(function($q) {
+            $q->whereRaw("UPPER(name) LIKE '%EXPENSE%'")
+              ->orWhereRaw("UPPER(name) LIKE '%INCOME%'")
+              ->orWhereRaw("UPPER(name) LIKE '%SCRAP%'")
+              ->orWhere('id', 100000);
+        })->get();
+
         $viewMode = true;
 
         $previousBalance = 0;
@@ -543,7 +572,7 @@ class VoucherController extends Controller
             $previousBalance = $ledgerService->latestClosing($receipt->type, (int) $receipt->party_id);
         }
 
-        return view('admin_panel.vochers.reciepts_vouchers', compact('narrations', 'AccountHeads', 'allAccounts', 'receipt', 'viewMode', 'previousBalance'));
+        return view('admin_panel.vochers.reciepts_vouchers', compact('narrations', 'AccountHeads', 'allAccounts', 'receipt', 'viewMode', 'previousBalance', 'discountAccountHeads'));
     }
 
     public function ajax_save_receipt(Request $request)

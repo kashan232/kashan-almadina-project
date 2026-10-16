@@ -150,7 +150,7 @@
                                 <div class="column-picker-menu shadow" id="columnPickerMenu">
                                     <div class="p-2 border-bottom fw-bold small text-muted">Show/Hide Columns</div>
                                     <label class="column-picker-item"><input type="checkbox" data-column="1" checked> Type</label>
-                                    <label class="column-picker-item"><input type="checkbox" data-column="2" checked> Inv#</label>
+                                    <label class="column-picker-item"><input type="checkbox" data-column="2" checked> Inv Number</label>
                                     <label class="column-picker-item"><input type="checkbox" data-column="3" checked> Date</label>
                                     <label class="column-picker-item"><input type="checkbox" data-column="4" checked> From</label>
                                     <label class="column-picker-item"><input type="checkbox" data-column="5" checked> To</label>
@@ -166,7 +166,7 @@
                                     <thead>
                                         <tr>
                                             <th>Type</th>
-                                            <th>Inv#</th>
+                                            <th>Inv Number</th>
                                             <th>Date</th>
                                             <th>From</th>
                                             <th>To</th>
@@ -180,8 +180,8 @@
                                         @foreach($transfers as $t)
                                         <tr>
                                             <td class="text-muted small">GT</td>
-                                            <td class="fw-bold text-primary">#{{ $t->id }}</td>
-                                            <td>{{ \Carbon\Carbon::parse($t->created_at)->format('d-M-Y') }}</td>
+                                            <td class="fw-bold text-primary" data-order="{{ $t->id }}" data-sort="{{ $t->id }}">#{{ $t->id }}</td>
+                                            <td>{{ \Carbon\Carbon::parse($t->entry_date ?? $t->created_at)->format('d-M-Y') }}</td>
                                             <td>
                                                 @if($t->from_shop)
                                                     <span class="badge bg-light text-primary border px-2 py-1" style="font-size:10px;">Shop</span>
@@ -271,7 +271,7 @@
             }
         });
 
-        const storageKey = 'stock_transfer_cols_v1';
+        const storageKey = 'stock_transfer_cols_v2';
         
         var dt = $('#transferTable').DataTable({
             destroy: true,
@@ -285,7 +285,10 @@
                 { extend: 'csv', className: 'btn btn-sm btn-outline-info', text: '<i class="fa fa-file-text-o me-1"></i> CSV' },
                 { extend: 'copy', className: 'btn btn-sm btn-outline-secondary', text: '<i class="fa fa-copy me-1"></i> Copy' }
             ],
-            order: [[1, 'desc']], // Sort by Voucher # (Inv#)
+            order: [[1, 'desc']], // Sort by Inv Number (latest ID first)
+            columnDefs: [
+                { targets: 1, type: 'num' } // Enforce numeric sorting
+            ],
             language: {
                 search: "_INPUT_",
                 searchPlaceholder: "Search transfers..."

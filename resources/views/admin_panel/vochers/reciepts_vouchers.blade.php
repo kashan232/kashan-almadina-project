@@ -144,9 +144,20 @@
                                         <td>
                                              <select name="row_account_head[]" class="form-select form-select-sm rowAccountHead select2">
                                                  <option value="">Select Head...</option>
+                                                 @php $hasHeadSelected = false; @endphp
                                                  @foreach($AccountHeads as $head)
-                                                 <option value="{{ $head->id }}" {{ ($rowHeads[$index] ?? '') == $head->id ? 'selected' : '' }}>{{ $head->name }}</option>
+                                                 @php
+                                                     $isHeadSel = (($rowHeads[$index] ?? '') == $head->id);
+                                                     if ($isHeadSel) $hasHeadSelected = true;
+                                                 @endphp
+                                                 <option value="{{ $head->id }}" {{ $isHeadSel ? 'selected' : '' }}>{{ $head->name }}</option>
                                                  @endforeach
+                                                 @if(!$hasHeadSelected && !empty($rowHeads[$index]))
+                                                     @php $existingHead = \App\Models\AccountHead::find($rowHeads[$index]); @endphp
+                                                     @if($existingHead)
+                                                     <option value="{{ $existingHead->id }}" selected>{{ $existingHead->name }}</option>
+                                                     @endif
+                                                 @endif
                                              </select>
                                         </td>
                                         @php
@@ -209,7 +220,7 @@
                                 <label class="form-label mb-1 fw-bold text-dark"><i class="fa fa-percent text-primary me-1"></i> Disc Head</label>
                                 <select name="discount_head" id="discount_head" class="form-select form-select-sm select2">
                                     <option value="">Select Discount Head...</option>
-                                     @foreach($AccountHeads as $head)
+                                     @foreach(($discountAccountHeads ?? $AccountHeads) as $head)
                                          @if(strtoupper($head->name) === 'EXPENSE' || strtoupper($head->name) === 'INCOME' || strtoupper($head->name) === 'SCRAP' || $head->id == 100000)
                                          <option value="{{ $head->id }}" {{ ($discHeadVal == $head->id || (empty($discHeadVal) && strtoupper($head->name) === 'EXPENSE')) ? 'selected' : '' }}>{{ $head->name }}</option>
                                          @endif

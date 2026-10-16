@@ -33,7 +33,8 @@ class VendorController extends Controller
                 // OR Vendor belongs to user's group
                 if (!empty($userGroupIds)) {
                     foreach ($userGroupIds as $groupId) {
-                        $q->orWhereJsonContains('user_group_ids', (string)$groupId);
+                        $q->orWhereJsonContains('user_group_ids', (string)$groupId)
+                          ->orWhereJsonContains('user_group_ids', (int)$groupId);
                     }
                 }
             });
@@ -45,8 +46,11 @@ class VendorController extends Controller
         }
 
         if ($request->filled('group_id')) {
-            $groupId = (string) $request->group_id;
-            $query->whereJsonContains('user_group_ids', $groupId);
+            $groupId = $request->group_id;
+            $query->where(function($q) use ($groupId) {
+                $q->whereJsonContains('user_group_ids', (string) $groupId)
+                  ->orWhereJsonContains('user_group_ids', (int) $groupId);
+            });
         }
 
         $vendors = $query->withInactive()->withCount('purchases')->latest()->get();

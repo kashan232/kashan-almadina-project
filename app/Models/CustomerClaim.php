@@ -39,6 +39,16 @@ class CustomerClaim extends Model
         return $this->belongsTo(\App\Models\Warehouse::class, 'replacement_from_warehouse_id')->withoutGlobalScopes();
     }
 
+    public function cashAccount()
+    {
+        return $this->belongsTo(\App\Models\Account::class, 'cash_account_id')->withoutGlobalScopes();
+    }
+
+    public function incomeAccount()
+    {
+        return $this->belongsTo(\App\Models\Account::class, 'income_account_id')->withoutGlobalScopes();
+    }
+
     public function vendor()
     {
         return $this->belongsTo(\App\Models\Vendor::class, 'party_id');

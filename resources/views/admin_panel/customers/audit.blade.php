@@ -82,6 +82,51 @@
             </div>
         </div>
 
+        <!-- Formula & Reconciliation Explanation Card -->
+        <div class="card border-0 shadow-sm mb-3 bg-light border-start border-4 border-primary">
+            <div class="card-body p-3">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h6 class="fw-bold text-primary mb-0">
+                        <i class="fa fa-calculator me-2"></i> Audit Calculation Formulas & Balance Reconciliation
+                    </h6>
+                    <button class="btn btn-sm btn-outline-secondary py-0 px-2" type="button" data-bs-toggle="collapse" data-bs-target="#formulaCollapse" aria-expanded="true">
+                        <i class="fa fa-chevron-down"></i> Details
+                    </button>
+                </div>
+                <div class="collapse show" id="formulaCollapse">
+                    <div class="row g-2 mt-1" style="font-size: 11.5px;">
+                        <div class="col-md-6">
+                            <div class="p-2 rounded bg-white border h-100">
+                                <div class="fw-bold text-dark mb-1"><i class="fa fa-plus-circle text-success me-1"></i> 1. Calculated True Balance (Formula):</div>
+                                <div class="font-monospace text-muted mb-1">
+                                    <strong>True Balance</strong> = Opening + <span class="text-dark fw-bold">[Additions (DR)]</span> - <span class="text-danger fw-bold">[Deductions (CR)]</span>
+                                </div>
+                                <ul class="list-unstyled mb-0 ps-2" style="line-height: 1.6;">
+                                    <li><strong class="text-dark">Additions (+) :</strong> Sales + C.Rep + Payment + Income + JV-DR + AV-DR + CIR + Pur Ret</li>
+                                    <li><strong class="text-danger">Deductions (-) :</strong> Purchase + S.Ret + CLM CN + Receipts + Exp/Dis + JV-CR + AV-CR</li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="p-2 rounded bg-white border h-100">
+                                <div class="fw-bold text-dark mb-1"><i class="fa fa-balance-scale text-primary me-1"></i> 2. GL Balance & Difference Formula:</div>
+                                <div class="font-monospace text-muted mb-1">
+                                    <strong>GL Balance</strong> = Opening + Total GL Debits - Total GL Credits
+                                </div>
+                                <div class="font-monospace text-muted mb-1">
+                                    <strong>Difference</strong> = Calculated True Balance - GL Balance
+                                </div>
+                                <div class="mt-2">
+                                    <span class="badge bg-success px-2 py-1"><i class="fa fa-check me-1"></i> Diff = 0.00 : 100% Reconciled (OK)</span>
+                                    <span class="badge bg-danger px-2 py-1 ms-1"><i class="fa fa-exclamation-triangle me-1"></i> Diff ≠ 0 : Mismatch Alert</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         @php
             $fmtAdd = function($v) {
                 $val = (float)$v;

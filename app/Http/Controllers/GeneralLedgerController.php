@@ -2325,6 +2325,109 @@ class GeneralLedgerController extends Controller
                 }
             }
 
+            // Customer Claims (CLM) - Claim Amount impact on Cash (Debit) and Claim Income (Credit)
+            $targetAccount = $this->ledgerQuery(Account::class)->with('head')->find($id);
+            if ($targetAccount) {
+                $headName = strtoupper($targetAccount->head->name ?? '');
+                $isCashHead = ($targetAccount->head_id == 50000 || $headName === 'CASH');
+                $isIncomeHead = ($targetAccount->head_id == 70000 || $headName === 'INCOME');
+
+                if ($isCashHead || $isIncomeHead) {
+                    $claimDateCol = $this->getDateColumn('customer_claims');
+                    $claimQuery = $this->ledgerQuery(\App\Models\CustomerClaim::class)
+                        ->with(['product'])
+                        ->whereIn('status', ['Posted', 'posted'])
+                        ->where('claim_income', '>', 0)
+                        ->whereBetween(DB::raw($claimDateCol), [$start, $end]);
+
+                    if ($isCashHead) {
+                        $claimQuery->where(function($q) use ($id, $targetAccount) {
+                            $q->where('cash_account_id', $id);
+                            // Also match legacy claims where cash_account_id is null
+                            if (stripos($targetAccount->title, 'Counter Cash') !== false || stripos($targetAccount->title, 'CASH KHI') !== false) {
+                                $accGroups = is_array($targetAccount->user_group_ids) 
+                                    ? $targetAccount->user_group_ids 
+                                    : (json_decode($targetAccount->user_group_ids, true) ?? []);
+                                $q->orWhere(function($sub) use ($accGroups) {
+                                    $sub->whereNull('cash_account_id');
+                                    if (!empty($accGroups)) {
+                                        $sub->where(function($gQ) use ($accGroups) {
+                                            foreach ($accGroups as $g) {
+                                                $gQ->orWhereJsonContains('user_group_ids', (string)$g)
+                                                   ->orWhereJsonContains('user_group_ids', (int)$g);
+                                            }
+                                        });
+                                    }
+                                });
+                            }
+                        });
+                        $claims = $claimQuery->get();
+                        foreach ($claims as $claim) {
+                            $productName = $claim->product->name ?? 'Battery';
+                            $claimDate = $claim->entry_date ?: substr((string) $claim->created_at, 0, 10);
+                            $claimInv = preg_replace('/[^0-9]/', '', $claim->claim_no ?? '0');
+                            $desc = 'Claim Income: ' . $productName . ' : ' . ($claim->remarks ? $claim->remarks : '');
+
+                            $transactions[] = [
+                                'created_at' => $claim->created_at,
+                                'id' => 'clm_cash_' . $claim->id,
+                                'date' => $claimDate,
+                                'ref' => 'CLM',
+                                'inv' => $claimInv,
+                                'desc' => $desc,
+                                'price' => (float)$claim->sales_price,
+                                'qty' => 1,
+                                'debit' => (float)$claim->claim_income,
+                                'credit' => 0,
+                                'priority' => 32
+                            ];
+                        }
+                    } elseif ($isIncomeHead) {
+                        $claimQuery->where(function($q) use ($id, $targetAccount) {
+                            $q->where('income_account_id', $id);
+                            // Also match legacy claims where income_account_id is null
+                            if (stripos($targetAccount->title, 'Claim Income') !== false) {
+                                $accGroups = is_array($targetAccount->user_group_ids) 
+                                    ? $targetAccount->user_group_ids 
+                                    : (json_decode($targetAccount->user_group_ids, true) ?? []);
+                                $q->orWhere(function($sub) use ($accGroups) {
+                                    $sub->whereNull('income_account_id');
+                                    if (!empty($accGroups)) {
+                                        $sub->where(function($gQ) use ($accGroups) {
+                                            foreach ($accGroups as $g) {
+                                                $gQ->orWhereJsonContains('user_group_ids', (string)$g)
+                                                   ->orWhereJsonContains('user_group_ids', (int)$g);
+                                            }
+                                        });
+                                    }
+                                });
+                            }
+                        });
+                        $claims = $claimQuery->get();
+                        foreach ($claims as $claim) {
+                            $productName = $claim->product->name ?? 'Battery';
+                            $claimDate = $claim->entry_date ?: substr((string) $claim->created_at, 0, 10);
+                            $claimInv = preg_replace('/[^0-9]/', '', $claim->claim_no ?? '0');
+                            $desc = 'Claim Income: ' . $productName . ' : ' . ($claim->remarks ? $claim->remarks : '');
+
+                            $transactions[] = [
+                                'created_at' => $claim->created_at,
+                                'id' => 'clm_inc_' . $claim->id,
+                                'date' => $claimDate,
+                                'ref' => 'CLM',
+                                'inv' => $claimInv,
+                                'desc' => $desc,
+                                'price' => 0,
+                                'qty' => 1,
+                                'debit' => 0,
+                                'credit' => (float)$claim->claim_income,
+                                'priority' => 32
+                            ];
+                        }
+                    }
+                }
+            }
+
             $this->sortLedgerDetailsByCreatedAt($transactions);
             return $transactions;
         }

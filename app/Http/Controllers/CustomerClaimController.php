@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\DB;
 use App\Models\CustomerClaim;
 use App\Models\WarehouseStock;
 use App\Models\StockHold;
+use App\Models\Account;
 use App\Services\PartyLedgerService;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Validator;
@@ -76,9 +77,58 @@ class CustomerClaimController extends Controller
             }
         }
 
+        $cashAccounts = Account::withoutGlobalScopes()
+            ->where(function($q) {
+                $q->where('head_id', 50000)->orWhereHas('head', fn($h) => $h->where('name', 'CASH'));
+            })
+            ->when(!$isAdmin && !empty($userGroups), function($q) use ($userGroups) {
+                $q->where(function($sub) use ($userGroups) {
+                    foreach ($userGroups as $gid) {
+                        $sub->orWhereJsonContains('user_group_ids', (string)$gid)
+                            ->orWhereJsonContains('user_group_ids', (int)$gid);
+                    }
+                });
+            })
+            ->orderByRaw("CASE WHEN title LIKE '%Counter Cash%' THEN 1 WHEN title LIKE '%CASH KHI%' THEN 2 ELSE 3 END")
+            ->get();
+
+        $incomeAccounts = Account::withoutGlobalScopes()
+            ->where(function($q) {
+                $q->where('head_id', 70000)->orWhereHas('head', fn($h) => $h->where('name', 'INCOME'));
+            })
+            ->where('title', 'like', '%Claim Income%')
+            ->when(!$isAdmin && !empty($userGroups), function($q) use ($userGroups) {
+                $q->where(function($sub) use ($userGroups) {
+                    foreach ($userGroups as $gid) {
+                        $sub->orWhereJsonContains('user_group_ids', (string)$gid)
+                            ->orWhereJsonContains('user_group_ids', (int)$gid);
+                    }
+                });
+            })
+            ->orderBy('title')
+            ->get();
+
+        if ($cashAccounts->isEmpty()) {
+            $cashAccounts = Account::withoutGlobalScopes()
+                ->where(function($q) {
+                    $q->where('head_id', 50000)->orWhereHas('head', fn($h) => $h->where('name', 'CASH'));
+                })
+                ->orderBy('title')
+                ->get();
+        }
+        if ($incomeAccounts->isEmpty()) {
+            $incomeAccounts = Account::withoutGlobalScopes()
+                ->where('title', 'like', '%Claim Income%')
+                ->orderBy('title')
+                ->get();
+        }
+
+        $defaultCashAccountId = $this->resolveDefaultCashAccountId(null, $userGroups);
+        $defaultIncomeAccountId = $this->resolveDefaultIncomeAccountId(null, $userGroups);
+
         $claimNo = CustomerClaim::generateClaimNo();
         
-        return view('admin_panel.customer_claims.create', compact('products', 'warehouses', 'claimNo', 'assignedClaimWarehouse', 'isAdmin', 'allClaimWarehouses'));
+        return view('admin_panel.customer_claims.create', compact('products', 'warehouses', 'claimNo', 'assignedClaimWarehouse', 'isAdmin', 'allClaimWarehouses', 'cashAccounts', 'incomeAccounts', 'defaultCashAccountId', 'defaultIncomeAccountId'));
     }
 
     public function edit($id)
@@ -113,8 +163,57 @@ class CustomerClaimController extends Controller
                     })->first();
             }
         }
+
+        $cashAccounts = Account::withoutGlobalScopes()
+            ->where(function($q) {
+                $q->where('head_id', 50000)->orWhereHas('head', fn($h) => $h->where('name', 'CASH'));
+            })
+            ->when(!$isAdmin && !empty($userGroups), function($q) use ($userGroups) {
+                $q->where(function($sub) use ($userGroups) {
+                    foreach ($userGroups as $gid) {
+                        $sub->orWhereJsonContains('user_group_ids', (string)$gid)
+                            ->orWhereJsonContains('user_group_ids', (int)$gid);
+                    }
+                });
+            })
+            ->orderByRaw("CASE WHEN title LIKE '%Counter Cash%' THEN 1 WHEN title LIKE '%CASH KHI%' THEN 2 ELSE 3 END")
+            ->get();
+
+        $incomeAccounts = Account::withoutGlobalScopes()
+            ->where(function($q) {
+                $q->where('head_id', 70000)->orWhereHas('head', fn($h) => $h->where('name', 'INCOME'));
+            })
+            ->where('title', 'like', '%Claim Income%')
+            ->when(!$isAdmin && !empty($userGroups), function($q) use ($userGroups) {
+                $q->where(function($sub) use ($userGroups) {
+                    foreach ($userGroups as $gid) {
+                        $sub->orWhereJsonContains('user_group_ids', (string)$gid)
+                            ->orWhereJsonContains('user_group_ids', (int)$gid);
+                    }
+                });
+            })
+            ->orderBy('title')
+            ->get();
+
+        if ($cashAccounts->isEmpty()) {
+            $cashAccounts = Account::withoutGlobalScopes()
+                ->where(function($q) {
+                    $q->where('head_id', 50000)->orWhereHas('head', fn($h) => $h->where('name', 'CASH'));
+                })
+                ->orderBy('title')
+                ->get();
+        }
+        if ($incomeAccounts->isEmpty()) {
+            $incomeAccounts = Account::withoutGlobalScopes()
+                ->where('title', 'like', '%Claim Income%')
+                ->orderBy('title')
+                ->get();
+        }
+
+        $defaultCashAccountId = $claim->cash_account_id ?: $this->resolveDefaultCashAccountId($claim, $userGroups);
+        $defaultIncomeAccountId = $claim->income_account_id ?: $this->resolveDefaultIncomeAccountId($claim, $userGroups);
         
-        return view('admin_panel.customer_claims.edit', compact('claim', 'products', 'warehouses', 'assignedClaimWarehouse', 'isAdmin', 'allClaimWarehouses'));
+        return view('admin_panel.customer_claims.edit', compact('claim', 'products', 'warehouses', 'assignedClaimWarehouse', 'isAdmin', 'allClaimWarehouses', 'cashAccounts', 'incomeAccounts', 'defaultCashAccountId', 'defaultIncomeAccountId'));
     }
 
     public function ajaxSave(Request $request)
@@ -159,7 +258,9 @@ class CustomerClaimController extends Controller
             $claim->bill_date = $request->bill_date;
             $claim->original_warehouse_id = $request->original_warehouse_id;
             $claim->claim_warehouse_id = $request->claim_warehouse_id;
-            $claim->claim_income = $request->claim_income ?? 0;
+            $claim->claim_income = $request->claim_income ?? $request->claim_amount ?? 0;
+            $claim->cash_account_id = $request->cash_account_id ?: $this->resolveDefaultCashAccountId($claim);
+            $claim->income_account_id = $request->income_account_id ?: $this->resolveDefaultIncomeAccountId($claim);
             $claim->fault_found = $request->fault_found;
             $claim->remarks = $request->remarks;
             
@@ -273,5 +374,68 @@ class CustomerClaimController extends Controller
     private function adjustStock($warehouseId, $productId, $qty)
     {
         app(\App\Services\StockService::class)->adjust((int) $productId, $warehouseId, (float) $qty);
+    }
+
+    public function resolveDefaultCashAccountId($claim = null, $userGroups = null)
+    {
+        if ($claim && $claim->cash_account_id) {
+            return $claim->cash_account_id;
+        }
+
+        $groups = [];
+        if ($claim && !empty($claim->user_group_ids)) {
+            $groups = is_array($claim->user_group_ids) ? $claim->user_group_ids : (json_decode($claim->user_group_ids, true) ?? []);
+        } elseif (!empty($userGroups)) {
+            $groups = $userGroups;
+        } elseif (auth()->check()) {
+            $groups = auth()->user()->userGroups->pluck('id')->toArray();
+        }
+
+        $account = Account::withoutGlobalScopes()
+            ->where(function($q) {
+                $q->where('head_id', 50000)->orWhereHas('head', fn($h) => $h->where('name', 'CASH'));
+            })
+            ->where(function($q) use ($groups) {
+                if (!empty($groups)) {
+                    foreach ($groups as $gid) {
+                        $q->orWhereJsonContains('user_group_ids', (string)$gid)
+                          ->orWhereJsonContains('user_group_ids', (int)$gid);
+                    }
+                }
+            })
+            ->orderByRaw("CASE WHEN title LIKE '%Counter Cash%' THEN 1 WHEN title LIKE '%CASH KHI%' THEN 2 ELSE 3 END")
+            ->first();
+
+        return $account ? $account->id : 50005;
+    }
+
+    public function resolveDefaultIncomeAccountId($claim = null, $userGroups = null)
+    {
+        if ($claim && $claim->income_account_id) {
+            return $claim->income_account_id;
+        }
+
+        $groups = [];
+        if ($claim && !empty($claim->user_group_ids)) {
+            $groups = is_array($claim->user_group_ids) ? $claim->user_group_ids : (json_decode($claim->user_group_ids, true) ?? []);
+        } elseif (!empty($userGroups)) {
+            $groups = $userGroups;
+        } elseif (auth()->check()) {
+            $groups = auth()->user()->userGroups->pluck('id')->toArray();
+        }
+
+        $account = Account::withoutGlobalScopes()
+            ->where('title', 'like', '%Claim Income%')
+            ->where(function($q) use ($groups) {
+                if (!empty($groups)) {
+                    foreach ($groups as $gid) {
+                        $q->orWhereJsonContains('user_group_ids', (string)$gid)
+                          ->orWhereJsonContains('user_group_ids', (int)$gid);
+                    }
+                }
+            })
+            ->first();
+
+        return $account ? $account->id : 70007;
     }
 }

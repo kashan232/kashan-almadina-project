@@ -80,7 +80,7 @@
                                                 <input type="checkbox" id="selectAllTransfers" class="form-check-input" title="Select All">
                                             </th>
                                             <th>Type</th>
-                                            <th>Inv#</th>
+                                            <th>Inv Number</th>
                                             <th>Date</th>
                                             <th>From</th>
                                             <th>To</th>
@@ -97,8 +97,8 @@
                                                 <input type="checkbox" name="transfer_ids[]" value="{{ $t->id }}" class="form-check-input transfer-checkbox">
                                             </td>
                                             <td class="text-muted small">GT</td>
-                                            <td class="fw-bold text-primary">#{{ $t->id }}</td>
-                                            <td>{{ \Carbon\Carbon::parse($t->created_at)->format('d-M-Y') }}</td>
+                                            <td class="fw-bold text-primary" data-order="{{ $t->id }}" data-sort="{{ $t->id }}">#{{ $t->id }}</td>
+                                            <td>{{ \Carbon\Carbon::parse($t->entry_date ?? $t->created_at)->format('d-M-Y') }}</td>
                                             <td>
                                                 @if($t->from_shop)
                                                     <span class="badge bg-light text-primary border px-2 py-1" style="font-size:10px;">Shop</span>
@@ -247,7 +247,8 @@
             pageLength: 25,
             order: [[2, 'desc']],
             columnDefs: [
-                { orderable: false, targets: [0, 9] }
+                { orderable: false, targets: [0, 9] },
+                { targets: 2, type: 'num' }
             ],
             language: {
                 search: "_INPUT_",

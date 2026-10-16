@@ -60,8 +60,11 @@ class CustomerController extends Controller
         }
 
         if ($request->filled('group_id')) {
-            $groupId = (string) $request->group_id;
-            $query->whereJsonContains('user_group_ids', $groupId);
+            $groupId = $request->group_id;
+            $query->where(function($q) use ($groupId) {
+                $q->whereJsonContains('user_group_ids', (string) $groupId)
+                  ->orWhereJsonContains('user_group_ids', (int) $groupId);
+            });
         }
 
         if ($request->filled('customer_name')) {
@@ -118,8 +121,11 @@ class CustomerController extends Controller
         }
 
         if ($request->filled('group_id')) {
-            $groupId = (string) $request->group_id;
-            $query->whereJsonContains('user_group_ids', $groupId);
+            $groupId = $request->group_id;
+            $query->where(function($q) use ($groupId) {
+                $q->whereJsonContains('user_group_ids', (string) $groupId)
+                  ->orWhereJsonContains('user_group_ids', (int) $groupId);
+            });
         }
 
         if ($request->filled('customer_name')) {
@@ -740,7 +746,11 @@ class CustomerController extends Controller
         }
 
         if ($request->filled('group_id')) {
-            $query->whereJsonContains('user_group_ids', (string) $request->group_id);
+            $groupId = $request->group_id;
+            $query->where(function($q) use ($groupId) {
+                $q->whereJsonContains('user_group_ids', (string) $groupId)
+                  ->orWhereJsonContains('user_group_ids', (int) $groupId);
+            });
         }
 
         if ($request->filled('search')) {

@@ -15,13 +15,23 @@ class StockTransferController extends Controller
 {
     public function index(Request $request)
     {
-        $query = StockTransfer::with(['fromWarehouse', 'toWarehouse', 'items.product', 'creator', 'confirmer'])->latest();
+        $query = StockTransfer::with(['fromWarehouse', 'toWarehouse', 'items.product', 'creator', 'confirmer'])->orderBy('id', 'desc');
 
         if ($request->filled('start_date')) {
-            $query->whereDate('created_at', '>=', $request->start_date);
+            $query->where(function($q) use ($request) {
+                $q->whereDate('entry_date', '>=', $request->start_date)
+                  ->orWhere(function($sub) use ($request) {
+                      $sub->whereNull('entry_date')->whereDate('created_at', '>=', $request->start_date);
+                  });
+            });
         }
         if ($request->filled('end_date')) {
-            $query->whereDate('created_at', '<=', $request->end_date);
+            $query->where(function($q) use ($request) {
+                $q->whereDate('entry_date', '<=', $request->end_date)
+                  ->orWhere(function($sub) use ($request) {
+                      $sub->whereNull('entry_date')->whereDate('created_at', '<=', $request->end_date);
+                  });
+            });
         }
         if ($request->filled('status')) {
             $query->where('status', $request->status);
@@ -247,7 +257,7 @@ class StockTransferController extends Controller
 
         $query = StockTransfer::with(['items.product', 'fromWarehouse', 'toWarehouse', 'creator'])->where('status', 'Pending Approval');
 
-        $transfers = $query->orderBy('created_at', 'desc')->get();
+        $transfers = $query->orderBy('id', 'desc')->get();
         return view('admin_panel.warehouses.stock_transfers.pending', compact('transfers'));
     }
 
