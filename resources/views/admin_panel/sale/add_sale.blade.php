@@ -17,10 +17,24 @@
   $eTel = $editData ? $editData->tel : '';
   $ePrevBal = $editData ? $editData->previous_balance : '0.00';
   $eRemarks = $editData ? $editData->remarks : '';
-  $eOrderDiscMode = ($editData && !empty($editData->order_discount_mode)) 
-      ? $editData->order_discount_mode 
-      : (($editData && $editData->discount_percent > 0 && ($editData->discount_amount == 0 || $editData->discount_percent == floor($editData->discount_percent))) ? 'percent' : (($editData && $editData->discount_amount > 0) ? 'amount' : 'percent'));
-  $eOrderDiscValue = $editData ? (float)($eOrderDiscMode === 'amount' ? $editData->discount_amount : $editData->discount_percent) : 0;
+  if ($editData) {
+      if ((float)$editData->discount_amount > 0 && (float)$editData->discount_percent <= 0) {
+          $eOrderDiscMode = 'amount';
+          $eOrderDiscValue = (float)$editData->discount_amount;
+      } elseif ((float)$editData->discount_percent > 0 && (float)$editData->discount_amount <= 0) {
+          $eOrderDiscMode = 'percent';
+          $eOrderDiscValue = (float)$editData->discount_percent;
+      } elseif (!empty($editData->order_discount_mode)) {
+          $eOrderDiscMode = $editData->order_discount_mode;
+          $eOrderDiscValue = (float)($eOrderDiscMode === 'amount' ? $editData->discount_amount : $editData->discount_percent);
+      } else {
+          $eOrderDiscMode = ((float)$editData->discount_amount > 0) ? 'amount' : 'percent';
+          $eOrderDiscValue = (float)($eOrderDiscMode === 'amount' ? $editData->discount_amount : $editData->discount_percent);
+      }
+  } else {
+      $eOrderDiscMode = 'percent';
+      $eOrderDiscValue = 0;
+  }
   
   // Try to find the exact receipt variables
   $receiptAccs = $editData ? json_decode($editData->receipt_accounts ?? '[]', true) : [];
@@ -630,14 +644,14 @@
           {{-- Address --}}
           <div class="mb-2">
             <label class="form-label text-muted small mb-0" style="font-size: 0.7rem;">Address</label>
-            <textarea class="form-control form-control-sm py-1" id="address" name="address" rows="1" placeholder="Address" style="font-size: 0.75rem;">{{ old('address', $eAddress) }}</textarea>
+            <textarea class="form-control form-control-sm py-1 input-readonly" id="address" name="address" rows="1" placeholder="Address" readonly tabindex="-1" style="font-size: 0.75rem; background: #f8f9fa; cursor: not-allowed;">{{ old('address', $eAddress) }}</textarea>
           </div>
 
           {{-- Tel & Balance --}}
           <div class="row g-1 mb-2">
             <div class="col-5">
               <label class="form-label text-muted small mb-0" style="font-size: 0.7rem;">Tel#</label>
-              <input type="text" class="form-control form-control-sm py-0" id="tel" name="tel" placeholder="Phone" value="{{ old('tel', $eTel) }}" style="font-size: 0.8rem;">
+              <input type="text" class="form-control form-control-sm py-0 input-readonly" id="tel" name="tel" placeholder="Phone" value="{{ old('tel', $eTel) }}" readonly tabindex="-1" style="font-size: 0.8rem; background: #f8f9fa; cursor: not-allowed;">
             </div>
             <div class="col-7">
               <label class="form-label text-muted small mb-0" style="font-size: 0.7rem;">Current Balance</label>
@@ -732,7 +746,14 @@
                       </td>
                       <td>
                         <select name="product_id[]" class="form-control form-control-sm product-select" style="width: 100%;">
-                          <option value="{{ $pid }}" selected>{{ $pSearch }}</option>
+                          <option value="">Select Product</option>
+                          @if(isset($products))
+                            @foreach($products as $p)
+                              <option value="{{ $p->id }}" data-id="{{ $p->id }}" @selected($pid == $p->id)>{{ $p->name }}</option>
+                            @endforeach
+                          @else
+                            <option value="{{ $pid }}" selected>{{ $pSearch }}</option>
+                          @endif
                         </select>
                         <input type="hidden" name="product_search[]" class="product_name_hidden" value="{{ $pSearch }}">
                       </td>
@@ -791,7 +812,14 @@
                       </td>
                       <td>
                         <select name="product_id[]" class="form-control form-control-sm product-select" style="width: 100%;">
-                          <option value="{{ $pid }}" selected>{{ $pSearch }}</option>
+                          <option value="">Select Product</option>
+                          @if(isset($products))
+                            @foreach($products as $p)
+                              <option value="{{ $p->id }}" data-id="{{ $p->id }}" @selected($pid == $p->id)>{{ $p->name }}</option>
+                            @endforeach
+                          @else
+                            <option value="{{ $pid }}" selected>{{ $pSearch }}</option>
+                          @endif
                         </select>
                         <input type="hidden" name="product_search[]" class="product_name_hidden" value="{{ $pSearch }}">
                       </td>
@@ -827,6 +855,40 @@
                 @endif
               </tbody>
             </table>
+
+            <template id="productOptionsTemplate">
+              <option value="">Select Product</option>
+              @if(isset($products))
+                @foreach($products as $p)
+                  <option value="{{ $p->id }}" data-id="{{ $p->id }}">{{ $p->name }}</option>
+                @endforeach
+              @endif
+            </template>
+
+            <script>
+              window.productsCatalog = {
+                @if(isset($products))
+                  @foreach($products as $p)
+                    @php
+                      $whMap = [];
+                      if ($p->warehouseStocks) {
+                        foreach($p->warehouseStocks as $ws) {
+                          $whMap[$ws->warehouse_id] = (float)$ws->quantity;
+                        }
+                      }
+                    @endphp
+                    "{{ $p->id }}": {
+                      id: {{ $p->id }},
+                      name: {!! json_encode($p->name) !!},
+                      shop_stock: {{ (float)($p->stock ?? 0) }},
+                      wh_stocks: {!! json_encode($whMap) !!},
+                      sale_price: {{ (float)($p->latestPrice->sale_net_amount ?? 0) }},
+                      retail_price: {{ (float)($p->latestPrice->sale_retail_price ?? 0) }}
+                    },
+                  @endforeach
+                @endif
+              };
+            </script>
 
             <!-- Bottom totals table removed as requested -->
           </div>
@@ -1019,11 +1081,11 @@
                       <button type="button" class="btn btn-outline-primary order-disc-btn {{ old('order_discount_mode', $eOrderDiscMode) == 'amount' ? 'active' : '' }}" data-mode="amount">₨</button>
                     </div>
                   </div>
-                  <span class="fw-semibold text-danger" id="tOrderDisc" style="min-width: 60px; text-align: right;">0.00</span>
+                  <span class="fw-semibold text-danger" id="tOrderDisc" style="min-width: 60px; text-align: right;">{{ $editData ? number_format((float)$editData->discount_amount, 2) : '0.00' }}</span>
                 </div>
                 <input type="hidden" id="orderDiscountMode" name="order_discount_mode" value="{{ old('order_discount_mode', $eOrderDiscMode) }}">
                 <input type="hidden" id="discountPercent" name="discountPercent" value="{{ old('discountPercent', $eOrderDiscMode == 'percent' ? $eOrderDiscValue : '0') }}">
-                <input type="hidden" id="discountAmountHidden" value="0">
+                <input type="hidden" id="discountAmountHidden" value="{{ $editData ? (float)$editData->discount_amount : 0 }}">
               </div>
 
               <!-- Total Receipts -->
@@ -1167,8 +1229,11 @@
     
     const $select = $row.find('.product-select');
     if ($select.val() !== String(data.id)) {
-        const newOption = new Option(data.text || data.name, data.id, true, true);
-        $select.empty().append(newOption).trigger('change');
+        if (!$select.find('option[value="' + data.id + '"]').length) {
+            const newOption = new Option(data.text || data.name, data.id, true, true);
+            $select.append(newOption);
+        }
+        $select.val(data.id).trigger('change');
     }
     
     $row.find('.stock').val(parseFloat(data.stock || 0).toLocaleString('en-US'));
@@ -1185,16 +1250,41 @@
   }
 
   /* ---------- Select2 Product Initialization ---------- */
+  function matchProduct(params, data) {
+    if ($.trim(params.term) === '') {
+        return data;
+    }
+    if (typeof data.text === 'undefined') {
+        return null;
+    }
+    var term = params.term.toLowerCase();
+    var text = data.text.toLowerCase();
+    var id = String(data.id || '').toLowerCase();
+    if (text.indexOf(term) > -1 || id.indexOf(term) > -1) {
+        return data;
+    }
+    return null;
+  }
+
   function initProductSelect($row) {
     const $select = $row.find('.product-select');
     if ($select.hasClass('select2-hidden-accessible')) {
         return; // Already initialized
     }
-    $select.select2({
+
+    const hasPreloaded = $select.find('option').length > 1;
+
+    const select2Opts = {
       placeholder: "Select Product",
       allowClear: true,
-      minimumInputLength: 1,
-      ajax: {
+      width: '100%'
+    };
+
+    if (hasPreloaded) {
+      select2Opts.matcher = matchProduct;
+    } else {
+      select2Opts.minimumInputLength = 1;
+      select2Opts.ajax = {
         url: '{{ route("search-products") }}',
         dataType: 'json',
         delay: 100,
@@ -1226,10 +1316,10 @@
 
           return { results };
         }
-      }
-    });
+      };
+    }
 
-
+    $select.select2(select2Opts);
 
     // Auto open dropdown search on focus
     $select.on('select2:open', function() {
@@ -1242,7 +1332,31 @@
     $select.on('select2:select', function(e) {
       const data = e.params.data;
       const $currentRow = $(this).closest('tr');
-      updateRowWithProductData($currentRow, data);
+      const selectedWH = $currentRow.find('.warehouse').val();
+      
+      const prodInfo = (window.productsCatalog && window.productsCatalog[data.id]) ? window.productsCatalog[data.id] : null;
+      let stock = (data.stock !== undefined) ? data.stock : 0;
+      let salePrice = (data.sale_price !== undefined) ? data.sale_price : 0;
+      let retailPrice = (data.retail_price !== undefined) ? data.retail_price : 0;
+
+      if (prodInfo) {
+          if (selectedWH == 0) {
+              stock = prodInfo.shop_stock;
+          } else {
+              stock = (prodInfo.wh_stocks && prodInfo.wh_stocks[selectedWH] !== undefined) ? prodInfo.wh_stocks[selectedWH] : 0;
+          }
+          salePrice = prodInfo.sale_price;
+          retailPrice = prodInfo.retail_price;
+      }
+
+      updateRowWithProductData($currentRow, {
+          id: data.id,
+          name: data.text,
+          text: data.text,
+          stock: stock,
+          sale_price: salePrice,
+          retail_price: retailPrice
+      });
       
       // Auto add new row at the bottom without shifting focus
       if ($currentRow.is(':last-child')) {
@@ -1258,8 +1372,8 @@
       $currentRow.find('input').not('.item-id-input').val('');
       $currentRow.find('.item-id-input').val('');
       $currentRow.find('.stock').val('');
-      $currentRow.find('.sales-price').val('0');
-      $currentRow.find('.retail-price').val('0');
+      $currentRow.find('.sales-price').val('0.00');
+      $currentRow.find('.retail-price').val('0.00');
       computeRow($currentRow);
       updateGrandTotals();
     });
@@ -1276,6 +1390,7 @@
       }
     }
 
+    const productOptionsHtml = $('#productOptionsTemplate').html() || '<option value=""></option>';
     const rowId = 'row-' + Date.now();
     const template = `
     <tr data-row-id="${rowId}">
@@ -1284,7 +1399,7 @@
       </td>
       <td>
         <select name="product_id[]" class="form-control form-control-sm product-select" style="width: 100%;">
-          <option value=""></option>
+          ${productOptionsHtml}
         </select>
         <input type="hidden" name="product_search[]" class="product_name_hidden">
       </td>
@@ -2108,26 +2223,67 @@
 
   /* ---------- Item ID Lookup Logic ---------- */
   $(document).on('keydown', '.item-id-input', function(e) {
-      if (e.key === 'Enter' || e.key === 'Tab') {
-          const $input = $(this);
-          const id = $input.val().trim();
-          const $row = $input.closest('tr');
-          const $select = $row.find('.product-select');
-          
+      const $input = $(this);
+      const id = $.trim($input.val());
+      const $row = $input.closest('tr');
+      const $select = $row.find('.product-select');
+
+      // When Tab is pressed without Shift and Item ID is empty -> open Product select immediately
+      if (e.which === 9 && !e.shiftKey) {
           if (!id) {
-              if (e.key === 'Enter') e.preventDefault();
+              e.preventDefault();
+              $select.select2('open');
+              return;
+          }
+      }
+
+      if (e.key === 'Enter' || e.key === 'Tab' || e.which === 13 || e.which === 9) {
+          if (!id) {
+              if (e.key === 'Enter' || e.which === 13) e.preventDefault();
               return;
           }
 
-          // If current selection is already same, just move focus
+          // If current selection is already same, just move focus to Sales Price
           if ($select.val() === String(id)) {
               if ($row.is(':last-child')) addNewRow(false);
-              setTimeout(() => $row.find('.sales-qty').focus().select(), 50);
+              setTimeout(() => $row.find('.sales-price').focus().select(), 50);
               e.preventDefault();
               return;
           }
 
-          e.preventDefault(); // Lock focus until we fetch data
+          e.preventDefault();
+
+          // 1. FAST PATH: Instant in-memory catalog lookup (0ms!)
+          let prodInfo = null;
+          if (window.productsCatalog && window.productsCatalog[id]) {
+              prodInfo = window.productsCatalog[id];
+          } else if (window.productsCatalog) {
+              const keys = Object.keys(window.productsCatalog);
+              const foundKey = keys.find(k => String(window.productsCatalog[k].id) === String(id) || window.productsCatalog[k].name.toLowerCase() === id.toLowerCase());
+              if (foundKey) prodInfo = window.productsCatalog[foundKey];
+          }
+
+          if (prodInfo) {
+              const selectedWH = $row.find('.warehouse').val();
+              let stock = (selectedWH == 0) ? prodInfo.shop_stock : ((prodInfo.wh_stocks && prodInfo.wh_stocks[selectedWH] !== undefined) ? prodInfo.wh_stocks[selectedWH] : 0);
+
+              updateRowWithProductData($row, {
+                  id: prodInfo.id,
+                  name: prodInfo.name,
+                  text: prodInfo.name,
+                  stock: stock,
+                  sale_price: prodInfo.sale_price,
+                  retail_price: prodInfo.retail_price
+              });
+
+              if ($row.is(':last-child')) {
+                  addNewRow(false);
+              }
+              setTimeout(() => $row.find('.sales-price').focus().select(), 50);
+              return;
+          }
+
+          // 2. FALLBACK: Server search
           $input.addClass('loading-indicator'); 
 
           $.get('{{ route("search-products") }}', { 
@@ -2264,6 +2420,15 @@
       if (!productId) return;
 
       const $stock = $r.find('.stock');
+
+      // FAST PATH: Instant in-memory catalog (0ms!)
+      if (window.productsCatalog && window.productsCatalog[productId]) {
+          const p = window.productsCatalog[productId];
+          const stockVal = (selectedWH == 0) ? p.shop_stock : ((p.wh_stocks && p.wh_stocks[selectedWH] !== undefined) ? p.wh_stocks[selectedWH] : 0);
+          $stock.val(parseFloat(stockVal || 0).toLocaleString('en-US'));
+          return;
+      }
+
       $stock.addClass('loading-indicator');
 
       $.get('{{ route("search-products") }}', { q: productId, warehouse_id: selectedWH })
@@ -3172,8 +3337,11 @@
             const $select = $row.find('.product-select');
             const name = grouped['product_search[]']?.[i] || 'Product ' + val;
             
-            const newOption = new Option(name, val, true, true);
-            $select.empty().append(newOption).trigger('change');
+            if (!$select.find('option[value="' + val + '"]').length) {
+                const newOption = new Option(name, val, true, true);
+                $select.append(newOption);
+            }
+            $select.val(val).trigger('change');
             $row.find('.product_name_hidden').val(name);
           });
           

@@ -119,17 +119,23 @@ class SaleController extends Controller
         ]);
     }
 
+    protected function getSaleProducts()
+    {
+        return Product::withInactive()->with(['latestPrice', 'warehouseStocks'])->orderBy('name')->get();
+    }
+
     public function add_sale()
     {
         $warehouses = Warehouse::all();
         $customers = Customer::all();
         $accounts = Account::all();
         $accountHeads = AccountHead::all();
+        $products = $this->getSaleProducts();
 
         // Get next invoice from Sale model generator (ensures INVSLE-003 -> INVSLE-004)
         $nextInvoiceNumber = Sale::generateInvoiceNo();
 
-        return view('admin_panel.sale.add_sale', compact('warehouses', 'customers', 'nextInvoiceNumber', 'accounts', 'accountHeads'));
+        return view('admin_panel.sale.add_sale', compact('warehouses', 'customers', 'nextInvoiceNumber', 'accounts', 'accountHeads', 'products'));
     }
 
 
@@ -147,8 +153,9 @@ class SaleController extends Controller
         $accountHeads = AccountHead::all();
         $accounts = Account::all();
         $nextInvoiceNumber = $booking->invoice_no;
+        $products = $this->getSaleProducts();
 
-        return view('admin_panel.sale.add_sale', compact('booking', 'warehouses', 'customers', 'nextInvoiceNumber', 'accountHeads', 'accounts'));
+        return view('admin_panel.sale.add_sale', compact('booking', 'warehouses', 'customers', 'nextInvoiceNumber', 'accountHeads', 'accounts', 'products'));
     }
 
     public function edit($id)
@@ -159,7 +166,9 @@ class SaleController extends Controller
         $accountHeads = AccountHead::all();
         $accounts = Account::all();
         $nextInvoiceNumber = $sale->invoice_no;
-        return view('admin_panel.sale.add_sale', compact('sale', 'warehouses', 'customers', 'nextInvoiceNumber', 'accountHeads', 'accounts'));
+        $products = $this->getSaleProducts();
+
+        return view('admin_panel.sale.add_sale', compact('sale', 'warehouses', 'customers', 'nextInvoiceNumber', 'accountHeads', 'accounts', 'products'));
     }
 
     public function show($id)
@@ -171,6 +180,7 @@ class SaleController extends Controller
         $accounts = Account::all();
         $nextInvoiceNumber = $sale->invoice_no;
         $viewMode = true;
+        $products = $this->getSaleProducts();
 
         return view('admin_panel.sale.add_sale', compact(
             'sale',
@@ -179,7 +189,8 @@ class SaleController extends Controller
             'nextInvoiceNumber',
             'accountHeads',
             'accounts',
-            'viewMode'
+            'viewMode',
+            'products'
         ));
     }
 
@@ -195,6 +206,15 @@ class SaleController extends Controller
         $receiptAmountsArr = array_map(function($val) { return (float) str_replace(',', '', (string)$val); }, $rawReceiptAmountsArr);
         $totalReceipts = array_sum($receiptAmountsArr);
 
+        $discAmount = (float) str_replace(',', '', $request->discountAmount ?? 0);
+        $discPercent = (float) str_replace(',', '', $request->discountPercent ?? 0);
+        $orderDiscMode = $request->input('order_discount_mode', 'percent');
+        if ($discAmount > 0 && $discPercent <= 0) {
+            $orderDiscMode = 'amount';
+        } elseif ($discPercent > 0 && $discAmount <= 0) {
+            $orderDiscMode = 'percent';
+        }
+
         $sale->update([
             'manual_invoice' => $request->Invoice_main ?? null,
             'customer_id' => $request->customer ?? null,
@@ -205,9 +225,9 @@ class SaleController extends Controller
             'remarks' => $request->remarks ?? null,
             'sub_total1' => $request->subTotal1 ?? 0,
             'sub_total2' => $request->subTotal2 ?? 0,
-            'discount_percent' => $request->discountPercent ?? 0,
-            'discount_amount' => $request->discountAmount ?? 0,
-            'order_discount_mode' => $request->input('order_discount_mode', 'percent'),
+            'discount_percent' => $discPercent,
+            'discount_amount' => $discAmount,
+            'order_discount_mode' => $orderDiscMode,
             'discount_head' => $request->discount_head ?? null,
             'discount_account_id' => $request->discount_account_id ?? null,
             'previous_balance' => $request->previousBalance ?? 0,
@@ -283,6 +303,15 @@ class SaleController extends Controller
         $receiptAmounts = $request->input('receipt_amount', []);
         $totalReceipts = array_sum(array_map(function($val) { return (float) str_replace(',', '', $val); }, $receiptAmounts));
 
+        $discAmount = (float) str_replace(',', '', $request->discountAmount ?? 0);
+        $discPercent = (float) str_replace(',', '', $request->discountPercent ?? 0);
+        $orderDiscMode = $request->input('order_discount_mode', 'percent');
+        if ($discAmount > 0 && $discPercent <= 0) {
+            $orderDiscMode = 'amount';
+        } elseif ($discPercent > 0 && $discAmount <= 0) {
+            $orderDiscMode = 'percent';
+        }
+
         if ($isBooking) {
                 $booking = Productbooking::create([
                     'invoice_no' => $request->Invoice_no,
@@ -296,9 +325,9 @@ class SaleController extends Controller
                     'remarks' => $request->remarks,
                     'sub_total1' => (float) str_replace(',', '', $request->subTotal1 ?? 0),
                     'sub_total2' => (float) str_replace(',', '', $request->subTotal2 ?? 0),
-                    'discount_percent' => (float) str_replace(',', '', $request->discountPercent ?? 0),
-                    'discount_amount' => (float) str_replace(',', '', $request->discountAmount ?? 0),
-                    'order_discount_mode' => $request->input('order_discount_mode', 'percent'),
+                    'discount_percent' => $discPercent,
+                    'discount_amount' => $discAmount,
+                    'order_discount_mode' => $orderDiscMode,
                     'previous_balance' => (float) str_replace(',', '', $request->previousBalance ?? 0),
                     'total_balance' => (float) str_replace(',', '', $request->totalBalance ?? 0),
                     'receipt1' => $totalReceipts,
@@ -352,7 +381,7 @@ class SaleController extends Controller
         }
 
         // Direct Sale (stock minus)
-        return DB::transaction(function () use ($request) {
+        return DB::transaction(function () use ($request, $discAmount, $discPercent, $orderDiscMode) {
             $invoiceNo = Sale::generateInvoiceNo();
             $sale = Sale::create([
                 'invoice_no' => $invoiceNo,
@@ -366,9 +395,9 @@ class SaleController extends Controller
                 'remarks' => $request->remarks ?? null,
                 'sub_total1' => (float) str_replace(',', '', $request->subTotal1 ?? 0),
                 'sub_total2' => (float) str_replace(',', '', $request->subTotal2 ?? 0),
-                'discount_percent' => (float) str_replace(',', '', $request->discountPercent ?? 0),
-                'discount_amount' => (float) str_replace(',', '', $request->discountAmount ?? 0),
-                'order_discount_mode' => $request->input('order_discount_mode', 'percent'),
+                'discount_percent' => $discPercent,
+                'discount_amount' => $discAmount,
+                'order_discount_mode' => $orderDiscMode,
                 'previous_balance' => (float) str_replace(',', '', $request->previousBalance ?? 0),
                 'total_balance' => (float) str_replace(',', '', $request->totalBalance ?? 0),
                 'receipt1' => (float) str_replace(',', '', $request->receipt1 ?? 0),
@@ -487,7 +516,13 @@ class SaleController extends Controller
             $booking->sub_total2     = (float) str_replace(',', '', $request->subTotal2 ?? 0);
             $booking->discount_percent = (float) str_replace(',', '', $request->discountPercent ?? 0);
             $booking->discount_amount  = (float) str_replace(',', '', $request->discountAmount ?? 0);
-            $booking->order_discount_mode = $request->input('order_discount_mode', 'percent');
+            $orderDiscMode = $request->input('order_discount_mode', 'percent');
+            if ($booking->discount_amount > 0 && $booking->discount_percent <= 0) {
+                $orderDiscMode = 'amount';
+            } elseif ($booking->discount_percent > 0 && $booking->discount_amount <= 0) {
+                $orderDiscMode = 'percent';
+            }
+            $booking->order_discount_mode = $orderDiscMode;
             $booking->discount_head  = $request->discount_head;
             $booking->discount_account_id = $request->discount_account_id;
             $booking->previous_balance = (float) str_replace(',', '', $request->previousBalance ?? 0);
@@ -589,6 +624,13 @@ class SaleController extends Controller
                     $invNo = Sale::generateInvoiceNo();
                 }
 
+                $saleOrderMode = $booking->order_discount_mode ?? 'percent';
+                if ((float)$booking->discount_amount > 0 && (float)$booking->discount_percent <= 0) {
+                    $saleOrderMode = 'amount';
+                } elseif ((float)$booking->discount_percent > 0 && (float)$booking->discount_amount <= 0) {
+                    $saleOrderMode = 'percent';
+                }
+
                 $sale = Sale::create([
                     'invoice_no' => $invNo,
                     'is_sale_order' => $booking->is_sale_order,
@@ -604,7 +646,7 @@ class SaleController extends Controller
                     'sub_total2' => $booking->sub_total2,
                     'discount_percent' => $booking->discount_percent,
                     'discount_amount' => $booking->discount_amount,
-                    'order_discount_mode' => $booking->order_discount_mode ?? 'percent',
+                    'order_discount_mode' => $saleOrderMode,
                     'discount_head' => $booking->discount_head,
                     'discount_account_id' => $booking->discount_account_id,
                     'previous_balance' => $booking->previous_balance,
@@ -752,6 +794,13 @@ class SaleController extends Controller
                 $invNo = Sale::generateInvoiceNo();
             }
 
+            $saleOrderMode = $booking->order_discount_mode ?? 'percent';
+            if ((float)$booking->discount_amount > 0 && (float)$booking->discount_percent <= 0) {
+                $saleOrderMode = 'amount';
+            } elseif ((float)$booking->discount_percent > 0 && (float)$booking->discount_amount <= 0) {
+                $saleOrderMode = 'percent';
+            }
+
             $sale = Sale::create([
                 'invoice_no' => $invNo,
                 'is_sale_order' => $booking->is_sale_order,
@@ -767,7 +816,7 @@ class SaleController extends Controller
                 'sub_total2' => $booking->sub_total2,
                 'discount_percent' => $booking->discount_percent,
                 'discount_amount' => $booking->discount_amount,
-                'order_discount_mode' => $booking->order_discount_mode ?? 'percent',
+                'order_discount_mode' => $saleOrderMode,
                 'discount_head' => $booking->discount_head,
                 'discount_account_id' => $booking->discount_account_id,
                 'previous_balance' => $booking->previous_balance,

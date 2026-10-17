@@ -30,6 +30,7 @@ class Productbooking extends Model
         'sub_total2',
         'discount_percent',
         'discount_amount',
+        'order_discount_mode',
         'previous_balance',
         'total_balance',
         'receipt1',

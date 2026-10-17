@@ -54,16 +54,16 @@
                         <div class="row g-2 align-items-center">
                             <div class="col-auto">
                                 <label class="form-label">Entry Date <span class="text-danger">*</span></label>
-                                <input type="date" name="entry_date" id="entry_date" class="form-control form-control-sm" value="{{ $receipt->entry_date ?? now()->toDateString() }}" required>
+                                <input type="date" name="entry_date" id="entry_date" class="form-control form-control-sm" value="{{ $receipt->entry_date ?? now()->toDateString() }}" tabindex="1" required>
                             </div>
                             <div class="col-auto">
                                 <label class="form-label">Receipt Date <span class="text-danger">*</span></label>
-                                <input type="date" name="receipt_date" id="receipt_date" class="form-control form-control-sm" value="{{ $receipt->receipt_date ?? now()->toDateString() }}" required>
+                                <input type="date" name="receipt_date" id="receipt_date" class="form-control form-control-sm" value="{{ $receipt->receipt_date ?? now()->toDateString() }}" tabindex="2" required>
                             </div>
                             <div class="form-vr d-none d-md-block"></div>
                             <div class="col-md-2">
                                 <label class="form-label">Party Type <span class="text-danger">*</span></label>
-                                <select name="vendor_type" id="vendor_type" class="form-select form-select-sm select2">
+                                <select name="vendor_type" id="vendor_type" class="form-select form-select-sm select2" tabindex="3">
                                     <option value="">Select Type...</option>
                                     <option value="vendor" {{ $receipt->type == 'vendor' ? 'selected' : '' }}>Vendor</option>
                                     <option value="customer" {{ $receipt->type == 'customer' ? 'selected' : '' }}>Customer</option>
@@ -72,17 +72,17 @@
                             </div>
                             <div class="col-md-1">
                                 <label class="form-label">ID/Code</label>
-                                <input type="text" id="party_code_input" class="form-control form-control-sm text-center fw-bold text-primary" placeholder="Code" value="{{ $receipt->party_id }}">
+                                <input type="text" id="party_code_input" class="form-control form-control-sm text-center fw-bold text-primary" placeholder="Code" value="{{ $receipt->party_id }}" tabindex="-1">
                             </div>
                             <div class="col">
                                 <label class="form-label">Source Party Name <span class="text-danger">*</span></label>
-                                <select name="vendor_id" id="vendor_id" class="form-select form-select-sm select2" data-selected-id="{{ $receipt->party_id }}">
+                                <select name="vendor_id" id="vendor_id" class="form-select form-select-sm select2" data-selected-id="{{ $receipt->party_id }}" tabindex="4">
                                     <option value="">Select Party...</option>
                                 </select>
                             </div>
                             <div class="col-md-2">
                                 <label class="form-label text-muted">Current Balance</label>
-                                <input type="text" class="form-control form-control-sm text-end fw-bold input-readonly" id="previousBalance" name="previousBalance" value="{{ number_format($previousBalance ?? 0, 2, '.', '') }}" placeholder="0.00" readonly style="font-size: 1rem; color: #d63384; background: #fffcfd;">
+                                <input type="text" class="form-control form-control-sm text-end fw-bold input-readonly" id="previousBalance" name="previousBalance" value="{{ number_format($previousBalance ?? 0, 2, '.', '') }}" placeholder="0.00" readonly tabindex="-1" style="font-size: 1rem; color: #d63384; background: #fffcfd;">
                             </div>
                         </div>
                     </div>
@@ -92,7 +92,7 @@
                 <div class="card form-card mb-2">
                     <div class="card-header bg-white py-1 d-flex justify-content-between align-items-center border-bottom">
                         <span class="fw-bold text-muted small text-uppercase"><i class="fa fa-list-ul me-1"></i> Receipt Details</span>
-                        <button type="button" class="btn btn-primary btn-sm px-3 rounded-pill" id="btnAddRow" {{ $receipt->status == 'posted' ? 'disabled' : '' }}>
+                        <button type="button" class="btn btn-primary btn-sm px-3 rounded-pill" id="btnAddRow" tabindex="-1" {{ $receipt->status == 'posted' ? 'disabled' : '' }}>
                             <i class="fa fa-plus me-1"></i> Add Line
                         </button>
                     </div>
@@ -131,18 +131,18 @@
                                         $discAmtVal  = is_array($dValsArr)  ? (float)($dValsArr[0] ?? 0) : (float)($receipt->discount_value ?? 0);
                                     @endphp
                                     @foreach($narrations_json as $index => $nId)
-                                    <tr>
+                                     <tr>
                                         <td>
-                                            <select name="narration_id[]" class="form-select form-select-sm narrationSelect">
+                                            <select name="narration_id[]" class="form-select form-select-sm narrationSelect" tabindex="5">
                                                 <option value="">Narration...</option>
                                                 @foreach($narrations as $id => $name)
                                                 <option value="{{ $id }}" {{ $nId == $id ? 'selected' : '' }}>{{ $name }}</option>
                                                 @endforeach
                                             </select>
                                         </td>
-                                        <td><input name="reference_no[]" type="text" class="form-control form-control-sm" value="{{ $references[$index] ?? '' }}" placeholder="Ref#"></td>
+                                        <td><input name="reference_no[]" type="text" class="form-control form-control-sm" value="{{ $references[$index] ?? '' }}" placeholder="Ref#" tabindex="-1"></td>
                                         <td>
-                                             <select name="row_account_head[]" class="form-select form-select-sm rowAccountHead select2">
+                                             <select name="row_account_head[]" class="form-select form-select-sm rowAccountHead select2" tabindex="-1">
                                                  <option value="">Select Head...</option>
                                                  @php $hasHeadSelected = false; @endphp
                                                  @foreach($AccountHeads as $head)
@@ -168,16 +168,16 @@
                                             }
                                             $rowCode = $rowAcc ? $rowAcc->account_code : '';
                                         @endphp
-                                        <td><input type="text" name="row_account_code[]" class="form-control form-control-sm text-center fw-bold text-danger rowAccountCode" value="{{ $rowCode }}" placeholder="Code"></td>
+                                        <td><input type="text" name="row_account_code[]" class="form-control form-control-sm text-center fw-bold text-danger rowAccountCode" value="{{ $rowCode }}" placeholder="Code" tabindex="-1"></td>
                                         <td>
-                                            <select name="row_account_id[]" class="form-select form-select-sm rowAccountSub select2" data-selected="{{ $rowAccId }}">
+                                            <select name="row_account_id[]" class="form-select form-select-sm rowAccountSub select2" data-selected="{{ $rowAccId }}" tabindex="6">
                                                 <option value="">Select Account...</option>
                                                 @if(isset($allAccounts))
                                                     @php $hasSelected = false; @endphp
                                                     @foreach($allAccounts as $acc)
                                                         @php
-                                                            $sel = ($rowAccId == $acc->id);
-                                                            if ($sel) $hasSelected = true;
+                                                             $sel = ($rowAccId == $acc->id);
+                                                             if ($sel) $hasSelected = true;
                                                         @endphp
                                                         <option value="{{ $acc->id }}" data-head-id="{{ $acc->head_id }}" data-code="{{ $acc->account_code }}" {{ $sel ? 'selected' : '' }}>{{ $acc->title }}</option>
                                                     @endforeach
@@ -187,10 +187,10 @@
                                                 @endif
                                             </select>
                                         </td>
-                                        <td><input name="kg[]" type="number" step="any" class="form-control form-control-sm text-center kg" value="{{ $kgs[$index] ?? '' }}"></td>
-                                        <td><input name="rate[]" type="number" step="any" class="form-control form-control-sm text-end rate" value="{{ $rates[$index] ?? '' }}"></td>
-                                        <td><input name="amount[]" type="text" class="form-control form-control-sm text-end fw-bold amount" value="{{ $amounts[$index] ?? '' }}"></td>
-                                        <td class="text-center"><button type="button" class="btn btn-xs btn-outline-danger removeRow"><i class="fa fa-times"></i></button></td>
+                                        <td><input name="kg[]" type="number" step="any" class="form-control form-control-sm text-center kg" value="{{ $kgs[$index] ?? '' }}" tabindex="-1"></td>
+                                        <td><input name="rate[]" type="number" step="any" class="form-control form-control-sm text-end rate" value="{{ $rates[$index] ?? '' }}" tabindex="-1"></td>
+                                        <td><input name="amount[]" type="text" class="form-control form-control-sm text-end fw-bold amount" value="{{ $amounts[$index] ?? '' }}" tabindex="7"></td>
+                                        <td class="text-center"><button type="button" class="btn btn-xs btn-outline-danger removeRow" tabindex="-1"><i class="fa fa-times"></i></button></td>
                                     </tr>
                                     @endforeach
                                 </tbody>
@@ -218,7 +218,7 @@
                         <div class="row g-2 align-items-center">
                             <div class="col-md-4">
                                 <label class="form-label mb-1 fw-bold text-dark"><i class="fa fa-percent text-primary me-1"></i> Disc Head</label>
-                                <select name="discount_head" id="discount_head" class="form-select form-select-sm select2">
+                                <select name="discount_head" id="discount_head" class="form-select form-select-sm select2" tabindex="8">
                                     <option value="">Select Discount Head...</option>
                                      @foreach(($discountAccountHeads ?? $AccountHeads) as $head)
                                          @if(strtoupper($head->name) === 'EXPENSE' || strtoupper($head->name) === 'INCOME' || strtoupper($head->name) === 'SCRAP' || $head->id == 100000)
@@ -229,13 +229,13 @@
                             </div>
                             <div class="col-md-5">
                                 <label class="form-label mb-1 fw-bold text-dark"><i class="fa fa-university text-primary me-1"></i> Disc Sub Head (Account)</label>
-                                <select name="discount_account_id" id="discount_account_id" class="form-select form-select-sm select2" data-selected="{{ $discAccVal }}">
+                                <select name="discount_account_id" id="discount_account_id" class="form-select form-select-sm select2" data-selected="{{ $discAccVal }}" tabindex="9">
                                     <option value="">Select Sub Head Account...</option>
                                 </select>
                             </div>
                             <div class="col-md-3">
                                 <label class="form-label mb-1 fw-bold text-dark"><i class="fa fa-minus-circle text-danger me-1"></i> Disc. Amount</label>
-                                <input name="discount_value" id="discount_value" type="number" step="any" class="form-control form-control-sm text-end fw-bold text-danger fs-6" value="{{ $discAmtVal > 0 ? $discAmtVal : 0 }}" placeholder="0.00">
+                                <input name="discount_value" id="discount_value" type="number" step="any" class="form-control form-control-sm text-end fw-bold text-danger fs-6" value="{{ $discAmtVal > 0 ? $discAmtVal : 0 }}" placeholder="0.00" tabindex="10">
                             </div>
                         </div>
                     </div>
@@ -247,7 +247,7 @@
                         <div class="card form-card mb-0">
                             <div class="card-body p-2">
                                 <label class="form-label">General Remarks / Note</label>
-                                <input type="text" name="remarks" id="remarks" class="form-control form-control-sm" placeholder="Type additional voucher notes here..." value="{{ $receipt->remarks }}">
+                                <input type="text" name="remarks" id="remarks" class="form-control form-control-sm" placeholder="Type additional voucher notes here..." value="{{ $receipt->remarks }}" tabindex="11">
                             </div>
                         </div>
                     </div>
@@ -280,8 +280,61 @@ $(document).ready(function() {
         $container.find('.rowAccountSub').select2({ placeholder: "Select Account...", allowClear: true, width: '100%' });
         $container.find('.discountAccountSub').select2({ placeholder: "Sub Head...", allowClear: true, width: '100%' });
         $container.find('#vendor_id').select2({ placeholder: "Select Party...", allowClear: true, width: '100%' });
+        syncSelect2Tabindex($container);
+    }
+
+    // Sync tabindex to Select2 selection containers
+    function syncSelect2Tabindex($container = $('body')) {
+        $container.find('select').each(function() {
+            var ti = $(this).attr('tabindex');
+            if (ti !== undefined) {
+                $(this).next('.select2-container').find('.select2-selection').attr('tabindex', ti);
+            }
+        });
     }
     initSelectors();
+
+    // Helper: focus and open Select2 container
+    function focusAndOpenSelect2($select, delay = 60) {
+        if (!$select || !$select.length) return;
+        setTimeout(function() {
+            if ($select.prop('disabled')) return;
+            var s2 = $select.data('select2');
+            if (s2 && s2.$container) {
+                s2.$container.find('.select2-selection').focus();
+            } else {
+                $select.focus();
+            }
+            try {
+                if (s2 && !s2.isOpen()) {
+                    $select.select2('open');
+                }
+            } catch(ex) {}
+        }, delay);
+    }
+
+    // Auto focus on Entry Date (#1) on page load
+    setTimeout(function() {
+        if (!$('#receiptForm').hasClass('form-locked') && !$('#receiptForm').hasClass('view-mode')) {
+            $('#entry_date').focus();
+        }
+    }, 150);
+
+    // 1 Entry Date -> 2 Receipt Date (Enter)
+    $('#entry_date').on('keydown', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            $('#receipt_date').focus();
+        }
+    });
+
+    // 2 Receipt Date -> 3 Party Type (Enter)
+    $('#receipt_date').on('keydown', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            focusAndOpenSelect2($('#vendor_type'), 50);
+        }
+    });
 
     function syncRowAccountCodes() {
         $('#voucherTable tbody tr').each(function() {
@@ -300,7 +353,7 @@ $(document).ready(function() {
     $(document).on('focus', '.select2-container', function(e) {
         if ($(this).is(':hidden')) return;
         let $select = $(this).prev('select');
-        if ($select.length && !$select.prop('disabled') && !$select.data('select2-is-opening')) {
+        if ($select.length && !$select.prop('disabled') && $select.attr('tabindex') != '-1' && !$select.data('select2-is-opening')) {
             $select.data('select2-is-opening', true);
             $select.select2('open');
             setTimeout(function() { $select.data('select2-is-opening', false); }, 200);
@@ -317,7 +370,15 @@ $(document).ready(function() {
             if (optByCode.length > 0) { $('#vendor_id').val(optByCode.val()).trigger('change'); }
         }
     }
-    $('#party_code_input').on('blur keydown', function(e) { if(e.type === 'keydown' && e.which != 13 && e.which != 9) return; syncPartyIdToSelect2(); });
+    $('#party_code_input').on('blur keydown', function(e) {
+        if (e.type === 'keydown' && e.which != 13 && e.which != 9) return;
+        syncPartyIdToSelect2();
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            let $firstNarr = $('#voucherTable tbody tr:first .narrationSelect');
+            focusAndOpenSelect2($firstNarr, 60);
+        }
+    });
     $('#vendor_id').on('change', function() {
         let val = $(this).val();
         let partyType = $('#vendor_type').val();
@@ -338,6 +399,12 @@ $(document).ready(function() {
         }
     });
 
+    // 3 Party Type -> 4 Source Party Name
+    let _partyTypeUserNavigated = false;
+    $('#vendor_type').on('select2:select', function() {
+        _partyTypeUserNavigated = true;
+    });
+
     $('#vendor_type').change(function() {
         let type = $(this).val();
         let $partySelect = $('#vendor_id');
@@ -354,8 +421,35 @@ $(document).ready(function() {
             });
             $partySelect.trigger('change');
             if (selectedId) $('#party_code_input').val(selectedId);
+
+            if (_partyTypeUserNavigated) {
+                _partyTypeUserNavigated = false;
+                focusAndOpenSelect2($('#vendor_id'), 60);
+            }
         });
     }).trigger('change');
+
+    // 4 Source Party Name -> 5 Narration
+    $('#vendor_id').on('select2:select', function() {
+        let $firstNarr = $('#voucherTable tbody tr:first .narrationSelect');
+        focusAndOpenSelect2($firstNarr, 60);
+    });
+
+    // 5 Narration -> 6 Destination Account
+    $(document).on('select2:select', '.narrationSelect', function() {
+        let $row = $(this).closest('tr');
+        let $destAcc = $row.find('.rowAccountSub');
+        focusAndOpenSelect2($destAcc, 60);
+    });
+
+    // 6 Destination Account -> 7 Amount
+    $(document).on('select2:select', '.rowAccountSub', function() {
+        let $row = $(this).closest('tr');
+        let $amount = $row.find('.amount');
+        setTimeout(function() {
+            $amount.focus().select();
+        }, 60);
+    });
 
     // 🏦 Row Account Logic
     $(document).on('change', '.rowAccountSub', function() {
@@ -455,35 +549,98 @@ $(document).ready(function() {
         calculateTotals();
     });
 
+    // 7 Amount -> Next Row Narration (5) or Add Row
     $(document).on('keydown', '.amount', function(e) {
-        if (e.key === 'Enter' || (e.key === 'Tab' && !e.shiftKey)) {
+        if (e.key === 'Enter') {
             e.preventDefault();
-            $('#btnAddRow').click();
-            let $lastRow = $('#voucherTable tbody tr').last();
-            let $narration = $lastRow.find('.narrationSelect');
-            if ($narration.length && $narration.data('select2')) {
-                $narration.select2('open');
+            let $row = $(this).closest('tr');
+            let $nextRow = $row.next('tr');
+            if ($nextRow.length) {
+                focusAndOpenSelect2($nextRow.find('.narrationSelect'), 50);
             } else {
-                $narration.focus();
+                $('#btnAddRow').click();
+                let $newRow = $('#voucherTable tbody tr').last();
+                focusAndOpenSelect2($newRow.find('.narrationSelect'), 50);
+            }
+        } else if (e.key === 'Tab' && !e.shiftKey) {
+            let $row = $(this).closest('tr');
+            let $nextRow = $row.next('tr');
+            if ($nextRow.length) {
+                e.preventDefault();
+                focusAndOpenSelect2($nextRow.find('.narrationSelect'), 50);
+            } else {
+                let amt = parseFloat($(this).val()) || 0;
+                if (amt > 0) {
+                    e.preventDefault();
+                    $('#btnAddRow').click();
+                    let $newRow = $('#voucherTable tbody tr').last();
+                    focusAndOpenSelect2($newRow.find('.narrationSelect'), 50);
+                } else {
+                    e.preventDefault();
+                    focusAndOpenSelect2($('#discount_head'), 50);
+                }
             }
         }
     });
 
+    // Handle Tab in Select2 search boxes
+    $(document).on('keydown', '.select2-search__field', function(e) {
+        if (e.key === 'Tab' && !e.shiftKey) {
+            let $openSelect = $('select.select2, select.narrationSelect').filter(function() {
+                return $(this).data('select2') && $(this).data('select2').isOpen();
+            });
+            if (!$openSelect.length) return;
+
+            let $highlighted = $('.select2-results__option--highlighted');
+            if ($highlighted.length) {
+                let data = $highlighted.data('data');
+                if (data && data.id) {
+                    $openSelect.val(data.id).trigger('change');
+                }
+            }
+
+            e.preventDefault();
+            $openSelect.select2('close');
+
+            if ($openSelect.is('#vendor_type')) {
+                _partyTypeUserNavigated = true;
+                $('#vendor_type').trigger('change');
+                focusAndOpenSelect2($('#vendor_id'), 100);
+            } else if ($openSelect.is('#vendor_id')) {
+                let $firstNarr = $('#voucherTable tbody tr:first .narrationSelect');
+                focusAndOpenSelect2($firstNarr, 60);
+            } else if ($openSelect.hasClass('narrationSelect')) {
+                let $row = $openSelect.closest('tr');
+                focusAndOpenSelect2($row.find('.rowAccountSub'), 60);
+            } else if ($openSelect.hasClass('rowAccountSub')) {
+                let $row = $openSelect.closest('tr');
+                setTimeout(function() {
+                    $row.find('.amount').focus().select();
+                }, 60);
+            }
+        }
+    });
+
+    // Auto-select text on focus
+    $(document).on('focus', '.amount, #discount_value, #remarks', function() {
+        var $inp = $(this);
+        setTimeout(function() { $inp.select(); }, 10);
+    });
 
     $('#btnAddRow').click(function() {
         if (window.VoucherRowValidation && !window.VoucherRowValidation.validateLastRow($('#voucherTable'))) {
             return;
         }
         let newRow = '<tr>' +
-            '<td><select name="narration_id[]" class="form-select form-select-sm narrationSelect"><option value="">Narration...</option>@foreach($narrations as $id => $name)<option value="{{ $id }}">{{ addslashes($name) }}</option>@endforeach</select></td>' +
-            '<td><input name="reference_no[]" type="text" class="form-control form-control-sm" placeholder="Ref#"></td>' +
-            '<td><select name="row_account_head[]" class="form-select form-select-sm rowAccountHead select2"><option value="">Select Head...</option>@foreach($AccountHeads as $head) <option value="{{ $head->id }}">{{ addslashes($head->name) }}</option> @endforeach</select></td>' +
-            '<td><input type="text" class="form-control form-control-sm text-center fw-bold text-danger rowAccountCode" placeholder="Code"></td>' +
-            '<td><select name="row_account_id[]" class="form-select form-select-sm rowAccountSub select2"><option value="">Select Account...</option>@if(isset($allAccounts))@foreach($allAccounts as $acc)<option value="{{ $acc->id }}" data-head-id="{{ $acc->head_id }}" data-code="{{ $acc->account_code }}">{{ addslashes($acc->title) }}</option>@endforeach @endif</select></td>' +
-            '<td><input name="kg[]" type="number" step="any" class="form-control form-control-sm text-center kg"></td>' +
-            '<td><input name="rate[]" type="number" step="any" class="form-control form-control-sm text-end rate"></td>' +
-            '<td><input name="amount[]" type="text" class="form-control form-control-sm text-end fw-bold amount"></td>' +
-            '<td class="text-center"><button type="button" class="btn btn-xs btn-outline-danger removeRow"><i class="fa fa-times"></i></button></td>' +
+            '<td><select name="narration_id[]" class="form-select form-select-sm narrationSelect" tabindex="5"><option value="">Narration...</option>@foreach($narrations as $id => $name)<option value="{{ $id }}">{{ addslashes($name) }}</option>@endforeach</select></td>' +
+            '<td><input name="reference_no[]" type="text" class="form-control form-control-sm" placeholder="Ref#" tabindex="-1"></td>' +
+            '<td><select name="row_account_head[]" class="form-select form-select-sm rowAccountHead select2" tabindex="-1"><option value="">Select Head...</option>@foreach($AccountHeads as $head) <option value="{{ $head->id }}">{{ addslashes($head->name) }}</option> @endforeach</select></td>' +
+            '<td><input type="text" name="row_account_code[]" class="form-control form-control-sm text-center fw-bold text-danger rowAccountCode" placeholder="Code" tabindex="-1"></td>' +
+            '<td><select name="row_account_id[]" class="form-select form-select-sm rowAccountSub select2" tabindex="6"><option value="">Select Account...</option>@if(isset($allAccounts))@foreach($allAccounts as $acc)<option value="{{ $acc->id }}" data-head-id="{{ $acc->head_id }}" data-code="{{ $acc->account_code }}">{{ addslashes($acc->title) }}</option>@endforeach @endif</select></td>' +
+            '<td><input name="kg[]" type="number" step="any" class="form-control form-control-sm text-center kg" tabindex="-1"></td>' +
+            '<td><input name="rate[]" type="number" step="any" class="form-control form-control-sm text-end rate" tabindex="-1"></td>' +
+            '<td><input name="amount[]" type="text" class="form-control form-control-sm text-end fw-bold amount" tabindex="7"></td>' +
+            '<td class="text-center"><button type="button" class="btn btn-xs btn-outline-danger removeRow" tabindex="-1"><i class="fa fa-times"></i></button></td>' +
         '</tr>';
         $('#voucherTable tbody').append(newRow);
         initSelectors($('#voucherTable tbody tr').last());
