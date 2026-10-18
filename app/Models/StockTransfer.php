@@ -22,10 +22,13 @@ class StockTransfer extends Model
         'from_shop',
         'to_warehouse_id',
         'to_shop',
+        'entry_date',
+        'entry_time',
         'remarks',
         'status',
         'created_by',
         'confirmed_by',
+        'user_group_ids',
     ];
 
     public function items()

@@ -140,12 +140,12 @@
                             {{-- Entry Date --}}
                             <div class="col-md-2">
                                 <label class="form-label small fw-bold text-muted">Entry Date</label>
-                                <input name="entry_date" value="{{ date('Y-m-d') }}" type="date" class="form-control form-control-sm" tabindex="-1" required>
+                                <input name="entry_date" value="{{ date('Y-m-d') }}" type="date" class="form-control form-control-sm bg-light" readonly tabindex="-1" style="pointer-events: none;" required>
                             </div>
                             {{-- Entry Time --}}
                             <div class="col-md-2">
                                 <label class="form-label small fw-bold text-muted">Entry Time</label>
-                                <input name="entry_time" value="{{ date('H:i') }}" type="time" class="form-control form-control-sm" tabindex="-1" required>
+                                <input name="entry_time" value="{{ date('H:i') }}" type="time" class="form-control form-control-sm bg-light" readonly tabindex="-1" style="pointer-events: none;" required>
                             </div>
 
                             {{-- From Warehouse --}}

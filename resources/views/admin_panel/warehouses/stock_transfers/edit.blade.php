@@ -143,12 +143,18 @@
                             {{-- Entry Date --}}
                             <div class="col-md-2">
                                 <label class="form-label small fw-bold text-muted">Entry Date</label>
-                                <input name="entry_date" value="{{ $transfer->entry_date }}" type="date" class="form-control form-control-sm" tabindex="-1" required>
+                                @php
+                                    $eDate = $transfer->entry_date ?? ($transfer->created_at ? \Carbon\Carbon::parse($transfer->created_at)->format('Y-m-d') : date('Y-m-d'));
+                                @endphp
+                                <input name="entry_date" value="{{ $eDate }}" type="date" class="form-control form-control-sm bg-light" readonly tabindex="-1" style="pointer-events: none;" required>
                             </div>
                             {{-- Entry Time --}}
                             <div class="col-md-2">
                                 <label class="form-label small fw-bold text-muted">Entry Time</label>
-                                <input name="entry_time" value="{{ $transfer->entry_time ? \Carbon\Carbon::parse($transfer->entry_time)->format('H:i') : '' }}" type="time" class="form-control form-control-sm" tabindex="-1" required>
+                                @php
+                                    $eTime = $transfer->entry_time ? \Carbon\Carbon::parse($transfer->entry_time)->format('H:i') : ($transfer->created_at ? \Carbon\Carbon::parse($transfer->created_at)->format('H:i') : date('H:i'));
+                                @endphp
+                                <input name="entry_time" value="{{ $eTime }}" type="time" class="form-control form-control-sm bg-light" readonly tabindex="-1" style="pointer-events: none;" required>
                             </div>
 
                             {{-- From Warehouse --}}

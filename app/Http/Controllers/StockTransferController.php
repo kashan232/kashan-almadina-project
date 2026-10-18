@@ -118,6 +118,13 @@ class StockTransferController extends Controller
             return back()->with('error', 'Only unposted stock transfers can be edited.');
         }
 
+        if (empty($transfer->entry_date) && $transfer->created_at) {
+            $transfer->entry_date = \Carbon\Carbon::parse($transfer->created_at)->format('Y-m-d');
+        }
+        if (empty($transfer->entry_time) && $transfer->created_at) {
+            $transfer->entry_time = \Carbon\Carbon::parse($transfer->created_at)->format('H:i');
+        }
+
         $warehouses = Warehouse::allForSelection();
         $products = Product::orderBy('name')->get();
 
@@ -155,8 +162,8 @@ class StockTransferController extends Controller
                     'from_shop'         => $isFromShop ? 1 : 0,
                     'to_warehouse_id'   => $isToShop ? null : $request->to_warehouse_id,
                     'to_shop'           => $isToShop ? 1 : 0,
-                    'entry_date'        => $request->entry_date ?? date('Y-m-d'),
-                    'entry_time'        => $request->entry_time ?? date('H:i'),
+                    'entry_date'        => $transfer->entry_date ?? $request->entry_date ?? ($transfer->created_at ? \Carbon\Carbon::parse($transfer->created_at)->format('Y-m-d') : date('Y-m-d')),
+                    'entry_time'        => $transfer->entry_time ?? $request->entry_time ?? ($transfer->created_at ? \Carbon\Carbon::parse($transfer->created_at)->format('H:i') : date('H:i')),
                     'remarks'           => $request->remarks,
                 ]);
 
