@@ -165,16 +165,12 @@
                                 <input type="number" step="any" name="sales_price" id="sales_price" class="form-control input-sm text-end fw-bold text-danger" placeholder="0.00" readonly>
                             </div>
                             <div class="col-md-2" style="max-width: 130px;">
-                                <label class="form-label font-weight-bold text-success">Claim Amount</label>
-                                <input type="number" step="any" name="claim_income" id="claim_income" class="form-control input-sm text-end fw-bold text-success" placeholder="0.00" value="{{ old('claim_income', '0.00') }}">
-                            </div>
-                            <div class="col-md-2" style="max-width: 130px;">
                                 <label class="form-label">Bill Date</label>
                                 <input type="date" name="bill_date" class="form-control input-sm">
                             </div>
 
                             <!-- Warehouses & Accounts -->
-                            <div class="col-md-3" id="original_warehouse_div">
+                            <div class="col-md-2" id="original_warehouse_div">
                                 <label class="form-label border-danger border-bottom"><span class="text-danger"><i class="fa fa-minus-circle"></i></span> Deliver From</label>
                                 <select name="original_warehouse_id" class="form-select input-sm">
                                     @if(auth()->user()->canAccessShop())
@@ -185,7 +181,7 @@
                                     @endforeach
                                 </select>
                             </div>
-                            <div class="col-md-3">
+                            <div class="col-md-2">
                                 <label class="form-label border-primary border-bottom font-weight-bold"><span class="text-primary"><i class="fa fa-plus-circle"></i></span> Claim WH (To)</label>
                                 @if(isset($isAdmin) && $isAdmin)
                                     <select name="claim_warehouse_id" class="form-select input-sm">
@@ -221,6 +217,10 @@
                                         </option>
                                     @endforeach
                                 </select>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label font-weight-bold text-success border-success border-bottom"><span class="text-success"><i class="fa fa-calculator"></i></span> Claim Amount</label>
+                                <input type="number" step="any" name="claim_income" id="claim_income" class="form-control input-sm text-end fw-bold text-success" placeholder="0.00" value="{{ old('claim_income', '0.00') }}">
                             </div>
 
                             <!-- Fault Found & Remarks -->
