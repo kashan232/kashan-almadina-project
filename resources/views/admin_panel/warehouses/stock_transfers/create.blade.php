@@ -15,9 +15,58 @@
     .purchase-page .card-header { padding: .35rem .5rem !important; }
     .purchase-page .card-body { padding: .5rem !important; }
     .purchase-page .row.g-2, .purchase-page .row.g-3 { --bs-gutter-x: .5rem; --bs-gutter-y: .35rem; }
-    .purchase-page .bottom-bar { margin-top: .4rem !important; padding: .75rem !important; }
+    .purchase-page .bottom-bar {
+        margin-top: .4rem !important;
+        padding: .5rem !important;
+        position: sticky;
+        bottom: 2px;
+        z-index: 25;
+        background: #ffffff !important;
+        box-shadow: 0 -3px 12px rgba(0,0,0,0.12) !important;
+        border: 1px solid #ced4da !important;
+    }
     .purchase-page .page-head { padding: .35rem .5rem !important; margin-bottom: .35rem !important; }
     .purchase-page .btn-xs { padding: 1px 4px; font-size: .7rem; line-height: 1.2; }
+    
+    /* Scrollable items table container */
+    .transfer-table-container {
+        max-height: calc(100vh - 305px);
+        min-height: 260px;
+        overflow-y: auto;
+        overflow-x: auto;
+        position: relative;
+    }
+    .transfer-table-container table {
+        border-collapse: separate !important;
+        border-spacing: 0;
+        width: 100%;
+    }
+    /* Sticky Table Header */
+    .transfer-table-container table thead th {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        background: #f8f9fa !important;
+        border-bottom: 2px solid #dee2e6 !important;
+        border-top: none !important;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+    }
+    /* Sticky Table Footer (Total Qty) */
+    .transfer-table-container table tfoot th,
+    .transfer-table-container table tfoot td {
+        position: sticky;
+        bottom: 0;
+        z-index: 10;
+        background: #f8f9fa !important;
+        border-top: 2px solid #dee2e6 !important;
+        box-shadow: 0 -2px 5px rgba(0,0,0,0.08);
+    }
+    .loading-indicator {
+        background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 50 50"><path fill="%230d6efd" d="M25,5A20,20 0 1,0 45,25A5,5 0 0,1 55,25A30,30 0 1,1 25,-5A5,5 0 0,1 25,5Z"><animateTransform attributeName="transform" type="rotate" from="0 25 25" to="360 25 25" dur="0.8s" repeatCount="indefinite"/></path></svg>');
+        background-repeat: no-repeat;
+        background-position: right 6px center;
+        background-size: 14px 14px;
+    }
     .posted-watermark {
         position: absolute; top: 50%; left: 50%;
         transform: translate(-50%, -50%) rotate(-30deg);
@@ -134,12 +183,12 @@
 
                 <div class="card shadow-sm mb-2">
                     <div class="card-body p-0">
-                        <div class="table-responsive">
+                        <div class="table-responsive transfer-table-container">
                             <table class="table table-bordered table-striped mb-0" id="itemsTable">
                                 <thead class="bg-light">
                                     <tr>
-                                        <th style="width:80px;">Item ID</th>
-                                        <th style="width:300px;">Product Description</th>
+                                        <th style="width:90px;">Item ID</th>
+                                        <th style="min-width:320px;">Product Description</th>
                                         <th style="width:130px;">Available Stock</th>
                                         <th style="width:120px;">Qty to Transfer</th>
                                         <th style="width:50px;" class="text-center"><span style="font-size:9px;font-weight:normal;color:#888;"><kbd style="font-size:8px;padding:0 2px;">Ctrl+I</kbd></span></th>
@@ -150,7 +199,7 @@
                                     <tr>
                                         <th colspan="3" class="text-end">Total Qty:</th>
                                         <th>
-                                            <input type="text" id="total_qty" class="form-control input-sm text-center fw-bold" readonly value="0">
+                                            <input type="text" id="total_qty" class="form-control input-sm text-center fw-bold bg-white" readonly value="0">
                                         </th>
                                         <th></th>
                                     </tr>
@@ -159,6 +208,15 @@
                         </div>
                     </div>
                 </div>
+
+                <template id="productOptionsTemplate">
+                    <option value="">Search Product...</option>
+                    @if(isset($products))
+                        @foreach($products as $p)
+                            <option value="{{ $p->id }}" data-id="{{ $p->id }}">{{ $p->id }} - {{ $p->name }}</option>
+                        @endforeach
+                    @endif
+                </template>
 
                 <div class="d-flex flex-wrap gap-2 justify-content-center bg-light bottom-bar rounded-2 border shadow-sm w-100">
                     <button type="button" id="saveDraftBtn" class="btn btn-primary px-3 fw-bold shadow-sm">
@@ -346,29 +404,49 @@ $(document).ready(function() {
             .fail(function() { $row.find('.stock').val(0); });
     }
 
+    function matchProduct(params, data) {
+        if ($.trim(params.term) === '') {
+            return data;
+        }
+        if (typeof data.text === 'undefined') {
+            return null;
+        }
+        var term = params.term.toLowerCase();
+        var text = data.text.toLowerCase();
+        var id = String(data.id || '').toLowerCase();
+        if (text.indexOf(term) > -1 || id.indexOf(term) > -1) {
+            return data;
+        }
+        return null;
+    }
+
+    var productOptionsHtml = $('#productOptionsTemplate').html() || '<option value="">Search Product...</option>';
+
+    function scrollToBottom() {
+        var $c = $('.transfer-table-container');
+        if ($c.length) {
+            setTimeout(function() {
+                $c.scrollTop($c[0].scrollHeight);
+            }, 30);
+        }
+    }
+
     function initProductSelect($row) {
-        $row.find('.product-select').select2({
-            placeholder: 'Search Product', width: '100%',
-            ajax: {
-                url: "{{ route('search-productsinwar') }}", dataType: 'json', delay: 100,
-                data: function(params) { return { q: params.term }; },
-                processResults: function(data, params) {
-                    const term = (params.term || '').toLowerCase();
-                    const results = data.map(function(i) { 
-                        return { id: i.id, text: i.id + ' - ' + i.name, name: i.name }; 
-                    });
+        var $select = $row.find('.product-select');
+        if ($select.hasClass('select2-hidden-accessible')) {
+            return;
+        }
 
-                    // Prioritize exact matches
-                    results.sort((a, b) => {
-                        if (String(a.id) === term || a.name.toLowerCase() === term) return -1;
-                        if (String(b.id) === term || b.name.toLowerCase() === term) return 1;
-                        return 0;
-                    });
-
-                    return { results };
-                }
-            },
-            minimumInputLength: 1
+        $select.select2({
+            placeholder: 'Search Product',
+            width: '100%',
+            allowClear: true,
+            matcher: matchProduct
+        }).on('select2:open', function() {
+            setTimeout(function() {
+                var searchInput = document.querySelector('.select2-container--open .select2-search__field');
+                if (searchInput) searchInput.focus();
+            }, 10);
         }).on('select2:select', function(e) {
             var data = e.params.data;
             $row.find('.item-id-input').val(data.id);
@@ -376,13 +454,17 @@ $(document).ready(function() {
             recalcTotals();
             if ($row.is('#transferItems tr:last-child')) { appendBlankRow(false); }
             setTimeout(function() { $row.find('.quantity').focus().select(); }, 60);
+        }).on('select2:clear', function() {
+            $row.find('.item-id-input').val('');
+            $row.find('.stock').val('');
+            recalcTotals();
         });
     }
 
     function appendBlankRow(focus = false) {
         var html = `<tr>
             <td><input type="text" class="form-control input-sm item-id-input" placeholder="ID" tabindex="4"></td>
-            <td><select name="product_id[]" class="form-control product-select" style="width:100%;"><option value="">Select Product</option></select></td>
+            <td><select name="product_id[]" class="form-control product-select" style="width:100%;">${productOptionsHtml}</select></td>
             <td><input type="number" name="available_stock[]" class="form-control input-sm stock" readonly tabindex="-1"></td>
             <td><input type="number" name="quantity[]" class="form-control input-sm quantity" value="1" step="any" min="0.01"></td>
             <td class="text-center"><button type="button" class="btn btn-sm btn-danger remove-row" tabindex="-1">X</button></td>
@@ -390,6 +472,7 @@ $(document).ready(function() {
         var $row = $(html);
         $('#transferItems').append($row);
         initProductSelect($row);
+        scrollToBottom();
         if (focus) { setTimeout(function() { $row.find('.item-id-input').focus().select(); }, 60); }
         return $row;
     }
@@ -400,11 +483,37 @@ $(document).ready(function() {
         if ((e.key === 'Enter' || e.key === 'Tab') && !e.shiftKey) {
             var $row = $(this).closest('tr');
             var val  = $(this).val().trim();
-            if (!val) { e.preventDefault(); $row.find('.product-select').select2('open'); return; }
+
+            if (!val) {
+                e.preventDefault();
+                $row.find('.product-select').select2('open');
+                return;
+            }
+
             e.preventDefault();
+
+            var $select = $row.find('.product-select');
+            var $opt = $select.find('option[value="' + val + '"]');
+
+            if ($opt.length) {
+                $select.val(val).trigger('change.select2');
+                $(this).val(val);
+                fetchStock($row, val);
+                recalcTotals();
+                if ($row.is('#transferItems tr:last-child')) { appendBlankRow(false); }
+                setTimeout(function() {
+                    $row.find('.quantity').focus().select();
+                }, 50);
+                return;
+            }
+
+            // Fallback: search via server if product wasn't preloaded
+            $(this).addClass('loading-indicator');
             $.ajax({
-                url: "{{ route('search-productsinwar') }}", data: { q: val },
+                url: "{{ route('search-productsinwar') }}",
+                data: { q: val },
                 success: function(res) {
+                    $row.find('.item-id-input').removeClass('loading-indicator');
                     // Match prioritization: exact ID -> case-insensitive exact name -> first result if only 1
                     var item = res.find(function(i) { return i.id.toString() === val; })
                              || res.find(function(i) { return i.name.toLowerCase() === val.toLowerCase(); });
@@ -415,12 +524,22 @@ $(document).ready(function() {
 
                     if (item) {
                         var option = new Option(item.id + ' - ' + item.name, item.id, true, true);
-                        $row.find('.product-select').empty().append(option).val(item.id).trigger('change.select2');
+                        if (!$select.find('option[value="' + item.id + '"]').length) {
+                            $select.append(option);
+                        }
+                        $select.val(item.id).trigger('change.select2');
+                        $row.find('.item-id-input').val(item.id);
                         fetchStock($row, item.id);
                         recalcTotals();
                         if ($row.is('#transferItems tr:last-child')) { appendBlankRow(false); }
                         setTimeout(function() { $row.find('.quantity').focus().select(); }, 60);
-                    } else { $row.find('.product-select').select2('open'); }
+                    } else {
+                        $row.find('.product-select').select2('open');
+                    }
+                },
+                error: function() {
+                    $row.find('.item-id-input').removeClass('loading-indicator');
+                    $row.find('.product-select').select2('open');
                 }
             });
         }

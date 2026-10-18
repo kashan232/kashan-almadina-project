@@ -1551,7 +1551,7 @@
 
   function serializeForm() {
     // Strip commas from formatted fields
-    const formatClasses = ['.stock', '.sales-price', '.sales-qty', '.retail-price', '.discount-value', '.sales-rate', '.sales-amount', '.discount-amount-display'];
+    const formatClasses = ['.stock', '.sales-price', '.sales-qty', '.retail-price', '.discount-value', '.sales-rate', '.sales-amount', '.discount-amount-display', '.rv-amount'];
     formatClasses.forEach(cls => {
         $('#saleForm').find(cls).each(function() {
             $(this).data('old-val-comma', $(this).val()); // Store original
@@ -1720,6 +1720,7 @@
                   $(this).remove();
               }
           });
+          cleanupEmptyReceiptRows();
           updateGrandTotals();
 
           $('.ajax-valid-error').remove();
@@ -2683,10 +2684,26 @@
 
     if (accId) {
       $amtInput.prop('disabled', false);
+      setTimeout(() => {
+        $amtInput.focus().select();
+      }, 50);
     } else {
       $amtInput.prop('disabled', true).val('');
     }
     recomputeReceipts();
+  });
+
+  $(document).on('keydown', '.rv-amount', function(e) {
+    if (e.key === 'Enter' || e.keyCode === 13 || (e.key === 'Tab' && !e.shiftKey)) {
+      e.preventDefault();
+      const $row = $(this).closest('.rv-row');
+      const $narr = $row.find('.rv-narration');
+      if ($narr.length) {
+        setTimeout(() => {
+          $narr.select2('open');
+        }, 50);
+      }
+    }
   });
 
   $(document).on('blur', '.rv-amount', function() {
@@ -2799,6 +2816,98 @@
 
   // Recompute total receipt amounts when input changes
   $(document).on('input', '.rv-amount', recomputeReceipts);
+
+  let _rvAddingRow = false;
+  function autoAppendNextReceiptRow($narrationSelect) {
+    if (@json($isViewMode)) return;
+    if (_rvAddingRow) return;
+
+    const $row = $narrationSelect.closest('.rv-row');
+    const $wrapper = $('#rvWrapper');
+    const $allRows = $wrapper.find('.rv-row');
+
+    // Only if this is the last receipt row
+    if ($row.is($allRows.last())) {
+      const narVal = $narrationSelect.val();
+      if (narVal && String(narVal).trim() !== '') {
+        // Check if last row is already blank to prevent duplicates
+        const $last = $allRows.last();
+        const isBlank = !$last.find('.rv-head').val() &&
+                        !$last.find('.rv-account').val() &&
+                        (toNum($last.find('.rv-amount').val()) === 0) &&
+                        !$last.find('.rv-narration').val();
+        if (isBlank) {
+          setTimeout(() => {
+            $last.find('.rv-head').select2('open');
+          }, 100);
+          return;
+        }
+
+        _rvAddingRow = true;
+        $('#btnAddRV').click();
+
+        setTimeout(() => {
+          const $newRow = $('#rvWrapper .rv-row:last');
+          $newRow.find('.rv-head').select2('open');
+          _rvAddingRow = false;
+        }, 150);
+      }
+    }
+  }
+
+  $(document).on('select2:select', '.rv-narration', function() {
+    autoAppendNextReceiptRow($(this));
+  });
+
+  $(document).on('change', '.rv-narration', function() {
+    autoAppendNextReceiptRow($(this));
+  });
+
+  // Handle Tab when search box inside Select2 is open for narration
+  $(document).on('keydown', '.select2-container--open .select2-search__field', function(e) {
+    if (e.key === 'Tab' && !e.shiftKey) {
+      const $openSelect = $('.rv-narration').filter(function() {
+        return $(this).data('select2') && $(this).data('select2').isOpen();
+      });
+      if ($openSelect.length) {
+        const $highlighted = $('.select2-results__option--highlighted');
+        if ($highlighted.length && $highlighted.data('data')) {
+          e.preventDefault();
+          const data = $highlighted.data('data');
+          $openSelect.val(data.id).trigger('change');
+          $openSelect.select2('close');
+        }
+      }
+    }
+  });
+
+  // Handle Enter on closed narration select2 container
+  $(document).on('keydown', '.rv-row .select2-container', function(e) {
+    if (e.key === 'Enter' || e.keyCode === 13) {
+      const $select = $(this).prev('select.rv-narration');
+      if ($select.length && !$('.select2-container--open').length) {
+        e.preventDefault();
+        autoAppendNextReceiptRow($select);
+      }
+    }
+  });
+
+  function cleanupEmptyReceiptRows() {
+    $('#rvWrapper .rv-row').each(function() {
+      const $r = $(this);
+      const head = $r.find('.rv-head').val();
+      const acc = $r.find('.rv-account').val();
+      const amt = toNum($r.find('.rv-amount').val());
+      const narr = $r.find('.rv-narration').val();
+
+      if (!head && !acc && (!amt || amt === 0) && !narr) {
+        if ($('#rvWrapper .rv-row').length > 1) {
+          $r.remove();
+        }
+      }
+    });
+    recomputeReceipts();
+  }
 
   /* ---------- init ---------- */
   function init() {
@@ -3224,6 +3333,7 @@
   }
 
   function cleanupEmptyRows() {
+    cleanupEmptyReceiptRows();
     $('#salesTableBody tr').each(function() {
       const $r = $(this);
       const prod = $r.find('.product-select').val();

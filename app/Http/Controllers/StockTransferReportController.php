@@ -17,23 +17,30 @@ class StockTransferReportController extends Controller
         return !empty($selected) && ($total === 0 || count($selected) < $total);
     }
 
+    private function parseFilterDate(?string $value): ?string
+    {
+        if (empty($value)) {
+            return null;
+        }
+
+        try {
+            return \Carbon\Carbon::parse($value)->format('Y-m-d');
+        } catch (\Throwable $e) {
+            return null;
+        }
+    }
+
     private function applyDateFilter($query, ?string $from_date, ?string $to_date): void
     {
-        if (!empty($from_date)) {
-            $query->where(function ($sub) use ($from_date) {
-                $sub->whereDate('entry_date', '>=', $from_date)
-                    ->orWhere(function ($sq) use ($from_date) {
-                        $sq->whereNull('entry_date')->whereDate('created_at', '>=', $from_date);
-                    });
-            });
+        $fromDate = $this->parseFilterDate($from_date);
+        $toDate = $this->parseFilterDate($to_date);
+        $dateColumn = \DB::raw("COALESCE(NULLIF(entry_date, ''), created_at)");
+
+        if (!empty($fromDate)) {
+            $query->whereDate($dateColumn, '>=', $fromDate);
         }
-        if (!empty($to_date)) {
-            $query->where(function ($sub) use ($to_date) {
-                $sub->whereDate('entry_date', '<=', $to_date)
-                    ->orWhere(function ($sq) use ($to_date) {
-                        $sq->whereNull('entry_date')->whereDate('created_at', '<=', $to_date);
-                    });
-            });
+        if (!empty($toDate)) {
+            $query->whereDate($dateColumn, '<=', $toDate);
         }
     }
 
@@ -74,8 +81,8 @@ class StockTransferReportController extends Controller
 
     public function preview(Request $request)
     {
-        $from_date = $request->from_date;
-        $to_date = $request->to_date;
+        $from_date = $this->parseFilterDate($request->from_date) ?? date('Y-m-d');
+        $to_date = $this->parseFilterDate($request->to_date) ?? date('Y-m-d');
         $grouped = $this->fetchReportLines($request)->groupBy('stock_transfer_id');
 
         return view('admin_panel.reports.stock_transfer.preview', compact('grouped', 'from_date', 'to_date'));

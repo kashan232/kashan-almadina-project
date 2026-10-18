@@ -171,7 +171,7 @@
                                 </div>
                                 <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6">
                                     <label class="report-field-label">From</label>
-                                    <input type="date" name="receipt_from" class="form-control form-control-sm report-field-input" value="{{ date('Y-01-01') }}">
+                                    <input type="date" name="receipt_from" class="form-control form-control-sm report-field-input" value="{{ date('Y-m-01') }}">
                                 </div>
                                 <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6">
                                     <label class="report-field-label">To</label>
@@ -184,7 +184,7 @@
                                 </div>
                                 <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6">
                                     <label class="report-field-label">From</label>
-                                    <input type="date" name="entry_from" class="form-control form-control-sm report-field-input" value="{{ date('Y-01-01') }}">
+                                    <input type="date" name="entry_from" class="form-control form-control-sm report-field-input" value="{{ date('Y-m-01') }}">
                                 </div>
                                 <div class="col-xl-2 col-lg-3 col-md-4 col-sm-6">
                                     <label class="report-field-label">To</label>

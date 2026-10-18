@@ -109,22 +109,31 @@
                     </div>
 
                     <div class="card border border-primary mb-3 shadow-sm">
-                        <div class="card-header py-1 bg-primary text-white fw-bold small">
-                            <i class="fas fa-cog me-1"></i> REPORT SETTINGS
+                        <div class="card-header py-1 bg-primary text-white fw-bold small d-flex justify-content-between align-items-center flex-wrap gap-1">
+                            <span><i class="fas fa-cog me-1"></i> REPORT SETTINGS</span>
+                            <div class="btn-group btn-group-sm" role="group" aria-label="Quick Dates">
+                                <button type="button" class="btn btn-sm btn-light text-primary fw-bold py-0 px-2 quick-date" data-range="today">Today</button>
+                                <button type="button" class="btn btn-sm btn-light text-primary fw-bold py-0 px-2 quick-date" data-range="yesterday">Yesterday</button>
+                                <button type="button" class="btn btn-sm btn-light text-primary fw-bold py-0 px-2 quick-date" data-range="this_month">This Month</button>
+                                <button type="button" class="btn btn-sm btn-light text-primary fw-bold py-0 px-2 quick-date" data-range="last_month">Last Month</button>
+                                <button type="button" class="btn btn-sm btn-light text-primary fw-bold py-0 px-2 quick-date" data-range="this_year">This Year</button>
+                            </div>
                         </div>
                         <div class="card-body p-2">
-                            <div class="row g-2 align-items-end">
+                            <div class="row g-2 align-items-start">
                                 <div class="col-md-2">
                                     <label class="fw-bold mb-1" style="font-size: 11px;">Trn ID</label>
                                     <input type="text" name="transfer_id" class="form-control form-control-sm" placeholder="5062..." style="height: 30px; font-size: 12px;">
                                 </div>
-                                <div class="col-md-2">
+                                <div class="col-md-3">
                                     <label class="fw-bold mb-1" style="font-size: 11px;">From Date</label>
-                                    <input type="date" name="from_date" class="form-control form-control-sm" value="{{ date('Y-01-01') }}" style="height: 30px; font-size: 12px;">
+                                    <input type="date" id="from_date" name="from_date" class="form-control form-control-sm" value="{{ date('Y-m-d') }}" style="height: 30px; font-size: 12px;">
+                                    <div id="from_date_preview" class="text-primary fw-bold mt-1" style="font-size: 11px;"><i class="far fa-calendar-alt me-1"></i><span></span></div>
                                 </div>
-                                <div class="col-md-2">
+                                <div class="col-md-3">
                                     <label class="fw-bold mb-1" style="font-size: 11px;">To Date</label>
-                                    <input type="date" name="to_date" class="form-control form-control-sm" value="{{ date('Y-m-d') }}" style="height: 30px; font-size: 12px;">
+                                    <input type="date" id="to_date" name="to_date" class="form-control form-control-sm" value="{{ date('Y-m-d') }}" style="height: 30px; font-size: 12px;">
+                                    <div id="to_date_preview" class="text-primary fw-bold mt-1" style="font-size: 11px;"><i class="far fa-calendar-alt me-1"></i><span></span></div>
                                 </div>
                             </div>
                         </div>
@@ -256,6 +265,64 @@
 
         $('#group-list .filter-item').on('click', function() {
             setTimeout(filterByGroup, 50);
+        });
+
+        function formatDateText(dateStr) {
+            if (!dateStr) return '';
+            const parts = dateStr.split('-');
+            if (parts.length !== 3) return dateStr;
+            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+            const year = parts[0];
+            const monthIdx = parseInt(parts[1], 10) - 1;
+            const day = parts[2];
+            if (monthIdx >= 0 && monthIdx < 12) {
+                return day + '-' + months[monthIdx] + '-' + year;
+            }
+            return dateStr;
+        }
+
+        function updateDatePreviews() {
+            const fVal = $('#from_date').val();
+            const tVal = $('#to_date').val();
+            $('#from_date_preview span').text(formatDateText(fVal));
+            $('#to_date_preview span').text(formatDateText(tVal));
+        }
+
+        $('#from_date, #to_date').on('change input', updateDatePreviews);
+        updateDatePreviews();
+
+        function pad(n) { return n < 10 ? '0' + n : n; }
+        function toYMD(d) {
+            return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+        }
+
+        $('.quick-date').on('click', function(e) {
+            e.preventDefault();
+            const range = $(this).data('range');
+            const now = new Date();
+            let fromD = new Date();
+            let toD = new Date();
+
+            if (range === 'today') {
+                fromD = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                toD = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            } else if (range === 'yesterday') {
+                fromD = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
+                toD = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1);
+            } else if (range === 'this_month') {
+                fromD = new Date(now.getFullYear(), now.getMonth(), 1);
+                toD = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            } else if (range === 'last_month') {
+                fromD = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+                toD = new Date(now.getFullYear(), now.getMonth(), 0);
+            } else if (range === 'this_year') {
+                fromD = new Date(now.getFullYear(), 0, 1);
+                toD = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            }
+
+            $('#from_date').val(toYMD(fromD));
+            $('#to_date').val(toYMD(toD));
+            updateDatePreviews();
         });
     });
 </script>

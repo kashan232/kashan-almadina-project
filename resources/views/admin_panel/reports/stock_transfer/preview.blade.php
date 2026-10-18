@@ -140,8 +140,8 @@
     <div class="generated-date">{{ now()->format('l, F d, Y') }}</div>
     <h1 class="report-title">Goods Transfer Report</h1>
     <div class="date-range">
-        From: <span>{{ \Carbon\Carbon::parse($from_date)->format('d-m-y') }}</span>
-        To: <span>{{ \Carbon\Carbon::parse($to_date)->format('d-m-y') }}</span>
+        From: <span>{{ \Carbon\Carbon::parse($from_date)->format('d-M-Y') }}</span>
+        To: <span>{{ \Carbon\Carbon::parse($to_date)->format('d-M-Y') }}</span>
     </div>
 </div>
 
@@ -167,10 +167,11 @@
 
         @foreach($grouped as $transferId => $items)
             @php
-                $transfer = $items->first()->transfer;
-                $fromName = $transfer->from_shop ? 'Shop' : ($transfer->fromWarehouse->warehouse_name ?? 'N/A');
-                $toName = $transfer->to_shop ? 'Shop' : ($transfer->toWarehouse->warehouse_name ?? 'N/A');
-                $transferDate = \Carbon\Carbon::parse($transfer->entry_date ?? $transfer->created_at)->format('d-m-y');
+                $transfer = $items->first()?->transfer;
+                $fromName = $transfer?->from_shop ? 'Shop' : ($transfer?->fromWarehouse->warehouse_name ?? 'N/A');
+                $toName = $transfer?->to_shop ? 'Shop' : ($transfer?->toWarehouse->warehouse_name ?? 'N/A');
+                $rawDate = (!empty($transfer?->entry_date)) ? $transfer->entry_date : $transfer?->created_at;
+                $transferDate = $rawDate ? \Carbon\Carbon::parse($rawDate)->format('d-m-Y') : '-';
                 $trn_qty = 0;
             @endphp
 
@@ -184,7 +185,7 @@
                         : '-';
                 @endphp
                 <tr class="data-row">
-                    <td class="trn-cell">{{ $transfer->id }}</td>
+                    <td class="trn-cell">{{ $transfer?->id ?? $transferId }}</td>
                     <td class="text-center">{{ $transferDate }}</td>
                     <td class="text-left">{{ $fromName }}</td>
                     <td class="text-left">{{ $toName }}</td>
@@ -199,7 +200,7 @@
             @endforeach
 
             <tr class="total-row">
-                <td colspan="5" class="total-label">Trn ID: {{ $transfer->id }} Total:</td>
+                <td colspan="5" class="total-label">Trn ID: {{ $transfer?->id ?? $transferId }} Total:</td>
                 <td class="qty-box">{{ number_format($trn_qty, 0) }}</td>
             </tr>
         @endforeach

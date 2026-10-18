@@ -49,7 +49,11 @@
                                     </div>
                                     <div class="filter-list" id="officer-list">
                                         @foreach($users as $u)
-                                            <div class="filter-item" data-groups="{{ $u->userGroups->pluck('id')->implode(',') }}">
+                                            @php
+                                                $isAdminUser = $u->isAdmin();
+                                                $uGroupIds = $isAdminUser ? $userGroups->pluck('id')->implode(',') : $u->userGroups->pluck('id')->implode(',');
+                                            @endphp
+                                            <div class="filter-item" data-is-admin="{{ $isAdminUser ? 1 : 0 }}" data-groups="{{ $uGroupIds }}">
                                                 <input type="checkbox" name="sales_officer[]" value="{{ $u->id }}">
                                                 <span>{{ $u->name }}</span>
                                             </div>
@@ -386,8 +390,9 @@
 
         function matchesGroups($item, selectedGroups) {
             if (!selectedGroups.length) return true;
+            if ($item.data('is-admin') == 1) return true;
             const itemGroups = parseDataList($item.data('groups'));
-            if (!itemGroups.length) return false;
+            if (!itemGroups.length) return true;
             return selectedGroups.some(g => itemGroups.includes(g));
         }
 

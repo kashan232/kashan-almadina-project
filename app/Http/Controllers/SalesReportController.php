@@ -29,7 +29,7 @@ class SalesReportController extends Controller
     public function index()
     {
         $user = auth()->user();
-        $isAdmin = !$user || $user->roles->pluck('name')->contains('Admin') || $user->id == 1;
+        $isAdmin = !$user || $user->isAdmin();
 
         $userGroups = UserGroup::orderBy('group_name')
             ->when(!$isAdmin, function ($q) use ($user) {

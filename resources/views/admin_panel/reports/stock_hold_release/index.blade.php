@@ -141,7 +141,7 @@
                                 </div>
                                 <div class="col-md-2">
                                     <label class="fw-bold mb-1" style="font-size: 11px;">Start Date</label>
-                                    <input type="date" name="from_date" class="form-control form-control-sm" value="{{ date('Y-01-01') }}" required style="height: 30px; font-size: 12px;">
+                                    <input type="date" name="from_date" class="form-control form-control-sm" value="{{ date('Y-m-d') }}" required style="height: 30px; font-size: 12px;">
                                 </div>
                                 <div class="col-md-2">
                                     <label class="fw-bold mb-1" style="font-size: 11px;">End Date</label>
