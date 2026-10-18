@@ -128,9 +128,9 @@
                         <i class="fa fa-list-alt me-1"></i> Section 2: Claim Details
                     </div>
                     <div class="card-body">
-                        <div class="row g-3">
-                            <!-- Line 1: Claim Item (with Item ID), MFG Date, Card Number, Retail Price, Sale Price, Bill Date -->
-                            <div class="col-md-3">
+                        <!-- Line 1: Claim Item ,MFG Date , Card No, Bill Date, Fault Found , Retail Price , Sales Price -->
+                        <div class="row g-2 align-items-end mb-2">
+                            <div class="col-xl-3 col-lg-3 col-md-4 col-12" style="min-width: 240px;">
                                 <div class="row g-1">
                                     <div class="col-4" style="max-width: 75px;">
                                         <label class="form-label">Item ID</label>
@@ -147,30 +147,36 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-md-2" style="max-width: 110px;">
+                            <div class="col-md col-sm-4 col-6" style="min-width: 110px;">
                                 <label class="form-label">MFG Date</label>
                                 <input type="text" name="mfg_date" class="form-control input-sm" placeholder="BH JC BD" value="{{ $claim->mfg_date }}">
                             </div>
-                            <div class="col-md-2" style="max-width: 110px;">
+                            <div class="col-md col-sm-4 col-6" style="min-width: 110px;">
                                 <label class="form-label">Card No</label>
                                 <input type="text" name="card_no" class="form-control input-sm" value="{{ $claim->card_no }}">
                             </div>
-                            <div class="col-md-2" style="max-width: 130px;">
+                            <div class="col-md col-sm-4 col-6" style="min-width: 130px;">
+                                <label class="form-label">Bill Date</label>
+                                <input type="date" name="bill_date" class="form-control input-sm" value="{{ $claim->bill_date }}">
+                            </div>
+                            <div class="col-md-2 col-sm-6 col-12" style="min-width: 150px;">
+                                <label class="form-label">Fault Found / Analysis</label>
+                                <input type="text" name="fault_found" class="form-control input-sm" placeholder="Detail fault..." value="{{ $claim->fault_found }}">
+                            </div>
+                            <div class="col-md col-sm-3 col-6" style="min-width: 120px;">
                                 <label class="form-label font-weight-bold">Retail Price</label>
                                 <input type="number" step="any" id="retail_price_display" class="form-control input-sm text-end fw-bold text-dark bg-light" placeholder="0.00" readonly disabled value="{{ $claim->retail_price > 0 ? $claim->retail_price : ($claim->product?->latestPrice?->sale_retail_price ?? $claim->product?->latestPrice?->retail_price ?? $claim->sales_price) }}">
                                 <input type="hidden" name="retail_price" id="retail_price_hidden" value="{{ $claim->retail_price > 0 ? $claim->retail_price : ($claim->product?->latestPrice?->sale_retail_price ?? $claim->product?->latestPrice?->retail_price ?? $claim->sales_price) }}">
                             </div>
-                            <div class="col-md-2" style="max-width: 120px;">
+                            <div class="col-md col-sm-3 col-6" style="min-width: 120px;">
                                 <label class="form-label font-weight-bold">Sales Price</label>
                                 <input type="number" step="any" name="sales_price" id="sales_price" class="form-control input-sm text-end fw-bold text-danger" placeholder="0.00" readonly value="{{ $claim->sales_price }}">
                             </div>
-                            <div class="col-md-2" style="max-width: 130px;">
-                                <label class="form-label">Bill Date</label>
-                                <input type="date" name="bill_date" class="form-control input-sm" value="{{ $claim->bill_date }}">
-                            </div>
+                        </div>
 
-                            <!-- Line 2: Deliver From -->
-                            <div class="col-md-3 {{ in_array($claim->claim_type, ['credit_note', 'claim_hold']) ? 'd-none' : '' }}" id="original_warehouse_div">
+                        <!-- Line 2: Deliver From, Claim WH, Remarks -->
+                        <div class="row g-2 align-items-end">
+                            <div class="col-md-4 col-12 {{ in_array($claim->claim_type, ['credit_note', 'claim_hold']) ? 'd-none' : '' }}" id="original_warehouse_div">
                                 <label class="form-label border-danger border-bottom"><span class="text-danger"><i class="fa fa-minus-circle"></i></span> Deliver From</label>
                                 <select name="original_warehouse_id" class="form-select input-sm">
                                     @if(auth()->user()->canAccessShop())
@@ -181,18 +187,8 @@
                                     @endforeach
                                 </select>
                             </div>
-                        </div>
-                    </div>
-                </div>
 
-                <!-- SECTION 3: CLAIM ENTRY -->
-                <div class="card shadow-sm mb-3">
-                    <div class="card-header py-2 bg-light fw-bold text-secondary border-bottom">
-                        <i class="fa fa-calculator me-1"></i> Section 3: Claim Entry
-                    </div>
-                    <div class="card-body">
-                        <div class="row g-2 align-items-end mb-2">
-                            <div class="col-lg-3 col-md-6 col-12">
+                            <div class="col-md-4 col-12">
                                 <label class="form-label border-primary border-bottom font-weight-bold"><span class="text-primary"><i class="fa fa-plus-circle"></i></span> Claim WH (To)</label>
                                 @if(isset($isAdmin) && $isAdmin)
                                     <select name="claim_warehouse_id" class="form-select input-sm">
@@ -209,7 +205,23 @@
                                     </select>
                                 @endif
                             </div>
-                            <div class="col-lg-3 col-md-6 col-12">
+
+                            <div class="col-md-4 col-12">
+                                <label class="form-label">Remarks</label>
+                                <input type="text" name="remarks" class="form-control input-sm" placeholder="General remarks..." value="{{ $claim->remarks }}">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SECTION 3: CLAIM ENTRY -->
+                <div class="card shadow-sm mb-3">
+                    <div class="card-header py-2 bg-light fw-bold text-secondary border-bottom">
+                        <i class="fa fa-calculator me-1"></i> Section 3: Claim Entry
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-2 align-items-end">
+                            <div class="col-md-4 col-12">
                                 <label class="form-label border-success border-bottom font-weight-bold"><span class="text-success"><i class="fa fa-money"></i></span> Cash Account (Debit)</label>
                                 <select name="cash_account_id" id="cash_account_id" class="form-select input-sm">
                                     @foreach($cashAccounts as $ca)
@@ -219,7 +231,7 @@
                                     @endforeach
                                 </select>
                             </div>
-                            <div class="col-lg-3 col-md-6 col-12">
+                            <div class="col-md-4 col-12">
                                 <label class="form-label border-info border-bottom font-weight-bold"><span class="text-info"><i class="fa fa-line-chart"></i></span> Claim Income A/c (Credit)</label>
                                 <select name="income_account_id" id="income_account_id" class="form-select input-sm">
                                     @foreach($incomeAccounts as $ia)
@@ -229,21 +241,9 @@
                                     @endforeach
                                 </select>
                             </div>
-                            <div class="col-lg-3 col-md-6 col-12">
+                            <div class="col-md-4 col-12">
                                 <label class="form-label font-weight-bold text-success border-success border-bottom"><span class="text-success"><i class="fa fa-calculator"></i></span> Claim Amount</label>
                                 <input type="number" step="any" name="claim_income" id="claim_income" class="form-control input-sm text-end fw-bold text-success" placeholder="0.00" value="{{ old('claim_income', $claim->claim_income) }}">
-                            </div>
-                        </div>
-
-                        <!-- Fault Found & Remarks -->
-                        <div class="row g-2">
-                            <div class="col-md-6 col-12">
-                                <label class="form-label">Fault Found / Analysis</label>
-                                <textarea name="fault_found" class="form-control input-sm" rows="1" placeholder="Detail fault...">{{ $claim->fault_found }}</textarea>
-                            </div>
-                            <div class="col-md-6 col-12">
-                                <label class="form-label">Remarks</label>
-                                <textarea name="remarks" class="form-control input-sm" rows="1" placeholder="General remarks...">{{ $claim->remarks }}</textarea>
                             </div>
                         </div>
                     </div>
