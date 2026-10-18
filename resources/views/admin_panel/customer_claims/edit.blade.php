@@ -169,8 +169,8 @@
                                 <input type="date" name="bill_date" class="form-control input-sm" value="{{ $claim->bill_date }}">
                             </div>
 
-                            <!-- Warehouses & Accounts -->
-                            <div class="col-md-2 {{ in_array($claim->claim_type, ['credit_note', 'claim_hold']) ? 'd-none' : '' }}" id="original_warehouse_div">
+                            <!-- Line 2: Deliver From -->
+                            <div class="col-md-3 {{ in_array($claim->claim_type, ['credit_note', 'claim_hold']) ? 'd-none' : '' }}" id="original_warehouse_div">
                                 <label class="form-label border-danger border-bottom"><span class="text-danger"><i class="fa fa-minus-circle"></i></span> Deliver From</label>
                                 <select name="original_warehouse_id" class="form-select input-sm">
                                     @if(auth()->user()->canAccessShop())
@@ -181,7 +181,18 @@
                                     @endforeach
                                 </select>
                             </div>
-                            <div class="col-md-2">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SECTION 3: CLAIM ENTRY -->
+                <div class="card shadow-sm mb-3">
+                    <div class="card-header py-2 bg-light fw-bold text-secondary border-bottom">
+                        <i class="fa fa-calculator me-1"></i> Section 3: Claim Entry
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-2 align-items-end mb-2">
+                            <div class="col-lg-3 col-md-6 col-12">
                                 <label class="form-label border-primary border-bottom font-weight-bold"><span class="text-primary"><i class="fa fa-plus-circle"></i></span> Claim WH (To)</label>
                                 @if(isset($isAdmin) && $isAdmin)
                                     <select name="claim_warehouse_id" class="form-select input-sm">
@@ -198,7 +209,7 @@
                                     </select>
                                 @endif
                             </div>
-                            <div class="col-md-3">
+                            <div class="col-lg-3 col-md-6 col-12">
                                 <label class="form-label border-success border-bottom font-weight-bold"><span class="text-success"><i class="fa fa-money"></i></span> Cash Account (Debit)</label>
                                 <select name="cash_account_id" id="cash_account_id" class="form-select input-sm">
                                     @foreach($cashAccounts as $ca)
@@ -208,7 +219,7 @@
                                     @endforeach
                                 </select>
                             </div>
-                            <div class="col-md-3">
+                            <div class="col-lg-3 col-md-6 col-12">
                                 <label class="form-label border-info border-bottom font-weight-bold"><span class="text-info"><i class="fa fa-line-chart"></i></span> Claim Income A/c (Credit)</label>
                                 <select name="income_account_id" id="income_account_id" class="form-select input-sm">
                                     @foreach($incomeAccounts as $ia)
@@ -218,17 +229,19 @@
                                     @endforeach
                                 </select>
                             </div>
-                            <div class="col-md-2">
+                            <div class="col-lg-3 col-md-6 col-12">
                                 <label class="form-label font-weight-bold text-success border-success border-bottom"><span class="text-success"><i class="fa fa-calculator"></i></span> Claim Amount</label>
                                 <input type="number" step="any" name="claim_income" id="claim_income" class="form-control input-sm text-end fw-bold text-success" placeholder="0.00" value="{{ old('claim_income', $claim->claim_income) }}">
                             </div>
+                        </div>
 
-                            <!-- Fault Found & Remarks -->
-                            <div class="col-md-6">
+                        <!-- Fault Found & Remarks -->
+                        <div class="row g-2">
+                            <div class="col-md-6 col-12">
                                 <label class="form-label">Fault Found / Analysis</label>
                                 <textarea name="fault_found" class="form-control input-sm" rows="1" placeholder="Detail fault...">{{ $claim->fault_found }}</textarea>
                             </div>
-                            <div class="col-md-6">
+                            <div class="col-md-6 col-12">
                                 <label class="form-label">Remarks</label>
                                 <textarea name="remarks" class="form-control input-sm" rows="1" placeholder="General remarks...">{{ $claim->remarks }}</textarea>
                             </div>
