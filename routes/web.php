@@ -337,6 +337,7 @@ Route::middleware('auth')->group(function () {
     Route::post('stock_transfers/{id}/reject', [StockTransferController::class, 'reject'])->name('stock_transfers.reject');
     Route::post('stock_transfers/{id}/post', [StockTransferController::class, 'post'])->name('stock_transfers.post');
     Route::get('stock_transfers/{id}/print', [StockTransferController::class, 'printView'])->name('stock_transfers.print');
+    Route::get('stock_transfers/{id}/print-thermal', [StockTransferController::class, 'printThermal'])->name('stock_transfers.print_thermal');
     // Stock Wastage
     Route::resource('stock-wastage', StockWastageController::class);
     Route::post('stock-wastage/{id}/post', [StockWastageController::class, 'post'])->name('stock-wastage.post');

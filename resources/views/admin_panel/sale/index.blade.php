@@ -346,6 +346,10 @@
                                                     <i class="fa fa-edit text-dark"></i>
                                                 </a>
 
+                                                <a href="{{ route('booking.dc', $sale->id) }}" target="_blank" class="btn btn-outline-secondary btn-xs px-1 py-0" title="Delivery Challan (DC)" style="height: 20px; font-size: 10px; line-height: 18px;">
+                                                    <i class="fa fa-truck"></i> DC
+                                                </a>
+
                                                 <form action="{{ route('sale.destroy', $sale->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Delete this unposted booking?')">
                                                     @csrf
                                                     @method('DELETE')
@@ -354,6 +358,9 @@
                                                     </button>
                                                 </form>
                                             @else
+                                                <a href="{{ route('sale.dc', $sale->id) }}" target="_blank" class="btn btn-outline-dark btn-xs px-1 py-0" title="Delivery Challan (DC)" style="height: 20px; font-size: 10px; line-height: 18px;">
+                                                    <i class="fa fa-truck"></i> DC
+                                                </a>
                                                 <a href="{{ route('sale.view', $sale->id) }}" class="btn btn-outline-info btn-xs px-1 py-0" title="View Sale" style="height: 20px;">
                                                     <i class="fa fa-eye"></i>
                                                 </a>

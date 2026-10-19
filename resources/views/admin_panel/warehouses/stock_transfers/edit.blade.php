@@ -197,39 +197,54 @@
                                 <thead class="bg-light">
                                     <tr>
                                         <th style="width:90px;">Item ID</th>
-                                        <th style="min-width:320px;">Product Description</th>
-                                        <th style="width:130px;">Available Stock</th>
-                                        <th style="width:120px;">Qty to Transfer</th>
+                                        <th style="min-width:300px;">Product Description</th>
+                                        <th style="width:120px;">Available Stock</th>
+                                        <th style="width:110px;">Qty to Transfer</th>
+                                        <th style="width:110px;">Weight (Kgs)</th>
                                         <th style="width:50px;" class="text-center"><span style="font-size:9px;font-weight:normal;color:#888;"><kbd style="font-size:8px;padding:0 2px;">Ctrl+I</kbd></span></th>
                                     </tr>
                                 </thead>
                                 <tbody id="transferItems">
                                     @foreach($transfer->items as $item)
-                                    <tr>
+                                    @php
+                                        $unitWeight = (float) preg_replace('/[^0-9.]/', '', $item->product->weight ?? '0');
+                                        $itemWeight = (float)($item->weight ?? 0);
+                                        if ($itemWeight <= 0 && $unitWeight > 0) {
+                                            $itemWeight = (float)$item->quantity * $unitWeight;
+                                        }
+                                    @endphp
+                                    <tr data-unit-weight="{{ $unitWeight }}">
                                         <td><input type="text" class="form-control input-sm item-id-input" placeholder="ID" value="{{ $item->product_id }}"></td>
                                         <td>
                                             <select name="product_id[]" class="form-control product-select" style="width:100%;">
                                                 <option value="">Search Product...</option>
                                                 @if(isset($products))
                                                     @foreach($products as $p)
-                                                        <option value="{{ $p->id }}" data-id="{{ $p->id }}" @selected($item->product_id == $p->id)>{{ $p->id }} - {{ $p->name }}</option>
+                                                        @php
+                                                            $pWeight = (float) preg_replace('/[^0-9.]/', '', $p->weight ?? '0');
+                                                        @endphp
+                                                        <option value="{{ $p->id }}" data-id="{{ $p->id }}" data-weight="{{ $pWeight }}" @selected($item->product_id == $p->id)>{{ $p->id }} - {{ $p->name }}</option>
                                                     @endforeach
                                                 @else
-                                                    <option value="{{ $item->product_id }}" selected>{{ $item->product_id }} - {{ $item->product->name ?? 'Unknown' }}</option>
+                                                    <option value="{{ $item->product_id }}" data-weight="{{ $unitWeight }}" selected>{{ $item->product_id }} - {{ $item->product->name ?? 'Unknown' }}</option>
                                                 @endif
                                             </select>
                                         </td>
                                         <td><input type="number" name="available_stock[]" class="form-control input-sm stock" readonly></td>
                                         <td><input type="number" name="quantity[]" class="form-control input-sm quantity" value="{{ $item->quantity }}" step="any" min="0.01"></td>
+                                        <td><input type="number" name="weight[]" class="form-control input-sm weight text-center" value="{{ $itemWeight > 0 ? number_format($itemWeight, 2, '.', '') : '' }}" step="any" min="0" placeholder="0.00"></td>
                                         <td class="text-center"><button type="button" class="btn btn-sm btn-danger remove-row">X</button></td>
                                     </tr>
                                     @endforeach
                                 </tbody>
                                 <tfoot>
                                     <tr>
-                                        <th colspan="3" class="text-end">Total Qty:</th>
+                                        <th colspan="3" class="text-end fw-bold">Total:</th>
                                         <th>
                                             <input type="text" id="total_qty" class="form-control input-sm text-center fw-bold bg-white" readonly value="0">
+                                        </th>
+                                        <th>
+                                            <input type="text" id="total_weight" class="form-control input-sm text-center fw-bold bg-white" readonly value="0.00">
                                         </th>
                                         <th></th>
                                     </tr>
@@ -243,7 +258,10 @@
                     <option value="">Search Product...</option>
                     @if(isset($products))
                         @foreach($products as $p)
-                            <option value="{{ $p->id }}" data-id="{{ $p->id }}">{{ $p->id }} - {{ $p->name }}</option>
+                            @php
+                                $pWeight = (float) preg_replace('/[^0-9.]/', '', $p->weight ?? '0');
+                            @endphp
+                            <option value="{{ $p->id }}" data-id="{{ $p->id }}" data-weight="{{ $pWeight }}">{{ $p->id }} - {{ $p->name }}</option>
                         @endforeach
                     @endif
                 </template>
@@ -410,9 +428,12 @@ $(document).ready(function() {
     }
 
     function recalcTotals() {
-        var total = 0;
-        $('.quantity').each(function() { total += parseFloat($(this).val()) || 0; });
-        $('#total_qty').val(total.toFixed(2));
+        var totalQty = 0;
+        var totalWeight = 0;
+        $('.quantity').each(function() { totalQty += parseFloat($(this).val()) || 0; });
+        $('.weight').each(function() { totalWeight += parseFloat($(this).val()) || 0; });
+        $('#total_qty').val(totalQty.toFixed(2));
+        $('#total_weight').val(totalWeight.toFixed(2));
     }
 
     function fetchStock($row, productId) {
@@ -472,12 +493,21 @@ $(document).ready(function() {
             var data = e.params.data;
             $row.find('.item-id-input').val(data.id);
             fetchStock($row, data.id);
+            var $opt = $(e.params.data.element);
+            var unitW = parseFloat($opt.attr('data-weight')) || 0;
+            $row.attr('data-unit-weight', unitW);
+            var q = parseFloat($row.find('.quantity').val()) || 1;
+            if (unitW > 0) {
+                $row.find('.weight').val((q * unitW).toFixed(2));
+            }
             recalcTotals();
             if ($row.is('#transferItems tr:last-child')) { appendBlankRow(false); }
             setTimeout(function() { $row.find('.quantity').focus().select(); }, 60);
         }).on('select2:clear', function() {
             $row.find('.item-id-input').val('');
             $row.find('.stock').val('');
+            $row.attr('data-unit-weight', 0);
+            $row.find('.weight').val('');
             recalcTotals();
         });
     }
@@ -488,6 +518,7 @@ $(document).ready(function() {
             <td><select name="product_id[]" class="form-control product-select" style="width:100%;">${productOptionsHtml}</select></td>
             <td><input type="number" name="available_stock[]" class="form-control input-sm stock" readonly tabindex="-1"></td>
             <td><input type="number" name="quantity[]" class="form-control input-sm quantity" value="1" step="any" min="0.01"></td>
+            <td><input type="number" name="weight[]" class="form-control input-sm weight text-center" step="any" min="0" placeholder="0.00"></td>
             <td class="text-center"><button type="button" class="btn btn-sm btn-danger remove-row" tabindex="-1">X</button></td>
         </tr>`;
         var $row = $(html);
@@ -525,6 +556,12 @@ $(document).ready(function() {
                 $select.val(val).trigger('change.select2');
                 $(this).val(val);
                 fetchStock($row, val);
+                var unitW = parseFloat($opt.attr('data-weight')) || 0;
+                $row.attr('data-unit-weight', unitW);
+                var q = parseFloat($row.find('.quantity').val()) || 1;
+                if (unitW > 0) {
+                    $row.find('.weight').val((q * unitW).toFixed(2));
+                }
                 recalcTotals();
                 if ($row.is('#transferItems tr:last-child')) { appendBlankRow(false); }
                 setTimeout(function() {
@@ -549,13 +586,20 @@ $(document).ready(function() {
                     }
 
                     if (item) {
+                        var unitW = parseFloat(String(item.weight || '').replace(/[^0-9.]/g, '')) || 0;
                         var option = new Option(item.id + ' - ' + item.name, item.id, true, true);
+                        $(option).attr('data-weight', unitW);
                         if (!$select.find('option[value="' + item.id + '"]').length) {
                             $select.append(option);
                         }
                         $select.val(item.id).trigger('change.select2');
                         $row.find('.item-id-input').val(item.id);
+                        $row.attr('data-unit-weight', unitW);
                         fetchStock($row, item.id);
+                        var q = parseFloat($row.find('.quantity').val()) || 1;
+                        if (unitW > 0) {
+                            $row.find('.weight').val((q * unitW).toFixed(2));
+                        }
                         recalcTotals();
                         if ($row.is('#transferItems tr:last-child')) { appendBlankRow(false); }
                         setTimeout(function() { $row.find('.quantity').focus().select(); }, 60);
@@ -575,9 +619,27 @@ $(document).ready(function() {
         if ($('#transferItems tr').length > 1) { $(this).closest('tr').remove(); recalcTotals(); }
     });
 
-    $(document).on('input', '.quantity', recalcTotals);
+    $(document).on('input change', '.quantity', function() {
+        var $row = $(this).closest('tr');
+        var unitW = parseFloat($row.attr('data-unit-weight')) || parseFloat($row.find('.product-select option:selected').attr('data-weight')) || 0;
+        if (unitW > 0) {
+            var q = parseFloat($(this).val()) || 0;
+            $row.find('.weight').val((q * unitW).toFixed(2));
+        }
+        recalcTotals();
+    });
+
+    $(document).on('input change', '.weight', recalcTotals);
 
     $(document).on('keydown', '.quantity', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            var $row = $(this).closest('tr');
+            $row.find('.weight').focus().select();
+        }
+    });
+
+    $(document).on('keydown', '.weight', function(e) {
         if (e.key === 'Enter') {
             e.preventDefault();
             var $row = $(this).closest('tr');
@@ -702,15 +764,23 @@ $(document).ready(function() {
         var toWh    = $('#to_warehouse_id option:selected').text();
         if ($('#toShop').is(':checked')) toWh = 'Shop';
         var remarks = $('input[name="remarks"]').val();
-        var rows = '', totalQty = 0, serial = 1;
+        var rows = '', totalQty = 0, totalWeight = 0, serial = 1;
 
         $('#transferItems tr').each(function() {
             var pid   = $(this).find('.item-id-input').val();
             var ptxt  = $(this).find('.product-select option:selected').text();
             var qty   = parseFloat($(this).find('.quantity').val()) || 0;
+            var w     = parseFloat($(this).find('.weight').val()) || 0;
             if (!pid || ptxt.includes('Select Product') || !qty) return;
             totalQty += qty;
-            rows += `<tr><td style="border:1px solid #ddd;padding:6px;">${serial++}</td><td style="border:1px solid #ddd;padding:6px;">${pid}</td><td style="border:1px solid #ddd;padding:6px;">${ptxt.split(' - ').slice(1).join(' - ') || ptxt}</td><td style="border:1px solid #ddd;padding:6px;text-align:center;">${qty.toFixed(2)}</td></tr>`;
+            totalWeight += w;
+            rows += `<tr>
+                <td style="border:1px solid #ddd;padding:6px;">${serial++}</td>
+                <td style="border:1px solid #ddd;padding:6px;">${pid}</td>
+                <td style="border:1px solid #ddd;padding:6px;">${ptxt.split(' - ').slice(1).join(' - ') || ptxt}</td>
+                <td style="border:1px solid #ddd;padding:6px;text-align:center;">${qty.toFixed(2)}</td>
+                <td style="border:1px solid #ddd;padding:6px;text-align:center;">${w.toFixed(2)}</td>
+            </tr>`;
         });
 
         var html = `
@@ -728,9 +798,9 @@ $(document).ready(function() {
                 </div>
                 ${remarks ? '<p style="font-size:12px;"><strong>Remarks:</strong> ' + remarks + '</p>' : ''}
                 <table style="width:100%;border-collapse:collapse;margin-bottom:20px;">
-                    <thead><tr style="background:#f2f2f2;"><th style="border:1px solid #ddd;padding:7px;width:40px;">S#</th><th style="border:1px solid #ddd;padding:7px;width:80px;">Item ID</th><th style="border:1px solid #ddd;padding:7px;">Product</th><th style="border:1px solid #ddd;padding:7px;width:80px;text-align:center;">Qty</th></tr></thead>
+                    <thead><tr style="background:#f2f2f2;"><th style="border:1px solid #ddd;padding:7px;width:40px;">S#</th><th style="border:1px solid #ddd;padding:7px;width:80px;">Item ID</th><th style="border:1px solid #ddd;padding:7px;">Product</th><th style="border:1px solid #ddd;padding:7px;width:80px;text-align:center;">Qty</th><th style="border:1px solid #ddd;padding:7px;width:90px;text-align:center;">Weight (Kgs)</th></tr></thead>
                     <tbody>${rows}</tbody>
-                    <tfoot><tr style="font-weight:700;background:#f9f9f9;"><td colspan="3" style="border:1px solid #ddd;padding:7px;text-align:right;">Total Qty:</td><td style="border:1px solid #ddd;padding:7px;text-align:center;">${totalQty.toFixed(2)}</td></tr></tfoot>
+                    <tfoot><tr style="font-weight:700;background:#f9f9f9;"><td colspan="3" style="border:1px solid #ddd;padding:7px;text-align:right;">Total:</td><td style="border:1px solid #ddd;padding:7px;text-align:center;">${totalQty.toFixed(2)}</td><td style="border:1px solid #ddd;padding:7px;text-align:center;">${totalWeight.toFixed(2)}</td></tr></tfoot>
                 </table>
                 <div style="margin-top:50px;display:flex;justify-content:space-between;">
                     <div style="border-top:1px solid #000;width:130px;text-align:center;padding-top:5px;font-size:12px;">Prepared By</div>

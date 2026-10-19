@@ -14,6 +14,13 @@ class StockTransferProduct extends Model
         'product_id',
         'quantity',
         'price',
+        'weight',
+    ];
+
+    protected $casts = [
+        'quantity' => 'float',
+        'price' => 'float',
+        'weight' => 'float',
     ];
 
     public function transfer()

@@ -77,16 +77,19 @@
                     <i class="fa fa-arrow-left me-2"></i> Back to List
                 </a>
                 <div class="d-flex gap-2">
-                    <a href="{{ route('stock_transfers.print', $transfers->id) }}" target="_blank" class="btn btn-dark rounded-pill px-4">
-                        <i class="fa fa-print me-2"></i> Print Voucher
+                    <a href="{{ route('stock_transfers.print', $transfers->id) }}" target="_blank" class="btn btn-dark rounded-pill px-3">
+                        <i class="fa fa-print me-1"></i> Print A5
+                    </a>
+                    <a href="{{ route('stock_transfers.print_thermal', $transfers->id) }}" target="_blank" class="btn btn-secondary rounded-pill px-3">
+                        <i class="fa fa-ticket me-1"></i> Print Thermal
                     </a>
                     @if($transfers->status != 'Posted')
-                    <a href="{{ route('stock_transfers.edit', $transfers->id) }}" class="btn btn-warning rounded-pill px-4">
-                        <i class="fa fa-pencil me-2"></i> Edit Transfer
+                    <a href="{{ route('stock_transfers.edit', $transfers->id) }}" class="btn btn-warning rounded-pill px-3">
+                        <i class="fa fa-pencil me-1"></i> Edit Transfer
                     </a>
                     @endif
-                    <a href="{{ route('stock_transfers.create') }}" class="btn btn-primary rounded-pill px-4">
-                        <i class="fa fa-plus me-2"></i> New Transfer
+                    <a href="{{ route('stock_transfers.create') }}" class="btn btn-primary rounded-pill px-3">
+                        <i class="fa fa-plus me-1"></i> New Transfer
                     </a>
                 </div>
             </div>
@@ -132,11 +135,7 @@
                     <div class="row g-4 mb-5">
                         <div class="col-md-3">
                             <div class="info-label">Voucher Date</div>
-                            <div class="info-value">{{ \Carbon\Carbon::parse($transfers->created_at)->format('d F, Y') }}</div>
-                        </div>
-                        <div class="col-md-3">
-                            <div class="info-label">Time</div>
-                            <div class="info-value">{{ \Carbon\Carbon::parse($transfers->created_at)->format('h:i A') }}</div>
+                            <div class="info-value">{{ \Carbon\Carbon::parse($transfers->created_at)->format('d F, Y') }} <small class="text-muted">({{ \Carbon\Carbon::parse($transfers->created_at)->format('h:i A') }})</small></div>
                         </div>
                         <div class="col-md-3">
                             <div class="info-label">Prepared By</div>
@@ -151,6 +150,14 @@
                                 {{ number_format($transfers->items->sum('quantity'), 2) }}
                             </div>
                         </div>
+                        <div class="col-md-3 text-md-end">
+                            <div class="info-label">Total Weight (Kgs)</div>
+                            <div class="info-value text-success" style="font-size: 20px;">
+                                {{ number_format($transfers->items->sum(function($i){
+                                    return ($i->weight && (float)$i->weight > 0) ? (float)$i->weight : ((float)$i->quantity * (float)preg_replace('/[^0-9.]/', '', $i->product->weight ?? '0'));
+                                }), 2) }}
+                            </div>
+                        </div>
                     </div>
 
                     {{-- Items Table --}}
@@ -161,19 +168,34 @@
                                     <th class="ps-3" style="width: 60px;">S#</th>
                                     <th style="width: 120px;">Item ID</th>
                                     <th>Product Description</th>
-                                    <th class="text-center" style="width: 150px;">Quantity</th>
+                                    <th class="text-center" style="width: 140px;">Quantity</th>
+                                    <th class="text-center" style="width: 140px;">Weight (Kgs)</th>
                                 </tr>
                             </thead>
                             <tbody>
+                                @php $totalWeight = 0; @endphp
                                 @foreach($transfers->items as $idx => $item)
+                                @php
+                                    $unitW = (float) preg_replace('/[^0-9.]/', '', $item->product->weight ?? '0');
+                                    $rowW = ($item->weight && (float)$item->weight > 0) ? (float)$item->weight : ((float)$item->quantity * $unitW);
+                                    $totalWeight += $rowW;
+                                @endphp
                                 <tr>
                                     <td class="ps-3 fw-bold text-muted">{{ $idx + 1 }}</td>
                                     <td><span class="badge bg-light text-dark border">{{ $item->product_id }}</span></td>
                                     <td class="fw-semibold">{{ $item->product->name ?? 'N/A' }}</td>
                                     <td class="text-center fw-bold text-primary">{{ number_format($item->quantity, 2) }}</td>
+                                    <td class="text-center fw-bold text-success">{{ number_format($rowW, 2) }}</td>
                                 </tr>
                                 @endforeach
                             </tbody>
+                            <tfoot class="total-section">
+                                <tr>
+                                    <th colspan="3" class="text-end py-3">Total:</th>
+                                    <th class="text-center text-primary py-3">{{ number_format($transfers->items->sum('quantity'), 2) }}</th>
+                                    <th class="text-center text-success py-3">{{ number_format($totalWeight, 2) }}</th>
+                                </tr>
+                            </tfoot>
                         </table>
                     </div>
 

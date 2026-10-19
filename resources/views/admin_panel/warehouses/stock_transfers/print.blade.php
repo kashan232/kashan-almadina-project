@@ -2,128 +2,391 @@
 <html lang="en">
 <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>Stock Transfer #{{ $transfer->id }}</title>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Transfer Order #{{ $transfer->id }}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
     <style>
-        body { font-family: 'Poppins', sans-serif; margin: 0; padding: 20px; background: #fff; font-size: 13px; }
-        .container { width: 100%; max-width: 800px; margin: auto; border: 1px solid #eee; padding: 20px; }
-        .header { display: flex; justify-content: space-between; align-items: center;
-            border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 20px; }
-        .header h1 { margin: 0; font-size: 24px; }
-        .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
-        .info-item { display: flex; margin-bottom: 5px; }
-        .info-label { width: 130px; font-weight: 600; }
-        table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
-        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-        th { background-color: #f2f2f2; font-weight: 600; }
-        .total-row td { font-weight: 700; background-color: #f9f9f9; }
-        .footer { margin-top: 50px; display: flex; justify-content: space-between; }
-        .signature { border-top: 1px solid #000; width: 150px; text-align: center; padding-top: 5px; }
-        .status-badge {
-            display: inline-block; padding: 2px 10px; border-radius: 20px; font-size: 11px; font-weight: 600;
-            background: {{ $transfer->status === 'Posted' ? '#d4edda' : '#fff3cd' }};
-            color: {{ $transfer->status === 'Posted' ? '#155724' : '#856404' }};
-            border: 1px solid {{ $transfer->status === 'Posted' ? '#c3e6cb' : '#ffc107' }};
+        * {
+            box-sizing: border-box;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
         }
-        .arrow { font-size: 20px; font-weight: 700; color: #333; }
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: #525659;
+            color: #000;
+        }
+
+        /* 🎛️ Floating Action Toolbar (Screen only) */
+        .no-print-toolbar {
+            position: sticky;
+            top: 0;
+            z-index: 9999;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 16px;
+            background: #212529;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
+        .toolbar-info {
+            color: #fff;
+            font-size: 13px;
+            font-weight: 600;
+        }
+        .toolbar-actions {
+            display: flex;
+            gap: 8px;
+        }
+        .btn-toolbar {
+            padding: 6px 14px;
+            font-size: 12px;
+            font-weight: 600;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .btn-print { background: #0d6efd; color: #fff; }
+        .btn-print:hover { background: #0b5ed7; }
+        .btn-thermal { background: #198754; color: #fff; }
+        .btn-thermal:hover { background: #157347; }
+        .btn-close-tb { background: #6c757d; color: #fff; }
+        .btn-close-tb:hover { background: #5c636a; }
+
+        /* 📄 A5 Portrait Paper Sheet Container */
+        .a5-container {
+            width: 148mm;
+            min-height: 210mm;
+            margin: 15px auto;
+            background: #fff;
+            padding: 8mm 7mm;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.35);
+            box-sizing: border-box;
+            position: relative;
+        }
+
+        /* Header Layout */
+        .header-wrap {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 10px;
+        }
+        .company-title {
+            font-family: 'Times New Roman', Times, serif;
+            font-size: 24px;
+            font-weight: 700;
+            line-height: 1.1;
+            color: #000;
+            letter-spacing: -0.3px;
+        }
+        .company-sub1 {
+            font-size: 10.5px;
+            font-style: italic;
+            font-weight: 600;
+            color: #000;
+            margin-top: 3px;
+            line-height: 1.35;
+        }
+        .company-sub2 {
+            font-size: 10.5px;
+            font-style: italic;
+            font-weight: 600;
+            color: #000;
+            line-height: 1.35;
+        }
+        .header-right {
+            text-align: right;
+            flex-shrink: 0;
+        }
+        .logo-img {
+            max-width: 115px;
+            height: auto;
+            display: block;
+            margin-left: auto;
+        }
+        .order-badge-box {
+            border: 1.5px solid #000;
+            border-radius: 4px;
+            padding: 3px 12px;
+            margin-top: 4px;
+            font-weight: 700;
+            font-size: 12px;
+            text-align: center;
+            color: #000;
+            display: inline-block;
+            min-width: 110px;
+        }
+
+        .thick-divider {
+            border-top: 2px solid #000;
+            margin: 6px 0 8px 0;
+        }
+
+        /* Meta details */
+        .meta-details {
+            font-size: 11.5px;
+            line-height: 1.55;
+            color: #000;
+            margin-bottom: 8px;
+        }
+        .meta-row-flex {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .meta-label {
+            font-weight: 700;
+            color: #000;
+        }
+        .meta-val {
+            color: #000;
+        }
+        .col-label {
+            display: inline-block;
+            width: 78px;
+            font-weight: 700;
+        }
+
+        /* Table */
+        .transfer-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 11px;
+            color: #000;
+        }
+        .transfer-table th {
+            background-color: #d8d8d8 !important;
+            border: 1px solid #777 !important;
+            padding: 4px 6px;
+            font-weight: 700;
+            font-size: 11.5px;
+            color: #000;
+        }
+        .transfer-table td {
+            border: 1px solid #888 !important;
+            padding: 3px 6px;
+            font-size: 11px;
+            color: #000;
+        }
+        .grand-total-row td {
+            border-top: 1.5px solid #000 !important;
+            border-bottom: 1px solid #888 !important;
+            background-color: #fff !important;
+            padding: 4px 6px;
+            font-size: 11.5px;
+            font-weight: 700;
+        }
+        .ton-row td {
+            background-color: #85cde2 !important;
+            color: #000 !important;
+            border: 1px solid #62b1c8 !important;
+            padding: 4px 6px;
+            font-size: 11.5px;
+            font-weight: 700;
+        }
+
+        /* Footer & Signatures */
+        .footer-signatures {
+            margin-top: 45px;
+            display: flex;
+            justify-content: space-between;
+            padding: 0 15px;
+        }
+        .sig-box {
+            border-top: 1px solid #000;
+            width: 105px;
+            text-align: center;
+            padding-top: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            color: #000;
+        }
+        .page-num {
+            margin-top: 20px;
+            text-align: center;
+            font-size: 10px;
+            color: #555;
+        }
+
         @media print {
-            body { padding: 0; }
-            .container { border: none; }
-            @page { size: A4; margin: 10mm; }
+            @page {
+                size: A5 portrait;
+                margin: 6mm 5mm;
+            }
+            body {
+                background: #fff !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+            .no-print-toolbar {
+                display: none !important;
+            }
+            .a5-container {
+                width: 100% !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                box-shadow: none !important;
+                border: none !important;
+            }
         }
     </style>
 </head>
 <body onload="window.print()">
-    <div class="container">
-        <div class="header" style="align-items:flex-start;">
-            <x-amt-print-brand doc-subtitle="Stock Transfer Voucher" />
-            <div style="text-align:right; flex-shrink:0;">
-                <p style="margin:0;"><strong>Transfer #:</strong> {{ $transfer->id }}</p>
-                <p style="margin:4px 0;"><span class="status-badge">{{ strtoupper($transfer->status) }}</span></p>
-                <p style="margin:0; font-size:11px; color:#666;">{{ \Carbon\Carbon::parse($transfer->created_at)->format('d-M-Y') }}</p>
-            </div>
-        </div>
 
-        {{-- Warehouse Flow --}}
-        <div style="text-align:center; margin-bottom:20px; padding:10px; background:#f8f9fa; border-radius:8px;">
-            @if($transfer->from_shop)
-                <span style="font-size:15px; font-weight:600;">Shop</span>
-            @else
-                <span style="font-size:15px; font-weight:600;">{{ $transfer->fromWarehouse->warehouse_name ?? '-' }}</span>
-            @endif
-            <span class="arrow" style="margin:0 16px;">→</span>
-            <span style="font-size:15px; font-weight:600;">{{ $transfer->toWarehouse->warehouse_name ?? '-' }}</span>
-            @if($transfer->to_shop)
-                <span style="margin-left:10px; font-size:11px; background:#e3f2fd; color:#1565c0; padding:2px 8px; border-radius:10px;">To Shop</span>
-            @endif
+    {{-- Screen Toolbar --}}
+    <div class="no-print-toolbar">
+        <div class="toolbar-info">
+            <i class="fa fa-file-text-o me-1"></i> Stock Transfer #{{ $transfer->id }} &bull; A5 Portrait Print
         </div>
+        <div class="toolbar-actions">
+            <button class="btn-toolbar btn-print" onclick="window.print()">
+                <i class="fa fa-print"></i> Print A5
+            </button>
+            <a href="{{ route('stock_transfers.print_thermal', $transfer->id) }}" class="btn-toolbar btn-thermal">
+                <i class="fa fa-ticket"></i> Thermal Receipt
+            </a>
+            <button class="btn-toolbar btn-close-tb" onclick="window.close()">
+                <i class="fa fa-times"></i> Close
+            </button>
+        </div>
+    </div>
 
-        <div class="info-grid">
+    @php
+        $destName = $transfer->to_shop ? 'Main Shop' : ($transfer->toWarehouse->warehouse_name ?? '—');
+        $destAddress = '';
+        $destContact = '';
+
+        if ($transfer->to_shop) {
+            $destAddress = 'Shop# 2, United Hotel, Qazi Qayoom Road, Hyderabad.';
+            $destContact = '0312-0252899, 022-2780942';
+        } else {
+            $whName = strtolower($transfer->toWarehouse->warehouse_name ?? '');
+            if (str_contains($whName, 'khi') || str_contains($whName, 'karachi')) {
+                $destName = 'AL MADINA TRADERS KHI';
+                $destAddress = 'Shop # 21, Hyder-e-Karrar Imam Bargah, Pone 5, Orangi Town, Karachi';
+                $destContact = '0314-1110014, 0335-3390680';
+            } else {
+                $destAddress = $transfer->toWarehouse->location ?? '';
+                $destContact = $transfer->toWarehouse->remarks ?? '';
+            }
+        }
+    @endphp
+
+    {{-- Sheet Container --}}
+    <div class="a5-container">
+        <!-- Header -->
+        <div class="header-wrap">
             <div>
-                <div class="info-item">
-                    <span class="info-label">From Location:</span>
-                    <span>
-                        @if($transfer->from_shop)
-                            Shop
-                        @else
-                            {{ $transfer->fromWarehouse->warehouse_name ?? '-' }}
-                        @endif
-                    </span>
-                </div>
-                <div class="info-item">
-                    <span class="info-label">Prepared By:</span>
-                    <span>{{ $transfer->creator->name ?? '-' }}</span>
-                </div>
+                <div class="company-title">Al-Madina Traders</div>
+                <div class="company-sub1">Shop# 2, United Hotel, Qazi Qayoom Road, Hyderabad.</div>
+                <div class="company-sub2">Mob / Whatsapp: 0312-0252899, Tel: 022-2780942</div>
             </div>
-            <div>
-                <div class="info-item">
-                    <span class="info-label">To Warehouse:</span>
-                    <span>{{ $transfer->toWarehouse->warehouse_name ?? '-' }}</span>
-                </div>
-                <div class="info-item">
-                    <span class="info-label">Date:</span>
-                    <span>{{ \Carbon\Carbon::parse($transfer->created_at)->format('d-M-Y') }}</span>
-                </div>
+            <div class="header-right">
+                <img src="{{ asset('amt-logo.png') }}" alt="AMT" class="logo-img">
+                <div class="order-badge-box">Transfer Order</div>
             </div>
         </div>
 
-        <table>
+        <div class="thick-divider"></div>
+
+        <!-- Meta Information -->
+        <div class="meta-details">
+            <div class="meta-row-flex">
+                <div>
+                    <span class="col-label">Challan # :</span>
+                    <span class="meta-val" style="font-weight: 700; font-size: 13px;">{{ $transfer->id }}</span>
+                </div>
+                <div>
+                    <span class="meta-label">Date :</span>
+                    <span class="meta-val" style="font-weight: 700; margin-left: 6px;">{{ \Carbon\Carbon::parse($transfer->entry_date ?? $transfer->created_at)->format('l, F d, Y') }}</span>
+                </div>
+            </div>
+            <div>
+                <span class="col-label">Issue To:</span>
+                <span class="meta-val" style="font-weight: 700;">{{ $destName }}</span>
+            </div>
+            <div>
+                <span class="col-label">Address:</span>
+                <span class="meta-val">{{ $destAddress ?: '—' }}</span>
+            </div>
+            <div>
+                <span class="col-label">Contact #:</span>
+                <span class="meta-val">{{ $destContact ?: '—' }}</span>
+            </div>
+        </div>
+
+        <!-- Table -->
+        <table class="transfer-table">
             <thead>
                 <tr>
-                    <th style="width:40px;">S#</th>
-                    <th style="width:100px;">Item ID</th>
-                    <th>Product Description</th>
-                    <th style="width:80px; text-align:center;">Qty</th>
+                    <th style="width: 36px; text-align: center;">S #</th>
+                    <th style="width: 60px; text-align: center;">Item ID</th>
+                    <th style="text-align: left;">Description</th>
+                    <th style="width: 75px; text-align: center;">Quantity</th>
+                    <th style="width: 95px; text-align: center;">Weight (Kgs)</th>
                 </tr>
             </thead>
             <tbody>
-                @php $totalQty = 0; @endphp
-                @foreach($transfer->items as $index => $item)
-                <tr>
-                    <td>{{ $index + 1 }}</td>
-                    <td>{{ $item->product_id }}</td>
-                    <td>{{ $item->product->name ?? 'N/A' }}</td>
-                    <td style="text-align:center;">{{ $item->quantity }}</td>
-                </tr>
-                @php $totalQty += $item->quantity; @endphp
+                @php
+                    $totalQty = 0;
+                    $totalWeight = 0;
+                @endphp
+                @foreach($transfer->items as $idx => $item)
+                    @php
+                        $unitW = (float) preg_replace('/[^0-9.]/', '', $item->product->weight ?? '0');
+                        $rowW = ($item->weight && (float)$item->weight > 0) ? (float)$item->weight : ((float)$item->quantity * $unitW);
+                        $totalQty += (float)$item->quantity;
+                        $totalWeight += (float)$rowW;
+                        $qDisplay = (float)$item->quantity == (int)$item->quantity ? number_format($item->quantity, 0) : number_format($item->quantity, 2);
+                        $wDisplay = (float)$rowW == (int)$rowW ? number_format($rowW, 0) : number_format($rowW, 2);
+                    @endphp
+                    <tr>
+                        <td style="text-align: center;">{{ $idx + 1 }}</td>
+                        <td style="text-align: center;">{{ $item->product_id }}</td>
+                        <td style="text-align: left;">{{ $item->product->name ?? '—' }}</td>
+                        <td style="text-align: center;">{{ $qDisplay }}</td>
+                        <td style="text-align: center;">{{ $wDisplay }}</td>
+                    </tr>
                 @endforeach
-                <tr class="total-row">
-                    <td colspan="3" style="text-align:right;">Total Qty:</td>
-                    <td style="text-align:center;">{{ $totalQty }}</td>
-                </tr>
             </tbody>
+            <tfoot>
+                <tr class="grand-total-row">
+                    <td colspan="3" style="text-align: right;">Grand Total:</td>
+                    <td style="text-align: center;">{{ (float)$totalQty == (int)$totalQty ? number_format($totalQty, 0) : number_format($totalQty, 2) }}</td>
+                    <td style="text-align: center;">{{ number_format($totalWeight, 2) }}</td>
+                </tr>
+                <tr class="ton-row">
+                    <td colspan="4" style="text-align: right;">Total Weight in Ton(s):</td>
+                    <td style="text-align: center;">{{ number_format($totalWeight / 1000, 2) }}</td>
+                </tr>
+            </tfoot>
         </table>
 
         @if($transfer->remarks)
-        <p><strong>Remarks:</strong> {{ $transfer->remarks }}</p>
+            <div style="margin-top: 8px; font-size: 11px;">
+                <strong>Remarks:</strong> {{ $transfer->remarks }}
+            </div>
         @endif
 
-        <div class="footer">
-            <div class="signature">Prepared By</div>
-            <div class="signature">Checked By</div>
-            <div class="signature">Authorized By</div>
+        <!-- Signatures -->
+        <div class="footer-signatures">
+            <div class="sig-box">Prepared By</div>
+            <div class="sig-box">Checked By</div>
+            <div class="sig-box">Authorized By</div>
+        </div>
+
+        <div class="page-num">
+            Page 1 of 1
         </div>
     </div>
+
 </body>
 </html>

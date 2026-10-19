@@ -236,7 +236,8 @@
                                                         </form>
                                                     @endif
                                                     <a href="{{ route('stock_transfers.show', $t->id) }}" class="btn btn-outline-info btn-xs px-1 py-0" title="View" style="height: 20px;"><i class="fa fa-eye"></i></a>
-                                                    <a href="{{ route('stock_transfers.print', $t->id) }}" target="_blank" class="btn btn-outline-dark btn-xs px-1 py-0" title="Print" style="height: 20px;"><i class="fa fa-print"></i></a>
+                                                    <a href="{{ route('stock_transfers.print', $t->id) }}" target="_blank" class="btn btn-outline-dark btn-xs px-1 py-0" title="A5 Portrait Print" style="height: 20px; font-size: 10px; line-height: 18px;"><i class="fa fa-print"></i> A5</a>
+                                                    <a href="{{ route('stock_transfers.print_thermal', $t->id) }}" target="_blank" class="btn btn-outline-secondary btn-xs px-1 py-0" title="Thermal Print (Receipt)" style="height: 20px; font-size: 10px; line-height: 18px;"><i class="fa fa-ticket"></i> Th</a>
                                                 </div>
                                             </td>
                                         </tr>

@@ -964,8 +964,8 @@ class SaleController extends Controller
     }
     public function bookingDc($id)
     {
-        $booking = Productbooking::with('items.product')->findOrFail($id);
-        return view('admin_panel.sale.booking.prints.dc', compact('booking'));
+        $sale = Productbooking::with(['items.product.brandRelation', 'items.warehouse', 'customer', 'vendor'])->findOrFail($id);
+        return view('admin_panel.sale.prints.dc', compact('sale'));
     }
 
     /* -------- Support APIs -------- */

@@ -81,10 +81,15 @@ class StockTransferController extends Controller
                     $qty = (float) $request->quantity[$index];
                     if ($qty <= 0) continue;
 
+                    $weight = isset($request->weight[$index]) && is_numeric($request->weight[$index]) 
+                        ? (float) $request->weight[$index] 
+                        : 0;
+
                     StockTransferProduct::create([
                         'stock_transfer_id' => $transfer->id,
                         'product_id'        => $productId,
                         'quantity'          => $qty,
+                        'weight'            => $weight,
                     ]);
                 }
 
@@ -112,7 +117,7 @@ class StockTransferController extends Controller
 
     public function edit($id)
     {
-        $transfer = StockTransfer::with('items')->findOrFail($id);
+        $transfer = StockTransfer::with('items.product')->findOrFail($id);
         
         if ($transfer->status !== 'Unposted') {
             return back()->with('error', 'Only unposted stock transfers can be edited.');
@@ -175,10 +180,15 @@ class StockTransferController extends Controller
                     $qty = (float) $request->quantity[$index];
                     if ($qty <= 0) continue;
 
+                    $weight = isset($request->weight[$index]) && is_numeric($request->weight[$index]) 
+                        ? (float) $request->weight[$index] 
+                        : 0;
+
                     StockTransferProduct::create([
                         'stock_transfer_id' => $transfer->id,
                         'product_id'        => $productId,
                         'quantity'          => $qty,
+                        'weight'            => $weight,
                     ]);
                 }
             });
@@ -244,6 +254,12 @@ class StockTransferController extends Controller
     {
         $transfer = StockTransfer::with(['fromWarehouse', 'toWarehouse', 'items.product', 'creator'])->findOrFail($id);
         return view('admin_panel.warehouses.stock_transfers.print', compact('transfer'));
+    }
+
+    public function printThermal($id)
+    {
+        $transfer = StockTransfer::with(['fromWarehouse', 'toWarehouse', 'items.product', 'creator'])->findOrFail($id);
+        return view('admin_panel.warehouses.stock_transfers.print_thermal', compact('transfer'));
     }
 
     // Show single transfer
