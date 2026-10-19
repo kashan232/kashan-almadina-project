@@ -30,8 +30,8 @@
             print-color-adjust: exact !important;
         }
         body {
-            font-family: Arial, Helvetica, sans-serif;
-            font-size: 8.5px;
+            font-family: Calibri, 'Segoe UI', Candara, Arial, sans-serif;
+            font-size: 9px;
             color: #000;
             margin: 0;
             padding: 0;
@@ -51,6 +51,7 @@
             justify-content: space-between;
             align-items: center;
             box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            font-family: Calibri, 'Segoe UI', Candara, Arial, sans-serif;
         }
         .no-print .btn-group {
             display: flex;
@@ -63,6 +64,7 @@
             border: none;
             border-radius: 4px;
             font-size: 12px;
+            font-family: Calibri, 'Segoe UI', Candara, Arial, sans-serif;
         }
         .btn-print { background: #e91e63; color: #fff; }
         .btn-print:hover { background: #d81b60; }
@@ -80,6 +82,7 @@
             display: inline-flex;
             align-items: center;
             gap: 6px;
+            font-family: Calibri, 'Segoe UI', Candara, Arial, sans-serif;
         }
 
         /* 📄 A5 Portrait Page Sheet (Half of A4: 148mm x 210mm) */
@@ -97,40 +100,45 @@
             flex-direction: column;
             justify-content: space-between;
             overflow: hidden;
+            font-family: Calibri, 'Segoe UI', Candara, Arial, sans-serif;
         }
         .page-sheet-number {
             position: absolute;
             top: 2mm;
             right: 4mm;
-            font-size: 8px;
+            font-size: 8.5px;
             font-weight: bold;
             color: #555;
             background: #f0f0f0;
             padding: 1px 5px;
             border-radius: 3px;
             border: 1px solid #ccc;
+            font-family: Calibri, 'Segoe UI', Candara, Arial, sans-serif;
         }
 
         /* 🏷️ Header Box (Matching Image Exactly) */
         .ledger-header-box {
             border: 1.5px solid #000;
-            padding: 3px 6px;
+            padding: 2.5px 6px;
             margin-bottom: 3px;
             display: flex;
             justify-content: space-between;
             align-items: center;
             background: #fff;
             box-sizing: border-box;
+            font-family: Calibri, 'Segoe UI', Candara, Arial, sans-serif;
         }
         .ledger-header-title {
             font-size: 11px;
             font-weight: bold;
             color: #000080; /* Dark Navy Blue */
+            font-family: Calibri, 'Segoe UI', Candara, Arial, sans-serif;
         }
         .ledger-header-date {
-            font-size: 10px;
+            font-size: 9.5px;
             font-weight: bold;
             color: #000;
+            font-family: Calibri, 'Segoe UI', Candara, Arial, sans-serif;
         }
 
         /* 📊 Table Styling */
@@ -146,32 +154,36 @@
             border: 1px solid #000;
             table-layout: fixed;
             background: #fff;
+            font-family: Calibri, 'Segoe UI', Candara, Arial, sans-serif;
+            font-size: 9px;
         }
         .ledger-table th {
             background: #d9d9d9;
             border: 1px solid #000;
             padding: 2px 2px;
-            font-size: 8px;
+            font-size: 9px;
             font-weight: bold;
             color: #000;
             text-align: center;
-            line-height: 1.1;
+            line-height: 1.15;
+            font-family: Calibri, 'Segoe UI', Candara, Arial, sans-serif;
         }
         .ledger-table td {
             border: 1px solid #777;
-            padding: 2px 3px;
-            font-size: 8px;
-            line-height: 1.1;
+            padding: 1.5px 3px;
+            font-size: 9px;
+            line-height: 1.15;
             vertical-align: middle;
             color: #000;
+            font-family: Calibri, 'Segoe UI', Candara, Arial, sans-serif;
         }
-        .col-date   { width: 9%; text-align: center; white-space: nowrap; }
-        .col-ref    { width: 10%; text-align: center; white-space: nowrap; }
-        .col-desc   { width: 27%; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .col-price  { width: 8%; text-align: right; white-space: nowrap; }
-        .col-qty    { width: 6%; text-align: center; white-space: nowrap; }
-        .col-amt    { width: 11%; text-align: right; white-space: nowrap; }
-        .col-bal    { width: 12%; text-align: right; white-space: nowrap; }
+        .col-date   { width: 9%; text-align: center; white-space: nowrap; font-size: 9px; }
+        .col-ref    { width: 10%; text-align: center; white-space: nowrap; font-size: 9px; }
+        .col-desc   { width: 27%; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 9px; }
+        .col-price  { width: 8%; text-align: right; white-space: nowrap; font-size: 9px; }
+        .col-qty    { width: 6%; text-align: center; white-space: nowrap; font-size: 9px; }
+        .col-amt    { width: 11%; text-align: right; white-space: nowrap; font-size: 9px; }
+        .col-bal    { width: 12%; text-align: right; white-space: nowrap; font-size: 9px; }
 
         /* DR / CR Split in Balance Column */
         .balance-cell {
@@ -180,18 +192,21 @@
             align-items: center;
             width: 100%;
             padding: 0 !important;
+            font-family: Calibri, 'Segoe UI', Candara, Arial, sans-serif;
         }
         .balance-cell .drcr {
             font-weight: bold;
-            font-size: 7.5px;
+            font-size: 8px;
             margin-right: 2px;
             flex-shrink: 0;
+            font-family: Calibri, 'Segoe UI', Candara, Arial, sans-serif;
         }
         .balance-cell .bal-val {
             font-weight: bold;
-            font-size: 8px;
+            font-size: 9px;
             text-align: right;
             flex-grow: 1;
+            font-family: Calibri, 'Segoe UI', Candara, Arial, sans-serif;
         }
 
         /* Total Row (Blue text, bold, matches image) */
@@ -199,19 +214,24 @@
             border-top: 1.5px solid #000;
             border-bottom: 1.5px solid #000;
             background: #fff;
-            padding: 3px 2px;
+            padding: 2.5px 2px;
             font-weight: bold;
-            font-size: 8px;
+            font-size: 9px;
+            font-family: Calibri, 'Segoe UI', Candara, Arial, sans-serif;
         }
         .total-label {
             text-align: right;
             color: #000080;
             font-weight: bold;
             padding-right: 4px !important;
+            font-size: 9px;
+            font-family: Calibri, 'Segoe UI', Candara, Arial, sans-serif;
         }
         .total-val {
             color: #000080;
             font-weight: bold;
+            font-size: 9px;
+            font-family: Calibri, 'Segoe UI', Candara, Arial, sans-serif;
         }
 
         /* 📑 Footer */
@@ -219,17 +239,20 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            font-size: 7.5px;
+            font-size: 8px;
             color: #000;
             padding-top: 2px;
             margin-top: auto;
             border-top: 1px solid #999;
+            font-family: Calibri, 'Segoe UI', Candara, Arial, sans-serif;
         }
         .sheet-footer .footer-left {
             font-weight: bold;
+            font-family: Calibri, 'Segoe UI', Candara, Arial, sans-serif;
         }
         .sheet-footer .footer-right {
             color: #333;
+            font-family: Calibri, 'Segoe UI', Candara, Arial, sans-serif;
         }
 
         @media print {
@@ -241,6 +264,7 @@
                 background: #fff !important;
                 margin: 0 !important;
                 padding: 0 !important;
+                font-family: Calibri, 'Segoe UI', Candara, Arial, sans-serif !important;
             }
             .no-print {
                 display: none !important;
@@ -257,9 +281,14 @@
                 page-break-inside: avoid !important;
                 overflow: hidden !important;
                 box-sizing: border-box !important;
+                font-family: Calibri, 'Segoe UI', Candara, Arial, sans-serif !important;
             }
             .page-sheet:last-child {
                 page-break-after: auto !important;
+            }
+            .ledger-table th, .ledger-table td, .total-row td, .balance-cell .bal-val, .total-label, .total-val {
+                font-family: Calibri, 'Segoe UI', Candara, Arial, sans-serif !important;
+                font-size: 9px !important;
             }
         }
     </style>
@@ -416,7 +445,7 @@
             XLSX.writeFile(wb, fileName);
         }
 
-        // 📄 Dynamic A5 Portrait Sheet Paginator (26 rows per page)
+        // 📄 Dynamic A5 Portrait Sheet Paginator (Fills page completely before spilling to next page)
         document.addEventListener("DOMContentLoaded", function() {
             var rawTable = document.getElementById("ledgerRawTable");
             var pagesWrapper = document.getElementById("pagesWrapper");
@@ -432,55 +461,107 @@
                 return;
             }
 
-            var rowsPerPage = 26; // Exact fit for A5 portrait (210mm height)
-            var totalPages = Math.ceil(rows.length / rowsPerPage);
-            if (totalPages === 0) totalPages = 1;
-
-            if (badge) {
-                badge.innerText = "📄 Total Pages: " + totalPages + " A5 " + (totalPages === 1 ? "Page" : "Pages");
-            }
+            pagesWrapper.innerHTML = "";
 
             var theadHTML = rawTable.querySelector("thead").outerHTML;
             var headerBoxHTML = document.getElementById("rawHeaderBox").innerHTML;
             var footerHTML = document.getElementById("rawFooterBox").innerHTML;
 
-            for (var p = 0; p < totalPages; p++) {
-                var start = p * rowsPerPage;
-                var pageRows = rows.slice(start, start + rowsPerPage);
-
+            function createNewSheet(pageIdx) {
                 var sheet = document.createElement("div");
                 sheet.className = "page-sheet";
 
-                // Page Number Tag
                 var pageNumDiv = document.createElement("div");
                 pageNumDiv.className = "page-sheet-number";
-                pageNumDiv.innerText = "Page " + (p + 1) + " of " + totalPages;
+                pageNumDiv.innerText = "Page " + (pageIdx + 1);
                 sheet.appendChild(pageNumDiv);
 
-                // Top Header Box
                 var hBox = document.createElement("div");
                 hBox.className = "ledger-header-box";
                 hBox.innerHTML = headerBoxHTML;
                 sheet.appendChild(hBox);
 
-                // Table Section
                 var tableWrap = document.createElement("div");
                 tableWrap.className = "ledger-table-wrap";
-
-                var tbodyHTML = pageRows.map(function(r) { return r.outerHTML; }).join("");
-                var isLastPage = (p === totalPages - 1);
-                var tfootHTML = (isLastPage && footRow) ? ('<tfoot>' + footRow.outerHTML + '</tfoot>') : '';
-
-                tableWrap.innerHTML = '<table class="ledger-table">' + theadHTML + '<tbody>' + tbodyHTML + '</tbody>' + tfootHTML + '</table>';
+                tableWrap.innerHTML = '<table class="ledger-table">' + theadHTML + '<tbody></tbody></table>';
                 sheet.appendChild(tableWrap);
 
-                // Bottom Footer
                 var fBox = document.createElement("div");
                 fBox.className = "sheet-footer";
                 fBox.innerHTML = footerHTML;
                 sheet.appendChild(fBox);
 
-                pagesWrapper.appendChild(sheet);
+                return sheet;
+            }
+
+            function getMaxTableHeight(sheet) {
+                var sheetH = sheet.clientHeight || 764;
+                var hBox = sheet.querySelector(".ledger-header-box");
+                var fBox = sheet.querySelector(".sheet-footer");
+                var hBoxH = hBox ? hBox.offsetHeight : 22;
+                var fBoxH = fBox ? fBox.offsetHeight : 14;
+                // Safety buffer to prevent any print overflow
+                return (sheetH - hBoxH - fBoxH - 10);
+            }
+
+            var sheetIndex = 0;
+            var currentSheet = createNewSheet(sheetIndex);
+            pagesWrapper.appendChild(currentSheet);
+
+            var currentTbody = currentSheet.querySelector("tbody");
+            var maxTableHeight = getMaxTableHeight(currentSheet);
+
+            for (var i = 0; i < rows.length; i++) {
+                var row = rows[i];
+                currentTbody.appendChild(row.cloneNode(true));
+
+                var isLastRow = (i === rows.length - 1);
+                var currentTable = currentSheet.querySelector(".ledger-table");
+                var currentTableHeight = currentTable.offsetHeight;
+
+                var neededHeight = currentTableHeight;
+                if (isLastRow && footRow) {
+                    neededHeight += (footRow.offsetHeight || 20);
+                }
+
+                // If adding this row exceeds sheet capacity, move it to next sheet
+                if (neededHeight > maxTableHeight && currentTbody.children.length > 1) {
+                    currentTbody.removeChild(currentTbody.lastChild);
+
+                    sheetIndex++;
+                    currentSheet = createNewSheet(sheetIndex);
+                    pagesWrapper.appendChild(currentSheet);
+                    currentTbody = currentSheet.querySelector("tbody");
+                    maxTableHeight = getMaxTableHeight(currentSheet);
+
+                    currentTbody.appendChild(row.cloneNode(true));
+                }
+            }
+
+            // Append footer row to the last sheet
+            var finalSheet = pagesWrapper.lastElementChild;
+            if (finalSheet && footRow) {
+                var finalTable = finalSheet.querySelector(".ledger-table");
+                if (finalTable && !finalTable.querySelector("tfoot")) {
+                    var tfoot = document.createElement("tfoot");
+                    tfoot.innerHTML = footRow.outerHTML;
+                    finalTable.appendChild(tfoot);
+                }
+            }
+
+            // Update page numbers: Page X of Y
+            var allSheets = Array.from(pagesWrapper.querySelectorAll(".page-sheet"));
+            var totalPages = allSheets.length;
+
+            allSheets.forEach(function(s, idx) {
+                var pNumEl = s.querySelector(".page-sheet-number");
+                if (pNumEl) {
+                    pNumEl.innerText = "Page " + (idx + 1) + " of " + totalPages;
+                }
+            });
+
+            if (badge) {
+                badge.innerText = "📄 Total Pages: " + totalPages + " A5 " + (totalPages === 1 ? "Page" : "Pages");
             }
         });
     </script>
