@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login | AL Madina Traders</title>
+    <title>Login - AMT AL MADINA TRADERS</title>
     <link rel="shortcut icon" type="image/png" href="{{ asset('amt-logo.png') }}">
     
     <!-- Google Fonts -->
@@ -18,324 +18,370 @@
             padding: 0;
             box-sizing: border-box;
         }
-        
+
         body {
-            font-family: 'Poppins', sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
-            overflow: hidden;
-        }
-        
-        /* Animated Background */
-        .bg-animation {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: 0;
-            opacity: 0.1;
-        }
-        
-        .bg-animation span {
-            position: absolute;
-            display: block;
-            width: 20px;
-            height: 20px;
-            background: rgba(255, 255, 255, 0.5);
-            animation: animate 25s linear infinite;
-            bottom: -150px;
-        }
-        
-        @keyframes animate {
-            0% {
-                transform: translateY(0) rotate(0deg);
-                opacity: 1;
-                border-radius: 0;
-            }
-            100% {
-                transform: translateY(-1000px) rotate(720deg);
-                opacity: 0;
-                border-radius: 50%;
-            }
-        }
-        
-        .bg-animation span:nth-child(1) { left: 25%; width: 80px; height: 80px; animation-delay: 0s; }
-        .bg-animation span:nth-child(2) { left: 10%; width: 20px; height: 20px; animation-delay: 2s; }
-        .bg-animation span:nth-child(3) { left: 70%; width: 20px; height: 20px; animation-delay: 4s; }
-        .bg-animation span:nth-child(4) { left: 40%; width: 60px; height: 60px; animation-delay: 0s; }
-        .bg-animation span:nth-child(5) { left: 65%; width: 20px; height: 20px; animation-delay: 0s; }
-        
-        /* Login Container */
-        .login-container {
-            position: relative;
-            z-index: 10;
-            width: 100%;
-            max-width: 450px;
             padding: 20px;
+            color: #1e293b;
         }
-        
+
+        .login-wrapper {
+            width: 100%;
+            max-width: 440px;
+        }
+
         .login-card {
-            background: rgba(255, 255, 255, 0.9);
-            backdrop-filter: blur(20px);
-            border-radius: 20px;
-            padding: 40px;
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
-            animation: slideIn 0.8s ease-out;
-            border-top: 1px solid rgba(255, 255, 255, 0.5);
-            border-left: 1px solid rgba(255, 255, 255, 0.5);
-        }
-        
-        @keyframes slideIn {
-            from { opacity: 0; transform: translateY(30px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        
-        /* Header */
-        .login-header {
-            text-align: center;
-            margin-bottom: 30px;
-        }
-        
-        .logo-icon {
-            font-size: 50px;
-            color: #667eea;
-            margin-bottom: 10px;
-            display: inline-block;
-        }
-        
-        .login-header h2 {
-            color: #333;
-            font-weight: 700;
-            font-size: 24px;
-            margin-bottom: 5px;
-        }
-        
-        .login-header p {
-            color: #666;
-            font-size: 14px;
-        }
-        
-        /* Form Elements */
-        .form-group {
-            margin-bottom: 20px;
+            background: #ffffff;
+            border-radius: 18px;
+            padding: 36px 32px 28px;
+            box-shadow: 0 20px 45px -10px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.1);
             position: relative;
         }
-        
+
+        .brand-section {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        .brand-logo {
+            max-height: 60px;
+            max-width: 130px;
+            object-fit: contain;
+            margin-bottom: 12px;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.08));
+        }
+
+        .brand-title {
+            font-size: 19px;
+            font-weight: 700;
+            color: #0f172a;
+            line-height: 1.3;
+            letter-spacing: -0.2px;
+        }
+
+        .brand-sub {
+            display: block;
+            font-size: 15px;
+            font-weight: 600;
+            color: #2563eb;
+            margin-top: 2px;
+            letter-spacing: 0.5px;
+        }
+
+        .dealer-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            background: #f1f5f9;
+            color: #475569;
+            font-size: 11.5px;
+            font-weight: 600;
+            padding: 4px 12px;
+            border-radius: 20px;
+            margin-top: 8px;
+            border: 1px solid #e2e8f0;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+        }
+
+        .dealer-badge i {
+            color: #2563eb;
+            font-size: 13px;
+        }
+
+        .alert-box {
+            padding: 10px 14px;
+            border-radius: 10px;
+            font-size: 12.5px;
+            margin-bottom: 18px;
+            line-height: 1.4;
+        }
+        .alert-warning {
+            background: #fef3c7;
+            border: 1px solid #fde68a;
+            color: #92400e;
+        }
+        .alert-danger {
+            background: #fee2e2;
+            border: 1px solid #fecaca;
+            color: #991b1b;
+        }
+        .alert-success {
+            background: #dcfce7;
+            border: 1px solid #bbf7d0;
+            color: #166534;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
         .form-label {
             display: block;
-            margin-bottom: 8px;
-            color: #444;
-            font-weight: 500;
-            font-size: 14px;
+            font-size: 12.5px;
+            font-weight: 600;
+            color: #334155;
+            margin-bottom: 6px;
         }
-        
-        .input-group {
+
+        .input-group-custom {
             position: relative;
+            display: flex;
+            align-items: center;
         }
-        
+
         .input-icon {
             position: absolute;
-            left: 15px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: #667eea;
-            font-size: 18px;
+            left: 14px;
+            color: #94a3b8;
+            font-size: 16px;
+            pointer-events: none;
+            transition: color 0.2s;
         }
-        
-        .form-control {
+
+        .form-control-custom {
             width: 100%;
-            padding: 12px 15px 12px 45px;
-            border: 2px solid #e1e5ee;
+            padding: 11px 40px 11px 40px;
+            font-size: 13.5px;
+            font-family: inherit;
+            color: #0f172a;
+            background: #f8fafc;
+            border: 1.5px solid #e2e8f0;
             border-radius: 10px;
-            font-family: 'Poppins', sans-serif;
-            font-size: 14px;
-            transition: all 0.3s ease;
-            background: #fff;
+            transition: all 0.2s ease;
         }
-        
-        .form-control:focus {
+
+        .form-control-custom:focus {
             outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+            background: #ffffff;
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
         }
-        
-        /* Button */
-        .btn-login {
+
+        .form-control-custom:focus + .input-icon,
+        .input-group-custom:focus-within .input-icon {
+            color: #2563eb;
+        }
+
+        .btn-toggle-pass {
+            position: absolute;
+            right: 12px;
+            background: none;
+            border: none;
+            color: #94a3b8;
+            font-size: 16px;
+            cursor: pointer;
+            padding: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: color 0.2s;
+        }
+
+        .btn-toggle-pass:hover {
+            color: #334155;
+        }
+
+        .form-row-extra {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 14px;
+            margin-bottom: 20px;
+            font-size: 12.5px;
+        }
+
+        .remember-wrap {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            color: #64748b;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .remember-wrap input[type="checkbox"] {
+            width: 15px;
+            height: 15px;
+            accent-color: #2563eb;
+            cursor: pointer;
+        }
+
+        .forgot-link {
+            color: #2563eb;
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.2s;
+        }
+
+        .forgot-link:hover {
+            color: #1d4ed8;
+            text-decoration: underline;
+        }
+
+        .btn-submit {
             width: 100%;
-            padding: 14px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+            padding: 12px;
+            font-size: 14px;
+            font-weight: 600;
+            font-family: inherit;
+            color: #ffffff;
+            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
             border: none;
             border-radius: 10px;
-            font-size: 16px;
-            font-weight: 600;
             cursor: pointer;
-            transition: all 0.3s ease;
-            font-family: 'Poppins', sans-serif;
-            margin-top: 10px;
-            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
-        }
-        
-        .btn-login:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 15px 25px rgba(102, 126, 234, 0.4);
-        }
-        
-        /* Extra Links */
-        .form-check {
-            display: flex;
+            display: inline-flex;
             align-items: center;
-            margin-bottom: 20px;
+            justify-content: center;
+            gap: 8px;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+            transition: all 0.2s ease;
         }
-        
-        .form-check input {
-            margin-right: 8px;
-            width: 16px;
-            height: 16px;
-            accent-color: #667eea;
-            cursor: pointer;
+
+        .btn-submit:hover {
+            background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
+            box-shadow: 0 6px 16px rgba(37, 99, 235, 0.4);
+            transform: translateY(-1px);
         }
-        
-        .form-check label {
-            font-size: 13px;
-            color: #555;
-            cursor: pointer;
+
+        .btn-submit:active {
+            transform: translateY(0);
         }
-        
-        .footer-links {
+
+        .login-footer {
+            margin-top: 24px;
+            padding-top: 18px;
+            border-top: 1px solid #f1f5f9;
             text-align: center;
-            margin-top: 25px;
-            padding-top: 20px;
-            border-top: 1px solid #eee;
         }
-        
-        .footer-links a {
-            color: #667eea;
-            text-decoration: none;
-            font-size: 13px;
-            font-weight: 500;
-            transition: color 0.3s;
+
+        .powered-by {
+            font-size: 11.5px;
+            color: #64748b;
+            margin: 0;
+            letter-spacing: 0.2px;
         }
-        
-        .footer-links a:hover {
-            color: #764ba2;
-        }
-        
-        .error-message {
-            color: #dc3545;
-            font-size: 12px;
-            margin-top: 5px;
-            display: block;
-        }
-        
-        .back-link {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            color: white;
-            text-decoration: none;
-            display: flex;
-            align-items: center;
-            font-size: 14px;
-            background: rgba(255, 255, 255, 0.2);
-            padding: 8px 15px;
-            border-radius: 30px;
-            backdrop-filter: blur(5px);
-            transition: all 0.3s;
-            z-index: 20;
-        }
-        
-        .back-link:hover {
-            background: rgba(255, 255, 255, 0.3);
-            transform: translateX(-3px);
+
+        .prowave-name {
+            font-weight: 700;
+            color: #2563eb;
         }
     </style>
 </head>
 <body>
-    <!-- Animated Background -->
-    <div class="bg-animation">
-        <span></span>
-        <span></span>
-        <span></span>
-        <span></span>
-        <span></span>
-    </div>
-    
-    <!-- Back Button -->
-    <a href="/" class="back-link">
-        <i class="bi bi-arrow-left me-2" style="margin-right: 5px;"></i> Back to Home
-    </a>
 
-    <!-- Login Container -->
-    <div class="login-container">
+    <div class="login-wrapper">
         <div class="login-card">
-            <!-- Header -->
-            <div class="login-header">
-                <x-amt-logo width="120px" alt="Al Madina Traders Logo" style="margin-bottom:10px;" />
-                <h2>Welcome Back!</h2>
-                <p>Sign in to manage AL Madina Traders</p>
-            </div>
             
-            <!-- Login Form -->
+            <!-- Brand & Heading Section -->
+            <div class="brand-section">
+                <img src="{{ asset('amt-logo.png') }}" alt="AL Madina Traders Logo" class="brand-logo" onerror="this.style.display='none'">
+                <h1 class="brand-title">Welcome to AMT</h1>
+                <span class="brand-sub">AL MADINA TRADERS</span>
+                <div>
+                    <span class="dealer-badge">
+                        <i class="bi bi-shield-check"></i> Dealer Software
+                    </span>
+                </div>
+            </div>
+
+            <!-- Lockdown / Maintenance Alert -->
             @if(session('lockdown'))
-                <div style="background:#fff3cd;border:1px solid #ffc107;color:#856404;padding:12px 14px;border-radius:8px;margin-bottom:16px;font-size:13px;">
-                    <strong>Login Disabled:</strong> {{ session('lockdown') }}
+                <div class="alert-box alert-warning">
+                    <strong>Notice:</strong> {{ session('lockdown') }}
                 </div>
             @elseif(!empty($loginLockdownActive))
-                <div style="background:#fff3cd;border:1px solid #ffc107;color:#856404;padding:12px 14px;border-radius:8px;margin-bottom:16px;font-size:13px;">
-                    <strong>Maintenance Mode:</strong> Login is temporarily disabled for system maintenance. Please contact admin.
+                <div class="alert-box alert-warning">
+                    <strong>Maintenance Mode:</strong> Login is temporarily disabled for maintenance.
                 </div>
             @endif
 
+            <!-- Session Status / Errors -->
+            @if (session('status'))
+                <div class="alert-box alert-success">
+                    {{ session('status') }}
+                </div>
+            @endif
+
+            @if (isset($errors) && $errors->any())
+                <div class="alert-box alert-danger">
+                    @foreach ($errors->all() as $error)
+                        <div>{{ $error }}</div>
+                    @endforeach
+                </div>
+            @endif
+
+            <!-- Login Form -->
             <form method="POST" action="{{ route('login') }}">
                 @csrf
-                
-                <!-- Email -->
+
+                <!-- Email Field -->
                 <div class="form-group">
-                    <label class="form-label">Email Address</label>
-                    <div class="input-group">
+                    <label class="form-label" for="email">Email Address</label>
+                    <div class="input-group-custom">
                         <i class="bi bi-envelope input-icon"></i>
-                        <input type="email" name="email" class="form-control" placeholder="admin@example.com" required autofocus>
+                        <input type="email" id="email" name="email" value="{{ old('email') }}" class="form-control-custom" placeholder="admin@example.com" required autofocus autocomplete="username">
                     </div>
                 </div>
-                
-                <!-- Password -->
+
+                <!-- Password Field -->
                 <div class="form-group">
-                    <label class="form-label">Password</label>
-                    <div class="input-group">
+                    <label class="form-label" for="password">Password</label>
+                    <div class="input-group-custom">
                         <i class="bi bi-lock input-icon"></i>
-                        <input type="password" name="password" class="form-control" placeholder="Enter your password" required>
+                        <input type="password" id="password" name="password" class="form-control-custom" placeholder="Enter your password" required autocomplete="current-password">
+                        <button type="button" class="btn-toggle-pass" onclick="togglePasswordVisibility()" aria-label="Toggle password visibility">
+                            <i class="bi bi-eye" id="togglePassIcon"></i>
+                        </button>
                     </div>
-                    @error('email')
-                        <span class="error-message">
-                            <strong>{{ $message }}</strong>
-                        </span>
-                    @enderror
                 </div>
-                
-                <!-- Remember Me -->
-                <div class="form-check">
-                    <input type="checkbox" name="remember" id="remember">
-                    <label for="remember">Remember me</label>
-                </div>
-                
-                <!-- Submit Button -->
-                <button type="submit" class="btn-login">
-                    Login <i class="bi bi-box-arrow-in-right"></i>
-                </button>
-                
-                <!-- Footer -->
-                <div class="footer-links">
+
+                <!-- Extra Row: Remember Me & Forgot Password -->
+                <div class="form-row-extra">
+                    <label class="remember-wrap">
+                        <input type="checkbox" name="remember" id="remember" {{ old('remember') ? 'checked' : '' }}>
+                        <span>Remember me</span>
+                    </label>
+
                     @if (Route::has('password.request'))
-                        <a href="{{ route('password.request') }}">Forgot your password?</a>
+                        <a href="{{ route('password.request') }}" class="forgot-link">Forgot password?</a>
                     @endif
                 </div>
+
+                <!-- Submit Button -->
+                <button type="submit" class="btn-submit">
+                    <span>Sign In</span>
+                    <i class="bi bi-arrow-right"></i>
+                </button>
             </form>
+
+            <!-- Footer: Powered by ProWave Software Solutions -->
+            <div class="login-footer">
+                <p class="powered-by">
+                    Developed by <span class="prowave-name">ProWave Software Solutions</span>
+                </p>
+            </div>
+
         </div>
     </div>
+
+    <script>
+        function togglePasswordVisibility() {
+            var passInput = document.getElementById('password');
+            var icon = document.getElementById('togglePassIcon');
+            if (passInput.type === 'password') {
+                passInput.type = 'text';
+                icon.className = 'bi bi-eye-slash';
+            } else {
+                passInput.type = 'password';
+                icon.className = 'bi bi-eye';
+            }
+        }
+    </script>
 </body>
 </html>

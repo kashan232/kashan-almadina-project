@@ -4,141 +4,485 @@
     @include('admin_panel.reports.partials.report_global_zoom')
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>General Ledger Report</title>
+    @php
+        if ($type == 'customer') {
+            $acCode = $account_info->customer_id ?: $account_info->id;
+            $acName = $account_info->customer_name;
+        } elseif ($type == 'vendor') {
+            $acCode = $account_info->vendor_id ?: $account_info->id;
+            $acName = $account_info->name;
+        } else {
+            $acCode = $account_info->account_code ?: $account_info->id;
+            $acName = $account_info->title;
+        }
+        $fromLabel = $startDate ? date('d-m-y', strtotime($startDate)) : '';
+        $toLabel = $endDate ? date('d-m-y', strtotime($endDate)) : '';
+    @endphp
+    <title>Ledger - {{ $acCode }} {{ $acName }}</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 13px; margin: 20px; color: #000; line-height: 1.4; }
-        .header-table { width: 100%; border: 2px solid #000; border-collapse: collapse; margin-bottom: 10px; }
-        .header-table td { padding: 8px; font-weight: bold; font-size: 14px; }
-        .ledger-table { width: 100%; border-collapse: collapse; border: 2px solid #000; }
-        .ledger-table th { background: #f2f2f2; border: 1px solid #000; padding: 8px; text-transform: uppercase; font-size: 12px; font-weight: bold; color: #000; }
-        .ledger-table td { border: 1px solid #000; padding: 6px 8px; vertical-align: middle; }
-        .ledger-table tr:nth-child(even) { background-color: #fff; }
-        .ledger-table tr.border-bottom td { border-bottom: 1px solid #000; }
-        .text-center { text-align: center; }
-        .text-right { text-align: right; }
-        .fw-bold { font-weight: bold; }
-        .bg-grey { background-color: #f2f2f2; }
-        .footer-info { margin-top: 15px; font-size: 12px; display: flex; justify-content: space-between; font-weight: bold; }
-        .report-title { font-size: 18px; color: #000; text-decoration: underline; }
-        .dr-text { color: #000; font-weight: bold; }
-        .cr-text { color: #000; font-weight: bold; }
-        
+        @page {
+            size: A5 portrait;
+            margin: 0;
+        }
+        * {
+            box-sizing: border-box;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 8.5px;
+            color: #000;
+            margin: 0;
+            padding: 0;
+            background: #525659;
+        }
+
+        /* 🎛️ Sticky Top Control Bar (Like Customer Outstanding) */
+        .no-print {
+            position: sticky;
+            top: 0;
+            z-index: 9999;
+            padding: 10px 15px;
+            background: #2a2d32;
+            color: #fff;
+            border-bottom: 1px solid #1a1c1e;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        }
+        .no-print .btn-group {
+            display: flex;
+            gap: 8px;
+        }
+        .no-print .btn-group button {
+            padding: 7px 16px;
+            font-weight: bold;
+            cursor: pointer;
+            border: none;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+        .btn-print { background: #e91e63; color: #fff; }
+        .btn-print:hover { background: #d81b60; }
+        .btn-excel { background: #2e7d32; color: #fff; }
+        .btn-excel:hover { background: #1b5e20; }
+        .btn-close { background: #616161; color: #fff; }
+        .btn-close:hover { background: #424242; }
+        .page-badge {
+            background: #1976d2;
+            color: #fff;
+            padding: 5px 14px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        /* 📄 A5 Portrait Page Sheet (Half of A4: 148mm x 210mm) */
+        .page-sheet {
+            width: 148mm;
+            min-height: 210mm;
+            height: 210mm;
+            margin: 15px auto;
+            background: #ffffff;
+            padding: 4mm 5mm;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+            position: relative;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            overflow: hidden;
+        }
+        .page-sheet-number {
+            position: absolute;
+            top: 2mm;
+            right: 4mm;
+            font-size: 8px;
+            font-weight: bold;
+            color: #555;
+            background: #f0f0f0;
+            padding: 1px 5px;
+            border-radius: 3px;
+            border: 1px solid #ccc;
+        }
+
+        /* 🏷️ Header Box (Matching Image Exactly) */
+        .ledger-header-box {
+            border: 1.5px solid #000;
+            padding: 3px 6px;
+            margin-bottom: 3px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #fff;
+            box-sizing: border-box;
+        }
+        .ledger-header-title {
+            font-size: 11px;
+            font-weight: bold;
+            color: #000080; /* Dark Navy Blue */
+        }
+        .ledger-header-date {
+            font-size: 10px;
+            font-weight: bold;
+            color: #000;
+        }
+
+        /* 📊 Table Styling */
+        .ledger-table-wrap {
+            flex: 1 1 auto;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+        .ledger-table {
+            width: 100%;
+            border-collapse: collapse;
+            border: 1px solid #000;
+            table-layout: fixed;
+            background: #fff;
+        }
+        .ledger-table th {
+            background: #d9d9d9;
+            border: 1px solid #000;
+            padding: 2px 2px;
+            font-size: 8px;
+            font-weight: bold;
+            color: #000;
+            text-align: center;
+            line-height: 1.1;
+        }
+        .ledger-table td {
+            border: 1px solid #777;
+            padding: 2px 3px;
+            font-size: 8px;
+            line-height: 1.1;
+            vertical-align: middle;
+            color: #000;
+        }
+        .col-date   { width: 9%; text-align: center; white-space: nowrap; }
+        .col-ref    { width: 10%; text-align: center; white-space: nowrap; }
+        .col-desc   { width: 27%; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .col-price  { width: 8%; text-align: right; white-space: nowrap; }
+        .col-qty    { width: 6%; text-align: center; white-space: nowrap; }
+        .col-amt    { width: 11%; text-align: right; white-space: nowrap; }
+        .col-bal    { width: 12%; text-align: right; white-space: nowrap; }
+
+        /* DR / CR Split in Balance Column */
+        .balance-cell {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            padding: 0 !important;
+        }
+        .balance-cell .drcr {
+            font-weight: bold;
+            font-size: 7.5px;
+            margin-right: 2px;
+            flex-shrink: 0;
+        }
+        .balance-cell .bal-val {
+            font-weight: bold;
+            font-size: 8px;
+            text-align: right;
+            flex-grow: 1;
+        }
+
+        /* Total Row (Blue text, bold, matches image) */
+        .total-row td {
+            border-top: 1.5px solid #000;
+            border-bottom: 1.5px solid #000;
+            background: #fff;
+            padding: 3px 2px;
+            font-weight: bold;
+            font-size: 8px;
+        }
+        .total-label {
+            text-align: right;
+            color: #000080;
+            font-weight: bold;
+            padding-right: 4px !important;
+        }
+        .total-val {
+            color: #000080;
+            font-weight: bold;
+        }
+
+        /* 📑 Footer */
+        .sheet-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 7.5px;
+            color: #000;
+            padding-top: 2px;
+            margin-top: auto;
+            border-top: 1px solid #999;
+        }
+        .sheet-footer .footer-left {
+            font-weight: bold;
+        }
+        .sheet-footer .footer-right {
+            color: #333;
+        }
+
         @media print {
-            .no-print { display: none; }
-            body { margin: 0; padding: 0; }
-            @page { size: A4 {{ $orientation }}; margin: 1cm; }
+            @page {
+                size: A5 portrait;
+                margin: 0;
+            }
+            body {
+                background: #fff !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+            .no-print {
+                display: none !important;
+            }
+            .page-sheet {
+                width: 148mm !important;
+                height: 210mm !important;
+                max-height: 210mm !important;
+                margin: 0 !important;
+                padding: 4mm 5mm !important;
+                box-shadow: none !important;
+                border: none !important;
+                page-break-after: always !important;
+                page-break-inside: avoid !important;
+                overflow: hidden !important;
+                box-sizing: border-box !important;
+            }
+            .page-sheet:last-child {
+                page-break-after: auto !important;
+            }
         }
     </style>
 </head>
 <body>
 
-    <div class="no-print" style="margin-bottom: 20px;">
-        <button onclick="window.print()" style="padding: 8px 20px; cursor: pointer; background: #1e3a8a; color: white; border: none; border-radius: 4px;">Print Report</button>
-        <button onclick="window.history.back()" style="padding: 8px 20px; cursor: pointer; background: #6b7280; color: white; border: none; border-radius: 4px;">Go Back</button>
+    <!-- Sticky Navigation Controls -->
+    <div class="no-print">
+        <div class="page-badge" id="pageCountBadge">📄 Total Pages: Computing...</div>
+        <div class="btn-group">
+            <button class="btn-print" onclick="window.print()">Print Report</button>
+            <button class="btn-excel" onclick="exportReportToExcel()">Export to Excel</button>
+            <button class="btn-close" onclick="if(window.history.length > 1){ window.history.back(); } else { window.close(); }">Close</button>
+        </div>
     </div>
 
-    <table class="header-table">
-        <tr>
-            <td style="width: 60%;">
-                <span class="report-title">Ledger of:- &nbsp; 
-                @if($type == 'customer')
-                    {{ $account_info->customer_id }} - {{ $account_info->customer_name }}
-                @elseif($type == 'vendor')
-                    {{ $account_info->vendor_id }} - {{ $account_info->name }}
-                @else
-                    {{ $account_info->account_code }} - {{ $account_info->title }}
-                @endif
-                </span>
-            </td>
-            <td class="text-right" style="width: 40%;">
-                From: {{ date('d-m-y', strtotime($startDate)) }} To: {{ date('d-m-y', strtotime($endDate)) }}
-            </td>
-        </tr>
-    </table>
+    <!-- Container for dynamic A5 sheets rendered by JavaScript -->
+    <div id="pagesWrapper"></div>
 
-    <table class="ledger-table">
-        <thead>
-            <tr>
-                <th rowspan="2" style="width: 60px;">Date</th>
-                <th rowspan="2" style="width: 80px;">Reference</th>
-                <th rowspan="2">Description</th>
-                <th rowspan="2" style="width: 70px;">Rate</th>
-                <th colspan="2">Debit</th>
-                <th colspan="2">Credit</th>
-                <th rowspan="2" style="width: 100px;">Balance</th>
-            </tr>
-            <tr>
-                <th style="width: 40px;">Qty</th>
-                <th style="width: 70px;">Amount</th>
-                <th style="width: 40px;">Qty</th>
-                <th style="width: 70px;">Amount</th>
-            </tr>
-        </thead>
-        <tbody>
-            <!-- B/F -->
-            <tr class="border-bottom">
-                <td></td>
-                <td></td>
-                <td class="text-center fw-bold">B/F:</td>
-                <td></td>
-                <td class="text-center">-</td>
-                <td class="text-center">-</td>
-                <td class="text-center">-</td>
-                <td class="text-center">-</td>
-                <td class="text-right fw-bold">
-                    @php 
-                        $runningBalance = $openingBalance;
-                        $totalDebitAmount = 0;
-                        $totalCreditAmount = 0;
-                        $totalQty = 0;
-                    @endphp
-                    {{ $runningBalance >= 0 ? 'DR.' : 'CR.' }} {{ number_format(abs($runningBalance), 0) }}
-                </td>
-            </tr>
+    <!-- Hidden Raw Data Container (Used for Pagination & Excel export) -->
+    <div id="rawReportContainer" style="display: none;">
+        <!-- Header Template -->
+        <div id="rawHeaderBox">
+            <div class="ledger-header-title">
+                Ledger of:- &nbsp; <span>{{ $acCode }}</span> &nbsp;-&nbsp; <span>{{ $acName }}</span>
+            </div>
+            <div class="ledger-header-date">
+                From: {{ $fromLabel }} To: {{ $toLabel }}
+            </div>
+        </div>
 
-            @foreach($transactions as $trx)
-                @php
-                    $runningBalance += ($trx['debit'] - $trx['credit']);
-                    $totalDebitAmount += $trx['debit'];
-                    $totalCreditAmount += $trx['credit'];
-                    $totalQty += $trx['qty'];
+        <!-- Full Table Template -->
+        <table id="ledgerRawTable" class="ledger-table">
+            <thead>
+                <tr>
+                    <th rowspan="2" class="col-date">Date</th>
+                    <th rowspan="2" class="col-ref">Reference</th>
+                    <th rowspan="2" class="col-desc">Description</th>
+                    <th rowspan="2" class="col-price">Price</th>
+                    <th colspan="2" class="col-debit-group">Debit</th>
+                    <th colspan="2" class="col-credit-group">Credit</th>
+                    <th rowspan="2" class="col-bal">Balance</th>
+                </tr>
+                <tr>
+                    <th class="col-qty">Qty</th>
+                    <th class="col-amt">Amount</th>
+                    <th class="col-qty">Qty</th>
+                    <th class="col-amt">Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                @php 
+                    $runningBalance = (float)$openingBalance;
+                    $totalDebitAmount = 0;
+                    $totalCreditAmount = 0;
+                    $totalDebitQty = 0;
+                    $totalCreditQty = 0;
+
+                    $fmtQty = function($q) {
+                        $val = (float)$q;
+                        if (abs($val) < 0.0001) return '-';
+                        return (floor($val) == $val) ? ((int)$val . ' -') : number_format($val, 1);
+                    };
                 @endphp
-                <tr class="border-bottom">
-                    <td class="text-center">{{ date('d-m-y', strtotime($trx['date'])) }}</td>
-                    <td class="text-center">{{ $trx['ref'] }} {{ $trx['inv'] }}</td>
-                    <td>{{ $trx['desc'] }}</td>
-                    <td class="text-right">{{ $trx['price'] > 0 ? number_format($trx['price'], 0) : '' }}</td>
-                    <td class="text-center">{{ ($trx['debit'] > 0 && $trx['qty'] > 0) ? $trx['qty'] : '' }}</td>
-                    <td class="text-right">{{ $trx['debit'] > 0 ? number_format($trx['debit'], 0) : '-' }}</td>
-                    <td class="text-center">{{ ($trx['credit'] > 0 && $trx['qty'] > 0) ? $trx['qty'] : '' }}</td>
-                    <td class="text-right">{{ $trx['credit'] > 0 ? number_format($trx['credit'], 0) : '-' }}</td>
-                    <td class="text-right fw-bold">
-                        {{ $runningBalance >= 0 ? 'DR.' : 'CR.' }} {{ number_format(abs($runningBalance), 0) }}
+
+                <!-- Row 0: B/F (Opening Balance) -->
+                <tr class="bf-row">
+                    <td class="col-date"></td>
+                    <td class="col-ref"></td>
+                    <td class="col-desc" style="text-align: center; font-weight: bold;">B/F:</td>
+                    <td class="col-price"></td>
+                    <td class="col-qty">-</td>
+                    <td class="col-amt">-</td>
+                    <td class="col-qty">-</td>
+                    <td class="col-amt">-</td>
+                    <td class="col-bal">
+                        <div class="balance-cell">
+                            <span class="drcr">{{ $runningBalance >= 0 ? 'DR.' : 'CR.' }}</span>
+                            <span class="bal-val">{{ number_format(abs($runningBalance), 0) }}</span>
+                        </div>
                     </td>
                 </tr>
-            @endforeach
-        </tbody>
-        <tfoot>
-            <tr style="background: #eee; font-weight: bold;">
-                <td colspan="3" class="text-right" style="color: #1e3a8a;">
-                    @if($type == 'customer') {{ $account_info->customer_name }} @else {{ $account_info->title ?? $account_info->name }} @endif Total. >>>
-                </td>
-                <td></td>
-                <td class="text-center">{{ $totalQty > 0 ? $totalQty : '' }}</td>
-                <td class="text-right">{{ number_format($totalDebitAmount, 0) }}</td>
-                <td class="text-center">-</td>
-                <td class="text-right">{{ number_format($totalCreditAmount, 0) }}</td>
-                <td class="text-right" style="color: #1e3a8a;">
-                    {{ $runningBalance >= 0 ? 'DR.' : 'CR.' }} {{ number_format(abs($runningBalance), 0) }}
-                </td>
-            </tr>
-        </tfoot>
-    </table>
 
-    <div class="footer-info">
-        <div>Report Generated: {{ date('h:i:s A | l, F d, Y') }}</div>
-        <div>System Generated Report and Required no Signature</div>
+                <!-- Transaction Rows -->
+                @foreach($transactions as $trx)
+                    @php
+                        $runningBalance += ($trx['debit'] - $trx['credit']);
+                        $totalDebitAmount += $trx['debit'];
+                        $totalCreditAmount += $trx['credit'];
+                        if ($trx['debit'] > 0) {
+                            $totalDebitQty += (float)$trx['qty'];
+                        }
+                        if ($trx['credit'] > 0) {
+                            $totalCreditQty += (float)$trx['qty'];
+                        }
+
+                        $dQty = ($trx['debit'] > 0 && $trx['qty'] > 0) ? $fmtQty($trx['qty']) : '-';
+                        $dAmt = $trx['debit'] > 0 ? number_format($trx['debit'], 0) : '-';
+                        $cQty = ($trx['credit'] > 0 && $trx['qty'] > 0) ? $fmtQty($trx['qty']) : '-';
+                        $cAmt = $trx['credit'] > 0 ? number_format($trx['credit'], 0) : '-';
+                        $priceDisplay = $trx['price'] > 0 ? number_format($trx['price'], 0) : '';
+                    @endphp
+                    <tr>
+                        <td class="col-date">{{ date('d-m-y', strtotime($trx['date'])) }}</td>
+                        <td class="col-ref">{{ $trx['ref'] }} {{ $trx['inv'] }}</td>
+                        <td class="col-desc" title="{{ $trx['desc'] }}">{{ $trx['desc'] }}</td>
+                        <td class="col-price">{{ $priceDisplay }}</td>
+                        <td class="col-qty">{{ $dQty }}</td>
+                        <td class="col-amt">{{ $dAmt }}</td>
+                        <td class="col-qty">{{ $cQty }}</td>
+                        <td class="col-amt">{{ $cAmt }}</td>
+                        <td class="col-bal">
+                            <div class="balance-cell">
+                                <span class="drcr">{{ $runningBalance >= 0 ? 'DR.' : 'CR.' }}</span>
+                                <span class="bal-val">{{ number_format(abs($runningBalance), 0) }}</span>
+                            </div>
+                        </td>
+                    </tr>
+                @endforeach
+            </tbody>
+            <tfoot>
+                <tr class="total-row">
+                    <td colspan="3" class="total-label">{{ $acName }} Total. &gt;&gt;&gt;</td>
+                    <td class="col-price"></td>
+                    <td class="col-qty total-val">{{ $totalDebitQty > 0 ? $fmtQty($totalDebitQty) : '-' }}</td>
+                    <td class="col-amt total-val">{{ number_format($totalDebitAmount, 0) }}</td>
+                    <td class="col-qty total-val">{{ $totalCreditQty > 0 ? $fmtQty($totalCreditQty) : '-' }}</td>
+                    <td class="col-amt total-val">{{ $totalCreditAmount > 0 ? number_format($totalCreditAmount, 0) : '-' }}</td>
+                    <td class="col-bal total-val">
+                        <div class="balance-cell">
+                            <span class="drcr">{{ $runningBalance >= 0 ? 'DR.' : 'CR.' }}</span>
+                            <span class="bal-val">{{ number_format(abs($runningBalance), 0) }}</span>
+                        </div>
+                    </td>
+                </tr>
+            </tfoot>
+        </table>
+
+        <!-- Footer Template -->
+        <div id="rawFooterBox">
+            <div class="footer-left">Report Generated: {{ date('h:i:s A | l, F d, Y') }}</div>
+            <div class="footer-right">System Generated Report and Required no Signature</div>
+        </div>
     </div>
 
+    <!-- SheetJS for Excel Export -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script>
+        function exportReportToExcel() {
+            var table = document.getElementById("ledgerRawTable");
+            if (!table) return;
+            var wb = XLSX.utils.table_to_book(table, {sheet: "General Ledger"});
+            var fileName = "{{ preg_replace('/[^a-zA-Z0-9_-]/', '_', $acCode . '_' . $acName) }}_Ledger.xlsx";
+            XLSX.writeFile(wb, fileName);
+        }
+
+        // 📄 Dynamic A5 Portrait Sheet Paginator (26 rows per page)
+        document.addEventListener("DOMContentLoaded", function() {
+            var rawTable = document.getElementById("ledgerRawTable");
+            var pagesWrapper = document.getElementById("pagesWrapper");
+            var badge = document.getElementById("pageCountBadge");
+            if (!rawTable || !pagesWrapper) return;
+
+            var rows = Array.from(rawTable.querySelectorAll("tbody tr"));
+            var footRow = rawTable.querySelector("tfoot tr");
+
+            if (rows.length === 0) {
+                pagesWrapper.innerHTML = '<div class="page-sheet"><p style="text-align:center; padding: 40px; font-size:12px;">No transactions found for the selected period.</p></div>';
+                if (badge) badge.innerText = "📄 Total Pages: 0 A5 Pages";
+                return;
+            }
+
+            var rowsPerPage = 26; // Exact fit for A5 portrait (210mm height)
+            var totalPages = Math.ceil(rows.length / rowsPerPage);
+            if (totalPages === 0) totalPages = 1;
+
+            if (badge) {
+                badge.innerText = "📄 Total Pages: " + totalPages + " A5 " + (totalPages === 1 ? "Page" : "Pages");
+            }
+
+            var theadHTML = rawTable.querySelector("thead").outerHTML;
+            var headerBoxHTML = document.getElementById("rawHeaderBox").innerHTML;
+            var footerHTML = document.getElementById("rawFooterBox").innerHTML;
+
+            for (var p = 0; p < totalPages; p++) {
+                var start = p * rowsPerPage;
+                var pageRows = rows.slice(start, start + rowsPerPage);
+
+                var sheet = document.createElement("div");
+                sheet.className = "page-sheet";
+
+                // Page Number Tag
+                var pageNumDiv = document.createElement("div");
+                pageNumDiv.className = "page-sheet-number";
+                pageNumDiv.innerText = "Page " + (p + 1) + " of " + totalPages;
+                sheet.appendChild(pageNumDiv);
+
+                // Top Header Box
+                var hBox = document.createElement("div");
+                hBox.className = "ledger-header-box";
+                hBox.innerHTML = headerBoxHTML;
+                sheet.appendChild(hBox);
+
+                // Table Section
+                var tableWrap = document.createElement("div");
+                tableWrap.className = "ledger-table-wrap";
+
+                var tbodyHTML = pageRows.map(function(r) { return r.outerHTML; }).join("");
+                var isLastPage = (p === totalPages - 1);
+                var tfootHTML = (isLastPage && footRow) ? ('<tfoot>' + footRow.outerHTML + '</tfoot>') : '';
+
+                tableWrap.innerHTML = '<table class="ledger-table">' + theadHTML + '<tbody>' + tbodyHTML + '</tbody>' + tfootHTML + '</table>';
+                sheet.appendChild(tableWrap);
+
+                // Bottom Footer
+                var fBox = document.createElement("div");
+                fBox.className = "sheet-footer";
+                fBox.innerHTML = footerHTML;
+                sheet.appendChild(fBox);
+
+                pagesWrapper.appendChild(sheet);
+            }
+        });
+    </script>
 </body>
 </html>

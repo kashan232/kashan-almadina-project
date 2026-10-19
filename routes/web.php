@@ -110,7 +110,10 @@ Route::get('/home', [HomeController::class, 'index'])->middleware('auth')->name(
 // Route::get('/adminpage', [HomeController::class, 'adminpage'])->middleware(['auth','admin'])->name('adminpage');
 
 Route::get('/', function () {
-    return view('welcome');
+    if (auth()->check()) {
+        return redirect()->route('home');
+    }
+    return redirect()->route('login');
 });
 
 Route::get('/get-customers-by-type', [CustomerController::class, 'getByType']);

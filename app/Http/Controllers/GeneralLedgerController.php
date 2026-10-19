@@ -731,7 +731,9 @@ class GeneralLedgerController extends Controller
 
         // 1. Sales (SJ) - Aggregate
         $salesDateCol = $this->getDateColumn('sales');
-        $sales = $this->ledgerQuery(Sale::class)->where('customer_id', $id)->whereIn('partyType', $typeArray)
+        $sales = $this->ledgerQuery(Sale::class)
+            ->withSum('items as total_sales_qty', 'sales_qty')
+            ->where('customer_id', $id)->whereIn('partyType', $typeArray)
             ->whereBetween(DB::raw($salesDateCol), [$start, $end])
             ->get();
         foreach ($sales as $sale) {
@@ -753,8 +755,8 @@ class GeneralLedgerController extends Controller
                 'date' => $sale->entry_date ?: $sale->created_at,
                 'ref' => 'SJ',
                 'inv' => $sale->invoice_no,
-                'desc' => 'Sales',
-                'qty' => (float)$sale->quantity,
+                'desc' => 'Sales :',
+                'qty' => (float)($sale->total_sales_qty ?? $sale->quantity ?? 0),
                 'debit' => (float)($sale->sub_total2 ?? 0),
                 'credit' => round($orderDisc + $receiptAmt, 2),
                 'priority' => 10,
@@ -1064,7 +1066,9 @@ class GeneralLedgerController extends Controller
 
         // 6. Sale Returns (SRJ) - Aggregate
         $srDateCol = $this->getDateColumn('sale_returns', 'current_date');
-        $sReturns = $this->ledgerQuery(SaleReturn::class)->with('sale')->where('customer_id', $id)->whereIn('party_type', $typeArray)
+        $sReturns = $this->ledgerQuery(SaleReturn::class)
+            ->withSum('items as total_sr_qty', 'sales_qty')
+            ->with('sale')->where('customer_id', $id)->whereIn('party_type', $typeArray)
             ->whereIn('status', ['posted', 'Posted'])->whereBetween(DB::raw($srDateCol), [$start, $end])
             ->get();
         foreach ($sReturns as $sr) {
@@ -1079,7 +1083,7 @@ class GeneralLedgerController extends Controller
                 'ref' => 'SRJ',
                 'inv' => preg_replace('/[^0-9]/', '', substr($sr->invoice_no, strlen('SR-'))) ?: $sr->invoice_no,
                 'desc' => $desc,
-                'qty' => (float)$sr->quantity,
+                'qty' => (float)($sr->total_sr_qty ?? $sr->quantity ?? 0),
                 'debit' => 0,
                 'credit' => (float)$sr->sub_total2,
                 'priority' => 20
