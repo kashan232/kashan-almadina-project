@@ -252,6 +252,10 @@
                                                         </a>
                                                     @endif
 
+                                                    <a href="{{ route('stock-holds.release.print', $v->id) }}" target="_blank" class="btn btn-outline-dark btn-xs px-1 py-0" title="Print Release (Thermal)" style="height: 20px;">
+                                                        <i class="fa fa-print"></i>
+                                                    </a>
+
                                                     @if($v->hold_voucher_id)
                                                     <a href="{{ route('stock-holds.view', $v->hold_voucher_id) }}" class="btn btn-outline-info btn-xs px-2 py-0" title="View Hold {{ optional($v->holdVoucher)->display_no }}" style="font-size: 10px;">
                                                        Hold
