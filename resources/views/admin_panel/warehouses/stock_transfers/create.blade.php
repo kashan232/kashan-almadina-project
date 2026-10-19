@@ -139,8 +139,8 @@
                         <div class="row g-2">
                             {{-- Entry Date --}}
                             <div class="col-md-2">
-                                <label class="form-label small fw-bold text-muted">Entry Date</label>
-                                <input name="entry_date" value="{{ date('Y-m-d') }}" type="date" class="form-control form-control-sm bg-light" readonly tabindex="-1" style="pointer-events: none;" required>
+                                <label class="form-label small fw-bold">Entry Date <span class="text-danger">*</span></label>
+                                <input name="entry_date" id="entry_date" value="{{ date('Y-m-d') }}" type="date" class="form-control form-control-sm" required>
                             </div>
                             {{-- Entry Time --}}
                             <div class="col-md-2">
@@ -763,7 +763,7 @@ $(document).ready(function() {
                     <span style="font-size:15px; font-weight:600;">${fromWh}</span><span style="margin:0 16px; font-size:20px; font-weight:700;">→</span><span style="font-size:15px; font-weight:600;">${toWh}</span>
                 </div>
                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px; font-size:12px;">
-                    <div><div><span style="font-weight:600;width:120px;display:inline-block;">Date:</span>{{ date('d-M-Y') }}</div></div>
+                    <div><div><span style="font-weight:600;width:120px;display:inline-block;">Date:</span>${$('input[name="entry_date"]').val() || "{{ date('d-M-Y') }}"}</div></div>
                     <div><div><span style="font-weight:600;width:120px;display:inline-block;">Prepared By:</span>{{ auth()->user()->name }}</div></div>
                 </div>
                 ${remarks ? '<p style="font-size:12px;"><strong>Remarks:</strong> ' + remarks + '</p>' : ''}

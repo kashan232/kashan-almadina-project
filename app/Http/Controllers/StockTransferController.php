@@ -167,8 +167,8 @@ class StockTransferController extends Controller
                     'from_shop'         => $isFromShop ? 1 : 0,
                     'to_warehouse_id'   => $isToShop ? null : $request->to_warehouse_id,
                     'to_shop'           => $isToShop ? 1 : 0,
-                    'entry_date'        => $transfer->entry_date ?? $request->entry_date ?? ($transfer->created_at ? \Carbon\Carbon::parse($transfer->created_at)->format('Y-m-d') : date('Y-m-d')),
-                    'entry_time'        => $transfer->entry_time ?? $request->entry_time ?? ($transfer->created_at ? \Carbon\Carbon::parse($transfer->created_at)->format('H:i') : date('H:i')),
+                    'entry_date'        => $request->entry_date ?? $transfer->entry_date ?? ($transfer->created_at ? \Carbon\Carbon::parse($transfer->created_at)->format('Y-m-d') : date('Y-m-d')),
+                    'entry_time'        => $request->entry_time ?? $transfer->entry_time ?? ($transfer->created_at ? \Carbon\Carbon::parse($transfer->created_at)->format('H:i') : date('H:i')),
                     'remarks'           => $request->remarks,
                 ]);
 

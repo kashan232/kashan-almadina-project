@@ -142,11 +142,11 @@
                         <div class="row g-2">
                             {{-- Entry Date --}}
                             <div class="col-md-2">
-                                <label class="form-label small fw-bold text-muted">Entry Date</label>
+                                <label class="form-label small fw-bold">Entry Date <span class="text-danger">*</span></label>
                                 @php
                                     $eDate = $transfer->entry_date ?? ($transfer->created_at ? \Carbon\Carbon::parse($transfer->created_at)->format('Y-m-d') : date('Y-m-d'));
                                 @endphp
-                                <input name="entry_date" value="{{ $eDate }}" type="date" class="form-control form-control-sm bg-light" readonly tabindex="-1" style="pointer-events: none;" required>
+                                <input name="entry_date" id="entry_date" value="{{ $eDate }}" type="date" class="form-control form-control-sm" required>
                             </div>
                             {{-- Entry Time --}}
                             <div class="col-md-2">
