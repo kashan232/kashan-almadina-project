@@ -62,8 +62,19 @@ class PurchaseController extends Controller
         // ---------- GET LAST INVOICE ----------
         $nextInvoice = Purchase::generateInvoiceNo();
 
-        $expenseAccounts = Account::where('head_id', 1)->get();
-        $incomeAccounts = Account::where('head_id', 2)->get();
+        $expenseHead = AccountHead::where(function($q) {
+            $q->where('name', 'EXPENSE')->orWhere('id', 60000)->orWhere('id', 1);
+        })->first();
+        $expenseAccounts = $expenseHead 
+            ? Account::where('head_id', $expenseHead->id)->where('status', 1)->orderBy('title')->get() 
+            : Account::whereIn('head_id', [1, 60000])->get();
+
+        $incomeHead = AccountHead::where(function($q) {
+            $q->where('name', 'INCOME')->orWhere('id', 70000)->orWhere('id', 2);
+        })->first();
+        $incomeAccounts = $incomeHead 
+            ? Account::where('head_id', $incomeHead->id)->where('status', 1)->orderBy('title')->get() 
+            : Account::whereIn('head_id', [2, 70000])->get();
 
         // Pass this to the view
         return view(
@@ -432,8 +443,19 @@ class PurchaseController extends Controller
         $customers = Customer::all();
         $Warehouse = Warehouse::all();
         $AccountHeads = AccountHead::all();
-        $expenseAccounts = Account::where('head_id', 1)->get();
-        $incomeAccounts = Account::where('head_id', 2)->get();
+        $expenseHead = AccountHead::where(function($q) {
+            $q->where('name', 'EXPENSE')->orWhere('id', 60000)->orWhere('id', 1);
+        })->first();
+        $expenseAccounts = $expenseHead 
+            ? Account::where('head_id', $expenseHead->id)->where('status', 1)->orderBy('title')->get() 
+            : Account::whereIn('head_id', [1, 60000])->get();
+
+        $incomeHead = AccountHead::where(function($q) {
+            $q->where('name', 'INCOME')->orWhere('id', 70000)->orWhere('id', 2);
+        })->first();
+        $incomeAccounts = $incomeHead 
+            ? Account::where('head_id', $incomeHead->id)->where('status', 1)->orderBy('title')->get() 
+            : Account::whereIn('head_id', [2, 70000])->get();
         $nextInvoice = $purchase->invoice_no;
         $viewMode = true;
 
@@ -460,8 +482,19 @@ class PurchaseController extends Controller
         $Warehouse = Warehouse::all();
         $AccountHeads = AccountHead::all();
         
-        $expenseAccounts = Account::where('head_id', 1)->get();
-        $incomeAccounts = Account::where('head_id', 2)->get();
+        $expenseHead = AccountHead::where(function($q) {
+            $q->where('name', 'EXPENSE')->orWhere('id', 60000)->orWhere('id', 1);
+        })->first();
+        $expenseAccounts = $expenseHead 
+            ? Account::where('head_id', $expenseHead->id)->where('status', 1)->orderBy('title')->get() 
+            : Account::whereIn('head_id', [1, 60000])->get();
+
+        $incomeHead = AccountHead::where(function($q) {
+            $q->where('name', 'INCOME')->orWhere('id', 70000)->orWhere('id', 2);
+        })->first();
+        $incomeAccounts = $incomeHead 
+            ? Account::where('head_id', $incomeHead->id)->where('status', 1)->orderBy('title')->get() 
+            : Account::whereIn('head_id', [2, 70000])->get();
         
         // Use existing invoice number
         $nextInvoice = $purchase->invoice_no;

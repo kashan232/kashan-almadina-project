@@ -127,26 +127,37 @@
         /* Customer Box */
         .customer-box {
             border: 1.5px solid #000;
-            padding: 5px 8px;
+            padding: 4px 6px;
             margin-bottom: 7px;
-            text-align: right;
-            direction: rtl;
+            box-sizing: border-box;
         }
-        .urdu-label {
-            font-size: 12.5px;
-            font-weight: 700;
-            font-family: 'Noto Nastaliq Urdu', 'Jameel Noori Nastaleeq', 'Urdu Typesetting', Arial, sans-serif;
-            margin-bottom: 2px;
+        .cust-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .cust-table tr td {
+            padding: 1.5px 0;
+            vertical-align: top;
+            font-size: 11px;
+            line-height: 1.35;
             color: #000;
-            line-height: 1.4;
+        }
+        .cust-lbl {
+            width: 78px;
+            font-weight: 700;
+            color: #000;
+            white-space: nowrap;
+        }
+        .cust-val {
+            color: #000;
+            font-weight: 700;
+            text-align: left;
+            word-break: break-word;
         }
         .urdu-val {
-            font-size: 12.5px;
-            font-weight: 700;
-            font-family: 'Noto Nastaliq Urdu', 'Jameel Noori Nastaleeq', 'Urdu Typesetting', Arial, sans-serif;
-            line-height: 1.6;
-            text-align: center;
-            color: #000;
+            font-family: 'Noto Nastaliq Urdu', 'Jameel Noori Nastaleeq', Arial, sans-serif;
+            font-size: 11.5px;
+            line-height: 1.45;
         }
 
         /* Table */
@@ -296,27 +307,26 @@
     @php
         $pType = strtolower($sale->partyType ?? ($sale->party_type ?? 'customer'));
         if ($pType === 'vendor') {
-            $partyName = $sale->vendor->name ?? 'N/A';
-            $partyUrdu = $partyName;
+            $partyNameUrdu = $sale->vendor->name ?? 'N/A';
+            $partyAddress = $sale->vendor->address ?? ($sale->address ?? '-');
+            $partyTransport = '-';
+            $partyContact = $sale->vendor->mobile ?? ($sale->vendor->phone ?? ($sale->tel ?? '-'));
         } else {
-            $partyName = $sale->customer->customer_name ?? 'Walk-in Customer';
-            $urduParts = [];
-            if (!empty($sale->customer->customer_name_ur)) {
-                $urduParts[] = $sale->customer->customer_name_ur;
-            } else {
-                $urduParts[] = $partyName;
-            }
-            if (!empty($sale->customer->address_ur)) {
-                $urduParts[] = $sale->customer->address_ur;
-            } elseif (!empty($sale->address)) {
-                $urduParts[] = $sale->address;
-            } elseif (!empty($sale->customer->address)) {
-                $urduParts[] = $sale->customer->address;
-            }
-            if (!empty($sale->customer->transport_ur)) {
-                $urduParts[] = $sale->customer->transport_ur;
-            }
-            $partyUrdu = implode('، ', array_filter($urduParts));
+            $partyNameUrdu = !empty($sale->customer->customer_name_ur)
+                ? $sale->customer->customer_name_ur
+                : ($sale->customer->customer_name ?? 'Walk-in Customer');
+
+            $partyAddress = !empty($sale->customer->address_ur)
+                ? $sale->customer->address_ur
+                : (!empty($sale->address) ? $sale->address : ($sale->customer->address ?? '-'));
+
+            $partyTransport = !empty($sale->customer->transport_ur)
+                ? $sale->customer->transport_ur
+                : '-';
+
+            $partyContact = !empty($sale->tel)
+                ? $sale->tel
+                : (!empty($sale->customer->mobile) ? $sale->customer->mobile : ($sale->customer->mobile_2 ?? '-'));
         }
 
         $saleDate = $sale->entry_date
@@ -324,7 +334,7 @@
             : ($sale->created_at ? $sale->created_at->format('d-m-y') : now()->format('d-m-y'));
 
         $dcYear = $sale->entry_date ? \Carbon\Carbon::parse($sale->entry_date)->format('Y') : date('Y');
-        $dcNumber = $sale->manual_invoice ?: $sale->id;
+        $dcNumber = $sale->manual_invoice ?: ($sale->invoice_no ?: $sale->id);
         $dcNo = 'AMT-' . $dcYear . '-' . $dcNumber;
 
         $qtyTotal = $sale->items->sum('sales_qty');
@@ -350,8 +360,24 @@
 
         <!-- Customer Box -->
         <div class="customer-box">
-            <div class="urdu-label">کسٹمر کا نام اور پتہ-</div>
-            <div class="urdu-val">{{ $partyUrdu }}</div>
+            <table class="cust-table">
+                <tr>
+                    <td class="cust-lbl">Customer:</td>
+                    <td class="cust-val urdu-val">{{ $partyNameUrdu }}</td>
+                </tr>
+                <tr>
+                    <td class="cust-lbl">Address:</td>
+                    <td class="cust-val urdu-val">{{ $partyAddress }}</td>
+                </tr>
+                <tr>
+                    <td class="cust-lbl">Transporter:</td>
+                    <td class="cust-val urdu-val">{{ $partyTransport ?: '-' }}</td>
+                </tr>
+                <tr>
+                    <td class="cust-lbl">Contact No:</td>
+                    <td class="cust-val">{{ $partyContact ?: '-' }}</td>
+                </tr>
+            </table>
         </div>
 
         <!-- Items Table -->

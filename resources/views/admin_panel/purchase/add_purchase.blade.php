@@ -679,33 +679,53 @@
                 <span class="text-dark small fw-bold">WHT (Tax)</span>
                 <div class="d-flex align-items-center gap-2">
                   <div class="d-flex gap-1" style="width:230px;">
+                    @php
+                        $savedWhtHeadId = null;
+                        if (isset($purchase)) {
+                            if ($purchase->whtAccount) {
+                                $savedWhtHeadId = $purchase->whtAccount->head_id;
+                            } elseif (!empty($purchase->wht_account_id)) {
+                                $foundWhtAcc = \App\Models\Account::withoutGlobalScopes()->find($purchase->wht_account_id);
+                                $savedWhtHeadId = $foundWhtAcc ? $foundWhtAcc->head_id : null;
+                            }
+                        }
+                        if (!$savedWhtHeadId) {
+                            $savedWhtHeadId = old('wht_head_id');
+                        }
+                        if (!$savedWhtHeadId && isset($AccountHeads)) {
+                            $expHead = $AccountHeads->first(function($h) { return strtoupper($h->name) == 'EXPENSE' || $h->id == 60000 || $h->id == 1; });
+                            $savedWhtHeadId = $expHead ? $expHead->id : ($AccountHeads->first()->id ?? null);
+                        }
+
+                        $savedWhtAccId = old('wht_account_id', $purchase->wht_account_id ?? '');
+                        $whtHeadAccounts = collect();
+                        if ($savedWhtHeadId) {
+                            $whtHeadAccounts = \App\Models\Account::withoutGlobalScopes()
+                                ->where('head_id', $savedWhtHeadId)
+                                ->where(function ($q) use ($savedWhtAccId) {
+                                    $q->where('status', 1);
+                                    if ($savedWhtAccId) {
+                                        $q->orWhere('id', $savedWhtAccId);
+                                    }
+                                })
+                                ->orderBy('title')->get();
+                        }
+                        if ($whtHeadAccounts->isEmpty() && isset($expenseAccounts) && $expenseAccounts->isNotEmpty()) {
+                            $whtHeadAccounts = $expenseAccounts;
+                        }
+                    @endphp
                     <select id="wht_head_id" class="form-select form-select-sm py-0 select2" style="width:90px;">
                       @foreach($AccountHeads as $head)
-                          @if(strtoupper($head->name) == 'EXPENSE' || $head->id == 1)
-                          <option value="{{ $head->id }}" selected>
+                          <option value="{{ $head->id }}" {{ (string)$head->id === (string)$savedWhtHeadId ? 'selected' : '' }}>
                               {{ $head->name }}
                           </option>
-                          @endif
                       @endforeach
                     </select>
-                    <select name="wht_account_id" id="wht_account_id" class="form-select form-select-sm py-0 select2" style="flex-grow:1;">
+                    <select name="wht_account_id" id="wht_account_id" data-selected="{{ $savedWhtAccId }}" class="form-select form-select-sm py-0 select2" style="flex-grow:1;">
                       <option value="">Account</option>
-                      @if(isset($purchase) && $purchase->whtAccount)
-                          @php
-                              $whtHeadAccounts = \App\Models\Account::where('head_id', $purchase->whtAccount->head_id)
-                                  ->where(function ($q) use ($purchase) {
-                                      $q->where('status', 1)->orWhere('id', $purchase->wht_account_id);
-                                  })
-                                  ->orderBy('title')->get();
-                          @endphp
-                          @foreach($whtHeadAccounts as $whtAcc)
-                              <option value="{{ $whtAcc->id }}" {{ (int) $purchase->wht_account_id === (int) $whtAcc->id ? 'selected' : '' }}>{{ $whtAcc->title }}</option>
-                          @endforeach
-                      @else
-                          @foreach($expenseAccounts as $whtAcc)
-                              <option value="{{ $whtAcc->id }}">{{ $whtAcc->title }}</option>
-                          @endforeach
-                      @endif
+                      @foreach($whtHeadAccounts as $whtAcc)
+                          <option value="{{ $whtAcc->id }}" {{ (string)$savedWhtAccId === (string)$whtAcc->id ? 'selected' : '' }}>{{ $whtAcc->title }}</option>
+                      @endforeach
                     </select>
                   </div>
                   <div class="d-flex align-items-center gap-1">
@@ -716,8 +736,8 @@
                         <option value="amount" {{ $wType == 'amount' ? 'selected' : '' }}>PKR</option>
                     </select>
                   </div>
-                  <span id="whtAmountDisplay" class="fw-bold" style="width:80px; text-align:right;">0.00</span>
-                  <input type="hidden" id="whtAmount" name="wht_amount" value="{{ old('wht_amount', 0) }}">
+                  <span id="whtAmountDisplay" class="fw-bold" style="width:80px; text-align:right;">{{ number_format((float)old('wht', $purchase->wht ?? 0), 2) }}</span>
+                  <input type="hidden" id="whtAmount" name="wht_amount" value="{{ old('wht_amount', $purchase->wht ?? 0) }}">
                 </div>
                 <input type="hidden" id="whtValue" name="wht" value="{{ old('wht', $purchase->wht ?? 0) }}">
               </div>
@@ -2258,9 +2278,10 @@ $(document).ready(function() {
         });
     });
 
-    $(document).on('change', '#wht_head_id', function() {
+    $(document).on('change', '#wht_head_id', function(e, preselectedId) {
         var headId = $(this).val();
         var $accSelect = $('#wht_account_id');
+        var targetAccId = preselectedId || $accSelect.data('selected') || $accSelect.val();
 
         if (!headId) {
             $accSelect.html('<option value="">Select Account</option>');
@@ -2277,14 +2298,21 @@ $(document).ready(function() {
                 var html = '<option value="">Select Account</option>';
                 if (res && res.length) {
                     res.forEach(function(acc) {
-                        html += '<option value="' + acc.id + '">' + acc.title + '</option>';
+                        var isSel = (targetAccId && String(acc.id) === String(targetAccId)) ? ' selected' : '';
+                        html += '<option value="' + acc.id + '"' + isSel + '>' + acc.title + '</option>';
                     });
                 } else {
                     html = '<option value="">No Accounts Found</option>';
                 }
                 $accSelect.html(html);
                 if ($.fn.select2) {
-                    $accSelect.select2({ width: '100%' }).trigger('change');
+                    $accSelect.select2({ width: '100%' });
+                }
+                if (targetAccId) {
+                    $accSelect.val(targetAccId);
+                    if ($.fn.select2) {
+                        $accSelect.trigger('change.select2');
+                    }
                 }
             },
             error: function(err) {
@@ -2308,7 +2336,7 @@ $(document).ready(function() {
 
     // Sweep all rows on load to ensure proper enablement state
     $(document).ready(function() {
-        if ($('#wht_head_id').val()) {
+        if ($('#wht_account_id option').length <= 1 && $('#wht_head_id').val()) {
             $('#wht_head_id').trigger('change');
         }
         setTimeout(function() {

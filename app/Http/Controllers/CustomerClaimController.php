@@ -237,6 +237,14 @@ class CustomerClaimController extends Controller
             return response()->json(['ok' => false, 'msg' => 'Validation error', 'errors' => $validator->errors()]);
         }
 
+        if (($request->original_warehouse_id === '0' || $request->original_warehouse_id === 0) && !auth()->user()->canAccessShop()) {
+            return response()->json(['ok' => false, 'msg' => 'You do not have access to Shop inventory.']);
+        }
+
+        if ($request->claim_type === 'credit_note' && ($request->replacement_from_warehouse_id === '0' || $request->replacement_from_warehouse_id === 0) && !auth()->user()->canAccessShop()) {
+            return response()->json(['ok' => false, 'msg' => 'You do not have access to Shop inventory for replacement.']);
+        }
+
         try {
             DB::beginTransaction();
 

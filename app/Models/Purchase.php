@@ -45,7 +45,7 @@ class Purchase extends Model
 
     public function whtAccount()
     {
-        return $this->belongsTo(Account::class, 'wht_account_id');
+        return $this->belongsTo(Account::class, 'wht_account_id')->withoutGlobalScopes();
     }
 
     public function user()

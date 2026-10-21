@@ -569,7 +569,14 @@ class StockHoldController extends Controller
 
     public function printRelease($id)
     {
-        $voucher = \App\Models\StockReleaseVoucher::with(['items.product', 'warehouse', 'partyCustomer', 'partyVendor', 'holdVoucher'])->findOrFail($id);
+        $voucher = \App\Models\StockReleaseVoucher::with([
+            'items.product.brandRelation',
+            'items.warehouse',
+            'warehouse',
+            'partyCustomer',
+            'partyVendor',
+            'holdVoucher'
+        ])->findOrFail($id);
         return view('admin_panel.stock_hold.print_release', compact('voucher'));
     }
 
