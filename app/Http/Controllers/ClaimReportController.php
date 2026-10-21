@@ -39,7 +39,7 @@ class ClaimReportController extends Controller
                 $q->whereIn('id', $groupIds);
             })
             ->get();
-        $users = User::with('userGroups')->orderBy('name')->get();
+        $users = User::with(['userGroups', 'roles'])->orderBy('name')->get();
         $claimWarehouses = Warehouse::withoutGlobalScopes()
             ->where('claim_type', 'customer')
             ->orderBy('warehouse_name')

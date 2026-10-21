@@ -53,7 +53,10 @@
                                     </div>
                                     <div class="filter-list" id="officer-list">
                                         @foreach($users as $u)
-                                            <div class="filter-item" data-groups="{{ $u->userGroups->pluck('id')->implode(',') }}" title="Click to toggle, double-click to select only this">
+                                            <div class="filter-item" 
+                                                 data-groups="{{ $u->userGroups->pluck('id')->implode(',') }}" 
+                                                 data-is-admin="{{ $u->isAdmin() ? '1' : '0' }}"
+                                                 title="Click to toggle, double-click to select only this">
                                                 <input type="checkbox" name="sales_officer[]" value="{{ $u->id }}">
                                                 <span>{{ $u->name }}</span>
                                             </div>
@@ -354,9 +357,17 @@
         }
 
         function matchesGroups($item, selectedGroups) {
-            if (!selectedGroups.length) return true;
+            // Super Admin / Admin users always have access across all groups and should never be hidden
+            if ($item.data('is-admin') == '1' || $item.data('is-admin') === 1) return true;
+
+            const totalGroups = $('#group-list .filter-item').length;
+            // If all groups are selected or none selected, keep everything visible
+            if (!selectedGroups.length || selectedGroups.length === totalGroups) return true;
+
             const itemGroups = parseDataList($item.data('groups'));
-            if (!itemGroups.length) return false;
+            // If an entity has no specific group restrictions, keep it visible
+            if (!itemGroups.length) return true;
+
             return selectedGroups.some(g => itemGroups.includes(g));
         }
 
@@ -480,19 +491,29 @@
         });
 
         // Search filtering for items with auto-deselect of non-matching items
+        let itemFilterWasAllChecked = false;
+
+        $('#itemSearch').on('focus', function() {
+            const total = $('#item-list .filter-item').length;
+            const checked = $('#item-list .filter-item input:checked').length;
+            itemFilterWasAllChecked = (checked === total);
+        });
+
         $('#itemSearch').on('keyup input search', function() {
             const term = ($(this).val() || '').toLowerCase().trim();
             const total = $('#item-list .filter-item').length;
             const checked = $('#item-list .filter-item input:checked').length;
 
-            // If user is searching and all items were checked, automatically uncheck non-matching items
-            if (term && checked === total) {
+            if (term && (itemFilterWasAllChecked || checked === total)) {
+                itemFilterWasAllChecked = true;
                 $('#item-list .filter-item').each(function() {
                     const search = String($(this).data('search') || '');
                     const match = search.indexOf(term) > -1;
                     $(this).toggle(match);
                     if (!match) {
                         uncheckItem($(this));
+                    } else {
+                        checkItem($(this));
                     }
                 });
             } else {
@@ -501,6 +522,9 @@
                     const match = !term || search.indexOf(term) > -1;
                     $(this).toggle(match);
                 });
+                if (!term) {
+                    itemFilterWasAllChecked = false;
+                }
             }
             updateCounters();
         });
