@@ -133,7 +133,7 @@
 
         /* 📊 Table Styling */
         .ledger-table-wrap {
-            flex: 1 1 auto;
+            flex: 0 0 auto !important;
             overflow: hidden;
             display: flex;
             flex-direction: column;
@@ -167,13 +167,13 @@
             color: #000;
             font-family: Calibri, 'Segoe UI', Arial, sans-serif;
         }
-        .col-date   { width: 8.5%; text-align: center; white-space: nowrap; font-size: 9px; font-family: Calibri, 'Segoe UI', Arial, sans-serif; }
-        .col-ref    { width: 9.5%; text-align: center; white-space: nowrap; font-size: 9px; font-family: Calibri, 'Segoe UI', Arial, sans-serif; }
-        .col-desc   { width: 38%; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 9px; font-family: Calibri, 'Segoe UI', Arial, sans-serif; }
-        .col-qty    { width: 7%; text-align: center; white-space: nowrap; font-size: 9px; }
-        .col-amt    { width: 12%; text-align: right; white-space: nowrap; font-size: 9px; }
-        .col-credit { width: 12%; text-align: right; white-space: nowrap; font-size: 9px; }
-        .col-bal    { width: 13%; text-align: right; white-space: nowrap; padding: 1px 3px !important; font-size: 9px; }
+        .col-date   { width: 8%;   text-align: center; white-space: nowrap; font-size: 9px; font-family: Calibri, 'Segoe UI', Arial, sans-serif; }
+        .col-ref    { width: 9%;   text-align: center; white-space: nowrap; font-size: 9px; font-family: Calibri, 'Segoe UI', Arial, sans-serif; }
+        .col-desc   { width: 39%;  text-align: left;   white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 9px; font-family: Calibri, 'Segoe UI', Arial, sans-serif; }
+        .col-qty    { width: 4%;   text-align: center; white-space: nowrap; font-size: 9px; }
+        .col-amt    { width: 14%;  text-align: right;  white-space: nowrap; font-size: 9px; }
+        .col-credit { width: 14%;  text-align: right;  white-space: nowrap; font-size: 9px; }
+        .col-bal    { width: 12%;  text-align: right;  white-space: nowrap; padding: 1px 3px !important; font-size: 9px; }
 
         /* 🚫 Remove vertical borders between Date, Reference, and Description */
         .ledger-table th.col-date,
@@ -240,16 +240,19 @@
             font-family: Calibri, 'Segoe UI', Arial, sans-serif;
         }
 
-        /* 📑 Footer */
+        /* 📑 Footer — positioned immediately below the table on the last page */
         .sheet-footer {
             display: flex;
             justify-content: space-between;
             align-items: center;
             font-size: 8.5px;
             color: #000;
-            padding-top: 3px;
-            margin-top: 3px;
+            padding-top: 4px;
+            margin-top: 4px;
             font-family: Calibri, 'Segoe UI', Arial, sans-serif;
+            flex-shrink: 0;
+            width: 100%;
+            box-sizing: border-box;
         }
         .sheet-footer .footer-left {
             font-weight: bold;
@@ -259,6 +262,17 @@
         .sheet-footer .footer-right {
             color: #000;
             font-family: Calibri, 'Segoe UI', Arial, sans-serif;
+        }
+
+        /* 📄 Page Number at the end of the page */
+        .page-sheet-number {
+            position: absolute;
+            bottom: 2.5mm;
+            right: 8mm;
+            font-size: 8.5px;
+            color: #444;
+            font-family: Calibri, 'Segoe UI', Arial, sans-serif;
+            font-weight: normal;
         }
 
         @media print {
@@ -275,12 +289,15 @@
             .no-print {
                 display: none !important;
             }
+            .ledger-table-wrap {
+                flex: 0 0 auto !important;
+            }
             .page-sheet {
                 width: {{ $sheetW }} !important;
                 height: {{ $sheetH }} !important;
                 max-height: {{ $sheetH }} !important;
                 margin: 0 !important;
-                padding: 6mm 8mm !important;
+                padding: 5mm 8mm !important;
                 box-shadow: none !important;
                 border: none !important;
                 page-break-after: always !important;
@@ -288,9 +305,25 @@
                 overflow: hidden !important;
                 box-sizing: border-box !important;
                 font-family: Calibri, 'Segoe UI', Arial, sans-serif !important;
+                justify-content: flex-start !important;
             }
             .page-sheet:last-child {
                 page-break-after: auto !important;
+            }
+            .sheet-footer {
+                display: flex !important;
+                font-size: 8.5px !important;
+                margin-top: 4px !important;
+                padding-top: 4px !important;
+            }
+            .page-sheet-number {
+                display: block !important;
+                position: absolute !important;
+                bottom: 2.5mm !important;
+                right: 8mm !important;
+                font-size: 8.5px !important;
+                color: #000 !important;
+                font-family: Calibri, 'Segoe UI', Arial, sans-serif !important;
             }
             .ledger-table th, .ledger-table td, .total-row td, .balance-cell .bal-val, .total-label, .total-val {
                 font-family: Calibri, 'Segoe UI', Arial, sans-serif !important;
@@ -451,6 +484,9 @@
             var headerBoxHTML = document.getElementById("rawHeaderBox").innerHTML;
             var footerHTML = document.getElementById("rawFooterBox").innerHTML;
 
+            var FOOTER_HEIGHT = 22;
+            var PAGE_NUM_HEIGHT = 16;
+
             function createNewSheet(pageIdx) {
                 var sheet = document.createElement("div");
                 sheet.className = "page-sheet";
@@ -465,23 +501,21 @@
                 tableWrap.innerHTML = '<table class="ledger-table">' + theadHTML + '<tbody></tbody></table>';
                 sheet.appendChild(tableWrap);
 
-                var fBox = document.createElement("div");
-                fBox.className = "sheet-footer";
-                fBox.innerHTML = footerHTML;
-                sheet.appendChild(fBox);
+                var pNum = document.createElement("div");
+                pNum.className = "page-sheet-number";
+                pNum.innerText = "Page " + (pageIdx + 1);
+                sheet.appendChild(pNum);
 
                 return sheet;
             }
 
-            function getMaxTableHeight(sheet) {
+            function getMaxTableHeight(sheet, isLast) {
                 var isLandscape = {{ $isLandscape ? 'true' : 'false' }};
                 var sheetH = sheet.clientHeight || (isLandscape ? 764 : 1080);
                 var hBox = sheet.querySelector(".ledger-header-box");
-                var fBox = sheet.querySelector(".sheet-footer");
                 var hBoxH = hBox ? hBox.offsetHeight : 28;
-                var fBoxH = fBox ? fBox.offsetHeight : 16;
-                // Safety buffer to prevent any print overflow
-                return (sheetH - hBoxH - fBoxH - 12);
+                var fH = isLast ? FOOTER_HEIGHT : 0;
+                return (sheetH - hBoxH - fH - PAGE_NUM_HEIGHT - 10);
             }
 
             var sheetIndex = 0;
@@ -529,8 +563,23 @@
                 }
             }
 
+            // Append footer ONLY on the finalSheet, directly below the table!
+            if (finalSheet) {
+                var fBox = document.createElement("div");
+                fBox.className = "sheet-footer";
+                fBox.innerHTML = footerHTML;
+                finalSheet.appendChild(fBox);
+            }
+
             var allSheets = Array.from(pagesWrapper.querySelectorAll(".page-sheet"));
             var totalPages = allSheets.length;
+
+            allSheets.forEach(function(s, idx) {
+                var pNumEl = s.querySelector(".page-sheet-number");
+                if (pNumEl) {
+                    pNumEl.innerText = "Page " + (idx + 1) + " of " + totalPages;
+                }
+            });
 
             if (badge) {
                 badge.innerText = "📄 Total Pages: " + totalPages + " A4 " + (totalPages === 1 ? "Page" : "Pages");
