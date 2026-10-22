@@ -17,11 +17,14 @@
         }
         $fromLabel = $startDate ? date('d-m-y', strtotime($startDate)) : '';
         $toLabel = $endDate ? date('d-m-y', strtotime($endDate)) : '';
+        $isLandscape = ($orientation ?? 'portrait') === 'landscape';
+        $sheetW = $isLandscape ? '297mm' : '210mm';
+        $sheetH = $isLandscape ? '210mm' : '297mm';
     @endphp
     <title>Ledger - {{ $acCode }} {{ $acName }}</title>
     <style>
         @page {
-            size: A5 portrait;
+            size: A4 {{ $orientation ?? 'portrait' }};
             margin: 0;
         }
         * {
@@ -30,7 +33,7 @@
             print-color-adjust: exact !important;
         }
         body {
-            font-family: Calibri, 'Segoe UI', Candara, Arial, sans-serif;
+            font-family: Calibri, 'Segoe UI', Arial, sans-serif;
             font-size: 9px;
             color: #000;
             margin: 0;
@@ -38,12 +41,12 @@
             background: #525659;
         }
 
-        /* 🎛️ Sticky Top Control Bar (Like Customer Outstanding) */
+        /* 🎛️ Sticky Top Control Bar */
         .no-print {
             position: sticky;
             top: 0;
             z-index: 9999;
-            padding: 10px 15px;
+            padding: 8px 15px;
             background: #2a2d32;
             color: #fff;
             border-bottom: 1px solid #1a1c1e;
@@ -51,20 +54,20 @@
             justify-content: space-between;
             align-items: center;
             box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-            font-family: Calibri, 'Segoe UI', Candara, Arial, sans-serif;
+            font-family: Calibri, 'Segoe UI', Arial, sans-serif;
         }
         .no-print .btn-group {
             display: flex;
             gap: 8px;
         }
         .no-print .btn-group button {
-            padding: 7px 16px;
+            padding: 6px 16px;
             font-weight: bold;
             cursor: pointer;
             border: none;
             border-radius: 4px;
             font-size: 12px;
-            font-family: Calibri, 'Segoe UI', Candara, Arial, sans-serif;
+            font-family: Calibri, 'Segoe UI', Arial, sans-serif;
         }
         .btn-print { background: #e91e63; color: #fff; }
         .btn-print:hover { background: #d81b60; }
@@ -75,24 +78,24 @@
         .page-badge {
             background: #1976d2;
             color: #fff;
-            padding: 5px 14px;
+            padding: 4px 12px;
             border-radius: 20px;
             font-size: 12px;
             font-weight: bold;
             display: inline-flex;
             align-items: center;
             gap: 6px;
-            font-family: Calibri, 'Segoe UI', Candara, Arial, sans-serif;
+            font-family: Calibri, 'Segoe UI', Arial, sans-serif;
         }
 
-        /* 📄 A5 Portrait Page Sheet (Half of A4: 148mm x 210mm) */
+        /* 📄 A4 Portrait Page Sheet (210mm x 297mm) */
         .page-sheet {
-            width: 148mm;
-            min-height: 210mm;
-            height: 210mm;
+            width: {{ $sheetW }};
+            min-height: {{ $sheetH }};
+            height: {{ $sheetH }};
             margin: 15px auto;
             background: #ffffff;
-            padding: 4mm 5mm;
+            padding: 6mm 8mm;
             box-shadow: 0 4px 15px rgba(0,0,0,0.4);
             position: relative;
             box-sizing: border-box;
@@ -100,45 +103,32 @@
             flex-direction: column;
             justify-content: space-between;
             overflow: hidden;
-            font-family: Calibri, 'Segoe UI', Candara, Arial, sans-serif;
-        }
-        .page-sheet-number {
-            position: absolute;
-            top: 2mm;
-            right: 4mm;
-            font-size: 8.5px;
-            font-weight: bold;
-            color: #555;
-            background: #f0f0f0;
-            padding: 1px 5px;
-            border-radius: 3px;
-            border: 1px solid #ccc;
-            font-family: Calibri, 'Segoe UI', Candara, Arial, sans-serif;
+            font-family: Calibri, 'Segoe UI', Arial, sans-serif;
         }
 
-        /* 🏷️ Header Box (Matching Image Exactly) */
+        /* 🏷️ Header Box (Matching Image Exactly: solid border, dark blue title, bold dates) */
         .ledger-header-box {
             border: 1.5px solid #000;
-            padding: 2.5px 6px;
-            margin-bottom: 3px;
+            padding: 3px 6px;
+            margin-bottom: 2px;
             display: flex;
             justify-content: space-between;
             align-items: center;
             background: #fff;
             box-sizing: border-box;
-            font-family: Calibri, 'Segoe UI', Candara, Arial, sans-serif;
+            font-family: Calibri, 'Segoe UI', Arial, sans-serif;
         }
         .ledger-header-title {
-            font-size: 11px;
+            font-size: 13px;
             font-weight: bold;
             color: #000080; /* Dark Navy Blue */
-            font-family: Calibri, 'Segoe UI', Candara, Arial, sans-serif;
+            font-family: Calibri, 'Segoe UI', Arial, sans-serif;
         }
         .ledger-header-date {
-            font-size: 9.5px;
+            font-size: 11px;
             font-weight: bold;
             color: #000;
-            font-family: Calibri, 'Segoe UI', Candara, Arial, sans-serif;
+            font-family: Calibri, 'Segoe UI', Arial, sans-serif;
         }
 
         /* 📊 Table Styling */
@@ -151,22 +141,22 @@
         .ledger-table {
             width: 100%;
             border-collapse: collapse;
-            border: 1px solid #000;
+            border: 1px solid #777;
             table-layout: fixed;
             background: #fff;
-            font-family: Calibri, 'Segoe UI', Candara, Arial, sans-serif;
+            font-family: Calibri, 'Segoe UI', Arial, sans-serif;
             font-size: 9px;
         }
         .ledger-table th {
-            background: #d9d9d9;
-            border: 1px solid #000;
+            background: #e0e0e0;
+            border: 1px solid #777;
             padding: 2px 2px;
             font-size: 9px;
             font-weight: bold;
             color: #000;
             text-align: center;
             line-height: 1.15;
-            font-family: Calibri, 'Segoe UI', Candara, Arial, sans-serif;
+            font-family: Calibri, 'Segoe UI', Arial, sans-serif;
         }
         .ledger-table td {
             border: 1px solid #777;
@@ -175,15 +165,49 @@
             line-height: 1.15;
             vertical-align: middle;
             color: #000;
-            font-family: Calibri, 'Segoe UI', Candara, Arial, sans-serif;
+            font-family: Calibri, 'Segoe UI', Arial, sans-serif;
         }
-        .col-date   { width: 9%; text-align: center; white-space: nowrap; font-size: 9px; }
-        .col-ref    { width: 10%; text-align: center; white-space: nowrap; font-size: 9px; }
-        .col-desc   { width: 27%; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 9px; }
-        .col-price  { width: 8%; text-align: right; white-space: nowrap; font-size: 9px; }
-        .col-qty    { width: 6%; text-align: center; white-space: nowrap; font-size: 9px; }
-        .col-amt    { width: 11%; text-align: right; white-space: nowrap; font-size: 9px; }
-        .col-bal    { width: 12%; text-align: right; white-space: nowrap; font-size: 9px; }
+        .col-date   { width: 8.5%; text-align: center; white-space: nowrap; font-size: 9px; font-family: Calibri, 'Segoe UI', Arial, sans-serif; }
+        .col-ref    { width: 9.5%; text-align: center; white-space: nowrap; font-size: 9px; font-family: Calibri, 'Segoe UI', Arial, sans-serif; }
+        .col-desc   { width: 33%; text-align: left; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 9px; font-family: Calibri, 'Segoe UI', Arial, sans-serif; }
+        .col-price  { width: 7.5%; text-align: right; white-space: nowrap; font-size: 9px; }
+        .col-qty    { width: 5%; text-align: center; white-space: nowrap; font-size: 9px; }
+        .col-amt    { width: 10.5%; text-align: right; white-space: nowrap; font-size: 9px; }
+        .col-bal    { width: 11%; text-align: right; white-space: nowrap; font-size: 9px; }
+
+        /* 🚫 Remove vertical borders between Date, Reference, and Description */
+        .ledger-table th.col-date,
+        .ledger-table td.col-date {
+            border-right: none !important;
+        }
+        .ledger-table th.col-ref,
+        .ledger-table td.col-ref {
+            border-left: none !important;
+            border-right: none !important;
+        }
+        .ledger-table th.col-desc,
+        .ledger-table td.col-desc {
+            border-left: none !important;
+            border-right: 1px solid #777 !important;
+        }
+
+        /* 🚫 Seamless Qty and Amount inside Debit and Credit groups (tbody & tfoot) */
+        .ledger-table tbody td.col-debit-qty,
+        .ledger-table tfoot td.col-debit-qty {
+            border-right: none !important;
+        }
+        .ledger-table tbody td.col-debit-amt,
+        .ledger-table tfoot td.col-debit-amt {
+            border-left: none !important;
+        }
+        .ledger-table tbody td.col-credit-qty,
+        .ledger-table tfoot td.col-credit-qty {
+            border-right: none !important;
+        }
+        .ledger-table tbody td.col-credit-amt,
+        .ledger-table tfoot td.col-credit-amt {
+            border-left: none !important;
+        }
 
         /* DR / CR Split in Balance Column */
         .balance-cell {
@@ -192,21 +216,20 @@
             align-items: center;
             width: 100%;
             padding: 0 !important;
-            font-family: Calibri, 'Segoe UI', Candara, Arial, sans-serif;
+            font-family: Calibri, 'Segoe UI', Arial, sans-serif;
         }
         .balance-cell .drcr {
             font-weight: bold;
-            font-size: 8px;
+            font-size: 9px;
             margin-right: 2px;
             flex-shrink: 0;
-            font-family: Calibri, 'Segoe UI', Candara, Arial, sans-serif;
+            font-family: Calibri, 'Segoe UI', Arial, sans-serif;
         }
         .balance-cell .bal-val {
-            font-weight: bold;
             font-size: 9px;
             text-align: right;
             flex-grow: 1;
-            font-family: Calibri, 'Segoe UI', Candara, Arial, sans-serif;
+            font-family: Calibri, 'Segoe UI', Arial, sans-serif;
         }
 
         /* Total Row (Blue text, bold, matches image) */
@@ -214,80 +237,79 @@
             border-top: 1.5px solid #000;
             border-bottom: 1.5px solid #000;
             background: #fff;
-            padding: 2.5px 2px;
+            padding: 2.5px 3px;
             font-weight: bold;
             font-size: 9px;
-            font-family: Calibri, 'Segoe UI', Candara, Arial, sans-serif;
+            font-family: Calibri, 'Segoe UI', Arial, sans-serif;
         }
         .total-label {
             text-align: right;
             color: #000080;
             font-weight: bold;
-            padding-right: 4px !important;
+            padding-right: 6px !important;
             font-size: 9px;
-            font-family: Calibri, 'Segoe UI', Candara, Arial, sans-serif;
+            font-family: Calibri, 'Segoe UI', Arial, sans-serif;
         }
         .total-val {
             color: #000080;
             font-weight: bold;
             font-size: 9px;
-            font-family: Calibri, 'Segoe UI', Candara, Arial, sans-serif;
+            font-family: Calibri, 'Segoe UI', Arial, sans-serif;
         }
 
-        /* 📑 Footer */
+        /* 📑 Footer (No border line, clean spacing like image) */
         .sheet-footer {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            font-size: 8px;
+            font-size: 8.5px;
             color: #000;
-            padding-top: 2px;
-            margin-top: auto;
-            border-top: 1px solid #999;
-            font-family: Calibri, 'Segoe UI', Candara, Arial, sans-serif;
+            padding-top: 3px;
+            margin-top: 3px;
+            font-family: Calibri, 'Segoe UI', Arial, sans-serif;
         }
         .sheet-footer .footer-left {
             font-weight: bold;
-            font-family: Calibri, 'Segoe UI', Candara, Arial, sans-serif;
+            font-family: Calibri, 'Segoe UI', Arial, sans-serif;
         }
         .sheet-footer .footer-right {
-            color: #333;
-            font-family: Calibri, 'Segoe UI', Candara, Arial, sans-serif;
+            color: #000;
+            font-family: Calibri, 'Segoe UI', Arial, sans-serif;
         }
 
         @media print {
             @page {
-                size: A5 portrait;
+                size: A4 {{ $orientation ?? 'portrait' }};
                 margin: 0;
             }
             body {
                 background: #fff !important;
                 margin: 0 !important;
                 padding: 0 !important;
-                font-family: Calibri, 'Segoe UI', Candara, Arial, sans-serif !important;
+                font-family: Calibri, 'Segoe UI', Arial, sans-serif !important;
             }
             .no-print {
                 display: none !important;
             }
             .page-sheet {
-                width: 148mm !important;
-                height: 210mm !important;
-                max-height: 210mm !important;
+                width: {{ $sheetW }} !important;
+                height: {{ $sheetH }} !important;
+                max-height: {{ $sheetH }} !important;
                 margin: 0 !important;
-                padding: 4mm 5mm !important;
+                padding: 6mm 8mm !important;
                 box-shadow: none !important;
                 border: none !important;
                 page-break-after: always !important;
                 page-break-inside: avoid !important;
                 overflow: hidden !important;
                 box-sizing: border-box !important;
-                font-family: Calibri, 'Segoe UI', Candara, Arial, sans-serif !important;
+                font-family: Calibri, 'Segoe UI', Arial, sans-serif !important;
             }
             .page-sheet:last-child {
                 page-break-after: auto !important;
             }
             .ledger-table th, .ledger-table td, .total-row td, .balance-cell .bal-val, .total-label, .total-val {
-                font-family: Calibri, 'Segoe UI', Candara, Arial, sans-serif !important;
+                font-family: Calibri, 'Segoe UI', Arial, sans-serif !important;
                 font-size: 9px !important;
             }
         }
@@ -333,10 +355,10 @@
                     <th rowspan="2" class="col-bal">Balance</th>
                 </tr>
                 <tr>
-                    <th class="col-qty">Qty</th>
-                    <th class="col-amt">Amount</th>
-                    <th class="col-qty">Qty</th>
-                    <th class="col-amt">Amount</th>
+                    <th class="col-qty col-debit-qty">Qty</th>
+                    <th class="col-amt col-debit-amt">Amount</th>
+                    <th class="col-qty col-credit-qty">Qty</th>
+                    <th class="col-amt col-credit-amt">Amount</th>
                 </tr>
             </thead>
             <tbody>
@@ -349,8 +371,8 @@
 
                     $fmtQty = function($q) {
                         $val = (float)$q;
-                        if (abs($val) < 0.0001) return '-';
-                        return (floor($val) == $val) ? ((int)$val . ' -') : number_format($val, 1);
+                        if (abs($val) < 0.0001) return '';
+                        return (floor($val) == $val) ? ((int)$val . ' -') : (number_format($val, 1) . ' -');
                     };
                 @endphp
 
@@ -360,10 +382,10 @@
                     <td class="col-ref"></td>
                     <td class="col-desc" style="text-align: center; font-weight: bold;">B/F:</td>
                     <td class="col-price"></td>
-                    <td class="col-qty">-</td>
-                    <td class="col-amt">-</td>
-                    <td class="col-qty">-</td>
-                    <td class="col-amt">-</td>
+                    <td class="col-qty col-debit-qty"></td>
+                    <td class="col-amt col-debit-amt" style="text-align: center;">-</td>
+                    <td class="col-qty col-credit-qty"></td>
+                    <td class="col-amt col-credit-amt" style="text-align: center;">-</td>
                     <td class="col-bal">
                         <div class="balance-cell">
                             <span class="drcr">{{ $runningBalance >= 0 ? 'DR.' : 'CR.' }}</span>
@@ -385,21 +407,21 @@
                             $totalCreditQty += (float)$trx['qty'];
                         }
 
-                        $dQty = ($trx['debit'] > 0 && $trx['qty'] > 0) ? $fmtQty($trx['qty']) : '-';
+                        $dQty = ($trx['debit'] > 0 && $trx['qty'] > 0) ? $fmtQty($trx['qty']) : '';
                         $dAmt = $trx['debit'] > 0 ? number_format($trx['debit'], 0) : '-';
-                        $cQty = ($trx['credit'] > 0 && $trx['qty'] > 0) ? $fmtQty($trx['qty']) : '-';
+                        $cQty = ($trx['credit'] > 0 && $trx['qty'] > 0) ? $fmtQty($trx['qty']) : '';
                         $cAmt = $trx['credit'] > 0 ? number_format($trx['credit'], 0) : '-';
                         $priceDisplay = $trx['price'] > 0 ? number_format($trx['price'], 0) : '';
                     @endphp
                     <tr>
                         <td class="col-date">{{ date('d-m-y', strtotime($trx['date'])) }}</td>
-                        <td class="col-ref">{{ $trx['ref'] }} {{ $trx['inv'] }}</td>
+                        <td class="col-ref">{{ $trx['ref'] }} &nbsp; {{ $trx['inv'] }}</td>
                         <td class="col-desc" title="{{ $trx['desc'] }}">{{ $trx['desc'] }}</td>
                         <td class="col-price">{{ $priceDisplay }}</td>
-                        <td class="col-qty">{{ $dQty }}</td>
-                        <td class="col-amt">{{ $dAmt }}</td>
-                        <td class="col-qty">{{ $cQty }}</td>
-                        <td class="col-amt">{{ $cAmt }}</td>
+                        <td class="col-qty col-debit-qty">{{ $dQty }}</td>
+                        <td class="col-amt col-debit-amt" style="{{ $trx['debit'] > 0 ? '' : 'text-align: center;' }}">{{ $dAmt }}</td>
+                        <td class="col-qty col-credit-qty">{{ $cQty }}</td>
+                        <td class="col-amt col-credit-amt" style="{{ $trx['credit'] > 0 ? '' : 'text-align: center;' }}">{{ $cAmt }}</td>
                         <td class="col-bal">
                             <div class="balance-cell">
                                 <span class="drcr">{{ $runningBalance >= 0 ? 'DR.' : 'CR.' }}</span>
@@ -413,14 +435,14 @@
                 <tr class="total-row">
                     <td colspan="3" class="total-label">{{ $acName }} Total. &gt;&gt;&gt;</td>
                     <td class="col-price"></td>
-                    <td class="col-qty total-val">{{ $totalDebitQty > 0 ? $fmtQty($totalDebitQty) : '-' }}</td>
-                    <td class="col-amt total-val">{{ number_format($totalDebitAmount, 0) }}</td>
-                    <td class="col-qty total-val">{{ $totalCreditQty > 0 ? $fmtQty($totalCreditQty) : '-' }}</td>
-                    <td class="col-amt total-val">{{ $totalCreditAmount > 0 ? number_format($totalCreditAmount, 0) : '-' }}</td>
+                    <td class="col-qty col-debit-qty total-val">{{ $totalDebitQty > 0 ? $fmtQty($totalDebitQty) : '' }}</td>
+                    <td class="col-amt col-debit-amt total-val">{{ number_format($totalDebitAmount, 0) }}</td>
+                    <td class="col-qty col-credit-qty total-val">{{ $totalCreditQty > 0 ? $fmtQty($totalCreditQty) : '' }}</td>
+                    <td class="col-amt col-credit-amt total-val" style="{{ $totalCreditAmount > 0 ? '' : 'text-align: center;' }}">{{ $totalCreditAmount > 0 ? number_format($totalCreditAmount, 0) : '-' }}</td>
                     <td class="col-bal total-val">
                         <div class="balance-cell">
-                            <span class="drcr">{{ $runningBalance >= 0 ? 'DR.' : 'CR.' }}</span>
-                            <span class="bal-val">{{ number_format(abs($runningBalance), 0) }}</span>
+                            <span class="drcr" style="color: #000080; font-weight: bold;">{{ $runningBalance >= 0 ? 'DR.' : 'CR.' }}</span>
+                            <span class="bal-val" style="color: #000080; font-weight: bold;">{{ number_format(abs($runningBalance), 0) }}</span>
                         </div>
                     </td>
                 </tr>
@@ -429,7 +451,7 @@
 
         <!-- Footer Template -->
         <div id="rawFooterBox">
-            <div class="footer-left">Report Generated: {{ date('h:i:s A | l, F d, Y') }}</div>
+            <div class="footer-left">Report Generated: {{ date('g:i:s A | l, F d, Y') }}</div>
             <div class="footer-right">System Generated Report and Required no Signature</div>
         </div>
     </div>
@@ -445,7 +467,7 @@
             XLSX.writeFile(wb, fileName);
         }
 
-        // 📄 Dynamic A5 Portrait Sheet Paginator (Fills page completely before spilling to next page)
+        // 📄 Dynamic A4 Portrait Sheet Paginator (Fills page completely before spilling to next page)
         document.addEventListener("DOMContentLoaded", function() {
             var rawTable = document.getElementById("ledgerRawTable");
             var pagesWrapper = document.getElementById("pagesWrapper");
@@ -457,7 +479,7 @@
 
             if (rows.length === 0) {
                 pagesWrapper.innerHTML = '<div class="page-sheet"><p style="text-align:center; padding: 40px; font-size:12px;">No transactions found for the selected period.</p></div>';
-                if (badge) badge.innerText = "📄 Total Pages: 0 A5 Pages";
+                if (badge) badge.innerText = "📄 Total Pages: 0 A4 Pages";
                 return;
             }
 
@@ -470,11 +492,6 @@
             function createNewSheet(pageIdx) {
                 var sheet = document.createElement("div");
                 sheet.className = "page-sheet";
-
-                var pageNumDiv = document.createElement("div");
-                pageNumDiv.className = "page-sheet-number";
-                pageNumDiv.innerText = "Page " + (pageIdx + 1);
-                sheet.appendChild(pageNumDiv);
 
                 var hBox = document.createElement("div");
                 hBox.className = "ledger-header-box";
@@ -495,13 +512,14 @@
             }
 
             function getMaxTableHeight(sheet) {
-                var sheetH = sheet.clientHeight || 764;
+                var isLandscape = {{ $isLandscape ? 'true' : 'false' }};
+                var sheetH = sheet.clientHeight || (isLandscape ? 764 : 1080);
                 var hBox = sheet.querySelector(".ledger-header-box");
                 var fBox = sheet.querySelector(".sheet-footer");
-                var hBoxH = hBox ? hBox.offsetHeight : 22;
-                var fBoxH = fBox ? fBox.offsetHeight : 14;
+                var hBoxH = hBox ? hBox.offsetHeight : 28;
+                var fBoxH = fBox ? fBox.offsetHeight : 16;
                 // Safety buffer to prevent any print overflow
-                return (sheetH - hBoxH - fBoxH - 10);
+                return (sheetH - hBoxH - fBoxH - 12);
             }
 
             var sheetIndex = 0;
@@ -549,19 +567,11 @@
                 }
             }
 
-            // Update page numbers: Page X of Y
             var allSheets = Array.from(pagesWrapper.querySelectorAll(".page-sheet"));
             var totalPages = allSheets.length;
 
-            allSheets.forEach(function(s, idx) {
-                var pNumEl = s.querySelector(".page-sheet-number");
-                if (pNumEl) {
-                    pNumEl.innerText = "Page " + (idx + 1) + " of " + totalPages;
-                }
-            });
-
             if (badge) {
-                badge.innerText = "📄 Total Pages: " + totalPages + " A5 " + (totalPages === 1 ? "Page" : "Pages");
+                badge.innerText = "📄 Total Pages: " + totalPages + " A4 " + (totalPages === 1 ? "Page" : "Pages");
             }
         });
     </script>
