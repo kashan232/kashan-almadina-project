@@ -252,16 +252,6 @@
                                             <a href="{{ route('customers.toggleStatus', $customer->id) }}" class="btn btn-xs {{ $customer->status === 'active' ? 'btn-outline-dark' : 'btn-outline-secondary' }} px-1 py-0" title="Toggle Status" style="height: 20px;">
                                                 <i class="fa {{ $customer->status === 'active' ? 'fa-toggle-on text-success' : 'fa-toggle-off' }}"></i>
                                             </a>
-
-                                            @if($customer->sales_count == 0)
-                                                <a href="{{ route('customers.destroy', $customer->id) }}" class="btn btn-outline-danger btn-xs px-1 py-0" style="height: 20px;" onclick="return confirm('Delete customer?');">
-                                                    <i class="fa fa-trash"></i>
-                                                </a>
-                                            @else
-                                                <button class="btn btn-outline-secondary btn-xs px-1 py-0" disabled title="Has Sales" style="height: 20px;">
-                                                    <i class="fa fa-trash"></i>
-                                                </button>
-                                            @endif
                                         </div>
                                     </td>
                                 </tr>

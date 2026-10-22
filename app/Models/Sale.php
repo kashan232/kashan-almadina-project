@@ -23,7 +23,8 @@ class Sale extends Model
 
     public function customer()
     {
-        return $this->belongsTo(\App\Models\Customer::class, 'customer_id');
+        return $this->belongsTo(\App\Models\Customer::class, 'customer_id')
+            ->withoutGlobalScope(\App\Models\Scopes\ActiveOnlyScope::class);
     }
     public function vendor()
     {

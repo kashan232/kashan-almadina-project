@@ -26,7 +26,8 @@ class SaleReturn extends Model
             return $this->belongsTo(Vendor::class, 'customer_id');
         }
 
-        return $this->belongsTo(Customer::class, 'customer_id');
+        return $this->belongsTo(Customer::class, 'customer_id')
+            ->withoutGlobalScope(\App\Models\Scopes\ActiveOnlyScope::class);
     }
     
     public function getPartyNameAttribute() {
