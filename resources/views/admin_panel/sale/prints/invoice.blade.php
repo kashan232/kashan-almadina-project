@@ -75,7 +75,7 @@
             min-height: 210mm;
             margin: 15px auto;
             background: #fff;
-            padding: 6mm 6.5mm;
+            padding: 5mm 6mm;
             box-shadow: 0 4px 15px rgba(0,0,0,0.35);
             box-sizing: border-box;
             position: relative;
@@ -350,10 +350,15 @@
             font-weight: 600;
             line-height: 1.3;
         }
+        .words-box-standalone {
+            border: 1px solid var(--black);
+            margin-top: 5px;
+            background: #fff;
+        }
 
         /* FOOTER & SIGNATURE */
         .ftr {
-            margin-top: 10px;
+            margin-top: 8px;
             display: flex;
             justify-content: space-between;
             align-items: flex-end;
@@ -369,7 +374,7 @@
             text-align: center;
         }
         .sig-space {
-            height: 10mm;
+            height: 7mm;
         }
         .sig-line {
             border-top: 1px solid var(--black);
@@ -383,37 +388,54 @@
 
         /* URDU DISCLAIMER BOX */
         .urdu-disclaimer-box {
-            margin-top: 8px;
+            margin-top: 6px;
             border: 1px solid var(--black);
-            padding: 4px 8px;
+            padding: 3px 6px;
             direction: rtl;
             text-align: center;
             font-family: 'Noto Nastaliq Urdu', 'Jameel Noori Nastaleeq', Arial, sans-serif;
-            font-size: 8.5pt;
+            font-size: 8pt;
             font-weight: 700;
-            line-height: 1.5;
+            line-height: 1.4;
             color: #000;
         }
 
         @media print {
             @page {
                 size: A5 portrait;
-                margin: 4mm 4mm;
+                margin: 0;
             }
-            body {
-                background: #fff !important;
+            html, body {
+                width: 148mm !important;
+                height: 210mm !important;
                 margin: 0 !important;
                 padding: 0 !important;
+                background: #fff !important;
+                overflow: hidden !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
             }
             .no-print-toolbar {
                 display: none !important;
             }
             .invoice-sheet {
-                width: 100% !important;
+                width: 148mm !important;
+                max-width: 148mm !important;
+                min-height: auto !important;
+                height: 100% !important;
+                max-height: 210mm !important;
                 margin: 0 !important;
-                padding: 0 !important;
+                padding: 5mm 6mm !important;
                 box-shadow: none !important;
                 border: none !important;
+                box-sizing: border-box !important;
+                overflow: hidden !important;
+                page-break-after: avoid !important;
+                page-break-before: avoid !important;
+                page-break-inside: avoid !important;
+            }
+            .inv-content, table.main, .rv-wrap, .words-box, .ftr, .urdu-disclaimer-box {
+                page-break-inside: avoid !important;
             }
         }
     </style>
@@ -492,8 +514,13 @@
         $receiptRows[] = ['label' => strtoupper($label), 'amount' => $amt];
     }
     $receiptTotal = collect($receiptRows)->sum('amount');
+    if ($receiptTotal <= 0 && !empty($sale->receipt1) && (float)$sale->receipt1 > 0) {
+        $receiptRows[] = ['label' => 'CASH RECEIVED', 'amount' => (float)$sale->receipt1];
+        $receiptTotal = (float)$sale->receipt1;
+    }
+    $hasReceipt = ($receiptTotal > 0);
     $amountPayable = $invoiceTotal - $receiptTotal;
-    $wordsRaw = number_format($receiptTotal > 0 ? $amountPayable : $invoiceTotal, 2, '.', '');
+    $wordsRaw = number_format($hasReceipt ? $amountPayable : $invoiceTotal, 2, '.', '');
     $sumRows = 4;
 @endphp
 
@@ -596,6 +623,7 @@
             </tbody>
         </table>
 
+        @if($hasReceipt)
         <!-- Receipt Voucher Section -->
         <div class="rv-wrap">
             <div class="rv-title">Receipt Voucher</div>
@@ -611,23 +639,12 @@
                         <td class="blue">INVOICE TOTAL. &gt;&gt;&gt;</td>
                         <td class="r blue">{{ number_format($invoiceTotal, 2) }}</td>
                     </tr>
-                    @if(count($receiptRows) > 0)
-                        @foreach($receiptRows as $row)
-                        <tr>
-                            <td class="purple">Less: {{ $row['label'] }}. &gt;&gt;&gt;</td>
-                            <td class="r purple">{{ number_format($row['amount'], 2) }}</td>
-                        </tr>
-                        @endforeach
-                    @else
-                        <tr>
-                            <td class="purple">Less: Cash Received. &gt;&gt;&gt;</td>
-                            <td class="r purple">{{ number_format($sale->receipt1 ?? 0, 2) }}</td>
-                        </tr>
-                    @endif
+                    @foreach($receiptRows as $row)
                     <tr>
-                        <td class="purple">Less: &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;. &gt;&gt;&gt;</td>
-                        <td class="r purple"></td>
+                        <td class="purple">Less: {{ $row['label'] }}. &gt;&gt;&gt;</td>
+                        <td class="r purple">{{ number_format($row['amount'], 2) }}</td>
                     </tr>
+                    @endforeach
                     <tr class="rv-pay">
                         <td class="blue">AMOUNT PAYABLE. &gt;&gt;&gt;</td>
                         <td class="r blue">{{ number_format($amountPayable, 2) }}</td>
@@ -638,6 +655,12 @@
                 <span class="amount-in-words" data-amount="{{ $wordsRaw }}"></span>
             </div>
         </div>
+        @else
+        <!-- Standalone Amount in Words (when no Receipt Voucher) -->
+        <div class="words-box words-box-standalone">
+            <span class="amount-in-words" data-amount="{{ $wordsRaw }}"></span>
+        </div>
+        @endif
 
         <!-- Footer -->
         <div class="ftr">

@@ -338,6 +338,15 @@
         $dcNo = 'AMT-' . $dcYear . '-' . $dcNumber;
 
         $qtyTotal = $sale->items->sum('sales_qty');
+
+        $saleLocations = $sale->items->map(function ($it) {
+            return ($it->warehouse_id == 0 || empty($it->warehouse_id))
+                ? 'Shop'
+                : ($it->warehouse->warehouse_name ?? 'Shop');
+        })->unique()->values();
+        $saleLocation = $saleLocations->count() === 1
+            ? $saleLocations->first()
+            : ($saleLocations->count() > 1 ? 'Multiple' : 'Shop');
     @endphp
 
     <div class="dc-container">
@@ -356,6 +365,7 @@
         <div class="meta-section">
             <div><strong>D.C #.</strong> &nbsp;&nbsp;&nbsp;<strong>{{ $dcNo }}</strong></div>
             <div><strong>Date.</strong> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<strong>{{ $saleDate }}</strong></div>
+            <div><strong>Location.</strong> &nbsp;<strong>{{ $saleLocation }}</strong></div>
         </div>
 
         <!-- Customer Box -->

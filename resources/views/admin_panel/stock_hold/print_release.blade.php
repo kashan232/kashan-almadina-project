@@ -347,6 +347,11 @@
         $dcNo = 'AMT-' . $dcYear . '-' . $dcNumber;
 
         $qtyTotal = $voucher->items->sum('release_qty');
+
+        $voucherWhId = (int)($voucher->warehouse_id ?? 0);
+        $voucherLocation = ($voucherWhId === 0)
+            ? 'Shop'
+            : ($voucher->warehouse->warehouse_name ?? 'Shop');
     @endphp
 
     <div class="dc-container">
@@ -366,6 +371,7 @@
         <div class="meta-section">
             <div><strong>D.C #.</strong> &nbsp;&nbsp;&nbsp;<strong>{{ $dcNo }}</strong></div>
             <div><strong>Date.</strong> &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<strong>{{ $releaseDate }}</strong></div>
+            <div><strong>Location.</strong> &nbsp;<strong>{{ $voucherLocation }}</strong></div>
         </div>
 
         <!-- Customer Box -->
@@ -409,7 +415,10 @@
                     } else {
                         $cleanDesc = $pName;
                     }
-                    $location = ($item->warehouse_id == 0 || empty($item->warehouse_id))
+                    $whId = (!is_null($item->warehouse_id) && $item->warehouse_id !== '') 
+                        ? (int)$item->warehouse_id 
+                        : (int)($voucher->warehouse_id ?? 0);
+                    $location = ($whId === 0)
                         ? 'Shop'
                         : ($item->warehouse->warehouse_name ?? ($voucher->warehouse->warehouse_name ?? 'Shop'));
                 @endphp

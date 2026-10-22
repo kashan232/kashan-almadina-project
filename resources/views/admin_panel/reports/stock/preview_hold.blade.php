@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <title>Stock Report — Hold Qty Only</title>
     <style>
-        @page { size: A4 landscape; margin: 2mm; }
+        @page { size: A5 portrait; margin: 4mm 3mm; }
         * { box-sizing: border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
         body {
             font-family: Arial, Helvetica, sans-serif;
@@ -23,18 +23,19 @@
             margin-bottom: 8px;
         }
         .print-sheet {
-            width: 297mm;
+            width: 148mm;
             max-width: 100%;
-            margin: 0 auto;
-            display: flex;
-            justify-content: flex-start;
+            margin: 10px auto;
+            display: block;
+            background: #fff;
+            padding: 0 1mm;
         }
-        .sheet-blank { display: none; width: 0; flex: 0 0 0%; }
+        .sheet-blank { display: none !important; }
         .report-sheet {
-            width: 50%;
-            flex: 0 0 50%;
-            padding: 0 0.5mm;
-            overflow: hidden;
+            width: 100%;
+            display: block;
+            padding: 0;
+            overflow: visible;
         }
         .company-name {
             text-align: center;
@@ -135,6 +136,52 @@
             text-align: center;
             padding: 20px;
             font-size: 10px;
+        }
+        @media print {
+            @page {
+                size: A5 portrait;
+                margin: 4mm 3mm 4mm 3mm;
+            }
+            html, body {
+                width: 100% !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                background: #fff !important;
+            }
+            .no-print { display: none !important; }
+            .print-sheet {
+                width: 100% !important;
+                max-width: 100% !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                display: block !important;
+            }
+            .sheet-blank { display: none !important; }
+            .report-sheet {
+                width: 100% !important;
+                max-width: 100% !important;
+                flex: none !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                display: block !important;
+                overflow: visible !important;
+            }
+            table {
+                width: 100% !important;
+                border-collapse: separate !important;
+                border-spacing: 0 !important;
+                page-break-inside: auto;
+                break-inside: auto;
+            }
+            thead {
+                display: table-header-group !important;
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+            }
+            tr {
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+            }
         }
     </style>
 </head>
