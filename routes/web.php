@@ -51,7 +51,7 @@ use App\Http\Controllers\DatabaseBackupController;
 | be assigned to the "web" middleware group. Make something great!
 |
 */
-// fixedssssssss
+// fixedssssssssss
 // Customer Claim Routes
 Route::middleware(['auth'])->group(function () {
     // Database Backup Routes
