@@ -95,13 +95,13 @@
             height: {{ $sheetH }};
             margin: 15px auto;
             background: #ffffff;
-            padding: 6mm 8mm;
+            padding: 5mm 8mm;
             box-shadow: 0 4px 15px rgba(0,0,0,0.4);
             position: relative;
             box-sizing: border-box;
             display: flex;
             flex-direction: column;
-            justify-content: space-between;
+            justify-content: flex-start;
             overflow: hidden;
             font-family: Calibri, 'Segoe UI', Arial, sans-serif;
         }
@@ -257,24 +257,9 @@
             font-family: Calibri, 'Segoe UI', Arial, sans-serif;
         }
 
-        /* 📑 Footer (No border line, clean spacing like image) */
+        /* 📑 Footer hidden completely */
         .sheet-footer {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 8.5px;
-            color: #000;
-            padding-top: 3px;
-            margin-top: 3px;
-            font-family: Calibri, 'Segoe UI', Arial, sans-serif;
-        }
-        .sheet-footer .footer-left {
-            font-weight: bold;
-            font-family: Calibri, 'Segoe UI', Arial, sans-serif;
-        }
-        .sheet-footer .footer-right {
-            color: #000;
-            font-family: Calibri, 'Segoe UI', Arial, sans-serif;
+            display: none;
         }
 
         @media print {
@@ -291,12 +276,15 @@
             .no-print {
                 display: none !important;
             }
+            .sheet-footer {
+                display: none !important;
+            }
             .page-sheet {
                 width: {{ $sheetW }} !important;
                 height: {{ $sheetH }} !important;
                 max-height: {{ $sheetH }} !important;
                 margin: 0 !important;
-                padding: 6mm 8mm !important;
+                padding: 5mm 8mm !important;
                 box-shadow: none !important;
                 border: none !important;
                 page-break-after: always !important;
@@ -304,6 +292,7 @@
                 overflow: hidden !important;
                 box-sizing: border-box !important;
                 font-family: Calibri, 'Segoe UI', Arial, sans-serif !important;
+                justify-content: flex-start !important;
             }
             .page-sheet:last-child {
                 page-break-after: auto !important;
@@ -321,7 +310,7 @@
     <div class="no-print">
         <div class="page-badge" id="pageCountBadge">📄 Total Pages: Computing...</div>
         <div class="btn-group">
-            <button class="btn-print" onclick="window.print()">Print Report</button>
+            <button class="btn-print" onclick="printReport()">Print Report</button>
             <button class="btn-excel" onclick="exportReportToExcel()">Export to Excel</button>
             <button class="btn-close" onclick="if(window.history.length > 1){ window.history.back(); } else { window.close(); }">Close</button>
         </div>
@@ -449,16 +438,20 @@
             </tfoot>
         </table>
 
-        <!-- Footer Template -->
-        <div id="rawFooterBox">
-            <div class="footer-left">Report Generated: {{ date('g:i:s A | l, F d, Y') }}</div>
-            <div class="footer-right">System Generated Report and Required no Signature</div>
+        <!-- Footer Template (hidden - removed from print) -->
+        <div id="rawFooterBox" style="display:none;">
+            <div class="footer-left"></div>
+            <div class="footer-right"></div>
         </div>
     </div>
 
     <!-- SheetJS for Excel Export -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script>
+        function printReport() {
+            window.print();
+        }
+
         function exportReportToExcel() {
             var table = document.getElementById("ledgerRawTable");
             if (!table) return;
@@ -503,11 +496,7 @@
                 tableWrap.innerHTML = '<table class="ledger-table">' + theadHTML + '<tbody></tbody></table>';
                 sheet.appendChild(tableWrap);
 
-                var fBox = document.createElement("div");
-                fBox.className = "sheet-footer";
-                fBox.innerHTML = footerHTML;
-                sheet.appendChild(fBox);
-
+                // No footer appended — footer is hidden
                 return sheet;
             }
 
@@ -515,11 +504,9 @@
                 var isLandscape = {{ $isLandscape ? 'true' : 'false' }};
                 var sheetH = sheet.clientHeight || (isLandscape ? 764 : 1080);
                 var hBox = sheet.querySelector(".ledger-header-box");
-                var fBox = sheet.querySelector(".sheet-footer");
                 var hBoxH = hBox ? hBox.offsetHeight : 28;
-                var fBoxH = fBox ? fBox.offsetHeight : 16;
-                // Safety buffer to prevent any print overflow
-                return (sheetH - hBoxH - fBoxH - 12);
+                // No footer height — footer removed. Safety buffer 10px.
+                return (sheetH - hBoxH - 10);
             }
 
             var sheetIndex = 0;
@@ -539,7 +526,7 @@
 
                 var neededHeight = currentTableHeight;
                 if (isLastRow && footRow) {
-                    neededHeight += (footRow.offsetHeight || 20);
+                    neededHeight += (footRow.offsetHeight || 24);
                 }
 
                 // If adding this row exceeds sheet capacity, move it to next sheet
@@ -556,14 +543,29 @@
                 }
             }
 
-            // Append footer row to the last sheet
+            // Append total footer row to the last sheet
             var finalSheet = pagesWrapper.lastElementChild;
             if (finalSheet && footRow) {
                 var finalTable = finalSheet.querySelector(".ledger-table");
-                if (finalTable && !finalTable.querySelector("tfoot")) {
-                    var tfoot = document.createElement("tfoot");
-                    tfoot.innerHTML = footRow.outerHTML;
-                    finalTable.appendChild(tfoot);
+                // Check if tfoot fits; if not add it on a new final sheet
+                var lastTbodyH = finalTable.offsetHeight;
+                var footRowH = footRow.offsetHeight || 24;
+                var lastMaxH = getMaxTableHeight(finalSheet);
+                if ((lastTbodyH + footRowH) > lastMaxH) {
+                    sheetIndex++;
+                    var extraSheet = createNewSheet(sheetIndex);
+                    pagesWrapper.appendChild(extraSheet);
+                    var extraTable = extraSheet.querySelector(".ledger-table");
+                    // Add empty tbody so tfoot renders correctly
+                    var tfoot2 = document.createElement("tfoot");
+                    tfoot2.innerHTML = footRow.outerHTML;
+                    extraTable.appendChild(tfoot2);
+                } else {
+                    if (!finalTable.querySelector("tfoot")) {
+                        var tfoot = document.createElement("tfoot");
+                        tfoot.innerHTML = footRow.outerHTML;
+                        finalTable.appendChild(tfoot);
+                    }
                 }
             }
 
