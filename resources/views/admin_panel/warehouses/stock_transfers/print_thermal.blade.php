@@ -315,9 +315,9 @@
             <div style="font-size: 9px; margin-top: 4px;"><strong>Note:</strong> {{ $transfer->remarks }}</div>
         @endif
 
-        <div class="sig-section">
-            <div class="sig-box">Prepared By</div>
-            <div class="sig-box">Receiver Sign</div>
+        <div class="sig-section" style="margin-top: 30px;">
+            <div class="sig-box">Receiver Stamp &amp; Signatory</div>
+            <div class="sig-box">Authorized Stamp &amp; Signatory</div>
         </div>
 
         <div style="text-align: center; font-size: 8px; color: #777; margin-top: 15px;">

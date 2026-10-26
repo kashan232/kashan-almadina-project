@@ -224,19 +224,20 @@
 
         /* Footer & Signatures */
         .footer-signatures {
-            margin-top: 50px;
+            margin-top: 55px;
             display: flex;
             justify-content: space-between;
-            padding: 0 15px;
+            padding: 0 20px;
         }
         .sig-box {
             border-top: 1.5px solid #000;
-            width: 105px;
+            width: 175px;
             text-align: center;
-            padding-top: 4px;
-            font-size: 11px;
-            font-weight: 600;
+            padding-top: 5px;
+            font-size: 10.5px;
+            font-weight: 700;
             color: #000;
+            line-height: 1.3;
         }
         .page-num {
             margin-top: 8px;
@@ -291,12 +292,12 @@
                 page-break-after: auto !important;
             }
             .transfer-table tfoot {
-                display: table-footer-group !important;
+                display: table-row-group !important;
                 page-break-inside: avoid !important;
             }
             .footer-signatures {
                 page-break-inside: avoid !important;
-                margin-top: 35px;
+                margin-top: 50px;
             }
             .page-num {
                 display: none !important;
@@ -448,13 +449,8 @@
 
         <!-- Signatures -->
         <div class="footer-signatures">
-            <div class="sig-box">Prepared By</div>
-            <div class="sig-box">Checked By</div>
-            <div class="sig-box">Authorized By</div>
-        </div>
-
-        <div class="page-num">
-            Page 1 of 1
+            <div class="sig-box">Receiver Stamp &amp; Signatory</div>
+            <div class="sig-box">Authorized Stamp &amp; Signatory</div>
         </div>
     </div>
 
