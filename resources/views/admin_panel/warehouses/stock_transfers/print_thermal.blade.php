@@ -69,6 +69,12 @@
             padding: 3mm 4mm;
             box-shadow: 0 4px 15px rgba(0,0,0,0.3);
             box-sizing: border-box;
+            font-weight: 700;
+            color: #000;
+        }
+        .receipt-container * {
+            font-weight: 700 !important;
+            color: #000 !important;
         }
 
         /* Header */
@@ -77,26 +83,26 @@
         }
         .brand-name {
             font-family: 'Times New Roman', Times, serif;
-            font-size: 19px;
-            font-weight: 700;
+            font-size: 20px;
+            font-weight: 900 !important;
             line-height: 1.1;
             margin: 0;
         }
         .brand-sub {
-            font-size: 9px;
-            font-style: italic;
-            font-weight: 600;
+            font-size: 9.5px;
+            font-style: normal;
+            font-weight: 700 !important;
             margin-top: 2px;
             line-height: 1.25;
         }
         .order-badge {
             display: inline-block;
-            border: 1.5px solid #000;
+            border: 2px solid #000;
             border-radius: 4px;
             padding: 2px 10px;
             margin: 5px auto 3px auto;
-            font-size: 11px;
-            font-weight: 700;
+            font-size: 11.5px;
+            font-weight: 900 !important;
             text-transform: uppercase;
         }
         .divider-thick {
@@ -109,65 +115,70 @@
             font-size: 10px;
             line-height: 1.45;
             margin-bottom: 5px;
+            font-weight: 700 !important;
         }
         .meta-row {
             display: flex;
             justify-content: space-between;
         }
         .meta-lbl {
-            font-weight: 700;
+            font-weight: 800 !important;
         }
 
         /* Thermal Table */
         .th-table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 9.5px;
+            font-size: 10px;
             margin-top: 4px;
+            font-weight: 700 !important;
         }
         .th-table th {
             background-color: #d8d8d8 !important;
-            border: 1px solid #000 !important;
+            border: 1.5px solid #000 !important;
             padding: 3px 2px;
-            font-weight: 700;
+            font-weight: 900 !important;
             color: #000;
             text-align: center;
         }
         .th-table td {
-            border: 1px solid #000 !important;
+            border: 1.5px solid #000 !important;
             padding: 2.5px 2px;
             color: #000;
+            font-weight: 700 !important;
         }
         .grand-row td {
-            border-top: 1.5px solid #000 !important;
+            border-top: 2px solid #000 !important;
             background: #fdfdfd;
-            font-weight: 700;
+            font-weight: 900 !important;
             padding: 3px 2px;
-            font-size: 10px;
+            font-size: 10.5px;
         }
         .ton-row td {
             background-color: #85cde2 !important;
             color: #000 !important;
-            border: 1px solid #000 !important;
-            font-weight: 700;
+            border: 1.5px solid #000 !important;
+            font-weight: 900 !important;
             padding: 3px 2px;
-            font-size: 10px;
+            font-size: 10.5px;
         }
 
         /* Signatures */
         .sig-section {
-            margin-top: 35px;
+            margin-top: 40px;
             display: flex;
             justify-content: space-between;
             font-size: 9.5px;
-            font-weight: 700;
+            font-weight: 800 !important;
             padding: 0 4px;
         }
         .sig-box {
-            border-top: 1px solid #000;
-            width: 45%;
+            border-top: 1.5px solid #000;
+            width: 46%;
             text-align: center;
-            padding-top: 2px;
+            padding-top: 3px;
+            font-weight: 800 !important;
+            line-height: 1.25;
         }
 
         @media print {
@@ -320,7 +331,7 @@
             <div class="sig-box">Authorized Stamp &amp; Signatory</div>
         </div>
 
-        <div style="text-align: center; font-size: 8px; color: #777; margin-top: 15px;">
+        <div style="text-align: center; font-size: 8.5px; font-weight: 700; color: #000; margin-top: 15px;">
             Printed on {{ date('d-M-Y h:i A') }}
         </div>
     </div>
