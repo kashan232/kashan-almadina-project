@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Brand;
 use App\Models\Customer;
 use App\Models\CustomerClaim;
 use App\Models\Product;
@@ -44,13 +45,14 @@ class ClaimReportController extends Controller
             ->where('claim_type', 'customer')
             ->orderBy('warehouse_name')
             ->get();
+        $brands = Brand::orderBy('name')->get();
         $products = Product::orderBy('name')->get();
         $customers = Customer::orderBy('customer_name')->get();
         $vendors = Vendor::orderBy('name')->get();
         $shopGroupIds = $userGroups->where('allow_shop', 1)->pluck('id')->implode(',');
 
         return view('admin_panel.reports.claim.index', compact(
-            'userGroups', 'users', 'claimWarehouses', 'products', 'customers', 'vendors', 'shopGroupIds'
+            'userGroups', 'users', 'claimWarehouses', 'brands', 'products', 'customers', 'vendors', 'shopGroupIds'
         ));
     }
 
@@ -60,6 +62,7 @@ class ClaimReportController extends Controller
         $officers = $request->sales_officer ?? [];
         $claimWarehouses = $request->claim_warehouse ?? [];
         $claimTypes = $request->claim_type ?? [];
+        $brands = $request->brand ?? [];
         $items = $request->item ?? [];
         $partyTypes = $request->party_type ?? [];
         $parties = $request->party ?? [];
@@ -73,6 +76,7 @@ class ClaimReportController extends Controller
         $totalUsers = User::count();
         $totalClaimWarehouses = Warehouse::withoutGlobalScopes()->where('claim_type', 'customer')->count();
         $totalClaimTypes = 3;
+        $totalBrands = Brand::count();
         $totalProducts = Product::count();
         $totalPartyTypes = 3;
         $totalParties = Customer::count() + Vendor::count();
@@ -117,6 +121,12 @@ class ClaimReportController extends Controller
 
         if ($claimEntryType !== 'all') {
             $query->where('claim_type', $claimEntryType);
+        }
+
+        if ($this->shouldApplyFilter($brands, $totalBrands)) {
+            $query->whereHas('product', function ($q) use ($brands) {
+                $q->whereIn('brand_id', $brands);
+            });
         }
 
         if ($this->shouldApplyFilter($items, $totalProducts)) {

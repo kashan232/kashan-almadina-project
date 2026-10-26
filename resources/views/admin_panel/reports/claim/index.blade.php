@@ -103,6 +103,27 @@
                                     </div>
                                 </div>
                             </div>
+                            <div class="col-md-1" style="min-width: 100px;">
+                                <div class="filter-column">
+                                    <div class="filter-header">
+                                        <div class="d-flex align-items-center gap-1">
+                                            <input type="checkbox" class="select-all" data-target="brand-list"> Brand
+                                        </div>
+                                        <div class="filter-actions">
+                                            <span class="badge bg-secondary counter-badge" data-target="brand-list">0</span>
+                                            <a href="javascript:void(0)" class="quick-none text-danger fw-bold ms-1" data-target="brand-list" title="Uncheck all">None</a>
+                                        </div>
+                                    </div>
+                                    <div class="filter-list" id="brand-list">
+                                        @foreach($brands as $brand)
+                                            <div class="filter-item" title="Click to toggle, double-click to select only this">
+                                                <input type="checkbox" name="brand[]" value="{{ $brand->id }}">
+                                                <span>{{ $brand->name }}</span>
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                </div>
+                            </div>
                             <div class="col-md-2">
                                 <div class="filter-column">
                                     <div class="filter-header">
@@ -119,7 +140,7 @@
                                     </div>
                                     <div class="filter-list" id="item-list">
                                         @foreach($products as $prod)
-                                            <div class="filter-item" data-search="{{ strtolower($prod->name) }}" title="Click to toggle, double-click to select only this">
+                                            <div class="filter-item" data-search="{{ strtolower($prod->name) }}" data-brand="{{ $prod->brand_id }}" title="Click to toggle, double-click to select only this">
                                                 <input type="checkbox" name="item[]" value="{{ $prod->id }}">
                                                 <span>{{ $prod->name }}</span>
                                             </div>
@@ -374,6 +395,7 @@
         function applyCascadeFilters() {
             const selectedGroups = getCheckedValues('group-list', 'user_group[]');
             const selectedPartyTypes = getCheckedValues('partytype-list', 'party_type[]');
+            const selectedBrands = getCheckedValues('brand-list', 'brand[]');
             const itemSearch = ($('#itemSearch').val() || '').toLowerCase().trim();
             const partySearch = ($('#partySearch').val() || '').toLowerCase().trim();
 
@@ -401,9 +423,13 @@
 
             $('#item-list .filter-item').each(function() {
                 const $item = $(this);
+                const brandId = String($item.data('brand') || '');
                 const searchText = String($item.data('search') || '');
-                const show = !itemSearch || searchText.indexOf(itemSearch) > -1;
+                const brandMatch = !selectedBrands.length || selectedBrands.includes(brandId);
+                const searchMatch = !itemSearch || searchText.indexOf(itemSearch) > -1;
+                const show = brandMatch && searchMatch;
                 $item.toggle(show);
+                if (!brandMatch) uncheckItem($item);
             });
 
             updateCounters();
@@ -417,7 +443,7 @@
             $(this).toggleClass('selected', checkbox.prop('checked'));
             updateCounters();
             const listId = $(this).closest('.filter-list').attr('id');
-            if (['group-list', 'partytype-list'].includes(listId)) applyCascadeFilters();
+            if (['group-list', 'brand-list', 'partytype-list'].includes(listId)) applyCascadeFilters();
         });
 
         $(document).on('change', '.filter-item input[type="checkbox"]', function() {
@@ -425,7 +451,7 @@
             $item.toggleClass('selected', $(this).prop('checked'));
             updateCounters();
             const listId = $item.closest('.filter-list').attr('id');
-            if (['group-list', 'partytype-list'].includes(listId)) {
+            if (['group-list', 'brand-list', 'partytype-list'].includes(listId)) {
                 applyCascadeFilters();
             }
         });
@@ -440,7 +466,7 @@
             checkItem($(this));
             updateCounters();
             const listId = $list.attr('id');
-            if (['group-list', 'partytype-list'].includes(listId)) applyCascadeFilters();
+            if (['group-list', 'brand-list', 'partytype-list'].includes(listId)) applyCascadeFilters();
         });
 
         // Quick None button
@@ -451,7 +477,7 @@
                 uncheckItem($(this));
             });
             updateCounters();
-            if (['group-list', 'partytype-list'].includes(targetId)) applyCascadeFilters();
+            if (['group-list', 'brand-list', 'partytype-list'].includes(targetId)) applyCascadeFilters();
         });
 
         // Select All column checkbox
@@ -474,7 +500,7 @@
                 });
             }
             updateCounters();
-            if (['group-list', 'partytype-list'].includes(targetId)) applyCascadeFilters();
+            if (['group-list', 'brand-list', 'partytype-list'].includes(targetId)) applyCascadeFilters();
         });
 
         // Global Select All
@@ -490,43 +516,9 @@
             updateCounters();
         });
 
-        // Search filtering for items with auto-deselect of non-matching items
-        let itemFilterWasAllChecked = false;
-
-        $('#itemSearch').on('focus', function() {
-            const total = $('#item-list .filter-item').length;
-            const checked = $('#item-list .filter-item input:checked').length;
-            itemFilterWasAllChecked = (checked === total);
-        });
-
+        // Search filtering for items
         $('#itemSearch').on('keyup input search', function() {
-            const term = ($(this).val() || '').toLowerCase().trim();
-            const total = $('#item-list .filter-item').length;
-            const checked = $('#item-list .filter-item input:checked').length;
-
-            if (term && (itemFilterWasAllChecked || checked === total)) {
-                itemFilterWasAllChecked = true;
-                $('#item-list .filter-item').each(function() {
-                    const search = String($(this).data('search') || '');
-                    const match = search.indexOf(term) > -1;
-                    $(this).toggle(match);
-                    if (!match) {
-                        uncheckItem($(this));
-                    } else {
-                        checkItem($(this));
-                    }
-                });
-            } else {
-                $('#item-list .filter-item').each(function() {
-                    const search = String($(this).data('search') || '');
-                    const match = !term || search.indexOf(term) > -1;
-                    $(this).toggle(match);
-                });
-                if (!term) {
-                    itemFilterWasAllChecked = false;
-                }
-            }
-            updateCounters();
+            applyCascadeFilters();
         });
 
         // Search filtering for party
