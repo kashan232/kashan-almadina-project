@@ -249,7 +249,7 @@
         @media print {
             @page {
                 size: A5 portrait;
-                margin: 6mm 6mm;
+                margin: 0;
             }
             html, body {
                 width: 100% !important;
@@ -265,13 +265,13 @@
                 display: none !important;
             }
             .a5-container {
-                width: 100% !important;
-                max-width: 100% !important;
+                width: 148mm !important;
+                max-width: 148mm !important;
                 height: auto !important;
                 min-height: auto !important;
                 max-height: none !important;
-                margin: 0 !important;
-                padding: 0 !important;
+                margin: 0 auto !important;
+                padding: 6mm 7mm !important;
                 box-shadow: none !important;
                 border: none !important;
                 box-sizing: border-box !important;
