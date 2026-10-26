@@ -164,7 +164,7 @@
                                      <option value="" disabled>Select Location</option>
                                      <option value="shop" {{ $transfer->from_shop ? 'selected' : '' }}>Shop</option>
                                      @foreach ($warehouses as $warehouse)
-                                         <option value="{{ $warehouse->id }}" {{ $transfer->from_warehouse_id == $warehouse->id ? 'selected' : '' }}>{{ $warehouse->warehouse_name }}</option>
+                                         <option value="{{ $warehouse->id }}" {{ $transfer->from_warehouse_id == $warehouse->id ? 'selected' : '' }}>{{ $warehouse->warehouse_name }}{{ $warehouse->claim_type && $warehouse->claim_type !== 'none' ? ' (' . ($warehouse->claim_type === 'customer' ? 'Customer Claim' : 'Company Claim') . ')' : '' }}</option>
                                      @endforeach
                                  </select>
                             </div>
@@ -176,7 +176,7 @@
                                     <option value="" disabled>Select Location</option>
                                     <option value="shop" {{ $transfer->to_shop ? 'selected' : '' }}>Shop</option>
                                     @foreach ($warehouses as $warehouse)
-                                        <option value="{{ $warehouse->id }}" {{ ($transfer->to_warehouse_id == $warehouse->id && !$transfer->to_shop) ? 'selected' : '' }}>{{ $warehouse->warehouse_name }}</option>
+                                        <option value="{{ $warehouse->id }}" {{ ($transfer->to_warehouse_id == $warehouse->id && !$transfer->to_shop) ? 'selected' : '' }}>{{ $warehouse->warehouse_name }}{{ $warehouse->claim_type && $warehouse->claim_type !== 'none' ? ' (' . ($warehouse->claim_type === 'customer' ? 'Customer Claim' : 'Company Claim') . ')' : '' }}</option>
                                     @endforeach
                                 </select>
                             </div>

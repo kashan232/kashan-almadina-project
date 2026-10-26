@@ -155,7 +155,7 @@
                                     <option value="" disabled selected>Select Location</option>
                                     <option value="shop">Shop</option>
                                     @foreach ($warehouses as $warehouse)
-                                        <option value="{{ $warehouse->id }}">{{ $warehouse->warehouse_name }}</option>
+                                        <option value="{{ $warehouse->id }}">{{ $warehouse->warehouse_name }}{{ $warehouse->claim_type && $warehouse->claim_type !== 'none' ? ' (' . ($warehouse->claim_type === 'customer' ? 'Customer Claim' : 'Company Claim') . ')' : '' }}</option>
                                     @endforeach
                                 </select>
                             </div>
@@ -167,7 +167,7 @@
                                     <option value="" disabled selected>Select Location</option>
                                     <option value="shop">Shop</option>
                                     @foreach ($warehouses as $warehouse)
-                                        <option value="{{ $warehouse->id }}">{{ $warehouse->warehouse_name }}</option>
+                                        <option value="{{ $warehouse->id }}">{{ $warehouse->warehouse_name }}{{ $warehouse->claim_type && $warehouse->claim_type !== 'none' ? ' (' . ($warehouse->claim_type === 'customer' ? 'Customer Claim' : 'Company Claim') . ')' : '' }}</option>
                                     @endforeach
                                 </select>
                             </div>
