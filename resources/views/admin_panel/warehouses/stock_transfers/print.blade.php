@@ -79,52 +79,67 @@
             align-items: center;
             gap: 10px;
         }
+        .company-header-left {
+            text-align: left;
+        }
         .company-title {
             font-family: 'Times New Roman', Times, serif;
-            font-size: 22px;
+            font-size: 33px;
             font-weight: 700;
-            line-height: 1.1;
+            line-height: 1.05;
             color: #000;
-            letter-spacing: -0.3px;
+            letter-spacing: -0.2px;
             margin: 0;
+            padding: 0;
+            text-align: left;
+            white-space: nowrap;
         }
         .company-sub1 {
-            font-size: 9.5px;
-            font-style: italic;
+            font-family: 'Times New Roman', Times, serif;
+            font-size: 11px;
             font-weight: 600;
             color: #000;
-            margin-top: 2px;
+            margin: 3px 0 0 0;
+            padding: 0;
             line-height: 1.25;
+            text-align: left;
+            white-space: nowrap;
         }
         .company-sub2 {
-            font-size: 9.5px;
-            font-style: italic;
+            font-family: 'Times New Roman', Times, serif;
+            font-size: 11px;
             font-weight: 600;
             color: #000;
+            margin: 1px 0 0 0;
+            padding: 0;
             line-height: 1.25;
+            text-align: left;
+            white-space: nowrap;
         }
         .header-right {
             text-align: right;
             flex-shrink: 0;
+            width: 120px;
         }
         .logo-img {
-            max-height: 38px;
-            width: auto;
-            object-fit: contain;
+            width: 120px;
+            height: 42px;
+            object-fit: fill;
             display: block;
-            margin-left: auto;
+            margin: 0 auto;
         }
         .order-badge-box {
+            width: 120px;
+            box-sizing: border-box;
             border: 1.5px solid #000;
             border-radius: 3px;
-            padding: 2px 10px;
-            margin-top: 3px;
+            padding: 3px 0;
+            margin-top: 4px;
             font-weight: 700;
             font-size: 11px;
             text-align: center;
             color: #000;
-            display: inline-block;
-            min-width: 100px;
+            display: block;
         }
 
         .thick-divider {
@@ -209,17 +224,17 @@
 
         /* Footer & Signatures */
         .footer-signatures {
-            margin-top: 22px;
+            margin-top: 50px;
             display: flex;
             justify-content: space-between;
             padding: 0 15px;
         }
         .sig-box {
-            border-top: 1px solid #000;
-            width: 95px;
+            border-top: 1.5px solid #000;
+            width: 105px;
             text-align: center;
-            padding-top: 3px;
-            font-size: 10.5px;
+            padding-top: 4px;
+            font-size: 11px;
             font-weight: 600;
             color: #000;
         }
@@ -304,7 +319,7 @@
     <div class="a5-container">
         <!-- Header -->
         <div class="header-wrap">
-            <div>
+            <div class="company-header-left">
                 <div class="company-title">Al-Madina Traders</div>
                 <div class="company-sub1">Shop# 2, United Hotel, Qazi Qayoom Road, Hyderabad.</div>
                 <div class="company-sub2">Mob / Whatsapp: 0312-0252899, Tel: 022-2780942</div>
@@ -342,6 +357,8 @@
                 <span class="meta-val">{{ $destContact ?: '—' }}</span>
             </div>
         </div>
+
+        <div class="thick-divider"></div>
 
         <!-- Table -->
         <table class="transfer-table">

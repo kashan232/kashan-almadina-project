@@ -251,6 +251,8 @@
             @endif
         </div>
 
+        <div class="divider-thick"></div>
+
         <!-- Items Table -->
         <table class="th-table">
             <thead>
