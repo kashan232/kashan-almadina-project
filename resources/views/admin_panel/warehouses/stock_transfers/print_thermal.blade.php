@@ -215,23 +215,13 @@
     </div>
 
     @php
-        $destName = $transfer->to_shop ? 'Main Shop' : ($transfer->toWarehouse->warehouse_name ?? '—');
+        $destName = $transfer->to_shop ? 'Shop' : ($transfer->toWarehouse->warehouse_name ?? '—');
         $destAddress = '';
         $destContact = '';
 
-        if ($transfer->to_shop) {
-            $destAddress = 'Shop# 2, United Hotel, Qazi Qayoom Road, Hyderabad.';
-            $destContact = '0312-0252899, 022-2780942';
-        } else {
-            $whName = strtolower($transfer->toWarehouse->warehouse_name ?? '');
-            if (str_contains($whName, 'khi') || str_contains($whName, 'karachi')) {
-                $destName = 'AL MADINA TRADERS KHI';
-                $destAddress = 'Shop # 21, Hyder-e-Karrar Imam Bargah, Pone 5, Orangi Town, Karachi';
-                $destContact = '0314-1110014, 0335-3390680';
-            } else {
-                $destAddress = $transfer->toWarehouse->location ?? '';
-                $destContact = $transfer->toWarehouse->remarks ?? '';
-            }
+        if (!$transfer->to_shop && $transfer->toWarehouse) {
+            $destAddress = $transfer->toWarehouse->location ?: ($transfer->toWarehouse->branch->address ?? '');
+            $destContact = $transfer->toWarehouse->remarks ?: ($transfer->toWarehouse->branch->number ?? '');
         }
     @endphp
 
@@ -285,11 +275,22 @@
                         $totalWeight += (float)$rowW;
                         $qDisplay = (float)$item->quantity == (int)$item->quantity ? number_format($item->quantity, 0) : number_format($item->quantity, 2);
                         $wDisplay = (float)$rowW == (int)$rowW ? number_format($rowW, 0) : number_format($rowW, 2);
+
+                        $productName = $item->product->name ?? 'Product #' . $item->product_id;
+                        $brandName = $item->product->brandRelation->name ?? ($item->product->brand->name ?? '');
+                        if ($brandName && str_starts_with(strtolower($productName), strtolower($brandName))) {
+                            $productName = trim(substr($productName, strlen($brandName)));
+                        }
                     @endphp
                     <tr>
                         <td style="text-align: center;">{{ $idx + 1 }}</td>
                         <td style="text-align: center;">{{ $item->product_id }}</td>
-                        <td style="text-align: left; padding-left: 3px; word-break: break-word;">{{ $item->product->name ?? '—' }}</td>
+                        <td style="text-align: left; padding-left: 3px; word-break: break-word;">
+                            @if($brandName)
+                                <strong>{{ $brandName }}</strong>
+                            @endif
+                            {{ $productName }}
+                        </td>
                         <td style="text-align: center;">{{ $qDisplay }}</td>
                         <td style="text-align: center;">{{ $wDisplay }}</td>
                     </tr>

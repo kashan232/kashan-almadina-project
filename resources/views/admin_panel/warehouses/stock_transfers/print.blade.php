@@ -66,7 +66,7 @@
             min-height: 210mm;
             margin: 15px auto;
             background: #fff;
-            padding: 8mm 7mm;
+            padding: 6mm 7mm;
             box-shadow: 0 4px 15px rgba(0,0,0,0.35);
             box-sizing: border-box;
             position: relative;
@@ -76,66 +76,68 @@
         .header-wrap {
             display: flex;
             justify-content: space-between;
-            align-items: flex-start;
+            align-items: center;
             gap: 10px;
         }
         .company-title {
             font-family: 'Times New Roman', Times, serif;
-            font-size: 24px;
+            font-size: 22px;
             font-weight: 700;
             line-height: 1.1;
             color: #000;
             letter-spacing: -0.3px;
+            margin: 0;
         }
         .company-sub1 {
-            font-size: 10.5px;
+            font-size: 9.5px;
             font-style: italic;
             font-weight: 600;
             color: #000;
-            margin-top: 3px;
-            line-height: 1.35;
+            margin-top: 2px;
+            line-height: 1.25;
         }
         .company-sub2 {
-            font-size: 10.5px;
+            font-size: 9.5px;
             font-style: italic;
             font-weight: 600;
             color: #000;
-            line-height: 1.35;
+            line-height: 1.25;
         }
         .header-right {
             text-align: right;
             flex-shrink: 0;
         }
         .logo-img {
-            max-width: 115px;
-            height: auto;
+            max-height: 38px;
+            width: auto;
+            object-fit: contain;
             display: block;
             margin-left: auto;
         }
         .order-badge-box {
             border: 1.5px solid #000;
-            border-radius: 4px;
-            padding: 3px 12px;
-            margin-top: 4px;
+            border-radius: 3px;
+            padding: 2px 10px;
+            margin-top: 3px;
             font-weight: 700;
-            font-size: 12px;
+            font-size: 11px;
             text-align: center;
             color: #000;
             display: inline-block;
-            min-width: 110px;
+            min-width: 100px;
         }
 
         .thick-divider {
             border-top: 2px solid #000;
-            margin: 6px 0 8px 0;
+            margin: 4px 0 6px 0;
         }
 
         /* Meta details */
         .meta-details {
-            font-size: 11.5px;
-            line-height: 1.55;
+            font-size: 11px;
+            line-height: 1.45;
             color: #000;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
         }
         .meta-row-flex {
             display: flex;
@@ -167,21 +169,33 @@
             border: 1px solid #777 !important;
             padding: 4px 6px;
             font-weight: 700;
-            font-size: 11.5px;
+            font-size: 11px;
             color: #000;
         }
         .transfer-table td {
             border: 1px solid #888 !important;
             padding: 3px 6px;
-            font-size: 11px;
+            font-size: 10.5px;
             color: #000;
+        }
+        .desc-line {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .desc-brand {
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+        .desc-item {
+            flex-grow: 1;
         }
         .grand-total-row td {
             border-top: 1.5px solid #000 !important;
             border-bottom: 1px solid #888 !important;
             background-color: #fff !important;
             padding: 4px 6px;
-            font-size: 11.5px;
+            font-size: 11px;
             font-weight: 700;
         }
         .ton-row td {
@@ -189,52 +203,68 @@
             color: #000 !important;
             border: 1px solid #62b1c8 !important;
             padding: 4px 6px;
-            font-size: 11.5px;
+            font-size: 11px;
             font-weight: 700;
         }
 
         /* Footer & Signatures */
         .footer-signatures {
-            margin-top: 45px;
+            margin-top: 22px;
             display: flex;
             justify-content: space-between;
             padding: 0 15px;
         }
         .sig-box {
             border-top: 1px solid #000;
-            width: 105px;
+            width: 95px;
             text-align: center;
-            padding-top: 4px;
-            font-size: 11px;
+            padding-top: 3px;
+            font-size: 10.5px;
             font-weight: 600;
             color: #000;
         }
         .page-num {
-            margin-top: 20px;
+            margin-top: 8px;
             text-align: center;
-            font-size: 10px;
+            font-size: 9.5px;
             color: #555;
         }
 
         @media print {
             @page {
                 size: A5 portrait;
-                margin: 6mm 5mm;
+                margin: 0;
             }
-            body {
-                background: #fff !important;
+            html, body {
+                width: 148mm !important;
+                height: 210mm !important;
                 margin: 0 !important;
                 padding: 0 !important;
+                background: #fff !important;
+                overflow: hidden !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
             }
             .no-print-toolbar {
                 display: none !important;
             }
             .a5-container {
-                width: 100% !important;
+                width: 148mm !important;
+                max-width: 148mm !important;
+                height: 100% !important;
+                max-height: 210mm !important;
                 margin: 0 !important;
-                padding: 0 !important;
+                padding: 6mm 7mm !important;
                 box-shadow: none !important;
                 border: none !important;
+                box-sizing: border-box !important;
+                overflow: hidden !important;
+                page-break-after: avoid !important;
+                page-break-before: avoid !important;
+                page-break-inside: avoid !important;
+            }
+            .transfer-table, .footer-signatures, .meta-details {
+                page-break-inside: avoid !important;
             }
         }
     </style>
@@ -260,23 +290,13 @@
     </div>
 
     @php
-        $destName = $transfer->to_shop ? 'Main Shop' : ($transfer->toWarehouse->warehouse_name ?? '—');
+        $destName = $transfer->to_shop ? 'Shop' : ($transfer->toWarehouse->warehouse_name ?? '—');
         $destAddress = '';
         $destContact = '';
 
-        if ($transfer->to_shop) {
-            $destAddress = 'Shop# 2, United Hotel, Qazi Qayoom Road, Hyderabad.';
-            $destContact = '0312-0252899, 022-2780942';
-        } else {
-            $whName = strtolower($transfer->toWarehouse->warehouse_name ?? '');
-            if (str_contains($whName, 'khi') || str_contains($whName, 'karachi')) {
-                $destName = 'AL MADINA TRADERS KHI';
-                $destAddress = 'Shop # 21, Hyder-e-Karrar Imam Bargah, Pone 5, Orangi Town, Karachi';
-                $destContact = '0314-1110014, 0335-3390680';
-            } else {
-                $destAddress = $transfer->toWarehouse->location ?? '';
-                $destContact = $transfer->toWarehouse->remarks ?? '';
-            }
+        if (!$transfer->to_shop && $transfer->toWarehouse) {
+            $destAddress = $transfer->toWarehouse->location ?: ($transfer->toWarehouse->branch->address ?? '');
+            $destContact = $transfer->toWarehouse->remarks ?: ($transfer->toWarehouse->branch->number ?? '');
         }
     @endphp
 
@@ -327,11 +347,11 @@
         <table class="transfer-table">
             <thead>
                 <tr>
-                    <th style="width: 36px; text-align: center;">S #</th>
-                    <th style="width: 60px; text-align: center;">Item ID</th>
+                    <th style="width: 34px; text-align: center;">S #</th>
+                    <th style="width: 55px; text-align: center;">Item ID</th>
                     <th style="text-align: left;">Description</th>
-                    <th style="width: 75px; text-align: center;">Quantity</th>
-                    <th style="width: 95px; text-align: center;">Weight (Kgs)</th>
+                    <th style="width: 70px; text-align: center;">Quantity</th>
+                    <th style="width: 90px; text-align: center;">Weight (Kgs)</th>
                 </tr>
             </thead>
             <tbody>
@@ -347,11 +367,24 @@
                         $totalWeight += (float)$rowW;
                         $qDisplay = (float)$item->quantity == (int)$item->quantity ? number_format($item->quantity, 0) : number_format($item->quantity, 2);
                         $wDisplay = (float)$rowW == (int)$rowW ? number_format($rowW, 0) : number_format($rowW, 2);
+
+                        $productName = $item->product->name ?? 'Product #' . $item->product_id;
+                        $brandName = $item->product->brandRelation->name ?? ($item->product->brand->name ?? '');
+                        if ($brandName && str_starts_with(strtolower($productName), strtolower($brandName))) {
+                            $productName = trim(substr($productName, strlen($brandName)));
+                        }
                     @endphp
                     <tr>
                         <td style="text-align: center;">{{ $idx + 1 }}</td>
                         <td style="text-align: center;">{{ $item->product_id }}</td>
-                        <td style="text-align: left;">{{ $item->product->name ?? '—' }}</td>
+                        <td style="text-align: left;">
+                            <div class="desc-line">
+                                @if($brandName)
+                                    <span class="desc-brand">{{ $brandName }}</span>
+                                @endif
+                                <span class="desc-item">{{ $productName }}</span>
+                            </div>
+                        </td>
                         <td style="text-align: center;">{{ $qDisplay }}</td>
                         <td style="text-align: center;">{{ $wDisplay }}</td>
                     </tr>
@@ -371,7 +404,7 @@
         </table>
 
         @if($transfer->remarks)
-            <div style="margin-top: 8px; font-size: 11px;">
+            <div style="margin-top: 6px; font-size: 10.5px;">
                 <strong>Remarks:</strong> {{ $transfer->remarks }}
             </div>
         @endif

@@ -252,13 +252,13 @@ class StockTransferController extends Controller
 
     public function printView($id)
     {
-        $transfer = StockTransfer::with(['fromWarehouse', 'toWarehouse', 'items.product', 'creator'])->findOrFail($id);
+        $transfer = StockTransfer::with(['fromWarehouse', 'toWarehouse.branch', 'items.product.brand', 'items.product.brandRelation', 'creator'])->findOrFail($id);
         return view('admin_panel.warehouses.stock_transfers.print', compact('transfer'));
     }
 
     public function printThermal($id)
     {
-        $transfer = StockTransfer::with(['fromWarehouse', 'toWarehouse', 'items.product', 'creator'])->findOrFail($id);
+        $transfer = StockTransfer::with(['fromWarehouse', 'toWarehouse.branch', 'items.product.brand', 'items.product.brandRelation', 'creator'])->findOrFail($id);
         return view('admin_panel.warehouses.stock_transfers.print_thermal', compact('transfer'));
     }
 
