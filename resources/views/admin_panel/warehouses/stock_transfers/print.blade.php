@@ -248,15 +248,15 @@
         @media print {
             @page {
                 size: A5 portrait;
-                margin: 0;
+                margin: 6mm 6mm;
             }
             html, body {
-                width: 148mm !important;
-                height: 210mm !important;
+                width: 100% !important;
+                height: auto !important;
                 margin: 0 !important;
                 padding: 0 !important;
                 background: #fff !important;
-                overflow: hidden !important;
+                overflow: visible !important;
                 -webkit-print-color-adjust: exact !important;
                 print-color-adjust: exact !important;
             }
@@ -264,22 +264,42 @@
                 display: none !important;
             }
             .a5-container {
-                width: 148mm !important;
-                max-width: 148mm !important;
-                height: 100% !important;
-                max-height: 210mm !important;
+                width: 100% !important;
+                max-width: 100% !important;
+                height: auto !important;
+                min-height: auto !important;
+                max-height: none !important;
                 margin: 0 !important;
-                padding: 6mm 7mm !important;
+                padding: 0 !important;
                 box-shadow: none !important;
                 border: none !important;
                 box-sizing: border-box !important;
-                overflow: hidden !important;
-                page-break-after: avoid !important;
-                page-break-before: avoid !important;
+                overflow: visible !important;
+            }
+            .transfer-table {
+                width: 100% !important;
+                page-break-inside: auto !important;
+            }
+            .transfer-table thead {
+                display: table-header-group !important;
+            }
+            .transfer-table tbody {
+                display: table-row-group !important;
+            }
+            .transfer-table tr {
+                page-break-inside: avoid !important;
+                page-break-after: auto !important;
+            }
+            .transfer-table tfoot {
+                display: table-footer-group !important;
                 page-break-inside: avoid !important;
             }
-            .transfer-table, .footer-signatures, .meta-details {
+            .footer-signatures {
                 page-break-inside: avoid !important;
+                margin-top: 35px;
+            }
+            .page-num {
+                display: none !important;
             }
         }
     </style>
