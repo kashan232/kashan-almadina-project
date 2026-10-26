@@ -7,6 +7,10 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
     <style>
+        @page {
+            size: A5 portrait;
+            margin: 0mm !important;
+        }
         * {
             box-sizing: border-box;
             -webkit-print-color-adjust: exact !important;

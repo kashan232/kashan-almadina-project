@@ -1,3 +1,7 @@
+@php
+    $thermalItemCount = count($transfer->items ?? []);
+    $thermalHeightMm = max(130, 130 + ($thermalItemCount * 8));
+@endphp
 <!doctype html>
 <html lang="en">
 <head>
@@ -7,6 +11,10 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
     <style>
+        @page {
+            size: 80mm {{ $thermalHeightMm }}mm;
+            margin: 0mm !important;
+        }
         * {
             box-sizing: border-box;
             -webkit-print-color-adjust: exact !important;
@@ -183,14 +191,16 @@
 
         @media print {
             @page {
-                size: 80mm auto;
-                margin: 0;
+                size: 80mm {{ $thermalHeightMm }}mm;
+                margin: 0mm !important;
             }
             body {
                 background: #fff !important;
                 margin: 0 !important;
                 padding: 1.5mm 2.5mm !important;
                 width: 76mm !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
             }
             .no-print-toolbar {
                 display: none !important;
@@ -201,6 +211,10 @@
                 padding: 0 !important;
                 box-shadow: none !important;
                 border: none !important;
+                page-break-inside: avoid !important;
+            }
+            .th-table, .sig-section {
+                page-break-inside: avoid !important;
             }
         }
     </style>
