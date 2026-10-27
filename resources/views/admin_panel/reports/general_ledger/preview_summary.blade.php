@@ -167,13 +167,13 @@
             color: #000;
             font-family: Calibri, 'Segoe UI', Arial, sans-serif;
         }
-        .col-date   { width: 8%;   text-align: center; white-space: nowrap; font-size: 9px; font-family: Calibri, 'Segoe UI', Arial, sans-serif; }
-        .col-ref    { width: 9%;   text-align: center; white-space: nowrap; font-size: 9px; font-family: Calibri, 'Segoe UI', Arial, sans-serif; }
-        .col-desc   { width: 39%;  text-align: left;   white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 9px; font-family: Calibri, 'Segoe UI', Arial, sans-serif; }
-        .col-qty    { width: 4%;   text-align: center; white-space: nowrap; font-size: 9px; }
-        .col-amt    { width: 14%;  text-align: right;  white-space: nowrap; font-size: 9px; }
-        .col-credit { width: 14%;  text-align: right;  white-space: nowrap; font-size: 9px; }
-        .col-bal    { width: 12%;  text-align: right;  white-space: nowrap; padding: 1px 3px !important; font-size: 9px; }
+        .col-date   { width: 5.5%; text-align: center; white-space: nowrap; font-size: 9px; font-family: Calibri, 'Segoe UI', Arial, sans-serif; }
+        .col-ref    { width: 6.5%; text-align: center; white-space: nowrap; font-size: 9px; font-family: Calibri, 'Segoe UI', Arial, sans-serif; }
+        .col-desc   { width: 42%;  text-align: left;   white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 9px; font-family: Calibri, 'Segoe UI', Arial, sans-serif; }
+        .col-qty    { width: 3.2%; text-align: center; white-space: nowrap; font-size: 9px; padding: 1.5px 1px !important; }
+        .col-amt    { width: 14.4%; text-align: right;  white-space: nowrap; font-size: 9px; }
+        .col-credit { width: 14.4%; text-align: right;  white-space: nowrap; font-size: 9px; }
+        .col-bal    { width: 14%;  text-align: right;  white-space: nowrap; padding: 1px 3px !important; font-size: 9px; }
 
         /* 🚫 Remove vertical borders between Date, Reference, and Description */
         .ledger-table th.col-date,
@@ -361,6 +361,15 @@
 
         <!-- Full Table Template -->
         <table id="ledgerRawTable" class="ledger-table">
+            <colgroup>
+                <col class="col-date">
+                <col class="col-ref">
+                <col class="col-desc">
+                <col class="col-qty">
+                <col class="col-amt">
+                <col class="col-credit">
+                <col class="col-bal">
+            </colgroup>
             <thead>
                 <tr>
                     <th class="col-date">Date</th>
@@ -410,7 +419,7 @@
                         $cDisplay = (float)$trx['credit'] > 0 ? number_format($trx['credit'], 0) : '';
 
                         $trxDate = !empty($trx['date']) ? date('d-m-y', strtotime($trx['date'])) : '';
-                        $trxRef = trim(($trx['ref'] ?? '') . '   ' . ($trx['inv'] ?? ''));
+                        $trxRef = trim(($trx['ref'] ?? '') . ' ' . ($trx['inv'] ?? ''));
                     @endphp
                     <tr>
                         <td class="col-date">{{ $trxDate }}</td>
@@ -480,6 +489,7 @@
 
             pagesWrapper.innerHTML = "";
 
+            var colgroupHTML = rawTable.querySelector("colgroup") ? rawTable.querySelector("colgroup").outerHTML : "";
             var theadHTML = rawTable.querySelector("thead").outerHTML;
             var headerBoxHTML = document.getElementById("rawHeaderBox").innerHTML;
             var footerHTML = document.getElementById("rawFooterBox").innerHTML;
@@ -498,7 +508,7 @@
 
                 var tableWrap = document.createElement("div");
                 tableWrap.className = "ledger-table-wrap";
-                tableWrap.innerHTML = '<table class="ledger-table">' + theadHTML + '<tbody></tbody></table>';
+                tableWrap.innerHTML = '<table class="ledger-table">' + colgroupHTML + theadHTML + '<tbody></tbody></table>';
                 sheet.appendChild(tableWrap);
 
                 var pNum = document.createElement("div");

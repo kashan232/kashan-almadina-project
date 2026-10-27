@@ -167,13 +167,17 @@
             color: #000;
             font-family: Calibri, 'Segoe UI', Arial, sans-serif;
         }
-        .col-date   { width: 8%;   text-align: center; white-space: nowrap; font-size: 9px; font-family: Calibri, 'Segoe UI', Arial, sans-serif; }
-        .col-ref    { width: 9%;   text-align: center; white-space: nowrap; font-size: 9px; font-family: Calibri, 'Segoe UI', Arial, sans-serif; }
-        .col-desc   { width: 33%;  text-align: left;   white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 9px; font-family: Calibri, 'Segoe UI', Arial, sans-serif; }
-        .col-price  { width: 7%;   text-align: right;  white-space: nowrap; font-size: 9px; }
-        .col-qty    { width: 3.5%; text-align: center; white-space: nowrap; font-size: 9px; }
-        .col-amt    { width: 13%;  text-align: right;  white-space: nowrap; font-size: 9px; }
-        .col-bal    { width: 10%;  text-align: right;  white-space: nowrap; font-size: 9px; }
+        .col-date   { width: 5.5%; text-align: center; white-space: nowrap; font-size: 9px; font-family: Calibri, 'Segoe UI', Arial, sans-serif; }
+        .col-ref    { width: 6.5%; text-align: center; white-space: nowrap; font-size: 9px; font-family: Calibri, 'Segoe UI', Arial, sans-serif; }
+        .col-desc   { width: 36%;  text-align: left;   white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 9px; font-family: Calibri, 'Segoe UI', Arial, sans-serif; }
+        .col-price  { width: 6.5%; text-align: right;  white-space: nowrap; font-size: 9px; }
+        .col-qty,
+        .col-debit-qty,
+        .col-credit-qty { width: 3.2%; text-align: center; white-space: nowrap; font-size: 9px; padding: 1.5px 1px !important; }
+        .col-amt,
+        .col-debit-amt,
+        .col-credit-amt { width: 13%;  text-align: right;  white-space: nowrap; font-size: 9px; }
+        .col-bal    { width: 13.1%; text-align: right; white-space: nowrap; font-size: 9px; }
 
         /* 🚫 Remove vertical borders between Date, Reference, and Description */
         .ledger-table th.col-date,
@@ -377,6 +381,17 @@
 
         <!-- Full Table Template -->
         <table id="ledgerRawTable" class="ledger-table">
+            <colgroup>
+                <col class="col-date">
+                <col class="col-ref">
+                <col class="col-desc">
+                <col class="col-price">
+                <col class="col-debit-qty">
+                <col class="col-debit-amt">
+                <col class="col-credit-qty">
+                <col class="col-credit-amt">
+                <col class="col-bal">
+            </colgroup>
             <thead>
                 <tr>
                     <th rowspan="2" class="col-date">Date</th>
@@ -448,7 +463,7 @@
                     @endphp
                     <tr>
                         <td class="col-date">{{ date('d-m-y', strtotime($trx['date'])) }}</td>
-                        <td class="col-ref">{{ $trx['ref'] }} &nbsp; {{ $trx['inv'] }}</td>
+                        <td class="col-ref">{{ trim(($trx['ref'] ?? '') . ' ' . ($trx['inv'] ?? '')) }}</td>
                         <td class="col-desc" title="{{ $trx['desc'] }}">{{ $trx['desc'] }}</td>
                         <td class="col-price">{{ $priceDisplay }}</td>
                         <td class="col-qty col-debit-qty">{{ $dQty }}</td>
@@ -522,6 +537,7 @@
 
             pagesWrapper.innerHTML = "";
 
+            var colgroupHTML = rawTable.querySelector("colgroup") ? rawTable.querySelector("colgroup").outerHTML : "";
             var theadHTML = rawTable.querySelector("thead").outerHTML;
             var headerBoxHTML = document.getElementById("rawHeaderBox").innerHTML;
             var footerBoxHTML = document.getElementById("rawFooterBox").innerHTML;
@@ -541,7 +557,7 @@
 
                 var tableWrap = document.createElement("div");
                 tableWrap.className = "ledger-table-wrap";
-                tableWrap.innerHTML = '<table class="ledger-table">' + theadHTML + '<tbody></tbody></table>';
+                tableWrap.innerHTML = '<table class="ledger-table">' + colgroupHTML + theadHTML + '<tbody></tbody></table>';
                 sheet.appendChild(tableWrap);
 
                 var pNum = document.createElement("div");
