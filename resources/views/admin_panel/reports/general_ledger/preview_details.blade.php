@@ -448,16 +448,19 @@
                         $runningBalance += ($trx['debit'] - $trx['credit']);
                         $totalDebitAmount += $trx['debit'];
                         $totalCreditAmount += $trx['credit'];
-                        if ($trx['debit'] > 0) {
+                        $isDebitItem = ($trx['debit'] > 0 || (isset($trx['ref']) && $trx['ref'] === 'SJ' && (float)($trx['qty'] ?? 0) > 0));
+                        $isCreditItem = ($trx['credit'] > 0 || (isset($trx['ref']) && in_array($trx['ref'], ['SRJ', 'PRJ', 'PJ', 'CLM']) && (float)($trx['qty'] ?? 0) > 0));
+
+                        if ($isDebitItem) {
                             $totalDebitQty += (float)$trx['qty'];
                         }
-                        if ($trx['credit'] > 0) {
+                        if ($isCreditItem) {
                             $totalCreditQty += (float)$trx['qty'];
                         }
 
-                        $dQty = ($trx['debit'] > 0 && $trx['qty'] > 0) ? $fmtQty($trx['qty']) : '';
+                        $dQty = ($isDebitItem && (float)($trx['qty'] ?? 0) > 0) ? $fmtQty($trx['qty']) : '';
                         $dAmt = $trx['debit'] > 0 ? number_format($trx['debit'], 0) : '-';
-                        $cQty = ($trx['credit'] > 0 && $trx['qty'] > 0) ? $fmtQty($trx['qty']) : '';
+                        $cQty = ($isCreditItem && (float)($trx['qty'] ?? 0) > 0) ? $fmtQty($trx['qty']) : '';
                         $cAmt = $trx['credit'] > 0 ? number_format($trx['credit'], 0) : '-';
                         $priceDisplay = $trx['price'] > 0 ? number_format($trx['price'], 0) : '';
                     @endphp

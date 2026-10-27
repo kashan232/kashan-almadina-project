@@ -362,20 +362,12 @@ class GeneralLedgerController extends Controller
     private function resolveSaleReturnItemMetrics($item): array
     {
         $qty = (float)($item->sales_qty ?? $item->quantity ?? $item->qty ?? 0);
-        $price = (float)($item->sales_price ?? $item->price ?? 0);
+        $price = (float)($item->sales_price ?? $item->sales_rate ?? $item->price ?? 0);
         $disc = (float)($item->discount_amount ?? 0);
         $lineCredit = (float)($item->amount ?? 0);
 
         if ($lineCredit <= 0 && $qty > 0 && $price > 0) {
             $lineCredit = max(0, ($qty * $price) - $disc);
-        }
-
-        if ($lineCredit <= 0 && $qty > 0) {
-            $fallbackRate = (float)($item->sales_rate ?? $item->retail_price ?? $item->price_level ?? 0);
-            if ($fallbackRate > 0) {
-                $price = $fallbackRate;
-                $lineCredit = max(0, ($qty * $fallbackRate) - $disc);
-            }
         }
 
         if ($lineCredit <= 0 && $price > 0 && $qty <= 0) {
@@ -385,7 +377,7 @@ class GeneralLedgerController extends Controller
 
         $finalPrice = ($qty > 0 && $lineCredit > 0)
             ? ($lineCredit / $qty)
-            : (($qty > 0) ? ($price - ($disc / $qty)) : $price);
+            : (($qty > 0 && $price > 0) ? ($price - ($disc / $qty)) : $price);
 
         return [
             'qty' => $qty,
@@ -427,6 +419,12 @@ class GeneralLedgerController extends Controller
         }
 
         if ($zeroIndexes === []) {
+            return $lines;
+        }
+
+        // Only allocate header sub_total2 if ALL items are zero-credit legacy lines.
+        // If some items already have credit, any zero-rate items were intentionally zero-rate.
+        if (count($zeroIndexes) !== count($lines)) {
             return $lines;
         }
 
