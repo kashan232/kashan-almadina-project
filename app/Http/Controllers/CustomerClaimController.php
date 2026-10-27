@@ -14,6 +14,7 @@ use App\Models\WarehouseStock;
 use App\Models\StockHold;
 use App\Models\Account;
 use App\Services\PartyLedgerService;
+use App\Services\CustomerClaimImportService;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Validator;
 
@@ -340,7 +341,49 @@ class CustomerClaimController extends Controller
         return back()->with('success', 'Customer Claim deleted successfully.');
     }
 
-    private function syncInventory(CustomerClaim $claim)
+    public function showImport()
+    {
+        return view('admin_panel.customer_claims.import');
+    }
+
+    public function downloadImportTemplate(CustomerClaimImportService $service)
+    {
+        return $service->downloadTemplateResponse();
+    }
+
+    public function processImport(Request $request, CustomerClaimImportService $service)
+    {
+        $request->validate([
+            'excel_file' => 'required|file|mimes:xlsx,xls,csv|max:10240',
+        ]);
+
+        $targetStatus = $request->input('target_status', 'Posted');
+        $file = $request->file('excel_file');
+
+        try {
+            $result = $service->importFromFile($file->getRealPath(), auth()->id() ?? 1, $targetStatus);
+
+            if ($result['imported'] === 0 && !empty($result['errors'])) {
+                return redirect()->back()
+                    ->with('error', 'Import failed: ' . implode(' | ', array_slice($result['errors'], 0, 5)))
+                    ->with('import_errors', $result['errors']);
+            }
+
+            $msg = "Successfully imported {$result['imported']} Customer Claim(s) as {$targetStatus}.";
+            $redirect = redirect()->route('customer-claims.index')->with('success', $msg);
+
+            if (!empty($result['errors'])) {
+                $redirect->with('warning', count($result['errors']) . " row(s) had issues and were skipped.")
+                         ->with('import_errors', $result['errors']);
+            }
+
+            return $redirect;
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Import failed: ' . $e->getMessage());
+        }
+    }
+
+    public function syncInventory(CustomerClaim $claim)
     {
         // 1. Faulty Item Movement
         // Add to claim warehouse

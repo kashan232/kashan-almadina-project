@@ -139,6 +139,9 @@
                                         <a class="btn btn-primary btn-sm rounded-pill px-3 shadow-sm ms-1" href="{{ route('customer-claims.create') }}">
                                             <i class="fa fa-plus me-1"></i> Add Claim
                                         </a>
+                                        <a class="btn btn-success btn-sm rounded-pill px-2 shadow-sm ms-1 text-white" href="{{ route('customer-claims.import') }}" title="Import Claims from Excel">
+                                            <i class="fa fa-file-excel-o me-1"></i> Import
+                                        </a>
                                     </div>
                                 </div>
                             </form>

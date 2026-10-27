@@ -69,6 +69,9 @@ Route::middleware(['auth'])->group(function () {
     })->name('system.fix-rolledback-adjustments');
 
     Route::get('/customer-claims', [CustomerClaimController::class, 'index'])->name('customer-claims.index');
+    Route::get('/customer-claims/import', [CustomerClaimController::class, 'showImport'])->name('customer-claims.import');
+    Route::get('/customer-claims/import/template', [CustomerClaimController::class, 'downloadImportTemplate'])->name('customer-claims.import.template');
+    Route::post('/customer-claims/import', [CustomerClaimController::class, 'processImport'])->name('customer-claims.import.process');
     Route::get('/customer-claims/add', [CustomerClaimController::class, 'create'])->name('customer-claims.create');
     Route::post('/customer-claims/ajax-save', [CustomerClaimController::class, 'ajaxSave'])->name('customer-claims.ajax-save');
     Route::post('/customer-claims/post/{id}', [CustomerClaimController::class, 'post'])->name('customer-claims.post');

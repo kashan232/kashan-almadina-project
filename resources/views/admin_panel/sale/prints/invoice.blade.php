@@ -87,7 +87,8 @@
             top: 55%;
             transform: translate(-50%, -50%);
             width: 75%;
-            opacity: 0.08;
+            opacity: 0.05;
+            filter: grayscale(100%);
             pointer-events: none;
             z-index: 0;
         }
@@ -128,15 +129,15 @@
         .hdr-right .logo-img {
             display: block;
             width: 125px;
-            height: auto;
-            max-height: 38px;
-            object-fit: contain;
+            height: 34px;
+            object-fit: fill;
             margin-left: auto;
         }
         .dc-box {
             border: 1.5px solid var(--black);
             padding: 3px 8px 11px;
             width: 125px;
+            box-sizing: border-box;
             text-align: center;
             font-weight: 700;
             font-size: 8.5pt;
@@ -182,7 +183,9 @@
             flex: 0 0 auto;
             border: 1.5px solid var(--black);
             padding: 3px 8px;
+            width: 125px;
             min-width: 125px;
+            box-sizing: border-box;
             line-height: 1.4;
             font-size: 8.5pt;
         }
@@ -258,6 +261,7 @@
             padding: 3px 5px;
             text-align: right;
             font-variant-numeric: tabular-nums;
+            font-weight: 700;
         }
 
         /* TOTALS UNDER TABLE */
@@ -268,7 +272,7 @@
             line-height: 1.25;
         }
         table.main tr.sum-first td {
-            border-top: 1px solid var(--black) !important;
+            border-top: none !important;
             padding-top: 4px;
         }
         table.main tr.sum .qty-cell {
@@ -389,14 +393,14 @@
         /* URDU DISCLAIMER BOX */
         .urdu-disclaimer-box {
             margin-top: 6px;
-            border: 1px solid var(--black);
-            padding: 3px 6px;
+            border: none;
+            padding: 2px 0;
             direction: rtl;
             text-align: center;
             font-family: 'Noto Nastaliq Urdu', 'Jameel Noori Nastaleeq', Arial, sans-serif;
-            font-size: 8pt;
+            font-size: 8.5pt;
             font-weight: 700;
-            line-height: 1.4;
+            line-height: 1.5;
             color: #000;
         }
 
@@ -640,11 +644,21 @@
                         <td class="r blue">{{ number_format($invoiceTotal, 2) }}</td>
                     </tr>
                     @foreach($receiptRows as $row)
+                    @php
+                        $labelClean = ucwords(strtolower($row['label']));
+                        $prefix = (stripos($row['label'], 'CASH') !== false) ? 'Less ' : 'Less: ';
+                    @endphp
                     <tr>
-                        <td class="purple">Less: {{ $row['label'] }}. &gt;&gt;&gt;</td>
+                        <td class="purple">{{ $prefix }}{{ $labelClean }}. &gt;&gt;&gt;</td>
                         <td class="r purple">{{ number_format($row['amount'], 2) }}</td>
                     </tr>
                     @endforeach
+                    @if(count($receiptRows) == 1)
+                    <tr>
+                        <td class="purple">Less: . &gt;&gt;&gt;</td>
+                        <td class="r purple"></td>
+                    </tr>
+                    @endif
                     <tr class="rv-pay">
                         <td class="blue">AMOUNT PAYABLE. &gt;&gt;&gt;</td>
                         <td class="r blue">{{ number_format($amountPayable, 2) }}</td>
