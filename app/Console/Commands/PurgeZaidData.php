@@ -116,6 +116,10 @@ class PurgeZaidData extends Command
                 })->count();
         }
 
+        // 9. Customers created by Zaid
+        $zaidCustomerIds = DB::table('customers')->where('created_by', $userId)->pluck('id')->toArray();
+        $zaidCustLedgersCount = count($zaidCustomerIds) ? DB::table('customer_ledgers')->whereIn('customer_id', $zaidCustomerIds)->count() : 0;
+
         // Summary table
         $this->table(
             ['Module / Table', 'Record Count', 'Action'],
@@ -135,7 +139,8 @@ class PurgeZaidData extends Command
                 ['Adjustment Vouchers (adjustment_vouchers)', $adjustmentCount, 'Delete'],
                 ['Expense Vouchers (expense_vouchers)', $expenseCount, 'Delete'],
                 ['Income Vouchers (income_vouchers)', $incomeCount, 'Delete'],
-                ['Customer Ledgers (customer_ledgers)', ($custLedgerDirect + $custLedgerSaleInvs), 'Delete & Full Auto-Resync'],
+                ['Customer Ledgers (customer_ledgers)', ($custLedgerDirect + $custLedgerSaleInvs + $zaidCustLedgersCount), 'Delete & Full Auto-Resync'],
+                ['Customers (customers table)', count($zaidCustomerIds), 'Delete customers created by Zaid & their opening ledgers'],
                 ['User Account Status', 1, 'Scramble password, remove roles & user groups'],
             ]
         );
@@ -210,6 +215,19 @@ class PurgeZaidData extends Command
                         $q->orWhere('description', 'like', '%Sale: ' . $inv . '%');
                     }
                 })->delete();
+            }
+
+            // Delete customers created by Zaid and all their associated records
+            if (count($zaidCustomerIds)) {
+                DB::table('customer_claims')->whereIn('party_id', $zaidCustomerIds)->delete();
+                DB::table('customer_ledgers')->whereIn('customer_id', $zaidCustomerIds)->delete();
+                if (Schema::hasTable('customer_payments')) {
+                    DB::table('customer_payments')->whereIn('customer_id', $zaidCustomerIds)->delete();
+                }
+                if (Schema::hasTable('outstanding_losses')) {
+                    DB::table('outstanding_losses')->whereIn('customer_id', $zaidCustomerIds)->delete();
+                }
+                DB::table('customers')->whereIn('id', $zaidCustomerIds)->delete();
             }
 
             // Deactivate Zaid user
