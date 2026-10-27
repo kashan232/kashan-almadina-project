@@ -310,10 +310,10 @@
                                     </td>
                                     <td class="text-center fw-bold text-info">{{ number_format($sale->items->sum('sales_qty'), 0) }}</td>
 
-                                    <td class="text-end fw-bold">{{ number_format($sale->sub_total2 ?? ($sale->items->sum('amount') ?? 0), 0) }}</td>
+                                    <td class="text-end fw-bold">{{ number_format(((float)$sale->sub_total2 > 0) ? (float)$sale->sub_total2 : (float)$sale->items->sum('amount'), 0) }}</td>
                                     <td class="text-end text-danger">{{ number_format($sale->discount_amount ?? 0, 0) }}</td>
                                     <td class="text-end">{{ number_format($saleReceipts, 0) }}</td>
-                                    <td class="text-end fw-bold text-primary">{{ number_format($sale->total_balance, 0) }}</td>
+                                    <td class="text-end fw-bold text-primary">{{ number_format(((float)$sale->total_balance != 0) ? (float)$sale->total_balance : ((((float)$sale->sub_total2 > 0) ? (float)$sale->sub_total2 : (float)$sale->items->sum('amount')) - (float)($sale->discount_amount ?? 0)), 0) }}</td>
 
                                     <td>
                                         @if($sale->user)

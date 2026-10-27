@@ -79,7 +79,6 @@
             box-shadow: 0 4px 15px rgba(0,0,0,0.35);
             box-sizing: border-box;
             position: relative;
-            overflow: hidden;
         }
         .wm {
             position: absolute;
@@ -199,14 +198,16 @@
         table.main {
             width: 100%;
             border-collapse: collapse;
+            table-layout: fixed;
         }
         table.main th,
         table.main td {
             border: 1px solid var(--black);
-            padding: 3px 4px;
+            padding: 2.5px 3px;
             font-size: 8.5pt;
             line-height: 1.25;
             vertical-align: middle;
+            box-sizing: border-box;
         }
         table.main th {
             background: var(--gray) !important;
@@ -219,83 +220,106 @@
         table.main td.col-sno {
             width: 6%;
             text-align: center;
-            padding: 3px 2px;
+            padding: 2.5px 1px;
         }
         table.main th.col-qty,
         table.main td.col-qty {
-            width: 7%;
+            width: 8%;
             text-align: center;
-            padding: 3px 2px;
+            padding: 2.5px 1px;
         }
         table.main th.col-desc,
         table.main td.col-desc {
-            width: 53%;
-            padding: 3px 6px;
+            width: 48%;
+            padding: 2.5px 4px;
         }
         .desc-line {
             display: flex;
             align-items: center;
             white-space: nowrap;
+            overflow: hidden;
         }
         .desc-brand {
             flex: 0 0 auto;
-            min-width: 55px;
+            min-width: 45px;
             font-weight: 700;
             text-align: left;
+            margin-right: 4px;
         }
         .desc-item {
             flex: 1 1 auto;
             text-align: left;
             font-weight: 700;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
         table.main th.col-rate,
         table.main td.col-rate {
             width: 16%;
-            padding: 3px 5px;
+            padding: 2.5px 3px;
             text-align: right;
             font-variant-numeric: tabular-nums;
+            font-weight: 700;
         }
         table.main th.col-amt,
         table.main td.col-amt {
-            width: 18%;
-            padding: 3px 5px;
+            width: 22%;
+            padding: 2.5px 3px;
             text-align: right;
             font-variant-numeric: tabular-nums;
             font-weight: 700;
         }
 
         /* TOTALS UNDER TABLE */
-        table.main tr.sum td {
+        .inv-totals-wrap {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-top: 4px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        .inv-totals-left {
+            font-weight: 700;
+            font-size: 8.5pt;
+            padding-top: 2px;
+            white-space: nowrap;
+            flex: 1 1 auto;
+        }
+        .inv-totals-right {
+            flex: 0 0 auto;
+            width: 60%;
+        }
+        table.totals-table {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+        }
+        table.totals-table td {
             border: none !important;
-            padding: 2px 4px;
+            padding: 1.5px 2px;
             font-size: 8.5pt;
             line-height: 1.25;
+            box-sizing: border-box;
         }
-        table.main tr.sum-first td {
-            border-top: none !important;
-            padding-top: 4px;
-        }
-        table.main tr.sum .qty-cell {
-            font-weight: 700;
-            vertical-align: top;
-            padding-top: 4px;
-            border: none !important;
-            font-size: 9pt;
-        }
-        table.main tr.sum .lbl {
+        table.totals-table td.lbl {
+            width: 63%;
             text-align: right;
             font-weight: 700;
             white-space: nowrap;
-            border: none !important;
+            padding-right: 6px;
         }
-        table.main tr.sum .val {
+        table.totals-table td.val {
+            width: 37%;
             text-align: right;
             font-weight: 700;
-            border: none !important;
+            font-variant-numeric: tabular-nums;
+            padding-right: 3px;
         }
-        table.main tr.sum .lbl.blue, table.main tr.sum .val.blue { color: var(--blue); }
-        table.main tr.sum .lbl.purple, table.main tr.sum .val.purple { color: var(--purple); }
-        table.main tr.sum-inv td {
+        table.totals-table td.lbl.blue, table.totals-table td.val.blue { color: var(--blue); }
+        table.totals-table td.lbl.purple, table.totals-table td.val.purple { color: var(--purple); }
+        table.totals-table tr.inv-total-row td {
             border-top: 1.5px solid var(--black) !important;
             padding-top: 3px;
         }
@@ -392,30 +416,34 @@
 
         /* URDU DISCLAIMER BOX */
         .urdu-disclaimer-box {
-            margin-top: 6px;
+            margin-top: 8px;
             border: none;
-            padding: 2px 0;
+            padding: 3px 0;
             direction: rtl;
             text-align: center;
             font-family: 'Noto Nastaliq Urdu', 'Jameel Noori Nastaleeq', Arial, sans-serif;
             font-size: 8.5pt;
             font-weight: 700;
-            line-height: 1.5;
+            line-height: 2.2;
             color: #000;
+        }
+        .urdu-disclaimer-box .urdu-line {
+            display: block;
+            margin-bottom: 2px;
         }
 
         @media print {
             @page {
                 size: A5 portrait;
-                margin: 0;
+                margin: 5mm 6mm;
             }
             html, body {
-                width: 148mm !important;
-                height: 210mm !important;
+                width: 100% !important;
+                height: auto !important;
                 margin: 0 !important;
                 padding: 0 !important;
                 background: #fff !important;
-                overflow: hidden !important;
+                overflow: visible !important;
                 -webkit-print-color-adjust: exact !important;
                 print-color-adjust: exact !important;
             }
@@ -423,22 +451,22 @@
                 display: none !important;
             }
             .invoice-sheet {
-                width: 148mm !important;
-                max-width: 148mm !important;
+                width: 100% !important;
+                max-width: 100% !important;
                 min-height: auto !important;
-                height: 100% !important;
-                max-height: 210mm !important;
+                height: auto !important;
+                max-height: none !important;
                 margin: 0 !important;
-                padding: 5mm 6mm !important;
+                padding: 0 !important;
                 box-shadow: none !important;
                 border: none !important;
                 box-sizing: border-box !important;
-                overflow: hidden !important;
-                page-break-after: avoid !important;
-                page-break-before: avoid !important;
+                overflow: visible !important;
+            }
+            .inv-content, .rv-wrap, .words-box, .ftr, .urdu-disclaimer-box {
                 page-break-inside: avoid !important;
             }
-            .inv-content, table.main, .rv-wrap, .words-box, .ftr, .urdu-disclaimer-box {
+            table.main tr {
                 page-break-inside: avoid !important;
             }
         }
@@ -492,10 +520,13 @@
         );
     }
 
-    $amountTotal = (float)($sale->sub_total2 ?: $sale->items->sum('amount'));
+    $sumItemsAmount = (float)$sale->items->sum('amount');
+    $amountTotal = ((float)$sale->sub_total2 > 0) ? (float)$sale->sub_total2 : $sumItemsAmount;
     $prevBal = (float)($sale->previous_balance ?? 0);
     $orderDisc = (float)($sale->discount_amount ?? 0);
-    $invoiceTotal = (float)($sale->total_balance ?? 0);
+    $calculatedInvoiceTotal = $amountTotal + $prevBal - $orderDisc;
+    $rawInvoiceTotal = (float)($sale->total_balance ?? 0);
+    $invoiceTotal = ($rawInvoiceTotal > 0) ? $rawInvoiceTotal : $calculatedInvoiceTotal;
     $qtyTotal = $sale->items->sum('sales_qty');
 
     $receiptRows = [];
@@ -603,29 +634,35 @@
                     <td class="r col-amt">{{ number_format($item->amount, 2) }}</td>
                 </tr>
                 @endforeach
-
-                <!-- Summary Rows below table -->
-                <tr class="sum sum-first">
-                    <td colspan="3" rowspan="{{ $sumRows }}" class="qty-cell">
-                        Quantity Total: {{ number_format($qtyTotal, 0) }}
-                    </td>
-                    <td class="lbl blue">AMOUNT TOTAL. &gt;&gt;&gt;</td>
-                    <td class="val blue">{{ number_format($amountTotal, 2) }}</td>
-                </tr>
-                <tr class="sum">
-                    <td class="lbl blue">Add: Previous Balance. &gt;&gt;&gt;</td>
-                    <td class="val blue">{{ number_format($prevBal, 2) }}</td>
-                </tr>
-                <tr class="sum">
-                    <td class="lbl purple">Less: Additional Discount. &gt;&gt;&gt;</td>
-                    <td class="val purple">{{ $orderDisc > 0 ? number_format($orderDisc, 2) : '' }}</td>
-                </tr>
-                <tr class="sum sum-inv">
-                    <td class="lbl blue">INVOICE TOTAL. &gt;&gt;&gt;</td>
-                    <td class="val blue">{{ number_format($invoiceTotal, 2) }}</td>
-                </tr>
             </tbody>
         </table>
+
+        <!-- Totals Section (Quantity Total on Left, Financial Totals on Right) -->
+        <div class="inv-totals-wrap">
+            <div class="inv-totals-left">
+                Quantity Total: {{ number_format($qtyTotal, 0) }}
+            </div>
+            <div class="inv-totals-right">
+                <table class="totals-table">
+                    <tr>
+                        <td class="lbl blue">AMOUNT TOTAL. &gt;&gt;&gt;</td>
+                        <td class="val blue">{{ number_format($amountTotal, 2) }}</td>
+                    </tr>
+                    <tr>
+                        <td class="lbl blue">Add: Previous Balance. &gt;&gt;&gt;</td>
+                        <td class="val blue">{{ number_format($prevBal, 2) }}</td>
+                    </tr>
+                    <tr>
+                        <td class="lbl purple">Less: Additional Discount. &gt;&gt;&gt;</td>
+                        <td class="val purple">{{ $orderDisc > 0 ? number_format($orderDisc, 2) : '' }}</td>
+                    </tr>
+                    <tr class="inv-total-row">
+                        <td class="lbl blue">INVOICE TOTAL. &gt;&gt;&gt;</td>
+                        <td class="val blue">{{ number_format($invoiceTotal, 2) }}</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
 
         @if($hasReceipt)
         <!-- Receipt Voucher Section -->
@@ -690,8 +727,8 @@
 
         <!-- Urdu Disclaimer Box -->
         <div class="urdu-disclaimer-box">
-            اگر بیٹری اسٹیمپ کی تاریخ کے 3 ماہ کے اندر فروخت نہ ہو، تو بیٹری تبدیل کروائیں ورنہ کلیم قبول نہیں ہوگا۔<br>
-            اسٹیمپ کے بغیر کلیم قابل قبول نہیں ہوگا۔ اوساکا کا کلیم صرف کلیم سنٹر پر ہوگا۔
+            <div class="urdu-line">اگر بیٹری اسٹیمپ کی تاریخ کے 3 ماہ کے اندر فروخت نہ ہو، تو بیٹری تبدیل کروائیں ورنہ کلیم قبول نہیں ہوگا۔</div>
+            <div class="urdu-line">اسٹیمپ کے بغیر کلیم قابل قبول نہیں ہوگا۔ اوساکا کا کلیم صرف کلیم سنٹر پر ہوگا۔</div>
         </div>
     </div>
 </div>

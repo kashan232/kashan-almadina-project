@@ -1301,7 +1301,16 @@ class SaleController extends Controller
         $pType = strtolower($sale->partyType ?? 'customer');
 
         // sub_total2 is Total Sale Amount after row discounts but before order discount
-        $saleAmount = (float)($sale->sub_total2 ?? 0);
+        $itemsSum = (float) $sale->items()->sum('amount');
+        if (((float)($sale->sub_total2 ?? 0) <= 0 || (float)($sale->total_balance ?? 0) == 0) && $itemsSum > 0) {
+            $sale->sub_total1 = $itemsSum;
+            $sale->sub_total2 = $itemsSum;
+            $sale->total_balance = $itemsSum;
+            $sale->final_balance1 = $itemsSum;
+            $sale->final_balance2 = $itemsSum;
+            $sale->save();
+        }
+        $saleAmount = ((float)($sale->sub_total2 ?? 0) > 0) ? (float)$sale->sub_total2 : $itemsSum;
         $orderDiscount = (float)($sale->discount_amount ?? 0);
         $receiptAmount = (float)($sale->receipt1 + $sale->receipt2);
 
