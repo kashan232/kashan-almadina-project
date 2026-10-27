@@ -10,19 +10,21 @@ use App\Models\User;
 use App\Models\Customer;
 use App\Models\CustomerLedger;
 use App\Http\Controllers\GeneralLedgerController;
+use App\Services\StockService;
 
 class PurgeZaidData extends Command
 {
     protected $signature = 'cleanup:purge-zaid 
-                            {--execute : Actually perform the deletion and resync. Without this flag, only a dry-run preview is shown}
+                            {--execute : Actually commit changes. Without this flag, only a dry-run preview is shown}
+                            {--restore-stock-only : Only reverse and restore physical stock balances without deleting vouchers or ledgers}
                             {--user-id= : Custom User ID if different}';
 
-    protected $description = 'Safely reverse, purge and resync all transactions created by user ZAID LODHI';
+    protected $description = 'Safely reverse physical stock, purge transactions, and resync ledgers for ZAID LODHI';
 
     public function handle()
     {
         $this->info("========================================================");
-        $this->info("       PURGE & REVERSAL TOOL FOR ZAID LODHI");
+        $this->info("       PURGE & STOCK REVERSAL TOOL FOR ZAID LODHI");
         $this->info("========================================================");
 
         $userId = $this->option('user-id');
@@ -45,13 +47,43 @@ class PurgeZaidData extends Command
 
         $userId = $user->id;
         $isLive = $this->option('execute');
+        $restoreStockOnly = $this->option('restore-stock-only');
 
         $this->info("Target User Identified:");
         $this->line(" - ID:    {$user->id}");
         $this->line(" - Name:  {$user->name}");
         $this->line(" - Email: {$user->email}");
         $this->line(" - Mode:  " . ($isLive ? "<fg=red;options=bold>*** LIVE EXECUTION (CHANGES WILL BE COMMITTED) ***</>" : "<fg=yellow;options=bold>DRY RUN (Preview only, no data will be changed)</>"));
+        if ($restoreStockOnly) {
+            $this->line(" - Scope: <fg=cyan;options=bold>RESTORE STOCK ONLY</>");
+        }
         $this->newLine();
+
+        // ----------------------------------------------------
+        // Compute Stock Reversals (Sales, Purchases, Returns, Claims)
+        // ----------------------------------------------------
+        $stockAdjustments = $this->collectStockAdjustments($userId);
+        $totalStockUnits = array_sum(array_column($stockAdjustments, 'net_delta'));
+        $distinctStockCombinations = count($stockAdjustments);
+
+        $this->info("Stock Impact Analysis:");
+        $this->line(" - Distinct (Product, Warehouse) Stock lines to adjust: <fg=cyan>{$distinctStockCombinations}</>");
+        $this->line(" - Net Physical Stock to Restore across Warehouses:     <fg=green;options=bold>" . ($totalStockUnits >= 0 ? "+{$totalStockUnits}" : $totalStockUnits) . " units</>");
+        $this->newLine();
+
+        if ($restoreStockOnly) {
+            if (!$isLive) {
+                $this->warn("DRY-RUN COMPLETE: Stock adjustments were NOT applied.");
+                $this->info("To apply stock restorations to database, run:");
+                $this->comment("  php artisan cleanup:purge-zaid --restore-stock-only --execute");
+                return 0;
+            }
+
+            $this->warn("Applying physical stock adjustments via StockService...");
+            $this->applyStockAdjustments($stockAdjustments);
+            $this->info("<bg=green;fg=white;options=bold> SUCCESS: Physical stock has been restored successfully! </>");
+            return 0;
+        }
 
         // 1. Sales & Sale Items
         $zaidSales = DB::table('sales')->where('created_by', $userId)->get();
@@ -124,12 +156,13 @@ class PurgeZaidData extends Command
         $this->table(
             ['Module / Table', 'Record Count', 'Action'],
             [
+                ['Physical Stock Reversals', $distinctStockCombinations . ' combinations', 'Adjust physical stock (+' . $totalStockUnits . ' net units)'],
                 ['Sales (sales table)', count($saleIds), 'Delete'],
-                ['Sale Items (sale_items table)', $saleItemsCount, 'Delete & Auto-restore stock'],
+                ['Sale Items (sale_items table)', $saleItemsCount, 'Delete'],
                 ['Receipts Vouchers (receipts_vouchers)', count($allReceiptIds), 'Delete (includes auto-receipts from sales)'],
                 ['Purchases (purchases table)', count($purchaseIds), 'Delete'],
-                ['Purchase Items (purchase_items table)', $purchaseItemsCount, 'Delete & Auto-restore stock'],
-                ['Customer Claims (customer_claims table)', count($claimIds), 'Delete & Reverse stock'],
+                ['Purchase Items (purchase_items table)', $purchaseItemsCount, 'Delete'],
+                ['Customer Claims (customer_claims table)', count($claimIds), 'Delete'],
                 ['Sale Returns (sale_returns table)', count($saleReturnIds), 'Delete'],
                 ['Sale Return Items (sale_return_items)', $srItemsCount, 'Delete'],
                 ['Product Bookings (productbookings table)', count($bookingIds), 'Delete'],
@@ -147,16 +180,20 @@ class PurgeZaidData extends Command
 
         if (!$isLive) {
             $this->warn("DRY-RUN COMPLETE: No changes were made to the database.");
-            $this->info("To perform actual deletion on live server, run:");
+            $this->info("To perform actual deletion and stock reversal, run:");
             $this->comment("  php artisan cleanup:purge-zaid --execute");
             return 0;
         }
 
-        $this->warn("Starting live deletion within database transaction...");
+        $this->warn("Starting live execution within database transaction...");
 
         DB::beginTransaction();
 
         try {
+            // First: Apply stock adjustments
+            $this->info("Restoring physical stock balances across warehouses...");
+            $this->applyStockAdjustments($stockAdjustments);
+
             // Delete sales & items
             if (count($saleIds)) {
                 DB::table('sale_items')->whereIn('sale_id', $saleIds)->delete();
@@ -242,11 +279,11 @@ class PurgeZaidData extends Command
             DB::table('user_group_assignments')->where('user_id', $userId)->delete();
 
             DB::commit();
-            $this->info("Transaction committed successfully. All Zaid Lodhi entries deleted.");
+            $this->info("Transaction committed successfully. All Zaid Lodhi entries purged and stock restored.");
 
         } catch (\Exception $e) {
             DB::rollBack();
-            $this->error("Failed to delete records: " . $e->getMessage());
+            $this->error("Failed during execution: " . $e->getMessage());
             return 1;
         }
 
@@ -256,8 +293,131 @@ class PurgeZaidData extends Command
         $this->info("Customer Ledgers resynchronized successfully!");
 
         $this->newLine();
-        $this->info("<bg=green;fg=white;options=bold> ALL TASKS COMPLETED SUCCESSFULLY! SYSTEM IS CLEAN. </>");
+        $this->info("<bg=green;fg=white;options=bold> ALL TASKS COMPLETED SUCCESSFULLY! SYSTEM AND STOCK ARE RESTORED. </>");
         return 0;
+    }
+
+    private function collectStockAdjustments($userId): array
+    {
+        $netAdjustments = [];
+
+        $addDelta = function($pid, $wid, $delta, $type) use (&$netAdjustments) {
+            if ($delta == 0 || $pid <= 0) return;
+            $wid = app(StockService::class)->normalizeWarehouseId($wid);
+            $key = "{$pid}-{$wid}";
+            if (!isset($netAdjustments[$key])) {
+                $netAdjustments[$key] = [
+                    'product_id' => (int) $pid,
+                    'warehouse_id' => $wid,
+                    'sales_qty_restored' => 0.0,
+                    'purchases_qty_deducted' => 0.0,
+                    'returns_qty_deducted' => 0.0,
+                    'claims_qty_net' => 0.0,
+                    'net_delta' => 0.0,
+                ];
+            }
+            if ($type === 'sale') {
+                $netAdjustments[$key]['sales_qty_restored'] += $delta;
+            } elseif ($type === 'purchase') {
+                $netAdjustments[$key]['purchases_qty_deducted'] += abs($delta);
+            } elseif ($type === 'return') {
+                $netAdjustments[$key]['returns_qty_deducted'] += abs($delta);
+            } elseif ($type === 'claim') {
+                $netAdjustments[$key]['claims_qty_net'] += $delta;
+            }
+            $netAdjustments[$key]['net_delta'] += $delta;
+        };
+
+        // 1. Sales
+        $saleItems = DB::table('sale_items')
+            ->join('sales', 'sales.id', '=', 'sale_items.sale_id')
+            ->where('sales.created_by', $userId)
+            ->select('sale_items.product_id', 'sale_items.warehouse_id', 'sale_items.sales_qty')
+            ->get();
+        foreach ($saleItems as $si) {
+            $addDelta($si->product_id, $si->warehouse_id, +(float)$si->sales_qty, 'sale');
+        }
+
+        // 2. Purchases
+        $purchaseItems = DB::table('purchase_items')
+            ->join('purchases', 'purchases.id', '=', 'purchase_items.purchase_id')
+            ->where('purchases.created_by', $userId)
+            ->select('purchase_items.product_id', 'purchases.warehouse_id', 'purchase_items.qty')
+            ->get();
+        foreach ($purchaseItems as $pi) {
+            $addDelta($pi->product_id, $pi->warehouse_id, -(float)$pi->qty, 'purchase');
+        }
+
+        // 3. Sale Returns
+        if (Schema::hasTable('sale_return_items')) {
+            $srItems = DB::table('sale_return_items')
+                ->join('sale_returns', 'sale_returns.id', '=', 'sale_return_items.sale_return_id')
+                ->where('sale_returns.created_by', $userId)
+                ->select('sale_return_items.product_id', 'sale_return_items.warehouse_id', 'sale_return_items.sales_qty')
+                ->get();
+            foreach ($srItems as $sri) {
+                $addDelta($sri->product_id, $sri->warehouse_id, -(float)$sri->sales_qty, 'return');
+            }
+        }
+
+        // 4. Customer Claims
+        $claims = DB::table('customer_claims')->where('created_by', $userId)->get();
+        foreach ($claims as $c) {
+            if (!empty($c->claim_warehouse_id)) {
+                $addDelta($c->product_id, $c->claim_warehouse_id, -1.0, 'claim');
+            }
+            if ($c->claim_type === 'item_return' && !empty($c->original_warehouse_id)) {
+                $addDelta($c->product_id, $c->original_warehouse_id, +1.0, 'claim');
+            } elseif ($c->claim_type === 'credit_note' && !empty($c->replacement_product_id) && !empty($c->replacement_from_warehouse_id)) {
+                $addDelta($c->replacement_product_id, $c->replacement_from_warehouse_id, +1.0, 'claim');
+            }
+        }
+
+        // If no records in database (already purged), fallback to saved verified audit snapshot
+        if (empty($netAdjustments)) {
+            $snapshotPath = database_path('zaid_stock_reversals.json');
+            if (file_exists($snapshotPath)) {
+                $loaded = json_decode(file_get_contents($snapshotPath), true);
+                if (is_array($loaded)) {
+                    foreach ($loaded as $row) {
+                        $wid = app(StockService::class)->normalizeWarehouseId($row['warehouse_id'] ?? 0);
+                        $pid = (int) ($row['product_id'] ?? 0);
+                        $key = "{$pid}-{$wid}";
+                        $netAdjustments[$key] = [
+                            'product_id' => $pid,
+                            'warehouse_id' => $wid,
+                            'sales_qty_restored' => (float)($row['sales_qty_restored'] ?? 0),
+                            'purchases_qty_deducted' => (float)($row['purchases_qty_deducted'] ?? 0),
+                            'returns_qty_deducted' => (float)($row['returns_qty_deducted'] ?? 0),
+                            'claims_qty_net' => (float)($row['claims_qty_net'] ?? 0),
+                            'net_delta' => (float)($row['net_delta'] ?? 0),
+                        ];
+                    }
+                }
+            }
+        }
+
+        return array_values($netAdjustments);
+    }
+
+    private function applyStockAdjustments(array $adjustments): void
+    {
+        $stockService = app(StockService::class);
+        $bar = $this->output->createProgressBar(count($adjustments));
+        $bar->start();
+
+        foreach ($adjustments as $adj) {
+            $stockService->adjust(
+                (int) $adj['product_id'],
+                $adj['warehouse_id'],
+                (float) $adj['net_delta'],
+                true
+            );
+            $bar->advance();
+        }
+
+        $bar->finish();
+        $this->newLine();
     }
 
     private function resyncCustomerLedgers()
