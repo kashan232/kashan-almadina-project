@@ -20,10 +20,10 @@
         .footer-info { margin-top: 10px; font-size: 10px; display: flex; justify-content: space-between; font-weight: bold; }
         .report-title { font-size: 16px; color: #000; text-decoration: underline; }
         
+        @page { size: A4 {{ $orientation }}; margin: 0.8cm; }
         @media print {
             .no-print { display: none; }
             body { margin: 0; padding: 0; }
-            @page { size: A4 {{ $orientation }}; margin: 0.8cm; }
         }
     </style>
 </head>

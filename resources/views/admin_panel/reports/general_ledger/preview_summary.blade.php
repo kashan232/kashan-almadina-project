@@ -276,10 +276,6 @@
         }
 
         @media print {
-            @page {
-                size: A4 {{ $orientation ?? 'portrait' }};
-                margin: 0;
-            }
             body {
                 background: #fff !important;
                 margin: 0 !important;
@@ -293,22 +289,27 @@
                 flex: 0 0 auto !important;
             }
             .page-sheet {
-                width: {{ $sheetW }} !important;
-                height: {{ $sheetH }} !important;
-                max-height: {{ $sheetH }} !important;
-                margin: 0 !important;
-                padding: 5mm 8mm !important;
+                width: 100% !important;
+                max-width: {{ $sheetW }} !important;
+                height: auto !important;
+                min-height: auto !important;
+                max-height: calc({{ $sheetH }} - 8mm) !important;
+                margin: 0 auto !important;
+                padding: 4mm 8mm !important;
                 box-shadow: none !important;
                 border: none !important;
                 page-break-after: always !important;
+                break-after: page !important;
                 page-break-inside: avoid !important;
+                break-inside: avoid !important;
                 overflow: hidden !important;
                 box-sizing: border-box !important;
                 font-family: Calibri, 'Segoe UI', Arial, sans-serif !important;
                 justify-content: flex-start !important;
             }
             .page-sheet:last-child {
-                page-break-after: auto !important;
+                page-break-after: avoid !important;
+                break-after: avoid !important;
             }
             .sheet-footer {
                 display: flex !important;
@@ -336,7 +337,12 @@
 
     <!-- Sticky Navigation Controls -->
     <div class="no-print">
-        <div class="page-badge" id="pageCountBadge">📄 Total Pages: Computing...</div>
+        <div style="display: flex; align-items: center; gap: 15px;">
+            <div class="page-badge" id="pageCountBadge">📄 Total Pages: Computing...</div>
+            <span style="font-size: 11.5px; color: #ffeb3b; font-weight: bold;">
+                ⚠️ Note: Print preview me "More settings" > "Headers and footers" ko uncheck karein taakay URL aur Time print nah ho.
+            </span>
+        </div>
         <div class="btn-group">
             <button class="btn-print" onclick="window.print()">Print Report</button>
             <button class="btn-excel" onclick="exportReportToExcel()">Export to Excel</button>
@@ -525,7 +531,7 @@
                 var hBox = sheet.querySelector(".ledger-header-box");
                 var hBoxH = hBox ? hBox.offsetHeight : 28;
                 var fH = isLast ? FOOTER_HEIGHT : 0;
-                return (sheetH - hBoxH - fH - PAGE_NUM_HEIGHT - 10);
+                return (sheetH - hBoxH - fH - PAGE_NUM_HEIGHT - 30);
             }
 
             var sheetIndex = 0;
