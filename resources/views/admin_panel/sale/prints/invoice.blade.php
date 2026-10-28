@@ -12,6 +12,7 @@
             --purple: #800080;
             --gray: #d9d9d9;
             --black: #000;
+            --dark-grey: #555;
         }
         * {
             margin: 0;
@@ -136,19 +137,19 @@
         .hdr-right {
             text-align: right;
             flex-shrink: 0;
-            width: 175px;
+            width: 140px;
         }
         .hdr-right .logo-img {
             display: block;
-            width: 175px;
-            height: 38px;
+            width: 140px;
+            height: 32px;
             object-fit: fill;
             margin-left: auto;
         }
         .dc-box {
-            border: 1.5px solid var(--black);
+            border: 1.5px solid var(--dark-grey);
             padding: 3px 8px 11px;
-            width: 175px;
+            width: 140px;
             box-sizing: border-box;
             text-align: center;
             font-weight: 700;
@@ -167,7 +168,7 @@
 
         .thick-rule {
             border: none;
-            border-top: 2.5px solid var(--black);
+            border-top: 2px solid var(--dark-grey);
             margin: 4px 0 5px;
         }
 
@@ -190,13 +191,16 @@
         .info-part-left .cust-val {
             font-weight: 700;
         }
+        .info-part-left .cust-addr-line {
+            margin-top: 3px;
+        }
         .info-part-right {
             text-align: left;
             flex: 0 0 auto;
-            border: 1.5px solid var(--black);
+            border: 1.5px solid var(--dark-grey);
             padding: 3px 8px;
-            width: 175px;
-            min-width: 175px;
+            width: 140px;
+            min-width: 140px;
             box-sizing: border-box;
             line-height: 1.45;
             font-size: 8.5pt;
@@ -205,7 +209,7 @@
         .info-part-right b {
             font-weight: 700;
             display: inline-block;
-            width: 52px;
+            width: 48px;
         }
 
         /* MAIN TABLE */
@@ -216,7 +220,7 @@
         }
         table.main th,
         table.main td {
-            border: 1px solid var(--black);
+            border: 1px solid var(--dark-grey);
             padding: 2.5px 3px;
             font-size: 8.5pt;
             line-height: 1.25;
@@ -232,19 +236,19 @@
         table.main td.r { text-align: right; }
         table.main th.col-sno,
         table.main td.col-sno {
-            width: 6%;
+            width: 8%;
             text-align: center;
             padding: 2.5px 1px;
         }
         table.main th.col-qty,
         table.main td.col-qty {
-            width: 8%;
+            width: 11%;
             text-align: center;
             padding: 2.5px 1px;
         }
         table.main th.col-desc,
         table.main td.col-desc {
-            width: 48%;
+            width: 47%;
             padding: 2.5px 4px;
         }
         .desc-line {
@@ -278,7 +282,7 @@
         }
         table.main th.col-amt,
         table.main td.col-amt {
-            width: 22%;
+            width: 18%;
             padding: 2.5px 3px;
             text-align: right;
             font-variant-numeric: tabular-nums;
@@ -337,13 +341,13 @@
             padding-top: 3px;
         }
         table.totals-table tr.inv-total-row td.val {
-            border-top: 1.5px solid var(--black) !important;
+            border-top: 1.5px solid var(--dark-grey) !important;
         }
 
         /* RECEIPT VOUCHER */
         .rv-wrap {
             margin-top: 6px;
-            border: 1px solid var(--black);
+            border: 1px solid var(--dark-grey);
         }
         .rv-title {
             background: var(--gray) !important;
@@ -351,7 +355,7 @@
             font-weight: 700;
             font-size: 9pt;
             padding: 3px 4px;
-            border-bottom: 1px solid var(--black);
+            border-bottom: 1px solid var(--dark-grey);
             line-height: 1.25;
         }
         table.rv {
@@ -368,7 +372,7 @@
         table.rv th {
             background: var(--gray) !important;
             font-weight: 700;
-            border-bottom: 1px solid var(--black);
+            border-bottom: 1px solid var(--dark-grey);
         }
         table.rv th:first-child,
         table.rv td:first-child {
@@ -422,7 +426,7 @@
             height: 9mm;
         }
         .sig-line {
-            border-top: 1px solid var(--black);
+            border-top: 1px solid var(--dark-grey);
             margin-bottom: 3px;
         }
         .sig-label {
@@ -435,7 +439,7 @@
         .urdu-disclaimer-box {
             margin-top: 8px;
             border: none;
-            border-top: 1px solid var(--black);
+            border-top: 1px solid var(--dark-grey);
             padding: 5px 0 2px;
             direction: rtl;
             text-align: center;
@@ -530,15 +534,8 @@
     if (!empty($sale->manual_invoice)) {
         $invDisplay = $sale->manual_invoice;
     } else {
-        $month = (int) $entryDate->format('n');
-        $year = (int) $entryDate->format('Y');
-        $fyStart = $month >= 7 ? $year : $year - 1;
-        $invDisplay = sprintf(
-            'AMT-%02d-%02d-%s',
-            $fyStart % 100,
-            ($fyStart + 1) % 100,
-            $sale->invoice_no
-        );
+        $invNo = trim((string)$sale->invoice_no);
+        $invDisplay = str_starts_with(strtoupper($invNo), 'AMT-') ? $invNo : ('AMT-' . $invNo);
     }
 
     $sumItemsAmount = (float)$sale->items->sum('amount');
@@ -609,7 +606,7 @@
                 <div class="info-part-left">
                     <div><span class="cust-lbl">Customer :</span> <span class="cust-val">{{ $partyName }}</span></div>
                     @if($partyAddress)
-                        <div><span class="cust-lbl">Address:</span> <span class="cust-val">{{ $partyAddress }}</span></div>
+                        <div class="cust-addr-line"><span class="cust-lbl">Address:</span> <span class="cust-val">{{ $partyAddress }}</span></div>
                     @endif
                 </div>
                 <div class="info-part-right">
@@ -714,12 +711,6 @@
                         <td class="r purple">{{ number_format($row['amount'], 2) }}</td>
                     </tr>
                     @endforeach
-                    @if(count($receiptRows) == 1)
-                    <tr>
-                        <td class="purple">Less: . &gt;&gt;&gt;</td>
-                        <td class="r purple"></td>
-                    </tr>
-                    @endif
                     <tr class="rv-pay">
                         <td class="blue">AMOUNT PAYABLE. &gt;&gt;&gt;</td>
                         <td class="r blue">{{ number_format($amountPayable, 2) }}</td>
