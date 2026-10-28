@@ -94,6 +94,18 @@
         .inv-content {
             position: relative;
             z-index: 1;
+            display: flex;
+            flex-direction: column;
+            min-height: calc(210mm - 10mm);
+            box-sizing: border-box;
+        }
+        .inv-main-body {
+            flex: 1 0 auto;
+        }
+        .inv-footer-area {
+            flex-shrink: 0;
+            margin-top: auto;
+            padding-top: 15px;
         }
 
         /* HEADER */
@@ -124,18 +136,19 @@
         .hdr-right {
             text-align: right;
             flex-shrink: 0;
+            width: 175px;
         }
         .hdr-right .logo-img {
             display: block;
-            width: 125px;
-            height: 34px;
+            width: 175px;
+            height: 38px;
             object-fit: fill;
             margin-left: auto;
         }
         .dc-box {
             border: 1.5px solid var(--black);
             padding: 3px 8px 11px;
-            width: 125px;
+            width: 175px;
             box-sizing: border-box;
             text-align: center;
             font-weight: 700;
@@ -155,7 +168,7 @@
         .thick-rule {
             border: none;
             border-top: 2.5px solid var(--black);
-            margin: 5px 0 6px;
+            margin: 4px 0 5px;
         }
 
         /* CUSTOMER + INV INFO */
@@ -165,7 +178,7 @@
             align-items: flex-start;
             gap: 10px;
             font-size: 9pt;
-            margin-bottom: 5px;
+            margin-bottom: 2px;
         }
         .info-part-left {
             flex: 1;
@@ -182,16 +195,17 @@
             flex: 0 0 auto;
             border: 1.5px solid var(--black);
             padding: 3px 8px;
-            width: 125px;
-            min-width: 125px;
+            width: 175px;
+            min-width: 175px;
             box-sizing: border-box;
-            line-height: 1.4;
+            line-height: 1.45;
             font-size: 8.5pt;
+            white-space: nowrap;
         }
         .info-part-right b {
             font-weight: 700;
             display: inline-block;
-            width: 48px;
+            width: 52px;
         }
 
         /* MAIN TABLE */
@@ -320,8 +334,10 @@
         table.totals-table td.lbl.blue, table.totals-table td.val.blue { color: var(--blue); }
         table.totals-table td.lbl.purple, table.totals-table td.val.purple { color: var(--purple); }
         table.totals-table tr.inv-total-row td {
-            border-top: 1.5px solid var(--black) !important;
             padding-top: 3px;
+        }
+        table.totals-table tr.inv-total-row td.val {
+            border-top: 1.5px solid var(--black) !important;
         }
 
         /* RECEIPT VOUCHER */
@@ -371,22 +387,23 @@
             font-weight: 700;
         }
         .words-box {
-            border-top: 1px solid var(--black);
-            padding: 3px 6px;
-            font-size: 8pt;
+            border: none !important;
+            padding: 4px 0;
+            font-size: 8.5pt;
             font-style: italic;
             font-weight: 600;
-            line-height: 1.3;
+            line-height: 1.35;
         }
         .words-box-standalone {
-            border: 1px solid var(--black);
-            margin-top: 5px;
-            background: #fff;
+            border: none !important;
+            margin-top: 6px;
+            background: transparent !important;
         }
 
         /* FOOTER & SIGNATURE */
         .ftr {
-            margin-top: 8px;
+            margin-top: 0;
+            margin-bottom: 6px;
             display: flex;
             justify-content: space-between;
             align-items: flex-end;
@@ -402,7 +419,7 @@
             text-align: center;
         }
         .sig-space {
-            height: 7mm;
+            height: 9mm;
         }
         .sig-line {
             border-top: 1px solid var(--black);
@@ -418,7 +435,8 @@
         .urdu-disclaimer-box {
             margin-top: 8px;
             border: none;
-            padding: 3px 0;
+            border-top: 1px solid var(--black);
+            padding: 5px 0 2px;
             direction: rtl;
             text-align: center;
             font-family: 'Noto Nastaliq Urdu', 'Jameel Noori Nastaleeq', Arial, sans-serif;
@@ -463,7 +481,10 @@
                 box-sizing: border-box !important;
                 overflow: visible !important;
             }
-            .inv-content, .rv-wrap, .words-box, .ftr, .urdu-disclaimer-box {
+            .inv-content {
+                min-height: calc(210mm - 10mm) !important;
+            }
+            .inv-footer-area, .inv-content, .rv-wrap, .words-box, .ftr, .urdu-disclaimer-box {
                 page-break-inside: avoid !important;
             }
             table.main tr {
@@ -562,41 +583,44 @@
 <div class="invoice-sheet">
     <img class="wm" src="{{ asset('amt-watermark.png') }}" alt="">
     <div class="inv-content">
-        <!-- Header -->
-        <div class="hdr">
-            <div class="hdr-left">
-                <div class="co-name">Al-Madina Traders</div>
-                <div class="co-lines">
-                    <div class="co-line">Shop# 2, United Hotel, Qazi Qayoom Road, Hyderabad.</div>
-                    <div class="co-line">Mob / Whatsapp: 0312-0252899 , Tel: 022-2780942</div>
+        <div class="inv-main-body">
+            <!-- Header -->
+            <div class="hdr">
+                <div class="hdr-left">
+                    <div class="co-name">Al-Madina Traders</div>
+                    <div class="co-lines">
+                        <div class="co-line">Shop# 2, United Hotel, Qazi Qayoom Road, Hyderabad.</div>
+                        <div class="co-line">Mob / Whatsapp: 0312-0252899 , Tel: 022-2780942</div>
+                    </div>
+                </div>
+                <div class="hdr-right">
+                    <img class="logo-img" src="{{ asset('amt-logo.png') }}" alt="AMT">
+                    <div class="dc-box">
+                        Delivery Challan
+                        <span class="est">Estimate</span>
+                    </div>
                 </div>
             </div>
-            <div class="hdr-right">
-                <img class="logo-img" src="{{ asset('amt-logo.png') }}" alt="AMT">
-                <div class="dc-box">
-                    Delivery Challan
-                    <span class="est">Estimate</span>
+
+            <hr class="thick-rule">
+
+            <!-- Info Row -->
+            <div class="info-row">
+                <div class="info-part-left">
+                    <div><span class="cust-lbl">Customer :</span> <span class="cust-val">{{ $partyName }}</span></div>
+                    @if($partyAddress)
+                        <div><span class="cust-lbl">Address:</span> <span class="cust-val">{{ $partyAddress }}</span></div>
+                    @endif
+                </div>
+                <div class="info-part-right">
+                    <div><b>Inv No.</b> {{ $invDisplay }}</div>
+                    <div><b>Date :</b> {{ $saleDate }}</div>
                 </div>
             </div>
-        </div>
 
-        <hr class="thick-rule">
+            <hr class="thick-rule">
 
-        <!-- Info Row -->
-        <div class="info-row">
-            <div class="info-part-left">
-                <div><span class="cust-lbl">Customer :</span> <span class="cust-val">{{ $partyName }}</span></div>
-                @if($partyAddress)
-                    <div><span class="cust-lbl">Address:</span> <span class="cust-val">{{ $partyAddress }}</span></div>
-                @endif
-            </div>
-            <div class="info-part-right">
-                <div><b>Inv No.</b> {{ $invDisplay }}</div>
-                <div><b>Date :</b> {{ $saleDate }}</div>
-            </div>
-        </div>
-
-        <!-- Table -->
+            <!-- Table -->
         <table class="main">
             <thead>
                 <tr>
@@ -712,8 +736,10 @@
             <span class="amount-in-words" data-amount="{{ $wordsRaw }}"></span>
         </div>
         @endif
+    </div><!-- /.inv-main-body -->
 
-        <!-- Footer -->
+    <!-- Footer Area (Signature + Urdu Disclaimer aligned to page bottom) -->
+    <div class="inv-footer-area">
         <div class="ftr">
             <div class="ftr-thanks">
                 Thank You for Business with us.
@@ -725,12 +751,12 @@
             </div>
         </div>
 
-        <!-- Urdu Disclaimer Box -->
         <div class="urdu-disclaimer-box">
             <div class="urdu-line">اگر بیٹری اسٹیمپ کی تاریخ کے 3 ماہ کے اندر فروخت نہ ہو، تو بیٹری تبدیل کروائیں ورنہ کلیم قبول نہیں ہوگا۔</div>
             <div class="urdu-line">اسٹیمپ کے بغیر کلیم قابل قبول نہیں ہوگا۔ اوساکا کا کلیم صرف کلیم سنٹر پر ہوگا۔</div>
         </div>
-    </div>
+    </div><!-- /.inv-footer-area -->
+</div><!-- /.inv-content -->
 </div>
 
 <script>
