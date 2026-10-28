@@ -543,8 +543,7 @@
     $prevBal = (float)($sale->previous_balance ?? 0);
     $orderDisc = (float)($sale->discount_amount ?? 0);
     $calculatedInvoiceTotal = $amountTotal + $prevBal - $orderDisc;
-    $rawInvoiceTotal = (float)($sale->total_balance ?? 0);
-    $invoiceTotal = ($rawInvoiceTotal > 0) ? $rawInvoiceTotal : $calculatedInvoiceTotal;
+    $invoiceTotal = $calculatedInvoiceTotal;
     $qtyTotal = $sale->items->sum('sales_qty');
 
     $receiptRows = [];
