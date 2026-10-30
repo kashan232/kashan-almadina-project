@@ -6,6 +6,9 @@
     <title>Sale Invoice - {{ $sale->invoice_no }}</title>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    @php
+        $isSinglePage = ($sale->items->count() <= 6);
+    @endphp
     <style>
         :root {
             --blue: #000080;
@@ -185,11 +188,24 @@
             flex: 1;
             line-height: 1.45;
         }
+        .info-part-left .cust-row {
+            display: flex;
+            align-items: flex-start;
+        }
         .info-part-left .cust-lbl {
             font-weight: 700;
+            width: 60px;
+            min-width: 60px;
+            flex-shrink: 0;
+        }
+        .info-part-left .cust-sep {
+            font-weight: 700;
+            margin-right: 6px;
+            flex-shrink: 0;
         }
         .info-part-left .cust-val {
             font-weight: 700;
+            flex: 1;
         }
         .info-part-left .cust-addr-line {
             margin-top: 3px;
@@ -203,7 +219,9 @@
             min-width: 140px;
             box-sizing: border-box;
             line-height: 1.45;
-            font-size: 8.5pt;
+            font-size: 9pt;
+            font-family: Calibri, 'Segoe UI', Arial, sans-serif;
+            font-weight: 700;
             white-space: nowrap;
         }
         .info-part-right b {
@@ -440,13 +458,13 @@
             margin-top: 8px;
             border: none;
             border-top: 1px solid var(--dark-grey);
-            padding: 5px 0 2px;
+            padding: 4px 0 2px;
             direction: rtl;
             text-align: center;
             font-family: 'Noto Nastaliq Urdu', 'Jameel Noori Nastaleeq', Arial, sans-serif;
-            font-size: 8.5pt;
+            font-size: 7pt;
             font-weight: 700;
-            line-height: 2.2;
+            line-height: 1.9;
             color: #000;
         }
         .urdu-disclaimer-box .urdu-line {
@@ -484,15 +502,43 @@
                 border: none !important;
                 box-sizing: border-box !important;
                 overflow: visible !important;
+                page-break-after: avoid !important;
+                break-after: avoid !important;
             }
+            @if($isSinglePage)
             .inv-content {
-                min-height: calc(210mm - 10mm) !important;
+                min-height: calc(210mm - 28mm) !important;
             }
-            .inv-footer-area, .inv-content, .rv-wrap, .words-box, .ftr, .urdu-disclaimer-box {
+            @else
+            .inv-content {
+                min-height: auto !important;
+            }
+            @endif
+            .inv-footer-area {
+                padding-top: 6px !important;
                 page-break-inside: avoid !important;
+                break-inside: avoid !important;
+            }
+            .sig-space {
+                height: 7mm !important;
+            }
+            .urdu-disclaimer-box {
+                margin-top: 4px !important;
+                padding: 2px 0 0 !important;
+                margin-bottom: 0 !important;
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+            }
+            .urdu-disclaimer-box .urdu-line:last-child {
+                margin-bottom: 0 !important;
+            }
+            .rv-wrap, .words-box, .ftr {
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
             }
             table.main tr {
                 page-break-inside: avoid !important;
+                break-inside: avoid !important;
             }
         }
     </style>
@@ -603,9 +649,9 @@
             <!-- Info Row -->
             <div class="info-row">
                 <div class="info-part-left">
-                    <div><span class="cust-lbl">Customer :</span> <span class="cust-val">{{ $partyName }}</span></div>
+                    <div class="cust-row"><span class="cust-lbl">Customer</span><span class="cust-sep">:</span><span class="cust-val">{{ $partyName }}</span></div>
                     @if($partyAddress)
-                        <div class="cust-addr-line"><span class="cust-lbl">Address:</span> <span class="cust-val">{{ $partyAddress }}</span></div>
+                        <div class="cust-row cust-addr-line"><span class="cust-lbl">Address</span><span class="cust-sep">:</span><span class="cust-val">{{ $partyAddress }}</span></div>
                     @endif
                 </div>
                 <div class="info-part-right">
