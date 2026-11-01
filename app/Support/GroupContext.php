@@ -8,6 +8,7 @@ use App\Models\Purchase;
 use App\Models\Sale;
 use App\Models\Vendor;
 use App\Models\Warehouse;
+use App\Models\UserGroup;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
 
@@ -29,6 +30,8 @@ class GroupContext
         'from_warehouse_id',
         'to_warehouse_id',
         'replacement_from_warehouse_id',
+        'from_shop',
+        'to_shop',
         'sale_id',
         'purchase_id',
         'person',
@@ -147,9 +150,17 @@ class GroupContext
             'replacement_from_warehouse_id',
         ] as $field) {
             $warehouseId = $model->{$field} ?? null;
-            if ($warehouseId !== null && $warehouseId !== '' && (int) $warehouseId > 0) {
-                $groups = array_merge($groups, self::fromWarehouse((int) $warehouseId));
+            if ($warehouseId !== null && $warehouseId !== '') {
+                if ((int) $warehouseId > 0) {
+                    $groups = array_merge($groups, self::fromWarehouse((int) $warehouseId));
+                } elseif ((int) $warehouseId === 0 && in_array($field, ['warehouse_id', 'from_warehouse_id', 'to_warehouse_id'], true)) {
+                    $groups = array_merge($groups, self::fromShop());
+                }
             }
+        }
+
+        if (!empty($model->from_shop) || !empty($model->to_shop)) {
+            $groups = array_merge($groups, self::fromShop());
         }
 
         if (!empty($model->sale_id)) {
@@ -266,6 +277,13 @@ class GroupContext
         $account = Account::withoutGlobalScopes()->find($id);
 
         return self::normalizeIds($account->user_group_ids ?? []);
+    }
+
+    public static function fromShop(): array
+    {
+        return self::normalizeIds(
+            UserGroup::where('allow_shop', 1)->pluck('id')->all()
+        );
     }
 
     public static function normalizeIds(array $ids): array

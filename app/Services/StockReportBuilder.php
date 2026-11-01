@@ -36,6 +36,10 @@ class StockReportBuilder
     /** @var array<string, array<string, float>> */
     private array $ledger = [];
 
+    private ?array $resolvedWarehouses = null;
+
+    private ?Collection $filteredProducts = null;
+
     private const COLS = [
         'pur', 'pur_ret', 'sales', 'sales_ret',
         'clm_rep', 'clm_in', 'clm_out',
@@ -184,6 +188,10 @@ class StockReportBuilder
 
     private function extractFilters(Request $request): array
     {
+        $this->resolvedWarehouses = null;
+        $this->filteredProducts = null;
+        $this->ledger = [];
+        $this->movements = collect();
         return [
             'user_groups' => $request->user_group ?? [],
             'claim_types' => $request->claim_type ?? [],
@@ -273,12 +281,11 @@ class StockReportBuilder
 
     private function productMatchesFilters(int $productId): bool
     {
-        static $cache = null;
-        if ($cache === null) {
-            $cache = $this->filteredProductIds()->flip();
+        if ($this->filteredProducts === null) {
+            $this->filteredProducts = $this->filteredProductIds()->flip();
         }
 
-        return isset($cache[$productId]);
+        return isset($this->filteredProducts[$productId]);
     }
 
     private function filteredProductIds(): Collection
@@ -312,22 +319,38 @@ class StockReportBuilder
 
     private function resolvedWarehouseIds(): array
     {
-        static $resolved = null;
-        if ($resolved !== null) {
-            return $resolved;
+        if ($this->resolvedWarehouses !== null) {
+            return $this->resolvedWarehouses;
         }
 
+        $applyGroup = $this->shouldApplyFilter($this->filters['user_groups'], $this->filters['totalGroups']);
         $applyWh = $this->shouldApplyFilter($this->filters['warehouses'], $this->filters['totalWarehouses']);
         $applyType = $this->shouldApplyFilter($this->filters['claim_types'], $this->filters['totalClaimTypes']);
 
         if ($applyWh) {
             $candidateIds = array_map('intval', $this->filters['warehouses']);
+        } elseif ($applyGroup) {
+            $selectedGroups = array_map('intval', $this->filters['user_groups']);
+            $candidateIds = [];
+
+            $allowsShop = UserGroup::whereIn('id', $selectedGroups)->where('allow_shop', 1)->exists();
+            if ($allowsShop) {
+                $candidateIds[] = 0;
+            }
+
+            $warehouses = Warehouse::withoutGlobalScopes()->get(['id', 'user_group_ids']);
+            foreach ($warehouses as $wh) {
+                $whGroups = array_map('intval', (array) ($wh->user_group_ids ?? []));
+                if (!empty(array_intersect($selectedGroups, $whGroups))) {
+                    $candidateIds[] = (int) $wh->id;
+                }
+            }
         } else {
             $candidateIds = array_merge([0], Warehouse::withoutGlobalScopes()->pluck('id')->map(fn ($id) => (int) $id)->all());
         }
 
         if (!$applyType) {
-            return $resolved = $candidateIds;
+            return $this->resolvedWarehouses = $candidateIds;
         }
 
         $selectedTypes = $this->filters['claim_types'];
@@ -344,7 +367,7 @@ class StockReportBuilder
             }
         }
 
-        return $resolved = $filtered;
+        return $this->resolvedWarehouses = $filtered;
     }
 
     private function warehouseLabel(int $warehouseId): string
