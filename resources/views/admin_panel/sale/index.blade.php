@@ -346,11 +346,11 @@
                                                     <i class="fa fa-edit text-dark"></i>
                                                 </a>
 
-                                                <a href="{{ route('booking.print', $sale->id) }}" target="_blank" class="btn btn-outline-primary btn-xs px-1 py-0" title="Print Booking Invoice" style="height: 20px; font-size: 10px; line-height: 18px;">
+                                                <a href="{{ route('sale.invoice', $sale->id) }}" target="_blank" class="btn btn-outline-primary btn-xs px-1 py-0" title="Print Invoice" style="height: 20px; font-size: 10px; line-height: 18px;">
                                                     <i class="fa fa-print"></i> Inv
                                                 </a>
 
-                                                <a href="{{ route('booking.dc', $sale->id) }}" target="_blank" class="btn btn-outline-secondary btn-xs px-1 py-0" title="Delivery Challan (DC)" style="height: 20px; font-size: 10px; line-height: 18px;">
+                                                <a href="{{ route('sale.dc', $sale->id) }}" target="_blank" class="btn btn-outline-secondary btn-xs px-1 py-0" title="Delivery Challan (DC)" style="height: 20px; font-size: 10px; line-height: 18px;">
                                                     <i class="fa fa-truck"></i> DC
                                                 </a>
 

@@ -933,39 +933,60 @@ class SaleController extends Controller
     }
 
     /* -------- Prints -------- */
-    public function invoice(Sale $sale)
+    public function invoice($id)
     {
-        $sale->load(['items.product.brandRelation', 'items.warehouse', 'customer', 'vendor']);
+        if ($id instanceof Sale) {
+            $sale = $id;
+        } else {
+            $sale = Sale::with(['items.product.brandRelation', 'items.warehouse', 'customer', 'vendor'])->find($id);
+            if (!$sale) {
+                $sale = Productbooking::with(['items.product.brandRelation', 'items.warehouse', 'customer', 'vendor'])->findOrFail($id);
+            }
+        }
+        $sale->loadMissing(['items.product.brandRelation', 'items.warehouse', 'customer', 'vendor']);
 
         return view('admin_panel.sale.prints.invoice', compact('sale'));
     }
-    public function print2(Sale $sale)
+    public function print2($id)
     {
-        $sale->load(['items.product.brandRelation', 'items.warehouse', 'customer', 'vendor']);
+        if ($id instanceof Sale) {
+            $sale = $id;
+        } else {
+            $sale = Sale::with(['items.product.brandRelation', 'items.warehouse', 'customer', 'vendor'])->find($id);
+            if (!$sale) {
+                $sale = Productbooking::with(['items.product.brandRelation', 'items.warehouse', 'customer', 'vendor'])->findOrFail($id);
+            }
+        }
+        $sale->loadMissing(['items.product.brandRelation', 'items.warehouse', 'customer', 'vendor']);
 
         return view('admin_panel.sale.prints.print2', compact('sale'));
     }
-    public function dc(Sale $sale)
+    public function dc($id)
     {
-        $sale->load(['items.product.brandRelation', 'items.warehouse', 'customer', 'vendor']);
+        if ($id instanceof Sale) {
+            $sale = $id;
+        } else {
+            $sale = Sale::with(['items.product.brandRelation', 'items.warehouse', 'customer', 'vendor'])->find($id);
+            if (!$sale) {
+                $sale = Productbooking::with(['items.product.brandRelation', 'items.warehouse', 'customer', 'vendor'])->findOrFail($id);
+            }
+        }
+        $sale->loadMissing(['items.product.brandRelation', 'items.warehouse', 'customer', 'vendor']);
 
         return view('admin_panel.sale.prints.dc', compact('sale'));
     }
 
     public function bookingPrint($id)
     {
-        $booking = Productbooking::with('items.product')->findOrFail($id);
-        return view('admin_panel.sale.booking.prints.print', compact('booking'));
+        return $this->invoice($id);
     }
     public function bookingPrint2($id)
     {
-        $booking = Productbooking::with('items.product')->findOrFail($id);
-        return view('admin_panel.sale.booking.prints.print2', compact('booking'));
+        return $this->print2($id);
     }
     public function bookingDc($id)
     {
-        $sale = Productbooking::with(['items.product.brandRelation', 'items.warehouse', 'customer', 'vendor'])->findOrFail($id);
-        return view('admin_panel.sale.prints.dc', compact('sale'));
+        return $this->dc($id);
     }
 
     /* -------- Support APIs -------- */

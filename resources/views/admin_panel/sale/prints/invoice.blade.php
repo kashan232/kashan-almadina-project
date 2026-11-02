@@ -7,7 +7,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
     @php
-        $isSinglePage = ($sale->items->count() <= 6);
+        $isSinglePage = ($sale->items->count() <= 7);
     @endphp
     <style>
         :root {
@@ -79,7 +79,7 @@
             min-height: 210mm;
             margin: 15px auto;
             background: #fff;
-            padding: 5mm 6mm;
+            padding: 5mm 6mm 4mm 6mm;
             box-shadow: 0 4px 15px rgba(0,0,0,0.35);
             box-sizing: border-box;
             position: relative;
@@ -87,7 +87,7 @@
         .wm {
             position: absolute;
             left: 50%;
-            top: 55%;
+            top: 50%;
             transform: translate(-50%, -50%);
             width: 75%;
             opacity: 0.05;
@@ -100,8 +100,9 @@
             z-index: 1;
             display: flex;
             flex-direction: column;
-            min-height: calc(210mm - 10mm);
+            min-height: calc(210mm - 9mm);
             box-sizing: border-box;
+            justify-content: space-between;
         }
         .inv-main-body {
             flex: 1 0 auto;
@@ -109,7 +110,8 @@
         .inv-footer-area {
             flex-shrink: 0;
             margin-top: auto;
-            padding-top: 15px;
+            padding-top: 10px;
+            margin-bottom: 0;
         }
 
         /* HEADER */
@@ -475,11 +477,11 @@
         @media print {
             @page {
                 size: A5 portrait;
-                margin: 5mm 6mm;
+                margin: 4mm 5mm 3mm 5mm;
             }
             html, body {
                 width: 100% !important;
-                height: auto !important;
+                height: 100% !important;
                 margin: 0 !important;
                 padding: 0 !important;
                 background: #fff !important;
@@ -493,7 +495,7 @@
             .invoice-sheet {
                 width: 100% !important;
                 max-width: 100% !important;
-                min-height: auto !important;
+                min-height: 100% !important;
                 height: auto !important;
                 max-height: none !important;
                 margin: 0 !important;
@@ -507,31 +509,50 @@
             }
             @if($isSinglePage)
             .inv-content {
-                min-height: calc(210mm - 28mm) !important;
+                min-height: 201mm !important;
+                display: flex !important;
+                flex-direction: column !important;
+                justify-content: space-between !important;
+                box-sizing: border-box !important;
             }
-            @else
-            .inv-content {
-                min-height: auto !important;
+            .inv-main-body {
+                flex: 1 0 auto !important;
             }
-            @endif
             .inv-footer-area {
-                padding-top: 6px !important;
+                flex-shrink: 0 !important;
+                margin-top: auto !important;
+                padding-top: 2px !important;
+                margin-bottom: 0 !important;
+                padding-bottom: 0 !important;
                 page-break-inside: avoid !important;
                 break-inside: avoid !important;
             }
             .sig-space {
-                height: 7mm !important;
+                height: 6mm !important;
             }
             .urdu-disclaimer-box {
-                margin-top: 4px !important;
+                margin-top: 3px !important;
                 padding: 2px 0 0 !important;
                 margin-bottom: 0 !important;
+                padding-bottom: 0 !important;
                 page-break-inside: avoid !important;
                 break-inside: avoid !important;
             }
             .urdu-disclaimer-box .urdu-line:last-child {
                 margin-bottom: 0 !important;
             }
+            @else
+            .inv-content {
+                min-height: auto !important;
+                display: block !important;
+            }
+            .inv-footer-area {
+                margin-top: 15px !important;
+                padding-top: 6px !important;
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+            }
+            @endif
             .rv-wrap, .words-box, .ftr {
                 page-break-inside: avoid !important;
                 break-inside: avoid !important;
@@ -567,7 +588,7 @@
     use App\Models\Account;
     use App\Models\AccountHead;
 
-    $pType = strtolower($sale->partyType ?? 'customer');
+    $pType = strtolower($sale->partyType ?? ($sale->party_type ?? 'customer'));
     $partyName = $pType === 'vendor'
         ? ($sale->vendor->name ?? 'N/A')
         : ($sale->customer->customer_name ?? 'Walk-in Customer');

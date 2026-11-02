@@ -845,9 +845,13 @@
         </button>
 
         <button type="button" id="previewPrintBtn" class="btn btn-sm btn-outline-dark rounded-pill px-4">
-          <i class="fa fa-print me-1"></i> Print Preview
+          <i class="fa fa-print me-1"></i> Inv Print
           <kbd style="font-size:9px;opacity:.8;margin-left:4px;">Ctrl+P</kbd>
         </button>
+
+        <a href="{{ url('sale/dc') }}/{{ $booking->id ?? '' }}" target="_blank" id="bookingDcBtn" class="btn btn-sm btn-outline-secondary rounded-pill px-3">
+          <i class="fa fa-truck me-1"></i> DC Print
+        </a>
 
         <button type="button" id="postBtn" class="btn btn-sm btn-primary rounded-pill px-4 shadow-sm">
           <i class="fa fa-send me-1"></i> Save & Post
@@ -1390,10 +1394,8 @@
               Swal.fire('Info', 'Please save the draft first (Ctrl+S).', 'info');
               return;
           }
-          // The route should probably be booking.print but controller said bookingPrint
-          const printUrl = '{{ url("booking/print") }}/' + bookingId; 
-          $('#printFrame').attr('src', printUrl);
-          $('#printModal').modal('show');
+          const printUrl = '{{ url("sale/invoice") }}/' + bookingId; 
+          window.open(printUrl, '_blank');
       });
 
       $('#editBtn').on('click', function() {

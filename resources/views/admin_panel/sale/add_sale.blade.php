@@ -1135,24 +1135,15 @@
           <i class="fa fa-trash me-1"></i> Delete <kbd>Ctrl+D</kbd>
         </button>
 
-        @if($isViewMode && isset($sale))
-        <a href="{{ route('sale.invoice', $sale->id) }}" target="_blank" id="invPrintBtn" class="btn btn-info text-dark shadow-sm">
+        @php
+            $currentPrintId = ($isViewMode && isset($sale)) ? $sale->id : ($editData ? $editData->id : null);
+        @endphp
+        <a href="{{ $currentPrintId ? route('sale.invoice', $currentPrintId) : '#' }}" target="_blank" id="invPrintBtn" class="btn btn-info text-dark shadow-sm">
           <i class="fa fa-file-text-o me-1"></i> Inv Print <kbd style="color:#000;">Ctrl+P</kbd>
         </a>
-        <a href="{{ route('sale.dc', $sale->id) }}" target="_blank" id="dcPrintBtn" class="btn btn-outline-info shadow-sm">
+        <a href="{{ $currentPrintId ? route('sale.dc', $currentPrintId) : '#' }}" target="_blank" id="dcPrintBtn" class="btn btn-outline-info shadow-sm">
           <i class="fa fa-truck me-1"></i> DC Print <kbd>Ctrl+Shift+D</kbd>
         </a>
-        @else
-        <a href="#" target="_blank" id="invPrintBtn" class="btn btn-info text-dark shadow-sm d-none">
-          <i class="fa fa-file-text-o me-1"></i> Inv Print <kbd style="color:#000;">Ctrl+P</kbd>
-        </a>
-        <a href="#" target="_blank" id="dcPrintBtn" class="btn btn-outline-info shadow-sm d-none">
-          <i class="fa fa-truck me-1"></i> DC Print <kbd>Ctrl+Shift+D</kbd>
-        </a>
-        <button type="button" id="previewPrintBtn" class="btn btn-info text-dark shadow-sm">
-          <i class="fa fa-print me-1"></i> Print <kbd style="color:#000;">Ctrl+P</kbd>
-        </button>
-        @endif
 
         <a href="{{ route('sale.index') }}" id="exitBtn" class="btn btn-secondary shadow-sm text-white">
           <i class="fa fa-times-circle me-1"></i> Exit <kbd>Esc</kbd>
@@ -1650,6 +1641,11 @@
           $('#editBtn').prop('disabled', false);
           $('#postBtn').prop('disabled', false);
           $('#deleteBtn').prop('disabled', false);
+          var curId = $('#sale_id').val() || $('#booking_id').val();
+          if (curId) {
+              $('#invPrintBtn').attr('href', '{{ url("sale/invoice") }}/' + curId).removeClass('d-none').show();
+              $('#dcPrintBtn').attr('href', '{{ url("sale/dc") }}/' + curId).removeClass('d-none').show();
+          }
       }
 
       function isSalePostedView() {
@@ -1701,7 +1697,7 @@
           setTimeout(function() { $toast.fadeOut(400, function(){ $(this).remove(); }); }, 3500);
       }
 
-      function ajaxSaveDraft(showMsg = true) {
+      function ajaxSaveDraft(showMsg = true, callback = null) {
           if (_saveInFlight) return;
 
           const v = validateFormAll();
@@ -1744,8 +1740,16 @@
                       setSaleButtonsAfterLock();
                       $('#statusBadge').removeClass('bg-warning').addClass('bg-info text-white').html('<i class="fa fa-pencil"></i> Unposted').show();
 
+                      var newId = res.booking_id || res.sale_id;
+                      if (newId) {
+                          $('#invPrintBtn').attr('href', '{{ url("sale/invoice") }}/' + newId).removeClass('d-none').show();
+                          $('#dcPrintBtn').attr('href', '{{ url("sale/dc") }}/' + newId).removeClass('d-none').show();
+                      }
                       if (showMsg) {
                           showToast('Draft Saved', 'success');
+                      }
+                      if (typeof callback === 'function') {
+                          callback(res.booking_id);
                       }
                   } else {
                       showToast(res.msg || 'Save failed', 'error');
@@ -1850,16 +1854,22 @@
       $('#saveDraftBtn').on('click', function() { ajaxSaveDraft(); });
       $('#postBtn').on('click', function() { doPost(); });
       
-      $('#previewPrintBtn').on('click', function() {
-          const bookingId = $('#booking_id').val();
-          if (!bookingId) {
-              Swal.fire('Info', 'Please save the draft first (Ctrl+S).', 'info');
-              return;
+      $('#invPrintBtn, #dcPrintBtn').on('click', function(e) {
+          const isDc = $(this).attr('id') === 'dcPrintBtn';
+          const type = isDc ? 'dc' : 'invoice';
+          const currentId = $('#sale_id').val() || $('#booking_id').val();
+          
+          if (currentId) {
+              $(this).attr('href', '{{ url("sale") }}/' + type + '/' + currentId);
+              return true;
           }
-          // The route should probably be booking.print but controller said bookingPrint
-          const printUrl = '{{ url("booking/print") }}/' + bookingId; 
-          $('#printFrame').attr('src', printUrl);
-          $('#printModal').modal('show');
+          
+          e.preventDefault();
+          ajaxSaveDraft(false, function(newBookingId) {
+              if (newBookingId) {
+                  window.open('{{ url("sale") }}/' + type + '/' + newBookingId, '_blank');
+              }
+          });
       });
 
       $('#editBtn').on('click', function() {
@@ -1935,7 +1945,11 @@
           }
           if (e.ctrlKey && (e.key === 'p' || e.key === 'P')) {
               e.preventDefault();
-              $('#previewPrintBtn').trigger('click');
+              $('#invPrintBtn')[0].click();
+          }
+          if (e.ctrlKey && (e.key === 'd' || e.key === 'D') && e.shiftKey) {
+              e.preventDefault();
+              $('#dcPrintBtn')[0].click();
           }
           if (e.ctrlKey && (e.key === 'e' || e.key === 'E')) {
               e.preventDefault();
