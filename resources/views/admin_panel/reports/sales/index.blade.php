@@ -133,11 +133,13 @@
                             <!-- Items -->
                             <div class="col-md-2">
                                 <div class="filter-column">
-                                    <div class="filter-header">
-                                        <input type="checkbox" class="select-all" data-target="item-list"> Item
+                                    <div class="filter-header d-flex justify-content-between align-items-center">
+                                        <div><input type="checkbox" class="select-all" data-target="item-list"> Item</div>
+                                        <span class="badge bg-light text-dark border deselect-column" data-target="item-list" title="Uncheck all items" style="font-size: 9px; cursor: pointer;">None</span>
                                     </div>
-                                    <div class="p-1 bg-light border-bottom">
-                                        <input type="text" class="form-control form-control-sm" id="itemSearch" placeholder="Search item..." style="height: 24px; font-size: 11px;">
+                                    <div class="p-1 bg-light border-bottom position-relative">
+                                        <input type="text" class="form-control form-control-sm pe-4" id="itemSearch" placeholder="Search item..." style="height: 24px; font-size: 11px;">
+                                        <button type="button" class="btn btn-link btn-xs text-secondary position-absolute top-50 end-0 translate-middle-y me-2 p-0 text-decoration-none clear-search" data-target="itemSearch" style="font-size: 14px; line-height: 1; display: none;">&times;</button>
                                     </div>
                                     <div class="filter-list" id="item-list">
                                         @foreach($products as $prod)
@@ -169,11 +171,13 @@
                             <!-- Party -->
                             <div class="col-md-1" style="min-width: 130px;">
                                 <div class="filter-column">
-                                    <div class="filter-header">
-                                        <input type="checkbox" class="select-all" data-target="party-list"> Party
+                                    <div class="filter-header d-flex justify-content-between align-items-center">
+                                        <div><input type="checkbox" class="select-all" data-target="party-list"> Party</div>
+                                        <span class="badge bg-light text-dark border deselect-column" data-target="party-list" title="Uncheck all parties" style="font-size: 9px; cursor: pointer;">None</span>
                                     </div>
-                                    <div class="p-1 bg-light border-bottom">
-                                        <input type="text" class="form-control form-control-sm" id="partySearch" placeholder="Search party..." style="height: 24px; font-size: 11px;">
+                                    <div class="p-1 bg-light border-bottom position-relative">
+                                        <input type="text" class="form-control form-control-sm pe-4" id="partySearch" placeholder="Search party..." style="height: 24px; font-size: 11px;">
+                                        <button type="button" class="btn btn-link btn-xs text-secondary position-absolute top-50 end-0 translate-middle-y me-2 p-0 text-decoration-none clear-search" data-target="partySearch" style="font-size: 14px; line-height: 1; display: none;">&times;</button>
                                     </div>
                                     <div class="filter-list" id="party-list">
                                          @foreach($customers as $cust)
@@ -447,6 +451,16 @@
             });
         }
 
+        function syncSelectAllHeader(targetId) {
+            const $list = $('#' + targetId);
+            const total = $list.find('.filter-item').length;
+            const checked = $list.find('.filter-item input[type="checkbox"]:checked').length;
+            const $header = $('.select-all[data-target="' + targetId + '"]');
+            if ($header.length) {
+                $header.prop('checked', total > 0 && checked === total);
+            }
+        }
+
         // Toggle item selection
         $(document).on('click', '.filter-item', function(e) {
             if ($(e.target).is('input[type="checkbox"]')) return;
@@ -459,6 +473,39 @@
             if (['group-list', 'category-list', 'brand-list', 'partytype-list'].includes(listId)) {
                 applyCascadeFilters();
             }
+            syncSelectAllHeader(listId);
+        });
+
+        // Double click an item to select ONLY that item
+        $(document).on('dblclick', '.filter-item', function(e) {
+            const listId = $(this).closest('.filter-list').attr('id');
+            const $list = $('#' + listId);
+            $list.find('.filter-item').each(function() {
+                $(this).find('input[type="checkbox"]').prop('checked', false);
+                $(this).removeClass('selected');
+            });
+            const checkbox = $(this).find('input[type="checkbox"]');
+            checkbox.prop('checked', true);
+            $(this).addClass('selected');
+            syncSelectAllHeader(listId);
+            if (['group-list', 'category-list', 'brand-list', 'partytype-list'].includes(listId)) {
+                applyCascadeFilters();
+            }
+        });
+
+        // Deselect column shortcut button
+        $(document).on('click', '.deselect-column', function(e) {
+            e.stopPropagation();
+            const targetId = $(this).data('target');
+            const $list = $('#' + targetId);
+            $list.find('.filter-item').each(function() {
+                $(this).find('input[type="checkbox"]').prop('checked', false);
+                $(this).removeClass('selected');
+            });
+            syncSelectAllHeader(targetId);
+            if (['group-list', 'category-list', 'brand-list', 'partytype-list'].includes(targetId)) {
+                applyCascadeFilters();
+            }
         });
 
         $(document).on('change', '.filter-item input[type="checkbox"]', function() {
@@ -469,6 +516,7 @@
             if (['group-list', 'category-list', 'brand-list', 'partytype-list'].includes(listId)) {
                 applyCascadeFilters();
             }
+            syncSelectAllHeader(listId);
         });
 
         // Select All functionality
@@ -478,10 +526,17 @@
             const $list = $('#' + targetId);
 
             $list.find('.filter-item').each(function() {
-                if ($(this).css('display') !== 'none') {
-                    const cb = $(this).find('input[type="checkbox"]');
-                    cb.prop('checked', isChecked);
-                    $(this).toggleClass('selected', isChecked);
+                const cb = $(this).find('input[type="checkbox"]');
+                if (!isChecked) {
+                    // When unchecking, ALWAYS uncheck ALL items in this column regardless of search visibility!
+                    cb.prop('checked', false);
+                    $(this).removeClass('selected');
+                } else {
+                    // When checking, check visible items
+                    if ($(this).css('display') !== 'none') {
+                        cb.prop('checked', true);
+                        $(this).addClass('selected');
+                    }
                 }
             });
 
@@ -508,6 +563,17 @@
         // Search functionality for Item and Party
         $('#itemSearch, #partySearch').on('keyup input search', function() {
             applyCascadeFilters();
+            const target = $(this).attr('id');
+            const $clearBtn = $('.clear-search[data-target="' + target + '"]');
+            if ($clearBtn.length) {
+                $clearBtn.toggle($(this).val().length > 0);
+            }
+        });
+
+        $(document).on('click', '.clear-search', function() {
+            const targetId = $(this).data('target');
+            $('#' + targetId).val('').trigger('input');
+            $(this).hide();
         });
 
         // Validate filter selection before submitting form
