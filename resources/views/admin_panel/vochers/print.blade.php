@@ -76,7 +76,7 @@
             min-height: 210mm;
             margin: 15px auto;
             background: #fff;
-            padding: 5mm 6mm;
+            padding: 5mm 6mm 4mm 6mm;
             box-shadow: 0 4px 15px rgba(0,0,0,0.35);
             box-sizing: border-box;
             position: relative;
@@ -84,7 +84,7 @@
         .wm {
             position: absolute;
             left: 50%;
-            top: 55%;
+            top: 50%;
             transform: translate(-50%, -50%);
             width: 75%;
             opacity: 0.05;
@@ -97,8 +97,9 @@
             z-index: 1;
             display: flex;
             flex-direction: column;
-            min-height: calc(210mm - 10mm);
+            min-height: calc(210mm - 9mm);
             box-sizing: border-box;
+            justify-content: space-between;
         }
         .inv-main-body {
             flex: 1 0 auto;
@@ -106,7 +107,8 @@
         .inv-footer-area {
             flex-shrink: 0;
             margin-top: auto;
-            padding-top: 15px;
+            padding-top: 10px;
+            margin-bottom: 0;
         }
 
         /* HEADER */
@@ -354,11 +356,11 @@
         @media print {
             @page {
                 size: A5 portrait;
-                margin: 5mm 6mm;
+                margin: 4mm 5mm 3mm 5mm;
             }
             html, body {
                 width: 100% !important;
-                height: auto !important;
+                height: 100% !important;
                 margin: 0 !important;
                 padding: 0 !important;
                 background: #fff !important;
@@ -372,7 +374,7 @@
             .invoice-sheet {
                 width: 100% !important;
                 max-width: 100% !important;
-                min-height: auto !important;
+                min-height: 100% !important;
                 height: auto !important;
                 max-height: none !important;
                 margin: 0 !important;
@@ -386,21 +388,39 @@
             }
             @if($isSinglePage)
             .inv-content {
-                min-height: calc(210mm - 28mm) !important;
+                min-height: 201mm !important;
+                display: flex !important;
+                flex-direction: column !important;
+                justify-content: space-between !important;
+                box-sizing: border-box !important;
             }
-            @else
-            .inv-content {
-                min-height: auto !important;
+            .inv-main-body {
+                flex: 1 0 auto !important;
             }
-            @endif
             .inv-footer-area {
-                padding-top: 6px !important;
+                flex-shrink: 0 !important;
+                margin-top: auto !important;
+                padding-top: 2px !important;
+                margin-bottom: 0 !important;
+                padding-bottom: 0 !important;
                 page-break-inside: avoid !important;
                 break-inside: avoid !important;
             }
             .sig-space {
-                height: 7mm !important;
+                height: 6mm !important;
             }
+            @else
+            .inv-content {
+                min-height: auto !important;
+                display: block !important;
+            }
+            .inv-footer-area {
+                margin-top: 15px !important;
+                padding-top: 6px !important;
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+            }
+            @endif
             .words-box, .ftr {
                 page-break-inside: avoid !important;
                 break-inside: avoid !important;
@@ -529,7 +549,7 @@
                     <tr>
                         <td class="c">{{ $key + 1 }}</td>
                         <td style="text-align: left; padding: 3px 6px;">
-                            <div style="font-weight: 700;">{{ $row['narration'] ?? 'Cash Received' }}</div>
+                            <div style="font-weight: 700;">{{ $row['narration'] ?? 'Cash Received' }}@if(!empty($voucher->receipt_date))<span style="font-weight: 600; font-size: 8pt; color: #333;">, Receipt Date: {{ \Carbon\Carbon::parse($voucher->receipt_date)->format('d-M-y') }}</span>@endif</div>
                             @if($accStr)
                                 <div style="font-size: 8pt; color: #444; font-weight: normal;">Towards: {{ $accStr }}</div>
                             @endif
@@ -552,7 +572,7 @@
                 <div class="inv-totals-left">
                     <table class="totals-table">
                         <tr>
-                            <td class="lbl blue">Add: Previous Balance.</td>
+                            <td class="lbl blue">Previous Balance.</td>
                             <td class="arr blue">&gt;&gt;&gt;</td>
                             <td class="val blue">{{ number_format($previousBalance, 2) }}</td>
                         </tr>
