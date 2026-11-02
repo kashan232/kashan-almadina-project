@@ -1603,11 +1603,27 @@
     // --- Navigation Guard (Prevent leaving incomplete form) ---
     let isInitializing = true;
     let isFormDirty = false;
-    let isFormSaved = false; // set true once AJAX draft save succeeds
+    let isFormSaved = {{ ($isPosted || $isViewMode) ? 'true' : 'false' }};
+
+    function isPageSafeToLeave() {
+        if ($('#purchaseForm').hasClass('form-locked') || 
+            $('#purchaseForm').hasClass('view-mode') || 
+            $('#postedWatermark').hasClass('show') ||
+            (typeof window.isPurchasePostedView === 'function' && window.isPurchasePostedView())) {
+            return true;
+        }
+        return !isFormDirty || isFormSaved;
+    }
 
     // Detect changes in any input/select/textarea within the form
     $(document).on('change input', '#purchaseForm :input', function() {
         if (isInitializing) return;
+        if ($('#purchaseForm').hasClass('form-locked') || 
+            $('#purchaseForm').hasClass('view-mode') || 
+            $('#postedWatermark').hasClass('show') ||
+            (typeof window.isPurchasePostedView === 'function' && window.isPurchasePostedView())) {
+            return;
+        }
         isFormDirty = true;
         isFormSaved = false; // re-dirty if user edits after saving
     });
@@ -1640,16 +1656,29 @@
             return;
         }
 
-        // Block only if dirty and not yet saved
-        if (isFormDirty && !isFormSaved) {
-            e.preventDefault();
-            showToast('⚠️ Please save the purchase (Save Draft) before leaving.', 'error');
+        // If form is posted, view mode, locked, or saved, never block navigation
+        if (isPageSafeToLeave()) {
             return;
+        }
+
+        // Prompt only if dirty and not yet saved
+        if (isFormDirty && !isFormSaved) {
+            if (confirm('Aap ka purchase form save nahi hua hai. Kya aap waqai bina save kiye doosre page par jana chahte hain? / You have unsaved changes. Leave without saving?')) {
+                isFormDirty = false;
+                isFormSaved = true;
+                return;
+            } else {
+                e.preventDefault();
+                return;
+            }
         }
     });
 
     // Browser-level guard (reload / close tab)
     window.addEventListener('beforeunload', function (e) {
+        if (isPageSafeToLeave()) {
+            return;
+        }
         if (isFormDirty && !isFormSaved) {
             e.preventDefault();
             e.returnValue = '';
@@ -1838,7 +1867,7 @@ $(document).ready(function() {
     //  SAVED PURCHASE STATE (after AJAX save)
     // =============================================
     var _savedPurchaseId = @json(isset($purchase) ? $purchase->id : null);
-    var isViewMode = @json(isset($viewMode) && $viewMode);
+    var isViewMode = @json((isset($viewMode) && $viewMode) || (isset($purchase) && $purchase->status == 'Posted'));
     var _saveInFlight = false;
     var _postInFlight = false;
     var _storeUrl = @json(route('store.Purchase'));
@@ -1880,13 +1909,17 @@ $(document).ready(function() {
     var BTN_POST = '<i class="fa fa-check-circle me-1"></i> Post <kbd style="font-size:10px;opacity:.8;margin-left:4px;">Ctrl+&crarr;</kbd>';
 
     function isPurchasePostedView() {
-        return isViewMode || $('#purchaseForm').hasClass('view-mode');
+        return isViewMode || $('#purchaseForm').hasClass('view-mode') || $('#purchaseForm').hasClass('form-locked') || $('#postedWatermark').hasClass('show');
     }
+    window.isPurchasePostedView = isPurchasePostedView;
 
     function setPurchaseFormPostedState(purchaseId, printUrl) {
         switchFormToUpdateMode(purchaseId);
         $('#purchaseForm').addClass('form-locked view-mode');
         $('#postedWatermark').addClass('show');
+        if (typeof window.markFormSaved === 'function') {
+            window.markFormSaved();
+        }
         $('#saveDraftBtn, #editInvoiceBtn, #postBtn, #deleteBtn').prop('disabled', true);
         $('#postBtn').html(BTN_POST);
         $('#purchaseForm input, #purchaseForm select, #purchaseForm textarea').attr('tabindex', '-1');
@@ -2060,6 +2093,9 @@ $(document).ready(function() {
             data: { _token: $('input[name="_token"]').first().val() },
             headers: { 'X-Requested-With': 'XMLHttpRequest' },
             success: function(res) {
+                if (typeof window.markFormSaved === 'function') {
+                    window.markFormSaved();
+                }
                 showToast('✅ Purchase posted successfully!', 'success');
                 setPurchaseFormPostedState(_savedPurchaseId, res.print_url);
             },
