@@ -5,7 +5,10 @@
     <meta charset="UTF-8">
     <title>Customer Outstanding Balance</title>
     <style>
-        @page { size: A4 landscape; margin: 0; }
+        @page {
+            size: A5 portrait;
+            margin: 4mm 4mm;
+        }
         * { box-sizing: border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
         body {
             font-family: Arial, Helvetica, sans-serif;
@@ -54,7 +57,7 @@
 
         /* 📄 A4 Landscape Page Sheet Preview Styling (Short View) */
         .page-sheet {
-            width: 297mm;
+            width: 148mm;
             min-height: auto;
             margin: 15px auto;
             background: #ffffff;
@@ -68,7 +71,7 @@
         }
 
         .table-half-container {
-            width: 145mm;
+            width: 100%;
         }
 
         table {
@@ -109,7 +112,7 @@
         .empty-msg { text-align: center; padding: 24px; font-size: 11px; }
 
         .sheet-footer {
-            width: 145mm;
+            width: 100%;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -122,8 +125,8 @@
 
         @media print {
             @page { 
-                size: A4 landscape; 
-                margin: 4mm 5mm; 
+                size: A5 portrait; 
+                margin: 4mm 4mm; 
             }
             body { 
                 background: #fff !important; 
@@ -286,7 +289,7 @@
                 filename:     "Customer_Outstanding_Summary.pdf",
                 image:        { type: "jpeg", quality: 0.98 },
                 html2canvas:  { scale: 2, useCORS: true },
-                jsPDF:        { unit: "mm", format: "a4", orientation: "landscape" }
+                jsPDF:        { unit: "mm", format: "a5", orientation: "portrait" }
             };
             html2pdf().set(opt).from(element).save();
         }

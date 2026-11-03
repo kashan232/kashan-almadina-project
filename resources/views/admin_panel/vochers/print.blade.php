@@ -9,6 +9,10 @@
         $isSinglePage = (count($rows) <= 6);
     @endphp
     <style>
+        @page {
+            size: A5 portrait;
+            margin: 4mm 5mm 3mm 5mm;
+        }
         :root {
             --blue: #000080;
             --purple: #800080;

@@ -5,7 +5,10 @@
     <meta charset="UTF-8">
     <title>Item Stock Ledger</title>
     <style>
-        @page { size: A4 landscape; margin: 4mm; }
+        @page {
+            size: A5 portrait;
+            margin: 4mm 3mm 4mm 3mm;
+        }
         * { box-sizing: border-box; }
         body {
             font-family: Arial, Helvetica, sans-serif;

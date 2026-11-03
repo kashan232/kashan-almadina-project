@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <title>Stock Hold Report</title>
     <style>
-        @page { size: A4 portrait; margin: 6mm; }
+        @page { size: A5 portrait; margin: 4mm 5mm; }
         * { box-sizing: border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
         body {
             font-family: Arial, Helvetica, sans-serif;
@@ -91,6 +91,7 @@
             font-size: 14px;
         }
         @media print {
+            @page { size: A5 portrait; margin: 4mm 5mm; }
             .no-print { display: none !important; }
             body { padding: 0; }
             tr { page-break-inside: avoid; }

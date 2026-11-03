@@ -5,7 +5,10 @@
     <meta charset="UTF-8">
     <title>Stock Report — With Retail</title>
     <style>
-        @page { size: A4 portrait; margin: 8mm; }
+        @page {
+            size: A5 portrait;
+            margin: 4mm 3mm 4mm 3mm;
+        }
         body {
             font-family: Arial, Helvetica, sans-serif;
             font-size: 10px;
