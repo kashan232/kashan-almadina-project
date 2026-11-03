@@ -6,7 +6,7 @@
     <title>Item Stock Ledger</title>
     <style>
         @page {
-            size: A5 portrait;
+            size: a5;
             margin: 4mm 3mm 4mm 3mm;
         }
         * { box-sizing: border-box; }

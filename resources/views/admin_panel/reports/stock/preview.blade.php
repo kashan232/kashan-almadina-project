@@ -6,7 +6,7 @@
     <title>Stock Report — Without Values</title>
     <style>
         @page {
-            size: A5 portrait;
+            size: a5;
             margin: 4mm 3mm 4mm 3mm;
         }
         * { box-sizing: border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
@@ -211,7 +211,7 @@
         }
         @media print {
             @page {
-                size: A5 portrait;
+                size: a5;
                 margin: 4mm 3mm 4mm 3mm;
             }
             html, body {

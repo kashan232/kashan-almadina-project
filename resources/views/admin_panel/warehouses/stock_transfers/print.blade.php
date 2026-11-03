@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
     <style>
         @page {
-            size: A5 portrait;
+            size: a5;
             margin: 0mm !important;
         }
         * {
@@ -252,7 +252,7 @@
 
         @media print {
             @page {
-                size: A5 portrait;
+                size: a5;
                 margin: 0;
             }
             html, body {

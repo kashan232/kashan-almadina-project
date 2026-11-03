@@ -11,7 +11,7 @@
     @endphp
     <style>
         @page {
-            size: A5 portrait;
+            size: a5;
             margin: 4mm 5mm 3mm 5mm;
         }
         :root {
@@ -480,7 +480,7 @@
 
         @media print {
             @page {
-                size: A5 portrait;
+                size: a5;
                 margin: 4mm 5mm 3mm 5mm;
             }
             html, body {

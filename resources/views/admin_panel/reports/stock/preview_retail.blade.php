@@ -6,7 +6,7 @@
     <title>Stock Report — With Retail</title>
     <style>
         @page {
-            size: A5 portrait;
+            size: a5;
             margin: 4mm 3mm 4mm 3mm;
         }
         body {

@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <title>Stock Report — Hold Qty Only</title>
     <style>
-        @page { size: A5 portrait; margin: 4mm 3mm; }
+        @page { size: a5; margin: 4mm 3mm; }
         * { box-sizing: border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
         body {
             font-family: Arial, Helvetica, sans-serif;
@@ -139,7 +139,7 @@
         }
         @media print {
             @page {
-                size: A5 portrait;
+                size: a5;
                 margin: 4mm 3mm 4mm 3mm;
             }
             html, body {
