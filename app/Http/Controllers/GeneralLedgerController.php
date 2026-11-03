@@ -2440,6 +2440,58 @@ class GeneralLedgerController extends Controller
                 }
             }
 
+            // Claim Credit Notes (CIR) - WHT Impact on Account Ledger
+            $crnDateCol = $this->getDateColumn('claim_credit_notes');
+            $crNotes = $this->ledgerQuery(\App\Models\ClaimCreditNote::class)
+                ->where('wht_account_id', $id)
+                ->whereIn('status', ['Posted', 'posted'])
+                ->where('wht_amount', '>', 0)
+                ->whereBetween(DB::raw($crnDateCol), [$start, $end])
+                ->get();
+
+            foreach ($crNotes as $crn) {
+                $crnDate = $crn->date ?? $crn->entry_date ?? substr((string)$crn->created_at, 0, 10);
+                $crnInv = preg_replace('/^CIR-?/i', '', (string)$crn->voucher_no);
+                $whtAmt = (float)($crn->wht_amount ?? 0);
+
+                $partyName = '';
+                $pType = strtolower((string)($crn->party_type ?? ''));
+                if ($pType === 'vendor') {
+                    $partyName = DB::table('vendors')->where('id', $crn->party_id)->value('name');
+                } elseif (in_array($pType, ['customer', 'walkin', 'walking', 'subcustomer'])) {
+                    $partyName = DB::table('customers')->where('id', $crn->party_id)->value('customer_name');
+                }
+
+                $descParts = [];
+                if ($partyName) {
+                    $descParts[] = $partyName;
+                }
+                $targetTitle = $targetAccount->title ?? 'WHT';
+                if ($targetTitle) {
+                    $descParts[] = $targetTitle;
+                }
+                if (!empty($crn->remarks)) {
+                    $descParts[] = $crn->remarks;
+                }
+
+                $desc = !empty($descParts) ? implode(' ; ', $descParts) : 'Claim Credit Note (WHT)';
+
+                $transactions[] = [
+                    'created_at' => $crn->created_at,
+                    'id' => 'crn_wht_acc_' . $crn->id,
+                    'date' => $crnDate,
+                    'ref' => 'CIR',
+                    'inv' => $crnInv,
+                    'desc' => $desc,
+                    'price' => 0,
+                    'qty' => 0,
+                    'debit' => 0,
+                    'credit' => $whtAmt,
+                    'priority' => 33,
+                    'sort_inv' => preg_replace('/[^0-9]/', '', (string)$crnInv)
+                ];
+            }
+
             $this->sortLedgerDetailsByCreatedAt($transactions);
             return $transactions;
         }

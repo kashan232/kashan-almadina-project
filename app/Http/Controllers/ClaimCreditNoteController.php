@@ -276,5 +276,14 @@ class ClaimCreditNoteController extends Controller
             $voucher->date ?? now()->toDateString(),
             'CIR: ' . $voucher->voucher_no
         );
+
+        // Update WHT account balance (Credit decreases Asset/Expense balance)
+        if ((float)($voucher->wht_amount ?? 0) > 0 && $voucher->wht_account_id) {
+            $whtAccount = \App\Models\Account::find($voucher->wht_account_id);
+            if ($whtAccount) {
+                $whtAccount->current_balance = ($whtAccount->current_balance ?? 0) - (float)$voucher->wht_amount;
+                $whtAccount->save();
+            }
+        }
     }
 }

@@ -74,8 +74,8 @@
             padding: 4mm 4.5mm;
             box-shadow: 0 4px 15px rgba(0,0,0,0.35);
             box-sizing: border-box;
-            font-size: 11px;
-            line-height: 1.35;
+            font-size: 12px;
+            line-height: 1.4;
         }
 
         /* Header */
@@ -83,7 +83,7 @@
             text-align: center;
         }
         .shop-name {
-            font-size: 17px;
+            font-size: 18px;
             font-weight: 900;
             text-transform: uppercase;
             letter-spacing: 0.5px;
@@ -91,14 +91,14 @@
             margin-bottom: 2px;
         }
         .shop-address {
-            font-size: 9.5px;
+            font-size: 10.5px;
             font-style: italic;
             font-weight: 600;
             color: #000;
             line-height: 1.3;
         }
         .shop-phone {
-            font-size: 10px;
+            font-size: 11px;
             font-weight: 700;
             color: #000;
             margin-top: 1px;
@@ -111,8 +111,8 @@
         /* Title */
         .title {
             text-align: center;
-            font-size: 14px;
-            font-weight: 700;
+            font-size: 15px;
+            font-weight: 800;
             text-decoration: underline;
             margin-bottom: 6px;
             color: #000;
@@ -120,20 +120,20 @@
 
         /* Meta details */
         .meta-section {
-            margin-bottom: 6px;
-            font-size: 11.5px;
-            line-height: 1.45;
+            margin-bottom: 7px;
+            font-size: 12px;
+            line-height: 1.5;
             color: #000;
         }
         .meta-section strong {
-            font-weight: 700;
+            font-weight: 800;
         }
 
         /* Customer Box */
         .customer-box {
             border: 1.5px solid #000;
-            padding: 4px 6px;
-            margin-bottom: 7px;
+            padding: 5px 7px;
+            margin-bottom: 8px;
             box-sizing: border-box;
         }
         .cust-table {
@@ -141,53 +141,62 @@
             border-collapse: collapse;
         }
         .cust-table tr td {
-            padding: 1.5px 0;
-            vertical-align: top;
-            font-size: 11px;
-            line-height: 1.35;
+            padding: 2px 0;
+            vertical-align: middle;
+            font-size: 12px;
+            line-height: 1.4;
             color: #000;
         }
         .cust-lbl {
-            width: 78px;
-            font-weight: 700;
+            width: 82px;
+            font-weight: 800;
+            font-size: 12px;
             color: #000;
             white-space: nowrap;
         }
         .cust-val {
             color: #000;
             font-weight: 700;
+            font-size: 12px;
             text-align: left;
             word-break: break-word;
         }
+        .cust-name-val {
+            font-size: 15px !important;
+            font-weight: 900 !important;
+            letter-spacing: 0.3px;
+            color: #000 !important;
+            line-height: 1.35 !important;
+        }
         .urdu-val {
             font-family: 'Noto Nastaliq Urdu', 'Jameel Noori Nastaleeq', Arial, sans-serif;
-            font-size: 11.5px;
-            line-height: 1.45;
+            font-size: 12.5px;
+            line-height: 1.5;
         }
 
         /* Table */
         .dc-table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 6px;
-            font-size: 10px;
+            margin-bottom: 7px;
+            font-size: 11px;
             color: #000;
         }
         .dc-table thead th {
             background: #000 !important;
             color: #fff !important;
-            font-weight: 700;
-            padding: 3.5px 4px;
-            border: 1px solid #000;
-            font-size: 10.5px;
+            font-weight: 800;
+            padding: 4px 4px;
+            border: 1.2px solid #000;
+            font-size: 11.5px;
             line-height: 1.2;
         }
         .dc-table tbody td {
             border: 1px solid #000;
-            padding: 3px 4px;
+            padding: 3.5px 4px;
             font-weight: 700;
             color: #000;
-            font-size: 10px;
+            font-size: 11px;
         }
         .td-desc {
             text-align: left;
@@ -198,27 +207,30 @@
         .brand-name {
             display: inline-block;
             width: 50px;
-            font-weight: 700;
+            font-weight: 800;
             color: #000;
         }
         .product-name {
-            font-weight: 700;
+            font-weight: 800;
             color: #000;
         }
         .td-qty {
             text-align: center;
+            font-size: 12px;
+            font-weight: 800;
         }
         .td-loc {
             text-align: center;
+            font-size: 10.5px;
         }
 
         /* Total Row (Enclosed Box) */
         .total-row td {
             border-top: 1.5px solid #000 !important;
             border-bottom: 1.5px solid #000 !important;
-            font-weight: 700;
-            font-size: 10.5px;
-            padding: 3.5px 4px;
+            font-weight: 900;
+            font-size: 12px;
+            padding: 4px;
         }
         .total-row td.total-label {
             border-left: 1.5px solid #000 !important;
@@ -228,6 +240,7 @@
             border-left: none !important;
             border-right: none !important;
             text-align: center;
+            font-size: 13px;
         }
         .total-row td.total-empty {
             border-right: 1.5px solid #000 !important;
@@ -236,15 +249,15 @@
 
         /* Remarks */
         .remarks-title {
-            margin-top: 6px;
-            font-size: 10.5px;
+            margin-top: 7px;
+            font-size: 11.5px;
             font-style: italic;
-            font-weight: 700;
+            font-weight: 800;
             text-decoration: underline;
             color: #000;
         }
         .remarks-content {
-            font-size: 10px;
+            font-size: 11px;
             min-height: 14px;
             color: #000;
             margin-top: 2px;
@@ -262,8 +275,8 @@
             color: #000;
         }
         .sig-label {
-            font-size: 10px;
-            font-weight: 600;
+            font-size: 11px;
+            font-weight: 700;
             margin-top: 2px;
             color: #000;
         }
@@ -378,7 +391,7 @@
             <table class="cust-table">
                 <tr>
                     <td class="cust-lbl">Customer:</td>
-                    <td class="cust-val urdu-val">{{ $partyNameUrdu }}</td>
+                    <td class="cust-val urdu-val cust-name-val">{{ $partyNameUrdu }}</td>
                 </tr>
                 <tr>
                     <td class="cust-lbl">Address:</td>

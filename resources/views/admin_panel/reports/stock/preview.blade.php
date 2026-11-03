@@ -311,53 +311,70 @@
             return 'num';
         };
 
-        // Determine report type
-        $whTypes = \App\Models\Warehouse::withoutGlobalScopes()->pluck('claim_type', 'id')->all();
-        $isClaimReport = false;
-        if (isset($grouped) && $grouped->isNotEmpty()) {
-            foreach ($grouped->keys() as $wId) {
-                if ($wId > 0 && in_array($whTypes[$wId] ?? '', ['customer', 'company'], true)) {
-                    $isClaimReport = true;
-                    break;
-                }
-            }
+        // Determine Layout (Normal vs Claim) based on user's Type / Warehouse filter
+        $reqClaimTypes = request('claim_type', []);
+        if (!is_array($reqClaimTypes)) $reqClaimTypes = [$reqClaimTypes];
+
+        $hasNormalType = in_array('none', $reqClaimTypes, true);
+        $hasClaimType = in_array('customer', $reqClaimTypes, true) || in_array('company', $reqClaimTypes, true);
+
+        $whMap = \App\Models\Warehouse::withoutGlobalScopes()->pluck('claim_type', 'id')->all();
+        $whMap[0] = 'none'; // Shop is always normal
+
+        $selectedWhs = request('warehouse', []);
+        if (!is_array($selectedWhs)) $selectedWhs = [$selectedWhs];
+
+        $allSelectedAreClaim = !empty($selectedWhs) && collect($selectedWhs)->every(fn($id) => in_array($whMap[$id] ?? 'none', ['customer', 'company'], true));
+        $allSelectedAreNormal = !empty($selectedWhs) && collect($selectedWhs)->every(fn($id) => ($whMap[$id] ?? 'none') === 'none');
+
+        if ($hasClaimType && !$hasNormalType) {
+            $isClaimReport = true;
+        } elseif ($hasNormalType && !$hasClaimType) {
+            $isClaimReport = false;
+        } elseif ($allSelectedAreClaim) {
+            $isClaimReport = true;
+        } elseif ($allSelectedAreNormal) {
+            $isClaimReport = false;
+        } else {
+            $warehousesInReport = isset($grouped) ? $grouped->keys()->all() : [];
+            $allInReportAreClaim = !empty($warehousesInReport) && collect($warehousesInReport)->every(fn($id) => in_array($whMap[$id] ?? 'none', ['customer', 'company'], true));
+            $isClaimReport = $allInReportAreClaim;
         }
-        $isNormalReport = !$isClaimReport;
 
-        // Keys to hide in print for Normal Report: Claim Acceptance (cla_in, cla_out) and Customer Claim CLM-IN (clm_in)
-        $normalHideKeys = ['cla_in', 'cla_out', 'clm_in'];
-        // Keys to hide in print for Claim Report: Non-claim movement columns
-        $claimHideKeys = ['pur', 'pur_ret', 'sales', 'sales_ret', 'trf_in', 'trf_out', 'waste', 'hold', 'release'];
-
-        $cols = [
-            ['key' => 'opening', 'head' => $opening_label, 'th' => ''],
-            ['key' => 'closing', 'head' => $closing_label, 'th' => ''],
-            ['key' => 'pur', 'head' => 'PJ', 'th' => ''],
-            ['key' => 'pur_ret', 'head' => 'PRJ', 'th' => 'col-out'],
-            ['key' => 'sales', 'head' => 'SJ', 'th' => 'col-out'],
-            ['key' => 'sales_ret', 'head' => 'SRJ', 'th' => ''],
-            ['key' => 'clm_rep', 'head' => 'CLM-REP', 'th' => 'col-out'],
-            ['key' => 'clm_in', 'head' => 'CLM-IN', 'th' => ''],
-            ['key' => 'clm_out', 'head' => 'CLM-OUT', 'th' => 'col-out'],
-            ['key' => 'cla_in', 'head' => 'CLM-IN', 'th' => ''],
-            ['key' => 'cla_out', 'head' => 'CLM-OUT', 'th' => 'col-out'],
-            ['key' => 'cli_in', 'head' => 'CLM-IN', 'th' => ''],
-            ['key' => 'cli_out', 'head' => 'CLM-OUT', 'th' => 'col-out'],
-            ['key' => 'trf_in', 'head' => 'TOG In', 'th' => ''],
-            ['key' => 'trf_out', 'head' => 'TOG Out', 'th' => 'col-out'],
-            ['key' => 'waste', 'head' => 'WOG', 'th' => 'col-out'],
-            ['key' => 'hold', 'head' => 'SH', 'th' => 'col-hold'],
-            ['key' => 'release', 'head' => 'SR', 'th' => 'col-out'],
-        ];
-
-        foreach ($cols as &$c) {
-            if ($isNormalReport && in_array($c['key'], $normalHideKeys, true)) {
-                $c['hide_print'] = true;
-            } elseif ($isClaimReport && in_array($c['key'], $claimHideKeys, true)) {
-                $c['hide_print'] = true;
-            }
+        if (!$isClaimReport) {
+            // 🟢 NORMAL REPORT COLUMNS (14 data cols + Item = 15 cols total)
+            $cols = [
+                ['key' => 'opening',   'head' => 'Start Date', 'th' => ''],
+                ['key' => 'closing',   'head' => 'End Date',   'th' => ''],
+                ['key' => 'pur',       'head' => 'PJ',         'th' => ''],
+                ['key' => 'pur_ret',   'head' => 'PRJ',        'th' => 'col-out'],
+                ['key' => 'sales',     'head' => 'SJ',         'th' => 'col-out'],
+                ['key' => 'sales_ret', 'head' => 'SRJ',        'th' => ''],
+                ['key' => 'clm_rep',   'head' => 'Clm-Rep',    'th' => 'col-out'],
+                ['key' => 'clm_out',   'head' => 'Clm-Out',    'th' => 'col-out'],
+                ['key' => 'cli_in',    'head' => 'Clm-In',     'th' => ''],
+                ['key' => 'trf_in',    'head' => 'TOG In',     'th' => ''],
+                ['key' => 'trf_out',   'head' => 'TOG Out',    'th' => 'col-out'],
+                ['key' => 'waste',     'head' => 'WOG',        'th' => 'col-out'],
+                ['key' => 'hold',      'head' => 'SH',         'th' => 'col-hold'],
+                ['key' => 'release',   'head' => 'SR',         'th' => 'col-out'],
+            ];
+        } else {
+            // 🔵 CLAIM REPORT COLUMNS (11 data cols + Item = 12 cols total)
+            $cols = [
+                ['key' => 'opening', 'head' => 'Start Date', 'th' => ''],
+                ['key' => 'closing', 'head' => 'End Date',   'th' => ''],
+                ['key' => 'clm_in',  'head' => 'Clm In',     'th' => ''],
+                ['key' => 'clm_out', 'head' => 'Clm-Out',    'th' => 'col-out'],
+                ['key' => 'cla_out', 'head' => 'Clm-Out',    'th' => 'col-out'],
+                ['key' => 'cla_in',  'head' => 'Clm-In',     'th' => ''],
+                ['key' => 'cli_out', 'head' => 'Clm-Out',    'th' => 'col-out'],
+                ['key' => 'cli_in',  'head' => 'Clm-In',     'th' => ''],
+                ['key' => 'trf_in',  'head' => 'TOG In',     'th' => ''],
+                ['key' => 'trf_out', 'head' => 'TOG Out',    'th' => 'col-out'],
+                ['key' => 'waste',   'head' => 'WOG',        'th' => 'col-out'],
+            ];
         }
-        unset($c);
     @endphp
 
     <div class="print-sheet">
@@ -370,32 +387,56 @@
             </div>
             <table>
                 <thead>
+                    @if(!$isClaimReport)
+                    {{-- 🟢 NORMAL WAREHOUSE REPORT HEADERS (Matching User Excel) --}}
                     <tr>
-                        <th rowspan="2" style="width:20%; min-width:26mm;">Item</th>
-                        <th rowspan="2">{{ $opening_label }}</th>
-                        <th rowspan="2">{{ $closing_label }}</th>
-                        <th rowspan="2" class="{{ $isClaimReport ? 'col-hide-print' : '' }}">PJ</th>
-                        <th rowspan="2" class="col-out {{ $isClaimReport ? 'col-hide-print' : '' }}">PRJ</th>
-                        <th rowspan="2" class="col-out {{ $isClaimReport ? 'col-hide-print' : '' }}">SJ</th>
-                        <th rowspan="2" class="{{ $isClaimReport ? 'col-hide-print' : '' }}">SRJ</th>
-                        <th colspan="{{ $isNormalReport ? 2 : 3 }}">Customer Claim</th>
-                        <th colspan="2" class="{{ $isNormalReport ? 'col-hide-print' : '' }}">Claim Acceptance</th>
+                        <th rowspan="2" style="width:20%; min-width:24mm;">Item</th>
+                        <th colspan="2">Date Range</th>
+                        <th colspan="4">Purchase &amp; Sales (Returns)</th>
+                        <th colspan="2">Customer Claim</th>
+                        <th colspan="1">CIR</th>
+                        <th colspan="5">Generals</th>
+                    </tr>
+                    <tr>
+                        <th>Start Date</th>
+                        <th>End Date</th>
+                        <th>PJ</th>
+                        <th class="col-out">PRJ</th>
+                        <th class="col-out">SJ</th>
+                        <th>SRJ</th>
+                        <th class="col-out">Clm-Rep</th>
+                        <th class="col-out">Clm-Out</th>
+                        <th>Clm-In</th>
+                        <th>TOG In</th>
+                        <th class="col-out">TOG Out</th>
+                        <th class="col-out">WOG</th>
+                        <th class="col-hold">SH</th>
+                        <th class="col-out">SR</th>
+                    </tr>
+                    @else
+                    {{-- 🔵 CLAIM WAREHOUSE REPORT HEADERS (Matching User Excel) --}}
+                    <tr>
+                        <th rowspan="2" style="width:24%; min-width:28mm;">Item</th>
+                        <th colspan="2">Date Range</th>
+                        <th colspan="2">Customer Claim</th>
+                        <th colspan="2">Claim Acceptance</th>
                         <th colspan="2">CIR</th>
-                        <th rowspan="2" class="{{ $isClaimReport ? 'col-hide-print' : '' }}">TOG In</th>
-                        <th rowspan="2" class="col-out {{ $isClaimReport ? 'col-hide-print' : '' }}">TOG Out</th>
-                        <th rowspan="2" class="col-out {{ $isClaimReport ? 'col-hide-print' : '' }}">WOG</th>
-                        <th rowspan="2" class="col-hold {{ $isClaimReport ? 'col-hide-print' : '' }}">SH</th>
-                        <th rowspan="2" class="col-out {{ $isClaimReport ? 'col-hide-print' : '' }}">SR</th>
+                        <th colspan="3">Generals</th>
                     </tr>
                     <tr>
-                        <th class="col-out">CLM-REP</th>
-                        <th class="{{ $isNormalReport ? 'col-hide-print' : '' }}">CLM-IN</th>
-                        <th class="col-out">CLM-OUT</th>
-                        <th class="{{ $isNormalReport ? 'col-hide-print' : '' }}">CLM-IN</th>
-                        <th class="col-out {{ $isNormalReport ? 'col-hide-print' : '' }}">CLM-OUT</th>
-                        <th>CLM-IN</th>
-                        <th class="col-out">CLM-OUT</th>
+                        <th>Start Date</th>
+                        <th>End Date</th>
+                        <th>Clm In</th>
+                        <th class="col-out">Clm-Out</th>
+                        <th class="col-out">Clm-Out</th>
+                        <th>Clm-In</th>
+                        <th class="col-out">Clm-Out</th>
+                        <th>Clm-In</th>
+                        <th>TOG In</th>
+                        <th class="col-out">TOG Out</th>
+                        <th class="col-out">WOG</th>
                     </tr>
+                    @endif
                 </thead>
                 <tbody>
                     @forelse($grouped as $warehouseId => $rows)
