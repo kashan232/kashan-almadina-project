@@ -143,11 +143,11 @@
                     <h5 class="fw-bold text-dark mb-3"><i class="fa fa-question-circle text-info me-2"></i> How 1-Click Silent Printing Works</h5>
                     <ol class="mb-0 text-muted ps-3 lh-lg" style="font-size: 13.5px;">
                         <li><strong>Step 1:</strong> Keep <strong>QZ Tray</strong> running in your Windows system tray (bottom-right next to the clock).</li>
-                        <li><strong>Step 2:</strong> In the table above, select your <strong>HP LaserJet</strong> printer for Sale Invoice, Vouchers, and Ledgers.</li>
-                        <li><strong>Step 3:</strong> Select your <strong>Thermal Printer (80mm)</strong> for Delivery Challans and Stock Release slips.</li>
+                        <li><strong>Step 2:</strong> In the table above, select your <strong>A5 Printer (e.g. Black Copper / HP)</strong> for Invoices and Vouchers.</li>
+                        <li><strong>Step 3:</strong> Select your <strong>POS-80 Thermal Printer</strong> for Delivery Challans.</li>
                         <li><strong>Step 4:</strong> Make sure the switch <strong>"Enable 1-Click Silent Printing"</strong> is turned <strong>ON</strong>.</li>
                         <li><strong>Step 5:</strong> Click <strong>"Save Printer Settings"</strong>.</li>
-                        <li><strong>Step 6:</strong> Done! Next time you click Print on an Invoice, it will print instantly to your HP LaserJet in <strong>1 click with NO dialogs</strong>!</li>
+                        <li><strong>Done!</strong> Now whenever you click Print on an Invoice or DC, it prints silently without any dialogs!</li>
                     </ol>
                 </div>
             </div>
@@ -185,7 +185,7 @@
             icon.innerHTML = '<i class="fa fa-exclamation-triangle"></i>';
             title.innerText = "QZ Tray Not Detected on this PC";
             title.style.color = "#d32f2f";
-            desc.innerText = "To enable 1-click silent printing, download and run QZ Tray on this Windows PC. (Standard browser printing will be used as fallback).";
+            desc.innerText = "Please make sure QZ Tray is running in your Windows taskbar. (Click Detect Printers once running).";
         });
     }
 
@@ -193,22 +193,15 @@
         var btn = document.getElementById("btnRefreshPrinters");
         if (btn) btn.innerHTML = '<i class="fa fa-spinner fa-spin me-1"></i> Detecting...';
 
-        Promise.all([
-            QzPrintService.getPrinters(),
-            QzPrintService.getDefaultPrinter().catch(() => null)
-        ]).then(function(results) {
-            var printers = results[0] || [];
-            var defaultPrinter = results[1] || '';
-
+        QzPrintService.getPrinters().then(function(printers) {
             if (btn) btn.innerHTML = '<i class="fa fa-refresh me-1"></i> Detect Printers';
 
-            // Find best candidates if user has not configured yet
             var laserPrinter = '';
             var thermalPrinter = '';
 
             printers.forEach(function(p) {
                 var pLow = p.toLowerCase();
-                if (!laserPrinter && (pLow.includes('hp') || pLow.includes('laser') || pLow.includes('m23') || pLow.includes('canon') || pLow.includes('epson') || pLow.includes('brother'))) {
+                if (!laserPrinter && (pLow.includes('copper') || pLow.includes('hp') || pLow.includes('laser') || pLow.includes('m23') || pLow.includes('canon') || pLow.includes('epson') || pLow.includes('brother'))) {
                     laserPrinter = p;
                 }
                 if (!thermalPrinter && (pLow.includes('pos') || pLow.includes('thermal') || pLow.includes('xp') || pLow.includes('rp') || pLow.includes('receipt') || pLow.includes('80') || pLow.includes('58'))) {
@@ -216,7 +209,6 @@
                 }
             });
 
-            if (!laserPrinter && defaultPrinter) laserPrinter = defaultPrinter;
             if (!laserPrinter && printers.length > 0) laserPrinter = printers[0];
             if (!thermalPrinter) thermalPrinter = laserPrinter;
 
@@ -258,13 +250,14 @@
                 if (alertBox) {
                     alertBox.classList.remove("d-none");
                     document.getElementById("autoDetectedText").innerHTML = 
-                        `Printers detected! We pre-selected <strong>${escapeHtml(laserPrinter || defaultPrinter)}</strong> for invoices and <strong>${escapeHtml(thermalPrinter || defaultPrinter)}</strong> for thermal slips. Please click <strong>"Save Printer Settings"</strong> below to activate!`;
+                        `Printers detected! We pre-selected <strong>${escapeHtml(laserPrinter)}</strong> for invoices and <strong>${escapeHtml(thermalPrinter)}</strong> for thermal slips. Please click <strong>"Save Printer Settings"</strong> below to activate!`;
                 }
             }
 
         }).catch(function(err) {
             if (btn) btn.innerHTML = '<i class="fa fa-refresh me-1"></i> Detect Printers';
-            alert("Could not detect printers. Please ensure QZ Tray is running: " + (err.message || err));
+            console.error(err);
+            alert("Could not detect printers: " + (err.message || err) + "\n\nPlease ensure QZ Tray is running in the Windows taskbar and click Detect Printers.");
         });
     }
 
@@ -313,16 +306,14 @@
             btn.disabled = false;
             btn.innerHTML = '<i class="fa fa-save me-1"></i> Save Printer Settings';
             
-            // Hide the alert if open
             var alertBox = document.getElementById("autoDetectedAlert");
             if (alertBox) alertBox.classList.add("d-none");
 
-            // Update data-saved attributes
             document.querySelectorAll(".printer-dropdown").forEach(function(select) {
                 select.setAttribute("data-saved", select.value);
             });
 
-            alert("✅ Printer settings saved successfully!\n\n1-Click Silent Printing is now ACTIVE for all selected modules. Open any Invoice or Delivery Challan to print directly without dialogs!");
+            alert("✅ Printer settings saved successfully!\n\n1-Click Silent Printing is now ACTIVE. Open any Invoice or Delivery Challan to print directly without dialogs!");
         }).catch(function(err) {
             btn.disabled = false;
             btn.innerHTML = '<i class="fa fa-save me-1"></i> Save Printer Settings';

@@ -5,6 +5,7 @@
 
 const QzPrintService = (function() {
     let isConnected = false;
+    let connectPromise = null;
     let localSettings = null;
 
     // Default module paper configurations
@@ -106,11 +107,11 @@ const QzPrintService = (function() {
     }
 
     /**
-     * Connect to QZ Tray WebSocket
+     * Connect to QZ Tray WebSocket (Safe Singleton)
      */
     function connect() {
         if (typeof qz === 'undefined') {
-            return Promise.reject(new Error("QZ Tray script is not loaded."));
+            return Promise.reject(new Error("QZ Tray script not loaded on page."));
         }
 
         if (qz.websocket.isActive()) {
@@ -118,32 +119,45 @@ const QzPrintService = (function() {
             return Promise.resolve();
         }
 
+        if (connectPromise) {
+            return connectPromise;
+        }
+
         setupSecurity();
 
-        return qz.websocket.connect({
-            retries: 2,
+        connectPromise = qz.websocket.connect({
+            retries: 3,
             delay: 1
         }).then(() => {
             isConnected = true;
+            connectPromise = null;
             return true;
         }).catch(err => {
             isConnected = false;
+            connectPromise = null;
             throw err;
         });
+
+        return connectPromise;
     }
 
     /**
-     * Get all installed printers on the client PC
+     * Get all installed printers on the client PC safely
      */
     function getPrinters() {
-        return connect().then(() => qz.printers.find());
-    }
-
-    /**
-     * Get default printer name on the client PC
-     */
-    function getDefaultPrinter() {
-        return connect().then(() => qz.printers.getDefault());
+        return connect().then(() => {
+            return new Promise((resolve, reject) => {
+                // Ensure socket handshake is completely settled
+                setTimeout(() => {
+                    if (typeof qz === 'undefined' || !qz.websocket.isActive()) {
+                        return reject(new Error("QZ Tray connection is not active."));
+                    }
+                    qz.printers.find()
+                        .then(printers => resolve(printers || []))
+                        .catch(reject);
+                }, 150);
+            });
+        });
     }
 
     /**
@@ -169,14 +183,14 @@ const QzPrintService = (function() {
         return loadSettings().then(() => {
             // If silent printing is not enabled, fallback to standard window.print()
             if (!isSilentEnabled()) {
-                console.log('[QZ Service] 1-Click Silent printing is OFF in settings. Using browser print dialog.');
+                console.log('[QZ Service] 1-Click Silent printing is OFF. Opening browser print dialog.');
                 if (typeof fallbackFn === 'function') fallbackFn();
                 return;
             }
 
             const printerName = getModulePrinter(moduleKey);
             if (!printerName) {
-                console.log('[QZ Service] No printer mapped for module "' + moduleKey + '". Using browser print dialog.');
+                console.log('[QZ Service] No printer mapped for module "' + moduleKey + '". Opening browser print dialog.');
                 showPrintToast(`No printer mapped for this module. Opening print dialog...`, 'warning');
                 if (typeof fallbackFn === 'function') fallbackFn();
                 return;
@@ -234,7 +248,7 @@ const QzPrintService = (function() {
                 });
             }).catch(err => {
                 console.warn("QZ Tray Print failed, falling back to browser print dialog:", err);
-                showPrintToast(`Silent print failed: ${err.message || err}. Opening print dialog...`, 'warning');
+                showPrintToast(`Silent print: ${err.message || err}. Opening print dialog...`, 'warning');
                 if (typeof fallbackFn === 'function') {
                     fallbackFn();
                 }
@@ -282,7 +296,7 @@ const QzPrintService = (function() {
     }
 
     /**
-     * Update status badge in print toolbars (if element exists)
+     * Update status badge in print toolbars
      */
     function updateToolbarBadge(moduleKey) {
         const badge = document.getElementById('qzPrintBadge');
@@ -340,7 +354,6 @@ const QzPrintService = (function() {
     return {
         connect,
         getPrinters,
-        getDefaultPrinter,
         loadSettings,
         saveSettings,
         isSilentEnabled,
