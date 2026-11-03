@@ -31,6 +31,7 @@
 
     <div class="no-print" style="margin-bottom: 15px;">
         <button onclick="window.print()" style="padding: 6px 18px; cursor: pointer; background: #1e3a8a; color: white; border: none; border-radius: 4px; font-weight: bold;">Print Report</button>
+        <button onclick="exportGroupedToPDF()" style="padding: 6px 18px; cursor: pointer; background: #0288d1; color: white; border: none; border-radius: 4px; font-weight: bold; margin-left: 6px;">Export to PDF</button>
         <button onclick="window.history.back()" style="padding: 6px 18px; cursor: pointer; background: #6b7280; color: white; border: none; border-radius: 4px; font-weight: bold;">Go Back</button>
     </div>
 
@@ -106,7 +107,7 @@
                         <td class="text-center">{{ date('d-m-y', strtotime($trx['date'])) }}</td>
                         <td class="text-center">{{ $trx['ref'] }} {{ $trx['inv'] }}</td>
                         <td>{{ $trx['desc'] }}</td>
-                        <td class="text-right">{{ ($trx['price'] ?? 0) > 0 ? number_format($trx['price'], 0) : '' }}</td>
+                        <td class="text-right">{{ ($trx['price'] ?? 0) > 0 ? ((floor($trx['price']) == $trx['price']) ? number_format($trx['price'], 0) : number_format($trx['price'], 2)) : '' }}</td>
                         <td class="text-center">{{ ($trx['debit'] > 0 && ($trx['qty'] ?? 0) > 0) ? $trx['qty'] : '' }}</td>
                         <td class="text-right">{{ $trx['debit'] > 0 ? number_format($trx['debit'], 0) : '-' }}</td>
                         <td class="text-center">{{ ($trx['credit'] > 0 && ($trx['qty'] ?? 0) > 0) ? $trx['qty'] : '' }}</td>
@@ -173,5 +174,19 @@
         <div>System Generated Report and Required no Signature</div>
     </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script>
+function exportGroupedToPDF() {
+    var element = document.body;
+    var opt = {
+        margin:       [6, 6, 6, 6],
+        filename:     "Grouped_General_Ledger.pdf",
+        image:        { type: "jpeg", quality: 0.98 },
+        html2canvas:  { scale: 2, useCORS: true },
+        jsPDF:        { unit: "mm", format: "a4", orientation: "{{ $orientation }}" }
+    };
+    html2pdf().set(opt).from(element).save();
+}
+</script>
 </body>
 </html>

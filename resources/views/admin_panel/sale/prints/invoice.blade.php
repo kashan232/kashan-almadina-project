@@ -575,6 +575,9 @@
             <button class="btn-toolbar btn-print" onclick="window.print()">
                 <i class="fa fa-print"></i> Print Invoice
             </button>
+            <button class="btn-toolbar btn-pdf" id="btnExportPDF" onclick="exportInvoiceToPDF()" style="background: #c2185b; color: #fff;">
+                <i class="fa fa-file-pdf-o"></i> Export to PDF
+            </button>
             <a href="{{ route('sale.dc', $sale->id) }}" class="btn-toolbar btn-dc">
                 <i class="fa fa-truck"></i> Delivery Challan
             </a>
@@ -845,6 +848,22 @@ document.addEventListener('DOMContentLoaded', function() {
         el.textContent = words;
     });
 });
+</script>
+<!-- html2pdf for PDF Export -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script>
+function exportInvoiceToPDF() {
+    var element = document.querySelector(".invoice-sheet");
+    if (!element) return;
+    var opt = {
+        margin:       [4, 5, 4, 5],
+        filename:     "Sale_Invoice_{{ $sale->invoice_no }}.pdf",
+        image:        { type: "jpeg", quality: 0.98 },
+        html2canvas:  { scale: 2, useCORS: true },
+        jsPDF:        { unit: "mm", format: "a5", orientation: "portrait" }
+    };
+    html2pdf().set(opt).from(element).save();
+}
 </script>
 </body>
 </html>

@@ -443,6 +443,9 @@
             <button class="btn-toolbar btn-print" onclick="window.print()">
                 <i class="fa fa-print"></i> Print Voucher
             </button>
+            <button class="btn-toolbar btn-pdf" onclick="exportVoucherToPDF()" style="background: #c2185b; color: #fff;">
+                <i class="fa fa-file-pdf-o"></i> Export to PDF
+            </button>
             <button class="btn-toolbar btn-close-tb" onclick="if(window.history.length > 1){ window.history.back(); } else { window.close(); }">
                 <i class="fa fa-times"></i> Close
             </button>
@@ -527,14 +530,27 @@
 
             <hr class="thick-rule">
 
+            @php
+                $hasKgRate = collect($rows)->contains(function($r) {
+                    return (!empty($r['kg']) && (float)$r['kg'] > 0) || (!empty($r['rate']) && (float)$r['rate'] > 0);
+                });
+            @endphp
             <!-- Table -->
             <table class="main">
                 <thead>
                     <tr>
                         <th class="col-sno">S no.</th>
-                        <th style="width: 58%; text-align: left; padding-left: 6px;">Payment Details / Towards Account</th>
-                        <th style="width: 14%;">Reference</th>
-                        <th style="width: 20%; text-align: right; padding-right: 6px;">Amount</th>
+                        @if($hasKgRate)
+                            <th style="width: 44%; text-align: left; padding-left: 6px;">Payment Details / Towards Account</th>
+                            <th style="width: 12%;">Reference</th>
+                            <th style="width: 12%; text-align: center;">KG</th>
+                            <th style="width: 12%; text-align: right; padding-right: 4px;">Rate</th>
+                            <th style="width: 15%; text-align: right; padding-right: 6px;">Amount</th>
+                        @else
+                            <th style="width: 58%; text-align: left; padding-left: 6px;">Payment Details / Towards Account</th>
+                            <th style="width: 14%;">Reference</th>
+                            <th style="width: 20%; text-align: right; padding-right: 6px;">Amount</th>
+                        @endif
                     </tr>
                 </thead>
                 <tbody>
@@ -542,26 +558,31 @@
                     @php
                         $accParts = array_filter([$row['account_head'] ?? '', $row['account_name'] ?? '']);
                         $accStr = implode(' - ', $accParts);
-                        if (!empty($row['account_code'])) {
-                            $accStr .= ' (' . $row['account_code'] . ')';
-                        }
                     @endphp
                     <tr>
                         <td class="c">{{ $key + 1 }}</td>
                         <td style="text-align: left; padding: 3px 6px;">
-                            <div style="font-weight: 700;">{{ $row['narration'] ?? 'Cash Received' }}@if(!empty($voucher->receipt_date))<span style="font-weight: 600; font-size: 8pt; color: #333;">, Receipt Date: {{ \Carbon\Carbon::parse($voucher->receipt_date)->format('d-M-y') }}</span>@endif</div>
+                            <div style="font-weight: 700;">{{ $row['narration'] ?? 'Cash Received' }}@if(!empty($voucher->receipt_date))<span style="font-weight: 600; font-size: 8pt; color: #333;">, Date: {{ \Carbon\Carbon::parse($voucher->receipt_date)->format('d-M-y') }}</span>@endif</div>
                             @if($accStr)
                                 <div style="font-size: 8pt; color: #444; font-weight: normal;">Towards: {{ $accStr }}</div>
                             @endif
                         </td>
                         <td class="c">{{ $row['reference'] ?: '-' }}</td>
+                        @if($hasKgRate)
+                            <td class="c" style="font-weight: 600; font-variant-numeric: tabular-nums;">
+                                {{ (!empty($row['kg']) && (float)$row['kg'] > 0) ? (floor($row['kg']) == $row['kg'] ? number_format($row['kg'], 0) : number_format($row['kg'], 2)) : '-' }}
+                            </td>
+                            <td class="r" style="font-weight: 600; font-variant-numeric: tabular-nums; padding-right: 4px;">
+                                {{ (!empty($row['rate']) && (float)$row['rate'] > 0) ? number_format($row['rate'], 2) : '-' }}
+                            </td>
+                        @endif
                         <td class="r" style="font-weight: 700; font-variant-numeric: tabular-nums; padding-right: 6px;">{{ number_format($row['amount'], 2) }}</td>
                     </tr>
                     @endforeach
                 </tbody>
                 <tfoot>
                     <tr>
-                        <td colspan="3" style="text-align: right; font-weight: 700; padding-right: 8px;">Total :</td>
+                        <td colspan="{{ $hasKgRate ? 5 : 3 }}" style="text-align: right; font-weight: 700; padding-right: 8px;">Total :</td>
                         <td class="r" style="font-weight: 700; font-variant-numeric: tabular-nums; padding-right: 6px;">{{ number_format($voucher->total_amount, 2) }}</td>
                     </tr>
                 </tfoot>
@@ -648,6 +669,21 @@ document.addEventListener('DOMContentLoaded', function() {
         el.textContent = words;
     });
 });
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script>
+function exportVoucherToPDF() {
+    var element = document.querySelector(".invoice-sheet");
+    if (!element) return;
+    var opt = {
+        margin:       [4, 5, 4, 5],
+        filename:     "Receipt_Voucher_{{ $voucher->rvid }}.pdf",
+        image:        { type: "jpeg", quality: 0.98 },
+        html2canvas:  { scale: 2, useCORS: true },
+        jsPDF:        { unit: "mm", format: "a5", orientation: "portrait" }
+    };
+    html2pdf().set(opt).from(element).save();
+}
 </script>
 </body>
 </html>

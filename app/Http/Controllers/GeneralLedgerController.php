@@ -1598,6 +1598,7 @@ class GeneralLedgerController extends Controller
                 $discAccIds = json_decode($rv->discount_account_id ?? '', true) ?? [];
                 $discounts = json_decode($rv->discount_value ?? '', true) ?? [];
                 $kgs = json_decode($rv->kg ?? '', true) ?? [];
+                $rates = is_array($rv->rate) ? $rv->rate : (json_decode($rv->rate ?? '', true) ?? []);
                 $refNos = json_decode($rv->reference_no ?? '', true) ?? [];
 
                 $totalKg = 0.0;
@@ -1651,6 +1652,10 @@ class GeneralLedgerController extends Controller
                     if ($aid == $id) {
                         $rowAmount = $this->cleanNum($amounts[$idx] ?? 0);
                         $rowKg = (float)($kgs[$idx] ?? 0);
+                        $rowRate = (float)($rates[$idx] ?? 0);
+                        if ($rowRate <= 0 && $rowKg > 0 && $rowAmount > 0) {
+                            $rowRate = round($rowAmount / $rowKg, 2);
+                        }
                         $rowNarr = '';
                         if (isset($narrIds[$idx])) {
                             if (is_numeric($narrIds[$idx])) {
@@ -1694,7 +1699,7 @@ class GeneralLedgerController extends Controller
                             'ref' => $ref,
                             'inv' => $rowInv,
                             'desc' => $desc,
-                            'price' => 0, 'qty' => $rowKg, 'debit' => $rowAmount, 'credit' => 0,
+                            'price' => $rowRate, 'qty' => $rowKg, 'debit' => $rowAmount, 'credit' => 0,
                             'priority' => 60
                         ];
                     }
@@ -1765,6 +1770,7 @@ class GeneralLedgerController extends Controller
                 $discAccIds = json_decode($pv->discount_account_id ?? '', true) ?? [];
                 $discounts = json_decode($pv->discount_value ?? '', true) ?? [];
                 $pvKgs = json_decode($pv->kg ?? '', true) ?? [];
+                $pvRates = is_array($pv->rate) ? $pv->rate : (json_decode($pv->rate ?? '', true) ?? []);
                 $refNos = json_decode($pv->reference_no ?? '', true) ?? [];
 
                 $pvTotalKg = 0.0;
@@ -1835,6 +1841,10 @@ class GeneralLedgerController extends Controller
                     if ($aid == $id) {
                         $rowAmount = (float)($amounts[$idx] ?? 0);
                         $rowKg = (float)($pvKgs[$idx] ?? 0);
+                        $rowRate = (float)($pvRates[$idx] ?? 0);
+                        if ($rowRate <= 0 && $rowKg > 0 && $rowAmount > 0) {
+                            $rowRate = round($rowAmount / $rowKg, 2);
+                        }
                         $rowNarr = '';
                         if (isset($narrIds[$idx])) {
                             if (is_numeric($narrIds[$idx])) {
@@ -1873,7 +1883,7 @@ class GeneralLedgerController extends Controller
                             'ref' => 'PV',
                             'inv' => $rowInv,
                             'desc' => $desc,
-                            'price' => 0, 'qty' => $rowKg, 'debit' => 0, 'credit' => $rowAmount,
+                            'price' => $rowRate, 'qty' => $rowKg, 'debit' => 0, 'credit' => $rowAmount,
                             'priority' => 60
                         ];
                     }
@@ -2567,12 +2577,17 @@ class GeneralLedgerController extends Controller
             $discounts = json_decode($pv->discount_value, true) ?? [];
             $discAccIds = json_decode($pv->discount_account_id, true) ?? [];
             $kgs = json_decode($pv->kg, true) ?? [];
+            $pvRates = is_array($pv->rate) ? $pv->rate : (json_decode($pv->rate ?? '', true) ?? []);
             $refNos = json_decode($pv->reference_no, true) ?? [];
 
             foreach ($accIds as $idx => $aid) {
                 $rowAmount = (float)($amounts[$idx] ?? 0);
                 $rowDiscount = (float)($discounts[$idx] ?? 0);
                 $rowKg = (float)($kgs[$idx] ?? 0);
+                $rowRate = (float)($pvRates[$idx] ?? 0);
+                if ($rowRate <= 0 && $rowKg > 0 && $rowAmount > 0) {
+                    $rowRate = round($rowAmount / $rowKg, 2);
+                }
                 if ($rowAmount <= 0 && $rowDiscount <= 0) continue;
 
                 $rowRef = '';
@@ -2612,7 +2627,7 @@ class GeneralLedgerController extends Controller
                         'ref' => 'PV',
                         'inv' => $rowInv,
                         'desc' => $desc,
-                        'price' => 0, 'qty' => $rowKg, 'debit' => $rowAmount, 'credit' => 0,
+                        'price' => $rowRate, 'qty' => $rowKg, 'debit' => $rowAmount, 'credit' => 0,
                         'priority' => 50
                     ];
                 }
@@ -3183,12 +3198,17 @@ class GeneralLedgerController extends Controller
             $discounts = json_decode($rv->discount_value ?? '', true) ?? [];
             $discAccIds = json_decode($rv->discount_account_id ?? '', true) ?? [];
             $kgs = json_decode($rv->kg ?? '', true) ?? [];
+            $rvRates = is_array($rv->rate) ? $rv->rate : (json_decode($rv->rate ?? '', true) ?? []);
             $refNos = json_decode($rv->reference_no ?? '', true) ?? [];
 
             foreach ($accIds as $idx => $aid) {
                 $rowAmount = (float)($amounts[$idx] ?? 0);
                 $rowDiscount = (float)($discounts[$idx] ?? 0);
                 $rowKg = (float)($kgs[$idx] ?? 0);
+                $rowRate = (float)($rvRates[$idx] ?? 0);
+                if ($rowRate <= 0 && $rowKg > 0 && $rowAmount > 0) {
+                    $rowRate = round($rowAmount / $rowKg, 2);
+                }
                 if ($rowAmount <= 0 && $rowDiscount <= 0) continue;
 
                 $rowRef = '';
@@ -3243,7 +3263,7 @@ class GeneralLedgerController extends Controller
                         'ref' => $ref,
                         'inv' => $inv,
                         'desc' => $desc,
-                        'price' => 0, 'qty' => $rowKg, 'debit' => 0, 'credit' => $rowAmount,
+                        'price' => $rowRate, 'qty' => $rowKg, 'debit' => 0, 'credit' => $rowAmount,
                         'priority' => str_contains($rv->remarks ?? '', 'Auto-generated from Sale:') ? 11 : 60,
                         'sort_inv' => str_contains($rv->remarks ?? '', 'Auto-generated from Sale:') ? preg_replace('/[^0-9]/', '', $rv->remarks) : preg_replace('/[^0-9]/', '', $rv->rvid ?? '')
                     ];

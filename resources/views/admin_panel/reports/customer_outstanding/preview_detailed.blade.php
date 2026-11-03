@@ -40,6 +40,8 @@
         .btn-print:hover { background: #d81b60; }
         .btn-excel { background: #2e7d32; color: #fff; margin-left: 8px; }
         .btn-excel:hover { background: #1b5e20; }
+        .btn-pdf { background: #0288d1; color: #fff; margin-left: 8px; }
+        .btn-pdf:hover { background: #0277bd; }
         .btn-close { background: #616161; color: #fff; margin-left: 8px; }
         .page-badge {
             background: #1976d2;
@@ -172,6 +174,7 @@
         <div class="btn-group">
             <button class="btn-print" onclick="window.print()">Print Report</button>
             <button class="btn-excel" id="btnExportExcel" onclick="exportReportToExcel()">Export to Excel</button>
+            <button class="btn-pdf" id="btnExportPDF" onclick="exportReportToPDF()">Export to PDF</button>
             <button class="btn-close" onclick="if(window.history.length > 1){ window.history.back(); } else { window.close(); }">Close</button>
         </div>
     </div>
@@ -278,6 +281,22 @@
             var estPages = Math.max(1, Math.ceil(rows.length / 44));
             badge.innerText = "📄 Total Customers: " + rows.length + " | ~" + estPages + " A4 " + (estPages === 1 ? "Page" : "Pages");
         });
+    </script>
+<!-- html2pdf for PDF Export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script>
+        function exportReportToPDF() {
+            var element = document.getElementById("reportContainer");
+            if (!element) return;
+            var opt = {
+                margin:       [4, 5, 4, 5],
+                filename:     "Customer_Outstanding_Detailed.pdf",
+                image:        { type: "jpeg", quality: 0.98 },
+                html2canvas:  { scale: 2, useCORS: true },
+                jsPDF:        { unit: "mm", format: "a4", orientation: "landscape" }
+            };
+            html2pdf().set(opt).from(element).save();
+        }
     </script>
 </body>
 </html>

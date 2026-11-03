@@ -73,6 +73,8 @@
         .btn-print:hover { background: #d81b60; }
         .btn-excel { background: #2e7d32; color: #fff; }
         .btn-excel:hover { background: #1b5e20; }
+        .btn-pdf { background: #0288d1; color: #fff; }
+        .btn-pdf:hover { background: #0277bd; }
         .btn-close { background: #616161; color: #fff; }
         .btn-close:hover { background: #424242; }
         .page-badge {
@@ -346,6 +348,7 @@
         <div class="btn-group">
             <button class="btn-print" onclick="window.print()">Print Report</button>
             <button class="btn-excel" onclick="exportReportToExcel()">Export to Excel</button>
+            <button class="btn-pdf" id="btnExportPDF" onclick="exportReportToPDF()">Export to PDF</button>
             <button class="btn-close" onclick="if(window.history.length > 1){ window.history.back(); } else { window.close(); }">Close</button>
         </div>
     </div>
@@ -601,6 +604,20 @@
                 badge.innerText = "📄 Total Pages: " + totalPages + " A4 " + (totalPages === 1 ? "Page" : "Pages");
             }
         });
+
+        function exportReportToPDF() {
+            var element = document.getElementById("pagesWrapper");
+            if (!element) return;
+            var opt = {
+                margin:       [4, 4, 4, 4],
+                filename:     "General_Ledger_{{ $acCode }}.pdf",
+                image:        { type: "jpeg", quality: 0.98 },
+                html2canvas:  { scale: 2, useCORS: true },
+                jsPDF:        { unit: "mm", format: "a4", orientation: "{{ $isLandscape ? 'landscape' : 'portrait' }}" }
+            };
+            html2pdf().set(opt).from(element).save();
+        }
     </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 </body>
 </html>

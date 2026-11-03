@@ -423,6 +423,10 @@ class VoucherController extends Controller
         $references = json_decode($voucher->reference_no, true) ?? [];
         $accountHeads = json_decode($voucher->row_account_head, true) ?? [];
         $accounts = json_decode($voucher->row_account_id, true) ?? [];
+        $kgsRaw = $voucher->kg;
+        $kgs = is_array($kgsRaw) ? $kgsRaw : (json_decode($kgsRaw, true) ?? []);
+        $ratesRaw = $voucher->rate;
+        $rates = is_array($ratesRaw) ? $ratesRaw : (json_decode($ratesRaw, true) ?? []);
         $amounts = json_decode($voucher->amount, true) ?? [];
 
         // Rows build
@@ -432,6 +436,8 @@ class VoucherController extends Controller
             $ref = $references[$index] ?? null;
             $accountHead = DB::table('account_heads')->where('id', $accountHeads[$index] ?? null)->value('name');
             $account = DB::table('accounts')->where('id', $accounts[$index] ?? null)->first();
+            $kg = isset($kgs[$index]) && is_numeric($kgs[$index]) && (float)$kgs[$index] > 0 ? (float)$kgs[$index] : null;
+            $rate = isset($rates[$index]) && is_numeric($rates[$index]) && (float)$rates[$index] > 0 ? (float)$rates[$index] : null;
             $amount = (float)($amounts[$index] ?? 0);
 
             $rows[] = [
@@ -440,6 +446,8 @@ class VoucherController extends Controller
                 'account_head' => $accountHead,
                 'account_name' => $account->title ?? null,
                 'account_code' => $account->account_code ?? null,
+                'kg' => $kg,
+                'rate' => $rate,
                 'amount' => $amount,
             ];
         }
