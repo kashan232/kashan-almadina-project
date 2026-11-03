@@ -119,20 +119,40 @@
         }
 
         @media print {
-            @page { size: A4 landscape; margin: 0; }
-            body { background: #fff; }
-            .no-print { display: none !important; }
+            @page { 
+                size: A4 landscape; 
+                margin: 4mm 5mm; 
+            }
+            body { 
+                background: #fff !important; 
+                margin: 0 !important; 
+                padding: 0 !important; 
+            }
+            .no-print { 
+                display: none !important; 
+            }
             .page-sheet {
                 width: 100% !important;
-                height: auto !important;
-                min-height: auto !important;
                 margin: 0 !important;
                 padding: 0 !important;
                 box-shadow: none !important;
-                page-break-after: always;
+                background: transparent !important;
             }
-            .page-sheet:last-child {
-                page-break-after: auto;
+            table {
+                width: 100% !important;
+                border-collapse: collapse !important;
+                page-break-inside: auto !important;
+            }
+            thead {
+                display: table-header-group !important;
+            }
+            tbody tr {
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+            }
+            .grand-row {
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
             }
         }
     </style>
@@ -157,11 +177,7 @@
         $toLabel = $to_date ? \Carbon\Carbon::parse($to_date)->format('d-m-y') : '';
     @endphp
 
-    <div id="pagesWrapper">
-        <!-- A4 Page Sheets will be dynamically rendered here -->
-    </div>
-
-    <div id="reportContainer" style="display:none;">
+    <div class="page-sheet" id="reportContainer">
         @if(!empty($rows))
         <table id="outstandingShortTable">
             <thead>

@@ -34,7 +34,7 @@
         }
         body {
             font-family: Calibri, 'Segoe UI', Arial, sans-serif;
-            font-size: 9px;
+            font-size: 10px;
             color: #000;
             margin: 0;
             padding: 0;
@@ -95,7 +95,7 @@
             height: {{ $sheetH }};
             margin: 15px auto;
             background: #ffffff;
-            padding: 5mm 8mm;
+            padding: 4mm 3mm;
             box-shadow: 0 4px 15px rgba(0,0,0,0.4);
             position: relative;
             box-sizing: border-box;
@@ -145,13 +145,13 @@
             table-layout: fixed;
             background: #fff;
             font-family: Calibri, 'Segoe UI', Arial, sans-serif;
-            font-size: 9px;
+            font-size: 10px;
         }
         .ledger-table th {
             background: #e0e0e0;
             border: 1px solid #777;
-            padding: 2px 2px;
-            font-size: 9px;
+            padding: 2.5px 2px;
+            font-size: 10px;
             font-weight: bold;
             color: #000;
             text-align: center;
@@ -160,24 +160,24 @@
         }
         .ledger-table td {
             border: 1px solid #777;
-            padding: 1.5px 3px;
-            font-size: 9px;
+            padding: 2px 3px;
+            font-size: 10px;
             line-height: 1.15;
             vertical-align: middle;
             color: #000;
             font-family: Calibri, 'Segoe UI', Arial, sans-serif;
         }
-        .col-date   { width: 5.5%; text-align: center; white-space: nowrap; font-size: 9px; font-family: Calibri, 'Segoe UI', Arial, sans-serif; }
-        .col-ref    { width: 6.5%; text-align: center; white-space: nowrap; font-size: 9px; font-family: Calibri, 'Segoe UI', Arial, sans-serif; }
-        .col-desc   { width: 36%;  text-align: left;   white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 9px; font-family: Calibri, 'Segoe UI', Arial, sans-serif; }
-        .col-price  { width: 6.5%; text-align: right;  white-space: nowrap; font-size: 9px; }
+        .col-date   { width: 6%; text-align: center; white-space: nowrap; font-size: 10px; font-family: Calibri, 'Segoe UI', Arial, sans-serif; }
+        .col-ref    { width: 6.5%; text-align: center; white-space: nowrap; font-size: 10px; font-family: Calibri, 'Segoe UI', Arial, sans-serif; }
+        .col-desc   { width: 33.5%;  text-align: left;   white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 10px; font-family: Calibri, 'Segoe UI', Arial, sans-serif; }
+        .col-price  { width: 6%; text-align: right;  white-space: nowrap; font-size: 10px; }
         .col-qty,
         .col-debit-qty,
-        .col-credit-qty { width: 3.2%; text-align: center; white-space: nowrap; font-size: 9px; padding: 1.5px 1px !important; }
+        .col-credit-qty { width: 4.5%; text-align: center; white-space: nowrap; font-size: 10px; padding: 1.5px 1px !important; }
         .col-amt,
         .col-debit-amt,
-        .col-credit-amt { width: 13%;  text-align: right;  white-space: nowrap; font-size: 9px; }
-        .col-bal    { width: 13.1%; text-align: right; white-space: nowrap; font-size: 9px; }
+        .col-credit-amt { width: 12%;  text-align: right;  white-space: nowrap; font-size: 10px; }
+        .col-bal    { width: 15%; text-align: right; white-space: nowrap; font-size: 10px; }
 
         /* 🚫 Remove vertical borders between Date, Reference, and Description */
         .ledger-table th.col-date,
@@ -224,13 +224,14 @@
         }
         .balance-cell .drcr {
             font-weight: bold;
-            font-size: 9px;
+            font-size: 10px;
             margin-right: 2px;
             flex-shrink: 0;
             font-family: Calibri, 'Segoe UI', Arial, sans-serif;
         }
         .balance-cell .bal-val {
-            font-size: 9px;
+            font-size: 10px;
+            font-weight: 600;
             text-align: right;
             flex-grow: 1;
             font-family: Calibri, 'Segoe UI', Arial, sans-serif;
@@ -243,7 +244,7 @@
             background: #fff;
             padding: 2.5px 3px;
             font-weight: bold;
-            font-size: 9px;
+            font-size: 10px;
             font-family: Calibri, 'Segoe UI', Arial, sans-serif;
         }
         .total-label {
@@ -251,13 +252,13 @@
             color: #000080;
             font-weight: bold;
             padding-right: 6px !important;
-            font-size: 9px;
+            font-size: 10px;
             font-family: Calibri, 'Segoe UI', Arial, sans-serif;
         }
         .total-val {
             color: #000080;
             font-weight: bold;
-            font-size: 9px;
+            font-size: 10px;
             font-family: Calibri, 'Segoe UI', Arial, sans-serif;
         }
 
@@ -287,8 +288,8 @@
         /* 📄 Page Number at the end of the page */
         .page-sheet-number {
             position: absolute;
-            bottom: 2.5mm;
-            right: 8mm;
+            bottom: 2mm;
+            right: 3mm;
             font-size: 8.5px;
             color: #444;
             font-family: Calibri, 'Segoe UI', Arial, sans-serif;
@@ -315,7 +316,7 @@
                 min-height: auto !important;
                 max-height: calc({{ $sheetH }} - 8mm) !important;
                 margin: 0 auto !important;
-                padding: 4mm 8mm !important;
+                padding: 3mm 3mm !important;
                 box-shadow: none !important;
                 border: none !important;
                 page-break-after: always !important;
@@ -340,15 +341,15 @@
             .page-sheet-number {
                 display: block !important;
                 position: absolute !important;
-                bottom: 2.5mm !important;
-                right: 8mm !important;
+                bottom: 2mm !important;
+                right: 3mm !important;
                 font-size: 8.5px !important;
                 color: #000 !important;
                 font-family: Calibri, 'Segoe UI', Arial, sans-serif !important;
             }
-            .ledger-table th, .ledger-table td, .total-row td, .balance-cell .bal-val, .total-label, .total-val {
+            .ledger-table th, .ledger-table td, .total-row td, .balance-cell .bal-val, .balance-cell .drcr, .total-label, .total-val, .col-date, .col-ref, .col-desc, .col-price, .col-qty, .col-amt, .col-bal {
                 font-family: Calibri, 'Segoe UI', Arial, sans-serif !important;
-                font-size: 9px !important;
+                font-size: 10px !important;
             }
         }
     </style>

@@ -53,25 +53,12 @@
         /* 📄 A4 Landscape Sheet Preview Styling */
         .page-sheet {
             width: 297mm;
-            min-height: auto;
             margin: 15px auto;
             background: #ffffff;
             padding: 4mm 6mm;
             box-shadow: 0 4px 15px rgba(0,0,0,0.4);
             position: relative;
             box-sizing: border-box;
-        }
-        .page-sheet-number {
-            position: absolute;
-            top: 2mm;
-            right: 6mm;
-            font-size: 9px;
-            font-weight: bold;
-            color: #666;
-            background: #f0f0f0;
-            padding: 1px 5px;
-            border-radius: 3px;
-            border: 1px solid #ccc;
         }
         
         .company-name {
@@ -141,21 +128,41 @@
         .empty-msg { text-align: center; padding: 24px; font-size: 11px; }
 
         @media print {
-            @page { size: A4 landscape; margin: 3mm 5mm; }
-            body { background: #fff !important; }
-            .no-print { display: none !important; }
+            @page { 
+                size: A4 landscape; 
+                margin: 4mm 5mm; 
+            }
+            body { 
+                background: #fff !important; 
+                margin: 0 !important; 
+                padding: 0 !important; 
+            }
+            .no-print { 
+                display: none !important; 
+            }
             .page-sheet {
                 width: 100% !important;
                 margin: 0 !important;
                 padding: 0 !important;
                 box-shadow: none !important;
-                page-break-after: always;
-                min-height: auto !important;
+                background: transparent !important;
             }
-            .page-sheet:last-child {
-                page-break-after: auto;
+            table {
+                width: 100% !important;
+                border-collapse: collapse !important;
+                page-break-inside: auto !important;
             }
-            .page-sheet-number { display: none !important; }
+            thead {
+                display: table-header-group !important; /* Repeats table header at top of every printed page */
+            }
+            tbody tr {
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+            }
+            .grand-row {
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+            }
         }
     </style>
 </head>
@@ -200,12 +207,7 @@
         ];
     @endphp
 
-    <div id="pagesWrapper">
-        <!-- A4 Page Sheets will be dynamically rendered here -->
-    </div>
-
-    <!-- Hidden Raw Report Container for Excel & Pagination calculation -->
-    <div id="reportContainer" style="display:none;">
+    <div class="page-sheet" id="reportContainer">
         @if(!empty($rows))
         <table id="outstandingReportTable">
             <thead>
@@ -261,44 +263,20 @@
             XLSX.writeFile(wb, "Outstanding_Balance_Detailed.xlsx");
         }
 
-        // 📄 Dynamic A4 Page Sheet Paginator (Exact 22 rows per A4 landscape sheet)
         document.addEventListener("DOMContentLoaded", function() {
             var rawTable = document.getElementById("outstandingReportTable");
-            var pagesWrapper = document.getElementById("pagesWrapper");
             var badge = document.getElementById("pageCountBadge");
-            if (!rawTable || !pagesWrapper) return;
+            if (!rawTable || !badge) return;
 
-            var rows = Array.from(rawTable.querySelectorAll("tbody tr"));
+            var rows = rawTable.querySelectorAll("tbody tr:not(.grand-row)");
             if (rows.length === 0) {
-                pagesWrapper.innerHTML = '<div class="page-sheet"><p class="empty-msg">No outstanding balance found.</p></div>';
-                if (badge) badge.innerText = "📄 Estimated Pages: 0";
+                badge.innerText = "📄 Total Customers: 0";
                 return;
             }
 
-            var rowsPerPage = 54; // Maximizes rows on A4 landscape sheet so no page space is wasted in window.print
-            var totalPages = Math.ceil(rows.length / rowsPerPage);
-            if (badge) badge.innerText = "📄 Total Pages: " + totalPages + " A4 Pages";
-
-            var theadHTML = rawTable.querySelector("thead").outerHTML;
-
-            for (var p = 0; p < totalPages; p++) {
-                var start = p * rowsPerPage;
-                var pageRows = rows.slice(start, start + rowsPerPage);
-                
-                var sheet = document.createElement("div");
-                sheet.className = "page-sheet";
-
-                var sheetNumBadge = document.createElement("div");
-                sheetNumBadge.className = "page-sheet-number";
-                sheetNumBadge.innerText = "Page " + (p + 1) + " of " + totalPages;
-                sheet.appendChild(sheetNumBadge);
-
-                var tbodyHTML = pageRows.map(function(r) { return r.outerHTML; }).join("");
-                var tableHTML = '<table style="table-layout:fixed; width:100%; border-collapse:collapse; border:1px solid #000;">' + theadHTML + '<tbody>' + tbodyHTML + '</tbody></table>';
-
-                sheet.innerHTML += tableHTML;
-                pagesWrapper.appendChild(sheet);
-            }
+            // Estimate pages in A4 landscape (~44 rows per page)
+            var estPages = Math.max(1, Math.ceil(rows.length / 44));
+            badge.innerText = "📄 Total Customers: " + rows.length + " | ~" + estPages + " A4 " + (estPages === 1 ? "Page" : "Pages");
         });
     </script>
 </body>
