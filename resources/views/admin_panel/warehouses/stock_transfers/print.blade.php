@@ -317,7 +317,7 @@
             <i class="fa fa-file-text-o me-1"></i> Stock Transfer #{{ $transfer->id }} &bull; A5 Portrait Print
         </div>
         <div class="toolbar-actions">
-            <button class="btn-toolbar btn-print" onclick="window.print()">
+            <button class="btn-toolbar btn-print" onclick="triggerTransferPrint()">
                 <i class="fa fa-print"></i> Print A5
             </button>
             <a href="{{ route('stock_transfers.print_thermal', $transfer->id) }}" class="btn-toolbar btn-thermal">
@@ -458,5 +458,12 @@
         </div>
     </div>
 
+<script src="https://cdn.jsdelivr.net/npm/qz-tray@2.2.4/qz-tray.min.js"></script>
+<script src="{{ asset('js/qz-print-service.js') }}"></script>
+<script>
+function triggerTransferPrint() {
+    printWithQzOrBrowser('stock_transfer', '.a5-container', function() { window.print(); });
+}
+</script>
 </body>
 </html>

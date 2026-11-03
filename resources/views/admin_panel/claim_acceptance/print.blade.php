@@ -252,7 +252,7 @@
             <i class="fa fa-clipboard me-1"></i> Claim Acceptance &bull; {{ $voucher->voucher_no ?: ('#' . $voucher->id) }}
         </div>
         <div class="toolbar-actions">
-            <button class="btn-toolbar btn-print" onclick="window.print()">
+            <button class="btn-toolbar btn-print" onclick="triggerClaimPrint()">
                 <i class="fa fa-print"></i> Print Voucher
             </button>
             <button class="btn-toolbar btn-pdf" id="btnExportPDF" onclick="exportClaimToPDF()">
@@ -373,7 +373,14 @@
         </div>
     </div>
 
-    <!-- html2pdf for PDF Export -->
+    <script src="https://cdn.jsdelivr.net/npm/qz-tray@2.2.4/qz-tray.min.js"></script>
+<script src="{{ asset('js/qz-print-service.js') }}"></script>
+<script>
+function triggerClaimPrint() {
+    printWithQzOrBrowser('claim_acceptance', '#claimSheet', function() { window.print(); });
+}
+</script>
+<!-- html2pdf for PDF Export -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <script>
         function exportClaimToPDF() {

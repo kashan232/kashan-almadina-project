@@ -518,6 +518,7 @@
                                   @endcan
                                   @can('Zone')
                                   <li><a href="{{url('zone')}}"><i class="fas fa-map-marked-alt mr-2"></i> Zone</a></li>
+                                   <li><a href="{{ route('printer-settings.index') }}"><i class="fas fa-print mr-2 text-primary"></i> Printer Settings</a></li>
                                   @endcan
                               </ul>
                           </div>

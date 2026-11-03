@@ -219,7 +219,7 @@
         }
     </style>
 </head>
-<body onload="window.print()">
+<body onload="triggerTransferThermalPrint()">
 
     {{-- Screen Toolbar --}}
     <div class="no-print-toolbar">
@@ -227,7 +227,7 @@
             <i class="fa fa-ticket me-1"></i> Stock Transfer #{{ $transfer->id }} &bull; Thermal Print (80mm)
         </div>
         <div class="toolbar-actions">
-            <button class="btn-toolbar btn-print" onclick="window.print()">
+            <button class="btn-toolbar btn-print" onclick="triggerTransferThermalPrint()">
                 <i class="fa fa-print"></i> Print Thermal
             </button>
             <a href="{{ route('stock_transfers.print', $transfer->id) }}" class="btn-toolbar btn-a5">
@@ -350,5 +350,12 @@
         </div>
     </div>
 
+<script src="https://cdn.jsdelivr.net/npm/qz-tray@2.2.4/qz-tray.min.js"></script>
+<script src="{{ asset('js/qz-print-service.js') }}"></script>
+<script>
+function triggerTransferThermalPrint() {
+    printWithQzOrBrowser('stock_transfer_thermal', '.receipt-container', function() { window.print(); });
+}
+</script>
 </body>
 </html>

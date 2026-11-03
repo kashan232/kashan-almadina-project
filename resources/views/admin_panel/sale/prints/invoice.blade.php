@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Sale Invoice - {{ $sale->invoice_no }}</title>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
@@ -568,15 +569,18 @@
         }
     </style>
 </head>
-<body onload="window.print()">
+<body onload="initPrint()">
 
     <!-- Screen Toolbar -->
     <div class="no-print-toolbar">
         <div class="toolbar-info">
             <i class="fa fa-file-text-o me-1"></i> Sale Invoice #{{ $sale->invoice_no }} &bull; A5 Portrait Print
+            <span id="qzPrintBadge" class="badge" style="background:#495057; font-size:11px; padding:3px 8px; border-radius:4px; margin-left:8px; font-weight:normal;">
+                <i class="fa fa-circle-o-notch fa-spin"></i> Checking Printer...
+            </span>
         </div>
         <div class="toolbar-actions">
-            <button class="btn-toolbar btn-print" onclick="window.print()">
+            <button class="btn-toolbar btn-print" onclick="triggerInvoicePrint()">
                 <i class="fa fa-print"></i> Print Invoice
             </button>
             <button class="btn-toolbar btn-pdf" id="btnExportPDF" onclick="exportInvoiceToPDF()" style="background: #c2185b; color: #fff;">
@@ -852,6 +856,24 @@ document.addEventListener('DOMContentLoaded', function() {
         el.textContent = words;
     });
 });
+</script>
+<script src="https://cdn.jsdelivr.net/npm/qz-tray@2.2.4/qz-tray.min.js"></script>
+<script src="{{ asset('js/qz-print-service.js') }}"></script>
+<script>
+function initPrint() {
+    if (typeof QzPrintService !== 'undefined') {
+        QzPrintService.updateToolbarBadge('sale_invoice');
+    }
+    setTimeout(function() {
+        triggerInvoicePrint();
+    }, 400);
+}
+function triggerInvoicePrint() {
+    if (typeof QzPrintService !== 'undefined') {
+        QzPrintService.updateToolbarBadge('sale_invoice');
+    }
+    printWithQzOrBrowser('sale_invoice', '.invoice-sheet', function() { window.print(); });
+}
 </script>
 <!-- html2pdf for PDF Export -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>

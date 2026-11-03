@@ -300,7 +300,7 @@
         }
     </style>
 </head>
-<body onload="window.print()">
+<body onload="triggerReleasePrint()">
 
     <!-- Screen Toolbar -->
     <div class="no-print-toolbar">
@@ -308,7 +308,7 @@
             <i class="fa fa-truck me-1"></i> Stock Release &bull; Delivery Challan #{{ $voucher->voucher_no ?: $voucher->id }}
         </div>
         <div class="toolbar-actions">
-            <button class="btn-toolbar btn-print" onclick="window.print()">
+            <button class="btn-toolbar btn-print" onclick="triggerReleasePrint()">
                 <i class="fa fa-print"></i> Print DC
             </button>
             <button class="btn-toolbar btn-close-tb" onclick="window.close()">
@@ -456,5 +456,12 @@
         </div>
     </div>
 
+<script src="https://cdn.jsdelivr.net/npm/qz-tray@2.2.4/qz-tray.min.js"></script>
+<script src="{{ asset('js/qz-print-service.js') }}"></script>
+<script>
+function triggerReleasePrint() {
+    printWithQzOrBrowser('stock_release', '.dc-container', function() { window.print(); });
+}
+</script>
 </body>
 </html>

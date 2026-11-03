@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Delivery Challan - {{ $sale->invoice_no ?? $sale->id }}</title>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
@@ -291,7 +292,7 @@
         }
     </style>
 </head>
-<body onload="window.print()">
+<body onload="initDcPrint()">
 
     <!-- Screen Toolbar -->
     <div class="no-print-toolbar">
@@ -299,7 +300,7 @@
             <i class="fa fa-truck me-1"></i> Delivery Challan &bull; {{ $sale->invoice_no ?? ('#' . $sale->id) }}
         </div>
         <div class="toolbar-actions">
-            <button class="btn-toolbar btn-print" onclick="window.print()">
+            <button class="btn-toolbar btn-print" onclick="triggerDcPrint()">
                 <i class="fa fa-print"></i> Print DC
             </button>
             <button class="btn-toolbar btn-close-tb" onclick="window.close()">
@@ -447,5 +448,20 @@
         </div>
     </div>
 
+<script src="https://cdn.jsdelivr.net/npm/qz-tray@2.2.4/qz-tray.min.js"></script>
+<script src="{{ asset('js/qz-print-service.js') }}"></script>
+<script>
+function initDcPrint() {
+    if (typeof QzPrintService !== 'undefined') {
+        QzPrintService.updateToolbarBadge('delivery_challan');
+    }
+    setTimeout(function() {
+        triggerDcPrint();
+    }, 400);
+}
+function triggerDcPrint() {
+    printWithQzOrBrowser('delivery_challan', '.dc-container', function() { window.print(); });
+}
+</script>
 </body>
 </html>

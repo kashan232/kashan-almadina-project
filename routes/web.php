@@ -40,6 +40,7 @@ use App\Http\Controllers\ClaimCreditNoteController;
 use App\Http\Controllers\RollbackController;
 use App\Http\Controllers\GeneralLedgerController;
 use App\Http\Controllers\DatabaseBackupController;
+use App\Http\Controllers\PrinterSettingController;
 
 /*
 |--------------------------------------------------------------------------
@@ -196,6 +197,13 @@ Route::get('/journalVoucher-print/{id}', [VoucherController::class, 'journalprin
 // })->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::middleware('auth')->group(function () {
+    // Printer Settings & QZ Tray Silent Printing
+    Route::get('/settings/printer-setup', [PrinterSettingController::class, 'index'])->name('printer-settings.index');
+    Route::post('/settings/printer-setup/save', [PrinterSettingController::class, 'save'])->name('printer-settings.save');
+    Route::get('/api/printer-settings/get', [PrinterSettingController::class, 'getSettings'])->name('printer-settings.get');
+    Route::get('/api/qz/certificate', [PrinterSettingController::class, 'certificate'])->name('qz.certificate');
+    Route::post('/api/qz/sign', [PrinterSettingController::class, 'sign'])->name('qz.sign');
+
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
