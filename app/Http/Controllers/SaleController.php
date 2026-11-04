@@ -1014,7 +1014,7 @@ class SaleController extends Controller
 
     // public function getStock($productId)
     // {
-    //     $product = Product::with('prices')->find($productId);
+    //     $product = Product::with('latestPrice')->find($productId);
     //     if (!$product) return response()->json(['error'=>'Product not found'],404);
 
     //     $price = optional($product->prices->first())->sale_retail_price ?? 0;
@@ -1026,7 +1026,7 @@ class SaleController extends Controller
 
     public function getStock(Request $request, $productId)
     {
-        $product = Product::with('prices')->find($productId);
+        $product = Product::with('latestPrice')->find($productId);
         if (!$product) {
             return response()->json(['error' => 'Product not found'], 404);
         }
@@ -1044,12 +1044,15 @@ class SaleController extends Controller
         }
 
         // Fetch the latest price record
-        $price = $product->prices()->latest()->first();
+        $price = $product->latestPrice;
 
         return response()->json([
             'stock' => (float) ($stock ?? 0),
             'sales_price' => (float) ($price->sale_net_amount ?? 0),
             'retail_price' => (float) ($price->sale_retail_price ?? 0),
+            'purchase_price' => (float) ($price->purchase_net_amount ?? 0),
+            'purchase_net_amount' => (float) ($price->purchase_net_amount ?? 0),
+            'purchase_retail_price' => (float) ($price->purchase_retail_price ?? ($price->sale_retail_price ?? 0)),
         ]);
     }
     // SaleController.php

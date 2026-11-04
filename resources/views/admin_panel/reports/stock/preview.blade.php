@@ -7,12 +7,12 @@
     <style>
         @page {
             size: a5;
-            margin: 4mm 3mm 4mm 3mm;
+            margin: 0mm;
         }
         * { box-sizing: border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
         html, body {
             font-family: Calibri, Arial, sans-serif;
-            font-size: 8px;
+            font-size: 8.5px;
             color: #000;
             margin: 0;
             padding: 0mm;
@@ -115,11 +115,11 @@
             border-bottom: 1px solid #000;
             border-left: none;
             border-right: none;
-            padding: 1px 1px;
-            font-size: 7.5px;
+            padding: 1.5px 1px;
+            font-size: 8px;
             font-weight: bold;
             text-align: center;
-            line-height: 1.05;
+            line-height: 1.1;
             word-wrap: break-word;
             color: #000 !important;
             page-break-inside: avoid;
@@ -140,10 +140,10 @@
             border-left: none;
             border-right: none;
             border-bottom: 1px solid #777;
-            padding: 0.8px 1px;
+            padding: 1px 1px;
             vertical-align: middle;
-            font-size: 7.5px;
-            line-height: 1.05;
+            font-size: 8px;
+            line-height: 1.1;
             color: #000 !important;
             page-break-inside: avoid;
             break-inside: avoid;
@@ -212,7 +212,7 @@
         @media print {
             @page {
                 size: a5;
-                margin: 4mm 3mm 4mm 3mm;
+                margin: 0mm;
             }
             html, body {
                 width: 100% !important;
@@ -311,9 +311,9 @@
             return 'num';
         };
 
-        // Determine Layout (Normal vs Claim) based on user's Type / Warehouse filter
+        // Determine Layout (Normal vs Claim vs All) based on user's Type / Warehouse filter
         $reqClaimTypes = request('claim_type', []);
-        if (!is_array($reqClaimTypes)) $reqClaimTypes = [$reqClaimTypes];
+        if (!is_array($reqClaimTypes)) $reqClaimTypes = array_filter([$reqClaimTypes]);
 
         $hasNormalType = in_array('none', $reqClaimTypes, true);
         $hasClaimType = in_array('customer', $reqClaimTypes, true) || in_array('company', $reqClaimTypes, true);
@@ -322,26 +322,53 @@
         $whMap[0] = 'none'; // Shop is always normal
 
         $selectedWhs = request('warehouse', []);
-        if (!is_array($selectedWhs)) $selectedWhs = [$selectedWhs];
+        if (!is_array($selectedWhs)) $selectedWhs = array_filter([$selectedWhs]);
 
-        $allSelectedAreClaim = !empty($selectedWhs) && collect($selectedWhs)->every(fn($id) => in_array($whMap[$id] ?? 'none', ['customer', 'company'], true));
-        $allSelectedAreNormal = !empty($selectedWhs) && collect($selectedWhs)->every(fn($id) => ($whMap[$id] ?? 'none') === 'none');
-
-        if ($hasClaimType && !$hasNormalType) {
-            $isClaimReport = true;
-        } elseif ($hasNormalType && !$hasClaimType) {
-            $isClaimReport = false;
-        } elseif ($allSelectedAreClaim) {
-            $isClaimReport = true;
-        } elseif ($allSelectedAreNormal) {
-            $isClaimReport = false;
-        } else {
-            $warehousesInReport = isset($grouped) ? $grouped->keys()->all() : [];
-            $allInReportAreClaim = !empty($warehousesInReport) && collect($warehousesInReport)->every(fn($id) => in_array($whMap[$id] ?? 'none', ['customer', 'company'], true));
-            $isClaimReport = $allInReportAreClaim;
+        $hasSelectedWhNormal = false;
+        $hasSelectedWhClaim = false;
+        if (!empty($selectedWhs)) {
+            foreach ($selectedWhs as $id) {
+                if (($whMap[$id] ?? 'none') === 'none') {
+                    $hasSelectedWhNormal = true;
+                } else {
+                    $hasSelectedWhClaim = true;
+                }
+            }
         }
 
-        if (!$isClaimReport) {
+        if ($hasNormalType && $hasClaimType) {
+            $reportMode = 'all';
+        } elseif ($hasSelectedWhNormal && $hasSelectedWhClaim) {
+            $reportMode = 'all';
+        } elseif ($hasClaimType && !$hasNormalType) {
+            $reportMode = 'claim';
+        } elseif ($hasNormalType && !$hasClaimType) {
+            $reportMode = 'normal';
+        } elseif ($hasSelectedWhClaim && !$hasSelectedWhNormal) {
+            $reportMode = 'claim';
+        } elseif ($hasSelectedWhNormal && !$hasSelectedWhClaim) {
+            $reportMode = 'normal';
+        } else {
+            $warehousesInReport = isset($grouped) ? $grouped->keys()->all() : [];
+            $reportHasNormal = false;
+            $reportHasClaim = false;
+            foreach ($warehousesInReport as $id) {
+                if (($whMap[$id] ?? 'none') === 'none') {
+                    $reportHasNormal = true;
+                } else {
+                    $reportHasClaim = true;
+                }
+            }
+            if ($reportHasNormal && $reportHasClaim) {
+                $reportMode = 'all';
+            } elseif ($reportHasClaim) {
+                $reportMode = 'claim';
+            } else {
+                $reportMode = 'normal';
+            }
+        }
+
+        if ($reportMode === 'normal') {
             // 🟢 NORMAL REPORT COLUMNS (14 data cols + Item = 15 cols total)
             $cols = [
                 ['key' => 'opening',   'head' => 'Start Date', 'th' => ''],
@@ -359,7 +386,7 @@
                 ['key' => 'hold',      'head' => 'SH',         'th' => 'col-hold'],
                 ['key' => 'release',   'head' => 'SR',         'th' => 'col-out'],
             ];
-        } else {
+        } elseif ($reportMode === 'claim') {
             // 🔵 CLAIM REPORT COLUMNS (11 data cols + Item = 12 cols total)
             $cols = [
                 ['key' => 'opening', 'head' => 'Start Date', 'th' => ''],
@@ -374,6 +401,28 @@
                 ['key' => 'trf_out', 'head' => 'TOG Out',    'th' => 'col-out'],
                 ['key' => 'waste',   'head' => 'WOG',        'th' => 'col-out'],
             ];
+        } else {
+            // 🟡 BOTH / ALL REPORT COLUMNS (18 data cols + Item = 19 cols total)
+            $cols = [
+                ['key' => 'opening',   'head' => 'Start Date', 'th' => ''],
+                ['key' => 'closing',   'head' => 'End Date',   'th' => ''],
+                ['key' => 'pur',       'head' => 'PJ',         'th' => ''],
+                ['key' => 'pur_ret',   'head' => 'PRJ',        'th' => 'col-out'],
+                ['key' => 'sales',     'head' => 'SJ',         'th' => 'col-out'],
+                ['key' => 'sales_ret', 'head' => 'SRJ',        'th' => ''],
+                ['key' => 'clm_rep',   'head' => 'Clm-Rep',    'th' => 'col-out'],
+                ['key' => 'clm_in',    'head' => 'Clm In',     'th' => ''],
+                ['key' => 'clm_out',   'head' => 'Clm-Out',    'th' => 'col-out'],
+                ['key' => 'cla_out',   'head' => 'Clm-Out',    'th' => 'col-out'],
+                ['key' => 'cla_in',    'head' => 'Clm-In',     'th' => ''],
+                ['key' => 'cli_out',   'head' => 'Clm-Out',    'th' => 'col-out'],
+                ['key' => 'cli_in',    'head' => 'Clm-In',     'th' => ''],
+                ['key' => 'trf_in',    'head' => 'TOG In',     'th' => ''],
+                ['key' => 'trf_out',   'head' => 'TOG Out',    'th' => 'col-out'],
+                ['key' => 'waste',     'head' => 'WOG',        'th' => 'col-out'],
+                ['key' => 'hold',      'head' => 'SH',         'th' => 'col-hold'],
+                ['key' => 'release',   'head' => 'SR',         'th' => 'col-out'],
+            ];
         }
     @endphp
 
@@ -387,7 +436,7 @@
             </div>
             <table>
                 <thead>
-                    @if(!$isClaimReport)
+                    @if($reportMode === 'normal')
                     {{-- 🟢 NORMAL WAREHOUSE REPORT HEADERS (Matching User Excel) --}}
                     <tr>
                         <th rowspan="2" style="width:20%; min-width:24mm;">Item</th>
@@ -398,8 +447,8 @@
                         <th colspan="5">Generals</th>
                     </tr>
                     <tr>
-                        <th>Start Date</th>
-                        <th>End Date</th>
+                        <th>Start Date<br><span style="font-size:7px; font-weight:bold;">{{ $from_date ? \Carbon\Carbon::parse($from_date)->format('d-m-y') : $opening_label }}</span></th>
+                        <th>End Date<br><span style="font-size:7px; font-weight:bold;">{{ $to_date ? \Carbon\Carbon::parse($to_date)->format('d-m-y') : $closing_label }}</span></th>
                         <th>PJ</th>
                         <th class="col-out">PRJ</th>
                         <th class="col-out">SJ</th>
@@ -413,7 +462,7 @@
                         <th class="col-hold">SH</th>
                         <th class="col-out">SR</th>
                     </tr>
-                    @else
+                    @elseif($reportMode === 'claim')
                     {{-- 🔵 CLAIM WAREHOUSE REPORT HEADERS (Matching User Excel) --}}
                     <tr>
                         <th rowspan="2" style="width:24%; min-width:28mm;">Item</th>
@@ -424,8 +473,8 @@
                         <th colspan="3">Generals</th>
                     </tr>
                     <tr>
-                        <th>Start Date</th>
-                        <th>End Date</th>
+                        <th>Start Date<br><span style="font-size:7px; font-weight:bold;">{{ $from_date ? \Carbon\Carbon::parse($from_date)->format('d-m-y') : $opening_label }}</span></th>
+                        <th>End Date<br><span style="font-size:7px; font-weight:bold;">{{ $to_date ? \Carbon\Carbon::parse($to_date)->format('d-m-y') : $closing_label }}</span></th>
                         <th>Clm In</th>
                         <th class="col-out">Clm-Out</th>
                         <th class="col-out">Clm-Out</th>
@@ -435,6 +484,37 @@
                         <th>TOG In</th>
                         <th class="col-out">TOG Out</th>
                         <th class="col-out">WOG</th>
+                    </tr>
+                    @else
+                    {{-- 🟡 BOTH / ALL REPORT HEADERS (All Columns Included) --}}
+                    <tr>
+                        <th rowspan="2" style="width:16%; min-width:20mm;">Item</th>
+                        <th colspan="2">Date Range</th>
+                        <th colspan="4">Purchase &amp; Sales (Returns)</th>
+                        <th colspan="3">Customer Claim</th>
+                        <th colspan="2">Claim Acceptance</th>
+                        <th colspan="2">CIR</th>
+                        <th colspan="5">Generals</th>
+                    </tr>
+                    <tr>
+                        <th>Start Date<br><span style="font-size:7px; font-weight:bold;">{{ $from_date ? \Carbon\Carbon::parse($from_date)->format('d-m-y') : $opening_label }}</span></th>
+                        <th>End Date<br><span style="font-size:7px; font-weight:bold;">{{ $to_date ? \Carbon\Carbon::parse($to_date)->format('d-m-y') : $closing_label }}</span></th>
+                        <th>PJ</th>
+                        <th class="col-out">PRJ</th>
+                        <th class="col-out">SJ</th>
+                        <th>SRJ</th>
+                        <th class="col-out">Clm-Rep</th>
+                        <th>Clm In</th>
+                        <th class="col-out">Clm-Out</th>
+                        <th class="col-out">Clm-Out</th>
+                        <th>Clm-In</th>
+                        <th class="col-out">Clm-Out</th>
+                        <th>Clm-In</th>
+                        <th>TOG In</th>
+                        <th class="col-out">TOG Out</th>
+                        <th class="col-out">WOG</th>
+                        <th class="col-hold">SH</th>
+                        <th class="col-out">SR</th>
                     </tr>
                     @endif
                 </thead>

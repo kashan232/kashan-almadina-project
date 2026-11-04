@@ -25,11 +25,15 @@ class GeneralLedgerController extends Controller
         static $cache = [];
         $key = $table . '_' . $fallback;
         if (!isset($cache[$key])) {
+            $hasDate = \Illuminate\Support\Facades\Schema::hasColumn($table, 'date');
             $hasEntryDate = \Illuminate\Support\Facades\Schema::hasColumn($table, 'entry_date');
             $hasCurrentDate = \Illuminate\Support\Facades\Schema::hasColumn($table, 'current_date');
             $hasCreatedAt = \Illuminate\Support\Facades\Schema::hasColumn($table, 'created_at');
 
             $parts = [];
+            if ($hasDate) {
+                $parts[] = "NULLIF(`date`, '')";
+            }
             if ($hasEntryDate) {
                 $parts[] = "NULLIF(entry_date, '')";
             }

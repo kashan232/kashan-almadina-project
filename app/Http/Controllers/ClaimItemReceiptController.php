@@ -116,7 +116,7 @@ class ClaimItemReceiptController extends Controller
     public function fetchByBTR(Request $request)
     {
         $btr = $request->btr;
-        $items = ClaimAcceptanceItem::with('product:id,name')
+        $items = ClaimAcceptanceItem::with(['product:id,name', 'product.latestPrice'])
             ->where('btr_no', $btr)
             ->where('status', 'Posted') // Should be posted in acceptance
             ->get();
@@ -126,11 +126,14 @@ class ClaimItemReceiptController extends Controller
         }
 
         $data = $items->map(function($item) {
+            $priceInfo = $item->product?->latestPrice;
             return [
                 'product_id' => $item->product_id,
                 'product_name' => $item->product->name ?? 'N/A',
                 'quantity' => $item->quantity,
-                'btr_no' => $item->btr_no
+                'btr_no' => $item->btr_no,
+                'price' => (float) ($priceInfo->purchase_net_amount ?? 0),
+                'retail_price' => (float) ($priceInfo->purchase_retail_price ?? ($priceInfo->sale_retail_price ?? 0)),
             ];
         });
 

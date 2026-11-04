@@ -82,8 +82,8 @@ class ClaimCreditNoteController extends Controller
                 'product_id' => $item->product_id,
                 'product_name' => $product->name ?? 'N/A',
                 'brand_name' => $product->brandRelation->brand_name ?? '-',
-                'price' => $priceInfo->sale_net_amount ?? 0,
-                'retail_price' => $priceInfo->sale_retail_price ?? 0,
+                'price' => (float) ($priceInfo->purchase_net_amount ?? 0),
+                'retail_price' => (float) ($priceInfo->purchase_retail_price ?? ($priceInfo->sale_retail_price ?? 0)),
                 'quantity' => $item->quantity,
                 'btr_no' => $item->btr_no
             ];

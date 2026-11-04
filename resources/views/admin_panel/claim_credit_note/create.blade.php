@@ -411,8 +411,12 @@ $(document).ready(function() {
         let pName = opt.data('name') || '';
 
         $.get("{{ url('/get-stock') }}/" + pId, function(res) {
-            let priceVal = res && res.sales_price ? parseFloat(res.sales_price) : 0;
-            let retailVal = res && res.retail_price ? parseFloat(res.retail_price) : priceVal;
+            let priceVal = res && (res.purchase_net_amount !== undefined || res.purchase_price !== undefined)
+                ? parseFloat(res.purchase_net_amount ?? res.purchase_price)
+                : (res && res.sales_price ? parseFloat(res.sales_price) : 0);
+            let retailVal = res && res.purchase_retail_price !== undefined
+                ? parseFloat(res.purchase_retail_price)
+                : (res && res.retail_price ? parseFloat(res.retail_price) : priceVal);
 
             addRow({
                 btr_no: 'MANUAL',

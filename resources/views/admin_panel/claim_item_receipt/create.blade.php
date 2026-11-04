@@ -247,8 +247,8 @@
                                     @if($initialClaimType === 'receipt' && isset($activeVoucher) && $activeVoucher->relationLoaded('items'))
                                         @foreach($activeVoucher->items as $item)
                                             @php
-                                                $priceVal = $item->product->latestPrice->sale_net_amount ?? 0;
-                                                $retailVal = $item->product->latestPrice->sale_retail_price ?? $priceVal;
+                                                $priceVal = $item->product->latestPrice->purchase_net_amount ?? ($item->product->latestPrice->sale_net_amount ?? 0);
+                                                $retailVal = $item->product->latestPrice->purchase_retail_price ?? ($item->product->latestPrice->sale_retail_price ?? $priceVal);
                                             @endphp
                                             <tr>
                                                 <td class="text-center"><input type="text" name="btr_no[]" class="form-control input-sm text-center bg-light" value="{{ $item->btr_no }}" readonly></td>
@@ -424,6 +424,26 @@ $(document).ready(function() {
             $('#to_warehouse_id').prop('required', false);
             $('#mainClaimForm').attr('action', "{{ route('claim-credit-note.ajax-save') }}");
             $('#receipt_tfoot_row').hide();
+
+            // Refresh any existing rows to purchase pricing for credit note
+            $('#claimItemRows tr').each(function() {
+                let row = $(this);
+                let pId = row.find('input[name="product_id[]"]').val();
+                let priceInput = row.find('.price');
+                let retailInput = row.find('.retail_price');
+                if (pId && !row.data('pricing-loaded')) {
+                    $.get("{{ url('/get-stock') }}/" + pId, function(res) {
+                        if (res) {
+                            let pNet = parseFloat(res.purchase_net_amount ?? res.purchase_price ?? 0);
+                            let pRet = parseFloat(res.purchase_retail_price ?? res.retail_price ?? 0);
+                            if (pNet > 0) priceInput.val(pNet.toFixed(2));
+                            if (pRet > 0) retailInput.val(pRet.toFixed(2));
+                            row.data('pricing-loaded', true);
+                            recalculateTotals();
+                        }
+                    });
+                }
+            });
         } else {
             $('#docTypeBadge').html('<i class="fa fa-file-text-o me-1"></i> TYPE: ITEM RECEIPT');
             $('.credit-only-field').css('display', 'none');
@@ -478,8 +498,20 @@ $(document).ready(function() {
         let pName = opt.data('name') || '';
 
         $.get("{{ url('/get-stock') }}/" + pId, function(res) {
-            let priceVal = res && res.sales_price ? parseFloat(res.sales_price) : 0;
-            let retailVal = res && res.retail_price ? parseFloat(res.retail_price) : priceVal;
+            let isCredit = $('#claim_type').val() === 'credit';
+            let priceVal = 0;
+            let retailVal = 0;
+            if (isCredit) {
+                priceVal = res && (res.purchase_net_amount !== undefined || res.purchase_price !== undefined)
+                    ? parseFloat(res.purchase_net_amount ?? res.purchase_price)
+                    : (res && res.sales_price ? parseFloat(res.sales_price) : 0);
+                retailVal = res && res.purchase_retail_price !== undefined
+                    ? parseFloat(res.purchase_retail_price)
+                    : (res && res.retail_price ? parseFloat(res.retail_price) : priceVal);
+            } else {
+                priceVal = res && res.sales_price ? parseFloat(res.sales_price) : 0;
+                retailVal = res && res.retail_price ? parseFloat(res.retail_price) : priceVal;
+            }
             addRow('MANUAL', pId, pName, 1, priceVal, retailVal);
             select.val('').trigger('change');
             showToast('Manual product added.');
@@ -528,7 +560,9 @@ $(document).ready(function() {
             <td class="credit-only-field" ${displayStyle}><input type="text" name="line_total[]" class="form-control input-sm text-end fw-bold bg-light row-total" value="0.00" readonly></td>
             <td class="text-center"><button type="button" class="btn btn-sm btn-link text-danger remove-row p-0"><i class="fa fa-trash fs-5"></i></button></td>
         </tr>`;
-        $('#claimItemRows').append(row);
+        var $newRow = $(row);
+        $newRow.data('pricing-loaded', true);
+        $('#claimItemRows').append($newRow);
         recalculateTotals();
     }
 
