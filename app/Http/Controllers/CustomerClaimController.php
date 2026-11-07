@@ -217,6 +217,33 @@ class CustomerClaimController extends Controller
         return view('admin_panel.customer_claims.edit', compact('claim', 'products', 'warehouses', 'assignedClaimWarehouse', 'isAdmin', 'allClaimWarehouses', 'cashAccounts', 'incomeAccounts', 'defaultCashAccountId', 'defaultIncomeAccountId'));
     }
 
+        public function checkDuplicateCard(Request $request)
+    {
+        $cardNo = trim($request->card_no ?? '');
+        $mfgDate = trim($request->mfg_date ?? '');
+        $id = $request->id;
+
+        if ($cardNo !== '' && $mfgDate !== '') {
+            $query = CustomerClaim::withoutGlobalScopes()
+                ->whereRaw('TRIM(card_no) = ?', [$cardNo])
+                ->whereRaw('TRIM(mfg_date) = ?', [$mfgDate]);
+            if ($id) {
+                $query->where('id', '!=', $id);
+            }
+            $existing = $query->first(['id', 'claim_no', 'claim_date', 'card_no', 'mfg_date']);
+            if ($existing) {
+                return response()->json([
+                    'exists' => true,
+                    'claim_no' => $existing->claim_no,
+                    'claim_date' => $existing->claim_date,
+                    'msg' => "Yeh Card No '{$cardNo}' aur same MFG Date '{$mfgDate}' pehle se Claim # {$existing->claim_no} me darj hai!"
+                ]);
+            }
+        }
+
+        return response()->json(['exists' => false]);
+    }
+
     public function ajaxSave(Request $request)
     {
         $id = $request->id;
@@ -237,6 +264,26 @@ class CustomerClaimController extends Controller
         if ($validator->fails()) {
             return response()->json(['ok' => false, 'msg' => 'Validation error', 'errors' => $validator->errors()]);
         }
+
+        $cardNo = trim($request->card_no ?? '');
+        $mfgDate = trim($request->mfg_date ?? '');
+
+        if ($cardNo !== '' && $mfgDate !== '') {
+            $duplicateQuery = CustomerClaim::withoutGlobalScopes()
+                ->whereRaw('TRIM(card_no) = ?', [$cardNo])
+                ->whereRaw('TRIM(mfg_date) = ?', [$mfgDate]);
+            if ($id) {
+                $duplicateQuery->where('id', '!=', $id);
+            }
+            $existing = $duplicateQuery->first();
+            if ($existing) {
+                return response()->json([
+                    'ok' => false,
+                    'msg' => "Is Card No ({$cardNo}) aur same MFG Date ({$mfgDate}) ka claim pehle se darj hai (Claim # {$existing->claim_no})! Ek hi Card No same MFG Date ke sath dobara create nahi ho sakta."
+                ]);
+            }
+        }
+
 
         if (($request->original_warehouse_id === '0' || $request->original_warehouse_id === 0) && !auth()->user()->canAccessShop()) {
             return response()->json(['ok' => false, 'msg' => 'You do not have access to Shop inventory.']);

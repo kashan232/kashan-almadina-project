@@ -103,7 +103,7 @@
             box-sizing: border-box;
             display: flex;
             flex-direction: column;
-            justify-content: space-between;
+            justify-content: flex-start;
             overflow: hidden;
             font-family: Calibri, 'Segoe UI', Arial, sans-serif;
         }

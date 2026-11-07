@@ -345,13 +345,17 @@ $(document).ready(function() {
     function showToast(msg, type = 'success') {
         var icon = type === 'success' ? 'fa-check-circle' : 'fa-times-circle';
         var color = type === 'success' ? '#28a745' : '#dc3545';
+        var duration = type === 'success' ? 2500 : 4500;
         var $toast = $('<div>').css({
             position: 'fixed', top: '20px', right: '20px', zIndex: 9999,
             background: color, color: '#fff', padding: '12px 20px', borderRadius: '8px',
-            boxShadow: '0 4px 15px rgba(0,0,0,.2)', display: 'flex', alignItems: 'center', gap: '8px'
+            boxShadow: '0 4px 15px rgba(0,0,0,.25)', display: 'flex', alignItems: 'center', gap: '8px',
+            fontWeight: '600'
         }).html('<i class="fa ' + icon + '"></i> ' + msg);
         $('body').append($toast);
-        setTimeout(() => $toast.fadeOut(400, () => $(this).remove()), 2000);
+        setTimeout(function() {
+            $toast.fadeOut(400, function() { $toast.remove(); });
+        }, duration);
     }
 
     // Handle Type Changes
@@ -467,6 +471,44 @@ $(document).ready(function() {
         });
     });
 
+    // Card No & MFG Date Duplicate Check
+    function checkCardDuplicate() {
+        var cardNo = $('input[name="card_no"]').val() ? $('input[name="card_no"]').val().trim() : '';
+        var mfgDate = $('input[name="mfg_date"]').val() ? $('input[name="mfg_date"]').val().trim() : '';
+        var claimId = $('#claim_id').val();
+
+        $('#card_duplicate_warning').remove();
+        if (cardNo && mfgDate) {
+            $.get("{{ route('customer-claims.check-duplicate-card') }}", {
+                card_no: cardNo,
+                mfg_date: mfgDate,
+                id: claimId
+            }, function(res) {
+                if (res.exists) {
+                    $('#card_duplicate_warning').remove();
+                    var warnHtml = `<div id="card_duplicate_warning" class="text-danger fw-bold mt-1" style="font-size: 0.78rem; line-height: 1.2;">
+                        <i class="fa fa-exclamation-triangle"></i> ${res.msg}
+                    </div>`;
+                    $('input[name="card_no"]').addClass('is-invalid');
+                    $('input[name="mfg_date"]').addClass('is-invalid');
+                    $('input[name="card_no"]').parent().append(warnHtml);
+                    showToast(res.msg, 'error');
+                } else {
+                    $('#card_duplicate_warning').remove();
+                    $('input[name="card_no"]').removeClass('is-invalid');
+                    $('input[name="mfg_date"]').removeClass('is-invalid');
+                }
+            });
+        } else {
+            $('input[name="card_no"]').removeClass('is-invalid');
+            $('input[name="mfg_date"]').removeClass('is-invalid');
+        }
+    }
+
+    $('input[name="card_no"], input[name="mfg_date"]').on('change blur', function() {
+        checkCardDuplicate();
+    });
+
     // Auto load initial parties
     $('#party_type').trigger('change');
 
@@ -502,6 +544,14 @@ $(document).ready(function() {
                         showToast('Draft Saved — Ctrl+E to edit');
                     }
                 } else {
+                    if (window.Swal) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Duplicate / Error',
+                            text: res.msg,
+                            confirmButtonColor: '#dc3545'
+                        });
+                    }
                     showToast(res.msg, 'error');
                 }
             },

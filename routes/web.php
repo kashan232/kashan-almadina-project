@@ -74,6 +74,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/customer-claims/import/template', [CustomerClaimController::class, 'downloadImportTemplate'])->name('customer-claims.import.template');
     Route::post('/customer-claims/import', [CustomerClaimController::class, 'processImport'])->name('customer-claims.import.process');
     Route::get('/customer-claims/add', [CustomerClaimController::class, 'create'])->name('customer-claims.create');
+    Route::get('/customer-claims/check-duplicate-card', [CustomerClaimController::class, 'checkDuplicateCard'])->name('customer-claims.check-duplicate-card');
     Route::post('/customer-claims/ajax-save', [CustomerClaimController::class, 'ajaxSave'])->name('customer-claims.ajax-save');
     Route::post('/customer-claims/post/{id}', [CustomerClaimController::class, 'post'])->name('customer-claims.post');
     Route::get('/customer-claims/edit/{id}', [CustomerClaimController::class, 'edit'])->name('customer-claims.edit');

@@ -82,7 +82,7 @@ class PurchaseReportController extends Controller
         if ($report_type == 'All') {
             return $this->previewAll($purchaseItems, $from_date, $to_date);
         } elseif ($report_type == 'Actual Invoice') {
-            return $this->previewActualInvoice($request, $from_date, $to_date);
+            return $this->previewActualInvoice($purchaseItems, $from_date, $to_date);
         } elseif ($report_type == 'Party Wise') {
             return $this->previewPartyWise($purchaseItems, $from_date, $to_date);
         } elseif ($report_type == 'Item Wise') {
@@ -425,7 +425,15 @@ class PurchaseReportController extends Controller
 
         $query = PurchaseItem::with([
             'purchase' => function ($q) {
-                $q->withoutGlobalScopes()->with(['vendor', 'purchasable', 'warehouse', 'user']);
+                $q->withoutGlobalScopes()->with([
+                    'vendor',
+                    'purchasable',
+                    'warehouse',
+                    'user',
+                    'accountAllocations.account',
+                    'accountAllocations.head',
+                    'whtAccount',
+                ]);
             },
             'product.brandRelation',
             'product.latestPrice',
@@ -475,9 +483,16 @@ class PurchaseReportController extends Controller
 
     private function wrapPurchaseLine(PurchaseItem $item, int $sign): object
     {
+        $rate = (float) ($item->purchase_rate > 0 ? $item->purchase_rate : $item->form_rate);
+        $total = (float) ($item->line_total > 0 ? $item->line_total : $item->form_line_total);
+
         if ($sign === 1) {
             $item->setAttribute('entry_type', 'purchase');
             $item->setAttribute('entry_type_label', 'PJ');
+            $item->setAttribute('purchase_rate', $rate);
+            $item->setAttribute('form_rate', $rate);
+            $item->setAttribute('line_total', $total);
+            $item->setAttribute('form_line_total', $total);
             return $item;
         }
 
@@ -486,8 +501,10 @@ class PurchaseReportController extends Controller
             'product' => $item->product,
             'product_id' => $item->product_id,
             'qty' => $sign * (float) $item->qty,
-            'form_rate' => $item->form_rate,
-            'form_line_total' => $sign * (float) $item->form_line_total,
+            'form_rate' => $rate,
+            'purchase_rate' => $rate,
+            'form_line_total' => $sign * $total,
+            'line_total' => $sign * $total,
             'entry_type' => 'purchase',
             'entry_type_label' => 'PJ',
         ];
@@ -506,12 +523,17 @@ class PurchaseReportController extends Controller
         );
 
         $pseudoPurchase = (object) [
+            'id' => $return?->id,
             'invoice_no' => $return?->invoice_no,
             'current_date' => $return?->current_date,
+            'created_at' => $return?->created_at,
             'purchasable' => $return?->purchasable,
             'vendor' => $return?->purchasable_type === Vendor::class ? $return?->purchasable : null,
             'purchasable_id' => $return?->purchasable_id,
             'vendor_id' => $return?->vendor_id,
+            'wht' => 0,
+            'discount' => 0,
+            'accountAllocations' => collect(),
         ];
 
         return (object) [
@@ -521,6 +543,10 @@ class PurchaseReportController extends Controller
             'qty' => $sign * $qty,
             'form_rate' => $formRate,
             'form_line_total' => $sign * $formLineTotal,
+            'purchase_rate' => $formRate,
+            'price' => (float) $item->price,
+            'retail_price' => (float) ($item->retail_price ?? 0),
+            'line_total' => $sign * $formLineTotal,
             'entry_type' => 'purchase_return',
             'entry_type_label' => 'PRJ',
         ];
@@ -541,12 +567,17 @@ class PurchaseReportController extends Controller
         $party = $note?->party_type === 'vendor' ? $note?->vendor : $note?->customer;
 
         $pseudoPurchase = (object) [
+            'id' => $note?->id,
             'invoice_no' => $note?->voucher_no,
             'current_date' => $note?->date,
+            'created_at' => $note?->created_at,
             'purchasable' => $party,
             'vendor' => $note?->party_type === 'vendor' ? $party : null,
             'purchasable_id' => $note?->party_id,
             'vendor_id' => $note?->party_type === 'vendor' ? $note?->party_id : null,
+            'wht' => (float) ($note?->wht_amount ?? 0),
+            'discount' => (float) ($note?->total_discount ?? 0),
+            'accountAllocations' => collect(),
         ];
 
         return (object) [
@@ -556,6 +587,10 @@ class PurchaseReportController extends Controller
             'qty' => $sign * $qty,
             'form_rate' => $formRate,
             'form_line_total' => $sign * $formLineTotal,
+            'purchase_rate' => $formRate,
+            'price' => (float) $item->price,
+            'retail_price' => (float) ($item->retail_price ?? 0),
+            'line_total' => $sign * $formLineTotal,
             'entry_type' => 'claim_credit_note',
             'entry_type_label' => 'CLM-CN',
         ];
@@ -566,97 +601,51 @@ class PurchaseReportController extends Controller
         return view('admin_panel.reports.purchase.preview_all', compact('purchaseItems', 'from_date', 'to_date'));
     }
 
-    private function previewActualInvoice(Request $request, $from_date, $to_date)
+    private function previewActualInvoice($purchaseItems, $from_date, $to_date)
     {
-        $filters = $this->extractFilters($request);
+        $groupedInvoices = $purchaseItems->groupBy(function ($item) {
+            $entryType = $item->entry_type ?? 'purchase';
+            $invNo = $item->purchase->invoice_no ?? '0';
+            $pId = $item->purchase->purchasable_id ?? $item->purchase->vendor_id ?? '0';
+            $date = $item->purchase->entry_date ?? $item->purchase->current_date ?? '0';
+            return "{$entryType}_{$invNo}_{$pId}_{$date}";
+        });
 
-        $query = \App\Models\Purchase::withoutGlobalScopes()
-            ->with([
-                'purchasable',
-                'vendor',
-                'items.product.brandRelation',
-                'items.product.latestPrice',
-                'accountAllocations.account',
-                'accountAllocations.head',
-                'whtAccount',
-            ])
-            ->where('status', 'Posted');
+        $extractNum = function ($val) {
+            return (int) (preg_replace('/[^0-9]/', '', (string) $val) ?: 0);
+        };
 
-        $this->applyPurchaseDateFilter($query, $from_date, $to_date);
+        $purchases = $groupedInvoices->map(function ($items) {
+            $first = $items->first();
+            $purchaseInfo = $first->purchase;
+            $entryType = $first->entry_type ?? 'purchase';
+            $entryTypeLabel = $first->entry_type_label ?? 'PJ';
 
-        if (!empty($filters['invoice_no'])) {
-            $invoiceNo = $filters['invoice_no'];
-            $query->where(function ($sub) use ($invoiceNo) {
-                $sub->where('invoice_no', 'like', "%{$invoiceNo}%")
-                    ->orWhere('invoice_no', 'like', '%' . ltrim($invoiceNo, '0') . '%');
-            });
-        }
+            $isPurchase = $entryType === 'purchase';
+            $wht = (float) ($purchaseInfo->wht ?? 0);
+            $discount = (float) ($purchaseInfo->discount ?? 0);
+            $allocations = ($isPurchase && isset($purchaseInfo->accountAllocations)) 
+                ? $purchaseInfo->accountAllocations 
+                : collect();
 
-        if ($this->shouldApplyFilter($filters['parties'], $filters['totalParties'])) {
-            $query->where(function ($sub) use ($filters) {
-                $sub->whereIn('vendor_id', $filters['parties'])
-                    ->orWhereIn('purchasable_id', $filters['parties']);
-            });
-        }
-
-        if ($this->shouldApplyFilter($filters['sales_officers'], $filters['totalUsers'])) {
-            $query->whereIn('created_by', $filters['sales_officers']);
-        }
-
-        if ($this->shouldApplyFilter($filters['warehouses'], $filters['totalWarehouses'])) {
-            $query->whereIn('warehouse_id', $filters['warehouses']);
-        }
-
-        $purchases = $query->get()->sortBy(function ($p) {
-            return (int) (preg_replace('/[^0-9]/', '', (string) $p->invoice_no) ?: 0);
+            return (object) [
+                'id' => $purchaseInfo->id ?? null,
+                'invoice_no' => $purchaseInfo->invoice_no ?? '',
+                'entry_date' => $purchaseInfo->entry_date ?? null,
+                'current_date' => $purchaseInfo->current_date ?? null,
+                'created_at' => $purchaseInfo->created_at ?? null,
+                'purchasable' => $purchaseInfo->purchasable ?? $purchaseInfo->vendor ?? null,
+                'vendor' => $purchaseInfo->vendor ?? null,
+                'wht' => $wht,
+                'discount' => $discount,
+                'accountAllocations' => $allocations,
+                'entry_type' => $entryType,
+                'entry_type_label' => $entryTypeLabel,
+                'items' => $items,
+            ];
+        })->sortBy(function ($p) use ($extractNum) {
+            return $extractNum($p->invoice_no);
         })->values();
-
-        // Attach historical date-aware purchase retail price to each item inside each purchase
-        $allProductPrices = \App\Models\ProductPrice::orderBy('start_date', 'asc')
-            ->orderBy('created_at', 'asc')
-            ->orderBy('id', 'asc')
-            ->get()
-            ->groupBy('product_id');
-
-        foreach ($purchases as $p) {
-            $rawDate = !empty($p->entry_date) ? $p->entry_date : (!empty($p->current_date) ? $p->current_date : ($p->created_at ? \Carbon\Carbon::parse($p->created_at)->toDateString() : now()->toDateString()));
-            $purchaseTime = $p->created_at ? \Carbon\Carbon::parse($p->created_at) : now();
-
-            foreach ($p->items as $item) {
-                $pId = $item->product_id;
-                $retailPrice = 0;
-                $pricesForProd = $allProductPrices->get($pId, collect());
-
-                if ($pricesForProd->isNotEmpty()) {
-                    $matched = $pricesForProd->filter(function($pr) use ($rawDate) {
-                        $start = $pr->start_date;
-                        $end = $pr->end_date;
-                        if ($start && $rawDate < $start) return false;
-                        if ($end && $rawDate > $end) return false;
-                        return true;
-                    });
-
-                    if ($matched->count() > 1) {
-                        $exact = $matched->filter(fn($pr) => \Carbon\Carbon::parse($pr->created_at) <= $purchaseTime)->last();
-                        $chosen = $exact ?: $matched->last();
-                    } else {
-                        $chosen = $matched->first();
-                    }
-
-                    if (!$chosen) {
-                        $chosen = $pricesForProd->filter(fn($pr) => !$pr->start_date || $pr->start_date <= $rawDate)->last() ?: $pricesForProd->last();
-                    }
-
-                    $retailPrice = (float) ($chosen->purchase_retail_price ?? $chosen->sale_retail_price ?? 0);
-                }
-
-                if ($retailPrice <= 0) {
-                    $retailPrice = (float) ($item->product?->latestPrice?->purchase_retail_price ?? $item->product?->latestPrice?->sale_retail_price ?? $item->product?->retail_price ?? 0);
-                }
-
-                $item->purchase_retail_price = $retailPrice;
-            }
-        }
 
         return view('admin_panel.reports.purchase.preview_actual_invoice', compact('purchases', 'from_date', 'to_date'));
     }

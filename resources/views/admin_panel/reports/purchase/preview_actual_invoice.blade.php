@@ -131,6 +131,7 @@
         .text-center { text-align: center; }
         .text-left { text-align: left; }
 
+        @include('admin_panel.reports.purchase.partials.report_line_styles')
         @media print {
             .no-print { display: none !important; }
             body { padding: 0; }
@@ -195,6 +196,7 @@
                         $invoiceNo = $p->invoice_no ?? '-';
                         $displayInvNo = preg_match('/\d+/', $invoiceNo, $matches) ? ltrim($matches[0], '0') : $invoiceNo;
                         if (empty($displayInvNo) || $displayInvNo === '') { $displayInvNo = '0'; }
+                        $displayInvNo = str_pad($displayInvNo, 3, '0', STR_PAD_LEFT);
 
                         $rawDate = !empty($p->entry_date) ? $p->entry_date : ($p->current_date ?? $p->created_at);
                         $purchaseDate = \Carbon\Carbon::parse($rawDate)->format('d-m-y');
@@ -205,12 +207,18 @@
 
                         $whtAmt = (float) ($p->wht ?? 0);
                         $discAmt = (float) ($p->discount ?? 0);
+                        $isReturnOrCredit = ($p->entry_type ?? 'purchase') !== 'purchase';
                     @endphp
 
                     <!-- Main Supplier & Header Bar Row -->
                     <tr class="party-heading-row">
                         <td colspan="5" class="text-left">
-                            <span class="party-name">{{ strtoupper($partyName) }}</span>
+                            <span class="party-name">
+                                @if($isReturnOrCredit)
+                                    <span class="type-cell type-{{ $p->entry_type }}">[{{ $p->entry_type_label }}]</span>
+                                @endif
+                                {{ strtoupper($partyName) }}
+                            </span>
                         </td>
                         <td colspan="2" class="text-right">Date.&nbsp;&nbsp;<b>{{ $purchaseDate }}</b></td>
                         <td colspan="2" class="text-right">Inv. No.&nbsp;&nbsp;<b>{{ $displayInvNo }}</b></td>
@@ -226,6 +234,7 @@
                     @endif
 
                     <!-- Account Allocations Rows (Subhead) -->
+                    @if(!empty($p->accountAllocations))
                     @foreach($p->accountAllocations as $alloc)
                         @php
                             $allocTitle = $alloc->account ? $alloc->account->title : ($alloc->head ? $alloc->head->name : 'Account Allocation');
@@ -237,6 +246,7 @@
                             <td class="text-right bold-val">-{{ number_format($allocAmt, 0) }}</td>
                         </tr>
                     @endforeach
+                    @endif
 
                     <!-- Product Items Rows -->
                     @foreach($p->items as $item)
@@ -244,19 +254,24 @@
                             $qty = (float) $item->qty;
                             $retail_p = (float) ($item->purchase_retail_price ?? $item->retail_price ?? 0);
                             $retail_a = $retail_p * $qty;
-                            $purchase_p = (float) ($item->purchase_rate > 0 ? $item->purchase_rate : $item->price);
-                            $lineTotal = (float) ($item->line_total > 0 ? $item->line_total : ($purchase_p * $qty));
+                            $purchase_p = (float) ($item->purchase_rate > 0 ? $item->purchase_rate : ($item->form_rate ?? $item->price ?? 0));
+                            $lineTotal = (float) ($item->form_line_total ?? $item->line_total ?? ($purchase_p * $qty));
 
                             $inv_qty += $qty;
                             $inv_retail_amt += $retail_a;
                             $inv_purchase_amt += $lineTotal;
                         @endphp
-                        <tr class="data-row">
-                            <td class="text-left">{{ $item->product ? $item->product->name : 'N/A' }}</td>
+                        <tr class="data-row {{ ($item->entry_type ?? 'purchase') !== 'purchase' ? 'return-row' : '' }}">
+                            <td class="text-left">
+                                @if(($item->entry_type ?? 'purchase') !== 'purchase')
+                                    <span class="type-cell type-{{ $item->entry_type }}">[{{ $item->entry_type_label }}]</span>
+                                @endif
+                                {{ $item->product ? $item->product->name : 'N/A' }}
+                            </td>
                             <td class="text-center">{{ $item->product && $item->product->brandRelation ? $item->product->brandRelation->name : '-' }}</td>
                             <td class="text-center">{{ number_format($qty) }}</td>
                             <td class="text-right">{{ $retail_p > 0 ? number_format($retail_p, 0) : '' }}</td>
-                            <td class="text-right bold-val">{{ $retail_a > 0 ? number_format($retail_a, 0) : '' }}</td>
+                            <td class="text-right bold-val">{{ abs($retail_a) > 0.001 ? number_format($retail_a, 0) : '' }}</td>
                             <td class="text-right">{{ number_format($purchase_p, 0) }}</td>
                             <td class="text-right bold-val">{{ number_format($lineTotal, 0) }}</td>
                             <td class="text-right"></td>
@@ -265,7 +280,8 @@
                     @endforeach
 
                     @php
-                        $netInvTotal = $inv_purchase_amt + $whtAmt - $p->accountAllocations->sum('amount');
+                        $allocSum = (!empty($p->accountAllocations) && is_iterable($p->accountAllocations)) ? $p->accountAllocations->sum('amount') : 0;
+                        $netInvTotal = $inv_purchase_amt + $whtAmt - $allocSum;
 
                         $grand_qty += $inv_qty;
                         $grand_retail_amt += $inv_retail_amt;

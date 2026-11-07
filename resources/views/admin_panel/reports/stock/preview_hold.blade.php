@@ -9,7 +9,7 @@
         * { box-sizing: border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
         body {
             font-family: Arial, Helvetica, sans-serif;
-            font-size: 8px;
+            font-size: 10px;
             color: #000;
             margin: 0;
             padding: 1mm;
@@ -58,18 +58,18 @@
             margin: 0;
         }
         .report-type {
-            font-size: 8px;
+            font-size: 10px;
             font-weight: bold;
             text-decoration: underline;
             color: #bf360c;
         }
-        .date-range { font-size: 7px; font-weight: bold; }
+        .date-range { font-size: 9px; font-weight: bold; }
         .date-range span { text-decoration: underline; }
         .generated-date {
             position: absolute;
             right: 0;
             top: 0;
-            font-size: 6px;
+            font-size: 8px;
             color: #333;
         }
         table {
@@ -83,7 +83,7 @@
             background: #cfd8dc;
             border: 1px solid #000;
             padding: 2px;
-            font-size: 8px;
+            font-size: 10px;
             font-weight: bold;
             text-align: center;
         }
@@ -95,7 +95,7 @@
         td {
             border: 1px solid #666;
             padding: 1px 3px;
-            font-size: 8px;
+            font-size: 10px;
         }
         td.hold-col {
             background: #fff3e0;
@@ -113,7 +113,7 @@
         .brand-title td {
             background: #eceff1;
             font-weight: bold;
-            font-size: 8px;
+            font-size: 10px;
             padding: 2px 4px;
             color: #0d47a1;
         }

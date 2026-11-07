@@ -534,27 +534,14 @@
 
             <hr class="thick-rule">
 
-            @php
-                $hasKgRate = collect($rows)->contains(function($r) {
-                    return (!empty($r['kg']) && (float)$r['kg'] > 0) || (!empty($r['rate']) && (float)$r['rate'] > 0);
-                });
-            @endphp
             <!-- Table -->
             <table class="main">
                 <thead>
                     <tr>
-                        <th class="col-sno">S no.</th>
-                        @if($hasKgRate)
-                            <th style="width: 44%; text-align: left; padding-left: 6px;">Payment Details / Towards Account</th>
-                            <th style="width: 12%;">Reference</th>
-                            <th style="width: 12%; text-align: center;">KG</th>
-                            <th style="width: 12%; text-align: right; padding-right: 4px;">Rate</th>
-                            <th style="width: 15%; text-align: right; padding-right: 6px;">Amount</th>
-                        @else
-                            <th style="width: 58%; text-align: left; padding-left: 6px;">Payment Details / Towards Account</th>
-                            <th style="width: 14%;">Reference</th>
-                            <th style="width: 20%; text-align: right; padding-right: 6px;">Amount</th>
-                        @endif
+                        <th class="col-sno" style="width: 8%;">S no.</th>
+                        <th style="width: 58%; text-align: left; padding-left: 6px;">Payment Details / Towards Account</th>
+                        <th style="width: 14%;">Reference</th>
+                        <th style="width: 20%; text-align: right; padding-right: 6px;">Amount</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -562,6 +549,8 @@
                     @php
                         $accParts = array_filter([$row['account_head'] ?? '', $row['account_name'] ?? '']);
                         $accStr = implode(' - ', $accParts);
+                        $hasRowKg = !empty($row['kg']) && (float)$row['kg'] > 0;
+                        $hasRowRate = !empty($row['rate']) && (float)$row['rate'] > 0;
                     @endphp
                     <tr>
                         <td class="c">{{ $key + 1 }}</td>
@@ -570,23 +559,28 @@
                             @if($accStr)
                                 <div style="font-size: 8pt; color: #444; font-weight: normal;">Towards: {{ $accStr }}</div>
                             @endif
+                            @if($hasRowKg || $hasRowRate)
+                                <div style="font-size: 8.5pt; color: #000; font-weight: 600; margin-top: 2px;">
+                                    @if($hasRowKg)
+                                        <span>KG: <b style="color: #000080;">{{ (floor($row['kg']) == $row['kg']) ? number_format($row['kg'], 0) : number_format($row['kg'], 2) }}</b></span>
+                                    @endif
+                                    @if($hasRowKg && $hasRowRate)
+                                        <span style="margin: 0 5px; color: #888;">|</span>
+                                    @endif
+                                    @if($hasRowRate)
+                                        <span>Rate: <b style="color: #000080;">{{ number_format($row['rate'], 2) }}</b></span>
+                                    @endif
+                                </div>
+                            @endif
                         </td>
                         <td class="c">{{ $row['reference'] ?: '-' }}</td>
-                        @if($hasKgRate)
-                            <td class="c" style="font-weight: 600; font-variant-numeric: tabular-nums;">
-                                {{ (!empty($row['kg']) && (float)$row['kg'] > 0) ? (floor($row['kg']) == $row['kg'] ? number_format($row['kg'], 0) : number_format($row['kg'], 2)) : '-' }}
-                            </td>
-                            <td class="r" style="font-weight: 600; font-variant-numeric: tabular-nums; padding-right: 4px;">
-                                {{ (!empty($row['rate']) && (float)$row['rate'] > 0) ? number_format($row['rate'], 2) : '-' }}
-                            </td>
-                        @endif
                         <td class="r" style="font-weight: 700; font-variant-numeric: tabular-nums; padding-right: 6px;">{{ number_format($row['amount'], 2) }}</td>
                     </tr>
                     @endforeach
                 </tbody>
                 <tfoot>
                     <tr>
-                        <td colspan="{{ $hasKgRate ? 5 : 3 }}" style="text-align: right; font-weight: 700; padding-right: 8px;">Total :</td>
+                        <td colspan="3" style="text-align: right; font-weight: 700; padding-right: 8px;">Total :</td>
                         <td class="r" style="font-weight: 700; font-variant-numeric: tabular-nums; padding-right: 6px;">{{ number_format($voucher->total_amount, 2) }}</td>
                     </tr>
                 </tfoot>

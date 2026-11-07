@@ -12,7 +12,7 @@
         * { box-sizing: border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
         html, body {
             font-family: Calibri, Arial, sans-serif;
-            font-size: 8.5px;
+            font-size: 10px;
             color: #000;
             margin: 0;
             padding: 0mm;
@@ -69,17 +69,17 @@
             margin: 0;
         }
         .report-type {
-            font-size: 9px;
+            font-size: 11px;
             font-weight: bold;
             text-decoration: underline;
         }
-        .date-range { font-size: 8px; font-weight: bold; margin-bottom: 2px; }
+        .date-range { font-size: 10px; font-weight: bold; margin-bottom: 2px; }
         .date-range span { text-decoration: underline; }
         .generated-date {
             position: absolute;
             right: 0;
             top: 0;
-            font-size: 7px;
+            font-size: 8.5px;
             color: #333;
         }
         table {
@@ -116,7 +116,7 @@
             border-left: none;
             border-right: none;
             padding: 1.5px 1px;
-            font-size: 8px;
+            font-size: 10px;
             font-weight: bold;
             text-align: center;
             line-height: 1.1;
@@ -142,7 +142,7 @@
             border-bottom: 1px solid #777;
             padding: 1px 1px;
             vertical-align: middle;
-            font-size: 8px;
+            font-size: 10px;
             line-height: 1.1;
             color: #000 !important;
             page-break-inside: avoid;
@@ -165,13 +165,13 @@
             color: #000 !important;
             text-align: center;
         }
-        .opening-col, .closing-col { font-weight: bold; text-align: center; font-size: 8px; }
+        .opening-col, .closing-col { font-weight: bold; text-align: center; font-size: 10px; }
         .wh-title td {
             background: #f0f0f0 !important;
             font-weight: bold;
             text-align: left;
             padding: 1px 2px;
-            font-size: 8px;
+            font-size: 10px;
             border-top: 1px solid #000;
             border-bottom: 1px solid #000;
         }
@@ -181,7 +181,7 @@
             color: #0d47a1 !important;
             text-align: left;
             padding: 1.5px 3px;
-            font-size: 8px;
+            font-size: 10px;
             border-top: 1px solid #777;
             border-bottom: 1px solid #777;
         }
@@ -190,14 +190,14 @@
             font-weight: bold;
             border-top: 1px solid #777;
             border-bottom: 1px solid #000;
-            font-size: 7.5px;
+            font-size: 10px;
         }
-        .subtotal-row td {
+        .subtotal-row td, .grand-total-row td {
             background: #fff !important;
             font-weight: bold;
             border-top: 1px solid #000;
             border-bottom: 1px solid #000;
-            font-size: 8px;
+            font-size: 10px;
         }
         .wh-title, .brand-heading-row {
             page-break-inside: avoid;
@@ -447,8 +447,8 @@
                         <th colspan="5">Generals</th>
                     </tr>
                     <tr>
-                        <th>Start Date<br><span style="font-size:7px; font-weight:bold;">{{ $from_date ? \Carbon\Carbon::parse($from_date)->format('d-m-y') : $opening_label }}</span></th>
-                        <th>End Date<br><span style="font-size:7px; font-weight:bold;">{{ $to_date ? \Carbon\Carbon::parse($to_date)->format('d-m-y') : $closing_label }}</span></th>
+                        <th>Start Date<br><span style="font-size:8.5px; font-weight:bold;">{{ $from_date ? \Carbon\Carbon::parse($from_date)->format('d-m-y') : $opening_label }}</span></th>
+                        <th>End Date<br><span style="font-size:8.5px; font-weight:bold;">{{ $to_date ? \Carbon\Carbon::parse($to_date)->format('d-m-y') : $closing_label }}</span></th>
                         <th>PJ</th>
                         <th class="col-out">PRJ</th>
                         <th class="col-out">SJ</th>
@@ -473,8 +473,8 @@
                         <th colspan="3">Generals</th>
                     </tr>
                     <tr>
-                        <th>Start Date<br><span style="font-size:7px; font-weight:bold;">{{ $from_date ? \Carbon\Carbon::parse($from_date)->format('d-m-y') : $opening_label }}</span></th>
-                        <th>End Date<br><span style="font-size:7px; font-weight:bold;">{{ $to_date ? \Carbon\Carbon::parse($to_date)->format('d-m-y') : $closing_label }}</span></th>
+                        <th>Start Date<br><span style="font-size:8.5px; font-weight:bold;">{{ $from_date ? \Carbon\Carbon::parse($from_date)->format('d-m-y') : $opening_label }}</span></th>
+                        <th>End Date<br><span style="font-size:8.5px; font-weight:bold;">{{ $to_date ? \Carbon\Carbon::parse($to_date)->format('d-m-y') : $closing_label }}</span></th>
                         <th>Clm In</th>
                         <th class="col-out">Clm-Out</th>
                         <th class="col-out">Clm-Out</th>
@@ -497,8 +497,8 @@
                         <th colspan="5">Generals</th>
                     </tr>
                     <tr>
-                        <th>Start Date<br><span style="font-size:7px; font-weight:bold;">{{ $from_date ? \Carbon\Carbon::parse($from_date)->format('d-m-y') : $opening_label }}</span></th>
-                        <th>End Date<br><span style="font-size:7px; font-weight:bold;">{{ $to_date ? \Carbon\Carbon::parse($to_date)->format('d-m-y') : $closing_label }}</span></th>
+                        <th>Start Date<br><span style="font-size:8.5px; font-weight:bold;">{{ $from_date ? \Carbon\Carbon::parse($from_date)->format('d-m-y') : $opening_label }}</span></th>
+                        <th>End Date<br><span style="font-size:8.5px; font-weight:bold;">{{ $to_date ? \Carbon\Carbon::parse($to_date)->format('d-m-y') : $closing_label }}</span></th>
                         <th>PJ</th>
                         <th class="col-out">PRJ</th>
                         <th class="col-out">SJ</th>

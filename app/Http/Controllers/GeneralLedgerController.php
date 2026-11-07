@@ -790,87 +790,89 @@ class GeneralLedgerController extends Controller
             ];
         }
 
-        // 3. Payments (PV)
+        // 3. Payments (PV) - Debit
         $pvDateCol = $this->getDateColumn('payment_vouchers', 'receipt_date');
         $payments = $this->ledgerQuery(PaymentVoucher::class)->where('party_id', $id)->whereIn('type', $typeArray)
             ->whereIn('status', ['posted', 'Posted'])->whereBetween(DB::raw($pvDateCol), [$start, $end])->get();
         foreach ($payments as $pv) {
             $accIds = json_decode($pv->row_account_id, true) ?? [];
             $amounts = json_decode($pv->amount, true) ?? [];
-            $discounts = json_decode($pv->discount_value, true);
+            $narrIds = json_decode($pv->narration_id, true) ?? [];
+            $discounts = json_decode($pv->discount_value, true) ?? [];
             $discAccIds = json_decode($pv->discount_account_id, true) ?? [];
             $kgs = json_decode($pv->kg, true) ?? [];
+            $pvRates = is_array($pv->rate) ? $pv->rate : (json_decode($pv->rate ?? '', true) ?? []);
             $refNos = json_decode($pv->reference_no, true) ?? [];
 
-            $totalKg = 0.0;
-            if (is_array($kgs)) {
-                foreach ($kgs as $k) { $totalKg += (float)$k; }
-            } elseif (is_numeric($pv->kg ?? null)) {
-                $totalKg = (float)$pv->kg;
-            }
+            foreach ($accIds as $idx => $aid) {
+                $rowAmount = (float)($amounts[$idx] ?? 0);
+                $rowDiscount = (float)($discounts[$idx] ?? 0);
+                $rowKg = (float)($kgs[$idx] ?? 0);
+                $rowRate = (float)($pvRates[$idx] ?? 0);
+                if ($rowRate <= 0 && $rowKg > 0 && $rowAmount > 0) {
+                    $rowRate = round($rowAmount / $rowKg, 2);
+                }
+                if ($rowAmount <= 0 && $rowDiscount <= 0) continue;
 
-            $totalDisc = 0.0;
-            if (is_numeric($pv->discount_value)) {
-                $totalDisc = (float)$pv->discount_value;
-            } elseif (is_array($discounts)) {
-                foreach ($discounts as $d) { $totalDisc += (float)$d; }
-            }
+                $rowRef = '';
+                if (is_array($refNos)) {
+                    $rowRef = trim((string)($refNos[$idx] ?? ''));
+                } elseif (is_string($pv->reference_no)) {
+                    $rowRef = trim($pv->reference_no);
+                }
+                if (strtolower($rowRef) === 'null') {
+                    $rowRef = '';
+                }
 
-            $pvPaidAmt = (float)$pv->total_amount;
-            if ($totalDisc > 0 && $pvPaidAmt >= $totalDisc) {
-                // If total_amount was saved including discount, separate net paid amount
-                $pvPaidAmt = $pvPaidAmt - $totalDisc;
-            }
+                $rowInv = $pv->pvid;
+                $refLabel = '';
+                if ($rowRef !== '') {
+                    $refLabel = (stripos($rowRef, 'ref') !== false) ? $rowRef : ('Ref# ' . $rowRef);
+                }
 
-            $validRefs = [];
-            if (is_array($refNos)) {
-                foreach ($refNos as $r) {
-                    $rStr = trim((string)$r);
-                    if ($rStr !== '' && strtolower($rStr) !== 'null') {
-                        $validRefs[] = $rStr;
+                $accName = DB::table('accounts')->where('id', $aid)->value('title');
+                $narrText = '';
+                if (isset($narrIds[$idx])) {
+                    $narrText = is_numeric($narrIds[$idx]) ? DB::table('narrations')->where('id', $narrIds[$idx])->value('narration') : $narrIds[$idx];
+                }
+                
+                $descParts = [];
+                if ($accName) $descParts[] = $accName;
+                if ($narrText && $narrText !== $accName) $descParts[] = $narrText;
+                if (!empty($pv->remarks)) $descParts[] = $pv->remarks;
+                if ($refLabel !== '') $descParts[] = '(' . $refLabel . ')';
+                $desc = !empty($descParts) ? implode(' ; ', $descParts) : 'Payment Voucher';
+
+                $pvDate = $pv->entry_date ?: ($pv->receipt_date ?: $pv->created_at);
+                if ($rowAmount > 0) {
+                    $transactions[] = [
+                        'created_at' => $pv->created_at,
+                        'id' => $pv->id . '_' . $idx,
+                        'date' => $pvDate,
+                        'ref' => 'PV',
+                        'inv' => $rowInv,
+                        'desc' => $desc,
+                        'price' => $rowRate, 'qty' => $rowKg, 'debit' => $rowAmount, 'credit' => 0,
+                        'priority' => 50
+                    ];
+                }
+
+                if ($rowDiscount > 0) {
+                    $discDesc = $this->voucherDiscountDescription($discAccIds[$idx] ?? null);
+                    if ($refLabel !== '') {
+                        $discDesc .= ' (' . $refLabel . ')';
                     }
+                    $transactions[] = [
+                        'created_at' => $pv->created_at,
+                        'id' => $pv->id . '_disc_' . $idx,
+                        'date' => $pvDate,
+                        'ref' => 'PV',
+                        'inv' => $rowInv,
+                        'desc' => $discDesc,
+                        'price' => 0, 'qty' => 0, 'debit' => $rowDiscount, 'credit' => 0,
+                        'priority' => 51
+                    ];
                 }
-            } elseif (is_string($pv->reference_no)) {
-                $rStr = trim($pv->reference_no);
-                if ($rStr !== '' && strtolower($rStr) !== 'null') {
-                    $validRefs[] = $rStr;
-                }
-            }
-            $pvInv = $pv->pvid;
-            $refLabel = '';
-            if (!empty($validRefs)) {
-                $pvRefStr = implode(', ', array_unique($validRefs));
-                $refLabel = (stripos($pvRefStr, 'ref') !== false) ? $pvRefStr : ('Ref# ' . $pvRefStr);
-            }
-            $pvDesc = $pv->remarks ?? 'Payment Voucher';
-            if ($refLabel !== '') {
-                $pvDesc = $pvDesc !== '' ? ($pvDesc . ' (' . $refLabel . ')') : ('(' . $refLabel . ')');
-            }
-
-            $transactions[] = [
-                'created_at' => $pv->created_at,
-                'id' => $pv->id,
-                'date' => $pv->entry_date ?: $pv->created_at,
-                'ref' => 'PV',
-                'inv' => $pvInv,
-                'desc' => $pvDesc,
-                'qty' => $totalKg, 'debit' => $pvPaidAmt, 'credit' => 0
-            ];
-
-            if ($totalDisc > 0) {
-                $discDesc = 'Payment Discount (Income)';
-                if ($refLabel !== '') {
-                    $discDesc .= ' (' . $refLabel . ')';
-                }
-                $transactions[] = [
-                    'created_at' => $pv->created_at,
-                    'id' => $pv->id . '_disc',
-                    'date' => $pv->entry_date ?: $pv->created_at,
-                    'ref' => 'IV',
-                    'inv' => $pvInv,
-                    'desc' => $discDesc,
-                    'qty' => 0, 'debit' => 0, 'credit' => $totalDisc
-                ];
             }
         }
 
@@ -2669,10 +2671,11 @@ class GeneralLedgerController extends Controller
                 }
                 
                 $descParts = [];
-                if ($narrText) $descParts[] = $narrText;
+                if ($accName) $descParts[] = $accName;
+                if ($narrText && $narrText !== $accName) $descParts[] = $narrText;
                 if (!empty($pv->remarks)) $descParts[] = $pv->remarks;
                 if ($refLabel !== '') $descParts[] = '(' . $refLabel . ')';
-                $desc = !empty($descParts) ? implode(' : ', $descParts) : 'Payment Voucher';
+                $desc = !empty($descParts) ? implode(' ; ', $descParts) : 'Payment Voucher';
 
                 $pvDate = $pv->entry_date ?: ($pv->receipt_date ?: $pv->created_at);
                 if ($rowAmount > 0) {

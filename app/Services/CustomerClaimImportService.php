@@ -376,6 +376,18 @@ class CustomerClaimImportService
             $retailPrice = (float)($product->retail_price ?? $product->price ?? 0);
             $salesPrice = (float)($product->price ?? $product->retail_price ?? 0);
 
+            // Duplicate Card No + MFG Date check
+            if (!empty($cardNo) && !empty($mfgDate)) {
+                $existingClaim = CustomerClaim::withoutGlobalScopes()
+                    ->whereRaw('TRIM(card_no) = ?', [$cardNo])
+                    ->whereRaw('TRIM(mfg_date) = ?', [$mfgDate])
+                    ->first(['id', 'claim_no']);
+                if ($existingClaim) {
+                    $errors[] = "Row {$rowNumber}: Card No '{$cardNo}' with MFG Date '{$mfgDate}' already exists in Claim # {$existingClaim->claim_no}.";
+                    continue;
+                }
+            }
+
             // Save inside transaction
             try {
                 DB::beginTransaction();
