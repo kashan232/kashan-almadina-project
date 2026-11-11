@@ -17,6 +17,7 @@ use App\Models\ExpenseVoucher;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class GeneralLedgerController extends Controller
 {
@@ -634,15 +635,54 @@ class GeneralLedgerController extends Controller
 
     public function preview(Request $request)
     {
+        $payload = $this->resolvePreviewData($request);
+        if (!$payload) {
+            return back()->with('error', 'Please select an account/party first.');
+        }
+
+        return view($payload['view'], $payload['data']);
+    }
+
+    public function exportPdf(Request $request)
+    {
+        $payload = $this->resolvePreviewData($request);
+        if (!$payload) {
+            return back()->with('error', 'Please select an account/party first.');
+        }
+
+        $orientation = ($payload['orientation'] === 'landscape') ? 'landscape' : 'portrait';
+        $pdf = Pdf::loadView($payload['pdfView'], $payload['data'])
+            ->setPaper('a4', $orientation)
+            ->setOption('isHtml5ParserEnabled', true)
+            ->setOption('isRemoteEnabled', false);
+
+        $pdf->render();
+        $dompdf = $pdf->getDomPDF();
+        $canvas = $dompdf->getCanvas();
+        $font = $dompdf->getFontMetrics()->get_font('Helvetica', 'normal');
+        $canvas->page_text(
+            $canvas->get_width() - 62,
+            $canvas->get_height() - 18,
+            'Page {PAGE_NUM} of {PAGE_COUNT}',
+            $font,
+            7.5,
+            [0.2, 0.2, 0.2]
+        );
+
+        return $pdf->download($payload['filename']);
+    }
+
+    private function resolvePreviewData(Request $request): ?array
+    {
         $type = $request->ac_type;
         $id = $request->ac_id;
         $report_mode = $request->report_mode; // 'details' or 'summary'
         $startDate = $request->start_date;
         $endDate = $request->end_date;
-        $orientation = $request->orientation ?? 'portrait';
+        $orientation = ($request->orientation === 'landscape') ? 'landscape' : 'portrait';
 
         if (!$id || !$type) {
-            return back()->with('error', 'Please select an account/party first.');
+            return null;
         }
 
         // Handle Grouped / Bulk Ledgers (Main Head Accounts, All Customers, All Vendors)
@@ -657,7 +697,7 @@ class GeneralLedgerController extends Controller
                 $subAccounts = Account::when($headId, fn($q) => $q->where('head_id', $headId))->orderBy('title')->get();
                 foreach ($subAccounts as $acc) {
                     $op = $this->calculateOpeningBalance('account', $acc->id, $startDate);
-                    $txs = ($report_mode == 'summary') 
+                    $txs = ($report_mode == 'summary')
                         ? $this->fetchSummaryTransactions('account', $acc->id, $startDate, $endDate)
                         : $this->fetchTransactions('account', $acc->id, $startDate, $endDate);
                     $groupedData[] = [
@@ -672,7 +712,7 @@ class GeneralLedgerController extends Controller
                 $customers = Customer::orderBy('customer_name')->get();
                 foreach ($customers as $cust) {
                     $op = $this->calculateOpeningBalance('customer', $cust->id, $startDate);
-                    $txs = ($report_mode == 'summary') 
+                    $txs = ($report_mode == 'summary')
                         ? $this->fetchSummaryTransactions('customer', $cust->id, $startDate, $endDate)
                         : $this->fetchTransactions('customer', $cust->id, $startDate, $endDate);
                     $groupedData[] = [
@@ -687,7 +727,7 @@ class GeneralLedgerController extends Controller
                 $vendors = Vendor::orderBy('name')->get();
                 foreach ($vendors as $vend) {
                     $op = $this->calculateOpeningBalance('vendor', $vend->id, $startDate);
-                    $txs = ($report_mode == 'summary') 
+                    $txs = ($report_mode == 'summary')
                         ? $this->fetchSummaryTransactions('vendor', $vend->id, $startDate, $endDate)
                         : $this->fetchTransactions('vendor', $vend->id, $startDate, $endDate);
                     $groupedData[] = [
@@ -699,26 +739,48 @@ class GeneralLedgerController extends Controller
                 }
             }
 
-            return view('admin_panel.reports.general_ledger.preview_grouped', compact('groupedData', 'mainTitle', 'startDate', 'endDate', 'orientation'));
+            return [
+                'view' => 'admin_panel.reports.general_ledger.preview_grouped',
+                'pdfView' => 'admin_panel.reports.general_ledger.pdf_grouped',
+                'orientation' => $orientation,
+                'filename' => 'Grouped_General_Ledger.pdf',
+                'data' => compact('groupedData', 'mainTitle', 'startDate', 'endDate', 'orientation'),
+            ];
         }
 
         if ($type == 'account') {
             $account_info = $this->ledgerQuery(Account::class)->with('head')->findOrFail($id);
+            $acCode = $account_info->account_code ?: $account_info->id;
         } elseif ($type == 'customer') {
             $account_info = $this->ledgerQuery(Customer::class)->findOrFail($id);
+            $acCode = $account_info->customer_id ?: $account_info->id;
         } else {
             $account_info = $this->ledgerQuery(Vendor::class)->findOrFail($id);
+            $acCode = $account_info->vendor_id ?: $account_info->id;
         }
 
+        $safeCode = preg_replace('/[^a-zA-Z0-9_-]/', '_', (string)$acCode);
         $openingBalance = $this->calculateOpeningBalance($type, $id, $startDate);
-        
+
         if ($report_mode == 'summary') {
             $transactions = $this->fetchSummaryTransactions($type, $id, $startDate, $endDate);
-            return view('admin_panel.reports.general_ledger.preview_summary', compact('transactions', 'openingBalance', 'startDate', 'endDate', 'account_info', 'type', 'orientation'));
-        } else {
-            $transactions = $this->fetchTransactions($type, $id, $startDate, $endDate);
-            return view('admin_panel.reports.general_ledger.preview_details', compact('transactions', 'openingBalance', 'startDate', 'endDate', 'account_info', 'type', 'orientation'));
+            return [
+                'view' => 'admin_panel.reports.general_ledger.preview_summary',
+                'pdfView' => 'admin_panel.reports.general_ledger.pdf_ledger',
+                'orientation' => $orientation,
+                'filename' => "General_Ledger_{$safeCode}.pdf",
+                'data' => compact('transactions', 'openingBalance', 'startDate', 'endDate', 'account_info', 'type', 'orientation') + ['reportMode' => 'summary'],
+            ];
         }
+
+        $transactions = $this->fetchTransactions($type, $id, $startDate, $endDate);
+        return [
+            'view' => 'admin_panel.reports.general_ledger.preview_details',
+            'pdfView' => 'admin_panel.reports.general_ledger.pdf_ledger',
+            'orientation' => $orientation,
+            'filename' => "General_Ledger_{$safeCode}.pdf",
+            'data' => compact('transactions', 'openingBalance', 'startDate', 'endDate', 'account_info', 'type', 'orientation') + ['reportMode' => 'details'],
+        ];
     }
 
     private function fetchSummaryTransactions($type, $id, $start, $end) {

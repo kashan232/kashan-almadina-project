@@ -675,8 +675,10 @@
                 badge.innerText = "📄 Total Pages: " + totalPages + " A4 " + (totalPages === 1 ? "Page" : "Pages");
             }
         });
+
+        function exportReportToPDF() {
+            window.location.href = "{{ route('general-ledger.pdf') }}" + window.location.search;
+        }
     </script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-    @include('admin_panel.reports.general_ledger._sheet_pdf_export')
 </body>
 </html>

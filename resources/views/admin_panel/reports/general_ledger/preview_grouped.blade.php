@@ -176,30 +176,9 @@
     </div>
     </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <script>
 function exportGroupedToPDF() {
-    var element = document.getElementById("groupedReportContainer");
-    if (!element) return;
-    var isLandscape = "{{ $orientation }}" === "landscape";
-    var targetW = isLandscape ? "1060px" : "760px";
-    var originalStyle = element.getAttribute("style") || "";
-    element.style.width = targetW;
-    element.style.margin = "0 auto";
-
-    var opt = {
-        margin:       [5, 5, 5, 5],
-        filename:     "Grouped_General_Ledger.pdf",
-        image:        { type: "jpeg", quality: 0.98 },
-        html2canvas:  { scale: 2, useCORS: true, logging: false, scrollX: 0, scrollY: 0, backgroundColor: "#ffffff" },
-        jsPDF:        { unit: "mm", format: "a4", orientation: "{{ $orientation }}" },
-        pagebreak:    { mode: ["avoid-all", "css", "legacy"] }
-    };
-    html2pdf().set(opt).from(element).save().then(function() {
-        element.setAttribute("style", originalStyle);
-    }).catch(function() {
-        element.setAttribute("style", originalStyle);
-    });
+    window.location.href = "{{ route('general-ledger.pdf') }}" + window.location.search;
 }
 </script>
 </body>

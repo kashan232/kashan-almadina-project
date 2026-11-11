@@ -87,6 +87,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/general-ledger/search-unified', [GeneralLedgerController::class, 'searchUnified'])->name('general-ledger.search-unified');
     Route::get('/general-ledger/lookup-by-code', [GeneralLedgerController::class, 'lookupByCode'])->name('general-ledger.lookup-by-code');
     Route::get('/general-ledger/preview', [GeneralLedgerController::class, 'preview'])->name('general-ledger.preview');
+    Route::get('/general-ledger/pdf', [GeneralLedgerController::class, 'exportPdf'])->name('general-ledger.pdf');
     
     // Customer Claim Release Routes
     Route::get('/customer-claims-release', [CustomerClaimReleaseController::class, 'index'])->name('customer-claims.release.index');
