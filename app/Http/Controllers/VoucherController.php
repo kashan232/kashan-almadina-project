@@ -432,13 +432,17 @@ class VoucherController extends Controller
         // Rows build
         $rows = [];
         foreach ($narrations as $index => $narrId) {
+            $amount = (float)($amounts[$index] ?? 0);
+            if ($amount <= 0) {
+                continue;
+            }
+
             $narration = DB::table('narrations')->where('id', $narrId)->value('narration');
             $ref = $references[$index] ?? null;
             $accountHead = DB::table('account_heads')->where('id', $accountHeads[$index] ?? null)->value('name');
             $account = DB::table('accounts')->where('id', $accounts[$index] ?? null)->first();
             $kg = isset($kgs[$index]) && is_numeric($kgs[$index]) && (float)$kgs[$index] > 0 ? (float)$kgs[$index] : null;
             $rate = isset($rates[$index]) && is_numeric($rates[$index]) && (float)$rates[$index] > 0 ? (float)$rates[$index] : null;
-            $amount = (float)($amounts[$index] ?? 0);
 
             $rows[] = [
                 'narration' => $narration,

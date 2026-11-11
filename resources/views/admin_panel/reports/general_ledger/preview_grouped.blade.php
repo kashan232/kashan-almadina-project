@@ -35,6 +35,7 @@
         <button onclick="window.history.back()" style="padding: 6px 18px; cursor: pointer; background: #6b7280; color: white; border: none; border-radius: 4px; font-weight: bold;">Go Back</button>
     </div>
 
+    <div id="groupedReportContainer">
     <table class="header-table">
         <tr>
             <td style="width: 65%;">
@@ -173,19 +174,32 @@
         <div>Report Generated: {{ date('h:i:s A | l, F d, Y') }}</div>
         <div>System Generated Report and Required no Signature</div>
     </div>
+    </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <script>
 function exportGroupedToPDF() {
-    var element = document.body;
+    var element = document.getElementById("groupedReportContainer");
+    if (!element) return;
+    var isLandscape = "{{ $orientation }}" === "landscape";
+    var targetW = isLandscape ? "1060px" : "760px";
+    var originalStyle = element.getAttribute("style") || "";
+    element.style.width = targetW;
+    element.style.margin = "0 auto";
+
     var opt = {
-        margin:       [6, 6, 6, 6],
+        margin:       [5, 5, 5, 5],
         filename:     "Grouped_General_Ledger.pdf",
         image:        { type: "jpeg", quality: 0.98 },
-        html2canvas:  { scale: 2, useCORS: true },
-        jsPDF:        { unit: "mm", format: "a4", orientation: "{{ $orientation }}" }
+        html2canvas:  { scale: 2, useCORS: true, logging: false, scrollX: 0, scrollY: 0, backgroundColor: "#ffffff" },
+        jsPDF:        { unit: "mm", format: "a4", orientation: "{{ $orientation }}" },
+        pagebreak:    { mode: ["avoid-all", "css", "legacy"] }
     };
-    html2pdf().set(opt).from(element).save();
+    html2pdf().set(opt).from(element).save().then(function() {
+        element.setAttribute("style", originalStyle);
+    }).catch(function() {
+        element.setAttribute("style", originalStyle);
+    });
 }
 </script>
 </body>
