@@ -614,8 +614,10 @@ Route::middleware('auth')->group(function () {
     Route::post('/reports/stock-transfer/preview', [\App\Http\Controllers\StockTransferReportController::class, 'preview'])->name('reports.stock-transfer.preview');
     Route::get('/reports/stock', [\App\Http\Controllers\StockReportController::class, 'index'])->name('reports.stock.index');
     Route::post('/reports/stock/preview', [\App\Http\Controllers\StockReportController::class, 'preview'])->name('reports.stock.preview');
+    Route::match(['GET', 'POST'], '/reports/stock/pdf', [\App\Http\Controllers\StockReportController::class, 'exportPdf'])->name('reports.stock.pdf');
     Route::get('/reports/stock-ledger', [\App\Http\Controllers\StockReportController::class, 'ledgerIndex'])->name('reports.stock-ledger.index');
     Route::post('/reports/stock-ledger/preview', [\App\Http\Controllers\StockReportController::class, 'ledgerPreview'])->name('reports.stock-ledger.preview');
+    Route::match(['GET', 'POST'], '/reports/stock-ledger/pdf', [\App\Http\Controllers\StockReportController::class, 'ledgerExportPdf'])->name('reports.stock-ledger.pdf');
     Route::get('/reports/stock-hold-release', [\App\Http\Controllers\StockHoldReleaseReportController::class, 'index'])->name('reports.stock-hold-release.index');
     Route::post('/reports/stock-hold-release/preview', [\App\Http\Controllers\StockHoldReleaseReportController::class, 'preview'])->name('reports.stock-hold-release.preview');
     Route::get('/reports/unpost-entries', [\App\Http\Controllers\UnpostEntriesReportController::class, 'index'])->name('reports.unpost-entries.index');

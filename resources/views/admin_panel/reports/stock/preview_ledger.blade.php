@@ -121,9 +121,24 @@
     </style>
 </head>
 <body>
-    <div class="no-print">
-        <button onclick="window.print()" style="padding:8px 20px;font-weight:bold;cursor:pointer;">Print Report</button>
-        <button onclick="if(window.history.length > 1){ window.history.back(); } else { window.close(); }" style="padding:8px 20px;margin-left:8px;cursor:pointer;">Close</button>
+    <div class="no-print" style="padding:8px;background:#f8f9fa;border-bottom:1px solid #ddd;margin-bottom:8px;text-align:center;">
+        <button onclick="window.print()" style="padding:6px 18px;font-weight:bold;cursor:pointer;background:#0d6efd;color:#fff;border:none;border-radius:4px;">Print Report</button>
+        <button onclick="if(window.history.length > 1){ window.history.back(); } else { window.close(); }" style="padding:6px 18px;margin-left:8px;cursor:pointer;background:#6c757d;color:#fff;border:none;border-radius:4px;">Close</button>
+        <button onclick="exportReportToExcel()" style="padding:6px 18px;margin-left:8px;font-weight:bold;cursor:pointer;background:#2e7d32;color:#fff;border:none;border-radius:4px;"><i class="fa fa-file-excel-o"></i> Export to Excel</button>
+        <button onclick="exportReportToPDF()" style="padding:6px 18px;margin-left:8px;font-weight:bold;cursor:pointer;background:#d32f2f;color:#fff;border:none;border-radius:4px;"><i class="fa fa-file-pdf-o"></i> Export to PDF</button>
+
+        <form id="pdfExportForm" method="POST" action="{{ route('reports.stock-ledger.pdf') }}" target="_blank" style="display:none;">
+            @csrf
+            @foreach(request()->all() as $name => $value)
+                @if(is_array($value))
+                    @foreach($value as $v)
+                        <input type="hidden" name="{{ $name }}[]" value="{{ $v }}">
+                    @endforeach
+                @elseif($name !== '_token')
+                    <input type="hidden" name="{{ $name }}" value="{{ $value }}">
+                @endif
+            @endforeach
+        </form>
     </div>
 
     @php
@@ -273,5 +288,70 @@
     @empty
         <p class="empty-msg">No ledger data found. Please select an Item, Warehouse (optional), and Date range.</p>
     @endforelse
+
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <script>
+        function exportReportToExcel() {
+            var blocks = document.querySelectorAll(".ledger-block");
+            if (blocks.length === 0) return;
+            
+            var tempTable = document.createElement("table");
+            blocks.forEach(function(block) {
+                var itemTitle = block.querySelector(".item-title") ? block.querySelector(".item-title").innerText : "";
+                var whLabel = block.querySelector(".wh-label") ? block.querySelector(".wh-label").innerText : "";
+                var holdBox = block.querySelector(".hold-box") ? block.querySelector(".hold-box").innerText : "";
+                
+                // Item Title row
+                var titleRow = document.createElement("tr");
+                var titleCell = document.createElement("th");
+                titleCell.setAttribute("colspan", "25");
+                titleCell.style.textAlign = "left";
+                titleCell.style.fontSize = "14px";
+                titleCell.style.fontWeight = "bold";
+                titleCell.innerText = itemTitle + (whLabel ? " (" + whLabel + ")" : "");
+                titleRow.appendChild(titleCell);
+                tempTable.appendChild(titleRow);
+                
+                // Table rows
+                var tbl = block.querySelector("table");
+                if (tbl) {
+                    var rows = tbl.querySelectorAll("tr");
+                    rows.forEach(function(r) {
+                        tempTable.appendChild(r.cloneNode(true));
+                    });
+                }
+                
+                // Hold Qty row
+                if (holdBox) {
+                    var holdRow = document.createElement("tr");
+                    var holdCell = document.createElement("td");
+                    holdCell.setAttribute("colspan", "25");
+                    holdCell.style.fontWeight = "bold";
+                    holdCell.innerText = holdBox;
+                    holdRow.appendChild(holdCell);
+                    tempTable.appendChild(holdRow);
+                }
+                
+                // Blank row between items
+                var blankRow = document.createElement("tr");
+                var blankCell = document.createElement("td");
+                blankCell.setAttribute("colspan", "25");
+                blankRow.appendChild(blankCell);
+                tempTable.appendChild(blankRow);
+            });
+
+            var wb = XLSX.utils.table_to_book(tempTable, {sheet: "Stock Ledger"});
+            var fileName = "Stock_Ledger_{{ $from_date }}_to_{{ $to_date }}.xlsx";
+            XLSX.writeFile(wb, fileName);
+        }
+        function exportReportToPDF() {
+            var form = document.getElementById("pdfExportForm");
+            if (form) {
+                form.submit();
+            } else {
+                window.location.href = "{{ route('reports.stock-ledger.pdf') }}" + window.location.search;
+            }
+        }
+    </script>
 </body>
 </html>

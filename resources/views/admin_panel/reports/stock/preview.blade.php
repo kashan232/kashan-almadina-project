@@ -292,7 +292,22 @@
     <div class="no-print" style="padding:8px;background:#f8f9fa;border-bottom:1px solid #ddd;margin-bottom:8px;text-align:center;">
         <button onclick="window.print()" style="padding:6px 18px;font-weight:bold;cursor:pointer;background:#0d6efd;color:#fff;border:none;border-radius:4px;">Print Report</button>
         <button onclick="if(window.history.length > 1){ window.history.back(); } else { window.close(); }" style="padding:6px 18px;margin-left:8px;cursor:pointer;background:#6c757d;color:#fff;border:none;border-radius:4px;">Close</button>
+        <button onclick="exportReportToExcel()" style="padding:6px 18px;margin-left:8px;font-weight:bold;cursor:pointer;background:#2e7d32;color:#fff;border:none;border-radius:4px;"><i class="fa fa-file-excel-o"></i> Export to Excel</button>
+        <button onclick="exportReportToPDF()" style="padding:6px 18px;margin-left:8px;font-weight:bold;cursor:pointer;background:#d32f2f;color:#fff;border:none;border-radius:4px;"><i class="fa fa-file-pdf-o"></i> Export to PDF</button>
         <span style="margin-left:15px;font-size:11px;color:#555;"><i class="fa fa-info-circle"></i> Click anywhere on the report to Zoom In / Zoom Out</span>
+
+        <form id="pdfExportForm" method="POST" action="{{ route('reports.stock.pdf') }}" target="_blank" style="display:none;">
+            @csrf
+            @foreach(request()->all() as $name => $value)
+                @if(is_array($value))
+                    @foreach($value as $v)
+                        <input type="hidden" name="{{ $name }}[]" value="{{ $v }}">
+                    @endforeach
+                @elseif($name !== '_token')
+                    <input type="hidden" name="{{ $name }}" value="{{ $value }}">
+                @endif
+            @endforeach
+        </form>
     </div>
 
     @php
@@ -434,7 +449,7 @@
                     To: <span>{{ $to_date ? \Carbon\Carbon::parse($to_date)->format('d-m-y') : '' }}</span>
                 </div>
             </div>
-            <table>
+            <table id="stockReportTable">
                 <thead>
                     @if($reportMode === 'normal')
                     {{-- 🟢 NORMAL WAREHOUSE REPORT HEADERS (Matching User Excel) --}}
@@ -593,7 +608,24 @@
         </div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <script>
+        function exportReportToExcel() {
+            var table = document.getElementById("stockReportTable");
+            if (!table) return;
+            var wb = XLSX.utils.table_to_book(table, {sheet: "Stock Report"});
+            var isMerged = {{ !empty($is_merged) ? 'true' : 'false' }};
+            var fileName = (isMerged ? "Stock_Report_Merged_" : "Stock_Report_") + "{{ $from_date }}_to_{{ $to_date }}.xlsx";
+            XLSX.writeFile(wb, fileName);
+        }
+        function exportReportToPDF() {
+            var form = document.getElementById("pdfExportForm");
+            if (form) {
+                form.submit();
+            } else {
+                window.location.href = "{{ route('reports.stock.pdf') }}" + window.location.search;
+            }
+        }
         document.addEventListener('DOMContentLoaded', function () {
             const reportSheet = document.querySelector('.report-sheet');
             let zoomLevel = 0; // 0 = 1x, 1 = 1.5x, 2 = 2.0x
