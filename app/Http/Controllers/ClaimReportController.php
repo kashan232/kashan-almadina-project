@@ -10,6 +10,7 @@ use App\Models\User;
 use App\Models\UserGroup;
 use App\Models\Vendor;
 use App\Models\Warehouse;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 
 class ClaimReportController extends Controller
@@ -57,6 +58,47 @@ class ClaimReportController extends Controller
     }
 
     public function preview(Request $request)
+    {
+        $payload = $this->resolveReportPayload($request);
+        if (!$payload) {
+            return back()->with('error', 'Invalid Report Type Selected');
+        }
+
+        return view($payload['view'], $payload['data']);
+    }
+
+    public function exportPdf(Request $request)
+    {
+        ini_set('memory_limit', '512M');
+        ini_set('max_execution_time', '300');
+
+        $payload = $this->resolveReportPayload($request);
+        if (!$payload) {
+            return back()->with('error', 'Invalid Report Type Selected');
+        }
+
+        $pdf = Pdf::loadView($payload['pdfView'], $payload['data'])
+            ->setPaper('a4', $payload['orientation'])
+            ->setOption('isHtml5ParserEnabled', true)
+            ->setOption('isRemoteEnabled', false);
+
+        $pdf->render();
+        $dompdf = $pdf->getDomPDF();
+        $canvas = $dompdf->getCanvas();
+        $font = $dompdf->getFontMetrics()->get_font('Helvetica', 'normal');
+        $canvas->page_text(
+            $canvas->get_width() - 65,
+            $canvas->get_height() - 16,
+            'Page {PAGE_NUM} of {PAGE_COUNT}',
+            $font,
+            7.5,
+            [0.2, 0.2, 0.2]
+        );
+
+        return $pdf->download($payload['filename']);
+    }
+
+    private function resolveReportPayload(Request $request): ?array
     {
         $user_groups = $request->user_group ?? [];
         $officers = $request->sales_officer ?? [];
@@ -155,22 +197,22 @@ class ClaimReportController extends Controller
         $claims = $query->orderBy('claim_date')->orderBy('id')->get();
 
         if ($reportType === 'Party Wise') {
-            return $this->previewPartyWise($claims, $from_date, $to_date);
+            return $this->partyWisePayload($claims, $from_date, $to_date);
         }
         if ($reportType === 'Claim Type Wise') {
-            return $this->previewClaimTypeWise($claims, $from_date, $to_date);
+            return $this->claimTypeWisePayload($claims, $from_date, $to_date);
         }
         if ($reportType === 'Brand Wise') {
-            return $this->previewBrandWise($claims, $from_date, $to_date);
+            return $this->brandWisePayload($claims, $from_date, $to_date);
         }
         if ($reportType === 'Item Wise') {
-            return $this->previewItemWise($claims, $from_date, $to_date);
+            return $this->itemWisePayload($claims, $from_date, $to_date);
         }
         if ($reportType === 'Claim Wise') {
-            return $this->previewClaimWise($claims, $from_date, $to_date);
+            return $this->claimWisePayload($claims, $from_date, $to_date);
         }
 
-        return back()->with('error', 'Invalid Report Type Selected');
+        return null;
     }
 
     private function partyKey(CustomerClaim $claim): string
@@ -178,14 +220,20 @@ class ClaimReportController extends Controller
         return $claim->party_type . ':' . $claim->party_id;
     }
 
-    private function previewPartyWise($claims, $from_date, $to_date)
+    private function partyWisePayload($claims, $from_date, $to_date)
     {
         $grouped = $claims->groupBy(fn ($claim) => $this->partyKey($claim));
 
-        return view('admin_panel.reports.claim.preview_party', compact('grouped', 'from_date', 'to_date'));
+        return [
+            'view' => 'admin_panel.reports.claim.preview_party',
+            'pdfView' => 'admin_panel.reports.claim.pdf_party',
+            'orientation' => 'landscape',
+            'filename' => "Claim_Report_Party_Wise_{$from_date}_to_{$to_date}.pdf",
+            'data' => compact('grouped', 'from_date', 'to_date'),
+        ];
     }
 
-    private function previewClaimTypeWise($claims, $from_date, $to_date)
+    private function claimTypeWisePayload($claims, $from_date, $to_date)
     {
         $order = ['item_return', 'credit_note', 'claim_hold'];
         $grouped = $claims->groupBy('claim_type')->sortBy(function ($items, $type) use ($order) {
@@ -193,10 +241,16 @@ class ClaimReportController extends Controller
             return $index === false ? 99 : $index;
         });
 
-        return view('admin_panel.reports.claim.preview_claim_type', compact('grouped', 'from_date', 'to_date'));
+        return [
+            'view' => 'admin_panel.reports.claim.preview_claim_type',
+            'pdfView' => 'admin_panel.reports.claim.pdf_claim_type',
+            'orientation' => 'landscape',
+            'filename' => "Claim_Report_Claim_Type_Wise_{$from_date}_to_{$to_date}.pdf",
+            'data' => compact('grouped', 'from_date', 'to_date'),
+        ];
     }
 
-    private function previewBrandWise($claims, $from_date, $to_date)
+    private function brandWisePayload($claims, $from_date, $to_date)
     {
         $sorted = $claims->sortBy(fn ($claim) => [
             $claim->product?->brandRelation?->name ?? 'ZZZ',
@@ -209,20 +263,38 @@ class ClaimReportController extends Controller
             ->groupBy(fn ($claim) => $claim->product?->brandRelation?->name ?? 'N/A')
             ->map(fn ($brandClaims) => $brandClaims->groupBy('product_id'));
 
-        return view('admin_panel.reports.claim.preview_brand', compact('grouped', 'from_date', 'to_date'));
+        return [
+            'view' => 'admin_panel.reports.claim.preview_brand',
+            'pdfView' => 'admin_panel.reports.claim.pdf_brand',
+            'orientation' => 'portrait',
+            'filename' => "Claim_Report_Brand_Wise_{$from_date}_to_{$to_date}.pdf",
+            'data' => compact('grouped', 'from_date', 'to_date'),
+        ];
     }
 
-    private function previewItemWise($claims, $from_date, $to_date)
+    private function itemWisePayload($claims, $from_date, $to_date)
     {
         $grouped = $claims->groupBy('product_id');
 
-        return view('admin_panel.reports.claim.preview_item', compact('grouped', 'from_date', 'to_date'));
+        return [
+            'view' => 'admin_panel.reports.claim.preview_item',
+            'pdfView' => 'admin_panel.reports.claim.pdf_item',
+            'orientation' => 'landscape',
+            'filename' => "Claim_Report_Item_Wise_{$from_date}_to_{$to_date}.pdf",
+            'data' => compact('grouped', 'from_date', 'to_date'),
+        ];
     }
 
-    private function previewClaimWise($claims, $from_date, $to_date)
+    private function claimWisePayload($claims, $from_date, $to_date)
     {
         $grouped = $claims->groupBy('claim_no');
 
-        return view('admin_panel.reports.claim.preview_claim', compact('grouped', 'from_date', 'to_date'));
+        return [
+            'view' => 'admin_panel.reports.claim.preview_claim',
+            'pdfView' => 'admin_panel.reports.claim.pdf_claim',
+            'orientation' => 'landscape',
+            'filename' => "Claim_Report_Claim_Wise_{$from_date}_to_{$to_date}.pdf",
+            'data' => compact('grouped', 'from_date', 'to_date'),
+        ];
     }
 }

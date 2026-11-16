@@ -604,10 +604,13 @@ Route::middleware('auth')->group(function () {
     Route::post('/reports/purchase/preview', [\App\Http\Controllers\PurchaseReportController::class, 'preview'])->name('reports.purchase.preview');
     Route::get('/reports/claim', [\App\Http\Controllers\ClaimReportController::class, 'index'])->name('reports.claim.index');
     Route::post('/reports/claim/preview', [\App\Http\Controllers\ClaimReportController::class, 'preview'])->name('reports.claim.preview');
+    Route::match(['GET', 'POST'], '/reports/claim/pdf', [\App\Http\Controllers\ClaimReportController::class, 'exportPdf'])->name('reports.claim.pdf');
     Route::get('/reports/claim-acceptance', [\App\Http\Controllers\ClaimAcceptanceReportController::class, 'index'])->name('reports.claim-acceptance.index');
     Route::post('/reports/claim-acceptance/preview', [\App\Http\Controllers\ClaimAcceptanceReportController::class, 'preview'])->name('reports.claim-acceptance.preview');
+    Route::match(['GET', 'POST'], '/reports/claim-acceptance/pdf', [\App\Http\Controllers\ClaimAcceptanceReportController::class, 'exportPdf'])->name('reports.claim-acceptance.pdf');
     Route::get('/reports/claim-item-receipt', [\App\Http\Controllers\ClaimItemReceiptReportController::class, 'index'])->name('reports.claim-item-receipt.index');
     Route::post('/reports/claim-item-receipt/preview', [\App\Http\Controllers\ClaimItemReceiptReportController::class, 'preview'])->name('reports.claim-item-receipt.preview');
+    Route::match(['GET', 'POST'], '/reports/claim-item-receipt/pdf', [\App\Http\Controllers\ClaimItemReceiptReportController::class, 'exportPdf'])->name('reports.claim-item-receipt.pdf');
     Route::get('/reports/stock-wastage', [\App\Http\Controllers\StockWastageReportController::class, 'index'])->name('reports.stock-wastage.index');
     Route::post('/reports/stock-wastage/preview', [\App\Http\Controllers\StockWastageReportController::class, 'preview'])->name('reports.stock-wastage.preview');
     Route::get('/reports/stock-transfer', [\App\Http\Controllers\StockTransferReportController::class, 'index'])->name('reports.stock-transfer.index');

@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Models\UserGroup;
 use App\Models\Vendor;
 use App\Models\Warehouse;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 
@@ -73,6 +74,37 @@ class ClaimAcceptanceReportController extends Controller
         $grouped = $this->fetchReportLines($request)->groupBy('claim_acceptance_id');
 
         return view('admin_panel.reports.claim_acceptance.preview', compact('grouped', 'from_date', 'to_date'));
+    }
+
+    public function exportPdf(Request $request)
+    {
+        ini_set('memory_limit', '512M');
+        ini_set('max_execution_time', '300');
+
+        $from_date = $request->from_date;
+        $to_date = $request->to_date;
+        $grouped = $this->fetchReportLines($request)->groupBy('claim_acceptance_id');
+        $filename = "Claim_Acceptance_Report_{$from_date}_to_{$to_date}.pdf";
+
+        $pdf = Pdf::loadView('admin_panel.reports.claim_acceptance.pdf', compact('grouped', 'from_date', 'to_date'))
+            ->setPaper('a4', 'landscape')
+            ->setOption('isHtml5ParserEnabled', true)
+            ->setOption('isRemoteEnabled', false);
+
+        $pdf->render();
+        $dompdf = $pdf->getDomPDF();
+        $canvas = $dompdf->getCanvas();
+        $font = $dompdf->getFontMetrics()->get_font('Helvetica', 'normal');
+        $canvas->page_text(
+            $canvas->get_width() - 65,
+            $canvas->get_height() - 16,
+            'Page {PAGE_NUM} of {PAGE_COUNT}',
+            $font,
+            7.5,
+            [0.2, 0.2, 0.2]
+        );
+
+        return $pdf->download($filename);
     }
 
     private function fetchReportLines(Request $request): Collection
