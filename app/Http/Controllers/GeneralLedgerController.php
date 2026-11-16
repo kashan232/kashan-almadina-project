@@ -1476,6 +1476,7 @@ class GeneralLedgerController extends Controller
         foreach ($avs as $av) {
             $narrIds = json_decode($av->narration_id, true) ?? [];
             $refNos = json_decode($av->reference_no, true) ?? [];
+            $qtys = json_decode($av->qty, true) ?? [];
             
             // Header match check
             if ($av->party_id == $id && in_array($av->party_type, $typeArray)) {
@@ -1525,7 +1526,8 @@ class GeneralLedgerController extends Controller
                     }
 
                     $rowAmt = (float)($amounts[$i] ?? 0);
-                    if ($rowAmt > 0) {
+                    $rowQty = (float)($qtys[$i] ?? 0);
+                    if ($rowAmt > 0 || $rowQty > 0) {
                         $transactions[] = [
                             'created_at' => $av->created_at,
                             'id' => $av->id . '_h_' . $i,
@@ -1533,7 +1535,7 @@ class GeneralLedgerController extends Controller
                             'ref' => 'AV',
                             'inv' => $rowInv,
                             'desc' => $headerDesc,
-                            'qty' => 0,
+                            'qty' => $rowQty,
                             'debit' => $rowAmt,
                             'credit' => 0,
                             'priority' => 61
@@ -1592,18 +1594,22 @@ class GeneralLedgerController extends Controller
                         $desc .= ' (' . $refLabel . ')';
                     }
 
-                    $transactions[] = [
-                        'created_at' => $av->created_at,
-                        'id' => $av->id,
-                        'date' => $av->entry_date ?: $av->created_at,
-                        'ref' => 'AV',
-                        'inv' => $rowInv,
-                        'desc' => $desc,
-                        'qty' => 0,
-                        'debit' => 0,
-                        'credit' => (float)($amounts[$idx] ?? 0),
-                        'priority' => 61
-                    ];
+                    $rowAmt = (float)($amounts[$idx] ?? 0);
+                    $rowQty = (float)($qtys[$idx] ?? 0);
+                    if ($rowAmt > 0 || $rowQty > 0) {
+                        $transactions[] = [
+                            'created_at' => $av->created_at,
+                            'id' => $av->id . '_' . $idx,
+                            'date' => $av->entry_date ?: $av->created_at,
+                            'ref' => 'AV',
+                            'inv' => $rowInv,
+                            'desc' => $desc,
+                            'qty' => $rowQty,
+                            'debit' => 0,
+                            'credit' => $rowAmt,
+                            'priority' => 61
+                        ];
+                    }
                 }
             }
         }
@@ -2279,6 +2285,7 @@ class GeneralLedgerController extends Controller
                 $narrIds = json_decode($av->narration_id, true) ?? [];
                 $accHeads = json_decode($av->account_head, true) ?? [];
                 $refNos = json_decode($av->reference_no, true) ?? [];
+                $qtys = json_decode($av->qty, true) ?? [];
 
                 // Header check
                 if ($av->party_id == $id && is_numeric($av->party_type)) {
@@ -2325,7 +2332,9 @@ class GeneralLedgerController extends Controller
                         $headerDesc = !empty($headerDescParts) ? implode(' ; ', $headerDescParts) : 'Adjustment Voucher';
 
                         $rowAmt = (float)($amounts[$i] ?? 0);
-                        if ($rowAmt > 0) {
+                        $rowQty = (float)($qtys[$i] ?? 0);
+                        $rowPrice = ($rowQty > 0 && $rowAmt > 0) ? round($rowAmt / $rowQty, 2) : 0;
+                        if ($rowAmt > 0 || $rowQty > 0) {
                             $transactions[] = [
                                 'created_at' => $av->created_at,
                                 'id' => $av->id . '_h_' . $i,
@@ -2333,7 +2342,7 @@ class GeneralLedgerController extends Controller
                                 'ref' => 'AV',
                                 'inv' => $rowInv,
                                 'desc' => $headerDesc,
-                                'price' => 0, 'qty' => 0, 
+                                'price' => $rowPrice, 'qty' => $rowQty, 
                                 'debit' => $rowAmt, 
                                 'credit' => 0,
                                 'priority' => 61
@@ -2389,18 +2398,24 @@ class GeneralLedgerController extends Controller
 
                         $desc = !empty($descParts) ? implode(' ; ', $descParts) : 'Adjustment Voucher';
 
-                        $transactions[] = [
-                            'created_at' => $av->created_at,
-                            'id' => $av->id . '_' . $idx,
-                            'date' => $av->entry_date ?: $av->created_at,
-                            'ref' => 'AV',
-                            'inv' => $rowInv,
-                            'desc' => $desc,
-                            'price' => 0, 'qty' => 0, 
-                            'debit' => 0, 
-                            'credit' => (float)($amounts[$idx] ?? 0),
-                            'priority' => 61
-                        ];
+                        $rowAmt = (float)($amounts[$idx] ?? 0);
+                        $rowQty = (float)($qtys[$idx] ?? 0);
+                        $rowPrice = ($rowQty > 0 && $rowAmt > 0) ? round($rowAmt / $rowQty, 2) : 0;
+
+                        if ($rowAmt > 0 || $rowQty > 0) {
+                            $transactions[] = [
+                                'created_at' => $av->created_at,
+                                'id' => $av->id . '_' . $idx,
+                                'date' => $av->entry_date ?: $av->created_at,
+                                'ref' => 'AV',
+                                'inv' => $rowInv,
+                                'desc' => $desc,
+                                'price' => $rowPrice, 'qty' => $rowQty, 
+                                'debit' => 0, 
+                                'credit' => $rowAmt,
+                                'priority' => 61
+                            ];
+                        }
                     }
                 }
             }
@@ -2992,6 +3007,7 @@ class GeneralLedgerController extends Controller
         foreach ($avs as $av) {
             $narrIds = json_decode($av->narration_id, true) ?? [];
             $refNos = json_decode($av->reference_no, true) ?? [];
+            $qtys = json_decode($av->qty, true) ?? [];
             
             // Header match check
             if ($av->party_id == $id && in_array($av->party_type, $typeArray)) {
@@ -3042,7 +3058,9 @@ class GeneralLedgerController extends Controller
                     $headerDesc = !empty($headerDescParts) ? implode(' ; ', $headerDescParts) : 'Adjustment Voucher';
 
                     $rowAmt = (float)($amounts[$i] ?? 0);
-                    if ($rowAmt > 0) {
+                    $rowQty = (float)($qtys[$i] ?? 0);
+                    $rowPrice = ($rowQty > 0 && $rowAmt > 0) ? round($rowAmt / $rowQty, 2) : 0;
+                    if ($rowAmt > 0 || $rowQty > 0) {
                         $transactions[] = [
                             'created_at' => $av->created_at,
                             'id' => $av->id . '_h_' . $i,
@@ -3050,7 +3068,7 @@ class GeneralLedgerController extends Controller
                             'ref' => 'AV',
                             'inv' => $rowInv,
                             'desc' => $headerDesc,
-                            'price' => 0, 'qty' => 0,
+                            'price' => $rowPrice, 'qty' => $rowQty,
                             'debit' => $rowAmt,
                             'credit' => 0,
                             'priority' => 61
@@ -3110,18 +3128,24 @@ class GeneralLedgerController extends Controller
 
                     $desc = !empty($descParts) ? implode(' ; ', $descParts) : 'Adjustment Voucher';
 
-                    $transactions[] = [
-                        'created_at' => $av->created_at,
-                        'id' => $av->id,
-                        'date' => $av->entry_date ?: $av->created_at,
-                        'ref' => 'AV',
-                        'inv' => $rowInv,
-                        'desc' => $desc,
-                        'price' => 0, 'qty' => 0,
-                        'debit' => 0,
-                        'credit' => (float)($amounts[$idx] ?? 0),
-                        'priority' => 61
-                    ];
+                    $rowAmt = (float)($amounts[$idx] ?? 0);
+                    $rowQty = (float)($qtys[$idx] ?? 0);
+                    $rowPrice = ($rowQty > 0 && $rowAmt > 0) ? round($rowAmt / $rowQty, 2) : 0;
+
+                    if ($rowAmt > 0 || $rowQty > 0) {
+                        $transactions[] = [
+                            'created_at' => $av->created_at,
+                            'id' => $av->id . '_' . $idx,
+                            'date' => $av->entry_date ?: $av->created_at,
+                            'ref' => 'AV',
+                            'inv' => $rowInv,
+                            'desc' => $desc,
+                            'price' => $rowPrice, 'qty' => $rowQty,
+                            'debit' => 0,
+                            'credit' => $rowAmt,
+                            'priority' => 61
+                        ];
+                    }
                 }
             }
         }
