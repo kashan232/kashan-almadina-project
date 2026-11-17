@@ -52,7 +52,7 @@ use App\Http\Controllers\PrinterSettingController;
 | be assigned to the "web" middleware group. Make something great!
 |
 */
-// fixedssssssssss
+// fixedsssssssssss
 // Customer Claim Routes
 Route::middleware(['auth'])->group(function () {
     // Database Backup Routes
