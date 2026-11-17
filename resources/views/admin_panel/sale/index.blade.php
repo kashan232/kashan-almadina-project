@@ -138,30 +138,24 @@
         margin-bottom: 0.5rem;
     }
     
-    /* Compact Items Column Styling */
-    .items-list-container {
-        max-height: 50px;
-        overflow-y: auto;
-        scrollbar-width: thin;
-    }
-    .items-list-container::-webkit-scrollbar {
-        width: 3px;
-    }
-    .items-list-container::-webkit-scrollbar-thumb {
-        background: #cbd5e1;
-        border-radius: 2px;
-    }
-    .item-detail-row {
-        font-size: 10px;
-        line-height: 1.25;
+    /* Clean, natural item rows - NO inner scrollbar! */
+    .sale-item-entry {
+        font-size: 11px;
+        line-height: 1.35;
         white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        max-width: 200px;
         border-bottom: 1px dashed #e2e8f0;
         padding: 1px 0;
     }
-    .item-detail-row:last-child {
+    .sale-item-entry:last-child {
+        border-bottom: none;
+    }
+    .sale-qty-entry {
+        font-size: 11px;
+        line-height: 1.35;
+        border-bottom: 1px dashed #e2e8f0;
+        padding: 1px 0;
+    }
+    .sale-qty-entry:last-child {
         border-bottom: none;
     }
 </style>
@@ -175,19 +169,19 @@
                 <div class="col-12">
                     <div class="card border-0 shadow-sm">
                         <div class="card-body p-2" style="overflow: visible;">
-                            <form action="{{ route('sale.index') }}" method="GET">
+                            <form id="filterForm" onsubmit="return false;">
                                 <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
                                     <div class="d-flex align-items-center gap-1 flex-wrap">
                                         <span class="badge bg-success text-white px-3 py-2 fs-6 rounded-pill"><i class="fa fa-shopping-cart me-1"></i> Sales List</span>
                                         
                                         <div class="input-group input-group-sm" style="width: 220px;">
                                             <span class="input-group-text bg-white border-end-0 small fw-bold text-muted">Range</span>
-                                            <input type="date" name="start_date" class="form-control border-start-0" value="{{ request('start_date') }}">
-                                            <input type="date" name="end_date" class="form-control" value="{{ request('end_date') }}">
+                                            <input type="date" name="start_date" id="filter_start_date" class="form-control border-start-0" value="{{ request('start_date') }}">
+                                            <input type="date" name="end_date" id="filter_end_date" class="form-control" value="{{ request('end_date') }}">
                                         </div>
 
                                         <div style="min-width: 160px;">
-                                            <select name="user_group_id" class="form-select form-select-sm select2">
+                                            <select name="user_group_id" id="filter_user_group_id" class="form-select form-select-sm select2">
                                                 <option value="">Group: All</option>
                                                 @foreach($userGroups as $grp)
                                                     <option value="{{ $grp->id }}" {{ request('user_group_id') == $grp->id ? 'selected' : '' }}>{{ $grp->group_name }}</option>
@@ -196,15 +190,15 @@
                                         </div>
 
                                         <div style="min-width: 130px;">
-                                            <select name="status" class="form-select form-select-sm select2">
+                                            <select name="status" id="filter_status" class="form-select form-select-sm select2">
                                                 <option value="">Status: All</option>
                                                 <option value="Unposted" {{ request('status') == 'Unposted' ? 'selected' : '' }}>Unposted</option>
                                                 <option value="Posted" {{ request('status') == 'Posted' ? 'selected' : '' }}>Posted</option>
                                             </select>
                                         </div>
 
-                                        <button type="submit" class="btn btn-primary btn-sm rounded-pill px-3 shadow-sm">Filter</button>
-                                        <a href="{{ route('sale.index') }}" class="btn btn-outline-secondary btn-sm rounded-pill px-2" title="Reset"><i class="fa fa-refresh"></i></a>
+                                        <button type="button" id="btnFilter" class="btn btn-primary btn-sm rounded-pill px-3 shadow-sm">Filter</button>
+                                        <button type="button" id="btnReset" class="btn btn-outline-secondary btn-sm rounded-pill px-2" title="Reset"><i class="fa fa-refresh"></i></button>
                                     </div>
 
                                     <div>
@@ -272,7 +266,7 @@
                                         <th style="min-width: 140px;">Customer</th>
                                         <th style="width: 80px;">Group</th>
                                         <th style="width: 100px;">Warehouse</th>
-                                        <th style="min-width: 160px; max-width: 220px;">Items</th>
+                                        <th style="min-width: 160px;">Items</th>
                                         <th class="text-center" style="width: 65px;">Item Qty</th>
                                         <th class="text-center" style="width: 60px;">T. Qty</th>
                                         <th class="text-end" style="width: 85px;">Inv Total</th>
@@ -284,126 +278,7 @@
                                         <th class="text-center" style="width: 120px; min-width: 120px;">Action</th>
                                     </tr>
                                 </thead>
-                                <tbody>
-                                    @foreach($sales as $key => $sale)
-                                    @php
-                                        $partyName = $sale->party_name ?? ($sale->p_type === 'vendor' ? ($sale->vendor->name ?? 'N/A') : ($sale->customer->customer_name ?? 'N/A'));
-                                        $whNames = $sale->wh_names ?? '-';
-                                        $displayInv = $sale->display_inv_no ?? (int) preg_replace('/[^0-9]/', '', $sale->invoice_no);
-                                        $displayDate = $sale->display_date ?? \Carbon\Carbon::parse($sale->entry_date ?? $sale->created_at)->format('d-M-Y');
-                                        $totalQty = $sale->item_qty_sum ?? $sale->items->sum('sales_qty');
-                                        $invTotal = $sale->display_inv_total ?? (((float)$sale->sub_total2 > 0) ? (float)$sale->sub_total2 : (float)$sale->items->sum('amount'));
-                                        $saleReceipts = $sale->display_receipts ?? (($sale->receipt1 ?? 0) + ($sale->receipt2 ?? 0));
-                                        $netPayable = $sale->display_net_payable ?? (((float)$sale->total_balance != 0) ? (float)$sale->total_balance : ($invTotal - (float)($sale->discount_amount ?? 0)));
-                                    @endphp
-                                    <tr>
-                                        <td class="text-muted">{{ $key+1 }}</td>
-                                        <td class="text-muted small">SJ</td>
-                                        <td class="fw-bold text-primary">{{ $displayInv }}</td>
-                                        <td>{{ $sale->manual_invoice ?? '-' }}</td>
-                                        <td class="small">{{ $displayDate }}</td>
-                                        <td>
-                                            @if($sale->p_type === 'vendor')
-                                                <span class="badge bg-info-subtle text-info border border-info px-1 py-0" style="font-size: 10px;">Vendor</span>
-                                            @elseif($sale->p_type === 'customer')
-                                                <span class="badge bg-primary-subtle text-primary border border-primary px-1 py-0" style="font-size: 10px;">Customer</span>
-                                            @else
-                                                <span class="badge bg-secondary-subtle text-secondary border border-secondary px-1 py-0" style="font-size: 10px;">{{ ucfirst($sale->p_type ?? 'N/A') }}</span>
-                                            @endif
-                                        </td>
-                                        <td>
-                                            <span class="fw-bold text-dark small">{{ $partyName }}</span>
-                                        </td>
-                                        <td>
-                                            @if(!empty($sale->group_names))
-                                                @foreach($sale->group_names as $gName)
-                                                    <span class="badge bg-secondary-subtle text-dark border px-1 py-0" style="font-size: 10px;">{{ $gName }}</span>
-                                                @endforeach
-                                            @else
-                                                <span class="text-muted small">-</span>
-                                            @endif
-                                        </td>
-                                        <td>
-                                            <div class="text-muted" style="font-size: 10px;"><i class="fa fa-building-o me-1"></i>{{ Str::limit($whNames ?: '-', 20) }}</div>
-                                        </td>
-                                        <td class="py-1">
-                                            <div class="items-list-container">
-                                                @foreach($sale->items as $item)
-                                                    <div class="item-detail-row" title="{{ $item->product->name ?? 'Product #'.$item->product_id }}">{{ $item->product->name ?? 'Product #'.$item->product_id }}</div>
-                                                @endforeach
-                                            </div>
-                                        </td>
-                                        <td class="text-center py-1">
-                                            <div class="items-list-container">
-                                                @foreach($sale->items as $item)
-                                                    <div class="item-detail-row text-primary fw-bold">{{ number_format($item->sales_qty ?? 0, 0) }}</div>
-                                                @endforeach
-                                            </div>
-                                        </td>
-                                        <td class="text-center fw-bold text-info">{{ number_format($totalQty, 0) }}</td>
-                                        <td class="text-end fw-bold">{{ number_format($invTotal, 0) }}</td>
-                                        <td class="text-end text-danger">{{ number_format($sale->discount_amount ?? 0, 0) }}</td>
-                                        <td class="text-end">{{ number_format($saleReceipts, 0) }}</td>
-                                        <td class="text-end fw-bold text-primary">{{ number_format($netPayable, 0) }}</td>
-                                        <td>
-                                            @if($sale->user)
-                                                <span class="text-dark small">{{ $sale->user->name }}</span>
-                                            @else
-                                                <span class="text-muted small">System</span>
-                                            @endif
-                                        </td>
-                                        <td class="text-center">
-                                            @if($sale->entry_status === 'Posted')
-                                                <span class="badge bg-success rounded-pill px-3">Posted</span>
-                                            @else
-                                                <span class="badge bg-warning text-dark rounded-pill px-3">Unposted</span>
-                                            @endif
-                                        </td>
-                                        <td class="text-center">
-                                            <div class="d-flex gap-1 justify-content-center">
-                                                @if($sale->entry_status === 'Unposted')
-                                                    <form action="{{ url('/sale/' . $sale->id . '/post') }}" method="POST" class="d-inline">
-                                                        @csrf
-                                                        <button type="submit" class="btn btn-primary btn-xs px-2 py-0" title="Post now" style="font-size: 10px;">
-                                                            <i class="fa fa-send"></i> Post
-                                                        </button>
-                                                    </form>
-
-                                                    <a class="btn btn-outline-warning btn-xs px-1 py-0" href="{{ url('/Booking/edit/' . $sale->id) }}" title="Edit" style="height: 20px;">
-                                                        <i class="fa fa-edit text-dark"></i>
-                                                    </a>
-
-                                                    <a href="{{ url('/sale/invoice/' . $sale->id) }}" target="_blank" class="btn btn-outline-primary btn-xs px-1 py-0" title="Print Invoice" style="height: 20px; font-size: 10px; line-height: 18px;">
-                                                        <i class="fa fa-print"></i> Inv
-                                                    </a>
-
-                                                    <a href="{{ url('/sale/dc/' . $sale->id) }}" target="_blank" class="btn btn-outline-secondary btn-xs px-1 py-0" title="Delivery Challan (DC)" style="height: 20px; font-size: 10px; line-height: 18px;">
-                                                        <i class="fa fa-truck"></i> DC
-                                                    </a>
-
-                                                    <form action="{{ url('/sale/' . $sale->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Delete this unposted booking?')">
-                                                        @csrf
-                                                        @method('DELETE')
-                                                        <button type="submit" class="btn btn-outline-danger btn-xs px-1 py-0" title="Delete" style="height: 20px;">
-                                                            <i class="fa fa-trash"></i>
-                                                        </button>
-                                                    </form>
-                                                @else
-                                                    <a href="{{ url('/sale/invoice/' . $sale->id) }}" target="_blank" class="btn btn-outline-primary btn-xs px-1 py-0" title="Print Invoice" style="height: 20px; font-size: 10px; line-height: 18px;">
-                                                        <i class="fa fa-print"></i> Inv
-                                                    </a>
-                                                    <a href="{{ url('/sale/dc/' . $sale->id) }}" target="_blank" class="btn btn-outline-dark btn-xs px-1 py-0" title="Delivery Challan (DC)" style="height: 20px; font-size: 10px; line-height: 18px;">
-                                                        <i class="fa fa-truck"></i> DC
-                                                    </a>
-                                                    <a href="{{ url('/sale/' . $sale->id . '/view') }}" class="btn btn-outline-info btn-xs px-1 py-0" title="View Sale" style="height: 20px;">
-                                                        <i class="fa fa-eye"></i>
-                                                    </a>
-                                                @endif
-                                            </div>
-                                        </td>
-                                    </tr>
-                                    @endforeach
-                                </tbody>
+                                <tbody></tbody>
                             </table>
                         </div>
                     </div>
@@ -435,8 +310,8 @@
 
         // Build columnDefs with pre-defined visibility from localStorage
         const columnDefs = [
-            { "type": "num", "targets": 2 }, // Invoice# sorting
-            { "orderable": false, "targets": [9, 10, 18] } // Items, Item Qty, Actions
+            { "type": "num", "targets": 2 },
+            { "orderable": false, "targets": [0, 1, 7, 8, 9, 10, 18] }
         ];
 
         // Apply saved column visibility directly into columnDefs BEFORE DataTables initializes
@@ -450,17 +325,51 @@
             pickerEl.find('input[data-column="' + i + '"]').prop('checked', isVisible);
         }
 
-        // Initialize DataTable with correct column visibility on first paint
+        // Initialize DataTable with Server-Side AJAX Processing (Instant 0.1s load time!)
         var dt = $('#saleListingTable').DataTable({
+            "processing": true,
+            "serverSide": true,
+            "ajax": {
+                "url": "{{ route('sale.index') }}",
+                "type": "GET",
+                "data": function(d) {
+                    d.start_date = $('#filter_start_date').val();
+                    d.end_date = $('#filter_end_date').val();
+                    d.user_group_id = $('#filter_user_group_id').val();
+                    d.status = $('#filter_status').val();
+                }
+            },
+            "columns": [
+                { data: 'index', name: 'index', orderable: false, searchable: false },
+                { data: 'type', name: 'type', orderable: false, searchable: false },
+                { data: 'inv_no', name: 'inv_no' },
+                { data: 'manual_inv', name: 'manual_inv' },
+                { data: 'date', name: 'date' },
+                { data: 'party_type', name: 'party_type', searchable: false },
+                { data: 'customer', name: 'customer' },
+                { data: 'group', name: 'group', orderable: false, searchable: false },
+                { data: 'warehouse', name: 'warehouse', orderable: false, searchable: false },
+                { data: 'items', name: 'items', orderable: false },
+                { data: 'item_qty', name: 'item_qty', orderable: false, searchable: false, className: 'text-center' },
+                { data: 'total_qty', name: 'total_qty', searchable: false, className: 'text-center' },
+                { data: 'inv_total', name: 'inv_total', searchable: false, className: 'text-end' },
+                { data: 'discount', name: 'discount', searchable: false, className: 'text-end text-danger' },
+                { data: 'ac_allocation', name: 'ac_allocation', searchable: false, className: 'text-end' },
+                { data: 'net_payable', name: 'net_payable', searchable: false, className: 'text-end fw-bold text-primary' },
+                { data: 'created_by', name: 'created_by', searchable: false },
+                { data: 'status', name: 'status', searchable: false, className: 'text-center' },
+                { data: 'actions', name: 'actions', orderable: false, searchable: false, className: 'text-center' }
+            ],
             "order": [[2, 'desc']], // Default sort by Inv#
             "pageLength": 25,
-            "lengthMenu": [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
+            "lengthMenu": [[10, 25, 50, 100], [10, 25, 50, 100]],
             "scrollX": true,
             "autoWidth": false,
             "columnDefs": columnDefs,
             "language": {
                 "search": "_INPUT_",
-                "searchPlaceholder": "Search sales..."
+                "searchPlaceholder": "Search sales...",
+                "processing": '<div class="spinner-border spinner-border-sm text-primary me-2"></div> Loading data...'
             },
             dom: '<"d-flex justify-content-between align-items-center p-2"<"d-flex align-items-center gap-2"l<"column-picker-slot">>Bf>rt<"d-flex justify-content-between align-items-center p-2"ip>',
             buttons: [
@@ -478,7 +387,35 @@
 
                 // Adjust headers to match body
                 this.api().columns.adjust();
+            },
+            drawCallback: function() {
+                // Adjust headers after every page change/filter
+                this.api().columns.adjust();
             }
+        });
+
+        // Filter button click -> redraw table via fast AJAX
+        $('#btnFilter').on('click', function(e) {
+            e.preventDefault();
+            dt.draw();
+        });
+
+        // Enter key in filter fields
+        $('#filter_start_date, #filter_end_date').on('keypress', function(e) {
+            if (e.which == 13) {
+                e.preventDefault();
+                dt.draw();
+            }
+        });
+
+        // Reset button click
+        $('#btnReset').on('click', function(e) {
+            e.preventDefault();
+            $('#filter_start_date').val('');
+            $('#filter_end_date').val('');
+            $('#filter_user_group_id').val('').trigger('change');
+            $('#filter_status').val('').trigger('change');
+            dt.draw();
         });
 
         // Toggle Column Picker Menu

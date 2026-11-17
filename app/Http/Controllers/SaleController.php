@@ -28,49 +28,33 @@ class SaleController extends Controller
     /* -------- Lists & screens -------- */
     public function index(Request $request)
     {
-        // Fetch all users for the filter
-        $users = \App\Models\User::orderBy('name')->get();
+        if ($request->ajax() || $request->has('draw')) {
+            return $this->getSalesDatatable($request);
+        }
 
-        // Fetch Posted Sales with items and user
-        $salesQuery = Sale::with(['customer', 'vendor', 'items.product', 'items.warehouse', 'user'])->latest();
+        $userGroups = \App\Models\UserGroup::orderBy('group_name')->get();
+
+        return view('admin_panel.sale.index', [
+            'sales' => collect([]),
+            'userGroups' => $userGroups
+        ]);
+    }
+
+    public function getSalesDatatable(Request $request)
+    {
+        $start = (int) $request->input('start', 0);
+        $length = (int) $request->input('length', 25);
+        $searchValue = trim($request->input('search.value', ''));
         
-        // Fetch Unposted Bookings with items and user
-        $bookingsQuery = Productbooking::with(['customer', 'vendor', 'items.product', 'items.warehouse', 'user'])->latest();
-
-        // Filters
-        if ($request->filled('start_date')) {
-            $salesQuery->whereDate('created_at', '>=', $request->start_date);
-            $bookingsQuery->whereDate('created_at', '>=', $request->start_date);
-        }
-        if ($request->filled('end_date')) {
-            $salesQuery->whereDate('created_at', '<=', $request->end_date);
-            $bookingsQuery->whereDate('created_at', '<=', $request->end_date);
-        }
-        if ($request->filled('user_group_id')) {
-            $groupId = (string) $request->user_group_id;
-            $groupIdInt = (int) $request->user_group_id;
-            
-            $groupFilter = function($query) use ($groupId, $groupIdInt) {
-                $query->where(function($q) use ($groupId, $groupIdInt) {
-                    $q->whereJsonContains('user_group_ids', $groupId)
-                      ->orWhereJsonContains('user_group_ids', $groupIdInt)
-                      ->orWhereHas('customer', function($cq) use ($groupId, $groupIdInt) {
-                          $cq->whereJsonContains('user_group_ids', $groupId)
-                            ->orWhereJsonContains('user_group_ids', $groupIdInt);
-                      })
-                      ->orWhereHas('vendor', function($vq) use ($groupId, $groupIdInt) {
-                          $vq->whereJsonContains('user_group_ids', $groupId)
-                            ->orWhereJsonContains('user_group_ids', $groupIdInt);
-                      });
-                });
-            };
-
-            $salesQuery->where($groupFilter);
-            $bookingsQuery->where($groupFilter);
-        }
+        $orderColumnIdx = $request->input('order.0.column', 2);
+        $orderDir = strtolower($request->input('order.0.dir', 'desc')) === 'asc' ? 'asc' : 'desc';
+        
+        $statusFilter = $request->input('status', '');
+        $startDate = $request->input('start_date', '');
+        $endDate = $request->input('end_date', '');
+        $userGroupId = $request->input('user_group_id', '');
 
         $userGroupsMap = \App\Models\UserGroup::pluck('group_name', 'id')->toArray();
-
         $mapRowGroups = function($s) use ($userGroupsMap) {
             $gIds = [];
             if (!empty($s->user_group_ids)) {
@@ -85,55 +69,206 @@ class SaleController extends Controller
             $gIds = array_unique(array_filter($gIds));
             $names = [];
             foreach ($gIds as $id) {
-                if (isset($userGroupsMap[$id])) {
-                    $names[] = $userGroupsMap[$id];
-                }
+                if (isset($userGroupsMap[$id])) $names[] = $userGroupsMap[$id];
             }
-            $s->group_names = $names;
-            return $s;
+            return $names;
         };
 
-        $formatRow = function($s, $status, $pType) use ($mapRowGroups) {
-            $s->entry_status = $status;
-            $s->p_type = $pType ?? 'customer';
-            $s = $mapRowGroups($s);
-            $s->display_inv_no = (int) preg_replace('/[^0-9]/', '', $s->invoice_no);
-            $s->display_date = \Carbon\Carbon::parse($s->entry_date ?? $s->created_at)->format('d-M-Y');
-            $s->party_name = ($s->p_type === 'vendor')
-                ? ($s->vendor->name ?? 'N/A')
-                : ($s->customer->customer_name ?? 'N/A');
-            $s->wh_names = $s->items->map(function($it) {
-                return $it->warehouse_id == 0 ? 'Shop' : ($it->warehouse->warehouse_name ?? 'N/A');
-            })->unique()->implode(', ');
-            $s->item_qty_sum = $s->items->sum('sales_qty');
-            $itemsSum = (float)$s->items->sum('amount');
-            $s->display_inv_total = ((float)$s->sub_total2 > 0) ? (float)$s->sub_total2 : $itemsSum;
-            $s->display_receipts = ($s->receipt1 ?? 0) + ($s->receipt2 ?? 0);
-            $s->display_net_payable = ((float)$s->total_balance != 0)
-                ? (float)$s->total_balance
-                : ($s->display_inv_total - (float)($s->discount_amount ?? 0));
-            return $s;
+        $applyGroupFilter = function($query) use ($userGroupId) {
+            if (!empty($userGroupId)) {
+                $groupId = (string) $userGroupId;
+                $groupIdInt = (int) $userGroupId;
+                $query->where(function($q) use ($groupId, $groupIdInt) {
+                    $q->whereJsonContains('user_group_ids', $groupId)
+                      ->orWhereJsonContains('user_group_ids', $groupIdInt)
+                      ->orWhereHas('customer', function($cq) use ($groupId, $groupIdInt) {
+                          $cq->whereJsonContains('user_group_ids', $groupId)
+                            ->orWhereJsonContains('user_group_ids', $groupIdInt);
+                      })
+                      ->orWhereHas('vendor', function($vq) use ($groupId, $groupIdInt) {
+                          $vq->whereJsonContains('user_group_ids', $groupId)
+                            ->orWhereJsonContains('user_group_ids', $groupIdInt);
+                      });
+                });
+            }
         };
 
-        $salesRows = $salesQuery->get()->map(function($s) use ($formatRow) {
-            return $formatRow($s, 'Posted', $s->partyType);
-        });
+        $applySearchFilter = function($query) use ($searchValue) {
+            if (!empty($searchValue)) {
+                $query->where(function($q) use ($searchValue) {
+                    $q->where('invoice_no', 'like', "%{$searchValue}%")
+                      ->orWhere('manual_invoice', 'like', "%{$searchValue}%")
+                      ->orWhereHas('customer', function($cq) use ($searchValue) {
+                          $cq->where('customer_name', 'like', "%{$searchValue}%");
+                      })
+                      ->orWhereHas('vendor', function($vq) use ($searchValue) {
+                          $vq->where('name', 'like', "%{$searchValue}%");
+                      })
+                      ->orWhereHas('items.product', function($pq) use ($searchValue) {
+                          $pq->where('name', 'like', "%{$searchValue}%");
+                      });
+                });
+            }
+        };
 
-        $bookingsRows = $bookingsQuery->get()->map(function($b) use ($formatRow) {
-            return $formatRow($b, 'Unposted', $b->party_type);
-        });
+        $csrfToken = csrf_token();
 
-        $combined = $salesRows->concat($bookingsRows)->sortByDesc('created_at');
+        if ($statusFilter === 'Unposted') {
+            $bQuery = Productbooking::with(['customer', 'vendor', 'items.product', 'items.warehouse', 'user']);
+            if (!empty($startDate)) $bQuery->whereDate('created_at', '>=', $startDate);
+            if (!empty($endDate)) $bQuery->whereDate('created_at', '<=', $endDate);
+            $applyGroupFilter($bQuery);
+            $recordsTotal = (clone $bQuery)->count();
+            $applySearchFilter($bQuery);
+            $recordsFiltered = (clone $bQuery)->count();
+            $bQuery->orderBy('id', $orderDir);
+            if ($length > 0) $bQuery->skip($start)->take($length);
+            $rows = $bQuery->get();
+            $entryStatus = 'Unposted';
+        } else {
+            $sQuery = Sale::with(['customer', 'vendor', 'items.product', 'items.warehouse', 'user']);
+            if (!empty($startDate)) $sQuery->whereDate('created_at', '>=', $startDate);
+            if (!empty($endDate)) $sQuery->whereDate('created_at', '<=', $endDate);
+            $applyGroupFilter($sQuery);
+            $recordsTotal = (clone $sQuery)->count();
+            $applySearchFilter($sQuery);
+            $recordsFiltered = (clone $sQuery)->count();
 
-        if ($request->filled('status')) {
-            $combined = $combined->where('entry_status', $request->status);
+            if ($orderColumnIdx == 2) {
+                $sQuery->orderBy('id', $orderDir);
+            } elseif ($orderColumnIdx == 4) {
+                $sQuery->orderBy('created_at', $orderDir);
+            } else {
+                $sQuery->orderBy('id', $orderDir);
+            }
+
+            if ($length > 0) $sQuery->skip($start)->take($length);
+            $rows = $sQuery->get();
+            $entryStatus = 'Posted';
         }
 
-        $userGroups = \App\Models\UserGroup::orderBy('group_name')->get();
+        $data = [];
+        foreach ($rows as $i => $s) {
+            $s->p_type = ($entryStatus === 'Posted') ? ($s->partyType ?? 'customer') : ($s->party_type ?? 'customer');
+            $groupNames = $mapRowGroups($s);
 
-        return view('admin_panel.sale.index', [
-            'sales' => $combined,
-            'userGroups' => $userGroups
+            $partyName = ($s->p_type === 'vendor') 
+                ? ($s->vendor->name ?? 'N/A') 
+                : ($s->customer->customer_name ?? 'N/A');
+
+            $whNames = $s->items->map(function($it) {
+                return $it->warehouse_id == 0 ? 'Shop' : ($it->warehouse->warehouse_name ?? 'N/A');
+            })->unique()->implode(', ');
+
+            $invTotal = ((float)$s->sub_total2 > 0) ? (float)$s->sub_total2 : (float)$s->items->sum('amount');
+            $saleReceipts = ($s->receipt1 ?? 0) + ($s->receipt2 ?? 0);
+            $netPayable = ((float)$s->total_balance != 0) 
+                ? (float)$s->total_balance 
+                : ($invTotal - (float)($s->discount_amount ?? 0));
+
+            if ($s->p_type === 'vendor') {
+                $partyTypeBadge = '<span class="badge bg-info-subtle text-info border border-info px-1 py-0" style="font-size: 10px;">Vendor</span>';
+            } elseif ($s->p_type === 'customer') {
+                $partyTypeBadge = '<span class="badge bg-primary-subtle text-primary border border-primary px-1 py-0" style="font-size: 10px;">Customer</span>';
+            } else {
+                $partyTypeBadge = '<span class="badge bg-secondary-subtle text-secondary border border-secondary px-1 py-0" style="font-size: 10px;">' . ucfirst($s->p_type ?? 'N/A') . '</span>';
+            }
+
+            $groupBadges = '';
+            if (!empty($groupNames)) {
+                foreach ($groupNames as $gName) {
+                    $groupBadges .= '<span class="badge bg-secondary-subtle text-dark border px-1 py-0 me-1" style="font-size: 10px;">' . e($gName) . '</span>';
+                }
+            } else {
+                $groupBadges = '<span class="text-muted small">-</span>';
+            }
+
+            // Items HTML (CLEAN, NO SCROLLBAR!)
+            $itemsHtml = '';
+            foreach ($s->items as $it) {
+                $pName = e($it->product->name ?? 'Product #' . $it->product_id);
+                $itemsHtml .= '<div class="sale-item-entry" title="' . $pName . '">' . $pName . '</div>';
+            }
+
+            // Item Qty HTML (CLEAN, NO SCROLLBAR!)
+            $itemQtyHtml = '';
+            foreach ($s->items as $it) {
+                $itemQtyHtml .= '<div class="sale-qty-entry text-primary fw-bold">' . number_format($it->sales_qty ?? 0, 0) . '</div>';
+            }
+
+            if ($entryStatus === 'Posted') {
+                $statusBadge = '<span class="badge bg-success rounded-pill px-3">Posted</span>';
+            } else {
+                $statusBadge = '<span class="badge bg-warning text-dark rounded-pill px-3">Unposted</span>';
+            }
+
+            if ($entryStatus === 'Unposted') {
+                $actionsHtml = '<div class="d-flex gap-1 justify-content-center">
+                    <form action="' . url('/sale/' . $s->id . '/post') . '" method="POST" class="d-inline">
+                        <input type="hidden" name="_token" value="' . $csrfToken . '">
+                        <button type="submit" class="btn btn-primary btn-xs px-2 py-0" title="Post now" style="font-size: 10px;">
+                            <i class="fa fa-send"></i> Post
+                        </button>
+                    </form>
+                    <a class="btn btn-outline-warning btn-xs px-1 py-0" href="' . url('/Booking/edit/' . $s->id) . '" title="Edit" style="height: 20px;">
+                        <i class="fa fa-edit text-dark"></i>
+                    </a>
+                    <a href="' . url('/sale/invoice/' . $s->id) . '" target="_blank" class="btn btn-outline-primary btn-xs px-1 py-0" title="Print Invoice" style="height: 20px; font-size: 10px; line-height: 18px;">
+                        <i class="fa fa-print"></i> Inv
+                    </a>
+                    <a href="' . url('/sale/dc/' . $s->id) . '" target="_blank" class="btn btn-outline-secondary btn-xs px-1 py-0" title="Delivery Challan (DC)" style="height: 20px; font-size: 10px; line-height: 18px;">
+                        <i class="fa fa-truck"></i> DC
+                    </a>
+                    <form action="' . url('/sale/' . $s->id) . '" method="POST" class="d-inline" onsubmit="return confirm(\'Delete this unposted booking?\')">
+                        <input type="hidden" name="_token" value="' . $csrfToken . '">
+                        <input type="hidden" name="_method" value="DELETE">
+                        <button type="submit" class="btn btn-outline-danger btn-xs px-1 py-0" title="Delete" style="height: 20px;">
+                            <i class="fa fa-trash"></i>
+                        </button>
+                    </form>
+                </div>';
+            } else {
+                $actionsHtml = '<div class="d-flex gap-1 justify-content-center">
+                    <a href="' . url('/sale/invoice/' . $s->id) . '" target="_blank" class="btn btn-outline-primary btn-xs px-1 py-0" title="Print Invoice" style="height: 20px; font-size: 10px; line-height: 18px;">
+                        <i class="fa fa-print"></i> Inv
+                    </a>
+                    <a href="' . url('/sale/dc/' . $s->id) . '" target="_blank" class="btn btn-outline-dark btn-xs px-1 py-0" title="Delivery Challan (DC)" style="height: 20px; font-size: 10px; line-height: 18px;">
+                        <i class="fa fa-truck"></i> DC
+                    </a>
+                    <a href="' . url('/sale/' . $s->id . '/view') . '" class="btn btn-outline-info btn-xs px-1 py-0" title="View Sale" style="height: 20px;">
+                        <i class="fa fa-eye"></i>
+                    </a>
+                </div>';
+            }
+
+            $data[] = [
+                'index' => $start + $i + 1,
+                'type' => '<span class="text-muted small">SJ</span>',
+                'inv_no' => '<span class="fw-bold text-primary">' . (int) preg_replace('/[^0-9]/', '', $s->invoice_no) . '</span>',
+                'manual_inv' => e($s->manual_invoice ?? '-'),
+                'date' => '<span class="small">' . \Carbon\Carbon::parse($s->entry_date ?? $s->created_at)->format('d-M-Y') . '</span>',
+                'party_type' => $partyTypeBadge,
+                'customer' => '<span class="fw-bold text-dark small">' . e($partyName) . '</span>',
+                'group' => $groupBadges,
+                'warehouse' => '<div class="text-muted" style="font-size: 10px;"><i class="fa fa-building-o me-1"></i>' . e(\Illuminate\Support\Str::limit($whNames ?: '-', 20)) . '</div>',
+                'items' => $itemsHtml,
+                'item_qty' => $itemQtyHtml,
+                'total_qty' => '<span class="fw-bold text-info">' . number_format($s->items->sum('sales_qty'), 0) . '</span>',
+                'inv_total' => '<span class="fw-bold">' . number_format($invTotal, 0) . '</span>',
+                'discount' => '<span class="text-danger">' . number_format($s->discount_amount ?? 0, 0) . '</span>',
+                'ac_allocation' => number_format($saleReceipts, 0),
+                'net_payable' => '<span class="fw-bold text-primary">' . number_format($netPayable, 0) . '</span>',
+                'created_by' => '<span class="text-dark small">' . e($s->user->name ?? 'System') . '</span>',
+                'status' => $statusBadge,
+                'actions' => $actionsHtml,
+            ];
+        }
+
+        return response()->json([
+            'draw' => (int) $request->input('draw', 1),
+            'recordsTotal' => $recordsTotal,
+            'recordsFiltered' => $recordsFiltered,
+            'data' => $data,
         ]);
     }
 
