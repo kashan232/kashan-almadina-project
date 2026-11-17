@@ -293,9 +293,20 @@
                                     @endif
                                 </tbody>
                                 <tfoot>
-                                    <tr id="receipt_tfoot_row">
-                                        <th colspan="3" class="text-end py-2">Grand Total Qty:</th>
-                                        <th class="text-center py-2"><span id="total_qty_badge" class="badge bg-secondary">0</span></th>
+                                    <tr id="receipt_tfoot_row" style="{{ $initialClaimType === 'credit' ? 'display: none;' : '' }}">
+                                        <th colspan="3" class="text-end py-2 fw-bold text-muted">Grand Total Qty:</th>
+                                        <th class="text-center py-2"><span id="total_qty_badge" class="badge bg-secondary" style="font-size: 13px;">0</span></th>
+                                        <th></th>
+                                    </tr>
+                                    <tr id="credit_tfoot_row" style="{{ $initialClaimType === 'credit' ? '' : 'display: none;' }}">
+                                        <th colspan="6" class="text-end py-2 fw-bold text-muted">Grand Total Qty:</th>
+                                        <th class="text-center py-2">
+                                            <span id="credit_total_qty_badge" class="badge bg-primary" style="font-size: 13px;">0</span>
+                                        </th>
+                                        <th class="credit-only-field"></th>
+                                        <th class="credit-only-field text-end py-2">
+                                            <span id="credit_tfoot_total" class="fw-bold text-dark">0.00</span>
+                                        </th>
                                         <th></th>
                                     </tr>
                                 </tfoot>
@@ -424,6 +435,7 @@ $(document).ready(function() {
             $('#to_warehouse_id').prop('required', false);
             $('#mainClaimForm').attr('action', "{{ route('claim-credit-note.ajax-save') }}");
             $('#receipt_tfoot_row').hide();
+            $('#credit_tfoot_row').show();
 
             // Refresh any existing rows to purchase pricing for credit note
             $('#claimItemRows tr').each(function() {
@@ -451,6 +463,7 @@ $(document).ready(function() {
             $('#to_warehouse_id').prop('required', true);
             $('#mainClaimForm').attr('action', "{{ route('claim-item-receipt.ajax-save') }}");
             $('#receipt_tfoot_row').show();
+            $('#credit_tfoot_row').hide();
         }
         recalculateTotals();
     }
@@ -599,7 +612,9 @@ $(document).ready(function() {
             }
         });
 
-        $('#total_qty_badge').text(totalQty.toFixed(2));
+        let formattedQty = (totalQty % 1 === 0) ? totalQty.toFixed(0) : totalQty.toFixed(2);
+        $('#total_qty_badge').text(formattedQty);
+        $('#credit_total_qty_badge').text(formattedQty);
 
         if (isCredit) {
             let whtPctVal = parseFloat($('#credit_wht_percent').val()) || 0;
@@ -608,6 +623,7 @@ $(document).ready(function() {
             let whtAmt = (whtType === 'percent') ? ((netBeforeWHT * whtPctVal) / 100.0) : whtPctVal;
             let finalNet = netBeforeWHT + whtAmt;
 
+            $('#credit_tfoot_total').text(subtotal.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2}));
             $('#txtCreditSubtotal').text(subtotal.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2}));
             $('#credit_wht_amount').val(whtAmt.toFixed(2));
             $('#txtCreditNetTotal').text(finalNet.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2}));

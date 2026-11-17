@@ -330,7 +330,7 @@
                         $dAmt = $trx['debit'] > 0 ? number_format($trx['debit'], 0) : '-';
                         $cQty = ($isCreditItem && (float)($trx['qty'] ?? 0) > 0) ? $fmtQty($trx['qty']) : '';
                         $cAmt = $trx['credit'] > 0 ? number_format($trx['credit'], 0) : '-';
-                        $priceDisplay = ($trx['price'] ?? 0) > 0 ? ((floor($trx['price']) == $trx['price']) ? number_format($trx['price'], 0) : number_format($trx['price'], 2)) : '';
+                        $priceDisplay = ($trx['price'] ?? 0) > 0 ? number_format($trx['price'], 0) : '';
                     @endphp
                     <tr>
                         <td class="col-date">{{ date('d-m-y', strtotime($trx['date'])) }}</td>

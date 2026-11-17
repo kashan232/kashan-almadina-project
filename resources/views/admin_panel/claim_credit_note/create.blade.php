@@ -256,6 +256,19 @@
                                         @endforeach
                                     @endif
                                 </tbody>
+                                <tfoot>
+                                    <tr>
+                                        <th colspan="6" class="text-end py-2 fw-bold text-muted">Grand Total Qty:</th>
+                                        <th class="text-center py-2">
+                                            <span id="total_qty_badge" class="badge bg-primary" style="font-size: 13px;">0</span>
+                                        </th>
+                                        <th></th>
+                                        <th class="text-end py-2">
+                                            <span id="tfoot_total" class="fw-bold text-dark">0.00</span>
+                                        </th>
+                                        <th></th>
+                                    </tr>
+                                </tfoot>
                             </table>
                         </div>
                     </div>
@@ -499,6 +512,7 @@ $(document).ready(function() {
     });
 
     function calculate() {
+        let totalQty = 0;
         let subtotal = 0;
         let totalDisc = 0;
 
@@ -506,6 +520,7 @@ $(document).ready(function() {
             let row = $(this);
             let price = parseFloat(row.find('.price').val()) || 0;
             let qty = parseFloat(row.find('.quantity').val()) || 0;
+            totalQty += qty;
             let discPct = parseFloat(row.find('.discount_percent').val()) || 0;
             let discAmt = parseFloat(row.find('.discount_amount').val()) || 0;
 
@@ -531,6 +546,10 @@ $(document).ready(function() {
         let netBeforeWHT = subtotal - totalDisc;
         let whtAmt = whtType === 'percent' ? (netBeforeWHT * whtPct) / 100 : whtPct;
         let finalNet = netBeforeWHT + whtAmt;
+
+        let formattedQty = (totalQty % 1 === 0) ? totalQty.toFixed(0) : totalQty.toFixed(2);
+        $('#total_qty_badge').text(formattedQty);
+        $('#tfoot_total').text(subtotal.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2}));
 
         $('#txtSubtotal').text(subtotal.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2}));
         $('#txtTotalDisc').text(totalDisc.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2}));

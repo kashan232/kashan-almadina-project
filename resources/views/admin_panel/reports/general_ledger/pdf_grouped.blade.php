@@ -192,7 +192,7 @@
                         <td class="text-center">{{ date('d-m-y', strtotime($trx['date'])) }}</td>
                         <td class="text-center">{{ $trx['ref'] }} {{ $trx['inv'] }}</td>
                         <td>{{ $trx['desc'] }}</td>
-                        <td class="text-right">{{ ($trx['price'] ?? 0) > 0 ? ((floor($trx['price']) == $trx['price']) ? number_format($trx['price'], 0) : number_format($trx['price'], 2)) : '' }}</td>
+                        <td class="text-right">{{ ($trx['price'] ?? 0) > 0 ? number_format($trx['price'], 0) : '' }}</td>
                         <td class="text-center">{{ ($trx['debit'] > 0 && ($trx['qty'] ?? 0) > 0) ? $trx['qty'] : '' }}</td>
                         <td class="text-right">{{ $trx['debit'] > 0 ? number_format($trx['debit'], 0) : '-' }}</td>
                         <td class="text-center">{{ ($trx['credit'] > 0 && ($trx['qty'] ?? 0) > 0) ? $trx['qty'] : '' }}</td>

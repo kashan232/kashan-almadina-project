@@ -93,16 +93,34 @@ class SaleController extends Controller
             return $s;
         };
 
-        $salesRows = $salesQuery->get()->map(function($s) use ($mapRowGroups) {
-            $s->entry_status = 'Posted';
-            $s->p_type = $s->partyType ?? 'customer';
-            return $mapRowGroups($s);
+        $formatRow = function($s, $status, $pType) use ($mapRowGroups) {
+            $s->entry_status = $status;
+            $s->p_type = $pType ?? 'customer';
+            $s = $mapRowGroups($s);
+            $s->display_inv_no = (int) preg_replace('/[^0-9]/', '', $s->invoice_no);
+            $s->display_date = \Carbon\Carbon::parse($s->entry_date ?? $s->created_at)->format('d-M-Y');
+            $s->party_name = ($s->p_type === 'vendor')
+                ? ($s->vendor->name ?? 'N/A')
+                : ($s->customer->customer_name ?? 'N/A');
+            $s->wh_names = $s->items->map(function($it) {
+                return $it->warehouse_id == 0 ? 'Shop' : ($it->warehouse->warehouse_name ?? 'N/A');
+            })->unique()->implode(', ');
+            $s->item_qty_sum = $s->items->sum('sales_qty');
+            $itemsSum = (float)$s->items->sum('amount');
+            $s->display_inv_total = ((float)$s->sub_total2 > 0) ? (float)$s->sub_total2 : $itemsSum;
+            $s->display_receipts = ($s->receipt1 ?? 0) + ($s->receipt2 ?? 0);
+            $s->display_net_payable = ((float)$s->total_balance != 0)
+                ? (float)$s->total_balance
+                : ($s->display_inv_total - (float)($s->discount_amount ?? 0));
+            return $s;
+        };
+
+        $salesRows = $salesQuery->get()->map(function($s) use ($formatRow) {
+            return $formatRow($s, 'Posted', $s->partyType);
         });
 
-        $bookingsRows = $bookingsQuery->get()->map(function($b) use ($mapRowGroups) {
-            $b->entry_status = 'Unposted';
-            $b->p_type = $b->party_type ?? 'customer'; 
-            return $mapRowGroups($b);
+        $bookingsRows = $bookingsQuery->get()->map(function($b) use ($formatRow) {
+            return $formatRow($b, 'Unposted', $b->party_type);
         });
 
         $combined = $salesRows->concat($bookingsRows)->sortByDesc('created_at');
