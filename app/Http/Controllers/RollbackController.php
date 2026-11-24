@@ -501,10 +501,31 @@ class RollbackController extends Controller
 
     private function rollbackWarehouseStock($invoiceNo)
     {
-        $ws = WarehouseStock::find($invoiceNo);
-        if (!$ws) throw new \Exception("Warehouse Stock record $invoiceNo not found.");
-        $ws->update(['status' => 'Unposted']);
-        return back()->with('success', "Warehouse Stock record #$invoiceNo set to Unposted.");
+        $adjustment = \App\Models\StockAdjustment::with('items')
+            ->where('adj_id', $invoiceNo)
+            ->orWhere('id', $invoiceNo)
+            ->first();
+
+        if (!$adjustment) {
+            $ws = WarehouseStock::find($invoiceNo);
+            if ($ws) {
+                $ws->update(['status' => 'Posted']);
+            }
+            throw new \Exception("Stock Adjustment record $invoiceNo not found.");
+        }
+
+        $this->validateRollbackDate($adjustment);
+
+        if ($adjustment->status === 'Unposted') {
+            throw new \Exception("Stock Adjustment #$invoiceNo is already Unposted.");
+        }
+
+        foreach ($adjustment->items as $item) {
+            $this->adjustStock($item->product_id, $adjustment->warehouse_id, $item->qty, 'subtract');
+        }
+
+        $adjustment->update(['status' => 'Unposted']);
+        return back()->with('success', "Stock Adjustment #$invoiceNo set to Unposted.");
     }
 
     private function rollbackCustomerClaim($invoiceNo)

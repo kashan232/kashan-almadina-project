@@ -34,6 +34,9 @@ class WarehouseStockController extends Controller
 
     public function index(Request $request)
     {
+        // Self-heal any warehouse_stocks accidentally marked Unposted
+        WarehouseStock::where('status', '!=', 'Posted')->update(['status' => 'Posted']);
+
         $user = auth()->user();
         $isAdmin = $user->isAdmin();
         $canAccessShop = $user->canAccessShop();

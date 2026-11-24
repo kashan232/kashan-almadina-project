@@ -73,7 +73,6 @@ class UnpostEntriesReportBuilder
             ['definition' => 'Stock Release', 'model' => StockReleaseVoucher::class, 'scope' => 'unposted', 'date_columns' => ['date', 'entry_date', 'created_at']],
             ['definition' => 'Stock Transfer', 'model' => StockTransfer::class, 'scope' => 'unposted', 'date_columns' => ['entry_date', 'date', 'created_at']],
             ['definition' => 'Stock Wastage', 'model' => StockWastage::class, 'scope' => 'unposted', 'date_columns' => ['date', 'entry_date', 'created_at']],
-            ['definition' => 'Warehouse Stock', 'model' => WarehouseStock::class, 'scope' => 'unposted', 'date_columns' => ['entry_date', 'created_at']],
             ['definition' => 'Customer Claim', 'model' => CustomerClaim::class, 'scope' => 'not_posted', 'date_columns' => ['claim_date', 'entry_date']],
             ['definition' => 'Claim Acceptance', 'model' => ClaimAcceptance::class, 'scope' => 'not_posted', 'date_columns' => ['date', 'entry_date']],
             ['definition' => 'Claim Item Receipt', 'model' => ClaimItemReceipt::class, 'scope' => 'not_posted', 'date_columns' => ['date', 'entry_date']],
@@ -109,13 +108,16 @@ class UnpostEntriesReportBuilder
                     continue;
                 }
 
+                $recordId = (string) ($record->id ?? '');
+                $formId = $this->pickFormId($record, $source['definition']);
+
                 $rows->push([
                     'definition' => $source['definition'],
-                    'record_id' => (string) ($record->id ?? ''),
+                    'record_id' => $formId,
                     'date' => $date ? Carbon::parse($date)->format('d-m-y') : '',
                     'date_sort' => $date ?: '0000-00-00',
                     'user_name' => $this->userName($record->created_by ?? null),
-                    'view_url' => $this->viewUrl($source['definition'], (string) ($record->id ?? '')),
+                    'view_url' => $this->viewUrl($source['definition'], $recordId),
                 ]);
             }
         });
@@ -181,6 +183,30 @@ class UnpostEntriesReportBuilder
         return $this->userNames[$userId] ?? '';
     }
 
+    private function pickFormId($record, string $definition): string
+    {
+        $id = match ($definition) {
+            'Sales' => $record->invoice_no ?: ($record->manual_invoice ?: (string) $record->id),
+            'Purchase', 'Purchase Return', 'Sale Return' => $record->invoice_no ?: (string) $record->id,
+            'Inward Gatepass' => $record->gatepass_no ?: (string) $record->id,
+            'Stock Hold', 'Stock Release' => $record->voucher_no ?: (string) $record->id,
+            'Customer Claim' => $record->claim_no ?: (string) $record->id,
+            'Claim Acceptance' => $record->voucher_no ?: ($record->btr_no ?: (string) $record->id),
+            'Claim Item Receipt', 'Claim Credit Note' => $record->voucher_no ?: ($record->do_no ?: (string) $record->id),
+            'Receipt Voucher' => $record->rvid ?: (string) $record->id,
+            'Payment Voucher' => $record->pvid ?: (string) $record->id,
+            'Expense Voucher' => $record->evid ?: (string) $record->id,
+            'Income Voucher' => $record->ivid ?: (string) $record->id,
+            'Journal Voucher' => $record->jvid ?: (string) $record->id,
+            'Adjustment Voucher' => $record->avid ?: (string) $record->id,
+            'Stock Adjustment' => $record->adj_id ?: (string) $record->id,
+            'Stock Wastage' => $record->gwn_id ?: ($record->ref_no ?: (string) $record->id),
+            default => (string) ($record->id ?? ''),
+        };
+
+        return (string) $id;
+    }
+
     private function viewUrl(string $definition, string $recordId): ?string
     {
         if ($recordId === '') {
@@ -197,7 +223,6 @@ class UnpostEntriesReportBuilder
             'Stock Release' => route('stock-holds.release.edit', $recordId),
             'Stock Transfer' => route('stock_transfers.edit', $recordId),
             'Stock Wastage' => route('stock-wastage.edit', $recordId),
-            'Warehouse Stock' => route('warehouse_stocks.index', ['view' => 'history']),
             'Customer Claim' => route('customer-claims.edit', $recordId),
             'Claim Acceptance' => route('claim-acceptance.edit', $recordId),
             'Claim Item Receipt' => route('claim-item-receipt.edit', $recordId),
