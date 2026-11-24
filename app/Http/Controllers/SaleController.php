@@ -147,6 +147,7 @@ class SaleController extends Controller
             $entryStatus = 'Posted';
         }
 
+        $rows = $rows->values();
         $data = [];
         foreach ($rows as $i => $s) {
             $s->p_type = ($entryStatus === 'Posted') ? ($s->partyType ?? 'customer') : ($s->party_type ?? 'customer');

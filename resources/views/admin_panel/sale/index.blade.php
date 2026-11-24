@@ -340,7 +340,15 @@
                 }
             },
             "columns": [
-                { data: 'index', name: 'index', orderable: false, searchable: false },
+                {
+                    data: 'index',
+                    name: 'index',
+                    orderable: false,
+                    searchable: false,
+                    render: function(data, type, row, meta) {
+                        return (meta && meta.settings) ? (meta.row + meta.settings._iDisplayStart + 1) : (data || 1);
+                    }
+                },
                 { data: 'type', name: 'type', orderable: false, searchable: false },
                 { data: 'inv_no', name: 'inv_no' },
                 { data: 'manual_inv', name: 'manual_inv' },
