@@ -264,12 +264,14 @@
             width: 8%;
             text-align: center;
             padding: 2.5px 1px;
+            font-weight: 700;
         }
         table.main th.col-qty,
         table.main td.col-qty {
             width: 11%;
             text-align: center;
             padding: 2.5px 1px;
+            font-weight: 700;
         }
         table.main th.col-desc,
         table.main td.col-desc {
@@ -718,8 +720,8 @@
                     }
                 @endphp
                 <tr>
-                    <td class="c col-sno">{{ $index + 1 }}</td>
-                    <td class="c col-qty">{{ number_format($item->sales_qty, 0) }}</td>
+                    <td class="c col-sno" style="font-weight: 700;">{{ $index + 1 }}</td>
+                    <td class="c col-qty" style="font-weight: 700;">{{ number_format($item->sales_qty, 0) }}</td>
                     <td class="col-desc">
                         <div class="desc-line">
                             @if($brandName)
