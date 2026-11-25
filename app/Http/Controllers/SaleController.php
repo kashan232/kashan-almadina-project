@@ -121,11 +121,14 @@ class SaleController extends Controller
             $recordsTotal = (clone $bQuery)->count();
             $applySearchFilter($bQuery);
             $recordsFiltered = (clone $bQuery)->count();
-            $bQuery->orderBy('id', $orderDir);
+            if ($orderColumnIdx == 4) {
+                $bQuery->orderBy('created_at', $orderDir);
+            } else {
+                $bQuery->orderBy('id', $orderDir);
+            }
             if ($length > 0) $bQuery->skip($start)->take($length);
             $rows = $bQuery->get();
-            $entryStatus = 'Unposted';
-        } else {
+        } elseif ($statusFilter === 'Posted') {
             $sQuery = Sale::with(['customer', 'vendor', 'items.product', 'items.warehouse', 'user']);
             if (!empty($startDate)) $sQuery->whereDate('created_at', '>=', $startDate);
             if (!empty($endDate)) $sQuery->whereDate('created_at', '<=', $endDate);
@@ -144,12 +147,109 @@ class SaleController extends Controller
 
             if ($length > 0) $sQuery->skip($start)->take($length);
             $rows = $sQuery->get();
-            $entryStatus = 'Posted';
+        } else {
+            // Status: All -> include both Posted (Sale) and Unposted (Productbooking)
+            $bQuery = Productbooking::query();
+            $sQuery = Sale::query();
+
+            if (!empty($startDate)) {
+                $bQuery->whereDate('created_at', '>=', $startDate);
+                $sQuery->whereDate('created_at', '>=', $startDate);
+            }
+            if (!empty($endDate)) {
+                $bQuery->whereDate('created_at', '<=', $endDate);
+                $sQuery->whereDate('created_at', '<=', $endDate);
+            }
+            $applyGroupFilter($bQuery);
+            $applyGroupFilter($sQuery);
+
+            $recordsTotal = (clone $sQuery)->count() + (clone $bQuery)->count();
+
+            $applySearchFilter($bQuery);
+            $applySearchFilter($sQuery);
+
+            $bFiltered = (clone $bQuery)->count();
+            $sFiltered = (clone $sQuery)->count();
+            $recordsFiltered = $sFiltered + $bFiltered;
+
+            if ($bFiltered === 0) {
+                $sQuery->with(['customer', 'vendor', 'items.product', 'items.warehouse', 'user']);
+                if ($orderColumnIdx == 4) {
+                    $sQuery->orderBy('created_at', $orderDir);
+                } else {
+                    $sQuery->orderBy('id', $orderDir);
+                }
+                if ($length > 0) $sQuery->skip($start)->take($length);
+                $rows = $sQuery->get();
+            } else {
+                $fetchLimit = $length > 0 ? ($start + $length + 50) : null;
+
+                $bMetaQ = (clone $bQuery)->select('id', 'invoice_no', 'entry_date', 'created_at')
+                    ->orderBy('created_at', $orderDir)->orderBy('id', $orderDir);
+                $sMetaQ = (clone $sQuery)->select('id', 'invoice_no', 'entry_date', 'created_at')
+                    ->orderBy('created_at', $orderDir)->orderBy('id', $orderDir);
+
+                if ($fetchLimit !== null) {
+                    $bMetaQ->take($fetchLimit);
+                    $sMetaQ->take($fetchLimit);
+                }
+
+                $combinedMeta = collect();
+                foreach ($bMetaQ->get() as $bm) {
+                    $combinedMeta->push([
+                        'source' => 'booking',
+                        'id' => $bm->id,
+                        'inv' => (int) preg_replace('/[^0-9]/', '', (string) $bm->invoice_no),
+                        'date' => $bm->entry_date ? \Carbon\Carbon::parse($bm->entry_date)->timestamp : ($bm->created_at ? $bm->created_at->timestamp : 0),
+                        'created' => $bm->created_at ? $bm->created_at->timestamp : 0,
+                    ]);
+                }
+                foreach ($sMetaQ->get() as $sm) {
+                    $combinedMeta->push([
+                        'source' => 'sale',
+                        'id' => $sm->id,
+                        'inv' => (int) preg_replace('/[^0-9]/', '', (string) $sm->invoice_no),
+                        'date' => $sm->entry_date ? \Carbon\Carbon::parse($sm->entry_date)->timestamp : ($sm->created_at ? $sm->created_at->timestamp : 0),
+                        'created' => $sm->created_at ? $sm->created_at->timestamp : 0,
+                    ]);
+                }
+
+                $descending = ($orderDir === 'desc');
+                $combinedMeta = $combinedMeta->sort(function ($a, $b) use ($orderColumnIdx, $descending) {
+                    if ($orderColumnIdx == 2) {
+                        $cmp = $a['inv'] <=> $b['inv'];
+                        if ($cmp === 0) $cmp = $a['created'] <=> $b['created'];
+                    } else {
+                        $cmp = $a['date'] <=> $b['date'];
+                        if ($cmp === 0) $cmp = $a['created'] <=> $b['created'];
+                    }
+                    return $descending ? -$cmp : $cmp;
+                })->values();
+
+                $pageMeta = $length > 0 ? $combinedMeta->slice($start, $length)->values() : $combinedMeta;
+
+                $bookingIds = $pageMeta->where('source', 'booking')->pluck('id')->all();
+                $saleIds = $pageMeta->where('source', 'sale')->pluck('id')->all();
+
+                $bookingsMap = !empty($bookingIds)
+                    ? Productbooking::with(['customer', 'vendor', 'items.product', 'items.warehouse', 'user'])->whereIn('id', $bookingIds)->get()->keyBy('id')
+                    : collect();
+                $salesMap = !empty($saleIds)
+                    ? Sale::with(['customer', 'vendor', 'items.product', 'items.warehouse', 'user'])->whereIn('id', $saleIds)->get()->keyBy('id')
+                    : collect();
+
+                $rows = collect();
+                foreach ($pageMeta as $pm) {
+                    $model = ($pm['source'] === 'booking') ? $bookingsMap->get($pm['id']) : $salesMap->get($pm['id']);
+                    if ($model) $rows->push($model);
+                }
+            }
         }
 
         $rows = $rows->values();
         $data = [];
         foreach ($rows as $i => $s) {
+            $entryStatus = ($s instanceof Productbooking) ? 'Unposted' : 'Posted';
             $s->p_type = ($entryStatus === 'Posted') ? ($s->partyType ?? 'customer') : ($s->party_type ?? 'customer');
             $groupNames = $mapRowGroups($s);
 
