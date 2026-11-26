@@ -224,7 +224,7 @@ class HomeController extends Controller
 
         $returnsSum = (float) DB::table('sale_return_items')
             ->join('sale_returns', 'sale_returns.id', '=', 'sale_return_items.sale_return_id')
-            ->whereBetween(DB::raw("COALESCE(NULLIF(sale_returns.entry_date, ''), NULLIF(sale_returns.`current_date`, ''), DATE(sale_returns.created_at))"), [$fromDate, $toDate])
+            ->whereBetween(DB::raw("COALESCE(NULLIF(sale_returns.entry_date, ''), sale_returns.`current_date`)"), [$fromDate, $toDate])
             ->when($userId !== null, fn ($q) => $q->where('sale_returns.created_by', $userId))
             ->sum('sale_return_items.amount');
 
@@ -261,7 +261,7 @@ class HomeController extends Controller
 
         $returnsByUser = DB::table('sale_return_items')
             ->join('sale_returns', 'sale_returns.id', '=', 'sale_return_items.sale_return_id')
-            ->whereBetween(DB::raw("COALESCE(NULLIF(sale_returns.entry_date, ''), NULLIF(sale_returns.`current_date`, ''), DATE(sale_returns.created_at))"), [$fromDate, $toDate])
+            ->whereBetween(DB::raw("COALESCE(NULLIF(sale_returns.entry_date, ''), sale_returns.`current_date`)"), [$fromDate, $toDate])
             ->when($userId !== null, fn ($q) => $q->where('sale_returns.created_by', $userId))
             ->groupBy('sale_returns.created_by')
             ->selectRaw('sale_returns.created_by, COALESCE(SUM(sale_return_items.amount), 0) as amt')
