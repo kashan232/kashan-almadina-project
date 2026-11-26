@@ -2,10 +2,13 @@
 
 namespace App\Services;
 
+use App\Models\Brand;
+use App\Models\Category;
 use App\Models\Customer;
 use App\Models\Product;
 use App\Models\StockHold;
 use App\Models\StockRelease;
+use App\Models\Subcategory;
 use App\Models\UserGroup;
 use App\Models\Vendor;
 use App\Models\Warehouse;
@@ -65,18 +68,46 @@ class StockHoldReleaseReportBuilder
 
     private function extractFilters(Request $request): array
     {
+        $totalProducts = Product::count();
+        $totalCategories = Category::count();
+        $totalSubcategories = Subcategory::count();
+        $totalBrands = Brand::count();
+
+        $selectedItems = array_map('intval', $request->item ?? []);
+        $selectedCategories = array_map('intval', $request->category ?? []);
+        $selectedSubcategories = array_map('intval', $request->subcategory ?? []);
+        $selectedBrands = array_map('intval', $request->brand ?? []);
+
+        $applyCat = $this->shouldApplyFilter($selectedCategories, $totalCategories);
+        $applySub = $this->shouldApplyFilter($selectedSubcategories, $totalSubcategories);
+        $applyBrand = $this->shouldApplyFilter($selectedBrands, $totalBrands);
+        $applyItem = $this->shouldApplyFilter($selectedItems, $totalProducts);
+
+        if ($applyCat || $applySub || $applyBrand) {
+            $matchedIds = Product::query()
+                ->when($applyCat, fn ($q) => $q->whereIn('category_id', $selectedCategories))
+                ->when($applySub, fn ($q) => $q->whereIn('sub_category_id', $selectedSubcategories))
+                ->when($applyBrand, fn ($q) => $q->whereIn('brand_id', $selectedBrands))
+                ->when($applyItem, fn ($q) => $q->whereIn('id', $selectedItems))
+                ->pluck('id')
+                ->map(fn ($id) => (int) $id)
+                ->all();
+
+            $selectedItems = empty($matchedIds) ? [-1] : $matchedIds;
+        }
+
         return [
             'report_type' => in_array($request->report_type, ['party', 'item', 'detailed', 'hold_only', 'release_only', 'hold_balance_only'], true) ? $request->report_type : 'party',
             'user_groups' => $request->user_group ?? [],
             'warehouses' => $request->warehouse ?? [],
             'parties' => $request->party ?? [],
-            'items' => $request->item ?? [],
+            'items' => $selectedItems,
             'from_date' => $request->from_date,
             'to_date' => $request->to_date,
             'totalGroups' => UserGroup::count(),
             'totalWarehouses' => Warehouse::withoutGlobalScopes()->count() + 1,
             'totalParties' => Vendor::count() + Customer::count(),
-            'totalProducts' => Product::count(),
+            'totalProducts' => $totalProducts,
         ];
     }
 

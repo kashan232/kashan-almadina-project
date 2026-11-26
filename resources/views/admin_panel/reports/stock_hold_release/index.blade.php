@@ -101,6 +101,54 @@
                                     </div>
                                 </div>
                             </div>
+                            <!-- Category -->
+                            <div class="col-md-1">
+                                <div class="filter-column">
+                                    <div class="filter-header">
+                                        <input type="checkbox" class="select-all" data-target="category-list"> Category
+                                    </div>
+                                    <div class="filter-list" id="category-list">
+                                        @foreach($categories as $cat)
+                                            <div class="filter-item">
+                                                <input type="checkbox" name="category[]" value="{{ $cat->id }}">
+                                                <span>{{ $cat->name }}</span>
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Sub Category -->
+                            <div class="col-md-1" style="min-width: 100px;">
+                                <div class="filter-column">
+                                    <div class="filter-header">
+                                        <input type="checkbox" class="select-all" data-target="subcat-list"> Sub Category
+                                    </div>
+                                    <div class="filter-list" id="subcat-list">
+                                        @foreach($subcategories as $sub)
+                                            <div class="filter-item" data-category="{{ $sub->category_id }}">
+                                                <input type="checkbox" name="subcategory[]" value="{{ $sub->id }}">
+                                                <span>{{ $sub->name }}</span>
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Brand -->
+                            <div class="col-md-1" style="min-width: 100px;">
+                                <div class="filter-column">
+                                    <div class="filter-header">
+                                        <input type="checkbox" class="select-all" data-target="brand-list"> Brand
+                                    </div>
+                                    <div class="filter-list" id="brand-list">
+                                        @foreach($brands as $brand)
+                                            <div class="filter-item">
+                                                <input type="checkbox" name="brand[]" value="{{ $brand->id }}">
+                                                <span>{{ $brand->name }}</span>
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                </div>
+                            </div>
                             <!-- Item -->
                             <div class="col-md-2">
                                 <div class="filter-column">
@@ -112,7 +160,11 @@
                                     </div>
                                     <div class="filter-list" id="item-list">
                                         @foreach($products as $prod)
-                                            <div class="filter-item" data-search="{{ strtolower($prod->name) }}">
+                                            <div class="filter-item"
+                                                 data-search="{{ strtolower($prod->name) }}"
+                                                 data-brand="{{ $prod->brand_id }}"
+                                                 data-category="{{ $prod->category_id }}"
+                                                 data-subcategory="{{ $prod->sub_category_id }}">
                                                 <input type="checkbox" name="item[]" value="{{ $prod->id }}">
                                                 <span>{{ $prod->name }}</span>
                                             </div>
@@ -247,6 +299,9 @@
             if (['partytype-list', 'group-list'].includes(listId)) {
                 setTimeout(applyFilters, 10);
             }
+            if (['category-list', 'subcat-list', 'brand-list'].includes(listId)) {
+                setTimeout(applyItemFilters, 50);
+            }
         });
 
         $(document).on('change', '.filter-item input[type="checkbox"]', function() {
@@ -256,6 +311,9 @@
             const listId = $item.closest('.filter-list').attr('id');
             if (['partytype-list', 'group-list'].includes(listId)) {
                 setTimeout(applyFilters, 10);
+            }
+            if (['category-list', 'subcat-list', 'brand-list'].includes(listId)) {
+                setTimeout(applyItemFilters, 50);
             }
         });
 
@@ -269,6 +327,9 @@
             if (['partytype-list', 'group-list'].includes(target)) {
                 applyFilters();
             }
+            if (['category-list', 'subcat-list', 'brand-list'].includes(target)) {
+                applyItemFilters();
+            }
         });
 
         $('#globalSelectAll').on('change', function() {
@@ -279,6 +340,7 @@
                 $(this).toggleClass('selected', checked);
             });
             applyFilters();
+            applyItemFilters();
         });
 
         $('#partySearch').on('keyup input search', function() {
@@ -286,13 +348,38 @@
         });
 
         $('#itemSearch').on('keyup input search', function() {
-            const term = ($(this).val() || '').toLowerCase().trim();
+            applyItemFilters();
+        });
+
+        function applyItemFilters() {
+            const brands = getCheckedValues('brand-list', 'brand[]');
+            const categories = getCheckedValues('category-list', 'category[]');
+            const subcategories = getCheckedValues('subcat-list', 'subcategory[]');
+            const term = ($('#itemSearch').val() || '').toLowerCase().trim();
+
+            $('#subcat-list .filter-item').each(function() {
+                const $item = $(this);
+                const catId = String($item.data('category') || '');
+                const show = !categories.length || categories.includes(catId);
+                $item.toggle(show);
+                if (!show) uncheckItem($item);
+            });
+
             $('#item-list .filter-item').each(function() {
                 const $item = $(this);
-                const show = !term || String($item.data('search') || '').includes(term);
+                const brandId = String($item.data('brand') || '');
+                const catId = String($item.data('category') || '');
+                const subcatId = String($item.data('subcategory') || '');
+                const searchText = String($item.data('search') || '');
+                const brandMatch = !brands.length || brands.includes(brandId);
+                const catMatch = !categories.length || categories.includes(catId);
+                const subcatMatch = !subcategories.length || subcategories.includes(subcatId);
+                const searchMatch = !term || searchText.includes(term);
+                const show = brandMatch && catMatch && subcatMatch && searchMatch;
                 $item.toggle(show);
+                if (!brandMatch || !catMatch || !subcatMatch) uncheckItem($item);
             });
-        });
+        }
 
         function applyPartyFilterOnly() {
             const selectedTypes = getCheckedValues('partytype-list', 'party_type[]');
