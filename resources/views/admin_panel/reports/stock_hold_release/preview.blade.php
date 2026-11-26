@@ -55,6 +55,7 @@
         }
         table {
             width: 100%;
+            table-layout: fixed;
             border-collapse: collapse;
             border: 1px solid #000;
             margin-bottom: 0;
@@ -135,14 +136,22 @@
 
     @forelse($groups as $group)
     <table>
+        <colgroup>
+            <col style="width: 5%;">
+            <col style="width: 55%;">
+            <col style="width: 10%;">
+            <col style="width: 10%;">
+            <col style="width: 10%;">
+            <col style="width: 10%;">
+        </colgroup>
         <thead>
             <tr>
                 <th class="sno">S#</th>
-                <th style="width: 45%;">Item Description</th>
-                <th style="width: 10%;">Opn</th>
-                <th style="width: 10%;">Hold</th>
-                <th style="width: 10%;">Rel</th>
-                <th style="width: 10%;">Payable</th>
+                <th>Item Description</th>
+                <th>Opn</th>
+                <th>Hold</th>
+                <th>Rel</th>
+                <th>Payable</th>
             </tr>
         </thead>
         <tbody>
@@ -205,11 +214,18 @@
     @endforelse
 
     @if(!empty($groups))
-    <table>
+    <table style="border-top: none;">
+        <colgroup>
+            <col style="width: 5%;">
+            <col style="width: 55%;">
+            <col style="width: 10%;">
+            <col style="width: 10%;">
+            <col style="width: 10%;">
+            <col style="width: 10%;">
+        </colgroup>
         <tbody>
             <tr class="grand-row">
-                <td class="sno"></td>
-                <td style="text-align:right;">Grand Total</td>
+                <td colspan="2" style="text-align:right;">Grand Total</td>
                 <td class="num">{{ $fmt($grand['opening']) }}</td>
                 <td class="num">{{ $fmt($grand['hold']) }}</td>
                 <td class="num">{{ $fmt($grand['rel']) }}</td>

@@ -55,6 +55,7 @@
         }
         table {
             width: 100%;
+            table-layout: fixed;
             border-collapse: collapse;
             border: 1px solid #000;
             margin-bottom: 0;
@@ -131,11 +132,16 @@
 
     @forelse($groups as $group)
     <table>
+        <colgroup>
+            <col style="width: 5%;">
+            <col style="width: 75%;">
+            <col style="width: 20%;">
+        </colgroup>
         <thead>
             <tr>
                 <th class="sno">S#</th>
-                <th style="width: 70%;">Item Description</th>
-                <th style="width: 30%;">Payable</th>
+                <th>Item Description</th>
+                <th>Payable</th>
             </tr>
         </thead>
         <tbody>
@@ -160,12 +166,16 @@
     @endforelse
 
     @if(!empty($groups))
-    <table>
+    <table style="border-top: none;">
+        <colgroup>
+            <col style="width: 5%;">
+            <col style="width: 75%;">
+            <col style="width: 20%;">
+        </colgroup>
         <tbody>
             <tr class="grand-row">
-                <td class="sno"></td>
-                <td style="text-align:right; width: 70%;">Grand Total</td>
-                <td class="num" style="width: 30%;">{{ $fmt($grand_payable) }}</td>
+                <td colspan="2" style="text-align:right;">Grand Total</td>
+                <td class="num">{{ $fmt($grand_payable) }}</td>
             </tr>
         </tbody>
     </table>
