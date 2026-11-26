@@ -122,9 +122,11 @@ class SaleController extends Controller
             $applySearchFilter($bQuery);
             $recordsFiltered = (clone $bQuery)->count();
             if ($orderColumnIdx == 4) {
-                $bQuery->orderBy('created_at', $orderDir);
+                $bQuery->orderBy('created_at', $orderDir)
+                    ->orderByRaw("CAST(invoice_no AS UNSIGNED) {$orderDir}");
             } else {
-                $bQuery->orderBy('id', $orderDir);
+                $bQuery->orderByRaw("CAST(invoice_no AS UNSIGNED) {$orderDir}")
+                    ->orderBy('id', $orderDir);
             }
             if ($length > 0) $bQuery->skip($start)->take($length);
             $rows = $bQuery->get();
@@ -137,12 +139,12 @@ class SaleController extends Controller
             $applySearchFilter($sQuery);
             $recordsFiltered = (clone $sQuery)->count();
 
-            if ($orderColumnIdx == 2) {
-                $sQuery->orderBy('id', $orderDir);
-            } elseif ($orderColumnIdx == 4) {
-                $sQuery->orderBy('created_at', $orderDir);
+            if ($orderColumnIdx == 4) {
+                $sQuery->orderBy('created_at', $orderDir)
+                    ->orderByRaw("CAST(invoice_no AS UNSIGNED) {$orderDir}");
             } else {
-                $sQuery->orderBy('id', $orderDir);
+                $sQuery->orderByRaw("CAST(invoice_no AS UNSIGNED) {$orderDir}")
+                    ->orderBy('id', $orderDir);
             }
 
             if ($length > 0) $sQuery->skip($start)->take($length);
@@ -175,19 +177,27 @@ class SaleController extends Controller
             if ($bFiltered === 0) {
                 $sQuery->with(['customer', 'vendor', 'items.product', 'items.warehouse', 'user']);
                 if ($orderColumnIdx == 4) {
-                    $sQuery->orderBy('created_at', $orderDir);
+                    $sQuery->orderBy('created_at', $orderDir)
+                        ->orderByRaw("CAST(invoice_no AS UNSIGNED) {$orderDir}");
                 } else {
-                    $sQuery->orderBy('id', $orderDir);
+                    $sQuery->orderByRaw("CAST(invoice_no AS UNSIGNED) {$orderDir}")
+                        ->orderBy('id', $orderDir);
                 }
                 if ($length > 0) $sQuery->skip($start)->take($length);
                 $rows = $sQuery->get();
             } else {
                 $fetchLimit = $length > 0 ? ($start + $length + 50) : null;
 
-                $bMetaQ = (clone $bQuery)->select('id', 'invoice_no', 'entry_date', 'created_at')
-                    ->orderBy('created_at', $orderDir)->orderBy('id', $orderDir);
-                $sMetaQ = (clone $sQuery)->select('id', 'invoice_no', 'entry_date', 'created_at')
-                    ->orderBy('created_at', $orderDir)->orderBy('id', $orderDir);
+                $bMetaQ = (clone $bQuery)->select('id', 'invoice_no', 'entry_date', 'created_at');
+                $sMetaQ = (clone $sQuery)->select('id', 'invoice_no', 'entry_date', 'created_at');
+
+                if ($orderColumnIdx == 4) {
+                    $bMetaQ->orderBy('created_at', $orderDir)->orderBy('id', $orderDir);
+                    $sMetaQ->orderBy('created_at', $orderDir)->orderBy('id', $orderDir);
+                } else {
+                    $bMetaQ->orderByRaw("CAST(invoice_no AS UNSIGNED) {$orderDir}")->orderBy('id', $orderDir);
+                    $sMetaQ->orderByRaw("CAST(invoice_no AS UNSIGNED) {$orderDir}")->orderBy('id', $orderDir);
+                }
 
                 if ($fetchLimit !== null) {
                     $bMetaQ->take($fetchLimit);
