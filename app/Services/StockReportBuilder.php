@@ -1300,7 +1300,13 @@ class StockReportBuilder
 
     public function buildRetail(Request $request): array
     {
-        $this->filters = $this->extractFilters($request);
+        $ledgerData = $this->build($request);
+        $closingMap = [];
+        foreach ($ledgerData['grouped'] as $whId => $rows) {
+            foreach ($rows as $row) {
+                $closingMap[(int) $whId][(int) $row['product_id']] = (float) $row['closing'];
+            }
+        }
 
         $products = Product::query()
             ->with(['latestPrice', 'brandRelation', 'brand'])
@@ -1334,7 +1340,7 @@ class StockReportBuilder
 
             foreach ($products as $product) {
                 $retailPrice = (float) ($product->latestPrice->sale_retail_price ?? 0);
-                $physicalQty = $this->getCurrentStock((int) $product->id, (int) $warehouseId);
+                $physicalQty = (float) ($closingMap[(int) $warehouseId][(int) $product->id] ?? 0.0);
                 $holdQty = $this->currentHoldQty((int) $product->id, (int) $warehouseId);
 
                 if (abs($physicalQty) < 0.0001 && abs($holdQty) < 0.0001) {
