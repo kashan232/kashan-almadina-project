@@ -1298,6 +1298,25 @@ class StockReportBuilder
         return $totals;
     }
 
+    private function buildDatedHoldMap(?string $toDate): array
+    {
+        $holdMap = [];
+        foreach ($this->movements as $m) {
+            if ($toDate && $m['date'] > $toDate) {
+                continue;
+            }
+            $wh = (int) $m['warehouse_id'];
+            $pid = (int) $m['product_id'];
+            if ($m['column'] === 'hold') {
+                $holdMap[$wh][$pid] = ($holdMap[$wh][$pid] ?? 0.0) + (float) $m['qty'];
+            } elseif ($m['column'] === 'release') {
+                $holdMap[$wh][$pid] = ($holdMap[$wh][$pid] ?? 0.0) - (float) $m['qty'];
+            }
+        }
+
+        return $holdMap;
+    }
+
     public function buildRetail(Request $request): array
     {
         $ledgerData = $this->build($request);
@@ -1307,6 +1326,7 @@ class StockReportBuilder
                 $closingMap[(int) $whId][(int) $row['product_id']] = (float) $row['closing'];
             }
         }
+        $holdMap = $this->buildDatedHoldMap($request->to_date);
 
         $products = Product::query()
             ->with(['latestPrice', 'brandRelation', 'brand'])
@@ -1341,7 +1361,7 @@ class StockReportBuilder
             foreach ($products as $product) {
                 $retailPrice = (float) ($product->latestPrice->sale_retail_price ?? 0);
                 $physicalQty = (float) ($closingMap[(int) $warehouseId][(int) $product->id] ?? 0.0);
-                $holdQty = $this->currentHoldQty((int) $product->id, (int) $warehouseId);
+                $holdQty = (float) ($holdMap[(int) $warehouseId][(int) $product->id] ?? 0.0);
 
                 if (abs($physicalQty) < 0.0001 && abs($holdQty) < 0.0001) {
                     continue;
@@ -1434,6 +1454,10 @@ class StockReportBuilder
     public function buildHold(Request $request): array
     {
         $this->filters = $this->extractFilters($request);
+        $this->movements = collect();
+        $this->collectHolds();
+        $this->collectReleases();
+        $holdMap = $this->buildDatedHoldMap($request->to_date);
 
         $products = Product::query()
             ->with('brandRelation')
@@ -1452,7 +1476,10 @@ class StockReportBuilder
         $grand = ['hold_qty' => 0.0];
 
         foreach ($products as $product) {
-            $holdQty = $this->currentHoldQtyForWarehouses((int) $product->id, $warehouseIds);
+            $holdQty = 0.0;
+            foreach ($warehouseIds as $warehouseId) {
+                $holdQty += (float) ($holdMap[(int) $warehouseId][(int) $product->id] ?? 0.0);
+            }
             if (abs($holdQty) < 0.0001) {
                 continue;
             }
