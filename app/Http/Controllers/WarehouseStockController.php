@@ -3,9 +3,11 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use App\Models\WarehouseStock;
-use App\Models\Warehouse;
+use App\Models\Brand;
 use App\Models\Product;
+use App\Models\Warehouse;
+use App\Models\WarehouseStock;
+use App\Services\StockReportBuilder;
 use Illuminate\Support\Facades\DB;
 
 class WarehouseStockController extends Controller
@@ -399,5 +401,255 @@ class WarehouseStockController extends Controller
         }
 
         return redirect()->route('warehouse_stocks.index')->with('success', $message);
+    }
+
+    public function auditIndex(Request $request, StockReportBuilder $builder)
+    {
+        @set_time_limit(300);
+        @ini_set('max_execution_time', '300');
+
+        $startDate = $request->start_date ?? '2020-01-01';
+        $endDate = $request->end_date ?? date('Y-m-d');
+        $warehouseFilter = $request->input('warehouse_id', '');
+        $brandFilter = $request->input('brand_id', '');
+        $productSearch = trim((string) $request->input('product_name', ''));
+        $onlyDiff = $request->boolean('only_diff');
+
+        $builderParams = [
+            'from_date' => $startDate,
+            'to_date' => $endDate,
+        ];
+        if ($warehouseFilter !== '' && $warehouseFilter !== null) {
+            $builderParams['warehouse'] = [(string) $warehouseFilter];
+        }
+        if ($brandFilter !== '' && $brandFilter !== null) {
+            $builderParams['brand'] = [(string) $brandFilter];
+        }
+
+        $report = $builder->build(new Request($builderParams));
+
+        $warehouses = Warehouse::withoutGlobalScopes()->orderBy('warehouse_name')->get();
+        $brands = Brand::orderBy('name')->get();
+
+        // Pre-load system saved stocks
+        $shopStocks = Product::withoutGlobalScopes()->pluck('stock', 'id')->map(fn ($v) => (float) ($v ?? 0))->all();
+        $whStocks = [];
+        foreach (WarehouseStock::all(['warehouse_id', 'product_id', 'quantity']) as $ws) {
+            $whStocks[(int) $ws->warehouse_id][(int) $ws->product_id] = (float) ($ws->quantity ?? 0);
+        }
+
+        $seenKeys = [];
+        $auditRows = [];
+
+        foreach ($report['grouped'] as $whId => $rows) {
+            $whIdInt = (int) $whId;
+            foreach ($rows as $r) {
+                $pid = (int) $r['product_id'];
+                $seenKeys[$whIdInt . '|' . $pid] = true;
+
+                if ($productSearch !== '' && stripos((string) $r['product_name'], $productSearch) === false) {
+                    continue;
+                }
+
+                $savedStock = $whIdInt === 0
+                    ? ($shopStocks[$pid] ?? 0.0)
+                    : ($whStocks[$whIdInt][$pid] ?? 0.0);
+                $calcStock = (float) $r['closing'];
+                $diff = $calcStock - $savedStock;
+
+                if ($onlyDiff && abs($diff) < 0.01) {
+                    continue;
+                }
+
+                $clmIn = (float) ($r['clm_in'] ?? 0) + (float) ($r['cla_in'] ?? 0) + (float) ($r['cli_in'] ?? 0);
+                $clmOut = (float) ($r['clm_rep'] ?? 0) + (float) ($r['clm_out'] ?? 0) + (float) ($r['cla_out'] ?? 0) + (float) ($r['cli_out'] ?? 0);
+
+                $auditRows[] = [
+                    'product_id' => $pid,
+                    'warehouse_id' => $whIdInt,
+                    'warehouse_label' => $r['warehouse_label'],
+                    'brand_name' => $r['brand_name'] ?? '-',
+                    'product_name' => $r['product_name'],
+                    'opening' => (float) $r['opening'],
+                    'pur' => (float) ($r['pur'] ?? 0),
+                    'sales_ret' => (float) ($r['sales_ret'] ?? 0),
+                    'trf_in' => (float) ($r['trf_in'] ?? 0),
+                    'clm_in' => $clmIn,
+                    'hold' => (float) ($r['hold'] ?? 0),
+                    'sales' => (float) ($r['sales'] ?? 0),
+                    'pur_ret' => (float) ($r['pur_ret'] ?? 0),
+                    'trf_out' => (float) ($r['trf_out'] ?? 0),
+                    'clm_out' => $clmOut,
+                    'waste' => (float) ($r['waste'] ?? 0),
+                    'release' => (float) ($r['release'] ?? 0),
+                    'calc_stock' => $calcStock,
+                    'saved_stock' => $savedStock,
+                    'diff' => $diff,
+                ];
+            }
+        }
+
+        // Catch any non-zero saved stocks in DB that had zero ledger movements
+        $productsMap = Product::withoutGlobalScopes()->with('brandRelation')->get()->keyBy('id');
+        $warehousesMap = $warehouses->keyBy('id');
+
+        if ($warehouseFilter === '' || $warehouseFilter === '0') {
+            foreach ($shopStocks as $pid => $qty) {
+                if (abs($qty) < 0.0001 || isset($seenKeys['0|' . $pid])) {
+                    continue;
+                }
+                $prod = $productsMap->get($pid);
+                if (!$prod) {
+                    continue;
+                }
+                if ($brandFilter !== '' && (int) $prod->brand_id !== (int) $brandFilter) {
+                    continue;
+                }
+                if ($productSearch !== '' && stripos((string) $prod->name, $productSearch) === false) {
+                    continue;
+                }
+                $auditRows[] = [
+                    'product_id' => (int) $pid,
+                    'warehouse_id' => 0,
+                    'warehouse_label' => 'Shop Stock',
+                    'brand_name' => $prod->brandRelation?->name ?? 'Other',
+                    'product_name' => $prod->name,
+                    'opening' => 0.0, 'pur' => 0.0, 'sales_ret' => 0.0, 'trf_in' => 0.0,
+                    'clm_in' => 0.0, 'hold' => 0.0, 'sales' => 0.0, 'pur_ret' => 0.0,
+                    'trf_out' => 0.0, 'clm_out' => 0.0, 'waste' => 0.0, 'release' => 0.0,
+                    'calc_stock' => 0.0,
+                    'saved_stock' => $qty,
+                    'diff' => -$qty,
+                ];
+            }
+        }
+
+        foreach ($whStocks as $whIdInt => $prodList) {
+            if ($warehouseFilter !== '' && (int) $warehouseFilter !== $whIdInt) {
+                continue;
+            }
+            $whName = $warehousesMap->get($whIdInt)?->warehouse_name ?? ('WH #' . $whIdInt);
+            foreach ($prodList as $pid => $qty) {
+                if (abs($qty) < 0.0001 || isset($seenKeys[$whIdInt . '|' . $pid])) {
+                    continue;
+                }
+                $prod = $productsMap->get($pid);
+                if (!$prod) {
+                    continue;
+                }
+                if ($brandFilter !== '' && (int) $prod->brand_id !== (int) $brandFilter) {
+                    continue;
+                }
+                if ($productSearch !== '' && stripos((string) $prod->name, $productSearch) === false) {
+                    continue;
+                }
+                $auditRows[] = [
+                    'product_id' => (int) $pid,
+                    'warehouse_id' => $whIdInt,
+                    'warehouse_label' => $whName,
+                    'brand_name' => $prod->brandRelation?->name ?? 'Other',
+                    'product_name' => $prod->name,
+                    'opening' => 0.0, 'pur' => 0.0, 'sales_ret' => 0.0, 'trf_in' => 0.0,
+                    'clm_in' => 0.0, 'hold' => 0.0, 'sales' => 0.0, 'pur_ret' => 0.0,
+                    'trf_out' => 0.0, 'clm_out' => 0.0, 'waste' => 0.0, 'release' => 0.0,
+                    'calc_stock' => 0.0,
+                    'saved_stock' => $qty,
+                    'diff' => -$qty,
+                ];
+            }
+        }
+
+        $groupedAudit = collect($auditRows)
+            ->groupBy('warehouse_id')
+            ->sortKeys()
+            ->map(function ($items, $whId) {
+                $sorted = $items->sortBy([
+                    ['brand_name', 'asc'],
+                    ['product_name', 'asc'],
+                ])->values();
+
+                $mismatchCount = $sorted->filter(fn ($r) => abs($r['diff']) >= 0.01)->count();
+
+                return [
+                    'warehouse_id' => (int) $whId,
+                    'warehouse_label' => $sorted->first()['warehouse_label'] ?? ('WH #' . $whId),
+                    'rows' => $sorted->all(),
+                    'mismatch_count' => $mismatchCount,
+                    'total_count' => $sorted->count(),
+                ];
+            })
+            ->values()
+            ->all();
+
+        return view('admin_panel.warehouses.warehouse_stocks.audit', compact(
+            'groupedAudit',
+            'auditRows',
+            'startDate',
+            'endDate',
+            'warehouses',
+            'brands',
+            'warehouseFilter',
+            'brandFilter',
+            'onlyDiff'
+        ));
+    }
+
+    public function syncStocks(Request $request, StockReportBuilder $builder)
+    {
+        @set_time_limit(300);
+        @ini_set('max_execution_time', '300');
+
+        $report = $builder->build(new Request([
+            'from_date' => '2020-01-01',
+            'to_date' => date('Y-m-d'),
+        ]));
+
+        $syncedCount = 0;
+        $ledgerMap = [];
+
+        foreach ($report['grouped'] as $whId => $rows) {
+            $whIdInt = (int) $whId;
+            foreach ($rows as $r) {
+                $pid = (int) $r['product_id'];
+                $calcStock = round((float) $r['closing'], 2);
+                $ledgerMap[$whIdInt][$pid] = $calcStock;
+
+                if ($whIdInt === 0) {
+                    $prod = Product::withoutGlobalScopes()->find($pid);
+                    if ($prod && abs((float) ($prod->stock ?? 0) - $calcStock) > 0.01) {
+                        $prod->stock = $calcStock;
+                        $prod->save();
+                        $syncedCount++;
+                    }
+                } else {
+                    $ws = WarehouseStock::where('warehouse_id', $whIdInt)->where('product_id', $pid)->first();
+                    $currentQty = $ws ? (float) ($ws->quantity ?? 0) : 0.0;
+                    if (abs($currentQty - $calcStock) > 0.01) {
+                        if ($ws) {
+                            $ws->quantity = $calcStock;
+                            $ws->save();
+                        } elseif ($calcStock != 0.0) {
+                            WarehouseStock::create([
+                                'warehouse_id' => $whIdInt,
+                                'product_id' => $pid,
+                                'quantity' => $calcStock,
+                            ]);
+                        }
+                        $syncedCount++;
+                    }
+                }
+            }
+        }
+
+        // Zero out any orphaned non-zero warehouse_stocks not present in ledger
+        foreach (WarehouseStock::where('quantity', '!=', 0)->get() as $ws) {
+            if (!isset($ledgerMap[(int) $ws->warehouse_id][(int) $ws->product_id])) {
+                $ws->quantity = 0;
+                $ws->save();
+                $syncedCount++;
+            }
+        }
+
+        return back()->with('success', "All warehouse & shop stocks synced with Stock Ledger! ({$syncedCount} records updated)");
     }
 }

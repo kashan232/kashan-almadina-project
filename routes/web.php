@@ -319,7 +319,7 @@ Route::middleware('auth')->group(function () {
     Route::get('customers/toggle-status/{id}', [CustomerController::class, 'toggleStatus'])->name('customers.toggleStatus');
     Route::get('/outstanding-losses', [CustomerController::class, 'outstandingLosses'])->name('outstanding.losses');
     // Vendor Routes
-    Route::get('/vendor', [VendorController::class, 'index']);
+    Route::get('/vendor', [VendorController::class, 'index'])->name('vendor.index');
     Route::get('/vendor/create', [VendorController::class, 'create'])->name('vendor.create');
     Route::post('/vendor/store', [VendorController::class, 'store']);
     Route::get('/vendor/edit/{id}', [VendorController::class, 'edit'])->name('vendor.edit');
@@ -329,6 +329,7 @@ Route::middleware('auth')->group(function () {
     Route::get('vendor/ledger', [VendorController::class, 'allLedgers'])->name('vendor.ledger');
     Route::get('vendor/payments', [VendorController::class, 'payments_index'])->name('vendor.payments.index');
     Route::post('vendor/payments/store', [VendorController::class, 'payments_store'])->name('vendor.payments.store');
+    Route::post('/vendor/sync-ledgers', [VendorController::class, 'syncLedgers'])->name('vendors.sync-ledgers');
     // routes/web.php
     Route::get('/vendor/{id}/closing-balance', [VendorController::class, 'getClosingBalance'])->name('vendor.closing.balance');
 
@@ -342,6 +343,7 @@ Route::middleware('auth')->group(function () {
     Route::resource('warehouse_stocks', WarehouseStockController::class);
     Route::post('warehouse_stocks/{id}/post', [WarehouseStockController::class, 'post'])->name('warehouse_stocks.post');
     Route::get('warehouse_stocks/{id}/print', [WarehouseStockController::class, 'print'])->name('warehouse_stocks.print');
+    Route::post('warehouse_stocks/sync-stocks', [WarehouseStockController::class, 'syncStocks'])->name('warehouse_stocks.sync');
     Route::get('/warehouse-stock-quantity', [StockTransferController::class, 'getStockQuantity'])->name('warehouse.stock.quantity');
 
     Route::resource('stock_transfers', StockTransferController::class)->except(['destroy']);
@@ -636,6 +638,7 @@ Route::middleware('auth')->group(function () {
     Route::post('/reports/journal-voucher/preview', [\App\Http\Controllers\JournalVoucherReportController::class, 'preview'])->name('reports.journal-voucher.preview');
     Route::get('/reports/customer-audit', [\App\Http\Controllers\CustomerController::class, 'auditIndex'])->name('customers.audit');
     Route::get('/reports/vendor-audit', [\App\Http\Controllers\VendorController::class, 'auditIndex'])->name('vendors.audit');
+    Route::get('/reports/warehouse-stock-audit', [\App\Http\Controllers\WarehouseStockController::class, 'auditIndex'])->name('warehouse_stocks.audit');
     Route::get('/reports/adjustment-voucher', [\App\Http\Controllers\AdjustmentVoucherReportController::class, 'index'])->name('reports.adjustment-voucher.index');
     Route::post('/reports/adjustment-voucher/preview', [\App\Http\Controllers\AdjustmentVoucherReportController::class, 'preview'])->name('reports.adjustment-voucher.preview');
 

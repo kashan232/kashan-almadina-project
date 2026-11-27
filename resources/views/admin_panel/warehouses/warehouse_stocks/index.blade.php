@@ -164,6 +164,9 @@
                             <div class="d-flex align-items-center justify-content-between flex-wrap gap-1">
                                 <h6 class="mb-0 fw-bold text-dark ms-2"><i class="fa fa-cubes me-2 text-primary"></i>Warehouse Stock Management</h6>
                                 <div class="d-flex align-items-center gap-1">
+                                    <a class="btn btn-warning btn-sm rounded-pill px-3 shadow-sm py-1 text-dark fw-bold" href="{{ route('warehouse_stocks.audit') }}" style="font-size: 11px;">
+                                        <i class="fa fa-calculator me-1"></i> Audit
+                                    </a>
                                     <a class="btn btn-success btn-sm rounded-pill px-3 shadow-sm py-1" href="{{ route('warehouse_stocks.export') }}" style="font-size: 11px;">
                                         <i class="fa fa-file-excel-o me-1"></i> Export Excel
                                     </a>

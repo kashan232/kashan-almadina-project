@@ -7,7 +7,7 @@
             <div class="col-12 d-flex justify-content-between align-items-center">
                 <div>
                     <h4 class="mb-0 text-dark fw-bold">Vendor Closing Balance Reconciliation (Audit)</h4>
-                    <p class="text-muted small mb-0">Detailed breakdown of opening, purchases, returns, payments, calculated true balance vs system saved balance.</p>
+                    <p class="text-muted small mb-0">Detailed breakdown matching General Ledger — Opening, Purchases, Payments, Receipts, Returns, True Balance vs Saved Balance.</p>
                 </div>
                 <div>
                     <a href="{{ route('vendor.index') }}" class="btn btn-outline-secondary btn-sm rounded-pill px-3">
@@ -19,23 +19,118 @@
 
         <div class="card border-0 shadow-sm mb-3">
             <div class="card-body p-3">
-                <form method="GET" action="{{ route('vendors.audit') }}" class="row g-2 align-items-center">
-                    <div class="col-md-3">
+                <form method="GET" action="{{ route('vendors.audit') }}" class="row g-2 align-items-end">
+                    <div class="col-md-2">
                         <label class="form-label small fw-bold text-muted mb-1">Start Date</label>
                         <input type="date" name="start_date" class="form-control form-control-sm" value="{{ $startDate }}">
                     </div>
-                    <div class="col-md-3">
+                    <div class="col-md-2">
                         <label class="form-label small fw-bold text-muted mb-1">End Date</label>
                         <input type="date" name="end_date" class="form-control form-control-sm" value="{{ $endDate }}">
                     </div>
-                    <div class="col-md-3 mt-4">
+                    <div class="col-md-3">
+                        <label class="form-label small fw-bold text-muted mb-1">Vendor Name</label>
+                        <input type="text" name="vendor_name" class="form-control form-control-sm" placeholder="Vendor Name..." value="{{ request('vendor_name') }}">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label small fw-bold text-muted mb-1">Group</label>
+                        <select name="group_id" class="form-select form-select-sm select2">
+                            <option value="">All Groups</option>
+                            @foreach($userGroups as $group)
+                                <option value="{{ $group->id }}" {{ request('group_id') == $group->id ? 'selected' : '' }}>
+                                    {{ $group->group_name }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                    @if($isAdmin)
+                    <div class="col-md-3">
+                        <label class="form-label small fw-bold text-muted mb-1">Created By</label>
+                        <select name="created_by" class="form-select form-select-sm select2">
+                            <option value="">All Users (Created By)</option>
+                            @foreach($users as $user)
+                                <option value="{{ $user->id }}" {{ request('created_by') == $user->id ? 'selected' : '' }}>
+                                    {{ $user->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                    @endif
+                    <div class="col-md-12 d-flex gap-2 justify-content-end mt-2">
                         <button type="submit" class="btn btn-primary btn-sm rounded-pill px-4">
                             <i class="fa fa-filter me-1"></i> Run Audit
                         </button>
+                        <a href="{{ route('vendors.audit') }}" class="btn btn-outline-secondary btn-sm rounded-pill px-3">
+                            <i class="fa fa-refresh me-1"></i> Reset
+                        </a>
+                        <button type="submit" form="syncLedgersForm" class="btn btn-warning btn-sm rounded-pill px-3">
+                            <i class="fa fa-database me-1"></i> Sync & Fix Ledgers
+                        </button>
                     </div>
+                </form>
+                <form id="syncLedgersForm" action="{{ route('vendors.sync-ledgers') }}" method="POST" class="d-none" onsubmit="return confirm('Recalculate and sync all vendor ledgers with General Ledger?');">
+                    @csrf
                 </form>
             </div>
         </div>
+
+        <!-- Formula & Reconciliation Explanation Card -->
+        <div class="card border-0 shadow-sm mb-3 bg-light border-start border-4 border-primary">
+            <div class="card-body p-3">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h6 class="fw-bold text-primary mb-0">
+                        <i class="fa fa-calculator me-2"></i> Audit Calculation Formulas & Balance Reconciliation
+                    </h6>
+                    <button class="btn btn-sm btn-outline-secondary py-0 px-2" type="button" data-bs-toggle="collapse" data-bs-target="#formulaCollapse" aria-expanded="true">
+                        <i class="fa fa-chevron-down"></i> Details
+                    </button>
+                </div>
+                <div class="collapse show" id="formulaCollapse">
+                    <div class="row g-2 mt-1" style="font-size: 11.5px;">
+                        <div class="col-md-6">
+                            <div class="p-2 rounded bg-white border h-100">
+                                <div class="fw-bold text-dark mb-1"><i class="fa fa-plus-circle text-success me-1"></i> 1. Calculated True Balance (Formula):</div>
+                                <div class="font-monospace text-muted mb-1">
+                                    <strong>True Balance</strong> = Opening + <span class="text-dark fw-bold">[Additions (DR)]</span> - <span class="text-danger fw-bold">[Deductions (CR)]</span>
+                                </div>
+                                <ul class="list-unstyled mb-0 ps-2" style="line-height: 1.6;">
+                                    <li><strong class="text-dark">Additions (+) :</strong> Sales + C.Rep + Payment + JV-DR + AV-DR + CIR + Pur Ret</li>
+                                    <li><strong class="text-danger">Deductions (-) :</strong> Purchase + S.Ret + CLM CN + Receipts + Income + Exp/Dis + JV-CR + AV-CR</li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="p-2 rounded bg-white border h-100">
+                                <div class="fw-bold text-dark mb-1"><i class="fa fa-balance-scale text-primary me-1"></i> 2. GL Balance & Difference Formula:</div>
+                                <div class="font-monospace text-muted mb-1">
+                                    <strong>GL Balance</strong> = Opening + Total GL Debits - Total GL Credits
+                                </div>
+                                <div class="font-monospace text-muted mb-1">
+                                    <strong>Difference</strong> = Calculated True Balance - GL Balance
+                                </div>
+                                <div class="mt-2">
+                                    <span class="badge bg-success px-2 py-1"><i class="fa fa-check me-1"></i> Diff = 0.00 : 100% Reconciled (OK)</span>
+                                    <span class="badge bg-danger px-2 py-1 ms-1"><i class="fa fa-exclamation-triangle me-1"></i> Diff ≠ 0 : Mismatch Alert</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        @php
+            $fmtAdd = function($v) {
+                $val = (float)$v;
+                if (abs($val) < 0.0001) return '-';
+                return '<span class="fw-bold text-dark">' . number_format($val, 0) . '</span>';
+            };
+            $fmtSub = function($v) {
+                $val = (float)$v;
+                if (abs($val) < 0.0001) return '-';
+                return '<span class="text-danger fw-bold">-' . number_format(abs($val), 0) . '</span>';
+            };
+        @endphp
 
         <div class="card border-0 shadow-sm">
             <div class="card-body p-0">
@@ -43,22 +138,33 @@
                     <table class="table table-sm table-striped table-bordered align-middle w-100 mb-0" style="font-size: 11px;">
                         <thead class="table-dark text-center">
                             <tr>
-                                <th>DB ID</th>
-                                <th>Vendor ID</th>
-                                <th>Vendor Name</th>
-                                <th>Initial Opening</th>
-                                <th>Total Purchases</th>
-                                <th>Pur. Ret</th>
-                                <th>Total Payments</th>
-                                <th>Receipts</th>
-                                <th>Income</th>
-                                <th>S. Ret</th>
+                                <th rowspan="2">DB ID</th>
+                                <th rowspan="2">Vend ID</th>
+                                <th rowspan="2">Vendor Name</th>
+                                <th rowspan="2">Opening</th>
+                                <th colspan="15" style="background:#37474f;color:#fff;">Period Transactions (Between {{ $startDate }} to {{ $endDate }})</th>
+                                <th rowspan="2" style="background:#0d47a1;color:#fff;">Calculated True Balance</th>
+                                <th rowspan="2" style="background:#4a148c;color:#fff;">System Saved Balance</th>
+                                <th rowspan="2" style="background:#00695c;color:#fff;">GL Balance</th>
+                                <th rowspan="2" style="background:#e65100;color:#fff;">Difference</th>
+                                <th rowspan="2">Status</th>
+                            </tr>
+                            <tr>
                                 <th>Sales</th>
-                                <th>Exp / Dis</th>
-                                <th style="background:#0d47a1;color:#fff;">Calculated True Balance</th>
-                                <th style="background:#4a148c;color:#fff;">System Saved Balance</th>
-                                <th style="background:#e65100;color:#fff;">Difference</th>
-                                <th>Action</th>
+                                <th>C. Rep</th>
+                                <th>Payment</th>
+                                <th>JV-DR</th>
+                                <th>AV-DR</th>
+                                <th>CIR</th>
+                                <th>Pur Ret</th>
+                                <th style="color:#ffcdd2;">Purchase</th>
+                                <th style="color:#ffcdd2;">S. Ret</th>
+                                <th style="color:#ffcdd2;">CLM CN</th>
+                                <th style="color:#ffcdd2;">Receipts</th>
+                                <th style="color:#ffcdd2;">Income</th>
+                                <th style="color:#ffcdd2;">Exp / Dis</th>
+                                <th style="color:#ffcdd2;">JV-CR</th>
+                                <th style="color:#ffcdd2;">AV-CR</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -66,22 +172,38 @@
                             @php $isOk = abs($r['diff']) < 0.01; @endphp
                             <tr class="{{ !$isOk ? 'table-danger' : '' }}">
                                 <td class="text-center text-muted">{{ $r['id'] }}</td>
-                                <td class="text-center fw-bold text-primary">{{ $r['vendor_id'] }}</td>
+                                <td class="text-center fw-bold text-primary">{{ $r['vendor_id'] ?? '-' }}</td>
                                 <td class="fw-bold text-dark">{{ $r['name'] }}</td>
-                                <td class="text-end fw-bold">{{ number_format($r['opening'], 0) }}</td>
-                                <td class="text-end text-success">{{ number_format($r['purchases'], 0) }}</td>
-                                <td class="text-end text-danger">{{ number_format($r['pur_ret'], 0) }}</td>
-                                <td class="text-end text-warning">{{ number_format($r['payments'], 0) }}</td>
-                                <td class="text-end text-success">{{ number_format($r['receipts'], 0) }}</td>
-                                <td class="text-end">{{ number_format($r['income'], 0) }}</td>
-                                <td class="text-end">{{ number_format($r['s_ret'], 0) }}</td>
-                                <td class="text-end">{{ number_format($r['sales'], 0) }}</td>
-                                <td class="text-end">{{ number_format($r['exp_dis'], 0) }}</td>
+                                <td class="text-end">{!! $fmtAdd($r['opening']) !!}</td>
+
+                                {{-- Positive Addition Fields (DR) --}}
+                                <td class="text-end">{!! $fmtAdd($r['sales']) !!}</td>
+                                <td class="text-end">{!! $fmtAdd($r['c_rep']) !!}</td>
+                                <td class="text-end">{!! $fmtAdd($r['payments']) !!}</td>
+                                <td class="text-end">{!! $fmtAdd($r['jv_dr']) !!}</td>
+                                <td class="text-end">{!! $fmtAdd($r['av_dr'] ?? 0) !!}</td>
+                                <td class="text-end">{!! $fmtAdd($r['cir']) !!}</td>
+                                <td class="text-end">{!! $fmtAdd($r['pur_ret']) !!}</td>
+
+                                {{-- Negative Deduction Fields (CR) --}}
+                                <td class="text-end">{!! $fmtSub($r['purchases']) !!}</td>
+                                <td class="text-end">{!! $fmtSub($r['s_ret']) !!}</td>
+                                <td class="text-end">{!! $fmtSub($r['clm_cn'] ?? 0) !!}</td>
+                                <td class="text-end">{!! $fmtSub($r['receipts']) !!}</td>
+                                <td class="text-end">{!! $fmtSub($r['income']) !!}</td>
+                                <td class="text-end">{!! $fmtSub($r['exp_dis']) !!}</td>
+                                <td class="text-end">{!! $fmtSub($r['jv_cr']) !!}</td>
+                                <td class="text-end">{!! $fmtSub($r['av_cr'] ?? 0) !!}</td>
+
                                 <td class="text-end fw-bold text-primary" style="background:#f4f8fb;">
                                     {{ number_format($r['calc_balance'], 2) }}
                                 </td>
-                                <td class="text-end fw-bold text-purple" style="background:#faf8fc;color:#4a148c;">
+                                <td class="text-end fw-bold" style="background:#faf8fc;color:#4a148c;">
                                     {{ number_format($r['saved_balance'], 2) }}
+                                </td>
+                                <td class="text-end fw-bold" style="background:#e0f2f1;color:#004d40;">
+                                    @php $glVal = (float)($r['gl_balance'] ?? 0); @endphp
+                                    {{ $glVal >= 0 ? 'DR.' : 'CR.' }} {{ number_format(abs($glVal), 2) }}
                                 </td>
                                 <td class="text-end fw-bold" style="background:#fffaf0;color:{{ $isOk ? '#2e7d32' : '#c62828' }};">
                                     {{ number_format($r['diff'], 2) }}
@@ -96,10 +218,54 @@
                             </tr>
                             @empty
                             <tr>
-                                <td colspan="16" class="text-center p-3 text-muted">No vendor record found.</td>
+                                <td colspan="24" class="text-center p-3 text-muted">No vendor record found.</td>
                             </tr>
                             @endforelse
                         </tbody>
+                        @if(!empty($auditRows))
+                        @php
+                            $totals = [
+                                'opening' => 0.0, 'sales' => 0.0, 'c_rep' => 0.0, 'payments' => 0.0,
+                                'jv_dr' => 0.0, 'av_dr' => 0.0, 'cir' => 0.0, 'pur_ret' => 0.0,
+                                'purchases' => 0.0, 's_ret' => 0.0, 'clm_cn' => 0.0, 'receipts' => 0.0,
+                                'income' => 0.0, 'exp_dis' => 0.0, 'jv_cr' => 0.0, 'av_cr' => 0.0,
+                                'calc_balance' => 0.0, 'saved_balance' => 0.0, 'gl_balance' => 0.0, 'diff' => 0.0
+                            ];
+                            foreach($auditRows as $r) {
+                                foreach(array_keys($totals) as $k) {
+                                    $totals[$k] += (float)($r[$k] ?? 0);
+                                }
+                            }
+                        @endphp
+                        <tfoot class="table-dark text-end fw-bold">
+                            <tr>
+                                <td colspan="3" class="text-center text-uppercase">Total Amount</td>
+                                <td>{!! $fmtAdd($totals['opening']) !!}</td>
+                                <td>{!! $fmtAdd($totals['sales']) !!}</td>
+                                <td>{!! $fmtAdd($totals['c_rep']) !!}</td>
+                                <td>{!! $fmtAdd($totals['payments']) !!}</td>
+                                <td>{!! $fmtAdd($totals['jv_dr']) !!}</td>
+                                <td>{!! $fmtAdd($totals['av_dr']) !!}</td>
+                                <td>{!! $fmtAdd($totals['cir']) !!}</td>
+                                <td>{!! $fmtAdd($totals['pur_ret']) !!}</td>
+                                <td>{!! $fmtSub($totals['purchases']) !!}</td>
+                                <td>{!! $fmtSub($totals['s_ret']) !!}</td>
+                                <td>{!! $fmtSub($totals['clm_cn']) !!}</td>
+                                <td>{!! $fmtSub($totals['receipts']) !!}</td>
+                                <td>{!! $fmtSub($totals['income']) !!}</td>
+                                <td>{!! $fmtSub($totals['exp_dis']) !!}</td>
+                                <td>{!! $fmtSub($totals['jv_cr']) !!}</td>
+                                <td>{!! $fmtSub($totals['av_cr']) !!}</td>
+                                <td class="text-primary">{{ number_format($totals['calc_balance'], 2) }}</td>
+                                <td style="color:#ce93d8;">{{ number_format($totals['saved_balance'], 2) }}</td>
+                                <td style="color:#80cbc4;">
+                                    {{ $totals['gl_balance'] >= 0 ? 'DR.' : 'CR.' }} {{ number_format(abs($totals['gl_balance']), 2) }}
+                                </td>
+                                <td style="color:{{ abs($totals['diff']) < 0.01 ? '#81c784' : '#ef5350' }};">{{ number_format($totals['diff'], 2) }}</td>
+                                <td class="text-center">-</td>
+                            </tr>
+                        </tfoot>
+                        @endif
                     </table>
                 </div>
             </div>
